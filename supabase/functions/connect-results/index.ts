@@ -145,7 +145,7 @@ Deno.serve(async req=>{
       next.classic=[{},{},{}];next.progress={};next.hardThree=[null,null,null];
       // Records Mort subite et trophées acquis conservés : sémantique V6.0.2.
     }else{
-      next.classic=[{},{},{}];next.sudden=[null,null,null];next.hard=[null,null,null];next.rewards=null;
+      next.classic=[{},{},{}];next.sudden=[null,null,null];next.hard=[null,null,null];next.hardThree=[null,null,null];next.rewards=null;
       // Déblocages et progression HARD conservés : sémantique V6.0.2.
     }
     const payload={state_data:next,schema_version:1,updated_at:new Date().toISOString(),reset_epoch:epoch+1,revision:rev+1};
