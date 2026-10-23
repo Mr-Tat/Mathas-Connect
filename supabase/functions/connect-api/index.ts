@@ -26,6 +26,15 @@ async function handle(req:Request){
  try{
  switch(b.action){
  
+ case 'student-device-label':{
+   if(!user.is_anonymous||typeof b.label!=='string')return fail('forbidden',403);
+   const label=b.label.trim();
+   if(label.length<1||label.length>40||/[<>\u0000-\u001f]/.test(label))return fail('input_invalid');
+   const device=await one(db.from('connect_devices').select('id').eq('auth_user_id',user.id).eq('state','approved').limit(1));
+   if(!device)return fail('forbidden',403);
+   const result=await db.from('connect_devices').update({device_label:label}).eq('id',device.id).eq('auth_user_id',user.id).eq('state','approved');
+   return result.error?fail('db_failed',500):ok({label});
+ }
  case 'student-release':{
    if(!user.is_anonymous)return fail('forbidden',403);
    const found=await db.from('connect_devices').select('id').eq('auth_user_id',user.id).eq('state','approved').limit(20);
@@ -71,7 +80,7 @@ async function handle(req:Request){
    const studentsIds=[...new Set(enrollments.data.map((x:any)=>x.student_id))];
    const [students,devices]=await Promise.all([
      studentsIds.length?db.from('connect_students').select('id,display_name').in('id',studentsIds):Promise.resolve({data:[],error:null}),
-     studentsIds.length?db.from('connect_devices').select('id,student_id,state,requested_at').in('student_id',studentsIds).limit(500):Promise.resolve({data:[],error:null})
+     studentsIds.length?db.from('connect_devices').select('id,student_id,state,requested_at,device_label').in('student_id',studentsIds).limit(500):Promise.resolve({data:[],error:null})
    ]);
    if(students.error||devices.error)return fail('db_failed',500);
    return ok({years:years.data,classes:classes.data,requests:requests.data,students:students.data,devices:devices.data});
