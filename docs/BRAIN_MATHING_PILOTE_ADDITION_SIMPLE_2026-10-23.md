@@ -10,13 +10,13 @@ Source examinée **en lecture seule** : `Mr-Tat/Addition-ecrite-simple/index.htm
 Configuration exacte `window.MathasAppConfig` :
 | Famille | Clé de stockage examinée | Destination proposée |
 |---|---|---|
-| Meilleurs scores classiques | `addition_classic_v1` | **Connect** : synthèse + détails de série 4/10/20 et niveau |
+| Meilleurs scores classiques | `addition_classic_v1` | **Connect** : résultats compacts des séries terminées (niveau, 4/10/20, réussites) ; aucune saisie individuelle |
 | Meilleurs scores Mort subite | `addition_sudden_v1` | **Connect** : record par niveau |
 | Résultats et records HARD | `addition1_hard_sudden_v1`, `addition1_hard_three_v1` | **Connect** : record/évolution, en respectant les variantes |
 | Progression et verrous | `mathas_progression_addition_simple_v1` | **Connect** : déblocages et réussites |
-| Points et meilleurs records | `mathas_points_v1_addition-simple` | **Connect** : top du jour, top 3 personnels et record absolu, sans confondre points et score brut |
-| Collection de trophées | `mathas_trophies_v3_addition-simple` | **Connect** : trophées séparés du top 3 (« médailles ») |
-| Historique court et dernière partie | `addition1_last_work`, `mathas_recent_two_scores_v1_addition-simple`, `mathas_scores_` + `location.pathname.toLowerCase()` | **Partiellement Connect** : événements terminés pertinents ; affichage local rapide, pas d'historique brut infini |
+| Points et meilleurs records | `mathas_points_v1_addition-simple` | **Connect** : uniquement les **3 meilleurs scores personnels en points** et le **meilleur score du jour** (avec date), en évitant toute copie de l'historique brut |
+| Collection de trophées | `mathas_trophies_v3_addition-simple` | **Connect** : **compteur total uniquement** pour les synthèses ; ni liste détaillée des trophées, ni médailles. L'intégralité de la collection reste locale pour l'instant ; limite explicite de restitution inter-PC |
+| Historique court et dernière partie | `addition1_last_work`, `mathas_recent_two_scores_v1_addition-simple`, `mathas_scores_` + `location.pathname.toLowerCase()` | **Connect** : résultats des séries terminées et utiles au suivi ; pas de duplication des tableaux locaux complets |
 | Préférences de jeu | `addition_settings_v1`, `addition1_theme_mode_v1`, `mathas_aids_addition_simple_v1`, `mathas_gamification_v1_addition-simple` | **Local par défaut** : thème, affichage des panneaux, réglages facultatifs ; éventuellement synchronisation optionnelle ultérieure |
 | Usage de la réglette | `addition_ruler_usage_v1` | **Métrique ponctuelle**, uniquement `aidUsed` dans la tentative pertinente, pas les gestes détaillés |
 | Mode Master | `sessionStorage` lié au chemin de page et `window.__masterMode` | **Jamais synchronisé** : privilège temporaire uniquement |
@@ -35,19 +35,32 @@ Attention : existent aussi anciennes clés de trophées (`v1/v2`), score global 
   2. « Remise à zéro » : efface les scores des séries et les déblocages mais **conserve certains records Mort subite**.
   Ces intentions ne doivent jamais être confondues. Toute suppression doit avoir un mécanisme anti-résurrection depuis un autre appareil (`resetEpoch`/versions).
 
+## Décision pédagogique du 23 octobre 2026 — Périmètre minimal (prioritaire)
+Le professeur privilégie **les résultats des exercices, le meilleur nombre d'exercices réussis d'affilée en Mort subite, les trois meilleurs scores en points, le meilleur score du jour et le seul NOMBRE de trophées**. Les médailles et la collection détaillée des trophées ne doivent pas transiter pour les bilans Connect.
+
+**Nécessaire pour des résultats exploitables :** date/heure, app, niveau, mode, longueur de série (4/10/20), réussites/total, points/barème si utiles, et indicateur d'aide. Un événement se rapporte à une **série/partie terminée**, pas à chaque calcul posé, frappe, erreur ni clic. Conserver aussi, séparément, les quelques booléens de déblocage indispensables pour restituer la progression sur un autre ordinateur.
+
+**Inutile pour Connect V1 :** détail de chaque opération, ordre des erreurs, temps par question, mouvements de réglette, miniatures, animations, préférences d'apparence, top 10/20, historique de tous les scores quotidiens, trophées individuellement identifiés et médailles. Les points intermédiaires ne sont pas des événements.
+
+**Point de cohérence inter-PC :** transmettre **seulement un nombre de trophées** ne permet pas de reconstituer *quels* trophées composent la collection. Le jeu peut continuer à gérer localement sa collection ; le compteur seul passe dans Connect. Si la restitution exacte de la collection devait devenir nécessaire, un mini-masque de 20 indicateurs (≈3 octets avant sérialisation) serait possible, **mais il n'est pas retenu pour la V1 sans décision expresse**. L'affichage ne doit pas suggérer que tous les trophées sont synchronisés.
+
+**Scores quotidiens :** ne conserver que le meilleur score et sa **date locale Europe/Brussels**, pas un historique quotidien infini. Les trois meilleurs scores globaux et le record Mort subite sont maintenus séparément.
+
 ## Modèle Connect retenu pour le pilote (proposition)
 ### 1. Profil de sauvegarde
 Un identifiant de jeu stable **`app_key = addition-ecrite-simple`**, indépendant de `MathasAppConfig.appId = addition-simple`. Mapping explicite.
 `connect_states` contient une **sauvegarde compacte canonique** par (student_id, app_key) :
 - `schemaVersion` (format d'échange), `revision` serveur et `resetEpoch` ;
 - `progression` (niveaux, mode Mort subite, accès HARD, maîtrise réelle) ;
-- `scores` (records pertinents par mode/niveau/4-10-20 ; éventuellement top 3 points et records par jour) ;
-- `trophies` (identifiants acquis, par version de barème) ;
-- `lastResult` résumé et horodatage ; rien qui ne serve à la récupération n'est gardé par défaut.
+- `results` : synthèse des exercices/séries terminées par mode, niveau et nombre de calculs (pas de détail question par question) ;
+- `suddenBest` : **meilleure longueur de Mort subite**, par niveau et variante utile ;
+- `topThree` : **maximum trois meilleurs scores en points** et `todayBest` : meilleur score du jour, avec date locale Europe/Brussels et version de barème ;
+- `trophyCount` : **un seul entier** pour la synthèse, sans liste de trophées ou médailles ;
+- `lastResult` : court résumé horodaté, uniquement si nécessaire au retour sur une partie ; rien d'autre par défaut.
 Ne pas transférer CSS, préférences d'apparence, clavier, animations, calculs affichés temporairement ou traces de chaque clic.
 
 ### 2. Historique de résultats
-`connect_attempts` stocke **un événement uniquement à la FIN d'une partie réellement notée**, avec `event_id` UUID stable pour déduplication ; session `launch_id` autorisée et courte ; `student_id/class_id` **déduits côté serveur** du ticket. Attributs : `app_key`, `activity_key`, `mode` (classic/sudden/hard), `level_key`, `score`, `score_max` (NULL pour Mort subite), `points`, `scoring_version`, `game_version`, `received_at` et **indicateur d'aide**.
+`connect_attempts` stocke **un événement uniquement à la FIN d'une partie réellement notée**, avec `event_id` UUID stable pour déduplication ; session `launch_id` autorisée et courte ; `student_id/class_id` **déduits côté serveur** du ticket. Attributs minimaux : `app_key`, `activity_key`, `mode` (classic/sudden/hard), `level_key`, `score`, `score_max` (NULL pour Mort subite), `points` (si calculés), `scoring_version`, `game_version`, `received_at` et **indicateur d'aide**. Aucun trophée ni médaille dans les événements.
 **À adapter avant écriture :** enregistrer et valider `aidUsed`/type d'aide sans gonfler les données ; vérifier que les variantes 4/10/20 ont chacune une identité claire ; créer `connect_activities` pilote correspondant. Les scores `hard` ne se comparent pas automatiquement aux classiques, même si les points sont comparables selon barème.
 
 ### 3. Source de vérité et conflits
@@ -71,7 +84,7 @@ Les jeux sous `https://mr-tat.github.io/<nom-de-dépôt>/` et le HUB sous `https
 - **Connect** : 1 chargement de l'état à l'ouverture, 1 événement + 1 sauvegarde compacte aux jalons de partie (à grouper quand possible), et uniquement si l'état a changé.
 - Aucun appel à chaque chiffre saisi, manipulation de retenue, mouvement de réglette, ouverture de panneau ou seconde d'une minuterie.
 - Stockage serveur des essais : conserver une granularité **utile aux bilans pédagogiques** tout en bornant le volume ; prévoir périodes de conservation et éventuellement agrégats par niveau plutôt que des copies illimitées de chaque interaction.
-- Ne pas envoyer les SVG de trophées, CSS, ressources graphiques, ni les préférences purement visuelles.
+- Ne pas envoyer les SVG ou détails de trophées, les médailles, CSS, ressources graphiques, ni les préférences purement visuelles. Seul le nombre de trophées est utile au suivi.
 - Maintenir catalogue et miniatures statiques GitHub ; pas de dépendance aux images de l'ancien Supabase.
 - Prévoir les quotas : pilote sur un élève/appareil avant généralisation, mesurer trafic réel, puis extrapoler par classe.
 
@@ -90,7 +103,7 @@ Les jeux sous `https://mr-tat.github.io/<nom-de-dépôt>/` et le HUB sous `https
 2. PC A Connect Élève A : compte neuf ne reprend pas automatiquement l'ancien libre, puis création de nouveaux scores/trophées.
 3. PC A retour Mode libre : retrouver **à l'identique** toutes les valeurs du début (y compris la progression).
 4. PC A reconnexion : récupérer les valeurs Connect, pas celles du mode libre.
-5. PC B (appareil approuvé pour le même élève) : mêmes scores, déblocages, trophées Connect.
+5. PC B (appareil approuvé pour le même élève) : mêmes résultats, déblocages, top 3, meilleur du jour et compteur de trophées ; **la collection exacte de trophées n'est pas garantie sans données de restitution supplémentaires**.
 6. PC B Mode libre : les scores propres à B, **pas** ceux de A/Connect.
 7. Changer de classe/profil : refuser lecture du profil précédent.
 8. Révocation/oubli : plus d'accès cloud, Mode libre reste utilisable.
