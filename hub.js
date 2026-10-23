@@ -22,13 +22,18 @@ const levels = [
 
 function card(app) {
   const node = $('appTemplate').content.firstElementChild.cloneNode(true);
-  node.href = app.launch_url;
+  const target = new URL(app.launch_url, location.href);
+  // Le HUB fournit la classe au jeu Connect ; les autorisations restent vérifiées côté serveur.
+  if (classId && target.origin === location.origin) target.searchParams.set('class', classId);
+  node.href = target.href;
   node.target = '_blank';
   node.rel = 'noopener noreferrer';
   node.querySelector('.app-name').textContent = app.title;
   node.querySelector('.app-initial').textContent = app.title.charAt(0).toUpperCase();
-  // Aucun jeu n'est encore adapté au connecteur. Ne pas annoncer une sauvegarde distante.
-  node.querySelector('.app-scores').textContent = 'Jeu actuel · scores locaux';
+  node.querySelector('.app-scores').textContent =
+    app.app_key === 'addition-ecrite-simple'
+      ? 'Classique : local · Connecté : compte élève'
+      : 'Jeu actuel · scores locaux';
   if (app.image_url && !app.image_url.includes('jftzuslpelgzbdrftszw')) {
     const img = document.createElement('img');
     img.src = app.image_url; img.alt = ''; img.loading = 'lazy';
