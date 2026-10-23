@@ -39,19 +39,15 @@ async function handle(req:Request){
    return launches.error?fail('db_failed',500):ok({released:true});
  }
  case 'student-me':{
-   if(!user.is_anonymous)return ok({status:'not_student'});
-   const d=await one(db.from('connect_devices')
-      .select('student_id').eq('auth_user_id',user.id)
-      .eq('state','approved').limit(1));
+   if(!user.is_anonymous||!U.test(b.classId||''))return fail('forbidden',403);
+   const d=await one(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));
    if(d){
-     const s=await one(db.from('connect_students').select('display_name').eq('id',d.student_id));
-     const e=await one(db.from('connect_enrollments')
-       .select('class_id').eq('student_id',d.student_id).is('left_at',null)
-       .order('joined_at',{ascending:false}).limit(1));
-     return ok({status:'approved',displayName:s?.display_name??'Élève',classId:e?.class_id??null});
+     const e=await one(db.from('connect_enrollments').select('id').eq('student_id',d.student_id).eq('class_id',b.classId).is('left_at',null));
+     if(!e)return ok({status:'wrong_class'});
+     const student=await one(db.from('connect_students').select('display_name').eq('id',d.student_id));
+     return ok({status:'approved',displayName:student?.display_name??'Élève',classId:b.classId});
    }
-   const revoked=await one(db.from('connect_devices').select('id')
-     .eq('auth_user_id',user.id).eq('state','revoked').limit(1));
+   const revoked=await one(db.from('connect_devices').select('id').eq('auth_user_id',user.id).eq('state','revoked').limit(1));
    return ok({status:revoked?'revoked':'unregistered'});
  }
  case 'teacher-dashboard':{
