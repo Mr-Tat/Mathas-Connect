@@ -1,0 +1,158 @@
+
+import { createClient } from 'npm:@supabase/supabase-js@2.95.0';
+const url=Deno.env.get('SUPABASE_URL')!, anon=Deno.env.get('SUPABASE_ANON_KEY')!, secret=Deno.env.get('SUPABASE_'+'SERVICE_ROLE_KEY')!;
+const db=createClient(url,secret,{auth:{persistSession:false,autoRefreshToken:false}});
+const h={'content-type':'application/json','cache-control':'no-store','access-control-allow-origin':'*','access-control-allow-headers':'authorization,apikey,content-type','access-control-allow-methods':'POST,OPTIONS'};
+const fail=(error:string,status=400)=>new Response(JSON.stringify({ok:false,error}),{headers:h,status});
+const ok=(payload:object)=>new Response(JSON.stringify({ok:true,...payload}),{headers:h});
+const U=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const good=(v:unknown,n:number)=>typeof v==='string'&&v.trim().length>0&&v.length<=n;
+const random=()=>Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');
+const hash=async(v:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v))),x=>x.toString(16).padStart(2,'0')).join('');
+async function one(query:any){const {data,error}=await query.maybeSingle();if(error)throw Error('db_failed');return data;}
+async function handle(req:Request){
+ if(req.method==='OPTIONS')return new Response('',{headers:h});
+ if(req.method!=='POST')return fail('method_not_allowed',405);
+ const authz=req.headers.get('authorization')||'',token=authz.match(/^Bearer (\S+)$/i)?.[1];
+ if(!token)return fail('auth_required',401);
+ const client=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}});
+ const {data:{user},error}=await client.auth.getUser(token);
+ if(error||!user)return fail('auth_required',401);
+ const raw=await req.text();if(raw.length>8000)return fail('body_too_large',413);
+ let b:any;try{b=JSON.parse(raw)}catch{return fail('invalid_json')}
+ if(!b||typeof b!=='object'||Array.isArray(b))return fail('invalid_json');
+ const teacher=async()=>!!(!user.is_anonymous&&await one(db.from('connect_teachers').select('auth_user_id').eq('auth_user_id',user.id)));
+ const manage=async(id:string)=>!!await one(db.from('connect_class_permissions').select('class_id').eq('class_id',id).eq('teacher_id',user.id).eq('can_manage',true));
+ try{
+ switch(b.action){
+ 
+ case 'student-me':{
+   if(!user.is_anonymous)return ok({status:'not_student'});
+   const d=await one(db.from('connect_devices')
+      .select('student_id').eq('auth_user_id',user.id)
+      .eq('state','approved').limit(1));
+   if(d){
+     const s=await one(db.from('connect_students').select('display_name').eq('id',d.student_id));
+     const e=await one(db.from('connect_enrollments')
+       .select('class_id').eq('student_id',d.student_id).is('left_at',null)
+       .order('joined_at',{ascending:false}).limit(1));
+     return ok({status:'approved',displayName:s?.display_name??'Élève',classId:e?.class_id??null});
+   }
+   const revoked=await one(db.from('connect_devices').select('id')
+     .eq('auth_user_id',user.id).eq('state','revoked').limit(1));
+   return ok({status:revoked?'revoked':'unregistered'});
+ }
+ case 'teacher-classes':{
+   if(!await teacher())return fail('forbidden',403);
+   const perm=await db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('can_manage',true);
+   if(perm.error)return fail('db_failed',500);
+   const ids=perm.data.map((x:any)=>x.class_id);
+   if(!ids.length)return ok({classes:[]});
+   const c=await db.from('connect_classes').select('id,name,year_id').in('id',ids).order('created_at',{ascending:true});
+   if(c.error)return fail('db_failed',500);
+   return ok({classes:c.data});
+ }
+ case 'teacher-join-requests':{
+   if(!U.test(b.classId||'')||!await manage(b.classId))return fail('forbidden',403);
+   const r=await db.from('connect_join_requests')
+    .select('id,first_name,last_initial,verify_code,state,created_at,expires_at,student_id')
+    .eq('class_id',b.classId).eq('state','pending')
+    .gt('expires_at',new Date().toISOString())
+    .order('created_at',{ascending:true}).limit(100);
+   if(r.error)return fail('db_failed',500);
+   return ok({requests:r.data});
+ }
+ case 'teacher-students':{
+   if(!U.test(b.classId||'')||!await manage(b.classId))return fail('forbidden',403);
+   const e=await db.from('connect_enrollments').select('student_id').eq('class_id',b.classId).is('left_at',null);
+   if(e.error)return fail('db_failed',500);
+   if(!e.data.length)return ok({students:[]});
+   const s=await db.from('connect_students').select('id,display_name').in('id',e.data.map((x:any)=>x.student_id));
+   return s.error?fail('db_failed',500):ok({students:s.data});
+ }
+ case 'teacher-review-join':{
+   if(!U.test(b.requestId||'')||typeof b.approve!=='boolean')return fail('input_invalid');
+   if(!await teacher())return fail('forbidden',403);
+   const args:any={p_teacher:user.id,p_request:b.requestId,p_approve:b.approve};
+   if(b.existingStudentId){
+     if(!U.test(b.existingStudentId))return fail('input_invalid');
+     args.p_existing_student=b.existingStudentId;
+   }
+   const r=await db.rpc('connect_review_join',args);
+   return r.error?fail('decision_failed',409):ok({result:r.data});
+ }
+ case 'student-join':{
+   if(!user.is_anonymous)return fail('anonymous_device_required',403);
+   if(!U.test(b.classId||'')||!good(b.firstName,40)||!good(b.lastInitial,2))
+     return fail('input_invalid');
+   const r=await db.rpc('connect_submit_join',{
+     p_class:b.classId,p_auth_user:user.id,p_first:b.firstName,p_initial:b.lastInitial});
+   return r.error?fail('join_failed',409):ok({request:r.data});
+ }
+ case 'student-join-status':{
+   if(!user.is_anonymous||!U.test(b.classId||''))return fail('forbidden',403);
+   const r=await db.from('connect_join_requests').select('id,verify_code,state,expires_at')
+     .eq('class_id',b.classId).eq('auth_user_id',user.id).maybeSingle();
+   if(r.error)return fail('db_failed',500);
+   if(!r.data)return ok({request:null});
+   if(r.data.state==='approved'){
+     const d=await db.from('connect_devices').select('state').eq('auth_user_id',user.id)
+       .eq('state','approved').maybeSingle();
+     return ok({request:{state:d.data?'approved':'revoked'}});
+   }
+   if(r.data.state==='pending'&&new Date(r.data.expires_at)<new Date())
+     return ok({request:{state:'expired'}});
+   return ok({request:r.data});
+ }
+ case 'student-cancel-join':{
+   if(!user.is_anonymous||!U.test(b.classId||''))return fail('forbidden',403);
+   const r=await db.rpc('connect_cancel_join',{p_class:b.classId,p_auth_user:user.id});
+   return r.error?fail('cancel_failed',409):ok({cancelled:r.data});
+ }
+ case 'teacher-create-year':{
+  if(!await teacher())return fail('forbidden',403);
+  if(!good(b.label,32)||!/^\d{4}-\d{2}-\d{2}$/.test(b.startsOn||'')||!/^\d{4}-\d{2}-\d{2}$/.test(b.endsOn||''))return fail('input_invalid');
+  const r=await db.from('connect_school_years').insert({label:b.label,starts_on:b.startsOn,ends_on:b.endsOn}).select('id').single();
+  return r.error?fail('year_failed'):ok({year:{id:r.data.id}});
+ }
+ case 'teacher-create-class':{
+  if(!await teacher())return fail('forbidden',403);
+  if(!U.test(b.yearId||'')||!good(b.name,100))return fail('input_invalid');
+  const r=await db.rpc('connect_create_class',{p_teacher:user.id,p_year:b.yearId,p_name:b.name});
+  return r.error?fail('class_failed'):ok({class:{id:r.data}});
+ }
+ case 'teacher-create-student':{
+  if(!U.test(b.classId||'')||!good(b.name,120)||!await manage(b.classId))return fail('forbidden',403);
+  const r=await db.rpc('connect_create_student',{p_teacher:user.id,p_class:b.classId,p_name:b.name});
+  return r.error?fail('student_failed'):ok({student:{id:r.data}});
+ }
+ case 'teacher-pair-code':{
+  if(!U.test(b.classId||'')||!U.test(b.studentId||'')||!await manage(b.classId))return fail('forbidden',403);
+  if(!await one(db.from('connect_enrollments').select('id').eq('class_id',b.classId).eq('student_id',b.studentId).is('left_at',null)))return fail('not_enrolled',403);
+  const code=random(),expiry=new Date(Date.now()+10*60000).toISOString();
+  const r=await db.from('connect_pairings').insert({class_id:b.classId,student_id:b.studentId,created_by:user.id,code_hash:await hash(code),expires_at:expiry});
+  return r.error?fail('pair_failed'):ok({code,expiresInSeconds:600});
+ }
+ case 'device-claim':{
+  if(!user.is_anonymous||!good(b.code,64))return fail('anonymous_device_required',403);
+  const r=await db.rpc('connect_claim_device',{p_auth_user:user.id,p_code_hash:await hash(b.code)});
+  return r.error?fail('code_invalid',403):ok({device:{id:r.data,state:'requested'}});
+ }
+ case 'teacher-devices':{
+  if(!U.test(b.classId||'')||!await manage(b.classId))return fail('forbidden',403);
+  const e=await db.from('connect_enrollments').select('student_id').eq('class_id',b.classId).is('left_at',null);
+  if(e.error)return fail('db_failed',500);
+  const ids=(e.data||[]).map(x=>x.student_id);if(!ids.length)return ok({devices:[]});
+  const r=await db.from('connect_devices').select('id,student_id,state,requested_at').in('student_id',ids);
+  return r.error?fail('db_failed',500):ok({devices:r.data});
+ }
+ case 'teacher-device-decision':{
+  if(!U.test(b.classId||'')||!U.test(b.deviceId||'')||!['approved','revoked'].includes(b.decision)||!await manage(b.classId))return fail('forbidden',403);
+  const r=await db.rpc('connect_decide_device',{p_teacher:user.id,p_class:b.classId,p_device:b.deviceId,p_decision:b.decision});
+  return r.error?fail('decision_failed',409):ok({state:r.data});
+ }
+ default:return fail('unknown_action',404);
+ }
+ }catch{return fail('request_failed',500)}
+}
+Deno.serve(handle);
