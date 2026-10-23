@@ -20,7 +20,8 @@ function validate(s:any){
  const today=s.todayBest??null;if(today!==null&&(!/^\d{4}-\d{2}-\d{2}$/.test(today.day||'')||!int(today.points,0,10000000)))throw Error('today');
  const prog:any={};for(const k of ['level2','level3','sudden1','sudden2','sudden3','perfect1','perfect2','perfect3','hard']){if(s.progress?.[k]!=null){if(typeof s.progress[k]!=='boolean')throw Error('progress');prog[k]=s.progress[k]}}
  const ids=Array.isArray(s.ids)?s.ids.slice(0,50).filter(valid):[];
- return {classic,sudden:sequence('sudden'),hard:sequence('hard'),recent:runs,bestPoints:best,todayBest:today,progress:prog,ids};
+ const topThree=Array.isArray(s.topThree)?s.topThree.filter((v:any)=>int(v,0,10000000)).slice(0,3):[];
+ return {classic,sudden:sequence('sudden'),hard:sequence('hard'),recent:runs,bestPoints:best,todayBest:today,progress:prog,ids,topThree};
 }
 Deno.serve(async req=>{
  if(req.method==='OPTIONS')return new Response('',{headers});
@@ -51,8 +52,8 @@ Deno.serve(async req=>{
    const [name,state]=await Promise.all([read(db.from('connect_students').select('display_name').eq('id',b.studentId)),read(db.from('connect_states').select('revision,state_data').eq('student_id',b.studentId).eq('app_key',selected))]);
    return answer({ok:true,name:name?.display_name||'Élève',state:state?.state_data||null,revision:state?.revision??0});
   }
-  if(b.action==='student-load'||b.action==='student-save'||b.action==='lab-record'){
-   if(!selected||b.action==='lab-record'&&selected!==lab)return deny('forbidden',403);
+  if(b.action==='student-load'||b.action==='student-save'||b.action==='lab-record'||b.action==='game-record'){
+   if(!selected||(b.action==='lab-record'&&selected!==lab)||(b.action==='game-record'&&selected!==app))return deny('forbidden',403);
    const studentId=await identity();if(!studentId)return deny('forbidden',403);
    const current=await read(db.from('connect_states').select('revision,state_data,reset_epoch').eq('student_id',studentId).eq('app_key',selected));
    if(b.action==='student-load')return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,state:current?.state_data||null});
@@ -80,17 +81,18 @@ Deno.serve(async req=>{
       if(next.progress.perfect1&&next.progress.perfect2&&next.progress.perfect3)next.progress.hard=true;
    }else next[b.mode][i]=Math.max(next[b.mode][i]??0,b.score);
    next.bestPoints=Math.max(next.bestPoints??0,b.points);
+   next.topThree=[...next.topThree,b.points].sort((a:number,b:number)=>b-a).slice(0,3);
    const today=belgianDay();
    next.todayBest={day:today,points:Math.max(next.todayBest?.day===today?next.todayBest.points:0,b.points)};
    const payload={state_data:next,schema_version:1,updated_at:when};
    if(current){
       const update=await db.from('connect_states').update({...payload,revision:rev+1})
-        .eq('student_id',studentId).eq('app_key',lab).eq('revision',rev).select('revision').maybeSingle();
+        .eq('student_id',studentId).eq('app_key',selected).eq('revision',rev).select('revision').maybeSingle();
       if(update.error)throw Error('db_error');
       if(!update.data)return deny('revision_conflict',409);
       return answer({ok:true,revision:update.data.revision,state:next});
    }
-   const created=await db.from('connect_states').insert({...payload,student_id:studentId,app_key:lab,revision:1}).select('revision').single();
+   const created=await db.from('connect_states').insert({...payload,student_id:studentId,app_key:selected,revision:1}).select('revision').single();
    if(created.error)return deny(created.error.code==='23505'?'revision_conflict':'db_error',created.error.code==='23505'?409:500);
    return answer({ok:true,revision:created.data.revision,state:next});
   }
