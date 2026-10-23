@@ -29,11 +29,34 @@ async function call(action,data={}){const {data:{session}}=await sb.auth.getSess
  const r=await fetch(url+'/functions/v1/connect-api',{method:'POST',headers:{'content-type':'application/json','apikey':key,'authorization':'Bearer '+session.access_token},body:JSON.stringify({action,...data})});
  const v=await r.json().catch(()=>({}));if(!r.ok||!v.ok)throw Error(({forbidden:'Accès refusé',join_failed:'Demande impossible',decision_failed:'Demande déjà traitée ou expirée',auth_required:'Connexion expirée'})[v.error]||v.error||'Erreur réseau');return v}
 async function teacher(){const r=await call('teacher-classes');const box=$('class-selector');box.replaceChildren(...r.classes.map(c=>new Option(c.name,c.id)));show('teacher');await refresh()}
-async function refresh(){const id=$('class-selector').value;if(!id)return;const [j,s]=await Promise.all([call('teacher-join-requests',{classId:id}),call('teacher-students',{classId:id})]);$('request-count').textContent=j.requests.length;const out=$('requests-list');out.replaceChildren();
+async function refresh(){const id=$('class-selector').value;if(!id)return;const [j,s,d]=await Promise.all([call('teacher-join-requests',{classId:id}),call('teacher-students',{classId:id}),call('teacher-devices',{classId:id})]);$('request-count').textContent=j.requests.length;const out=$('requests-list');out.replaceChildren();
  if(!j.requests.length)out.textContent='Aucune demande.';
  for(const req of j.requests){const card=document.createElement('div');card.className='request-card';const head=document.createElement('div');head.className='request-heading';const name=document.createElement('strong');name.textContent=req.first_name+'.'+req.last_initial;const code=document.createElement('span');code.className='request-code';code.textContent=req.verify_code;head.append(name,code);card.append(head);const row=document.createElement('div');row.className='button-row';
  for(const [label,approve] of [['Autoriser',true],['Refuser',false]]){const btn=document.createElement('button');btn.textContent=label;if(!approve)btn.className='danger';btn.onclick=()=>run(async()=>{await call('teacher-review-join',{requestId:req.id,approve});await refresh();msg(approve?'Appareil autorisé':'Demande refusée',true)});row.append(btn)}card.append(row);out.append(card)}
- const students=$('students-list');students.replaceChildren();if(!s.students.length)students.textContent='Aucun élève.';else for(const e of s.students){const item=document.createElement('div');item.className='student-card';item.textContent=e.display_name;students.append(item)}}
+ const students=$('students-list');students.replaceChildren();
+ if(!s.students.length){students.textContent='Aucun élève.';return}
+ const devicesByStudent=new Map();
+ for(const device of d.devices||[]){const arr=devicesByStudent.get(device.student_id)||[];arr.push(device);devicesByStudent.set(device.student_id,arr)}
+ for(const e of s.students){
+   const item=document.createElement('div');item.className='student-card';
+   const name=document.createElement('strong');name.textContent=e.display_name;item.append(name);
+   const devices=devicesByStudent.get(e.id)||[];
+   if(!devices.length){const info=document.createElement('p');info.className='hint';info.textContent='Aucun appareil autorisé.';item.append(info)}
+   devices.forEach((device,index)=>{
+     const row=document.createElement('div');row.className='device-row';
+     const info=document.createElement('span');info.textContent='Appareil '+(index+1)+' · '+(device.state==='approved'?'Autorisé':device.state==='revoked'?'Révoqué':'En attente');row.append(info);
+     if(device.state==='approved'){
+       const revoke=document.createElement('button');revoke.type='button';revoke.className='danger';revoke.textContent='Révoquer';
+       revoke.setAttribute('aria-label','Révoquer l’appareil '+(index+1)+' de '+e.display_name);
+       revoke.onclick=()=>{if(!confirm('Révoquer cet appareil de '+e.display_name+' ? Il perdra son accès Connect.'))return;
+         run(async()=>{await call('teacher-device-decision',{classId:id,deviceId:device.id,decision:'revoked'});await refresh();msg('Appareil révoqué pour '+e.display_name,true)})};
+       row.append(revoke);
+     }
+     item.append(row);
+   });
+   students.append(item);
+ }
+}
 async function student(){if(!cls){show('welcome');msg('Ouvre le lien donné par le professeur.');return}
  await ensureStudentSession();await status()}
 async function status(){await ensureStudentSession();const {request:r}=await call('student-join-status',{classId:cls});
