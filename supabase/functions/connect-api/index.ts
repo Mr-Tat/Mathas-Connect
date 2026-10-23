@@ -42,6 +42,32 @@ async function handle(req:Request){
      .eq('auth_user_id',user.id).eq('state','revoked').limit(1));
    return ok({status:revoked?'revoked':'unregistered'});
  }
+ case 'teacher-dashboard':{
+   if(!await teacher())return fail('forbidden',403);
+   const perms=await db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('can_manage',true).limit(100);
+   if(perms.error)return fail('db_failed',500);
+   const ids=perms.data.map((x:any)=>x.class_id);
+   const [years,classes]=await Promise.all([
+     db.from('connect_school_years').select('id,label,starts_on,ends_on').order('starts_on',{ascending:false}).limit(100),
+     ids.length?db.from('connect_classes').select('id,name,year_id').in('id',ids).order('created_at',{ascending:true}):Promise.resolve({data:[],error:null})
+   ]);
+   if(years.error||classes.error)return fail('db_failed',500);
+   if(!U.test(b.classId||'')||!ids.includes(b.classId))
+     return ok({years:years.data,classes:classes.data,requests:[],students:[],devices:[]});
+   const [requests,enrollments]=await Promise.all([
+     db.from('connect_join_requests').select('id,first_name,last_initial,verify_code,state,created_at,expires_at,student_id')
+       .eq('class_id',b.classId).eq('state','pending').gt('expires_at',new Date().toISOString()).order('created_at').limit(100),
+     db.from('connect_enrollments').select('student_id').eq('class_id',b.classId).is('left_at',null).limit(200)
+   ]);
+   if(requests.error||enrollments.error)return fail('db_failed',500);
+   const studentsIds=[...new Set(enrollments.data.map((x:any)=>x.student_id))];
+   const [students,devices]=await Promise.all([
+     studentsIds.length?db.from('connect_students').select('id,display_name').in('id',studentsIds):Promise.resolve({data:[],error:null}),
+     studentsIds.length?db.from('connect_devices').select('id,student_id,state,requested_at').in('student_id',studentsIds).limit(500):Promise.resolve({data:[],error:null})
+   ]);
+   if(students.error||devices.error)return fail('db_failed',500);
+   return ok({years:years.data,classes:classes.data,requests:requests.data,students:students.data,devices:devices.data});
+ }
  case 'teacher-years':{
    if(!await teacher())return fail('forbidden',403);
    const r=await db.from('connect_school_years')
