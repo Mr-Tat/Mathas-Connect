@@ -34,9 +34,40 @@ async function teacher(){const r=await call('teacher-dashboard');const box=$('cl
 async function refresh(){const id=$('class-selector').value;if(!id)return;const data=await call('teacher-dashboard',{classId:id});const j={requests:data.requests},s={students:data.students},d={devices:data.devices};$('request-count').textContent=j.requests.length;const out=$('requests-list');out.replaceChildren();
  if(!j.requests.length)out.textContent='Aucune demande.';
  for(const req of j.requests){const card=document.createElement('div');card.className='request-card';const head=document.createElement('div');head.className='request-heading';const name=document.createElement('strong');name.textContent=req.first_name+'.'+req.last_initial;const code=document.createElement('span');code.className='request-code';code.textContent=req.verify_code;head.append(name,code);card.append(head);const row=document.createElement('div');row.className='button-row';
- const matches=s.students.filter(e=>e.display_name.toLocaleLowerCase('fr')===(req.first_name+'.'+req.last_initial).toLocaleLowerCase('fr'));
- if(matches.length){const sel=document.createElement('select');sel.setAttribute('aria-label','Associer à un élève existant');sel.className='match-selector';sel.append(new Option('Nouvel élève',''),...matches.map(e=>new Option('Même élève : '+e.display_name,e.id)));card.append(sel)}
- for(const [label,approve] of [['Autoriser',true],['Refuser',false]]){const btn=document.createElement('button');btn.textContent=label;if(!approve)btn.className='danger';btn.onclick=()=>run(async()=>{const existingStudentId=card.querySelector('.match-selector')?.value||undefined;await call('teacher-review-join',{requestId:req.id,approve,...(approve&&existingStudentId?{existingStudentId}:{})});await refresh();msg(approve?'Appareil autorisé':'Demande refusée',true)});row.append(btn)}card.append(row);out.append(card)}
+ // Même prénom + initiale : présélection seulement si une seule fiche correspond.
+ // Une correspondance de nom NE PROUVE PAS l'identité : le professeur valide toujours la demande et le code.
+ const canonicalName=v=>String(v||'').normalize('NFC').toLocaleLowerCase('fr').replace(/[.\\s]+/g,'');
+ const requestedName=canonicalName(req.first_name+'.'+req.last_initial);
+ const matches=s.students.filter(e=>canonicalName(e.display_name)===requestedName);
+ if(matches.length){
+   const sel=document.createElement('select');sel.setAttribute('aria-label','Associer la demande à une fiche élève');sel.className='match-selector';
+   const first=new Option(matches.length>1?'Plusieurs élèves homonymes : choisis la bonne fiche':'Créer une nouvelle fiche (autre élève)',matches.length>1?'':'__new__');
+   if(matches.length>1){first.disabled=true;first.selected=true}
+   sel.append(first,...matches.map(e=>new Option('Élève existant : '+e.display_name,e.id)));
+   if(matches.length>1)sel.append(new Option('Créer une nouvelle fiche (autre élève)','__new__'));
+   if(matches.length===1)sel.value=matches[0].id;
+   card.append(sel);
+   const notice=document.createElement('p');notice.className='match-note';
+   notice.textContent=matches.length===1
+     ?'Élève déjà présent : fiche présélectionnée. Vérifie le code et l’identité avant d’autoriser.'
+     :'Homonymes : choisis manuellement la bonne fiche avant d’autoriser.';
+   card.append(notice);
+ }
+ for(const [label,approve] of [['Autoriser',true],['Refuser',false]]){
+   const btn=document.createElement('button');btn.textContent=label;if(!approve)btn.className='danger';
+   btn.onclick=()=>run(async()=>{
+     const selected=card.querySelector('.match-selector')?.value;
+     if(approve&&matches.length&&!selected)throw Error('Choisis la fiche élève correspondante.');
+     if(approve&&matches.length&&selected==='__new__'
+        &&!confirm('Une fiche de ce nom existe déjà. Créer une fiche différente malgré cette correspondance ?'))return;
+     const existingStudentId=approve&&selected&&selected!=='__new__'?selected:undefined;
+     await call('teacher-review-join',{requestId:req.id,approve,...(existingStudentId?{existingStudentId}:{})});
+     await refresh();
+     msg(approve?(existingStudentId?'Appareil associé à la fiche élève existante':'Appareil autorisé : nouvelle fiche élève'):'Demande refusée',true)
+   });
+   row.append(btn)
+ }
+ card.append(row);out.append(card)}
  const students=$('students-list');students.replaceChildren();
  if(!s.students.length){students.textContent='Aucun élève.';return}
  const devicesByStudent=new Map();
