@@ -36,7 +36,7 @@ Attention : existent aussi anciennes clés de trophées (`v1/v2`), score global 
   Ces intentions ne doivent jamais être confondues. Toute suppression doit avoir un mécanisme anti-résurrection depuis un autre appareil (`resetEpoch`/versions).
 
 ## Décision pédagogique du 23 octobre 2026 — Périmètre minimal (prioritaire)
-Le professeur privilégie **les résultats des exercices, le meilleur nombre d'exercices réussis d'affilée en Mort subite, les trois meilleurs scores en points, le meilleur score du jour et le seul NOMBRE de trophées**. Les médailles et la collection détaillée des trophées ne doivent pas transiter pour les bilans Connect.
+**Précision chronologique :** cette proposition initiale de trois meilleurs scores et d'un compteur de trophées a été remplacée, pour les vues professeur, par la décision « vue classe / fiche individuelle » ci-dessous. Aucun trophée ni médaille ne figure dans les vues.
 
 **Nécessaire pour des résultats exploitables :** date/heure, app, niveau, mode, longueur de série (4/10/20), réussites/total, points/barème si utiles, et indicateur d'aide. Un événement se rapporte à une **série/partie terminée**, pas à chaque calcul posé, frappe, erreur ni clic. Conserver aussi, séparément, les quelques booléens de déblocage indispensables pour restituer la progression sur un autre ordinateur.
 
@@ -46,6 +46,36 @@ Le professeur privilégie **les résultats des exercices, le meilleur nombre d'e
 
 **Scores quotidiens :** ne conserver que le meilleur score et sa **date locale Europe/Brussels**, pas un historique quotidien infini. Les trois meilleurs scores globaux et le record Mort subite sont maintenus séparément.
 
+## Décision complémentaire — Affichage professeur en deux niveaux (prioritaire)
+**La demande la plus récente du professeur précise la conception des vues.**
+
+### A. Vue classe (liste verticale de tous les élèves)
+Pour chaque élève, afficher pour **l'application sélectionnée** :
+- **Les trois exercices/parties terminés les plus récents**, et NON les trois meilleurs scores : `mode`, `niveau`, `réussites/total` (ou nombre successif en Mort subite), date/ordre de réalisation ; points uniquement s'ils sont utiles, avec unités claires. Garder aussi les mauvais résultats pour représenter honnêtement les trois dernières parties.
+- **Meilleur score absolu en points**, avec barème/jeu identifiables.
+- **Meilleur score du jour en points**, daté Europe/Brussels ; afficher « — » s'il n'y a pas de partie notée aujourd'hui, sans réutiliser la veille.
+- Clic sur la ligne : ouvrir la **fiche détaillée de cet élève**. Aucune colonne de trophée ou médaille.
+- L'affichage peut être filtré par application : **ne pas comparer des points entre jeux aux barèmes différents**. Si un « toutes les applications » est ajouté, mentionner le nom du jeu pour chaque partie et son record associé.
+
+### B. Fiche individuelle (au clic)
+Reproduire la structure du **tableau visible dans Addition écrite simple**, contrôlée dans le source du jeu à `mathas-v535-summary-script` :
+- **Niveaux 1, 2, 3**, colonnes meilleur classique `/4`, `/10`, `/20`, et **💀 Mort subite** = maximum de réussites d'affilée. Les valeurs absentes s'affichent « — » ; ne pas montrer un niveau inaccessible par défaut si l'interface suit les déblocages.
+- Ligne **HARD H1/H2/H3** seulement si réellement débloquée ; ne pas confondre records HARD et Mort subite normale.
+- **Record du jour** et **record absolu en points** ; éventuellement afficher aussi les trois dernières séries pour contexte, sans dupliquer les historiques.
+- **Pas de médaille ni détail de trophée** dans les données consultées par le professeur. Le compteur de trophées n'est pas nécessaire à ces deux vues et n'est pas une priorité de transmission.
+
+### C. Modèle minimal à envoyer et à garder
+- Un enregistrement **compact d'état par élève et par application** : `classics[level][4|10|20]` (meilleur score), `suddenBest[level]`, `hardBest[level]`, `progression` (déblocages), `recent[0..2]` (les **trois dernières parties**), `bestPoints`, `todayBestPoints`, `todayLocalDate`, `scoringVersion` et révision/époque de reset.
+- Une partie = **une mise à jour atomique** qui calcule records + derniers 3 exercices + déblocages, sans doubler les écritures de façon évitable ; eventId idempotent pour résister aux réessais réseau. Les requêtes ne transmettent que les données minimales, jamais chaque calcul ou clic.
+- Les éventuels **trois meilleurs scores en points** pour le podium *dans le jeu* peuvent figurer dans sa sauvegarde personnelle compacte si indispensables à la restitution entre appareils ; ils ne sont **pas à transférer dans la vue classe**. Il ne s'agit pas d'informations sur les médailles.
+- Le compteur de trophées est **hors du suivi professeur V1**. Si l'on décide plus tard de synchroniser une collection de trophées *dans le jeu*, il faudra décider quelle information minimale permet réellement de reconstituer cette collection : un simple compteur ne suffit pas.
+- Pour une classe de 20-30 élèves, **une requête API classe** retourne des résumés bornés, sans télécharger tous les `connect_attempts` ni des états complets de tous les jeux. **Une requête ciblée** récupère la fiche d'un élève au clic.
+- Les données seront mises à jour uniquement à l'issue d'une partie notée, ou lors d'un déblocage/reset pertinent. **Aucun polling par élève et aucun stockage illimité de parties** pour ces vues. Si les analyses pédagogiques ultérieures exigent un historique long, ce sera une décision et un budget séparés.
+- Ne pas confondre **date de l'exercice** (horodatage serveur) et **jour local de référence** (Europe/Brussels). Au changement de jour, afficher « aucun score aujourd'hui » si rien n'a été joué.
+
+### Conséquence sur les propositions plus anciennes ci-dessous
+Les mentions de `topThree`, `trophyCount` et d'un historique de `connect_attempts` sans limite dans les premières propositions doivent être lues à la lumière de cette décision **plus récente** : **3 derniers exercices + meilleur score absolu + meilleur du jour** en liste de classe ; **tableau 4/10/20/Mort subite/HARD** en fiche élève ; trophées/médailles exclus du suivi professeur.
+
 ## Modèle Connect retenu pour le pilote (proposition)
 ### 1. Profil de sauvegarde
 Un identifiant de jeu stable **`app_key = addition-ecrite-simple`**, indépendant de `MathasAppConfig.appId = addition-simple`. Mapping explicite.
@@ -54,9 +84,10 @@ Un identifiant de jeu stable **`app_key = addition-ecrite-simple`**, indépendan
 - `progression` (niveaux, mode Mort subite, accès HARD, maîtrise réelle) ;
 - `results` : synthèse des exercices/séries terminées par mode, niveau et nombre de calculs (pas de détail question par question) ;
 - `suddenBest` : **meilleure longueur de Mort subite**, par niveau et variante utile ;
-- `topThree` : **maximum trois meilleurs scores en points** et `todayBest` : meilleur score du jour, avec date locale Europe/Brussels et version de barème ;
-- `trophyCount` : **un seul entier** pour la synthèse, sans liste de trophées ou médailles ;
-- `lastResult` : court résumé horodaté, uniquement si nécessaire au retour sur une partie ; rien d'autre par défaut.
+- `recent` : **au plus trois derniers exercices terminés**, y compris les résultats moins bons ;
+- `bestPoints` : meilleur score absolu en points ; `todayBestPoints` : meilleur du jour avec date locale Europe/Brussels et version de barème ;
+- `bestThreePoints` : *facultatif*, uniquement si nécessaire au podium interne du jeu sur un second appareil ; non affiché dans les vues professeur ;
+- aucune donnée de trophée ou médaille pour le suivi enseignant.
 Ne pas transférer CSS, préférences d'apparence, clavier, animations, calculs affichés temporairement ou traces de chaque clic.
 
 ### 2. Historique de résultats
