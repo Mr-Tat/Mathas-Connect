@@ -94,6 +94,21 @@ function switchToFree() {
 }
 
 $('mode-toggle').onclick = switchToFree;
+$('rename-device').onclick = async () => {
+ const label=prompt('Nom de cet appareil (par exemple : Chrome FOPA, Chrome Tatouille) :');
+ if(label===null)return;
+ const name=label.trim();
+ if(!name||name.length>40){alert('Choisis un nom de 1 à 40 caractères.');return}
+ try{
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session?.user?.is_anonymous)throw Error('Profil élève non connecté');
+  const response=await fetch(url+'/functions/v1/connect-api',{method:'POST',headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},body:JSON.stringify({action:'student-device-label',label:name})});
+  const out=await response.json();
+  if(!response.ok||!out.ok)throw Error(out.error||'Enregistrement impossible');
+  alert('Nom enregistré : '+name+'. Le professeur le verra après actualisation.');
+ }catch(e){alert('Nom non enregistré : '+e.message)}
+};
+
 $('forget-device').onclick = async () => {
   if (!confirm('Retirer l’autorisation de cet ordinateur et oublier le profil ? Les résultats Connect resteront enregistrés. Il faudra une nouvelle autorisation du professeur pour revenir.')) return;
   const btn=$('forget-device');btn.disabled=true;
