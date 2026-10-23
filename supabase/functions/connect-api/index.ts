@@ -42,6 +42,12 @@ async function handle(req:Request){
      .eq('auth_user_id',user.id).eq('state','revoked').limit(1));
    return ok({status:revoked?'revoked':'unregistered'});
  }
+ case 'teacher-years':{
+   if(!await teacher())return fail('forbidden',403);
+   const r=await db.from('connect_school_years')
+     .select('id,label,starts_on,ends_on').order('starts_on',{ascending:false}).limit(100);
+   return r.error?fail('db_failed',500):ok({years:r.data});
+ }
  case 'teacher-classes':{
    if(!await teacher())return fail('forbidden',403);
    const perm=await db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('can_manage',true);
