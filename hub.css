@@ -1,0 +1,656 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@600;700;800;900&family=Nunito:wght@500;600;700;800;900&display=swap');
+
+:root {
+  --bg: #07101c;
+  --text: #f7f9fd;
+  --muted: #b3bfd0;
+  --accent: #34c6df;
+  --accent-rgb: 52,198,223;
+  --line: rgba(255,255,255,.12);
+  --shadow: 0 18px 48px rgba(0,0,0,.32);
+
+  /* Respiration globale : marge totale retirée à la largeur utile.
+     ~16 px/côté sur petit écran, ~40–48 px/côté sur écran classique. */
+  --layout-gutter-total: clamp(32px, 6vw, 96px);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(var(--accent-rgb), .22), transparent 29%),
+    radial-gradient(circle at 88% 16%, rgba(var(--accent-rgb), .12), transparent 25%),
+    linear-gradient(180deg, #06101d 0%, #091624 52%, #08111d 100%);
+  font-family: "Nunito", ui-sans-serif, system-ui, sans-serif;
+}
+
+.math-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: .22;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='560' viewBox='0 0 800 560'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='2' opacity='.48'%3E%3Cpath d='M42 44h56M70 16v56'/%3E%3Cpath d='M146 38l46 76h-92z'/%3E%3Crect x='292' y='28' width='84' height='48' rx='6'/%3E%3Ccircle cx='88' cy='206' r='42'/%3E%3Cpath d='M88 164v42l24 17'/%3E%3Cpath d='M404 170h58v58h-58zM404 170l29-24 29 24'/%3E%3Cpath d='M592 52h46M615 29v46'/%3E%3Ccircle cx='632' cy='194' r='34'/%3E%3Cpath d='M632 160v34l20 14'/%3E%3Cpath d='M120 420h64M120 434h64'/%3E%3Cpath d='M672 390l28 44h-56z'/%3E%3C/g%3E%3Cg fill='%23ffffff' opacity='.58' font-family='Arial' font-size='26'%3E%3Ctext x='24' y='296'%3E7 + 5 = 12%3C/text%3E%3Ctext x='302' y='260'%3E3 × 4 = 12%3C/text%3E%3Ctext x='560' y='302'%3E18 − 9 = 9%3C/text%3E%3Ctext x='36' y='352'%3Ecm   m   kg   L%3C/text%3E%3Ctext x='298' y='336'%3E1/2   1/4   3/4%3C/text%3E%3Ctext x='86' y='472'%3E12 ÷ 3 = 4%3C/text%3E%3Ctext x='338' y='454'%3E200 cm = 2 m%3C/text%3E%3Ctext x='580' y='462'%3E1 L = 1000 mL%3C/text%3E%3Ctext x='286' y='144'%3E8 + 7 = 15%3C/text%3E%3Ctext x='556' y='120'%3E30 + 20 = 50%3C/text%3E%3C/g%3E%3C/svg%3E");
+  background-size: 800px 560px;
+}
+
+.topbar, .page-shell {
+  width: min(1180px, calc(100% - var(--layout-gutter-total)));
+  margin-inline: auto;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 34px 0 24px;
+}
+
+h1 {
+  margin: 0;
+  font-family: "Fredoka", sans-serif;
+  font-size: clamp(3rem, 7vw, 5.4rem);
+  line-height: .9;
+}
+
+.brand-subtitle {
+  margin: 10px 0 0;
+  font-family: "Fredoka", sans-serif;
+  font-size: clamp(.98rem, 2vw, 1.22rem);
+}
+
+.class-badge {
+  display: inline-block;
+  margin: 14px 0 0;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), .16);
+  border: 1px solid rgba(var(--accent-rgb), .5);
+  font-weight: 900;
+}
+
+.ghost-btn {
+  border: 1px solid var(--line);
+  color: var(--text);
+  background: rgba(255,255,255,.045);
+  border-radius: 14px;
+  padding: 11px 15px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.page-shell { padding-bottom: 54px; }
+
+.panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(var(--accent-rgb), .31);
+  background:
+    radial-gradient(circle at 88% 8%, rgba(var(--accent-rgb), .12), transparent 26%),
+    linear-gradient(145deg, rgba(var(--accent-rgb), .09), rgba(10,18,30,.91) 58%);
+  box-shadow: var(--shadow);
+  border-radius: 24px;
+  backdrop-filter: blur(9px);
+}
+
+.daily-section { padding: 24px; margin-bottom: 18px; }
+.section-heading { margin-bottom: 18px; }
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.title-row-large h2 {
+  margin: 0;
+  font-family: "Fredoka", sans-serif;
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+}
+
+.count-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  padding: 5px 10px;
+  border: 1px solid rgba(var(--accent-rgb), .32);
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), .11);
+  font-size: .78rem;
+  font-weight: 900;
+}
+
+.level { margin: 16px 0; }
+
+.level-toggle {
+  width: 100%;
+  color: inherit;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 21px 22px;
+}
+
+.level-title {
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  font-size: clamp(1.3rem, 3.5vw, 1.85rem);
+  font-weight: 800;
+}
+
+.level-content {
+  padding: 0 18px 20px;
+}
+
+.level.collapsed .level-content { display: none; }
+
+.chevron {
+  transition: transform .2s ease;
+  color: var(--accent);
+  font-size: 1.15rem;
+}
+[aria-expanded="false"] .chevron { transform: rotate(-90deg); }
+
+.app-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.daily-grid {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 230px));
+  justify-content: start;
+}
+
+.level-apps {
+  grid-template-columns: repeat(auto-fill, minmax(100px, 125px));
+  justify-content: start;
+}
+
+.app-card {
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,.045);
+  overflow: hidden;
+}
+
+.app-thumb {
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), .18), rgba(255,255,255,.035));
+}
+
+.app-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.app-initial {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(var(--accent-rgb), .24);
+  font-weight: 900;
+}
+
+.app-meta {
+  padding: 10px 11px 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.level-apps .app-meta { padding: 8px 9px 10px; }
+.level-apps .app-name { font-size: .88rem; }
+.level-apps .app-scores { font-size: .62rem; }
+
+.app-scores { color: var(--muted); }
+
+.empty-grid {
+  min-height: 110px;
+  place-items: center;
+  border: 1px dashed rgba(var(--accent-rgb), .30);
+  border-radius: 16px;
+}
+
+.empty-state {
+  color: var(--muted);
+  margin: 0;
+  text-align: center;
+  padding: 30px 12px;
+}
+
+body.theme-observation { --accent: #2ac7d8; --accent-rgb: 42,199,216; }
+body.theme-phase1 { --accent: #9867ff; --accent-rgb: 152,103,255; }
+body.theme-phase2 { --accent: #42d486; --accent-rgb: 66,212,134; }
+
+@media (max-width: 700px) {
+  .daily-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .level-apps { grid-template-columns: repeat(3, minmax(0,1fr)); }
+}
+
+
+/* ===== Petites explications des catégories de niveau ===== */
+.level-heading-group {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  text-align: left;
+  min-width: 0;
+}
+
+.level-description {
+  color: var(--muted);
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+@media (max-width: 620px) {
+  .level-heading-group {
+    gap: 7px;
+  }
+
+  .level-description {
+    font-size: .76rem;
+    white-space: normal;
+  }
+}
+
+/* Les deux informations de score sont toujours sur deux lignes distinctes. */
+.score-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3px;
+}
+
+.score-row {
+  display: block;
+  width: 100%;
+  line-height: 1.25;
+}
+
+
+/* ===== Vues spéciales : Toutes les applis / Partage ===== */
+body.theme-toutes {
+  --accent: #39bfe7;
+  --accent-rgb: 57,191,231;
+}
+
+body.theme-partage {
+  --accent: #f0b64a;
+  --accent-rgb: 240,182,74;
+}
+
+.simple-view .simple-apps-section {
+  padding: 22px;
+}
+
+.simple-view .simple-app-grid {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 180px));
+  justify-content: start;
+  gap: 14px;
+}
+
+.simple-view .simple-app-grid .app-name {
+  font-size: .9rem;
+  line-height: 1.12;
+}
+
+.simple-view .simple-app-grid .app-scores {
+  font-size: .72rem;
+}
+
+.simple-view .simple-app-grid.empty-grid {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 700px) {
+  .simple-view .simple-app-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* ===== V2 : Toutes les applis / Partage en grille unique ===== */
+.simple-view .daily-section {
+  margin-bottom: 0;
+}
+
+.simple-view #levels {
+  display: none !important;
+}
+
+.simple-view .simple-apps-section {
+  padding: 24px;
+}
+
+.simple-view .simple-app-grid {
+  grid-template-columns: repeat(auto-fill, minmax(180px, 216px));
+  justify-content: start;
+  gap: 16px;
+}
+
+.simple-view .simple-app-grid .app-card {
+  border-radius: 18px;
+}
+
+.simple-view .simple-app-grid .app-name {
+  font-size: .98rem;
+}
+
+.simple-view .simple-app-grid .app-scores {
+  font-size: .78rem;
+}
+
+@media (max-width: 700px) {
+  .simple-view .simple-app-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* ===== Correction définitive : vues Toutes / Partage =====
+   Même taille de cartes que "Sélection du jour".
+   Plusieurs cartes peuvent donc tenir sur une ligne. */
+.simple-view .simple-app-grid,
+.simple-view .simple-app-grid.empty-grid:not(:has(.empty-state)) {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 230px));
+  justify-content: start;
+  align-items: start;
+  justify-items: stretch;
+  gap: 12px;
+}
+
+.simple-view .simple-app-grid .app-card {
+  width: 100%;
+  max-width: 230px;
+}
+
+@media (max-width: 700px) {
+  .simple-view .simple-app-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .simple-view .simple-app-grid .app-card {
+    max-width: none;
+  }
+}
+
+
+/* ===== Toutes / Partage : jusqu'à 6 cartes sur une ligne =====
+   La vue reste large, mais ne colle plus aux bords sur les écrans 1366–1600 px. */
+.simple-view .topbar,
+.simple-view .page-shell {
+  width: min(1360px, calc(100% - var(--layout-gutter-total)));
+}
+
+.simple-view .simple-app-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+  justify-content: stretch;
+}
+
+.simple-view .simple-app-grid .app-card {
+  width: 100%;
+  max-width: none;
+}
+
+@media (max-width: 1250px) {
+  .simple-view .simple-app-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .simple-view .simple-app-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 650px) {
+  .simple-view .simple-app-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* ===== Toutes / Partage : libellé + compteur compact en haut ===== */
+.simple-class-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.simple-class-line .class-badge {
+  margin: 0;
+}
+
+.simple-top-count {
+  margin: 0;
+}
+
+.simple-view .simple-apps-section {
+  padding-top: 18px;
+}
+
+/* La grande case ne contient plus de titre : uniquement les cartes. */
+.simple-view .daily-section > .section-heading[hidden] {
+  display: none !important;
+}
+
+
+/* ===== Section Jeux : double confirmation avant ouverture ===== */
+.jeux-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(2, 8, 18, .58);
+  backdrop-filter: blur(7px);
+}
+
+.jeux-confirm-bubble {
+  width: min(430px, 92vw);
+  padding: 24px;
+  border-radius: 24px;
+  border: 1px solid rgba(var(--accent-rgb), .55);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(var(--accent-rgb), .18), transparent 55%),
+    rgba(9, 20, 35, .98);
+  box-shadow:
+    0 24px 70px rgba(0,0,0,.5),
+    0 0 28px rgba(var(--accent-rgb), .13);
+  text-align: center;
+}
+
+.jeux-confirm-question {
+  margin: 0;
+  font-family: "Fredoka", sans-serif;
+  font-size: clamp(1.65rem, 5vw, 2.15rem);
+  line-height: 1.08;
+}
+
+.jeux-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.jeux-confirm-btn {
+  min-height: 52px;
+  border-radius: 15px;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.jeux-confirm-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.07);
+}
+
+
+/* ===== Classe 2 ECO ===== */
+body.theme-2eco {
+  --accent: #ff8a5b;
+  --accent-rgb: 255,138,91;
+}
+
+
+/* ===== Sections de classement pour Toutes / Partage ===== */
+.simple-view .daily-section {
+  display: none !important;
+}
+
+.simple-view #levels {
+  display: block !important;
+}
+
+.simple-view .simple-level {
+  margin: 14px 0;
+}
+
+.simple-view .simple-level .level-content {
+  padding: 0 18px 20px;
+}
+
+.simple-view .simple-level .level-apps {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  justify-content: stretch;
+  gap: 14px;
+}
+
+.simple-view .simple-level .app-card {
+  width: 100%;
+  max-width: none;
+}
+
+.simple-view .simple-level .app-name {
+  font-size: .92rem;
+  line-height: 1.15;
+}
+
+.simple-view .simple-level .app-scores {
+  font-size: .75rem;
+}
+
+@media (max-width: 1250px) {
+  .simple-view .simple-level .level-apps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .simple-view .simple-level .level-apps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 650px) {
+  .simple-view .simple-level .level-apps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* Les choix Oui / Non sont volontairement visuellement identiques. */
+.jeux-confirm-btn {
+  color: var(--text);
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.22);
+}
+
+.jeux-confirm-btn:focus-visible {
+  outline: 2px solid rgba(255,255,255,.58);
+  outline-offset: 2px;
+}
+
+/* ===== Refonte 2026-10 : pages spéciales ===== */
+body.theme-thibault {
+  --accent: #8c7cff;
+  --accent-rgb: 140,124,255;
+}
+
+body.theme-lise {
+  --accent: #ff78bd;
+  --accent-rgb: 255,120,189;
+}
+
+body.theme-partage {
+  --accent: #f2b84b;
+  --accent-rgb: 242,184,75;
+}
+
+.share-inactive-panel {
+  max-width: 760px;
+  margin: 28px auto;
+  padding: 34px;
+  text-align: center;
+}
+
+.share-inactive-panel h2 {
+  margin: 0 0 10px;
+  font-family: "Fredoka", sans-serif;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+}
+
+.share-inactive-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+
+/* ===== Nouveau logo Math'as ===== */
+.brand-wordmark {
+  display: block;
+  width: min(560px, 82vw);
+  max-height: 190px;
+  object-fit: contain;
+  object-position: left center;
+  filter: drop-shadow(0 12px 28px rgba(0,0,0,.28));
+}
+
+@media (max-width: 650px) {
+  .brand-wordmark {
+    width: min(470px, 90vw);
+    max-height: 150px;
+  }
+}
+
+
+/* ===== Mot Math'as plus compact sur les pages élèves ===== */
+.brand-wordmark {
+  width: min(336px, 50vw);
+  max-height: 114px;
+}
+
+@media (max-width: 650px) {
+  .brand-wordmark {
+    width: min(282px, 72vw);
+    max-height: 90px;
+  }
+}
