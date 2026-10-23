@@ -45,7 +45,8 @@ function validate(s:any){
  const prog:any={};for(const k of ['level2','level3','sudden1','sudden2','sudden3','perfect1','perfect2','perfect3','hard']){if(s.progress?.[k]!=null){if(typeof s.progress[k]!=='boolean')throw Error('progress');prog[k]=s.progress[k]}}
  const ids=Array.isArray(s.ids)?s.ids.slice(0,50).filter(valid):[];
  const topThree=Array.isArray(s.topThree)?s.topThree.filter((v:any)=>int(v,0,10000000)).slice(0,3):[];
- return {classic,sudden:sequence('sudden'),hard:sequence('hard'),recent:runs,bestPoints:best,todayBest:today,progress:prog,ids,topThree,rewards:normalizeRewards(s.rewards)};
+ const hardThree=Array.from({length:3},(_,i)=>{const value=s.hardThree?.[i];if(value==null)return null;if(!int(value,0,5))throw Error('hardThree');return value});
+ return {classic,sudden:sequence('sudden'),hard:sequence('hard'),recent:runs,bestPoints:best,todayBest:today,progress:prog,ids,topThree,hardThree,rewards:normalizeRewards(s.rewards)};
 }
 function mergeHistorical(current:any,old:any){
  if(!old||typeof old!=='object'||Array.isArray(old))throw Error('invalid_import');
@@ -53,6 +54,7 @@ function mergeHistorical(current:any,old:any){
  for(let i=0;i<3;i++){
   for(const n of [4,10,20]){const value=old.classic?.[i]?.[n];if(value!=null){if(!int(value,0,n))throw Error('invalid_import');next.classic[i][n]=Math.max(next.classic[i][n]??0,value)}}
   for(const group of ['sudden','hard']){const value=old[group]?.[i];if(value!=null){if(!int(value,0,100000))throw Error('invalid_import');next[group][i]=Math.max(next[group][i]??0,value)}}
+  const hardThree=old.hardThree?.[i];if(hardThree!=null){if(!int(hardThree,0,5))throw Error('invalid_import');next.hardThree[i]=Math.max(next.hardThree[i]??0,hardThree)}
  }
  for(const key of ['level2','level3','sudden1','sudden2','sudden3','perfect1','perfect2','perfect3','hard']){
   const value=old.progress?.[key];if(value!=null&&typeof value!=='boolean')throw Error('invalid_import');
