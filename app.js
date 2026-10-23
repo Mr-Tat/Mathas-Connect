@@ -97,6 +97,7 @@ async function student(){if(!cls){show('welcome');msg('Ouvre le lien donné par 
 async function status(){await ensureStudentSession();const {request:r}=await call('student-join-status',{classId:cls});
  if(!r||['cancelled','expired','rejected'].includes(r.state)){show('student-form');if(r?.state==='rejected')msg('Demande refusée : adresse-toi au professeur.');return}
  if(['approved','revoked'].includes(r.state)){if(r.state==='approved'){try{localStorage.removeItem('mathas.connect.mode-libre.v1')}catch{}}$('open-hub').hidden=r.state!=='approved';$('result-title').textContent=r.state==='approved'?'Appareil autorisé':'Appareil révoqué';$('result-description').textContent=r.state==='approved'?'L’accès est confirmé.':'Adresse-toi au professeur.';show('approved');return}
+ if(r.state==='wrong_class'){show('welcome');msg('Cet appareil est associé à une autre classe. Ouvre le lien de ta classe ou demande au professeur de changer de profil.');return}
  $('verification-code').textContent=r.verify_code;show('waiting')}
 $('home').onclick=()=>show('welcome');
 $('teacher-entry').onclick=()=>show('login');
@@ -117,7 +118,7 @@ $('join-form').onsubmit=e=>{e.preventDefault();run(async()=>{const firstName=$('
 $('check-status').onclick=()=>run(status);
 $('cancel-request').onclick=()=>run(async()=>{await call('student-cancel-join',{classId:cls});show('student-form')});
 $('result-home').onclick=()=>show('welcome');
-$('reset-local').onclick=()=>run(async()=>{if(!confirm('Oublier ce profil sur cet ordinateur ? Tu devras faire une nouvelle demande pour le retrouver.'))return;await sb.auth.signOut();location.href=hubLink});
+$('reset-local').onclick=()=>run(async()=>{if(!confirm('Révoquer cet appareil et oublier ce profil ici ? Les résultats Connect restent enregistrés. Pour reprendre le compte, il faudra une nouvelle autorisation du professeur.'))return;await call('student-release');const {error}=await sb.auth.signOut({scope:'local'});if(error)throw error;location.href=hubLink});
 if(cls){show('student-form');run(student)}else show('welcome');
 const resultsUrl=url+'/functions/v1/connect-results';
 async function resultCall(action,data={}) {
