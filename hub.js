@@ -113,7 +113,7 @@ async function showIdentity() {
     const response = await fetch(url + '/functions/v1/connect-api', {
       method: 'POST',
       headers: { apikey: key, authorization: 'Bearer ' + session.access_token, 'content-type': 'application/json' },
-      body: JSON.stringify({ action: 'student-me' })
+      body: JSON.stringify({ action: 'student-me', classId })
     });
     if (!response.ok) return;
     const profile = await response.json();
