@@ -1,8 +1,9 @@
+import {hubUrl} from './connect-context.js';
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 const url='https://awmhpfofacaglewammxt.supabase.co', key='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const sb=createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 const $=id=>document.getElementById(id), cls=new URLSearchParams(location.search).get('class');
-const hubLink='./hub.html';
+const hubLink=hubUrl();
 let busy=false;
 function show(v){document.querySelectorAll('[data-view]').forEach(e=>e.hidden=e.dataset.view!==v);msg('')}
 function msg(s='',success=false){const e=$('message');e.textContent=s;e.hidden=!s;e.classList.toggle('ok',success)}
@@ -64,7 +65,7 @@ async function student(){if(!cls){show('welcome');msg('Ouvre le lien donné par 
  await ensureStudentSession();await status()}
 async function status(){await ensureStudentSession();const {request:r}=await call('student-join-status',{classId:cls});
  if(!r||['cancelled','expired','rejected'].includes(r.state)){show('student-form');if(r?.state==='rejected')msg('Demande refusée : adresse-toi au professeur.');return}
- if(['approved','revoked'].includes(r.state)){$('open-hub').hidden=r.state!=='approved';$('result-title').textContent=r.state==='approved'?'Appareil autorisé':'Appareil révoqué';$('result-description').textContent=r.state==='approved'?'L’accès est confirmé.':'Adresse-toi au professeur.';show('approved');return}
+ if(['approved','revoked'].includes(r.state)){if(r.state==='approved'){try{localStorage.removeItem('mathas.connect.mode-libre.v1')}catch{}}$('open-hub').hidden=r.state!=='approved';$('result-title').textContent=r.state==='approved'?'Appareil autorisé':'Appareil révoqué';$('result-description').textContent=r.state==='approved'?'L’accès est confirmé.':'Adresse-toi au professeur.';show('approved');return}
  $('verification-code').textContent=r.verify_code;show('waiting')}
 $('home').onclick=()=>show('welcome');
 $('teacher-entry').onclick=()=>show('login');
@@ -79,11 +80,11 @@ $('add-class-form').onsubmit=e=>{e.preventDefault();run(async()=>{const yearId=$
 $('add-student-form').onsubmit=e=>{e.preventDefault();run(async()=>{const classId=$('class-selector').value,name=$('new-student-name').value.trim();await call('teacher-create-student',{classId,name});$('new-student-name').value='';await refresh();msg('Élève ajouté',true)})};
 $('class-selector').onchange=()=>run(refresh);
 $('refresh-teacher').onclick=()=>run(refresh);
-$('copy-student-link').onclick=()=>run(async()=>{if(!$('class-selector').value)throw Error('Aucune classe');const u=new URL(location.href);u.search='';u.hash='';u.searchParams.set('class',$('class-selector').value);await navigator.clipboard.writeText(u.href);msg('Lien élève copié',true)});
+$('copy-student-link').onclick=()=>run(async()=>{const box=$('class-selector');if(!box.value)throw Error('Aucune classe');await navigator.clipboard.writeText(hubUrl(box.value,box.selectedOptions[0]?.textContent||'Ma classe'));msg('Lien du HUB de classe copié',true)});
 $('clear-form').onclick=()=>{$('first-name').value='';$('last-initial').value=''};
 $('join-form').onsubmit=e=>{e.preventDefault();run(async()=>{const firstName=$('first-name').value.trim(),lastInitial=$('last-initial').value.trim().toUpperCase();if(!/^[\p{L}][\p{L} '-]{0,39}$/u.test(firstName)||!/^[\p{L}]$/u.test(lastInitial))throw Error('Vérifie le prénom et la lettre du nom');await ensureStudentSession();const {request}=await call('student-join',{classId:cls,firstName,lastInitial});$('verification-code').textContent=request.code;show('waiting')})};
 $('check-status').onclick=()=>run(status);
 $('cancel-request').onclick=()=>run(async()=>{await call('student-cancel-join',{classId:cls});show('student-form')});
 $('result-home').onclick=()=>show('welcome');
-$('reset-local').onclick=()=>run(async()=>{if(!confirm('Effacer la connexion sur cet appareil ?'))return;await sb.auth.signOut();show('welcome')});
+$('reset-local').onclick=()=>run(async()=>{if(!confirm('Oublier ce profil sur cet ordinateur ? Tu devras faire une nouvelle demande pour le retrouver.'))return;await sb.auth.signOut();location.href=hubLink});
 if(cls){show('student-form');run(student)}else show('welcome');
