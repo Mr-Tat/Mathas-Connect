@@ -10,6 +10,30 @@ const appAllowed=(k:any)=>k===app||k===lab;
 const belgianDay=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const read=async(q:any)=>{const {data,error}=await q.maybeSingle();if(error)throw Error('db_error');return data};
 const int=(n:any,min:number,max:number)=>Number.isSafeInteger(n)&&n>=min&&n<=max;
+// Récompenses privées de l'élève : collectées côté jeu, non transmises au tableau professeur.
+function normalizeRewards(raw:any){
+ if(raw==null)return null;
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('rewards');
+ const triple=(a:any)=>{if(!Array.isArray(a)||a.length!==3||a.some(v=>typeof v!=='boolean'))throw Error('rewards');return a;};
+ const mastery:any={};for(const k of ['4','10','20'])mastery[k]=triple(raw.mastery?.[k]);
+ const hardAwards:any={};for(const c of ['bronze','silver','gold'])hardAwards[c]=triple(raw.hardAwards?.[c]);
+ const scoreOne:any={};for(const c of ['bronze','silver','gold']){if(typeof raw.scoreOne?.[c]!=='boolean')throw Error('rewards');scoreOne[c]=raw.scoreOne[c]}
+ if(typeof raw.unlockedGold!=='boolean')throw Error('rewards');
+ return {version:3,mastery,sudden:triple(raw.sudden),hardAwards,scoreOne,unlockedGold:raw.unlockedGold};
+}
+function mergeRewards(before:any,after:any){
+ if(!after)return before;
+ if(!before)return after;
+ const out=structuredClone(before);
+ for(const k of ['4','10','20'])for(let i=0;i<3;i++)out.mastery[k][i]=before.mastery[k][i]||after.mastery[k][i];
+ for(let i=0;i<3;i++)out.sudden[i]=before.sudden[i]||after.sudden[i];
+ for(const c of ['bronze','silver','gold']){
+   out.scoreOne[c]=before.scoreOne[c]||after.scoreOne[c];
+   for(let i=0;i<3;i++)out.hardAwards[c][i]=before.hardAwards[c][i]||after.hardAwards[c][i];
+ }
+ out.unlockedGold=before.unlockedGold||after.unlockedGold;
+ return out;
+}
 function validate(s:any){
  if(!s||typeof s!=='object'||Array.isArray(s))throw Error('bad_state');
  const classic=Array.from({length:3},(_,i)=>{const x=s.classic?.[i]??{};if(typeof x!=='object'||Array.isArray(x))throw Error('classic');const y:any={};for(const count of [4,10,20])if(x[count]!=null){if(!int(x[count],0,count))throw Error('classic');y[count]=x[count]}return y});
@@ -21,7 +45,7 @@ function validate(s:any){
  const prog:any={};for(const k of ['level2','level3','sudden1','sudden2','sudden3','perfect1','perfect2','perfect3','hard']){if(s.progress?.[k]!=null){if(typeof s.progress[k]!=='boolean')throw Error('progress');prog[k]=s.progress[k]}}
  const ids=Array.isArray(s.ids)?s.ids.slice(0,50).filter(valid):[];
  const topThree=Array.isArray(s.topThree)?s.topThree.filter((v:any)=>int(v,0,10000000)).slice(0,3):[];
- return {classic,sudden:sequence('sudden'),hard:sequence('hard'),recent:runs,bestPoints:best,todayBest:today,progress:prog,ids,topThree};
+ return {classic,sudden:sequence('sudden'),hard:sequence('hard'),recent:runs,bestPoints:best,todayBest:today,progress:prog,ids,topThree,rewards:normalizeRewards(s.rewards)};
 }
 Deno.serve(async req=>{
  if(req.method==='OPTIONS')return new Response('',{headers});
@@ -80,6 +104,10 @@ Deno.serve(async req=>{
       if(b.total>=10&&b.score===b.total)next.progress['perfect'+b.level]=true;
       if(next.progress.perfect1&&next.progress.perfect2&&next.progress.perfect3)next.progress.hard=true;
    }else next[b.mode][i]=Math.max(next[b.mode][i]??0,b.score);
+   if(b.action==='game-record'&&b.rewards!=null){
+     const received=normalizeRewards(b.rewards);
+     next.rewards=mergeRewards(next.rewards,received);
+   }
    next.bestPoints=Math.max(next.bestPoints??0,b.points);
    next.topThree=[...next.topThree,b.points].sort((a:number,b:number)=>b-a).slice(0,3);
    const today=belgianDay();
