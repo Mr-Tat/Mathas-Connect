@@ -47,6 +47,23 @@ function validate(s:any){
  const topThree=Array.isArray(s.topThree)?s.topThree.filter((v:any)=>int(v,0,10000000)).slice(0,3):[];
  return {classic,sudden:sequence('sudden'),hard:sequence('hard'),recent:runs,bestPoints:best,todayBest:today,progress:prog,ids,topThree,rewards:normalizeRewards(s.rewards)};
 }
+function mergeHistorical(current:any,old:any){
+ if(!old||typeof old!=='object'||Array.isArray(old))throw Error('invalid_import');
+ const next=structuredClone(current);
+ for(let i=0;i<3;i++){
+  for(const n of [4,10,20]){const value=old.classic?.[i]?.[n];if(value!=null){if(!int(value,0,n))throw Error('invalid_import');next.classic[i][n]=Math.max(next.classic[i][n]??0,value)}}
+  for(const group of ['sudden','hard']){const value=old[group]?.[i];if(value!=null){if(!int(value,0,100000))throw Error('invalid_import');next[group][i]=Math.max(next[group][i]??0,value)}}
+ }
+ for(const key of ['level2','level3','sudden1','sudden2','sudden3','perfect1','perfect2','perfect3','hard']){
+  const value=old.progress?.[key];if(value!=null&&typeof value!=='boolean')throw Error('invalid_import');
+  if(value===true)next.progress[key]=true;
+ }
+ if(old.bestPoints!=null){if(!int(old.bestPoints,0,10000000))throw Error('invalid_import');next.bestPoints=Math.max(next.bestPoints??0,old.bestPoints)}
+ if(!Array.isArray(old.topThree)||old.topThree.length>3||old.topThree.some((n:any)=>!int(n,0,10000000)))throw Error('invalid_import');
+ next.topThree=[...new Set([...next.topThree,...old.topThree,...(old.bestPoints==null?[]:[old.bestPoints])])].sort((a,b)=>b-a).slice(0,3);
+ if(old.rewards)next.rewards=mergeRewards(next.rewards,normalizeRewards(old.rewards));
+ return next;
+}
 Deno.serve(async req=>{
  if(req.method==='OPTIONS')return new Response('',{headers});
  if(req.method!=='POST')return deny('method',405);
@@ -76,12 +93,27 @@ Deno.serve(async req=>{
    const [name,state]=await Promise.all([read(db.from('connect_students').select('display_name').eq('id',b.studentId)),read(db.from('connect_states').select('revision,state_data').eq('student_id',b.studentId).eq('app_key',selected))]);
    return answer({ok:true,name:name?.display_name||'Élève',state:state?.state_data||null,revision:state?.revision??0});
   }
-  if(b.action==='student-load'||b.action==='student-save'||b.action==='lab-record'||b.action==='game-record'){
+  if(b.action==='student-load'||b.action==='student-save'||b.action==='lab-record'||b.action==='game-record'||b.action==='legacy-import'){
    if(!selected||(b.action==='lab-record'&&selected!==lab)||(b.action==='game-record'&&selected!==app))return deny('forbidden',403);
    const studentId=await identity();if(!studentId)return deny('forbidden',403);
    const current=await read(db.from('connect_states').select('revision,state_data,reset_epoch').eq('student_id',studentId).eq('app_key',selected));
    if(b.action==='student-load')return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,state:current?.state_data||null});
    // Les jeux réels restent en lecture seule. Écriture exclusivement pour le laboratoire.
+   if(b.action==='legacy-import'){
+    if(selected!==app||!int(b.expectedRevision,0,1000000000))return deny('invalid_import');
+    const rev=current?.revision??0;if(rev!==b.expectedRevision)return deny('revision_conflict',409);
+    let before=validate(current?.state_data||{}),next=mergeHistorical(before,b.legacy);
+    if(JSON.stringify(before)===JSON.stringify(next))return answer({ok:true,revision:rev,state:next,unchanged:true});
+    const payload={state_data:next,schema_version:1,updated_at:new Date().toISOString(),revision:rev+1};
+    if(current){
+     const r=await db.from('connect_states').update(payload).eq('student_id',studentId).eq('app_key',app).eq('revision',rev).select('revision').maybeSingle();
+     if(r.error)throw Error('db_error');if(!r.data)return deny('revision_conflict',409);
+    }else{
+     const r=await db.from('connect_states').insert({...payload,student_id:studentId,app_key:app}).select('revision').single();
+     if(r.error)return deny(r.error.code==='23505'?'revision_conflict':'db_error',r.error.code==='23505'?409:500);
+    }
+    return answer({ok:true,revision:rev+1,state:next});
+   }
    if(b.action==='student-save')return deny('write_not_enabled',403);
    if(!valid(b.eventId)||!int(b.expectedRevision,0,1000000000)||!['classic','sudden','hard'].includes(b.mode)
      ||!int(b.level,1,3)||!int(b.score,0,100000)||!int(b.points,0,10000000)
