@@ -56,6 +56,14 @@
       <h2>Élèves</h2>
       <div id="students-list" class="stack hint">Aucun élève.</div>
       <p class="hint">Révoquer bloque l’accès Connect de cet appareil, sans supprimer l’élève ni ses résultats.</p>
+      <details class="management"><summary>Gérer la classe</summary>
+        <form id="add-student-form"><label for="new-student-name">Ajouter un élève</label><input id="new-student-name" maxlength="120" placeholder="Prénom.N" required><button type="submit">Ajouter l’élève</button></form>
+      </details>
+      <details class="management"><summary>Créer une classe</summary>
+        <form id="add-class-form"><label for="year-selector">Année scolaire</label><select id="year-selector"></select><label for="new-class-name">Nom de la classe</label><input id="new-class-name" maxlength="100" required><button type="submit">Créer la classe</button></form>
+        <form id="add-year-form"><label for="new-year-label">Nouvelle année scolaire</label><input id="new-year-label" maxlength="32" placeholder="2026-2027" required><div class="button-row"><div><label for="year-start">Début</label><input id="year-start" type="date" required></div><div><label for="year-end">Fin</label><input id="year-end" type="date" required></div></div><button class="soft" type="submit">Ajouter l’année</button></form>
+      </details>
+      <button id="teacher-hub" class="soft" type="button">Voir le HUB Connect</button>
     </section>
 
     <section class="panel" data-view="student-form" hidden>
@@ -90,6 +98,7 @@
       <p id="result-description" class="centered">Tu peux revenir à l’accueil.</p>
       <div class="button-row">
         <button id="result-home" class="soft">Accueil</button>
+        <button id="open-hub" type="button" hidden>Voir les jeux</button>
         <button id="reset-local" class="danger">Réinitialiser</button>
       </div>
       <p class="hint">Réinitialiser efface seulement cette connexion locale, pas l’autorisation conservée chez le professeur.</p>
