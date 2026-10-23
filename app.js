@@ -30,7 +30,7 @@ async function ensureStudentSession(){
 async function call(action,data={}){const {data:{session}}=await sb.auth.getSession();if(!session)throw Error('Connexion requise');
  const r=await fetch(url+'/functions/v1/connect-api',{method:'POST',headers:{'content-type':'application/json','apikey':key,'authorization':'Bearer '+session.access_token},body:JSON.stringify({action,...data})});
  const v=await r.json().catch(()=>({}));if(!r.ok||!v.ok)throw Error(({forbidden:'Accès refusé',join_failed:'Demande impossible',decision_failed:'Demande déjà traitée ou expirée',auth_required:'Connexion expirée'})[v.error]||v.error||'Erreur réseau');return v}
-async function teacher(){const r=await call('teacher-dashboard');const box=$('class-selector');box.replaceChildren(...r.classes.map(c=>new Option(c.name,c.id)));$('year-selector').replaceChildren(...r.years.map(v=>new Option(v.label,v.id)));show('teacher');await refresh()}
+async function teacher(){const r=await call('teacher-dashboard');const box=$('class-selector');box.replaceChildren(...r.classes.map(c=>new Option(c.name,c.id)));$('year-selector').replaceChildren(...r.years.map(v=>new Option(v.label,v.id)));show('teacher');await refresh();await showResults().catch(e=>showResultMessage('Suivi indisponible : '+e.message))}
 async function refresh(){const id=$('class-selector').value;if(!id)return;const data=await call('teacher-dashboard',{classId:id});const j={requests:data.requests},s={students:data.students},d={devices:data.devices};$('request-count').textContent=j.requests.length;const out=$('requests-list');out.replaceChildren();
  if(!j.requests.length)out.textContent='Aucune demande.';
  for(const req of j.requests){const card=document.createElement('div');card.className='request-card';const head=document.createElement('div');head.className='request-heading';const name=document.createElement('strong');name.textContent=req.first_name+'.'+req.last_initial;const code=document.createElement('span');code.className='request-code';code.textContent=req.verify_code;head.append(name,code);card.append(head);const row=document.createElement('div');row.className='button-row';
@@ -78,7 +78,7 @@ $('teacher-hub').onclick=()=>{location.href=hubLink};
 $('add-year-form').onsubmit=e=>{e.preventDefault();run(async()=>{const label=$('new-year-label').value.trim(),startsOn=$('year-start').value,endsOn=$('year-end').value;if(endsOn<=startsOn)throw Error('La date de fin doit suivre la date de début');await call('teacher-create-year',{label,startsOn,endsOn});$('add-year-form').reset();await teacher();msg('Année scolaire ajoutée',true)})};
 $('add-class-form').onsubmit=e=>{e.preventDefault();run(async()=>{const yearId=$('year-selector').value,name=$('new-class-name').value.trim();if(!yearId)throw Error('Ajoute d’abord une année scolaire.');const r=await call('teacher-create-class',{yearId,name});$('new-class-name').value='';await teacher();$('class-selector').value=r.class.id;await refresh();msg('Classe créée',true)})};
 $('add-student-form').onsubmit=e=>{e.preventDefault();run(async()=>{const classId=$('class-selector').value,name=$('new-student-name').value.trim();await call('teacher-create-student',{classId,name});$('new-student-name').value='';await refresh();msg('Élève ajouté',true)})};
-$('class-selector').onchange=()=>run(refresh);
+$('class-selector').onchange=()=>run(async()=>{await refresh();await showResults().catch(e=>showResultMessage('Suivi indisponible : '+e.message))});
 $('refresh-teacher').onclick=()=>run(refresh);
 $('copy-student-link').onclick=()=>run(async()=>{const box=$('class-selector');if(!box.value)throw Error('Aucune classe');await navigator.clipboard.writeText(hubUrl(box.value,box.selectedOptions[0]?.textContent||'Ma classe'));msg('Lien du HUB de classe copié',true)});
 $('clear-form').onclick=()=>{$('first-name').value='';$('last-initial').value=''};
@@ -88,3 +88,53 @@ $('cancel-request').onclick=()=>run(async()=>{await call('student-cancel-join',{
 $('result-home').onclick=()=>show('welcome');
 $('reset-local').onclick=()=>run(async()=>{if(!confirm('Oublier ce profil sur cet ordinateur ? Tu devras faire une nouvelle demande pour le retrouver.'))return;await sb.auth.signOut();location.href=hubLink});
 if(cls){show('student-form');run(student)}else show('welcome');
+const resultsUrl=url+'/functions/v1/connect-results';
+async function resultCall(action,data={}) {
+ const {data:{session}}=await sb.auth.getSession();
+ if(!session||session.user?.is_anonymous)throw Error('Compte professeur requis');
+ const response=await fetch(resultsUrl,{method:'POST',headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},body:JSON.stringify({action,classId:$('class-selector').value,appKey:$('results-app').value,...data})});
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok||!result.ok)throw Error(result.error||'Résultats indisponibles');
+ return result;
+}
+const showResultMessage=t=>$('results-message').textContent=t;
+const dateBE=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const points=n=>n==null?'—':String(n)+' pts';
+function recentLabel(r){
+ const mode={classic:'Classique',sudden:'Mort subite',hard:'HARD'}[r.mode]||r.mode;
+ return mode+' N'+r.level+' : '+r.score+(r.total!=null?'/'+r.total:'');
+}
+async function showResults(){
+ const id=$('class-selector').value;if(!id){showResultMessage('Aucune classe.');return}
+ $('results-detail').hidden=true;$('results-list').hidden=false;
+ showResultMessage('Lecture des résultats…');
+ const v=await resultCall('teacher-summary');
+ const list=$('results-list');list.replaceChildren();
+ for(const student of v.students){
+   const item=document.createElement('button');item.type='button';item.className='student-card result-person';
+   const title=document.createElement('strong');title.textContent=student.name;
+   const info=document.createElement('span');info.className='result-mini';
+   const today=student.todayBest;
+   info.textContent='Record '+points(student.bestPoints)+' · Aujourd’hui '+points(today)+' · '+(student.recent?.length?student.recent.map(recentLabel).join(' ; '):'Aucun exercice terminé');
+   item.append(title,info);
+   item.onclick=()=>run(async()=>{const detail=await resultCall('teacher-detail',{studentId:student.id});showDetail(detail)});
+   list.append(item);
+ }
+ showResultMessage(v.students.length?v.students.length+' élèves · données enregistrées uniquement dans Connect':'Aucun élève dans cette classe.');
+}
+function showDetail(v){
+ $('results-student-name').textContent=v.name;
+ $('results-list').hidden=true;$('results-detail').hidden=false;
+ const s=v.state||{},div=$('results-student-content');div.replaceChildren();
+ const table=document.createElement('table');table.className='result-table';
+ const head=document.createElement('tr');
+ for(const text of ['Niveau','/4','/10','/20','Mort subite']){const th=document.createElement('th');th.textContent=text;head.append(th)}table.append(head);
+ for(let i=0;i<3;i++){const tr=document.createElement('tr');const vals=['Niveau '+(i+1),...[4,10,20].map(c=>s.classic?.[i]?.[c]==null?'—':s.classic[i][c]+'/'+c),s.sudden?.[i]??'—'];for(const text of vals){const td=document.createElement('td');td.textContent=text;tr.append(td)}table.append(tr)}
+ div.append(table);
+ if(s.hard?.some(x=>x!=null)){const hard=document.createElement('p');hard.textContent='HARD : '+[1,2,3].map(i=>'H'+i+' '+(s.hard[i-1]??'—')).join(' · ');div.append(hard)}
+ const summary=document.createElement('p');summary.textContent='Record absolu : '+points(s.bestPoints)+' · Aujourd’hui : '+points(s.todayBest?.day===dateBE()?s.todayBest.points:null);div.append(summary);
+ const last=document.createElement('p');last.textContent='Derniers exercices : '+(s.recent?.length?s.recent.map(recentLabel).join(' ; '):'aucun');div.append(last);
+}
+$('results-refresh').onclick=()=>run(showResults);
+$('results-app').onchange=()=>run(showResults);
+$('results-back').onclick=()=>{$('results-detail').hidden=true;$('results-list').hidden=false};
