@@ -129,6 +129,20 @@ async function resultCall(action,data={}) {
  if(!response.ok||!result.ok)throw Error(result.error||'Résultats indisponibles');
  return result;
 }
+$('results-backup').addEventListener('click',()=>run(async()=>{
+ const cls=$('class-selector').value;
+ if(!cls)throw Error('Choisis une classe avant de télécharger.');
+ if(!confirm('Exporter une copie PRIVÉE des noms et résultats des élèves de cette classe ?\\n\\nConserve ce fichier dans un endroit protégé, jamais sur un GitHub public.'))return;
+ const backup=await resultCall('teacher-export');
+ if(backup.format!=='mathas-connect-class-backup-v1')throw Error('Format de sauvegarde inconnu.');
+ const contents=JSON.stringify(backup,null,2);
+ const blob=new Blob([contents],{type:'application/json;charset=utf-8'});
+ const url=URL.createObjectURL(blob);
+ const link=document.createElement('a');link.href=url;link.download='mathas-connect-sauvegarde-'+new Date().toISOString().slice(0,10)+'.json';
+ document.body.appendChild(link);link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),1500);
+ msg('Sauvegarde exportée. Ne la place pas sur un dépôt public.',true);
+}));
 const showResultMessage=t=>$('results-message').textContent=t;
 const dateBE=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const points=n=>n==null?'—':String(n)+' pts';
