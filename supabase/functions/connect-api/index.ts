@@ -68,6 +68,25 @@ async function handle(req:Request){
    if(students.error||devices.error)return fail('db_failed',500);
    return ok({years:years.data,classes:classes.data,requests:requests.data,students:students.data,devices:devices.data});
  }
+ case 'teacher-results':{
+   if(!U.test(b.classId||'')||!await manage(b.classId))return fail('forbidden',403);
+   if(b.appKey!=='addition-ecrite-simple')return fail('input_invalid');
+   const enrollment=await db.from('connect_enrollments').select('student_id').eq('class_id',b.classId).is('left_at',null).limit(120);
+   if(enrollment.error)return fail('db_failed',500);
+   const ids=enrollment.data.map((v:any)=>v.student_id);
+   if(!ids.length)return ok({students:[]});
+   const [names,states]=await Promise.all([
+     db.from('connect_students').select('id,display_name').in('id',ids),
+     db.from('connect_states').select('student_id,state_data,revision').eq('app_key',b.appKey).in('student_id',ids)
+   ]);
+   if(names.error||states.error)return fail('db_failed',500);
+   const byId=new Map(states.data.map((v:any)=>[v.student_id,v]));
+   const students=names.data.map((n:any)=>{
+     const state:any=byId.get(n.id),data:any=state?.state_data||{};
+     return {id:n.id,name:n.display_name,recent:Array.isArray(data.recent)?data.recent.slice(0,3):[],bestPoints:data.bestPoints??null,todayBest:data.todayBest??null,hasData:!!state};
+   });
+   return ok({students});
+ }
  case 'teacher-years':{
    if(!await teacher())return fail('forbidden',403);
    const r=await db.from('connect_school_years')
