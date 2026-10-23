@@ -95,7 +95,7 @@ function switchToFree() {
 
 $('mode-toggle').onclick = switchToFree;
 $('forget-device').onclick = async () => {
-  const agreed = confirm('Oublier le profil de cet élève sur cet ordinateur ? Une nouvelle autorisation du professeur sera nécessaire pour se reconnecter. Ses résultats enregistrés dans Connect ne seront pas supprimés.');
+  const agreed = confirm('La suppression locale ne retire pas encore l’autorisation serveur de cet appareil. Continuer ?');
   if (!agreed) return;
   try {
     const { error } = await sb.auth.signOut();
