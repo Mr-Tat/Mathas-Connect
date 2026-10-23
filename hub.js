@@ -95,13 +95,22 @@ function switchToFree() {
 
 $('mode-toggle').onclick = switchToFree;
 $('forget-device').onclick = async () => {
-  const agreed = confirm('La suppression locale ne retire pas encore l’autorisation serveur de cet appareil. Continuer ?');
-  if (!agreed) return;
+  if (!confirm('Retirer l’autorisation de cet ordinateur et oublier le profil ? Les résultats Connect resteront enregistrés. Il faudra une nouvelle autorisation du professeur pour revenir.')) return;
+  const btn=$('forget-device');btn.disabled=true;
   try {
-    const { error } = await sb.auth.signOut();
-    if (error) throw error;
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session?.user?.is_anonymous)throw Error('Session élève introuvable');
+    const r=await fetch(url+'/functions/v1/connect-api',{method:'POST',
+      headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
+      body:JSON.stringify({action:'student-release'})});
+    const data=await r.json();
+    if(!r.ok||!data.ok||!data.released)throw Error('Révocation impossible');
+    const {error}=await sb.auth.signOut({scope:'local'});
+    if(error)throw error;
     switchToFree();
-  } catch { alert('Impossible d’oublier ce profil maintenant. Vérifie la connexion et réessaie.'); }
+    alert('Appareil retiré de Connect. Les résultats sont conservés sur le compte élève.');
+  }catch(e){alert('Attention : '+e.message+'. Si la révocation a été acceptée, ferme puis rouvre le HUB.');}
+  finally{btn.disabled=false}
 };
 
 async function showIdentity() {
