@@ -16,7 +16,7 @@ async function refresh(){const id=$('class-selector').value;if(!id)return;const 
  for(const [label,approve] of [['Autoriser',true],['Refuser',false]]){const btn=document.createElement('button');btn.textContent=label;if(!approve)btn.className='danger';btn.onclick=()=>run(async()=>{await call('teacher-review-join',{requestId:req.id,approve});await refresh();msg(approve?'Appareil autorisé':'Demande refusée',true)});row.append(btn)}card.append(row);out.append(card)}
  const students=$('students-list');students.replaceChildren();if(!s.students.length)students.textContent='Aucun élève.';else for(const e of s.students){const item=document.createElement('div');item.className='student-card';item.textContent=e.display_name;students.append(item)}}
 async function student(){if(!cls){show('welcome');msg('Ouvre le lien donné par le professeur.');return}
- const {data:{user}}=await sb.auth.getUser();if(user&&!user.is_anonymous)throw Error('Ouvre le lien élève dans une fenêtre privée.');
+ const {data:{user}}=await sb.auth.getUser();if(user&&!user.is_anonymous){show('welcome');throw Error('Tu es connecté comme professeur sur ce navigateur. Pour tester un élève, ouvre le lien dans une fenêtre privée.');}
  if(!user){const r=await sb.auth.signInAnonymously();if(r.error)throw Error('Connexion anonyme indisponible')}
  await status()}
 async function status(){const {request:r}=await call('student-join-status',{classId:cls});
