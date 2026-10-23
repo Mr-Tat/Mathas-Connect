@@ -79,7 +79,7 @@ async function refresh(){const id=$('class-selector').value;if(!id)return;const 
    if(!devices.length){const info=document.createElement('p');info.className='hint';info.textContent='Aucun appareil autorisé.';item.append(info)}
    devices.forEach((device,index)=>{
      const row=document.createElement('div');row.className='device-row';
-     const info=document.createElement('span');info.textContent='Appareil '+(index+1)+' · '+(device.state==='approved'?'Autorisé':device.state==='revoked'?'Révoqué':'En attente');row.append(info);
+     const info=document.createElement('span');info.textContent=(device.device_label||'Appareil non nommé '+(index+1))+' · '+(device.state==='approved'?'Autorisé':device.state==='revoked'?'Révoqué':'En attente');row.append(info);
      if(device.state==='approved'){
        const revoke=document.createElement('button');revoke.type='button';revoke.className='danger';revoke.textContent='Révoquer';
        revoke.setAttribute('aria-label','Révoquer l’appareil '+(index+1)+' de '+e.display_name);
