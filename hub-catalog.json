@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "apps": [
+    {
+      "app_key": "addition-ecrite-simple",
+      "title": "Addition écrite",
+      "launch_url": "https://mr-tat.github.io/Addition-ecrite-simple/",
+      "hub_section": "calculs_ecrits",
+      "featured": true,
+      "display_order": 10,
+      "image_url": null
+    }
+  ]
+}
