@@ -26,6 +26,18 @@ async function handle(req:Request){
  try{
  switch(b.action){
  
+ case 'student-release':{
+   if(!user.is_anonymous)return fail('forbidden',403);
+   const found=await db.from('connect_devices').select('id').eq('auth_user_id',user.id).eq('state','approved').limit(20);
+   if(found.error)return fail('db_failed',500);
+   const ids=found.data.map((d:any)=>d.id);
+   if(!ids.length)return ok({released:true});
+   const at=new Date().toISOString();
+   const devices=await db.from('connect_devices').update({state:'revoked',revoked_at:at}).eq('auth_user_id',user.id).eq('state','approved').in('id',ids);
+   if(devices.error)return fail('db_failed',500);
+   const launches=await db.from('connect_launches').update({revoked_at:at}).in('device_id',ids).is('revoked_at',null);
+   return launches.error?fail('db_failed',500):ok({released:true});
+ }
  case 'student-me':{
    if(!user.is_anonymous)return ok({status:'not_student'});
    const d=await one(db.from('connect_devices')
