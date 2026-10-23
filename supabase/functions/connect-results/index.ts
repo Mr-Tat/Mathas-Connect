@@ -79,6 +79,23 @@ Deno.serve(async req=>{
  try{
   const managed=async()=>!user.is_anonymous&&!!await read(db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('class_id',b.classId).eq('can_manage',true));
   const identity=async()=>{if(!user.is_anonymous)return null;const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;return await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null))?device.student_id:null};
+  if(b.action==='teacher-export'){
+   // Sauvegarde privée, seulement pour l'enseignant gestionnaire de cette classe.
+   if(!await managed())return deny('forbidden',403);
+   const people=await db.from('connect_enrollments').select('student_id,joined_at,left_at').eq('class_id',b.classId).limit(250);
+   if(people.error)throw Error('db_error');
+   const ids=[...new Set(people.data.map((p:any)=>p.student_id))];
+   const [profiles,states]=await Promise.all([
+    ids.length?db.from('connect_students').select('id,display_name,public_alias').in('id',ids):Promise.resolve({data:[],error:null}),
+    ids.length?db.from('connect_states').select('student_id,app_key,revision,reset_epoch,state_data').in('student_id',ids):Promise.resolve({data:[],error:null})
+   ]);
+   if(profiles.error||states.error)throw Error('db_error');
+   return answer({ok:true,format:'mathas-connect-class-backup-v1',exportedAt:new Date().toISOString(),classId:b.classId,
+    students:profiles.data.map((p:any)=>({id:p.id,displayName:p.display_name,publicAlias:p.public_alias,
+     enrollments:people.data.filter((e:any)=>e.student_id===p.id),
+     apps:states.data.filter((state:any)=>state.student_id===p.id).map((state:any)=>({appKey:state.app_key,revision:state.revision,resetEpoch:state.reset_epoch,state:state.state_data}))}))
+   });
+  }
   if(b.action==='teacher-summary'){
    if(!selected||!await managed())return deny('forbidden',403);
    const en=await db.from('connect_enrollments').select('student_id').eq('class_id',b.classId).is('left_at',null).limit(100);
