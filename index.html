@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8fa">
+  <meta name="description" content="Math’as Connect — espace de test élèves et professeurs">
+  <title>Math’as Connect — Test</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <span class="brand">Math’as <em>Connect</em></span>
+      <button type="button" class="quiet" id="home">Accueil</button>
+    </header>
+    <div id="message" class="message" role="status" aria-live="polite" hidden></div>
+
+    <section class="panel" data-view="welcome">
+      <h1>Bienvenue</h1>
+      <div class="button-row">
+        <button id="teacher-entry">Professeur</button>
+        <button id="student-entry" class="soft">Élève</button>
+      </div>
+      <p class="hint">Environnement de test, sans jeux pour le moment.</p>
+    </section>
+
+    <section class="panel" data-view="login" hidden>
+      <h1>Professeur</h1>
+      <form id="login-form">
+        <label for="email">E-mail</label>
+        <input id="email" type="email" autocomplete="email" required>
+        <label for="password">Mot de passe</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+        <div class="button-row">
+          <button type="submit">Se connecter</button>
+          <button type="button" class="soft" id="back-login">Retour</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel" data-view="teacher" hidden>
+      <div class="heading-row"><h1>Ma classe</h1><button class="quiet" id="logout">Déconnexion</button></div>
+      <label for="class-selector">Classe</label>
+      <select id="class-selector"></select>
+      <div class="button-row">
+        <button id="refresh-teacher" class="soft">Actualiser</button>
+        <button id="copy-student-link">Copier le lien élève</button>
+      </div>
+      <p class="hint">L’élève ouvre le lien, écrit son prénom et l’initiale de son nom.</p>
+      <hr>
+      <h2>Demandes <span class="small-counter" id="request-count">0</span></h2>
+      <div id="requests-list" class="stack"><p class="hint">Aucune demande.</p></div>
+      <hr>
+      <h2>Élèves</h2>
+      <div id="students-list" class="stack hint">Aucun élève.</div>
+    </section>
+
+    <section class="panel" data-view="student-form" hidden>
+      <h1>Je rejoins ma classe</h1>
+      <form id="join-form">
+        <label for="first-name">Prénom</label>
+        <input id="first-name" type="text" maxlength="40" autocomplete="given-name" placeholder="Lucas" required>
+        <label for="last-initial">Première lettre du nom</label>
+        <input id="last-initial" type="text" maxlength="1" placeholder="D" required>
+        <div class="button-row">
+          <button type="submit">Demander l’accès</button>
+          <button type="button" id="clear-form" class="soft">Effacer</button>
+        </div>
+      </form>
+      <p class="hint">Un professeur doit autoriser cet appareil.</p>
+    </section>
+
+    <section class="panel" data-view="waiting" hidden>
+      <h1>Montre ces chiffres au professeur</h1>
+      <div id="verification-code" class="verification-code">••••</div>
+      <p class="centered">Il les voit déjà de son côté.</p>
+      <div class="button-row">
+        <button id="check-status">Vérifier</button>
+        <button id="cancel-request" class="soft">Annuler</button>
+      </div>
+      <p class="hint">Ce code expire après 15 minutes.</p>
+    </section>
+
+    <section class="panel" data-view="approved" hidden>
+      <div class="big-check" aria-hidden="true">✓</div>
+      <h1 id="result-title">Appareil autorisé</h1>
+      <p id="result-description" class="centered">Tu peux revenir à l’accueil.</p>
+      <div class="button-row">
+        <button id="result-home" class="soft">Accueil</button>
+        <button id="reset-local" class="danger">Réinitialiser</button>
+      </div>
+      <p class="hint">Réinitialiser efface seulement cette connexion locale, pas l’autorisation conservée chez le professeur.</p>
+    </section>
+
+    <footer>Math’as Connect · Prototype privé de test</footer>
+  </main>
+</body>
+</html>
