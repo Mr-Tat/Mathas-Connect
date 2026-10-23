@@ -56,6 +56,14 @@
       <h2>Élèves</h2>
       <div id="students-list" class="stack hint">Aucun élève.</div>
       <p class="hint">Révoquer bloque l’accès Connect de cet appareil, sans supprimer l’élève ni ses résultats.</p>
+      <hr>
+      <section id="results-section" aria-label="Résultats de la classe">
+        <div class="heading-row"><h2>Résultats des élèves</h2><button id="results-refresh" class="soft" type="button">Actualiser les résultats</button></div>
+        <label for="results-app">Application</label><select id="results-app"><option value="addition-ecrite-simple">Addition écrite simple</option><option value="connect-lab">Laboratoire (test)</option></select>
+        <p id="results-message" class="hint">Choisis une classe et actualise les résultats.</p>
+        <div id="results-list" class="stack"></div>
+        <section id="results-detail" hidden><button type="button" class="soft" id="results-back">← Retour à la classe</button><h2 id="results-student-name">Fiche élève</h2><div id="results-student-content"></div></section>
+      </section>
       <details class="management"><summary>Gérer la classe</summary>
         <form id="add-student-form"><label for="new-student-name">Ajouter un élève</label><input id="new-student-name" maxlength="120" placeholder="Prénom.N" required><button type="submit">Ajouter l’élève</button></form>
       </details>
