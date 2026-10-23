@@ -77,7 +77,7 @@ async function showCatalog() {
 
 function drawIdentity(profile) {
   const authorized = profile?.status === 'approved';
-  $('identity-title').textContent = authorized ? profile.displayName : 'Mode libre';
+  $('identity-title').textContent = authorized ? profile.displayName : 'Mode Classique';
   $('identity-class').textContent = classId ? classLabel : 'HUB de démonstration';
   $('classLabel').textContent = classId ? classLabel : 'Jeux';
   $('identity-action').textContent = authorized ? 'Modifier' : 'Se connecter';
