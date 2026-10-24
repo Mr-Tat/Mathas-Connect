@@ -134,7 +134,7 @@ $('results-backup').addEventListener('click',()=>run(async()=>{
  if(!cls)throw Error('Choisis une classe avant de télécharger.');
  if(!confirm('Exporter une copie PRIVÉE des noms et résultats des élèves de cette classe ?\\n\\nConserve ce fichier dans un endroit protégé, jamais sur un GitHub public.'))return;
  const backup=await resultCall('teacher-export');
- if(backup.format!=='mathas-connect-class-backup-v1')throw Error('Format de sauvegarde inconnu.');
+ if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2'].includes(backup.format))throw Error('Format de sauvegarde inconnu.');
  const contents=JSON.stringify(backup,null,2);
  const blob=new Blob([contents],{type:'application/json;charset=utf-8'});
  const url=URL.createObjectURL(blob);
@@ -142,6 +142,70 @@ $('results-backup').addEventListener('click',()=>run(async()=>{
  document.body.appendChild(link);link.click();link.remove();
  setTimeout(()=>URL.revokeObjectURL(url),1500);
  msg('Sauvegarde exportée. Ne la place pas sur un dépôt public.',true);
+}));
+// Import sécurisé et facultatif : uniquement les comptes déjà présents dans la classe.
+let restoreDraft=null,restoreCheck=null,restoreHasSafety=false;
+$('results-restore-file').addEventListener('change',async event=>{
+ restoreDraft=null;restoreCheck=null;restoreHasSafety=false;$('results-restore-confirm').disabled=true;
+ const file=event.target.files?.[0];if(!file)return;
+ if(file.size>1000000){msg('Fichier trop volumineux (maximum 1 Mo).');return}
+ try{
+  const doc=JSON.parse(await file.text());
+  if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2'].includes(doc.format))throw Error('Format JSON de sauvegarde inconnu');
+  if(doc.projectRef&&doc.projectRef!=='awmhpfofacaglewammxt')throw Error('Sauvegarde provenant d’un autre projet');
+  if(doc.classId!==$('class-selector').value)throw Error('Sélectionne la classe correspondant à cette sauvegarde');
+  if(!Array.isArray(doc.students)||doc.students.length>250)throw Error('Liste d’élèves invalide');
+  restoreDraft=doc;
+  const choices=[];
+  for(const student of doc.students){
+   if(!student||typeof student.id!=='string'||!Array.isArray(student.apps))continue;
+   for(const app of student.apps)if(app.appKey==='addition-ecrite-simple'&&app.state&&Number.isInteger(app.revision)&&Number.isInteger(app.resetEpoch))
+     choices.push({student,app});
+  }
+  if(!choices.length)throw Error('Aucun résultat Addition à restaurer dans ce fichier');
+  window.__restoreOptions=choices;
+  const menu=$('results-restore-select');menu.replaceChildren();
+  choices.forEach((o,i)=>{const option=document.createElement('option');option.value=String(i);option.textContent=o.student.displayName+' · Addition écrite (sauvegarde rev. '+o.app.revision+')';menu.appendChild(option)});
+  $('results-restore-panel').hidden=false;$('results-restore-summary').textContent='Fichier chargé. Choisis un élève et clique « Prévisualiser ». Aucune donnée modifiée.';
+ }catch(err){msg(err.message||'Fichier illisible')}
+});
+$('results-restore-preview').addEventListener('click',()=>run(async()=>{
+ const o=window.__restoreOptions?.[Number($('results-restore-select').value)];if(!o)throw Error('Choisis un élève');
+ restoreCheck=null;restoreHasSafety=false;$('results-restore-confirm').disabled=true;
+ async function preview(recoverPastReset){
+  return resultCall('teacher-restore-preview',{studentId:o.student.id,backupFormat:restoreDraft.format,backupProjectRef:restoreDraft.projectRef,
+   backupRevision:o.app.revision,backupResetEpoch:o.app.resetEpoch,backupState:o.app.state,recoverPastReset});
+ }
+ let v;
+ try{v=await preview(false)}
+ catch(e){
+  if(e.message!=='previous_reset_requires_confirmation')throw e;
+  if(!confirm('ATTENTION : cette sauvegarde est antérieure à une remise à zéro volontaire de ce compte.\\n\\nRestaurer les anciens records pourrait annuler cet effacement. Souhaites-tu uniquement PRÉVISUALISER cette possibilité ?'))return;
+  v=await preview(true);
+ }
+ restoreCheck={choice:o,data:v};
+ $('results-restore-summary').textContent='AVANT : '+JSON.stringify(v.before)+'\\n\\nAPRÈS : '+JSON.stringify(v.after)+'\\n\\n'+(v.recoveringPastReset?'⚠ Ancienne remise à zéro : réintroduction de records possible.':'Fusion sans remplacement des meilleurs records récents.')+(v.changed?'':' Aucune différence : rien à restaurer.');
+ $('results-restore-confirm').disabled=!v.changed;
+}));
+$('results-restore-confirm').addEventListener('click',()=>run(async()=>{
+ if(!restoreCheck||!restoreCheck.data.changed)throw Error('Prévisualisation nécessaire');
+ const {choice:o,data:v}=restoreCheck;
+ if(!confirm('Opération sensible : une sauvegarde de sécurité ACTUELLE doit être téléchargée avant la restauration. Continuer ?'))return;
+ const safety=await resultCall('teacher-export');
+ if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2'].includes(safety.format))throw Error('Export de sécurité indisponible');
+ const blob=new Blob([JSON.stringify(safety,null,2)],{type:'application/json'});
+ const link=document.createElement('a'),uri=URL.createObjectURL(blob);
+ link.href=uri;link.download='mathas-AVANT-restauration-'+new Date().toISOString().replaceAll(':','-')+'.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(uri),10000);
+ if(!confirm('Vérifie maintenant que le fichier « AVANT-restauration » a bien été téléchargé et conservé en lieu sûr.\\n\\nConfirmer la restauration de '+o.student.displayName+' ?'))return;
+ const phrase=prompt('Dernière confirmation : écris RESTAURER en majuscules');
+ if(phrase!=='RESTAURER')return;
+ const out=await resultCall('teacher-restore-apply',{studentId:o.student.id,backupFormat:restoreDraft.format,backupProjectRef:restoreDraft.projectRef,
+  backupRevision:o.app.revision,backupResetEpoch:o.app.resetEpoch,backupState:o.app.state,
+  recoverPastReset:v.recoveringPastReset,expectedRevision:v.currentRevision,expectedResetEpoch:v.currentResetEpoch,
+  confirmed:true,confirmationPhrase:'RESTAURER',safetyBackupExported:true});
+ $('results-restore-summary').textContent='Restauration enregistrée pour '+o.student.displayName+'. Révision : '+out.revision+'. Relire les résultats professeur.';
+ restoreCheck=null;$('results-restore-confirm').disabled=true;
+ await showResults();
 }));
 const showResultMessage=t=>$('results-message').textContent=t;
 const dateBE=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
