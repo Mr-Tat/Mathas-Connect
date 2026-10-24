@@ -66,19 +66,77 @@ function mergeHistorical(current:any,old:any){
  if(old.rewards)next.rewards=mergeRewards(next.rewards,normalizeRewards(old.rewards));
  return next;
 }
+// Une restauration n'invente aucune partie : les dates/id historiques sont conservés.
+// Le score/perfection/trophée est fusionné dans le compte ACTUEL, sans remplacer un meilleur record.
+function restorePreviewState(current:any,snapshot:any){
+ const old=validate(snapshot),now=validate(current||{});
+ const next=mergeHistorical(now,old);
+ const id=(a:any)=>a.eventId||JSON.stringify([a.at,a.mode,a.level,a.score,a.total]);
+ const rows=new Map<string,any>();
+ for(const item of [...now.recent,...old.recent]){
+  const key=id(item);if(!rows.has(key))rows.set(key,item);
+ }
+ next.recent=[...rows.values()].sort((a:any,b:any)=>b.at.localeCompare(a.at)).slice(0,3);
+ next.ids=[...new Set([...now.ids,...old.ids,...next.recent.map((v:any)=>v.eventId).filter(valid)])].slice(-50);
+ if(old.todayBest?.day===belgianDay())next.todayBest={day:belgianDay(),points:Math.max(next.todayBest?.day===belgianDay()?next.todayBest.points:0,old.todayBest.points)};
+ return {before:now,after:validate(next)};
+}
+function restoreSummary(state:any){
+ return {bestPoints:state.bestPoints??null,classic:state.classic,sudden:state.sudden,
+   hard:state.hard,hardThree:state.hardThree,progress:state.progress,
+   trophies:state.rewards?Object.values(state.rewards.mastery).flat().filter(Boolean).length+Object.values(state.rewards.hardAwards).flat().filter(Boolean).length+state.rewards.sudden.filter(Boolean).length+Object.values(state.rewards.scoreOne).filter(Boolean).length+Number(state.rewards.unlockedGold):0,
+   lastThree:state.recent.map((v:any)=>({mode:v.mode,level:v.level,score:v.score,total:v.total,at:v.at})),
+   topThree:state.topThree};
+}
 Deno.serve(async req=>{
  if(req.method==='OPTIONS')return new Response('',{headers});
  if(req.method!=='POST')return deny('method',405);
  const token=req.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];if(!token)return deny('auth',401);
  const client=createClient(url,pub,{auth:{persistSession:false,autoRefreshToken:false}});
  const {data:{user},error}=await client.auth.getUser(token);if(error||!user)return deny('auth',401);
- const raw=await req.text();if(raw.length>6500)return deny('too_large',413);
+ const raw=await req.text();if(raw.length>18000)return deny('too_large',413);
  let b:any;try{b=JSON.parse(raw)}catch{return deny('json')};
  if(!valid(b?.classId))return deny('class');
  const selected=appAllowed(b.appKey)?b.appKey:null;
  try{
   const managed=async()=>!user.is_anonymous&&!!await read(db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('class_id',b.classId).eq('can_manage',true));
   const identity=async()=>{if(!user.is_anonymous)return null;const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;return await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null))?device.student_id:null};
+  if(b.action==='teacher-restore-preview'||b.action==='teacher-restore-apply'){
+    if(!await managed()||!valid(b.studentId)||b.appKey!==app)return deny('forbidden',403);
+    if(b.backupFormat!=='mathas-connect-class-backup-v1'&&b.backupFormat!=='mathas-connect-class-backup-v2')return deny('invalid_backup_format');
+    if(b.backupProjectRef!=null&&b.backupProjectRef!=='awmhpfofacaglewammxt')return deny('wrong_project',403);
+    if(!int(b.backupRevision,0,1000000000)||!int(b.backupResetEpoch,0,1000000000))return deny('invalid_backup');
+    const member=await read(db.from('connect_enrollments').select('id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));
+    if(!member)return deny('student_not_in_class',403);
+    const record=await read(db.from('connect_states').select('revision,reset_epoch,state_data').eq('student_id',b.studentId).eq('app_key',app));
+    const rev=record?.revision??0,epoch=record?.reset_epoch??0;
+    if(b.backupResetEpoch>epoch&&record)return deny('backup_newer_epoch',409);
+    const differentEpoch=!!record&&b.backupResetEpoch!==epoch;
+    if(differentEpoch&&!b.recoverPastReset)return deny('previous_reset_requires_confirmation',409);
+    if(differentEpoch&&b.recoverPastReset!==true)return deny('invalid_confirmation');
+    const {before,after}=restorePreviewState(record?.state_data||{},b.backupState);
+    const unchanged=JSON.stringify(before)===JSON.stringify(after);
+    const details={ok:true,studentId:b.studentId,appKey:app,currentRevision:rev,currentResetEpoch:epoch,
+      backupRevision:b.backupRevision,backupResetEpoch:b.backupResetEpoch,
+      recoveringPastReset:differentEpoch,changed:!unchanged,before:restoreSummary(before),after:restoreSummary(after)};
+    if(b.action==='teacher-restore-preview')return answer(details);
+    if(!b.confirmed||b.confirmationPhrase!=='RESTAURER'||!b.safetyBackupExported)return deny('confirmation_required',403);
+    if(!int(b.expectedRevision,0,1000000000)||!int(b.expectedResetEpoch,0,1000000000))return deny('invalid_revision');
+    if(rev!==b.expectedRevision||epoch!==b.expectedResetEpoch)return deny('revision_conflict',409);
+    if(differentEpoch&&b.recoverPastReset!==true)return deny('previous_reset_requires_confirmation',409);
+    if(unchanged)return answer({...details,unchanged:true});
+    const payload={state_data:after,schema_version:1,updated_at:new Date().toISOString(),revision:rev+1};
+    if(record){
+     const updated=await db.from('connect_states').update(payload)
+       .eq('student_id',b.studentId).eq('app_key',app).eq('revision',rev).eq('reset_epoch',epoch).select('revision').maybeSingle();
+     if(updated.error)throw Error('db_error');
+     if(!updated.data)return deny('revision_conflict',409);
+    }else{
+     const created=await db.from('connect_states').insert({...payload,student_id:b.studentId,app_key:app,revision:1,reset_epoch:epoch}).select('revision').single();
+     if(created.error)return deny(created.error.code==='23505'?'revision_conflict':'db_error',created.error.code==='23505'?409:500);
+    }
+    return answer({...details,restored:true,revision:rev+1,resetEpoch:epoch});
+  }
   if(b.action==='teacher-export'){
    // Sauvegarde privée, seulement pour l'enseignant gestionnaire de cette classe.
    if(!await managed())return deny('forbidden',403);
@@ -90,7 +148,7 @@ Deno.serve(async req=>{
     ids.length?db.from('connect_states').select('student_id,app_key,revision,reset_epoch,state_data').in('student_id',ids):Promise.resolve({data:[],error:null})
    ]);
    if(profiles.error||states.error)throw Error('db_error');
-   return answer({ok:true,format:'mathas-connect-class-backup-v1',exportedAt:new Date().toISOString(),classId:b.classId,
+   return answer({ok:true,format:'mathas-connect-class-backup-v2',projectRef:'awmhpfofacaglewammxt',exportedAt:new Date().toISOString(),classId:b.classId,
     students:profiles.data.map((p:any)=>({id:p.id,displayName:p.display_name,publicAlias:p.public_alias,
      enrollments:people.data.filter((e:any)=>e.student_id===p.id),
      apps:states.data.filter((state:any)=>state.student_id===p.id).map((state:any)=>({appKey:state.app_key,revision:state.revision,resetEpoch:state.reset_epoch,state:state.state_data}))}))
