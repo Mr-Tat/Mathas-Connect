@@ -116,14 +116,18 @@ Deno.serve(async req=>{
     if(different&&b.recoverPastReset!==true)return deny('previous_reset_requires_confirmation',409);
     const {before,after}=restorePreviewState(record?.state_data||{},b.backupState);
     const changed=JSON.stringify(before)!==JSON.stringify(after);
+    // Liaison de la confirmation à la prévisualisation exacte, sans table supplémentaire.
+    const digestInput=JSON.stringify([b.classId,b.studentId,app,rev,epoch,b.backupRevision,b.backupResetEpoch,different,after]);
+    const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(digestInput)))).map(v=>v.toString(16).padStart(2,'0')).join('');
     const info={ok:true,changed,studentId:b.studentId,appKey:app,currentRevision:rev,currentResetEpoch:epoch,
-      recoveringPastReset:different,before:restoreSummary(before),after:restoreSummary(after)};
+      recoveringPastReset:different,previewDigest:digest,before:restoreSummary(before),after:restoreSummary(after)};
     if(b.action==='teacher-restore-preview')return answer(info);
     // Une sauvegarde privée préalable est impérative. Le clic navigateur ne prouve
     // pas le stockage du fichier : le professeur doit vérifier lui-même sa copie.
     if(!b.confirmed||b.confirmationPhrase!=='RESTAURER'||b.safetyBackupExported!==true)return deny('confirmation_required',403);
     if(!int(b.expectedRevision,0,1000000000)||!int(b.expectedResetEpoch,0,1000000000))return deny('invalid_revision');
     if(rev!==b.expectedRevision||epoch!==b.expectedResetEpoch)return deny('revision_conflict',409);
+    if(typeof b.previewDigest!=='string'||b.previewDigest!==digest)return deny('preview_changed',409);
     if(!changed)return answer({...info,unchanged:true});
     const payload={state_data:after,schema_version:1,updated_at:new Date().toISOString(),revision:rev+1};
     if(record){
