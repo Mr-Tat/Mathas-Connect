@@ -152,7 +152,7 @@ $('results-backup').addEventListener('click',()=>run(async()=>{
  const contents=JSON.stringify(backup,null,2);
  const blob=new Blob([contents],{type:'application/json;charset=utf-8'});
  const url=URL.createObjectURL(blob);
- const link=document.createElement('a');link.href=url;link.download='mathas-connect-sauvegarde-'+new Date().toISOString().slice(0,10)+'.json';
+ const link=document.createElement('a');link.href=url;link.download='mathas-connect-sauvegarde-'+cls+'-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';
  document.body.appendChild(link);link.click();link.remove();
  try{localStorage.setItem(backupKey(cls),new Date().toISOString())}catch{}
  updateBackupReminder();
@@ -161,6 +161,8 @@ $('results-backup').addEventListener('click',()=>run(async()=>{
 }));
 // Import sécurisé et facultatif : uniquement les comptes déjà présents dans la classe.
 let restoreDraft=null,restoreCheck=null,restoreHasSafety=false;
+// Un changement de classe invalide toute prévisualisation précédente.
+$('class-selector').addEventListener('change',()=>{restoreDraft=null;restoreCheck=null;restoreHasSafety=false;$('results-restore-confirm').disabled=true;$('results-restore-panel').hidden=true;$('results-restore-file').value='';});
 $('results-restore-file').addEventListener('change',async event=>{
  restoreDraft=null;restoreCheck=null;restoreHasSafety=false;$('results-restore-confirm').disabled=true;
  const file=event.target.files?.[0];if(!file)return;
