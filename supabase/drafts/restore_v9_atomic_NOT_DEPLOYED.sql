@@ -40,7 +40,7 @@ create or replace function public.connect_restore_prepare_v1(
  p_backup_sha text,p_after jsonb
 ) returns void language plpgsql security definer set search_path=''
 as $$
-declare s record;
+declare s public.connect_states%rowtype;
 begin
  if p_token_hash !~ '^[0-9a-f]{64}$' or p_backup_sha !~ '^[0-9a-f]{64}$'
     or p_after is null or pg_catalog.jsonb_typeof(p_after)<>'object'
@@ -57,9 +57,9 @@ begin
    where student_id=p_student and app_key=p_app for update;
  if coalesce(s.revision,0)<>p_revision or coalesce(s.reset_epoch,0)<>p_epoch
  then raise exception 'revision_conflict'; end if;
- if p_backup_epoch>p_epoch and s.revision is not null
+ if p_backup_epoch>p_epoch and s.student_id is not null
  then raise exception 'backup_newer_epoch'; end if;
- if p_backup_epoch<>p_epoch and s.revision is not null and not p_recover
+ if p_backup_epoch<>p_epoch and s.student_id is not null and not p_recover
  then raise exception 'previous_reset_requires_confirmation'; end if;
  insert into connect_internal.restore_previews
  (token_hash,actor_id,class_id,student_id,app_key,revision,reset_epoch,
