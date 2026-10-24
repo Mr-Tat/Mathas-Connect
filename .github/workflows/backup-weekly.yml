@@ -1,0 +1,24 @@
+name: Sauvegarde Mathas Connect chiffree hebdomadaire
+on:
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  encrypted-backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Sauvegarde vers depot prive chiffre
+        run: node scripts/backup-weekly.mjs
+        env:
+          SUPABASE_PROJECT_URL: https://awmhpfofacaglewammxt.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BACKUP_PRIVATE_REPO: ${{ secrets.BACKUP_PRIVATE_REPO }}
+          BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+          BACKUP_ENCRYPTION_KEY_BASE64: ${{ secrets.BACKUP_ENCRYPTION_KEY_BASE64 }}
