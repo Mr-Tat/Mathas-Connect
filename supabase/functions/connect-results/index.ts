@@ -121,6 +121,8 @@ Deno.serve(async req=>{
       recoveringPastReset:differentEpoch,changed:!unchanged,before:restoreSummary(before),after:restoreSummary(after)};
     if(b.action==='teacher-restore-preview')return answer(details);
     if(!b.confirmed||b.confirmationPhrase!=='RESTAURER'||!b.safetyBackupExported)return deny('confirmation_required',403);
+    // Aucun apply en production tant qu'un journal transactionnel et des preuves de preview ne sont pas déployés et testés.
+    return deny('restore_apply_not_enabled',403);
     if(!int(b.expectedRevision,0,1000000000)||!int(b.expectedResetEpoch,0,1000000000))return deny('invalid_revision');
     if(rev!==b.expectedRevision||epoch!==b.expectedResetEpoch)return deny('revision_conflict',409);
     if(differentEpoch&&b.recoverPastReset!==true)return deny('previous_reset_requires_confirmation',409);
