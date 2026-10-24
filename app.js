@@ -184,6 +184,8 @@ $('results-restore-preview').addEventListener('click',()=>run(async()=>{
   v=await preview(true);
  }
  restoreCheck={choice:o,data:v};
+ // Prévisualisation liée à l'élève, à la sauvegarde et à l'état courant.
+ // Ne jamais autoriser l'application d'une autre sélection sans nouvelle prévisualisation.
  $('results-restore-summary').textContent='AVANT : '+JSON.stringify(v.before)+'\\n\\nAPRÈS : '+JSON.stringify(v.after)+'\\n\\n'+(v.recoveringPastReset?'⚠ Ancienne remise à zéro : réintroduction de records possible.':'Fusion sans remplacement des meilleurs records récents.')+(v.changed?'':' Aucune différence : rien à restaurer.');
  $('results-restore-confirm').disabled=!v.changed;
 }));
@@ -199,14 +201,15 @@ $('results-restore-confirm').addEventListener('click',()=>run(async()=>{
  if(!confirm('Vérifie maintenant que le fichier « AVANT-restauration » a bien été téléchargé et conservé en lieu sûr.\\n\\nConfirmer la restauration de '+o.student.displayName+' ?'))return;
  const phrase=prompt('Dernière confirmation : écris RESTAURER en majuscules');
  if(phrase!=='RESTAURER')return;
- const out=await resultCall('teacher-restore-apply',{studentId:o.student.id,appKey:'addition-ecrite-simple',backupFormat:restoreDraft.format,backupProjectRef:restoreDraft.projectRef,
-  backupRevision:o.app.revision,backupResetEpoch:o.app.resetEpoch,backupState:o.app.state,
-  recoverPastReset:v.recoveringPastReset,expectedRevision:v.currentRevision,expectedResetEpoch:v.currentResetEpoch,
+ if(!v.previewToken||!v.backupSha)throw Error('Prévisualisation expirée ou ancien protocole : recommence la prévisualisation.');
+ const out=await resultCall('teacher-restore-apply',{studentId:o.student.id,appKey:'addition-ecrite-simple',
+  previewToken:v.previewToken,backupSha:v.backupSha,
   confirmed:true,confirmationPhrase:'RESTAURER',safetyBackupExported:true});
  $('results-restore-summary').textContent='Restauration enregistrée pour '+o.student.displayName+'. Révision : '+out.revision+'. Relire les résultats professeur.';
  restoreCheck=null;$('results-restore-confirm').disabled=true;
  await showResults();
 }));
+$('results-restore-select').addEventListener('change',()=>{restoreCheck=null;$('results-restore-confirm').disabled=true;$('results-restore-summary').textContent='Sélection modifiée : prévisualise cet élève avant toute restauration.'});
 const showResultMessage=t=>$('results-message').textContent=t;
 const dateBE=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const points=n=>n==null?'—':String(n)+' pts';
