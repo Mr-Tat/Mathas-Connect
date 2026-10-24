@@ -217,9 +217,10 @@ $('results-restore-confirm').addEventListener('click',()=>run(async()=>{
  if(!confirm('Vérifie maintenant que le fichier « AVANT-restauration » a bien été téléchargé et conservé en lieu sûr.\\n\\nConfirmer la restauration de '+o.student.displayName+' ?'))return;
  const phrase=prompt('Dernière confirmation : écris RESTAURER en majuscules');
  if(phrase!=='RESTAURER')return;
- if(!v.previewToken||!v.backupSha)throw Error('Prévisualisation expirée ou ancien protocole : recommence la prévisualisation.');
  const out=await resultCall('teacher-restore-apply',{studentId:o.student.id,appKey:'addition-ecrite-simple',
-  previewToken:v.previewToken,backupSha:v.backupSha,
+  backupFormat:restoreDraft.format,backupProjectRef:restoreDraft.projectRef,
+  backupRevision:o.app.revision,backupResetEpoch:o.app.resetEpoch,backupState:o.app.state,
+  recoverPastReset:v.recoveringPastReset,expectedRevision:v.currentRevision,expectedResetEpoch:v.currentResetEpoch,
   confirmed:true,confirmationPhrase:'RESTAURER',safetyBackupExported:true});
  $('results-restore-summary').textContent='Restauration enregistrée pour '+o.student.displayName+'. Révision : '+out.revision+'. Relire les résultats professeur.';
  restoreCheck=null;$('results-restore-confirm').disabled=true;
