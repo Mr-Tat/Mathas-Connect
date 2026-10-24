@@ -19,6 +19,6 @@ jobs:
         env:
           SUPABASE_PROJECT_URL: https://awmhpfofacaglewammxt.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          BACKUP_PRIVATE_REPO: ${{ secrets.BACKUP_PRIVATE_REPO }}
+          BACKUP_PRIVATE_REPO: Mr-Tat/Mathas-Connect-Sauvegardes
           BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
           BACKUP_ENCRYPTION_KEY_BASE64: ${{ secrets.BACKUP_ENCRYPTION_KEY_BASE64 }}
