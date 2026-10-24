@@ -129,6 +129,20 @@ async function resultCall(action,data={}) {
  if(!response.ok||!result.ok)throw Error(result.error||'Résultats indisponibles');
  return result;
 }
+// Rappel hebdomadaire local, sans requête ni stockage serveur.
+const backupKey=classId=>'mathas-connect-last-export-v1:'+classId;
+function updateBackupReminder(){
+ const element=$('results-backup-reminder');if(!element)return;
+ const cls=$('class-selector').value;
+ if(!cls){element.textContent='Sélectionne une classe pour les sauvegardes.';return}
+ let last=null;try{last=localStorage.getItem(backupKey(cls))}catch{}
+ const days=last?Math.floor((Date.now()-Date.parse(last))/86400000):Infinity;
+ element.textContent=Number.isFinite(days)&&days<7
+  ?'Dernier téléchargement demandé depuis ce navigateur il y a '+Math.max(0,days)+' jour(s). Prochain rappel dans '+(7-Math.max(0,days))+' jour(s).'
+  :'Sauvegarde hebdomadaire conseillée : télécharge une copie privée de cette classe. Le rappel est propre à ce navigateur.';
+}
+$('class-selector').addEventListener('change',updateBackupReminder);
+updateBackupReminder();
 $('results-backup').addEventListener('click',()=>run(async()=>{
  const cls=$('class-selector').value;
  if(!cls)throw Error('Choisis une classe avant de télécharger.');
@@ -140,8 +154,10 @@ $('results-backup').addEventListener('click',()=>run(async()=>{
  const url=URL.createObjectURL(blob);
  const link=document.createElement('a');link.href=url;link.download='mathas-connect-sauvegarde-'+new Date().toISOString().slice(0,10)+'.json';
  document.body.appendChild(link);link.click();link.remove();
+ try{localStorage.setItem(backupKey(cls),new Date().toISOString())}catch{}
+ updateBackupReminder();
  setTimeout(()=>URL.revokeObjectURL(url),1500);
- msg('Sauvegarde exportée. Ne la place pas sur un dépôt public.',true);
+ msg('Téléchargement demandé : vérifie que le fichier existe et conserve-le hors de GitHub.',true);
 }));
 // Import sécurisé et facultatif : uniquement les comptes déjà présents dans la classe.
 let restoreDraft=null,restoreCheck=null,restoreHasSafety=false;
