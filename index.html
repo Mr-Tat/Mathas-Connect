@@ -61,6 +61,20 @@
         <div class="heading-row"><h2>Résultats des élèves</h2><button id="results-refresh" class="soft" type="button">Actualiser les résultats</button><button id="results-backup" class="soft" type="button" title="Sauvegarde privée contenant les noms et résultats des élèves">Exporter une sauvegarde</button></div>
         <label for="results-app">Application</label><select id="results-app"><option value="addition-ecrite-simple">Addition écrite simple</option><option value="connect-lab">Laboratoire (test)</option></select>
         <p id="results-message" class="hint">Choisis une classe et actualise les résultats.</p>
+<details class="management" id="results-restore-panel-root">
+  <summary>Restaurer une sauvegarde (opération exceptionnelle)</summary>
+  <p class="hint">Choisis un fichier JSON exporté depuis Math’as Connect. La simulation ne modifie rien. Seuls les résultats d'un élève existant peuvent être fusionnés ; les autres élèves restent intacts.</p>
+  <label for="results-restore-file">Fichier de sauvegarde privé</label>
+  <input id="results-restore-file" type="file" accept=".json,application/json">
+  <div id="results-restore-panel" hidden>
+    <label for="results-restore-select">Élève et jeu</label>
+    <select id="results-restore-select"></select>
+    <button type="button" id="results-restore-preview" class="soft">Prévisualiser la restauration</button>
+    <pre id="results-restore-summary" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:320px;overflow:auto;padding:10px;border:1px solid #bed2de;border-radius:8px;font-size:12px"></pre>
+    <button type="button" id="results-restore-confirm" class="soft" disabled>Télécharger une sauvegarde de sécurité et restaurer</button>
+    <p class="hint">Attention : un ancien export peut réintroduire des records supprimés volontairement. La restauration complète des appareils, mots de passe et paramètres Supabase n’est pas incluse.</p>
+  </div>
+ </details>
         <div id="results-list" class="stack"></div>
         <section id="results-detail" hidden><button type="button" class="soft" id="results-back">← Retour à la classe</button><h2 id="results-student-name">Fiche élève</h2><div id="results-student-content"></div></section>
       </section>
