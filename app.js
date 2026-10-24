@@ -220,7 +220,7 @@ $('results-restore-confirm').addEventListener('click',()=>run(async()=>{
  const out=await resultCall('teacher-restore-apply',{studentId:o.student.id,appKey:'addition-ecrite-simple',
   backupFormat:restoreDraft.format,backupProjectRef:restoreDraft.projectRef,
   backupRevision:o.app.revision,backupResetEpoch:o.app.resetEpoch,backupState:o.app.state,
-  recoverPastReset:v.recoveringPastReset,expectedRevision:v.currentRevision,expectedResetEpoch:v.currentResetEpoch,
+  recoverPastReset:v.recoveringPastReset,expectedRevision:v.currentRevision,expectedResetEpoch:v.currentResetEpoch,previewDigest:v.previewDigest,
   confirmed:true,confirmationPhrase:'RESTAURER',safetyBackupExported:true});
  $('results-restore-summary').textContent='Restauration enregistrée pour '+o.student.displayName+'. Révision : '+out.revision+'. Relire les résultats professeur.';
  restoreCheck=null;$('results-restore-confirm').disabled=true;
