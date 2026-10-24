@@ -53,7 +53,7 @@ begin
  then raise exception 'forbidden'; end if;
  -- Ne pas fonder la sécurité sur une seule vérification Edge.
  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(p_student::text||':'||p_app,0));
- select revision,reset_epoch into s from public.connect_states
+ select * into s from public.connect_states
    where student_id=p_student and app_key=p_app for update;
  if coalesce(s.revision,0)<>p_revision or coalesce(s.reset_epoch,0)<>p_epoch
  then raise exception 'revision_conflict'; end if;
