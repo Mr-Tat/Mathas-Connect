@@ -173,7 +173,7 @@ $('results-restore-preview').addEventListener('click',()=>run(async()=>{
  const o=window.__restoreOptions?.[Number($('results-restore-select').value)];if(!o)throw Error('Choisis un élève');
  restoreCheck=null;restoreHasSafety=false;$('results-restore-confirm').disabled=true;
  async function preview(recoverPastReset){
-  return resultCall('teacher-restore-preview',{studentId:o.student.id,backupFormat:restoreDraft.format,backupProjectRef:restoreDraft.projectRef,
+  return resultCall('teacher-restore-preview',{studentId:o.student.id,appKey:'addition-ecrite-simple',backupFormat:restoreDraft.format,backupProjectRef:restoreDraft.projectRef,
    backupRevision:o.app.revision,backupResetEpoch:o.app.resetEpoch,backupState:o.app.state,recoverPastReset});
  }
  let v;
@@ -199,7 +199,7 @@ $('results-restore-confirm').addEventListener('click',()=>run(async()=>{
  if(!confirm('Vérifie maintenant que le fichier « AVANT-restauration » a bien été téléchargé et conservé en lieu sûr.\\n\\nConfirmer la restauration de '+o.student.displayName+' ?'))return;
  const phrase=prompt('Dernière confirmation : écris RESTAURER en majuscules');
  if(phrase!=='RESTAURER')return;
- const out=await resultCall('teacher-restore-apply',{studentId:o.student.id,backupFormat:restoreDraft.format,backupProjectRef:restoreDraft.projectRef,
+ const out=await resultCall('teacher-restore-apply',{studentId:o.student.id,appKey:'addition-ecrite-simple',backupFormat:restoreDraft.format,backupProjectRef:restoreDraft.projectRef,
   backupRevision:o.app.revision,backupResetEpoch:o.app.resetEpoch,backupState:o.app.state,
   recoverPastReset:v.recoveringPastReset,expectedRevision:v.currentRevision,expectedResetEpoch:v.currentResetEpoch,
   confirmed:true,confirmationPhrase:'RESTAURER',safetyBackupExported:true});
