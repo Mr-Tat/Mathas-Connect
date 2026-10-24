@@ -129,6 +129,20 @@ async function resultCall(action,data={}) {
  if(!response.ok||!result.ok)throw Error(result.error||'Résultats indisponibles');
  return result;
 }
+// Rappel hebdomadaire local, sans requête ni stockage serveur.
+const backupKey=classId=>'mathas-connect-last-export-v1:'+classId;
+function updateBackupReminder(){
+ const element=$('results-backup-reminder');if(!element)return;
+ const cls=$('class-selector').value;
+ if(!cls){element.textContent='Sélectionne une classe pour les sauvegardes.';return}
+ let last=null;try{last=localStorage.getItem(backupKey(cls))}catch{}
+ const days=last?Math.floor((Date.now()-Date.parse(last))/86400000):Infinity;
+ element.textContent=Number.isFinite(days)&&days<7
+  ?'Dernier téléchargement demandé depuis ce navigateur il y a '+Math.max(0,days)+' jour(s). Prochain rappel dans '+(7-Math.max(0,days))+' jour(s).'
+  :'Sauvegarde hebdomadaire conseillée : télécharge une copie privée de cette classe. Le rappel est propre à ce navigateur.';
+}
+$('class-selector').addEventListener('change',updateBackupReminder);
+updateBackupReminder();
 $('results-backup').addEventListener('click',()=>run(async()=>{
  const cls=$('class-selector').value;
  if(!cls)throw Error('Choisis une classe avant de télécharger.');
@@ -138,13 +152,17 @@ $('results-backup').addEventListener('click',()=>run(async()=>{
  const contents=JSON.stringify(backup,null,2);
  const blob=new Blob([contents],{type:'application/json;charset=utf-8'});
  const url=URL.createObjectURL(blob);
- const link=document.createElement('a');link.href=url;link.download='mathas-connect-sauvegarde-'+new Date().toISOString().slice(0,10)+'.json';
+ const link=document.createElement('a');link.href=url;link.download='mathas-connect-sauvegarde-'+cls+'-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';
  document.body.appendChild(link);link.click();link.remove();
+ try{localStorage.setItem(backupKey(cls),new Date().toISOString())}catch{}
+ updateBackupReminder();
  setTimeout(()=>URL.revokeObjectURL(url),1500);
- msg('Sauvegarde exportée. Ne la place pas sur un dépôt public.',true);
+ msg('Téléchargement demandé : vérifie que le fichier existe et conserve-le hors de GitHub.',true);
 }));
 // Import sécurisé et facultatif : uniquement les comptes déjà présents dans la classe.
 let restoreDraft=null,restoreCheck=null,restoreHasSafety=false;
+// Un changement de classe invalide toute prévisualisation précédente.
+$('class-selector').addEventListener('change',()=>{restoreDraft=null;restoreCheck=null;restoreHasSafety=false;$('results-restore-confirm').disabled=true;$('results-restore-panel').hidden=true;$('results-restore-file').value='';});
 $('results-restore-file').addEventListener('change',async event=>{
  restoreDraft=null;restoreCheck=null;restoreHasSafety=false;$('results-restore-confirm').disabled=true;
  const file=event.target.files?.[0];if(!file)return;
@@ -184,6 +202,8 @@ $('results-restore-preview').addEventListener('click',()=>run(async()=>{
   v=await preview(true);
  }
  restoreCheck={choice:o,data:v};
+ // Prévisualisation liée à l'élève, à la sauvegarde et à l'état courant.
+ // Ne jamais autoriser l'application d'une autre sélection sans nouvelle prévisualisation.
  $('results-restore-summary').textContent='AVANT : '+JSON.stringify(v.before)+'\\n\\nAPRÈS : '+JSON.stringify(v.after)+'\\n\\n'+(v.recoveringPastReset?'⚠ Ancienne remise à zéro : réintroduction de records possible.':'Fusion sans remplacement des meilleurs records récents.')+(v.changed?'':' Aucune différence : rien à restaurer.');
  $('results-restore-confirm').disabled=!v.changed;
 }));
@@ -199,14 +219,16 @@ $('results-restore-confirm').addEventListener('click',()=>run(async()=>{
  if(!confirm('Vérifie maintenant que le fichier « AVANT-restauration » a bien été téléchargé et conservé en lieu sûr.\\n\\nConfirmer la restauration de '+o.student.displayName+' ?'))return;
  const phrase=prompt('Dernière confirmation : écris RESTAURER en majuscules');
  if(phrase!=='RESTAURER')return;
- const out=await resultCall('teacher-restore-apply',{studentId:o.student.id,appKey:'addition-ecrite-simple',backupFormat:restoreDraft.format,backupProjectRef:restoreDraft.projectRef,
+ const out=await resultCall('teacher-restore-apply',{studentId:o.student.id,appKey:'addition-ecrite-simple',
+  backupFormat:restoreDraft.format,backupProjectRef:restoreDraft.projectRef,
   backupRevision:o.app.revision,backupResetEpoch:o.app.resetEpoch,backupState:o.app.state,
-  recoverPastReset:v.recoveringPastReset,expectedRevision:v.currentRevision,expectedResetEpoch:v.currentResetEpoch,
+  recoverPastReset:v.recoveringPastReset,expectedRevision:v.currentRevision,expectedResetEpoch:v.currentResetEpoch,previewDigest:v.previewDigest,
   confirmed:true,confirmationPhrase:'RESTAURER',safetyBackupExported:true});
  $('results-restore-summary').textContent='Restauration enregistrée pour '+o.student.displayName+'. Révision : '+out.revision+'. Relire les résultats professeur.';
  restoreCheck=null;$('results-restore-confirm').disabled=true;
  await showResults();
 }));
+$('results-restore-select').addEventListener('change',()=>{restoreCheck=null;$('results-restore-confirm').disabled=true;$('results-restore-summary').textContent='Sélection modifiée : prévisualise cet élève avant toute restauration.'});
 const showResultMessage=t=>$('results-message').textContent=t;
 const dateBE=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const points=n=>n==null?'—':String(n)+' pts';

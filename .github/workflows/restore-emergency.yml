@@ -1,0 +1,21 @@
+name: Restore emergency smoke tests
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/connect-results/index.ts'
+      - 'tests/restore-emergency.test.mjs'
+      - 'tests/restore-edge-mocked.test.mjs'
+      - '.github/workflows/restore-emergency.yml'
+  push:
+    branches: [audit/restore-safety-2026-10-24]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/restore-emergency.test.mjs tests/restore-edge-mocked.test.mjs

@@ -101,41 +101,48 @@ Deno.serve(async req=>{
  try{
   const managed=async()=>!user.is_anonymous&&!!await read(db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('class_id',b.classId).eq('can_manage',true));
   const identity=async()=>{if(!user.is_anonymous)return null;const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;return await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null))?device.student_id:null};
+  // Restauration de secours : fusion des acquis, sans nouvelles tables ni RPC.
   if(b.action==='teacher-restore-preview'||b.action==='teacher-restore-apply'){
     if(!await managed()||!valid(b.studentId)||b.appKey!==app)return deny('forbidden',403);
-    if(b.backupFormat!=='mathas-connect-class-backup-v1'&&b.backupFormat!=='mathas-connect-class-backup-v2')return deny('invalid_backup_format');
+    if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2'].includes(b.backupFormat))return deny('invalid_backup_format');
     if(b.backupProjectRef!=null&&b.backupProjectRef!=='awmhpfofacaglewammxt')return deny('wrong_project',403);
     if(!int(b.backupRevision,0,1000000000)||!int(b.backupResetEpoch,0,1000000000))return deny('invalid_backup');
     const member=await read(db.from('connect_enrollments').select('id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));
     if(!member)return deny('student_not_in_class',403);
     const record=await read(db.from('connect_states').select('revision,reset_epoch,state_data').eq('student_id',b.studentId).eq('app_key',app));
     const rev=record?.revision??0,epoch=record?.reset_epoch??0;
-    if(b.backupResetEpoch>epoch&&record)return deny('backup_newer_epoch',409);
-    const differentEpoch=!!record&&b.backupResetEpoch!==epoch;
-    if(differentEpoch&&!b.recoverPastReset)return deny('previous_reset_requires_confirmation',409);
-    if(differentEpoch&&b.recoverPastReset!==true)return deny('invalid_confirmation');
+    if(record&&b.backupResetEpoch>epoch)return deny('backup_newer_epoch',409);
+    const different=!!record&&b.backupResetEpoch!==epoch;
+    if(different&&b.recoverPastReset!==true)return deny('previous_reset_requires_confirmation',409);
     const {before,after}=restorePreviewState(record?.state_data||{},b.backupState);
-    const unchanged=JSON.stringify(before)===JSON.stringify(after);
-    const details={ok:true,studentId:b.studentId,appKey:app,currentRevision:rev,currentResetEpoch:epoch,
-      backupRevision:b.backupRevision,backupResetEpoch:b.backupResetEpoch,
-      recoveringPastReset:differentEpoch,changed:!unchanged,before:restoreSummary(before),after:restoreSummary(after)};
-    if(b.action==='teacher-restore-preview')return answer(details);
-    if(!b.confirmed||b.confirmationPhrase!=='RESTAURER'||!b.safetyBackupExported)return deny('confirmation_required',403);
+    const changed=JSON.stringify(before)!==JSON.stringify(after);
+    // Liaison de la confirmation à la prévisualisation exacte, sans table supplémentaire.
+    const digestInput=JSON.stringify([b.classId,b.studentId,app,rev,epoch,b.backupRevision,b.backupResetEpoch,different,after]);
+    const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(digestInput)))).map(v=>v.toString(16).padStart(2,'0')).join('');
+    const info={ok:true,changed,studentId:b.studentId,appKey:app,currentRevision:rev,currentResetEpoch:epoch,
+      recoveringPastReset:different,previewDigest:digest,before:restoreSummary(before),after:restoreSummary(after)};
+    if(b.action==='teacher-restore-preview')return answer(info);
+    // Une sauvegarde privée préalable est impérative. Le clic navigateur ne prouve
+    // pas le stockage du fichier : le professeur doit vérifier lui-même sa copie.
+    if(!b.confirmed||b.confirmationPhrase!=='RESTAURER'||b.safetyBackupExported!==true)return deny('confirmation_required',403);
     if(!int(b.expectedRevision,0,1000000000)||!int(b.expectedResetEpoch,0,1000000000))return deny('invalid_revision');
     if(rev!==b.expectedRevision||epoch!==b.expectedResetEpoch)return deny('revision_conflict',409);
-    if(differentEpoch&&b.recoverPastReset!==true)return deny('previous_reset_requires_confirmation',409);
-    if(unchanged)return answer({...details,unchanged:true});
+    if(typeof b.previewDigest!=='string'||b.previewDigest!==digest)return deny('preview_changed',409);
+    if(!changed)return answer({...info,unchanged:true});
     const payload={state_data:after,schema_version:1,updated_at:new Date().toISOString(),revision:rev+1};
     if(record){
-     const updated=await db.from('connect_states').update(payload)
-       .eq('student_id',b.studentId).eq('app_key',app).eq('revision',rev).eq('reset_epoch',epoch).select('revision').maybeSingle();
-     if(updated.error)throw Error('db_error');
-     if(!updated.data)return deny('revision_conflict',409);
+      const update=await db.from('connect_states').update(payload)
+        .eq('student_id',b.studentId).eq('app_key',app).eq('revision',rev).eq('reset_epoch',epoch)
+        .select('revision').maybeSingle();
+      if(update.error)throw Error('db_error');
+      if(!update.data)return deny('revision_conflict',409);
     }else{
-     const created=await db.from('connect_states').insert({...payload,student_id:b.studentId,app_key:app,revision:1,reset_epoch:epoch}).select('revision').single();
-     if(created.error)return deny(created.error.code==='23505'?'revision_conflict':'db_error',created.error.code==='23505'?409:500);
+      const created=await db.from('connect_states')
+        .insert({...payload,student_id:b.studentId,app_key:app,reset_epoch:epoch})
+        .select('revision').single();
+      if(created.error)return deny(created.error.code==='23505'?'revision_conflict':'db_error',created.error.code==='23505'?409:500);
     }
-    return answer({...details,restored:true,revision:rev+1,resetEpoch:epoch});
+    return answer({...info,restored:true,revision:rev+1});
   }
   if(b.action==='teacher-export'){
    // Sauvegarde privée, seulement pour l'enseignant gestionnaire de cette classe.
