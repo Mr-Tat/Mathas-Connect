@@ -27,7 +27,7 @@ Les Edge Functions déployées dans Supabase :
 Contrat `connect-results` pour une application :
 - Lire : `{action:'student-load',classId,appKey}` renvoie `revision`, `resetEpoch`, `state`.
 - Partie achevée : `{action:'game-record',classId,appKey,eventId,expectedRevision,expectedResetEpoch,mode,level,score,total,points,rewards?}`.
-- Modes actuels Addition : `classic` (4/10/20), `sudden`, `hard`, `hard-challenge` (5 calculs, sans points gamification).
+- Modes effectivement jouables dans Addition V6.0.2 : `classic` (4/10/20), `sudden`, `hard` (Mort subite HARD). Le type API `hard-challenge` (cinq calculs) existe pour compatibilité historique mais **le menu du jeu ne propose plus ce défi** et `startHard` refuse explicitement `challenge`. Ne pas demander de test 5/5.
 - Conflit de revision : relire, réessayer avec même `eventId`. **Une différence de `resetEpoch` interdit définitivement de renvoyer l'ancien événement.**
 - Import historique manuel : `legacy-import`, avec `expectedRevision` et `expectedResetEpoch`, fusion par maxima et union des trophées/déblocages, aucune partie récente créée.
 - Reset Master : `game-reset` avec `resetType:'restart'|'erase-results'` et garde revision+resetEpoch. `resetEpoch` est incrémenté et la file du navigateur est purgée après succès.
@@ -49,7 +49,7 @@ Contrat `connect-results` pour une application :
 
 ## Observations du premier audit
 - Parcours enseignants/élèves, appareils multiples, révocation, records Classique et Mort subite, progression, import V6.0.2 validés par essais réels du professeur.
-- Les corrections V7 (file hors ligne, resets cloud, HARD 5 calculs et export) doivent encore être vérifiées dans les navigateurs avant généralisation.
+- Le professeur a observé « En attente : 1 » lors d'une coupure puis l'arrivée du résultat dans l'espace professeur après reconnexion : reprise réseau **validée par retour utilisateur**. Les remises à zéro et l'export privé ont également été essayés ; le faux 10/10 après reset a été corrigé et vérifié. Le backend `connect-results` est désormais en V8.
 - Le dossier `README.md` du jeu et l'ancien `CONNECT_GAME_CONTRACT_V0.md` décrivent des états historiques antérieurs. Ce V1 fait foi pour la prochaine discussion.
 - Pour 50 jeux, prévoir un petit composant commun/versionné pour auth, file, identités, resets, métriques. **Ne pas recopier les règles propres à Addition** pour des jeux différents.
 - L'ancienne app reste nécessaire tant que les élèves migrent et tant que ses images ne sont pas rapatriées.
@@ -58,7 +58,7 @@ Contrat `connect-results` pour une application :
 1. Classique vs Connecté, identité affichée, aucune contamination de données.
 2. Couper Internet pendant une partie déjà ouverte, la terminer, revoir le statut *En attente*, reconnecter et constater une seule partie côté professeur.
 3. Sur un compte de **test**, vérifier les deux resets Master, sur deux Chrome et après reconnexion, sans rejouer les campagnes antérieures.
-4. HARD 5 calculs, record synchronisé sur un deuxième appareil.
+4. HARD Mort subite : record déjà observé au niveau 1 ; ne pas tester le défi 5 calculs devenu inaccessible. À vérifier éventuellement sur un deuxième appareil lors d'une future recette globale.
 5. Professeur : cliquer Exporter une sauvegarde, vérifier que le JSON privé contient les résultats attendus et le conserver en lieu sûr.
 6. Contrôler que le vieux jeu V6.0.2 et ses anciennes données sont toujours intacts.
 
