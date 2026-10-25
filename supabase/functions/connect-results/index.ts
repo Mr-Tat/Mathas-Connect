@@ -211,15 +211,9 @@ Deno.serve(async req=>{
   if(b.action==='student-xp'){
    if(b.appKey!==app)return deny('forbidden',403);
    const studentId=await identity();if(!studentId)return deny('forbidden',403);
-   const [earned,credits]=await Promise.all([
-     db.from('connect_xp_milestones').select('milestone_key').eq('student_id',studentId).eq('app_key',app).limit(60),
-     db.from('connect_xp_credits').select('app_key,xp_credited').eq('student_id',studentId).limit(60)
-   ]);
-   if(earned.error||credits.error)throw Error('db_error');
-   const total=credits.data.reduce((a:number,v:any)=>a+v.xp_credited,0);
-   const level=total<300?1+Math.floor(total/50):7+Math.floor((total-300)/100);
-   return answer({ok:true,appXp:credits.data.find((c:any)=>c.app_key===app)?.xp_credited||0,total,level,
-    next:level<7?level*50:300+(level-6)*100,milestones:earned.data.map((v:any)=>v.milestone_key),max:474});
+   const {data:summary,error:xpError}=await db.rpc('connect_xp_read_v2',{p_student:studentId,p_app:app,p_include_milestones:true});
+   if(xpError||!summary)return deny('xp_unavailable',503);
+   return answer({ok:true,appXp:summary.appXp,total:summary.total,level:summary.level,next:summary.next,milestones:summary.milestones,max:summary.max});
   }
   if(b.action==='student-load'||b.action==='student-save'||b.action==='lab-record'||b.action==='game-record'||b.action==='legacy-import'||b.action==='game-reset'){
    if(!selected||(b.action==='lab-record'&&selected!==lab)||(b.action==='game-record'&&selected!==app))return deny('forbidden',403);
