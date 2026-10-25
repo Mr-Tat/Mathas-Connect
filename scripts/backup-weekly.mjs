@@ -8,7 +8,7 @@ if(!/^[\w.-]+\/[\w.-]+$/.test(destination)||destination==='Mr-Tat/Mathas-Connect
 const githubToken=need('BACKUP_REPO_TOKEN');
 const secret=Buffer.from(need('BACKUP_ENCRYPTION_KEY_BASE64'),'base64');
 if(secret.length!==32)throw Error('Clé AES-256 incorrecte');
-const tables=['connect_school_years','connect_teachers','connect_classes','connect_class_permissions','connect_students','connect_enrollments','connect_apps','connect_activities','connect_states','connect_hub_presets','connect_hub_preset_entries'];
+const tables=['connect_school_years','connect_teachers','connect_classes','connect_class_permissions','connect_students','connect_enrollments','connect_apps','connect_activities','connect_states','connect_hub_presets','connect_hub_preset_entries','connect_attempts','connect_devices','connect_join_requests','connect_pairings','connect_launches','connect_projections','connect_teacher_players','connect_xp_credits','connect_level_profiles','connect_xp_milestones','connect_xp_award_rules'];
 const snapshot={format:'mathas-connect-emergency-snapshot-v1',createdAt:new Date().toISOString(),projectRef:new URL(base).hostname.split('.')[0],tables:{}};
 for(const table of tables){
  const rows=[];
