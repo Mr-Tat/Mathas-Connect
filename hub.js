@@ -133,6 +133,7 @@ function drawIdentity(profile) {
   $('identity-title').textContent = authorized ? 'Bienvenue '+profile.displayName+' !' : 'Mode Classique';
   $('identity-class').hidden=true;
   $('identity-level').hidden=!authorized;
+  if(authorized)$('identity-level').textContent=profile.xp?.active?('Niveau '+profile.xp.level+' · '+profile.xp.total+' XP Connect'):'Niveau 1 · 0 XP Connect';
   const avatar=$('identity-avatar');avatar.hidden=!authorized;
   if(authorized)paintAvatar(avatar,profile.avatar);
   $('edit-avatar').hidden=false;
@@ -200,7 +201,10 @@ async function showIdentity() {
     });
     if (!response.ok) return;
     const profile = await response.json();
-    if (profile.ok && profile.status === 'approved' && (profile.classId === classId || profile.teacherPlayer)) drawIdentity(profile);
+    if (profile.ok && profile.status === 'approved' && (profile.classId === classId || profile.teacherPlayer)) {
+      try {const x=await fetch(url+'/functions/v1/connect-api',{method:'POST',headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},body:JSON.stringify({action:'player-xp',classId})}).then(r=>r.json());if(x.ok)profile.xp=x.xp;}catch{}
+      drawIdentity(profile);
+    }
     // Aucun accès reconnu au seul motif de connaître le lien de classe.
   } catch { /* Toujours laisser le HUB et les jeux accessibles en mode libre. */ }
 }
