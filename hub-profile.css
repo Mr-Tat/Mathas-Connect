@@ -7,7 +7,7 @@
 #identity-class{display:none!important}
 #identity-box.identity-classic{opacity:.76;font-size:13px}
 #identity-box.identity-classic #identity-title{font-size:14px}
-#identity-box.identity-classic #identity-action{font-size:12px;padding:5px 9px;background:#10253b;border:1px solid #385772}
+#identity-box.identity-classic #identity-action{font-size:12px;padding:5px 9px;background:#10253b;border:1px solid #385772;color:#c0cbd7}
 #identity-box.identity-connected{min-width:min(100%,475px);padding:22px;border-radius:22px;border:1px solid #486e90;background:linear-gradient(125deg,#153c59,#0c2439)}
 #identity-box.identity-connected .identity-main{flex:1;justify-items:start;text-align:left}
 #identity-box.identity-connected #identity-title{font:900 clamp(23px,2.6vw,35px)/1.15 "Fredoka",sans-serif}
