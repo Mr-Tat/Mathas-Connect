@@ -87,6 +87,16 @@ async function handle(req:Request){
    const revoked=await one(db.from('connect_devices').select('id').eq('auth_user_id',user.id).eq('state','revoked').limit(1));
    return ok({status:revoked?'revoked':'unregistered'});
  }
+ case 'teacher-manage-student':{
+   if(!await teacher()||!U.test(b.classId||'')||!U.test(b.studentId||'')||!['archive','restore','delete'].includes(b.operation))return fail('forbidden',403);
+   if(!await manage(b.classId))return fail('forbidden',403);
+   const student=await one(db.from('connect_students').select('id,display_name,archived_at').eq('id',b.studentId));
+   if(!student)return fail('not_found',404);
+   if(b.operation==='delete'&&(!student.archived_at||b.confirmName!==student.display_name||b.confirmPhrase!=='SUPPRIMER DÉFINITIVEMENT'))return fail('confirmation_required',400);
+   const result=await db.rpc('connect_manage_student',{p_teacher:user.id,p_class:b.classId,p_student:b.studentId,p_action:b.operation});
+   if(result.error)return fail('manage_failed',409);
+   return ok({operation:result.data});
+ }
  case 'teacher-dashboard':{
    if(!await teacher())return fail('forbidden',403);
    const perms=await db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('can_manage',true).limit(100);
@@ -107,11 +117,11 @@ async function handle(req:Request){
    if(requests.error||enrollments.error)return fail('db_failed',500);
    const studentsIds=[...new Set(enrollments.data.map((x:any)=>x.student_id))];
    const [students,devices]=await Promise.all([
-     studentsIds.length?db.from('connect_students').select('id,display_name').in('id',studentsIds):Promise.resolve({data:[],error:null}),
+     studentsIds.length?db.from('connect_students').select('id,display_name,archived_at').in('id',studentsIds):Promise.resolve({data:[],error:null}),
      studentsIds.length?db.from('connect_devices').select('id,student_id,state,requested_at,device_label').in('student_id',studentsIds).limit(500):Promise.resolve({data:[],error:null})
    ]);
    if(students.error||devices.error)return fail('db_failed',500);
-   return ok({years:years.data,classes:classes.data,requests:requests.data,students:students.data,devices:devices.data});
+   return ok({years:years.data,classes:classes.data,requests:requests.data,students:students.data.filter((s:any)=>!s.archived_at),archivedStudents:students.data.filter((s:any)=>!!s.archived_at),devices:devices.data});
  }
  case 'teacher-results':{
    if(!U.test(b.classId||'')||!await manage(b.classId))return fail('forbidden',403);
