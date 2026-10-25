@@ -194,7 +194,7 @@ $('results-backup').addEventListener('click',()=>run(async()=>{
  if(!cls)throw Error('Choisis une classe avant de télécharger.');
  if(!confirm('Exporter une copie PRIVÉE des noms et résultats des élèves de cette classe ?\\n\\nConserve ce fichier dans un endroit protégé, jamais sur un GitHub public.'))return;
  const backup=await resultCall('teacher-export');
- if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2'].includes(backup.format))throw Error('Format de sauvegarde inconnu.');
+ if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2','mathas-connect-class-backup-v3'].includes(backup.format))throw Error('Format de sauvegarde inconnu.');
  const contents=JSON.stringify(backup,null,2);
  const blob=new Blob([contents],{type:'application/json;charset=utf-8'});
  const url=URL.createObjectURL(blob);
@@ -215,7 +215,7 @@ $('results-restore-file').addEventListener('change',async event=>{
  if(file.size>1000000){msg('Fichier trop volumineux (maximum 1 Mo).');return}
  try{
   const doc=JSON.parse(await file.text());
-  if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2'].includes(doc.format))throw Error('Format JSON de sauvegarde inconnu');
+  if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2','mathas-connect-class-backup-v3'].includes(doc.format))throw Error('Format JSON de sauvegarde inconnu');
   if(doc.projectRef&&doc.projectRef!=='awmhpfofacaglewammxt')throw Error('Sauvegarde provenant d’un autre projet');
   if(doc.classId!==$('class-selector').value)throw Error('Sélectionne la classe correspondant à cette sauvegarde');
   if(!Array.isArray(doc.students)||doc.students.length>250)throw Error('Liste d’élèves invalide');
@@ -258,7 +258,7 @@ $('results-restore-confirm').addEventListener('click',()=>run(async()=>{
  const {choice:o,data:v}=restoreCheck;
  if(!confirm('Opération sensible : une sauvegarde de sécurité ACTUELLE doit être téléchargée avant la restauration. Continuer ?'))return;
  const safety=await resultCall('teacher-export');
- if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2'].includes(safety.format))throw Error('Export de sécurité indisponible');
+ if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2','mathas-connect-class-backup-v3'].includes(safety.format))throw Error('Export de sécurité indisponible');
  const blob=new Blob([JSON.stringify(safety,null,2)],{type:'application/json'});
  const link=document.createElement('a'),uri=URL.createObjectURL(blob);
  link.href=uri;link.download='mathas-AVANT-restauration-'+new Date().toISOString().replaceAll(':','-')+'.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(uri),10000);
