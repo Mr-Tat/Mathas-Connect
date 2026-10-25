@@ -123,8 +123,8 @@ function renderArchives(data,classId){
    if(entered!==person.display_name)return;
    const phrase=prompt('Dernière confirmation : écris SUPPRIMER DÉFINITIVEMENT');
    if(phrase!=='SUPPRIMER DÉFINITIVEMENT')return;
-   await call('teacher-manage-student',{classId,studentId:person.id,operation:'delete',confirmName:entered,confirmPhrase:phrase});
-   await refresh();msg('Fiche et résultats supprimés définitivement de Connect.',true)
+   const outcome=await call('teacher-manage-student',{classId,studentId:person.id,operation:'delete',confirmName:entered,confirmPhrase:phrase});
+   await refresh();msg(outcome.accountCleanupPending?'Fiche et résultats supprimés, mais le nettoyage de certains identifiants techniques reste à vérifier.':'Fiche et résultats supprimés de Connect. Pense aussi à supprimer les anciennes sauvegardes téléchargées si nécessaire.',true)
   });
   const row=document.createElement('div');row.className='button-row';row.append(restore,remove);item.append(name,row);list.append(item);
  }
