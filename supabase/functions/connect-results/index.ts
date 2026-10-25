@@ -101,6 +101,12 @@ Deno.serve(async req=>{
  try{
   const managed=async()=>!user.is_anonymous&&!!await read(db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('class_id',b.classId).eq('can_manage',true));
   const identity=async()=>{if(!user.is_anonymous){if(!await managed())return null;const player=await read(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));return player?.student_id||null;}const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;const enrolled=await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null));if(!enrolled)return null;const active=await read(db.from('connect_students').select('id').eq('id',device.student_id).is('archived_at',null));return active?device.student_id:null};
+  const refreshXp=async(studentId:string,appKey:string)=>{
+   if(appKey!==app)return null;
+   const result=await db.rpc('connect_refresh_xp_v1',{p_student:studentId,p_app:appKey,p_force_recalculate:false});
+   if(result.error){console.error('xp_credit_error',result.error.code);return null}
+   return result.data;
+  };
   // Restauration de secours : fusion des acquis, sans nouvelles tables ni RPC.
   if(b.action==='teacher-restore-preview'||b.action==='teacher-restore-apply'){
     if(!await managed()||!valid(b.studentId)||b.appKey!==app)return deny('forbidden',403);
@@ -271,11 +277,13 @@ Deno.serve(async req=>{
         .eq('student_id',studentId).eq('app_key',selected).eq('revision',rev).eq('reset_epoch',b.expectedResetEpoch).select('revision').maybeSingle();
       if(update.error)throw Error('db_error');
       if(!update.data)return deny('revision_conflict',409);
-      return answer({ok:true,revision:update.data.revision,resetEpoch:b.expectedResetEpoch,state:next});
+      const xp=await refreshXp(studentId,selected);
+      return answer({ok:true,revision:update.data.revision,resetEpoch:b.expectedResetEpoch,state:next,...(xp?{xp}:{} )});
    }
    const created=await db.from('connect_states').insert({...payload,student_id:studentId,app_key:selected,revision:1}).select('revision').single();
    if(created.error)return deny(created.error.code==='23505'?'revision_conflict':'db_error',created.error.code==='23505'?409:500);
-   return answer({ok:true,revision:created.data.revision,resetEpoch:b.expectedResetEpoch,state:next});
+   const xp=await refreshXp(studentId,selected);
+   return answer({ok:true,revision:created.data.revision,resetEpoch:b.expectedResetEpoch,state:next,...(xp?{xp}:{} )});
   }
   return deny('unknown_action',404);
  }catch{return deny('server_error',500)}
