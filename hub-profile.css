@@ -1,0 +1,29 @@
+.connect-brand{align-items:flex-end!important;flex-wrap:nowrap!important;gap:8px!important}
+.connect-brand .brand-wordmark{width:clamp(190px,32vw,380px)!important;height:auto!important;max-height:none!important}
+.connect-brand .connect-brand-suffix{font-size:clamp(22px,3.3vw,40px)!important;line-height:1.13!important;color:#2358b6!important;margin-bottom:0!important}
+.connect-nav{width:min(1180px,calc(100% - var(--layout-gutter-total)));margin:-20px auto 8px;padding:0!important;display:flex;justify-content:flex-end}
+#identity-box{display:flex;align-items:center;gap:16px;color:#e9f3ff}
+#identity-box .identity-main{display:grid;gap:6px;justify-items:end}
+#identity-class{display:none!important}
+#identity-box.identity-classic{opacity:.76;font-size:13px}
+#identity-box.identity-classic #identity-title{font-size:14px}
+#identity-box.identity-classic #identity-action{font-size:12px;padding:5px 9px;background:#10253b;border:1px solid #385772}
+#identity-box.identity-connected{min-width:min(100%,475px);padding:22px;border-radius:22px;border:1px solid #486e90;background:linear-gradient(125deg,#153c59,#0c2439)}
+#identity-box.identity-connected .identity-main{flex:1;justify-items:start;text-align:left}
+#identity-box.identity-connected #identity-title{font:900 clamp(23px,2.6vw,35px)/1.15 "Fredoka",sans-serif}
+#identity-level{font-weight:900;color:#a0d9fc}
+.identity-avatar{display:grid;place-items:center;width:84px;height:84px;border-radius:21px;color:#fff;font-size:48px;font-weight:900;flex:none}
+#identity-extra{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-start}
+#identity-extra[hidden],.avatar-dialog[hidden]{display:none!important}
+#identity-extra button{font-size:12px;padding:7px 9px}
+.avatar-dialog{position:fixed;inset:0;z-index:3000;background:#020814d9;display:grid;place-items:center;padding:15px}
+.avatar-modal{background:#172d45;color:#fff;border:1px solid #6b91b5;border-radius:20px;width:min(650px,100%);max-height:90dvh;overflow:auto;padding:22px}
+.avatar-modal h2{font-size:27px;margin:0 0 9px}
+.avatar-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(43px,1fr));gap:6px}
+.avatar-choices button{font-size:23px;min-height:45px;border:1px solid #547693;border-radius:10px;background:#274b67;color:#fff;cursor:pointer}
+.avatar-choices button.selected,.avatar-colors button.selected{outline:3px solid #a4ddff;outline-offset:2px}
+.avatar-colors{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
+.avatar-colors button{width:34px;height:34px;border:1px solid #fff7;border-radius:50%;cursor:pointer}
+.avatar-actions{display:flex;justify-content:end;gap:12px}
+.avatar-actions button{background:#346da0;color:white;border:1px solid #7eacd0;border-radius:10px;padding:10px 15px;cursor:pointer}
+@media(max-width:720px){.connect-nav{margin-top:0}.identity-avatar{width:58px;height:58px;font-size:35px}#identity-box.identity-connected{min-width:0;padding:14px}.connect-brand .brand-wordmark{width:clamp(138px,49vw,265px)!important}.connect-brand .connect-brand-suffix{font-size:clamp(18px,5.2vw,29px)!important}}
