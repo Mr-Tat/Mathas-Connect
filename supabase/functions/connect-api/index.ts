@@ -43,6 +43,23 @@ async function handle(req:Request){
    const profile=await one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color').eq('id',link.student_id));
    return ok({status:'approved',displayName:profile?.display_name||'Monsieur T',avatar:{kind:profile?.avatar_kind||'letter',value:profile?.avatar_value||'T',color:profile?.avatar_color||'ocean'},level:{number:1,xp:0,next:90,active:false},teacherPlayer:true});
  }
+ case 'player-xp':{
+   let id:string|null=null;
+   if(user.is_anonymous){
+     if(!U.test(b.classId||''))return fail('forbidden',403);
+     const device=await one(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));
+     if(device&&await one(db.from('connect_enrollments').select('id').eq('class_id',b.classId).eq('student_id',device.student_id).is('left_at',null)))id=device.student_id;
+   }else if(await teacher()){
+     const player=await one(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));id=player?.student_id||null;
+   }
+   if(!id||!await one(db.from('connect_students').select('id').eq('id',id).is('archived_at',null)))return fail('forbidden',403);
+   const [credits,profile]=await Promise.all([db.from('connect_xp_credits').select('app_key,xp_credited').eq('student_id',id),one(db.from('connect_level_profiles').select('highest_level_reached').eq('student_id',id))]);
+   if(credits.error)return fail('db_failed',500);
+   const xp=credits.data.reduce((sum:number,v:any)=>sum+v.xp_credited,0);
+   let calculated=1;while(20*calculated*calculated+70*calculated<=xp&&calculated<999)calculated++;
+   const level=profile?.highest_level_reached||calculated;
+   return ok({xp:{total:xp,level,next:20*level*level+70*level,apps:credits.data,active:true}});
+ }
  case 'student-avatar':{
    if(!user.is_anonymous&&!await teacher())return fail('forbidden',403);
    const kind=b.kind,value=b.value,color=b.color;
