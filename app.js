@@ -238,7 +238,7 @@ $('results-restore-preview').addEventListener('click',()=>run(async()=>{
  restoreCheck=null;restoreHasSafety=false;$('results-restore-confirm').disabled=true;
  async function preview(recoverPastReset){
   return resultCall('teacher-restore-preview',{studentId:o.student.id,appKey:'addition-ecrite-simple',backupFormat:restoreDraft.format,backupProjectRef:restoreDraft.projectRef,
-   backupRevision:o.app.revision,backupResetEpoch:o.app.resetEpoch,backupState:o.app.state,recoverPastReset});
+   backupRevision:o.app.revision,backupResetEpoch:o.app.resetEpoch,backupState:o.app.state,backupMilestones:restoreDraft.format==='mathas-connect-class-backup-v4'?(o.student.xpMilestones||[]):[],recoverPastReset});
  }
  let v;
  try{v=await preview(false)}
@@ -250,7 +250,7 @@ $('results-restore-preview').addEventListener('click',()=>run(async()=>{
  restoreCheck={choice:o,data:v};
  // Prévisualisation liée à l'élève, à la sauvegarde et à l'état courant.
  // Ne jamais autoriser l'application d'une autre sélection sans nouvelle prévisualisation.
- $('results-restore-summary').textContent='AVANT : '+JSON.stringify(v.before)+'\\n\\nAPRÈS : '+JSON.stringify(v.after)+'\\n\\n'+(v.recoveringPastReset?'⚠ Ancienne remise à zéro : réintroduction de records possible.':'Fusion sans remplacement des meilleurs records récents.')+(v.changed?'':' Aucune différence : rien à restaurer.');
+ $('results-restore-summary').textContent='AVANT : '+JSON.stringify(v.before)+'\\n\\nAPRÈS : '+JSON.stringify(v.after)+'\\n\\n'+(v.recoveringPastReset?'⚠ Ancienne remise à zéro : réintroduction de records possible.':'Fusion sans remplacement des meilleurs records récents.')+'\nJalons XP à récupérer : '+(v.restoringXpMilestones||0)+(v.changed?'':' Aucune différence : rien à restaurer.');
  $('results-restore-confirm').disabled=!v.changed;
 }));
 $('results-restore-confirm').addEventListener('click',()=>run(async()=>{
@@ -268,6 +268,7 @@ $('results-restore-confirm').addEventListener('click',()=>run(async()=>{
  const out=await resultCall('teacher-restore-apply',{studentId:o.student.id,appKey:'addition-ecrite-simple',
   backupFormat:restoreDraft.format,backupProjectRef:restoreDraft.projectRef,
   backupRevision:o.app.revision,backupResetEpoch:o.app.resetEpoch,backupState:o.app.state,
+  backupMilestones:restoreDraft.format==='mathas-connect-class-backup-v4'?(o.student.xpMilestones||[]):[],
   recoverPastReset:v.recoveringPastReset,expectedRevision:v.currentRevision,expectedResetEpoch:v.currentResetEpoch,previewDigest:v.previewDigest,
   confirmed:true,confirmationPhrase:'RESTAURER',safetyBackupExported:true});
  $('results-restore-summary').textContent='Restauration enregistrée pour '+o.student.displayName+'. Révision : '+out.revision+'. Relire les résultats professeur.';
