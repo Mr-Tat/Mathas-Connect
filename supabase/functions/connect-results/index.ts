@@ -110,7 +110,7 @@ Deno.serve(async req=>{
   // Restauration de secours : fusion des acquis, sans nouvelles tables ni RPC.
   if(b.action==='teacher-restore-preview'||b.action==='teacher-restore-apply'){
     if(!await managed()||!valid(b.studentId)||b.appKey!==app)return deny('forbidden',403);
-    if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2','mathas-connect-class-backup-v3'].includes(b.backupFormat))return deny('invalid_backup_format');
+    if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2','mathas-connect-class-backup-v3','mathas-connect-class-backup-v4'].includes(b.backupFormat))return deny('invalid_backup_format');
     if(b.backupProjectRef!=null&&b.backupProjectRef!=='awmhpfofacaglewammxt')return deny('wrong_project',403);
     if(!int(b.backupRevision,0,1000000000)||!int(b.backupResetEpoch,0,1000000000))return deny('invalid_backup');
     const member=await read(db.from('connect_enrollments').select('id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));
@@ -167,8 +167,11 @@ Deno.serve(async req=>{
     ids.length?db.from('connect_level_profiles').select('student_id,highest_level_reached,level_ruleset_version,updated_at').in('student_id',ids):Promise.resolve({data:[],error:null})
    ]);
    if(credits.error||levels.error)throw Error('db_error');
-   return answer({ok:true,format:'mathas-connect-class-backup-v3',projectRef:'awmhpfofacaglewammxt',exportedAt:new Date().toISOString(),classId:b.classId,
+   const milestones=ids.length?await db.from('connect_xp_milestones').select('student_id,app_key,milestone_key,achieved_at,evidence').in('student_id',ids).limit(10000):{data:[],error:null};
+   if(milestones.error)throw Error('db_error');
+   return answer({ok:true,format:'mathas-connect-class-backup-v4',projectRef:'awmhpfofacaglewammxt',exportedAt:new Date().toISOString(),classId:b.classId,
     students:profiles.data.map((p:any)=>({id:p.id,displayName:p.display_name,publicAlias:p.public_alias,archivedAt:p.archived_at,avatar:{kind:p.avatar_kind,value:p.avatar_value,color:p.avatar_color},projectionOptIn:p.projection_opt_in,
+     xpMilestones:milestones.data.filter((x:any)=>x.student_id===p.id).map((x:any)=>({appKey:x.app_key,key:x.milestone_key,achievedAt:x.achieved_at,evidence:x.evidence})),
      xpCredits:credits.data.filter((x:any)=>x.student_id===p.id).map((x:any)=>({appKey:x.app_key,xpCredited:x.xp_credited,evidence:x.evidence,rulesetVersion:x.ruleset_version,updatedAt:x.updated_at})),
      levelProfile:levels.data.find((x:any)=>x.student_id===p.id)||null,
      enrollments:people.data.filter((e:any)=>e.student_id===p.id),
