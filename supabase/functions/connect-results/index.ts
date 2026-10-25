@@ -151,12 +151,12 @@ Deno.serve(async req=>{
    if(people.error)throw Error('db_error');
    const ids=[...new Set(people.data.map((p:any)=>p.student_id))];
    const [profiles,states]=await Promise.all([
-    ids.length?db.from('connect_students').select('id,display_name,public_alias').in('id',ids):Promise.resolve({data:[],error:null}),
+    ids.length?db.from('connect_students').select('id,display_name,public_alias,archived_at').in('id',ids):Promise.resolve({data:[],error:null}),
     ids.length?db.from('connect_states').select('student_id,app_key,revision,reset_epoch,state_data').in('student_id',ids):Promise.resolve({data:[],error:null})
    ]);
    if(profiles.error||states.error)throw Error('db_error');
    return answer({ok:true,format:'mathas-connect-class-backup-v2',projectRef:'awmhpfofacaglewammxt',exportedAt:new Date().toISOString(),classId:b.classId,
-    students:profiles.data.map((p:any)=>({id:p.id,displayName:p.display_name,publicAlias:p.public_alias,
+    students:profiles.data.map((p:any)=>({id:p.id,displayName:p.display_name,publicAlias:p.public_alias,archivedAt:p.archived_at,
      enrollments:people.data.filter((e:any)=>e.student_id===p.id),
      apps:states.data.filter((state:any)=>state.student_id===p.id).map((state:any)=>({appKey:state.app_key,revision:state.revision,resetEpoch:state.reset_epoch,state:state.state_data}))}))
    });
@@ -166,7 +166,7 @@ Deno.serve(async req=>{
    const en=await db.from('connect_enrollments').select('student_id').eq('class_id',b.classId).is('left_at',null).limit(100);
    if(en.error)throw Error('db');const ids=[...new Set(en.data.map(x=>x.student_id))];
    if(!ids.length)return answer({ok:true,students:[]});
-   const [names,states]=await Promise.all([db.from('connect_students').select('id,display_name').in('id',ids),db.from('connect_states').select('student_id,state_data').eq('app_key',selected).in('student_id',ids)]);
+   const [names,states]=await Promise.all([db.from('connect_students').select('id,display_name').in('id',ids).is('archived_at',null),db.from('connect_states').select('student_id,state_data').eq('app_key',selected).in('student_id',ids)]);
    if(names.error||states.error)throw Error('db');
    const map=new Map(states.data.map(x=>[x.student_id,x.state_data]));
    return answer({ok:true,students:names.data.map(x=>{const s:any=map.get(x.id)||{};return {id:x.id,name:x.display_name,recent:(s.recent||[]).slice(0,3),bestPoints:s.bestPoints??null,todayBest:s.todayBest?.day===belgianDay()?s.todayBest.points:null}}).sort((a,b)=>a.name.localeCompare(b.name,'fr'))});
