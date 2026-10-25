@@ -1,0 +1,8 @@
+.join-avatar-field{border:1px solid #84a6c3;border-radius:13px;padding:13px;margin:15px 0;background:#edf3fa;color:#183751}
+.join-avatar-field legend{font-weight:800}
+.join-avatar-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(43px,1fr));gap:7px;max-height:190px;overflow:auto;padding:5px}
+.join-avatar-grid button{min-height:43px;padding:5px;font-size:22px;border:1px solid #a2b7cd;background:#d7e4f0;color:#1d3854;border-radius:9px}
+.join-avatar-grid button.selected,.join-avatar-colors button.selected{outline:3px solid #3388ce;outline-offset:1px}
+.join-avatar-colors{display:flex;gap:9px;flex-wrap:wrap;padding:13px 3px}
+.join-avatar-colors button{width:32px;height:32px;border-radius:50%;border:1px solid #fff8;min-height:32px;padding:0}
+.join-avatar-preview{font-size:39px;border-radius:14px;width:66px;height:66px;display:grid;place-items:center;color:white;font-weight:900;margin:2px auto 6px}
