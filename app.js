@@ -39,7 +39,7 @@ async function call(action,data={}){const {data:{session}}=await sb.auth.getSess
  const r=await fetch(url+'/functions/v1/connect-api',{method:'POST',headers:{'content-type':'application/json','apikey':key,'authorization':'Bearer '+session.access_token},body:JSON.stringify({action,...data})});
  const v=await r.json().catch(()=>({}));if(!r.ok||!v.ok)throw Error(({forbidden:'Accès refusé',join_failed:'Demande impossible',decision_failed:'Demande déjà traitée ou expirée',auth_required:'Connexion expirée'})[v.error]||v.error||'Erreur réseau');return v}
 async function teacher(){const r=await call('teacher-dashboard');const box=$('class-selector');box.replaceChildren(...r.classes.filter(c=>!c.name.includes('TEST')).map(c=>new Option(c.name,c.id)));$('year-selector').replaceChildren(...r.years.map(v=>new Option(v.label,v.id)));show('teacher');showTeacherTab('home');await refresh();await showResults().catch(e=>showResultMessage('Suivi indisponible : '+e.message))}
-async function refresh(){const id=$('class-selector').value;if(!id){$('request-count').textContent='0';$('requests-list').textContent='Aucune demande.';$('students-list').textContent='Aucun élève.';return;}const data=await call('teacher-dashboard',{classId:id});const j={requests:data.requests},s={students:data.students},d={devices:data.devices};$('request-count').textContent=j.requests.length;const out=$('requests-list');out.replaceChildren();
+async function refresh(){const id=$('class-selector').value;if(!id){$('request-count').textContent='0';$('requests-list').textContent='Aucune demande.';$('students-list').textContent='Aucun élève.';return;}const data=await call('teacher-dashboard',{classId:id});renderArchives(data,id);const j={requests:data.requests},s={students:data.students},d={devices:data.devices};$('request-count').textContent=j.requests.length;const out=$('requests-list');out.replaceChildren();
  if(!j.requests.length)out.textContent='Aucune demande.';
  for(const req of j.requests){const card=document.createElement('div');card.className='request-card';const head=document.createElement('div');head.className='request-heading';const name=document.createElement('strong');name.textContent=req.first_name+'.'+req.last_initial;const code=document.createElement('span');code.className='request-code';code.textContent=req.verify_code;head.append(name,code);card.append(head);const row=document.createElement('div');row.className='button-row';
  // Même prénom + initiale : présélection seulement si une seule fiche correspond.
@@ -97,7 +97,36 @@ async function refresh(){const id=$('class-selector').value;if(!id){$('request-c
      }
      item.append(row);
    });
+   const archive=document.createElement('button');archive.type='button';archive.className='soft';archive.textContent='Archiver cet élève';archive.title='Désactiver le compte tout en conservant ses résultats';
+   archive.onclick=()=>run(async()=>{
+    if(!confirm('Archiver '+e.display_name+' ? Tous ses appareils seront révoqués, mais ses résultats seront conservés.'))return;
+    await call('teacher-manage-student',{classId:id,studentId:e.id,operation:'archive'});
+    await refresh();msg('Élève archivé et résultats conservés.',true)
+   });
+   item.append(archive);
    students.append(item);
+ }
+}
+function renderArchives(data,classId){
+ const list=$('archived-students-list');if(!list)return;
+ const people=data.archivedStudents||[];$('archived-students-count').textContent=String(people.length);list.replaceChildren();
+ if(!people.length){const empty=document.createElement('p');empty.className='hint';empty.textContent='Aucun élève archivé.';list.append(empty);return}
+ for(const person of people){
+  const item=document.createElement('div');item.className='student-card';
+  const name=document.createElement('strong');name.textContent=person.display_name;
+  const restore=document.createElement('button');restore.type='button';restore.className='soft';restore.textContent='Restaurer';
+  restore.onclick=()=>run(async()=>{await call('teacher-manage-student',{classId,studentId:person.id,operation:'restore'});await refresh();msg('Fiche restaurée. Les appareils devront être réautorisés.',true)});
+  const remove=document.createElement('button');remove.type='button';remove.className='danger';remove.textContent='Supprimer définitivement';
+  remove.onclick=()=>run(async()=>{
+   if(!confirm('SUPPRESSION IRRÉVERSIBLE de '+person.display_name+' et de tous ses résultats Connect ?'))return;
+   const entered=prompt('Pour confirmer, recopie exactement le nom : '+person.display_name);
+   if(entered!==person.display_name)return;
+   const phrase=prompt('Dernière confirmation : écris SUPPRIMER DÉFINITIVEMENT');
+   if(phrase!=='SUPPRIMER DÉFINITIVEMENT')return;
+   await call('teacher-manage-student',{classId,studentId:person.id,operation:'delete',confirmName:entered,confirmPhrase:phrase});
+   await refresh();msg('Fiche et résultats supprimés définitivement de Connect.',true)
+  });
+  const row=document.createElement('div');row.className='button-row';row.append(restore,remove);item.append(name,row);list.append(item);
  }
 }
 async function student(){if(!cls){show('welcome');msg('Ouvre le lien donné par le professeur.');return}
