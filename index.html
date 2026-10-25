@@ -8,8 +8,8 @@
   <title>Math’as Connect — Professeur</title>
   <link rel="icon" type="image/png" href="./assets/brand/favicon.png">
   <link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png">
-  <link rel="stylesheet" href="./style.css?v=20261025b">
-  <script type="module" src="./app.js?v=20261025b"></script>
+  <link rel="stylesheet" href="./style.css?v=20261025c">
+  <script type="module" src="./app.js?v=20261025c"></script>
 </head>
 <body>
   <main class="shell">
@@ -19,7 +19,7 @@
     </header>
     <div id="message" class="message" role="status" aria-live="polite" hidden></div>
 
-    <section class="panel" data-view="welcome">
+    <section class="panel" data-view="welcome" hidden>
       <h1>Bienvenue</h1>
       <div class="button-row">
         <button id="teacher-entry">Professeur</button>
@@ -28,8 +28,10 @@
       <p class="hint">Math’as Connect : comptes durables, jeux et suivi des élèves.</p>
     </section>
 
-    <section class="panel" data-view="login" hidden>
-      <h1>Professeur</h1>
+    <section class="panel login-panel" data-view="login">
+      <div class="login-brand"><img src="./assets/brand/mathas-wordmark.webp" alt="Math’as" width="300" height="100"><span>Connect</span></div>
+      <h1>Espace professeur</h1>
+      <p class="login-help">Connecte-toi pour retrouver les quatre espaces, les résultats et la gestion.</p>
       <form id="login-form">
         <label for="email">E-mail</label>
         <input id="email" type="email" autocomplete="email" required>
@@ -37,9 +39,10 @@
         <input id="password" type="password" autocomplete="current-password" required>
         <div class="button-row">
           <button type="submit">Se connecter</button>
-          <button type="button" class="soft" id="back-login">Retour</button>
+          <button type="button" class="soft" id="back-login">HUB élèves</button>
         </div>
       </form>
+      <p class="login-footer-note">Les comptes élèves se connectent depuis leur lien de classe.</p>
     </section>
 
     <section class="panel teacher-panel" data-view="teacher" hidden>
