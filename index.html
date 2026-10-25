@@ -8,8 +8,8 @@
   <title>Math’as Connect — Professeur</title>
   <link rel="icon" type="image/png" href="./assets/brand/favicon.png">
   <link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png">
-  <link rel="stylesheet" href="./style.css?v=20261025c">
-  <script type="module" src="./app.js?v=20261025c"></script>
+  <link rel="stylesheet" href="./style.css?v=20261025d">
+  <script type="module" src="./app.js?v=20261025d"></script>
 </head>
 <body>
   <main class="shell">
@@ -50,8 +50,7 @@
         <div class="teacher-identity"><img src="./assets/brand/mathas-wordmark.webp" alt="Math’as" width="300" height="100"><span>Connect</span><p>Espace professeur</p></div>
         <button class="teacher-logout" id="logout" type="button">Déconnexion</button>
       </header>
-      <div class="teacher-classbar"><label for="class-selector">Classe administrative</label><select id="class-selector"></select><button id="refresh-teacher" type="button" class="teacher-quiet">Actualiser</button><button id="copy-student-link" type="button" class="teacher-quiet">Copier le lien élève</button></div>
-      <p class="teacher-context">Les quatre espaces sont pédagogiques. La classe administrative sélectionnée détermine le compte et le suivi des élèves.</p>
+      
       <div class="teacher-section" id="teacher-home">
         <div class="teacher-spaces">
           <div class="teacher-space space-observation">
@@ -97,7 +96,7 @@
       </div>
       <div class="teacher-section" id="teacher-results" hidden>
         <div class="teacher-section-heading"><h2>Résultats des élèves</h2><button type="button" class="teacher-quiet" data-teacher-tab="home">← Accueil</button></div>
-        <p id="teacher-results-context" class="teacher-context">Résultats de la classe administrative sélectionnée. Le filtrage par espace pédagogique sera ajouté ensuite.</p>
+        <p id="teacher-results-context" class="teacher-context">Résultats de la classe liée au HUB choisi.</p>
       <section id="results-section" aria-label="Résultats de la classe">
         <div class="heading-row"><h2>Résultats des élèves</h2><button id="results-refresh" class="soft" type="button">Actualiser les résultats</button><button id="results-backup" class="soft" type="button" title="Sauvegarde privée contenant les noms et résultats des élèves">Exporter une sauvegarde</button></div>
         <p id="results-backup-reminder" class="hint" role="status">Sauvegarde hebdomadaire conseillée.</p>
@@ -124,6 +123,8 @@
       </div>
       <div class="teacher-section" id="teacher-management" hidden>
         <div class="teacher-section-heading"><h2>Gestion</h2><button type="button" class="teacher-quiet" data-teacher-tab="home">← Accueil</button></div>
+        <p class="teacher-context">Chaque HUB est relié à sa propre classe. Utilise la sélection ci-dessous uniquement pour administrer les élèves et les appareils d’un groupe.</p>
+        <div class="teacher-classbar"><label for="class-selector">Classe administrative</label><select id="class-selector"></select><button id="refresh-teacher" type="button" class="teacher-quiet">Actualiser</button><button id="copy-student-link" type="button" class="teacher-quiet">Copier le lien élève</button></div>
         <h3>Élèves et appareils</h3>
         <div id="students-list" class="stack hint">Aucun élève.</div>
         <p class="hint">Révoquer bloque l’accès Connect de cet appareil sans supprimer l’élève ni ses résultats.</p>
