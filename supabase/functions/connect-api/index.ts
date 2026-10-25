@@ -53,12 +53,9 @@ async function handle(req:Request){
      const player=await one(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));id=player?.student_id||null;
    }
    if(!id||!await one(db.from('connect_students').select('id').eq('id',id).is('archived_at',null)))return fail('forbidden',403);
-   const [credits,profile]=await Promise.all([db.from('connect_xp_credits').select('app_key,xp_credited').eq('student_id',id),one(db.from('connect_level_profiles').select('highest_level_reached').eq('student_id',id))]);
-   if(credits.error)return fail('db_failed',500);
-   const xp=credits.data.reduce((sum:number,v:any)=>sum+v.xp_credited,0);
-   const calculated=xp<300?1+Math.floor(xp/50):7+Math.floor((xp-300)/100);
-   const level=profile?.highest_level_reached||calculated;
-   return ok({xp:{total:xp,level,next:level<7?level*50:300+(level-6)*100,apps:credits.data,active:true}});
+   const {data:summary,error:xpError}=await db.rpc('connect_xp_read_v2',{p_student:id,p_app:'addition-ecrite-simple',p_include_milestones:false});
+   if(xpError||!summary)return fail('xp_unavailable',503);
+   return ok({xp:{total:summary.total,level:summary.level,next:summary.next,apps:summary.apps,active:true}});
  }
  case 'student-avatar':{
    if(!user.is_anonymous&&!await teacher())return fail('forbidden',403);
