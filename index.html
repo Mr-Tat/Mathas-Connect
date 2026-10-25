@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f8fa">
-  <meta name="description" content="Math’as Connect — espace de test élèves et professeurs">
-  <title>Math’as Connect — Test</title>
+  <meta name="description" content="Math’as Connect — espace professeur et élèves">
+  <title>Math’as Connect — Professeur</title>
   <link rel="icon" type="image/png" href="./assets/brand/favicon.png">
   <link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png">
-  <link rel="stylesheet" href="./style.css?v=20261023b">
-  <script type="module" src="./app.js?v=20261023e"></script>
+  <link rel="stylesheet" href="./style.css?v=20261025b">
+  <script type="module" src="./app.js?v=20261025b"></script>
 </head>
 <body>
   <main class="shell">
@@ -25,7 +25,7 @@
         <button id="teacher-entry">Professeur</button>
         <button id="student-entry" class="soft">Élève</button>
       </div>
-      <p class="hint">Environnement de test, sans jeux pour le moment.</p>
+      <p class="hint">Math’as Connect : comptes durables, jeux et suivi des élèves.</p>
     </section>
 
     <section class="panel" data-view="login" hidden>
@@ -42,27 +42,63 @@
       </form>
     </section>
 
-    <section class="panel" data-view="teacher" hidden>
-      <div class="heading-row"><h1>Ma classe</h1><button class="quiet" id="logout">Déconnexion</button></div>
-      <label for="class-selector">Classe</label>
-      <select id="class-selector"></select>
-      <div class="button-row">
-        <button id="refresh-teacher" class="soft">Actualiser</button>
-        <button id="copy-student-link">Copier le lien élève</button>
+    <section class="panel teacher-panel" data-view="teacher" hidden>
+      <header class="teacher-header">
+        <div class="teacher-identity"><img src="./assets/brand/mathas-wordmark.webp" alt="Math’as" width="300" height="100"><span>Connect</span><p>Espace professeur</p></div>
+        <button class="teacher-logout" id="logout" type="button">Déconnexion</button>
+      </header>
+      <div class="teacher-classbar"><label for="class-selector">Classe administrative</label><select id="class-selector"></select><button id="refresh-teacher" type="button" class="teacher-quiet">Actualiser</button><button id="copy-student-link" type="button" class="teacher-quiet">Copier le lien élève</button></div>
+      <p class="teacher-context">Les quatre espaces sont pédagogiques. La classe administrative sélectionnée détermine le compte et le suivi des élèves.</p>
+      <div class="teacher-section" id="teacher-home">
+        <div class="teacher-spaces">
+          <div class="teacher-space space-observation">
+        <a class="teacher-space-main" data-space="observation" href="./hub.html?space=observation" target="_blank" rel="noopener noreferrer"><strong>Observation</strong></a>
+        <a class="teacher-space-small" href="./projection.html?space=observation" target="_blank" rel="noopener noreferrer">Projection</a>
+        <button class="teacher-space-small" data-results="observation" type="button">Résultats</button>
       </div>
-      <p class="hint">L’élève ouvre le lien, écrit son prénom et l’initiale de son nom.</p>
-      <hr>
-      <h2>Demandes <span class="small-counter" id="request-count">0</span></h2>
-      <div id="requests-list" class="stack"><p class="hint">Aucune demande.</p></div>
-      <hr>
-      <h2>Élèves</h2>
-      <div id="students-list" class="stack hint">Aucun élève.</div>
-      <p class="hint">Révoquer bloque l’accès Connect de cet appareil, sans supprimer l’élève ni ses résultats.</p>
-      <hr>
+      <div class="teacher-space space-phase1">
+        <a class="teacher-space-main" data-space="phase1" href="./hub.html?space=phase1" target="_blank" rel="noopener noreferrer"><strong>Phase 1</strong></a>
+        <a class="teacher-space-small" href="./projection.html?space=phase1" target="_blank" rel="noopener noreferrer">Projection</a>
+        <button class="teacher-space-small" data-results="phase1" type="button">Résultats</button>
+      </div>
+      <div class="teacher-space space-phase2">
+        <a class="teacher-space-main" data-space="phase2" href="./hub.html?space=phase2" target="_blank" rel="noopener noreferrer"><strong>Phase 2</strong></a>
+        <a class="teacher-space-small" href="./projection.html?space=phase2" target="_blank" rel="noopener noreferrer">Projection</a>
+        <button class="teacher-space-small" data-results="phase2" type="button">Résultats</button>
+      </div>
+      <div class="teacher-space space-2eco">
+        <a class="teacher-space-main" data-space="2eco" href="./hub.html?space=2eco" target="_blank" rel="noopener noreferrer"><strong>2 ECO</strong></a>
+        <a class="teacher-space-small" href="./projection.html?space=2eco" target="_blank" rel="noopener noreferrer">Projection</a>
+        <button class="teacher-space-small" data-results="2eco" type="button">Résultats</button>
+      </div>
+        </div>
+        <nav class="teacher-shortcuts" aria-label="Navigation professeur">
+          <button type="button" data-teacher-tab="apps">Applis</button>
+          <button type="button" data-teacher-tab="other">Autres</button>
+          <a href="./hub.html?view=toutes" target="_blank" rel="noopener noreferrer" id="teacher-all">Toutes</a>
+          <button type="button" data-teacher-tab="management">Gestion</button>
+        </nav>
+        <section class="teacher-request-area" aria-label="Demandes de connexion">
+          <div class="teacher-section-heading"><h2>Demandes d'accès <span class="small-counter" id="request-count">0</span></h2><span>Approbation des nouveaux appareils</span></div>
+          <div id="requests-list" class="stack"><p class="hint">Aucune demande.</p></div>
+        </section>
+      </div>
+      <div class="teacher-section" id="teacher-apps" hidden>
+        <div class="teacher-section-heading"><h2>Applications · GLOBAL</h2><button type="button" class="teacher-quiet" data-teacher-tab="home">← Accueil</button></div>
+        <p class="teacher-context">Premier aperçu du catalogue Connect. Les réglages « Visible », « Du jour », sections et ordre seront repris dans le tableau interactif du prochain bloc.</p>
+        <div class="teacher-app-scroll"><table class="teacher-app-table"><thead><tr><th>Application</th><th>Observation</th><th>Phase 1</th><th>Phase 2</th><th>2 ECO</th><th>Partout</th><th>Ordre</th><th>Position</th></tr></thead><tbody id="teacher-app-tbody"><tr><td colspan="8">Chargement du catalogue…</td></tr></tbody></table></div>
+      </div>
+      <div class="teacher-section" id="teacher-other" hidden>
+        <div class="teacher-section-heading"><h2>Autres</h2><button type="button" class="teacher-quiet" data-teacher-tab="home">← Accueil</button></div>
+        <p class="teacher-context">Les pages spéciales de l’ancien Math’as seront adaptées à Connect, sans réutiliser sa base de données.</p>
+      </div>
+      <div class="teacher-section" id="teacher-results" hidden>
+        <div class="teacher-section-heading"><h2>Résultats des élèves</h2><button type="button" class="teacher-quiet" data-teacher-tab="home">← Accueil</button></div>
+        <p id="teacher-results-context" class="teacher-context">Résultats de la classe administrative sélectionnée. Le filtrage par espace pédagogique sera ajouté ensuite.</p>
       <section id="results-section" aria-label="Résultats de la classe">
         <div class="heading-row"><h2>Résultats des élèves</h2><button id="results-refresh" class="soft" type="button">Actualiser les résultats</button><button id="results-backup" class="soft" type="button" title="Sauvegarde privée contenant les noms et résultats des élèves">Exporter une sauvegarde</button></div>
         <p id="results-backup-reminder" class="hint" role="status">Sauvegarde hebdomadaire conseillée.</p>
-        <label for="results-app">Application</label><select id="results-app"><option value="addition-ecrite-simple">Addition écrite simple</option><option value="connect-lab">Laboratoire (test)</option></select>
+        <label for="results-app">Application</label><select id="results-app"><option value="addition-ecrite-simple">Addition écrite simple</option></select>
         <p id="results-message" class="hint">Choisis une classe et actualise les résultats.</p>
 <details class="management" id="results-restore-panel-root">
   <summary>Restaurer une sauvegarde (opération exceptionnelle)</summary>
@@ -81,6 +117,13 @@
         <div id="results-list" class="stack"></div>
         <section id="results-detail" hidden><button type="button" class="soft" id="results-back">← Retour à la classe</button><h2 id="results-student-name">Fiche élève</h2><div id="results-student-content"></div></section>
       </section>
+
+      </div>
+      <div class="teacher-section" id="teacher-management" hidden>
+        <div class="teacher-section-heading"><h2>Gestion</h2><button type="button" class="teacher-quiet" data-teacher-tab="home">← Accueil</button></div>
+        <h3>Élèves et appareils</h3>
+        <div id="students-list" class="stack hint">Aucun élève.</div>
+        <p class="hint">Révoquer bloque l’accès Connect de cet appareil sans supprimer l’élève ni ses résultats.</p>
       <details class="management"><summary>Gérer la classe</summary>
         <form id="add-student-form"><label for="new-student-name">Ajouter un élève</label><input id="new-student-name" maxlength="120" placeholder="Prénom.N" required><button type="submit">Ajouter l’élève</button></form>
       </details>
@@ -88,7 +131,8 @@
         <form id="add-class-form"><label for="year-selector">Année scolaire</label><select id="year-selector"></select><label for="new-class-name">Nom de la classe</label><input id="new-class-name" maxlength="100" required><button type="submit">Créer la classe</button></form>
         <form id="add-year-form"><label for="new-year-label">Nouvelle année scolaire</label><input id="new-year-label" maxlength="32" placeholder="2026-2027" required><div class="button-row"><div><label for="year-start">Début</label><input id="year-start" type="date" required></div><div><label for="year-end">Fin</label><input id="year-end" type="date" required></div></div><button class="soft" type="submit">Ajouter l’année</button></form>
       </details>
-      <button id="teacher-hub" class="soft" type="button">Voir le HUB Connect</button>
+      <button id="teacher-hub" class="soft" type="button">Voir le HUB Connect</b
+      </div>
     </section>
 
     <section class="panel" data-view="student-form" hidden>
@@ -129,7 +173,7 @@
       <p class="hint">Réinitialiser efface seulement cette connexion locale, pas l’autorisation conservée chez le professeur.</p>
     </section>
 
-    <footer>Math’as Connect · Prototype privé de test</footer>
+    <footer>Math’as Connect · Espace professeur et élèves</footer>
   </main>
 </body>
 </html>
