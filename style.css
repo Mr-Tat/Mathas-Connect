@@ -90,14 +90,14 @@ body:has(.login-panel:not([hidden])) footer{color:#afc8d9}
 .teacher-identity{display:block;min-width:0;flex:1}
 .teacher-logo-lockup,.login-brand{display:flex;align-items:flex-end;gap:clamp(4px,.8vw,12px);flex-wrap:nowrap;min-width:0}
 .teacher-logo-lockup img{width:clamp(190px,32vw,380px);height:auto;max-height:none;object-fit:contain;flex:0 1 auto}
-.teacher-connect-suffix,.login-brand span{font-size:clamp(22px,3.3vw,40px);font-weight:850;line-height:1.13;color:#48799d;letter-spacing:-.045em;white-space:nowrap;margin-bottom:clamp(13px,2.2vw,29px);text-shadow:0 1px 0 #06111c}
-.teacher-section-title{font-size:clamp(29px,3.6vw,48px);line-height:1.15;font-weight:900;letter-spacing:-.025em;color:#83dbef;margin:4px 0 0;text-shadow:0 4px 22px #19739244}
+.teacher-connect-suffix,.login-brand span{font-size:clamp(22px,3.3vw,40px);font-weight:850;line-height:1.13;color:#2358b6;letter-spacing:-.045em;white-space:nowrap;margin-bottom:0;text-shadow:0 1px 0 #06111c}
+.teacher-section-title{font-size:clamp(29px,3.6vw,48px);line-height:1.15;font-weight:900;letter-spacing:-.025em;color:#5d9deb;margin:4px 0 0;text-shadow:0 4px 22px #19739244}
 .login-brand img{width:clamp(175px,34vw,290px);max-height:none}
-.login-brand span{font-size:clamp(23px,4vw,36px);margin-bottom:clamp(12px,2vw,23px)}
+.login-brand span{font-size:clamp(23px,4vw,36px);margin-bottom:0}
 /* Accès professeur : boutons indépendants et bien différenciés. */
 .teacher-shortcuts>[data-teacher-tab="apps"]{background:linear-gradient(145deg,#24568f,#122e50);border-color:#63abeb}
 .teacher-shortcuts>[data-teacher-tab="other"]{background:linear-gradient(145deg,#6f419b,#312151);border-color:#b894e1}
 .teacher-shortcuts>#teacher-all{background:linear-gradient(145deg,#206f78,#113f52);border-color:#61c9d2}
 .teacher-shortcuts>[data-teacher-tab="management"]{background:linear-gradient(145deg,#916027,#493018);border-color:#dbab6b}
 .teacher-shortcuts>*:hover{filter:brightness(1.17)}
-@media(max-width:650px){.teacher-logo-lockup img{width:clamp(138px,49vw,265px)}.teacher-connect-suffix{font-size:clamp(18px,5.2vw,29px);margin-bottom:clamp(9px,3.1vw,18px)}.teacher-section-title{font-size:clamp(27px,7vw,36px)}.login-brand img{width:clamp(150px,48vw,245px)}.login-brand span{font-size:clamp(20px,5vw,31px)}}
+@media(max-width:650px){.teacher-logo-lockup img{width:clamp(138px,49vw,265px)}.teacher-connect-suffix{font-size:clamp(18px,5.2vw,29px);margin-bottom:0}.teacher-section-title{font-size:clamp(27px,7vw,36px)}.login-brand img{width:clamp(150px,48vw,245px)}.login-brand span{font-size:clamp(20px,5vw,31px)}}
