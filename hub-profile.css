@@ -27,3 +27,17 @@
 .avatar-actions{display:flex;justify-content:end;gap:12px}
 .avatar-actions button{background:#346da0;color:white;border:1px solid #7eacd0;border-radius:10px;padding:10px 15px;cursor:pointer}
 @media(max-width:720px){.connect-nav{margin-top:0}.identity-avatar{width:58px;height:58px;font-size:35px}#identity-box.identity-connected{min-width:0;padding:14px}.connect-brand .brand-wordmark{width:clamp(138px,49vw,265px)!important}.connect-brand .connect-brand-suffix{font-size:clamp(18px,5.2vw,29px)!important}}
+
+/* Identité remontée dans le coin haut droit, dans l'en-tête du HUB. */
+.topbar{align-items:flex-start}
+.topbar>.brand-block{flex:1 1 auto;min-width:0}
+.topbar>.connect-nav{flex:0 0 auto;width:auto;max-width:min(48%,495px);margin:0;padding:0!important;align-self:flex-start;justify-content:flex-end}
+.topbar #identity-box.identity-classic{padding:0;margin:0;align-items:flex-start}
+.topbar #identity-box.identity-classic .identity-main{justify-items:end}
+.topbar #identity-box.identity-connected{min-width:0;width:100%;margin:0}
+@media(max-width:850px){
+ .topbar{flex-wrap:wrap}
+ .topbar>.brand-block{flex:1 1 100%}
+ .topbar>.connect-nav{flex:1 1 100%;max-width:100%;justify-content:flex-end}
+ .topbar #identity-box.identity-connected{width:min(475px,100%)}
+}
