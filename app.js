@@ -30,8 +30,8 @@ async function ensureStudentSession(){
 async function call(action,data={}){const {data:{session}}=await sb.auth.getSession();if(!session)throw Error('Connexion requise');
  const r=await fetch(url+'/functions/v1/connect-api',{method:'POST',headers:{'content-type':'application/json','apikey':key,'authorization':'Bearer '+session.access_token},body:JSON.stringify({action,...data})});
  const v=await r.json().catch(()=>({}));if(!r.ok||!v.ok)throw Error(({forbidden:'Accès refusé',join_failed:'Demande impossible',decision_failed:'Demande déjà traitée ou expirée',auth_required:'Connexion expirée'})[v.error]||v.error||'Erreur réseau');return v}
-async function teacher(){const r=await call('teacher-dashboard');const box=$('class-selector');box.replaceChildren(...r.classes.map(c=>new Option(c.name,c.id)));$('year-selector').replaceChildren(...r.years.map(v=>new Option(v.label,v.id)));show('teacher');await refresh();await showResults().catch(e=>showResultMessage('Suivi indisponible : '+e.message))}
-async function refresh(){const id=$('class-selector').value;if(!id)return;const data=await call('teacher-dashboard',{classId:id});const j={requests:data.requests},s={students:data.students},d={devices:data.devices};$('request-count').textContent=j.requests.length;const out=$('requests-list');out.replaceChildren();
+async function teacher(){const r=await call('teacher-dashboard');const box=$('class-selector');box.replaceChildren(...r.classes.map(c=>new Option(c.name,c.id)));$('year-selector').replaceChildren(...r.years.map(v=>new Option(v.label,v.id)));show('teacher');showTeacherTab('home');await refresh();await showResults().catch(e=>showResultMessage('Suivi indisponible : '+e.message))}
+async function refresh(){const id=$('class-selector').value;if(!id){$('request-count').textContent='0';$('requests-list').textContent='Aucune demande.';$('students-list').textContent='Aucun élève.';return;}const data=await call('teacher-dashboard',{classId:id});const j={requests:data.requests},s={students:data.students},d={devices:data.devices};$('request-count').textContent=j.requests.length;const out=$('requests-list');out.replaceChildren();
  if(!j.requests.length)out.textContent='Aucune demande.';
  for(const req of j.requests){const card=document.createElement('div');card.className='request-card';const head=document.createElement('div');head.className='request-heading';const name=document.createElement('strong');name.textContent=req.first_name+'.'+req.last_initial;const code=document.createElement('span');code.className='request-code';code.textContent=req.verify_code;head.append(name,code);card.append(head);const row=document.createElement('div');row.className='button-row';
  // Même prénom + initiale : présélection seulement si une seule fiche correspond.
@@ -270,3 +270,48 @@ function showDetail(v){
 $('results-refresh').onclick=()=>run(showResults);
 $('results-app').onchange=()=>run(showResults);
 $('results-back').onclick=()=>{$('results-detail').hidden=true;$('results-list').hidden=false};
+
+/* B1 : navigation visuelle professeur (sans changer les API éprouvées). */
+const teacherTabs=['home','apps','other','results','management'];
+function showTeacherTab(tab){
+ const selected=teacherTabs.includes(tab)?tab:'home';
+ for(const t of teacherTabs){
+  const node=document.getElementById('teacher-'+t);
+  if(node)node.hidden=t!==selected;
+ }
+ if(selected==='apps')loadTeacherAppPreview();
+ if(selected==='results')run(showResults);
+ window.scrollTo({top:0,behavior:'instant'});
+}
+document.querySelectorAll('[data-teacher-tab]').forEach(b=>b.addEventListener('click',()=>showTeacherTab(b.dataset.teacherTab)));
+document.querySelectorAll('[data-results]').forEach(b=>b.addEventListener('click',()=>{
+ const label={observation:'Observation',phase1:'Phase 1',phase2:'Phase 2','2eco':'2 ECO'}[b.dataset.results];
+ $('teacher-results-context').textContent='Espace '+label+' · résultats des élèves de la classe administrative sélectionnée. Le filtrage par espace sera ajouté au prochain bloc.';
+ showTeacherTab('results');
+}));
+document.querySelectorAll('[data-space]').forEach(a=>a.addEventListener('click',()=>{
+ const box=$('class-selector');
+ const id=box?.value;
+ if(id){const url=new URL(a.href);url.searchParams.set('class',id);url.searchParams.set('name',box.selectedOptions[0]?.textContent||'Ma classe');a.href=url.href;}
+}));
+async function loadTeacherAppPreview(){
+ const body=$('teacher-app-tbody');
+ if(!body)return;
+ try{
+  const response=await fetch('./hub-catalog.json',{cache:'no-cache'});
+  if(!response.ok)throw Error('Catalogue non disponible');
+  const data=await response.json();
+  const apps=Array.isArray(data.apps)?data.apps:[];
+  body.replaceChildren();
+  if(!apps.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=8;td.textContent='Aucune application pour le moment.';tr.append(td);body.append(tr);return}
+  for(const [i,app] of apps.entries()){
+   const tr=document.createElement('tr'),cell=document.createElement('td');
+   const link=document.createElement('a');link.className='teacher-app-title';link.href=app.launch_url;link.target='_blank';link.rel='noopener noreferrer';
+   if(app.image_url){const im=document.createElement('img');im.src=app.image_url;im.alt='';im.loading='lazy';link.append(im)}
+   const name=document.createElement('span');name.textContent=app.title;link.append(name);cell.append(link);tr.append(cell);
+   for(let j=0;j<4;j++){const td=document.createElement('td');const small=document.createElement('small');small.textContent='Réglages à venir';td.append(small);tr.append(td)}
+   for(const value of ['À venir',String(app.display_order??'—'),String(i+1)]){const td=document.createElement('td');td.textContent=value;tr.append(td)}
+   body.append(tr);
+  }
+ }catch(e){body.textContent=e.message||'Catalogue indisponible'}
+}
