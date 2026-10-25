@@ -104,7 +104,7 @@ Deno.serve(async req=>{
   const refreshXp=async(studentId:string,appKey:string)=>{
    if(appKey!==app)return null;
    const result=await db.rpc('connect_xp_sync_v2',{p_student:studentId,p_app:appKey,p_force:false});
-   if(result.error){console.error('xp_credit_error',result.error.code);return null}
+   if(result.error){console.error('xp_credit_error',result.error.code);throw Error('xp_sync_failed')}
    return result.data;
   };
   // Restauration de secours : fusion des acquis, sans nouvelles tables ni RPC.
