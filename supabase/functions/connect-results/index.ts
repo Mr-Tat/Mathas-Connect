@@ -121,12 +121,21 @@ Deno.serve(async req=>{
     const different=!!record&&b.backupResetEpoch!==epoch;
     if(different&&b.recoverPastReset!==true)return deny('previous_reset_requires_confirmation',409);
     const {before,after}=restorePreviewState(record?.state_data||{},b.backupState);
-    const changed=JSON.stringify(before)!==JSON.stringify(after);
+    // Une sauvegarde V4 restaure aussi les étapes XP indépendantes des records effacés.
+    const backupKeys:any[]=b.backupFormat==='mathas-connect-class-backup-v4'?b.backupMilestones:[];
+    if(!Array.isArray(backupKeys)||backupKeys.length>100||backupKeys.some((x:any)=>!x||x.appKey!==app||typeof x.key!=='string'||! /^(classic:[123]:(4:perfect|10:(pass|bonus)|20:(pass|bonus))|sudden:[123]:(5|10)|hard:[123]:(3|7))$/.test(x.key)))return deny('invalid_backup_milestones');
+    const uniqueKeys=[...new Set(backupKeys.map((x:any)=>x.key))].sort();
+    const existing=await db.from('connect_xp_milestones').select('milestone_key').eq('student_id',b.studentId).eq('app_key',app);
+    if(existing.error)throw Error('db_error');
+    const currentKeys=new Set(existing.data.map((x:any)=>x.milestone_key));
+    const missingKeys=uniqueKeys.filter((k:string)=>!currentKeys.has(k));
+    const stateChanged=JSON.stringify(before)!==JSON.stringify(after);
+    const changed=stateChanged||missingKeys.length>0;
     // Liaison de la confirmation à la prévisualisation exacte, sans table supplémentaire.
-    const digestInput=JSON.stringify([b.classId,b.studentId,app,rev,epoch,b.backupRevision,b.backupResetEpoch,different,after]);
+    const digestInput=JSON.stringify([b.classId,b.studentId,app,rev,epoch,b.backupRevision,b.backupResetEpoch,different,after,uniqueKeys,[...currentKeys].sort()]);
     const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(digestInput)))).map(v=>v.toString(16).padStart(2,'0')).join('');
     const info={ok:true,changed,studentId:b.studentId,appKey:app,currentRevision:rev,currentResetEpoch:epoch,
-      recoveringPastReset:different,previewDigest:digest,before:restoreSummary(before),after:restoreSummary(after)};
+      recoveringPastReset:different,previewDigest:digest,stateChanged,restoringXpMilestones:missingKeys.length,before:restoreSummary(before),after:restoreSummary(after)};
     if(b.action==='teacher-restore-preview')return answer(info);
     // Une sauvegarde privée préalable est impérative. Le clic navigateur ne prouve
     // pas le stockage du fichier : le professeur doit vérifier lui-même sa copie.
@@ -136,20 +145,25 @@ Deno.serve(async req=>{
     if(typeof b.previewDigest!=='string'||b.previewDigest!==digest)return deny('preview_changed',409);
     if(!changed){const xp=await refreshXp(b.studentId,app);return answer({...info,unchanged:true,...(xp?{xp}:{} )});}
     const payload={state_data:after,schema_version:1,updated_at:new Date().toISOString(),revision:rev+1};
-    if(record){
+    if(stateChanged&&record){
       const update=await db.from('connect_states').update(payload)
         .eq('student_id',b.studentId).eq('app_key',app).eq('revision',rev).eq('reset_epoch',epoch)
         .select('revision').maybeSingle();
       if(update.error)throw Error('db_error');
       if(!update.data)return deny('revision_conflict',409);
-    }else{
+    }else if(stateChanged){
       const created=await db.from('connect_states')
         .insert({...payload,student_id:b.studentId,app_key:app,reset_epoch:epoch})
         .select('revision').single();
       if(created.error)return deny(created.error.code==='23505'?'revision_conflict':'db_error',created.error.code==='23505'?409:500);
     }
+    if(missingKeys.length){
+      const rows=missingKeys.map((key:string)=>({student_id:b.studentId,app_key:app,milestone_key:key,evidence:{source:'teacher-backup-v4',restored:true}}));
+      const added=await db.from('connect_xp_milestones').upsert(rows,{onConflict:'student_id,app_key,milestone_key',ignoreDuplicates:true});
+      if(added.error)return deny('milestone_restore_failed_after_state_write',500);
+    }
     const xp=await refreshXp(b.studentId,app);
-    return answer({...info,restored:true,revision:rev+1,...(xp?{xp}:{} )});
+    return answer({...info,restored:true,revision:stateChanged?rev+1:rev,...(xp?{xp}:{} )});
   }
   if(b.action==='teacher-export'){
    // Sauvegarde privée, seulement pour l'enseignant gestionnaire de cette classe.
