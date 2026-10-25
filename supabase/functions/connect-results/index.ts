@@ -100,7 +100,7 @@ Deno.serve(async req=>{
  const selected=appAllowed(b.appKey)?b.appKey:null;
  try{
   const managed=async()=>!user.is_anonymous&&!!await read(db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('class_id',b.classId).eq('can_manage',true));
-  const identity=async()=>{if(!user.is_anonymous)return null;const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;return await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null))?device.student_id:null};
+  const identity=async()=>{if(!user.is_anonymous){if(!await managed())return null;const player=await read(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));return player?.student_id||null;}const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;return await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null))?device.student_id:null};
   // Restauration de secours : fusion des acquis, sans nouvelles tables ni RPC.
   if(b.action==='teacher-restore-preview'||b.action==='teacher-restore-apply'){
     if(!await managed()||!valid(b.studentId)||b.appKey!==app)return deny('forbidden',403);
