@@ -26,6 +26,23 @@ async function handle(req:Request){
  try{
  switch(b.action){
  
+ case 'teacher-player':{
+   if(!await teacher())return fail('forbidden',403);
+   let link=await one(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));
+   if(!link){
+     const created=await db.from('connect_students').insert({display_name:'Monsieur T',avatar_kind:'letter',avatar_value:'T',avatar_color:'ocean',projection_opt_in:false}).select('id').single();
+     if(created.error)return fail('db_failed',500);
+     const saved=await db.from('connect_teacher_players').insert({teacher_id:user.id,student_id:created.data.id});
+     if(saved.error){
+       const winner=await one(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));
+       if(!winner)return fail('db_failed',500);
+       await db.from('connect_students').delete().eq('id',created.data.id);
+       link=winner;
+     }else link={student_id:created.data.id};
+   }
+   const profile=await one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color').eq('id',link.student_id));
+   return ok({status:'approved',displayName:profile?.display_name||'Monsieur T',avatar:{kind:profile?.avatar_kind||'letter',value:profile?.avatar_value||'T',color:profile?.avatar_color||'ocean'},level:{number:1,xp:0,next:90,active:false},teacherPlayer:true});
+ }
  case 'student-avatar':{
    if(!user.is_anonymous)return fail('forbidden',403);
    const kind=b.kind,value=b.value,color=b.color;
