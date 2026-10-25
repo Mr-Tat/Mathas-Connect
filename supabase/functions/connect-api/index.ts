@@ -51,7 +51,8 @@ async function handle(req:Request){
    if(!colors.includes(color)||!['animal','letter'].includes(kind)||(kind==='animal'?!animals.includes(value):!(/^[A-Z]$/).test(value)))return fail('input_invalid');
    const device=user.is_anonymous?await one(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1)):await one(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));
    if(!device)return fail('forbidden',403);
-   const updated=await db.from('connect_students').update({avatar_kind:kind,avatar_value:value,avatar_color:color}).eq('id',device.student_id);
+   const updated=await db.from('connect_students').update({avatar_kind:kind,avatar_value:value,avatar_color:color}).eq('id',device.student_id).is('archived_at',null).select('id');
+   if(!updated.error&&!updated.data?.length)return fail('profile_archived',403);
    return updated.error?fail('db_failed',500):ok({avatar:{kind,value,color}});
  }
  case 'student-device-label':{
@@ -81,7 +82,8 @@ async function handle(req:Request){
    if(d){
      const e=await one(db.from('connect_enrollments').select('id').eq('student_id',d.student_id).eq('class_id',b.classId).is('left_at',null));
      if(!e)return ok({status:'wrong_class'});
-     const student=await one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color').eq('id',d.student_id));
+     const student=await one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color,archived_at').eq('id',d.student_id));
+     if(!student||student.archived_at)return ok({status:'revoked'});
      return ok({status:'approved',displayName:student?.display_name??'Élève',avatar:{kind:student?.avatar_kind||'letter',value:student?.avatar_value||String(student?.display_name||'E').slice(0,1).toUpperCase(),color:student?.avatar_color||'ocean'},level:{number:1,xp:0,next:90,active:false},classId:b.classId});
    }
    const revoked=await one(db.from('connect_devices').select('id').eq('auth_user_id',user.id).eq('state','revoked').limit(1));
@@ -189,7 +191,7 @@ async function handle(req:Request){
    const e=await db.from('connect_enrollments').select('student_id').eq('class_id',b.classId).is('left_at',null);
    if(e.error)return fail('db_failed',500);
    if(!e.data.length)return ok({students:[]});
-   const s=await db.from('connect_students').select('id,display_name').in('id',e.data.map((x:any)=>x.student_id));
+   const s=await db.from('connect_students').select('id,display_name').in('id',e.data.map((x:any)=>x.student_id)).is('archived_at',null);
    return s.error?fail('db_failed',500):ok({students:s.data});
  }
  case 'teacher-review-join':{
@@ -218,9 +220,10 @@ async function handle(req:Request){
    if(r.error)return fail('db_failed',500);
    if(!r.data)return ok({request:null});
    if(r.data.state==='approved'){
-     const d=await db.from('connect_devices').select('state').eq('auth_user_id',user.id)
+     const d=await db.from('connect_devices').select('state,student_id').eq('auth_user_id',user.id)
        .eq('state','approved').maybeSingle();
-     return ok({request:{state:d.data?'approved':'revoked'}});
+     const student=d.data?await one(db.from('connect_students').select('id').eq('id',d.data.student_id).is('archived_at',null)):null;
+     return ok({request:{state:student?'approved':'revoked'}});
    }
    if(r.data.state==='pending'&&new Date(r.data.expires_at)<new Date())
      return ok({request:{state:'expired'}});
@@ -250,7 +253,7 @@ async function handle(req:Request){
  }
  case 'teacher-pair-code':{
   if(!U.test(b.classId||'')||!U.test(b.studentId||'')||!await manage(b.classId))return fail('forbidden',403);
-  if(!await one(db.from('connect_enrollments').select('id').eq('class_id',b.classId).eq('student_id',b.studentId).is('left_at',null)))return fail('not_enrolled',403);
+  if(!await one(db.from('connect_enrollments').select('id').eq('class_id',b.classId).eq('student_id',b.studentId).is('left_at',null))||!await one(db.from('connect_students').select('id').eq('id',b.studentId).is('archived_at',null)))return fail('not_enrolled',403);
   const code=random(),expiry=new Date(Date.now()+10*60000).toISOString();
   const r=await db.from('connect_pairings').insert({class_id:b.classId,student_id:b.studentId,created_by:user.id,code_hash:await hash(code),expires_at:expiry});
   return r.error?fail('pair_failed'):ok({code,expiresInSeconds:600});
