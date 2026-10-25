@@ -55,7 +55,7 @@ body:has(.teacher-panel:not([hidden]))>.shell>.topbar{display:none}
 .teacher-panel #results-section .hint{color:#bad0e4}
 .teacher-panel .management{border-color:#48617c}
 .teacher-panel .management summary{color:#e3f2ff}
-.teacher-app-scroll{max-width:100%;overflow-x:auto;border:1px solid #42617e;border-radius:15px;background:#12243a}
+.teacher-app-scroll{max-width:100%;max-height:72vh;overflow:auto;border:1px solid #42617e;border-radius:15px;background:#12243a}
 .teacher-app-table{border-collapse:separate;border-spacing:0;min-width:1150px;width:100%;color:#edf6ff}
 .teacher-app-table th,.teacher-app-table td{padding:15px 12px;text-align:center;border-right:1px solid #395169;border-bottom:3px solid #314866;white-space:nowrap}
 .teacher-app-table thead th{position:sticky;top:0;background:#233d5b;z-index:3}
