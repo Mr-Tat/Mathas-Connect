@@ -131,6 +131,17 @@ function drawIdentity(profile) {
   activeProfile=authorized?profile:null;
   $('identity-box').className=authorized?'identity-connected':'identity-classic';
   $('identity-title').textContent = authorized ? 'Bienvenue '+profile.displayName+' !' : 'Mode Classique';
+  const oldBar=$('connect-xp-bar');if(oldBar)oldBar.remove();
+  if(authorized&&profile.xp?.active){
+    const level=profile.xp.level,total=profile.xp.total,from=level<=7?(level-1)*50:300+(level-7)*100,to=profile.xp.next;
+    const detail=document.createElement('div');detail.id='connect-xp-bar';detail.title='XP Connect : '+total+' / '+to+' pour atteindre le prochain niveau';
+    detail.style.cssText='width:min(235px,100%);margin-top:5px;display:grid;gap:3px';
+    const rail=document.createElement('div');rail.style.cssText='height:7px;background:rgba(135,174,191,.25);overflow:hidden;border-radius:20px';
+    const fill=document.createElement('div');fill.style.cssText='height:100%;background:#c99b2c;border-radius:20px;width:'+Math.max(0,Math.min(100,100*(total-from)/(to-from)))+'%';rail.append(fill);
+    const label=document.createElement('small');label.style.cssText='font-size:10px;opacity:.78';label.textContent='Niveau '+(level+1)+' à '+to+' XP';
+    detail.append(rail,label);
+    $('identity-level').after(detail);
+  }
   $('identity-class').hidden=true;
   $('identity-level').hidden=!authorized;
   if(authorized)$('identity-level').textContent=profile.xp?.active?('Niveau '+profile.xp.level+' · '+profile.xp.total+' XP Connect'):'Niveau 1 · 0 XP Connect';
