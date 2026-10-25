@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "path": "assets/miniatures/addition-ecrite-simple.webp",
+      "source": "miniatures/optimise-v17-10-addition-simple-1791797141830-1uykou3.webp",
+      "source_bytes": 41240,
+      "bytes": 25068,
+      "dimensions": [
+        480,
+        480
+      ],
+      "sha256": "f5ee0cc21e2a516fe866ffe83d69d480841c5f039ae1582f0ea6e0c3f6e7aa34"
+    },
+    {
+      "path": "assets/brand/mathas-wordmark.webp",
+      "source": "logos/logo-mot-1791065255634-jznxux.png",
+      "source_bytes": 1680044,
+      "bytes": 61946,
+      "dimensions": [
+        840,
+        280
+      ],
+      "sha256": "8fc39f12e2515cb96d48dc9fff3180f05f7dd12bfb61f5682c4affb9468ce426"
+    },
+    {
+      "path": "assets/brand/favicon.png",
+      "source": "logos/embleme-neon-mathematique-avec-m-en-3d-1791285482515-dyxa8v.png",
+      "source_bytes": 1725443,
+      "bytes": 10887,
+      "dimensions": [
+        64,
+        64
+      ],
+      "sha256": "02e54898be4379bd3cfd6702035237ec49a860cd344f020b61b41a411512371d"
+    },
+    {
+      "path": "assets/brand/apple-touch-icon.png",
+      "source": "logos/embleme-neon-mathematique-avec-m-en-3d-1791285482515-dyxa8v.png",
+      "source_bytes": 1725443,
+      "bytes": 64493,
+      "dimensions": [
+        180,
+        180
+      ],
+      "sha256": "ca60d7d05c4d0d0ac45e7eb8cae9227b42de8c564e581f7fa01ab2d373e48b7e"
+    }
+  ]
+}
