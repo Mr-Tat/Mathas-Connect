@@ -8,8 +8,9 @@
   <title>Math’as Connect — Professeur</title>
   <link rel="icon" type="image/png" href="./assets/brand/favicon.png">
   <link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png">
-  <link rel="stylesheet" href="./style.css?v=20261025g">
-  <script type="module" src="./app.js?v=20261025g"></script>
+  <link rel="stylesheet" href="./style.css?v=20261025j">
+  <script type="module" src="./app.js?v=20261025j"></script>
+<link rel="stylesheet" href="./join-avatar.css?v=1">
 </head>
 <body>
   <main class="shell">
@@ -149,6 +150,11 @@
         <input id="first-name" type="text" maxlength="40" autocomplete="given-name" placeholder="Lucas" required>
         <label for="last-initial">Première lettre du nom</label>
         <input id="last-initial" type="text" maxlength="1" placeholder="D" required>
+        <fieldset class="join-avatar-field"><legend>Choisis ton avatar</legend><p class="hint">Un animal ou une lettre majuscule, puis une couleur.</p>
+          <div id="join-avatar-choices" class="join-avatar-grid" role="group" aria-label="Animal ou lettre"></div>
+          <div id="join-avatar-colors" class="join-avatar-colors" role="group" aria-label="Couleur de l'avatar"></div>
+          <div class="join-avatar-preview" id="join-avatar-preview" aria-label="Aperçu de ton avatar">🦊</div>
+        </fieldset>
         <div class="button-row">
           <button type="submit">Demander l’accès</button>
           <button type="button" id="clear-form" class="soft">Effacer</button>
