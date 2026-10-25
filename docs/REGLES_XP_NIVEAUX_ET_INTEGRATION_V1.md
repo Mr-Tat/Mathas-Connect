@@ -1,5 +1,7 @@
 # Math’as Connect — Règles XP, niveaux et intégration des jeux (V1 de conception)
 
+> **ATTENTION :** la règle actuelle est désormais celle de la section « Décision révisée — recalibrage manuel » ci-dessous. Les anciennes protections contre la baisse de niveau ne sont plus retenues.
+
 > Document de référence pour toutes les prochaines intégrations Math’as Connect.
 > Décision de conception validée le 25 octobre 2026. **Pas encore implémenté en production**.
 > Ne modifie jamais l'ancien Math’as (`Mr-Tat/Mathas` / Supabase legacy).
@@ -169,3 +171,18 @@ Les états `connect_states` du premier jeu, les récompenses et les `hardThree` 
 Joindre ce fichier à tout nouveau projet Connect ou fournir son chemin GitHub exact : `Mr-Tat/Mathas-Connect/docs/REGLES_XP_NIVEAUX_ET_INTEGRATION_V1.md`.
 
 Réviser le numéro de version et consigner explicitement toute modification des seuils, coefficients et règles de conservation d'acquis. Ne pas effacer les récompenses déjà créditées.
+
+
+## Décision révisée — recalibrage manuel (25 octobre 2026)
+
+Cette décision **remplace** toute phrase antérieure de ce document imposant de conserver à vie le plus haut niveau ou de créditer les XP uniquement à la hausse.
+
+- Les résultats bruts et preuves de trophées/défis restent enregistrés indépendamment de leur valorisation XP.
+- Le jeu définit les réussites qui méritent des XP, dans un contrat de version précis. Connect valide les preuves et comptabilise les crédits. Le HUB affiche le total.
+- **Barème actif** : appliqué aux nouvelles réussites. Les changements de code/barème en préparation ne doivent pas recalculer tous les anciens élèves à chaque publication.
+- **Recalibrage global manuel** depuis l'espace professeur : bouton « Recalculer les niveaux », simulation obligatoire des variations, puis confirmation explicite. La simulation doit tenir compte des barèmes de toutes les applications et des paliers de niveau en vigueur.
+- **Une baisse des XP et du niveau est autorisée** lors de ce recalibrage. Le niveau courant doit être recomputé à partir de la somme des crédits recalculés, pas forcé à son ancien record. Conserver l'historique des versions et de l'opération pour audit et restauration.
+- Recalcul idempotent, exclusif/concurrent sûr, valable aussi pour Monsieur T. Aucune perte ni multiplication de preuves, aucune attribution répétitive par partie, pas de double crédit.
+- **Important : les anciennes tables `connect_level_profiles.highest_level_reached` et `connect_xp_credits` reflètent encore l'ancien modèle tant que la migration n'est pas confirmée.** Ne pas prétendre que le nouveau modèle est déployé. Une migration transactionnelle et un moteur de simulation fiable restent à réaliser.
+- Conserver les exports privés avant un recalibrage et signaler que l'ancien fichier peut réintroduire des résultats supprimés.
+- Les réglages seront versionnés, avec un barème activé et un brouillon. Ne jamais publier un brouillon automatiquement.
