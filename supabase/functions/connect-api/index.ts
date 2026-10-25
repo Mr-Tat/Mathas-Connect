@@ -200,6 +200,7 @@ async function handle(req:Request){
    const args:any={p_teacher:user.id,p_request:b.requestId,p_approve:b.approve};
    if(b.existingStudentId){
      if(!U.test(b.existingStudentId))return fail('input_invalid');
+     if(!await one(db.from('connect_students').select('id').eq('id',b.existingStudentId).is('archived_at',null)))return fail('student_archived',409);
      args.p_existing_student=b.existingStudentId;
    }
    const r=await db.rpc('connect_review_join',args);
