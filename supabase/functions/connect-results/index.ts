@@ -277,7 +277,7 @@ Deno.serve(async req=>{
    const rev=current?.revision??0;
    if((current?.reset_epoch??0)!==b.expectedResetEpoch)return deny('stale_reset_epoch',409);
    const prior=validate(current?.state_data||{});
-   if(prior.ids.includes(b.eventId))return answer({ok:true,revision:rev,state:prior,duplicate:true});
+   if(prior.ids.includes(b.eventId)){const xp=await refreshXp(studentId,selected);return answer({ok:true,revision:rev,resetEpoch:current?.reset_epoch??0,state:prior,duplicate:true,...(xp?{xp}:{})});}
    if(rev!==b.expectedRevision)return deny('revision_conflict',409);
    const next=structuredClone(prior),i=b.level-1,when=new Date().toISOString();
    next.ids=[b.eventId,...next.ids].slice(0,50);
