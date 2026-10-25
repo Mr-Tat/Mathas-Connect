@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="./assets/brand/favicon.png">
   <link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png">
   <link rel="stylesheet" href="./style.css?v=20261025j">
-  <script type="module" src="./app.js?v=20261025j"></script>
+  <script type="module" src="./app.js?v=20261025l"></script>
 <link rel="stylesheet" href="./join-avatar.css?v=1">
 <link rel="stylesheet" href="./student-entry-dark.css?v=1">
 <script type="module" src="./join-avatar.js?v=1"></script>
@@ -134,6 +134,11 @@
         <div class="teacher-classbar"><label for="class-selector">Classe administrative</label><select id="class-selector"></select><button id="refresh-teacher" type="button" class="teacher-quiet">Actualiser</button><button id="copy-student-link" type="button" class="teacher-quiet">Copier le lien élève</button></div>
         <h3>Élèves et appareils</h3>
         <div id="students-list" class="stack hint">Aucun élève.</div>
+        <details class="management" id="archived-students-panel">
+          <summary>Élèves archivés — résultats conservés (<span id="archived-students-count">0</span>)</summary>
+          <p class="hint">Restaurer rend la fiche de nouveau active. Supprimer définitivement efface les résultats Connect et les données liées, sans possibilité de restauration depuis l'application.</p>
+          <div id="archived-students-list" class="stack"></div>
+        </details>
         <p class="hint">Révoquer bloque l’accès Connect de cet appareil sans supprimer l’élève ni ses résultats.</p>
       <details class="management"><summary>Gérer la classe</summary>
         <form id="add-student-form"><label for="new-student-name">Ajouter un élève</label><input id="new-student-name" maxlength="120" placeholder="Prénom.N" required><button type="submit">Ajouter l’élève</button></form>
