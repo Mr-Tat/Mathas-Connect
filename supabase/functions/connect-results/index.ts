@@ -104,7 +104,7 @@ Deno.serve(async req=>{
   // Restauration de secours : fusion des acquis, sans nouvelles tables ni RPC.
   if(b.action==='teacher-restore-preview'||b.action==='teacher-restore-apply'){
     if(!await managed()||!valid(b.studentId)||b.appKey!==app)return deny('forbidden',403);
-    if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2'].includes(b.backupFormat))return deny('invalid_backup_format');
+    if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2','mathas-connect-class-backup-v3'].includes(b.backupFormat))return deny('invalid_backup_format');
     if(b.backupProjectRef!=null&&b.backupProjectRef!=='awmhpfofacaglewammxt')return deny('wrong_project',403);
     if(!int(b.backupRevision,0,1000000000)||!int(b.backupResetEpoch,0,1000000000))return deny('invalid_backup');
     const member=await read(db.from('connect_enrollments').select('id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));
