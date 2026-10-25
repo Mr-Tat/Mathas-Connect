@@ -80,10 +80,61 @@ async function showCatalog() {
   }
 }
 
+const animalOptions={fox:'🦊',panda:'🐼',frog:'🐸',lion:'🦁',penguin:'🐧',owl:'🦉',cat:'🐱',dog:'🐶',rabbit:'🐰',bear:'🐻',koala:'🐨',wolf:'🐺',tiger:'🐯',monkey:'🐵',elephant:'🐘',giraffe:'🦒',zebra:'🦓',horse:'🐴',cow:'🐮',pig:'🐷',sheep:'🐑',deer:'🦌',hedgehog:'🦔',squirrel:'🐿️',otter:'🦦',dolphin:'🐬',whale:'🐳',octopus:'🐙',turtle:'🐢',seal:'🦭',duck:'🦆',parrot:'🦜',flamingo:'🦩',bee:'🐝',butterfly:'🦋',dragon:'🐲'};
+const palette={ocean:'#2563a5',sky:'#247cb5',indigo:'#5444b7',violet:'#8147bb',plum:'#963d86',rose:'#ac4568',coral:'#bc5948',sun:'#b47b27',amber:'#946122',mint:'#238c81',forest:'#297246',slate:'#4b657d'};
+let activeProfile=null,avatarChoice={kind:'animal',value:'fox',color:'ocean'};
+function paintAvatar(node,avatar){
+ const v=avatar||avatarChoice;
+ node.textContent=v.kind==='animal'?(animalOptions[v.value]||'🦊'):(v.value||'M');
+ node.style.background=palette[v.color]||palette.ocean;
+}
+function openAvatarEditor(){
+ const dialog=$('avatar-dialog');dialog.hidden=false;
+ const choices=$('avatar-choices');choices.replaceChildren();
+ for(const [value,emoji] of Object.entries(animalOptions)){
+  const b=document.createElement('button');b.type='button';b.textContent=emoji;b.title=value;b.setAttribute('aria-label','Animal : '+value);
+  b.className=avatarChoice.kind==='animal'&&avatarChoice.value===value?'selected':'';
+  b.onclick=()=>{avatarChoice.kind='animal';avatarChoice.value=value;openAvatarEditor()};
+  choices.append(b);
+ }
+ for(const letter of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'){
+  const b=document.createElement('button');b.type='button';b.textContent=letter;
+  b.className=avatarChoice.kind==='letter'&&avatarChoice.value===letter?'selected':'';
+  b.onclick=()=>{avatarChoice.kind='letter';avatarChoice.value=letter;openAvatarEditor()};
+  choices.append(b);
+ }
+ const colors=$('avatar-colors');colors.replaceChildren();
+ for(const [name,hex] of Object.entries(palette)){
+  const b=document.createElement('button');b.type='button';b.style.background=hex;b.setAttribute('aria-label','Couleur '+name);b.title=name;b.className=avatarChoice.color===name?'selected':'';
+  b.onclick=()=>{avatarChoice.color=name;openAvatarEditor()};colors.append(b);
+ }
+}
+$('avatar-cancel').onclick=()=>$('avatar-dialog').hidden=true;
+$('edit-avatar').onclick=()=>{if(!activeProfile)return;avatarChoice={...activeProfile.avatar};openAvatarEditor()};
+$('avatar-save').onclick=async()=>{
+ const button=$('avatar-save');button.disabled=true;
+ try{
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session?.user?.is_anonymous)throw Error('Connecte-toi en élève');
+  const response=await fetch(url+'/functions/v1/connect-api',{method:'POST',
+   headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
+   body:JSON.stringify({action:'student-avatar',...avatarChoice})});
+  const data=await response.json();
+  if(!response.ok||!data.ok)throw Error(data.error||'Enregistrement impossible');
+  activeProfile={...activeProfile,avatar:data.avatar};
+  drawIdentity(activeProfile);$('avatar-dialog').hidden=true;
+ }catch(e){$('avatar-feedback').textContent=e.message||'Erreur';}finally{button.disabled=false}
+};
+
 function drawIdentity(profile) {
   const authorized = profile?.status === 'approved';
-  $('identity-title').textContent = authorized ? profile.displayName : 'Mode Classique';
-  $('identity-class').textContent = classId ? classLabel : 'HUB de démonstration';
+  activeProfile=authorized?profile:null;
+  $('identity-box').className=authorized?'identity-connected':'identity-classic';
+  $('identity-title').textContent = authorized ? 'Bienvenue '+profile.displayName+' !' : 'Mode Classique';
+  $('identity-class').hidden=true;
+  $('identity-level').hidden=!authorized;
+  const avatar=$('identity-avatar');avatar.hidden=!authorized;
+  if(authorized)paintAvatar(avatar,profile.avatar);
   $('classLabel').textContent = classId ? classLabel : 'Jeux';
   $('identity-action').textContent = authorized ? 'Modifier' : 'Se connecter';
   $('identity-extra').hidden = true;
