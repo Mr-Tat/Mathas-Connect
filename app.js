@@ -4,6 +4,14 @@ const url='https://awmhpfofacaglewammxt.supabase.co', key='sb_publishable_oI2Pyl
 const sb=createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 const $=id=>document.getElementById(id), cls=new URLSearchParams(location.search).get('class');
 const hubLink=hubUrl();
+const CLASS_SPACES={
+ observation:{id:'8fe170fa-9e8f-4e80-885a-b0ba68026f64',name:'Observation'},
+ phase1:{id:'71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e',name:'Phase 1'},
+ phase2:{id:'1b021ed9-4846-4203-9c7b-4b5fa8d7adab',name:'Phase 2'},
+ '2eco':{id:'a9195199-0a28-4e86-99ce-47b36dd6e646',name:'2 ECO'}
+};
+let currentTeacherSpace=null;
+
 let busy=false;
 function show(v){document.querySelectorAll('[data-view]').forEach(e=>e.hidden=e.dataset.view!==v);msg('')}
 function msg(s='',success=false){const e=$('message');e.textContent=s;e.hidden=!s;e.classList.toggle('ok',success)}
@@ -30,7 +38,7 @@ async function ensureStudentSession(){
 async function call(action,data={}){const {data:{session}}=await sb.auth.getSession();if(!session)throw Error('Connexion requise');
  const r=await fetch(url+'/functions/v1/connect-api',{method:'POST',headers:{'content-type':'application/json','apikey':key,'authorization':'Bearer '+session.access_token},body:JSON.stringify({action,...data})});
  const v=await r.json().catch(()=>({}));if(!r.ok||!v.ok)throw Error(({forbidden:'Accès refusé',join_failed:'Demande impossible',decision_failed:'Demande déjà traitée ou expirée',auth_required:'Connexion expirée'})[v.error]||v.error||'Erreur réseau');return v}
-async function teacher(){const r=await call('teacher-dashboard');const box=$('class-selector');box.replaceChildren(...r.classes.map(c=>new Option(c.name,c.id)));$('year-selector').replaceChildren(...r.years.map(v=>new Option(v.label,v.id)));show('teacher');showTeacherTab('home');await refresh();await showResults().catch(e=>showResultMessage('Suivi indisponible : '+e.message))}
+async function teacher(){const r=await call('teacher-dashboard');const box=$('class-selector');box.replaceChildren(...r.classes.filter(c=>!c.name.includes('TEST')).map(c=>new Option(c.name,c.id)));$('year-selector').replaceChildren(...r.years.map(v=>new Option(v.label,v.id)));show('teacher');showTeacherTab('home');await refresh();await showResults().catch(e=>showResultMessage('Suivi indisponible : '+e.message))}
 async function refresh(){const id=$('class-selector').value;if(!id){$('request-count').textContent='0';$('requests-list').textContent='Aucune demande.';$('students-list').textContent='Aucun élève.';return;}const data=await call('teacher-dashboard',{classId:id});const j={requests:data.requests},s={students:data.students},d={devices:data.devices};$('request-count').textContent=j.requests.length;const out=$('requests-list');out.replaceChildren();
  if(!j.requests.length)out.textContent='Aucune demande.';
  for(const req of j.requests){const card=document.createElement('div');card.className='request-card';const head=document.createElement('div');head.className='request-heading';const name=document.createElement('strong');name.textContent=req.first_name+'.'+req.last_initial;const code=document.createElement('span');code.className='request-code';code.textContent=req.verify_code;head.append(name,code);card.append(head);const row=document.createElement('div');row.className='button-row';
@@ -289,20 +297,28 @@ function showTeacherTab(tab){
   if(node)node.hidden=t!==selected;
  }
  if(selected==='apps')loadTeacherAppPreview();
- if(selected==='results')run(showResults);
+ if(selected==='results' && !currentTeacherSpace)run(showResults);
  window.scrollTo({top:0,behavior:'instant'});
 }
 document.querySelectorAll('[data-teacher-tab]').forEach(b=>b.addEventListener('click',()=>showTeacherTab(b.dataset.teacherTab)));
 document.querySelectorAll('[data-results]').forEach(b=>b.addEventListener('click',()=>{
- const label={observation:'Observation',phase1:'Phase 1',phase2:'Phase 2','2eco':'2 ECO'}[b.dataset.results];
+ const label=CLASS_SPACES[b.dataset.results]?.name; if(!label)return; currentTeacherSpace=b.dataset.results; $('class-selector').value=CLASS_SPACES[currentTeacherSpace].id;
  $('teacher-results-context').textContent='Espace '+label+' · résultats des élèves de la classe administrative sélectionnée. Le filtrage par espace sera ajouté au prochain bloc.';
- showTeacherTab('results');
+ refresh().then(showResults).catch(e=>msg(e.message)); showTeacherTab('results');
 }));
-document.querySelectorAll('[data-space]').forEach(a=>a.addEventListener('click',()=>{
- const box=$('class-selector');
- const id=box?.value;
- if(id){const url=new URL(a.href);url.searchParams.set('class',id);url.searchParams.set('name',box.selectedOptions[0]?.textContent||'Ma classe');a.href=url.href;}
-}));
+document.querySelectorAll('[data-space]').forEach(a=>{
+ const space=CLASS_SPACES[a.dataset.space];
+ if(!space)return;
+ const u=new URL(a.href);
+ u.searchParams.set('class',space.id);
+ u.searchParams.set('name',space.name);
+ a.href=u.href;
+});
+document.querySelectorAll('.teacher-space .teacher-space-small[href]').forEach(a=>{
+ const slug=new URL(a.href).searchParams.get('space');
+ const space=CLASS_SPACES[slug];
+ if(space){const u=new URL(a.href);u.searchParams.set('class',space.id);u.searchParams.set('name',space.name);a.href=u.href}
+});
 async function loadTeacherAppPreview(){
  const body=$('teacher-app-tbody');
  if(!body)return;
