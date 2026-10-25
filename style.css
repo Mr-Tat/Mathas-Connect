@@ -13,3 +13,60 @@
 #results-section .result-table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}
 #results-section .result-table th,#results-section .result-table td{padding:10px 7px;border-bottom:1px solid #dce6ef;white-space:nowrap}
 #results-section .result-table th:first-child,#results-section .result-table td:first-child{text-align:left}
+
+/* B1 — Accueil professeur inspiré de l'ancien Math'as, indépendant de son CSS. */
+body:has(.teacher-panel:not([hidden])){background:#07111e;color:#f5f8fc;padding:0}
+body:has(.teacher-panel:not([hidden])) .shell{max-width:1480px;margin:0 auto;padding:22px clamp(12px,3vw,45px)}
+body:has(.teacher-panel:not([hidden]))>.shell>.topbar{display:none}
+.teacher-panel{background:transparent;border:0;padding:0;color:#f2f6fc}
+.teacher-header{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:10px 0 20px;border-bottom:1px solid #405776}
+.teacher-identity{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.teacher-identity img{width:clamp(150px,26vw,300px);height:auto;max-height:100px;object-fit:contain}
+.teacher-identity>span{font-size:clamp(22px,3vw,40px);font-weight:900;color:#43c6dc}
+.teacher-identity p{width:100%;margin:0;color:#aac0d8;font-size:13px}
+.teacher-logout,.teacher-quiet{background:#17344c;color:#ddecfa;border:1px solid #4d708b}
+.teacher-classbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:20px 0 8px}
+.teacher-classbar label{margin:0;color:#c5d7e8}
+.teacher-classbar select{width:min(250px,90vw);margin:0;background:#18314a;color:white;border-color:#5a7b98}
+.teacher-classbar button{min-height:38px;padding:8px 12px}
+.teacher-context{color:#afc3d8;font-size:13px;line-height:1.5;margin:9px 0 18px}
+.teacher-spaces{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:25px 0}
+.teacher-space{display:grid;gap:8px;min-width:0;--space-a:#174e63;--space-b:#087b9e;--space-border:#3ac1db}
+.space-phase1{--space-a:#302c61;--space-b:#6857b6;--space-border:#9d91f3}
+.space-phase2{--space-a:#16473e;--space-b:#208765;--space-border:#6bd9a9}
+.space-2eco{--space-a:#50382e;--space-b:#a76949;--space-border:#edb189}
+.teacher-space-main,.teacher-space-small{font:inherit;display:grid;place-items:center;width:100%;text-align:center;color:#fff!important;text-decoration:none;border:1px solid var(--space-border);background:linear-gradient(135deg,var(--space-b),var(--space-a));box-shadow:0 12px 28px #0005;border-radius:16px;font-weight:900}
+.teacher-space-main{min-height:112px;font-size:clamp(17px,2.15vw,27px);padding:15px 6px}
+.teacher-space-small{min-height:39px;font-size:clamp(11px,1.18vw,15px);padding:7px 5px;border-radius:10px;cursor:pointer}
+.teacher-space-main:hover,.teacher-space-small:hover{filter:brightness(1.15)}
+.teacher-shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:10px 0 28px;padding-top:22px;border-top:2px solid #2b4560}
+.teacher-shortcuts>*{display:grid;place-items:center;min-height:66px;padding:10px;border-radius:13px;background:linear-gradient(145deg,#334f78,#172b44);border:1px solid #6383a6;color:#fff;text-decoration:none;font-weight:850;font-size:clamp(14px,1.6vw,22px);cursor:pointer}
+.teacher-shortcuts>*:hover{background:#41618c}
+.teacher-section-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:12px 0}
+.teacher-section-heading h2{font-size:clamp(22px,2.6vw,32px);color:#f7fbff;margin:0}
+.teacher-request-area,.teacher-section:not(#teacher-home){border:1px solid #39536d;background:linear-gradient(150deg,#172a43,#0b1c30);padding:clamp(15px,2vw,28px);border-radius:20px}
+.teacher-request-area .hint,.teacher-section .hint{color:#a7bdd4}
+.teacher-request-area .request-card,.teacher-section .student-card{background:#eef5ff;color:#17304d}
+.teacher-section[hidden]{display:none!important}
+.teacher-panel .teacher-section:not(#teacher-home) input,.teacher-panel .teacher-section:not(#teacher-home) select{color:#172b40}
+.teacher-panel .teacher-section:not(#teacher-home) h3{color:#f5f8fe}
+.teacher-panel #results-section{border:0;padding:0}
+.teacher-panel #results-section> .heading-row h2{display:none}
+.teacher-panel #results-section .hint{color:#bad0e4}
+.teacher-panel .management{border-color:#48617c}
+.teacher-panel .management summary{color:#e3f2ff}
+.teacher-app-scroll{max-width:100%;overflow-x:auto;border:1px solid #42617e;border-radius:15px;background:#12243a}
+.teacher-app-table{border-collapse:separate;border-spacing:0;min-width:1150px;width:100%;color:#edf6ff}
+.teacher-app-table th,.teacher-app-table td{padding:15px 12px;text-align:center;border-right:1px solid #395169;border-bottom:3px solid #314866;white-space:nowrap}
+.teacher-app-table thead th{position:sticky;top:0;background:#233d5b;z-index:3}
+.teacher-app-table th:first-child,.teacher-app-table td:first-child{position:sticky;left:0;z-index:2;min-width:210px;text-align:left;background:#1a3350}
+.teacher-app-table th:first-child{z-index:4;background:#294c72}
+.teacher-app-table tbody tr:nth-child(even) td{background:#1a2c43}
+.teacher-app-table tbody tr:nth-child(even) td:first-child{background:#25415e}
+.teacher-app-table a{color:#aee6ff;text-decoration:none}
+.teacher-app-table .teacher-app-title{display:flex;align-items:center;gap:10px}
+.teacher-app-table img{width:50px;height:50px;object-fit:cover;border-radius:8px}
+.teacher-app-table small{display:block;color:#b9cddd}
+.teacher-classbar button:focus-visible,.teacher-shortcuts a:focus-visible,.teacher-shortcuts button:focus-visible,.teacher-space a:focus-visible,.teacher-space button:focus-visible{outline:3px solid #92e5f6;outline-offset:2px}
+@media(max-width:800px){.teacher-spaces{grid-template-columns:repeat(2,minmax(0,1fr))}.teacher-space-main{min-height:82px}.teacher-space-small{font-size:13px}.teacher-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:500px){.teacher-header{align-items:flex-start}.teacher-logout{font-size:12px}.teacher-classbar{align-items:stretch}.teacher-classbar label{width:100%}.teacher-classbar select{width:100%}}
