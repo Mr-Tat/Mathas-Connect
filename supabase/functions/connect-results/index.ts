@@ -103,7 +103,7 @@ Deno.serve(async req=>{
   const identity=async()=>{if(!user.is_anonymous){if(!await managed())return null;const player=await read(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));return player?.student_id||null;}const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;const enrolled=await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null));if(!enrolled)return null;const active=await read(db.from('connect_students').select('id').eq('id',device.student_id).is('archived_at',null));return active?device.student_id:null};
   const refreshXp=async(studentId:string,appKey:string)=>{
    if(appKey!==app)return null;
-   const result=await db.rpc('connect_refresh_xp_v1',{p_student:studentId,p_app:appKey,p_force_recalculate:false});
+   const result=await db.rpc('connect_xp_sync_v2',{p_student:studentId,p_app:appKey,p_force:false});
    if(result.error){console.error('xp_credit_error',result.error.code);return null}
    return result.data;
   };
@@ -134,7 +134,7 @@ Deno.serve(async req=>{
     if(!int(b.expectedRevision,0,1000000000)||!int(b.expectedResetEpoch,0,1000000000))return deny('invalid_revision');
     if(rev!==b.expectedRevision||epoch!==b.expectedResetEpoch)return deny('revision_conflict',409);
     if(typeof b.previewDigest!=='string'||b.previewDigest!==digest)return deny('preview_changed',409);
-    if(!changed)return answer({...info,unchanged:true});
+    if(!changed){const xp=await refreshXp(b.studentId,app);return answer({...info,unchanged:true,...(xp?{xp}:{} )});}
     const payload={state_data:after,schema_version:1,updated_at:new Date().toISOString(),revision:rev+1};
     if(record){
       const update=await db.from('connect_states').update(payload)
@@ -148,7 +148,8 @@ Deno.serve(async req=>{
         .select('revision').single();
       if(created.error)return deny(created.error.code==='23505'?'revision_conflict':'db_error',created.error.code==='23505'?409:500);
     }
-    return answer({...info,restored:true,revision:rev+1});
+    const xp=await refreshXp(b.studentId,app);
+    return answer({...info,restored:true,revision:rev+1,...(xp?{xp}:{} )});
   }
   if(b.action==='teacher-export'){
    // Sauvegarde privée, seulement pour l'enseignant gestionnaire de cette classe.
@@ -201,7 +202,7 @@ Deno.serve(async req=>{
     if((current?.reset_epoch??0)!==b.expectedResetEpoch)return deny('stale_reset_epoch',409);
     const rev=current?.revision??0;if(rev!==b.expectedRevision)return deny('revision_conflict',409);
     let before=validate(current?.state_data||{}),next=mergeHistorical(before,b.legacy);
-    if(JSON.stringify(before)===JSON.stringify(next))return answer({ok:true,revision:rev,state:next,unchanged:true});
+    if(JSON.stringify(before)===JSON.stringify(next)){const xp=await refreshXp(studentId,app);return answer({ok:true,revision:rev,state:next,unchanged:true,...(xp?{xp}:{} )});}
     const payload={state_data:next,schema_version:1,updated_at:new Date().toISOString(),revision:rev+1};
     if(current){
      const r=await db.from('connect_states').update(payload).eq('student_id',studentId).eq('app_key',app).eq('revision',rev).eq('reset_epoch',b.expectedResetEpoch).select('revision').maybeSingle();
@@ -210,7 +211,8 @@ Deno.serve(async req=>{
      const r=await db.from('connect_states').insert({...payload,student_id:studentId,app_key:app}).select('revision').single();
      if(r.error)return deny(r.error.code==='23505'?'revision_conflict':'db_error',r.error.code==='23505'?409:500);
     }
-    return answer({ok:true,revision:rev+1,resetEpoch:b.expectedResetEpoch,state:next});
+    const xp=await refreshXp(studentId,app);
+    return answer({ok:true,revision:rev+1,resetEpoch:b.expectedResetEpoch,state:next,...(xp?{xp}:{} )});
    }
    if(b.action==='game-reset'){
     if(selected!==app||!int(b.expectedRevision,0,1000000000)||!int(b.expectedResetEpoch,0,1000000000)||!['restart','erase-results'].includes(b.resetType))return deny('invalid_reset');
