@@ -315,7 +315,7 @@ async function showOverview(){
  const [catalogRes,exported]=await Promise.all([fetch('./hub-catalog.json',{cache:'no-cache'}),resultCall('teacher-export')]);
  if(!catalogRes.ok)throw Error('Catalogue indisponible');
  const {apps=[]}=await catalogRes.json();
- const people=(exported.students||[]).filter(x=>x.enrollments?.some(e=>e.left_at===null)).sort((a,b)=>a.displayName.localeCompare(b.displayName,'fr'));
+ const people=(exported.students||[]).filter(x=>!x.archivedAt&&x.enrollments?.some(e=>e.left_at===null)).sort((a,b)=>a.displayName.localeCompare(b.displayName,'fr'));
  const last=app=>Math.max(0,...people.map(p=>Date.parse(p.apps?.find(a=>a.appKey===app.app_key)?.state?.recent?.[0]?.at||0)||0));
  const ordered=apps.slice().sort((a,b)=>last(b)-last(a)||a.display_order-b.display_order);
  const container=$('results-list');container.replaceChildren();
