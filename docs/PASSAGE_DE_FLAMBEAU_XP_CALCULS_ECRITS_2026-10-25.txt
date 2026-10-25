@@ -1,0 +1,72 @@
+# MATH’AS CONNECT — PASSAGE DE FLAMBEAU : XP ET NIVEAUX
+Décisions de Brainmathing — 25 octobre 2026
+Statut : barème XP VALIDÉ pour conception. Barème des niveaux PROPOSÉ, à valider avant codage.
+Périmètre : Addition écrite, Soustraction écrite et Multiplication écrite sur le même modèle pédagogique.
+
+OBJECTIF PÉDAGOGIQUE
+- Les points propres à chaque jeu mesurent la performance et servent aux records et concours projetés.
+- Les XP Connect récompensent les étapes effectivement franchies, sans pénaliser lourdement les élèves moins rapides ou moins performants.
+- Une récompense d'étape ne se gagne qu'une fois. Si un meilleur résultat débloque ensuite un bonus, seul le complément est crédité.
+- Les trophées et médailles gardent leur rôle visuel ; ne pas compter automatiquement les points de jeu ou les trophées comme XP.
+- Master Mode ne donne aucun XP grâce à ses déblocages artificiels.
+- Il faut pouvoir consulter en permanence le détail des paliers XP obtenus et ceux qui restent à atteindre, depuis l'application et idéalement le HUB.
+- Les données de réussite/progression d'origine doivent rester enregistrées pour permettre un recalibrage global à partir de faits.
+- Dans la page professeur, prévoir plus tard une simulation puis un bouton explicite « Recalculer les niveaux ». Un recalibrage pourra augmenter OU diminuer les XP et niveaux, sans recalculer tout le monde à chaque publication d'une application.
+
+EXERCICES CLASSIQUES — MÊMES XP AUX DIFFICULTÉS 1, 2 ET 3
+Série de 4 calculs :
+- Réussite à 80 % minimum implique obligatoirement 4/4 ; 22 XP au total pour ce palier, bonus sans-faute déjà inclus.
+Série de 10 calculs :
+- 8/10 ou 9/10 : 30 XP ; 10/10 : 36 XP au total (bonus 20 %).
+Série de 20 calculs :
+- 16/20 à 19/20 : 50 XP ; 20/20 : 60 XP au total (bonus 20 %).
+Si le seuil de 80 % n'est pas atteint, 0 XP pour cette étape.
+Chaque série validée au moins une fois donne son meilleur montant, jamais à chaque nouvelle partie.
+Par difficulté : 22+30+50=102 XP avec validation des séries ; 22+36+60=118 XP avec sans-faute.
+Sur trois difficultés : 306 XP de base, 354 XP avec tous les bonus sans-faute.
+
+MORT SUBITE CLASSIQUE — DEUX JALONS, PAR DIFFICULTÉ
+- 5 bonnes réponses consécutives : +10 XP (une fois).
+- 10 bonnes réponses consécutives : +10 XP (une fois).
+- Pas de jalon à 20. AUCUN XP juste pour avoir tenté le mode : les seuils faciles servent déjà à encourager les premiers progrès.
+- Paliers cumulables : 10 réussites = 20 XP obtenus au total sur cette difficulté.
+Maximum : 20 x 3 = 60 XP pour l'application.
+
+MORT SUBITE HARD — DEUX JALONS, PAR DIFFICULTÉ
+- 3 bonnes réponses consécutives : +10 XP (une fois).
+- 7 bonnes réponses consécutives : +10 XP (une fois).
+- AUCUN XP pour simple participation.
+- Paliers cumulables, identiques aux difficultés 1, 2, 3.
+- Ces paliers concernent la MORT SUBITE HARD, pas le défi HARD de 5 calculs (qui ne peut pas atteindre 7).
+Maximum : 20 x 3 = 60 XP pour l'application.
+
+TOTAL POUR UNE GRANDE APPLICATION
+- Classique sans bonus : 306 XP.
+- Bonus sans-faute supplémentaires : jusqu'à 48 XP.
+- Mort subite classique : jusqu'à 60 XP.
+- Mort subite HARD : jusqu'à 60 XP.
+- MAXIMUM THÉORIQUE : 354+60+60 = 474 XP.
+- En ne validant que le classique à 80 % : 306 / 474 = 64,6 % du total.
+- Avec classique sans-faute : 354 / 474 = 74,7 % du total.
+Trois grandes applications identiques :
+- Maximum 1422 XP, sans aucun XP répété.
+- Trois classiques seulement à 80 % : 918 XP.
+- Trois classiques avec sans-faute : 1062 XP.
+Les petites applications à contenu plus court recevront un plafond inférieur, défini selon leurs étapes réelles ; éviter de gonfler artificiellement les XP pour les faire correspondre au barème des niveaux.
+
+NIVEAUX CONNECT — PROPOSITION, PAS ENCORE DÉCISION CODÉE
+Hypothèse simple privilégiée : niveau = 1 + partie entière(XP cumulés / 100).
+Niveau 1 : 0 XP ; niveau 2 : 100 ; niveau 3 : 200 ; niveau 4 : 300 ; niveau 5 : 400 ; niveau 6 : 500 ; niveau 10 : 900 ; niveau 15 : 1400 ; niveau 20 : 1900.
+Exemples : Addition classique 306 XP -> niveau 4 ; Addition parfaite 474 XP -> niveau 5 ; trois classiques 918 XP -> niveau 10 ; trois grandes applis parfaites 1422 XP -> niveau 15.
+Avantages : transparent, extensible, peu de maintenance, aucun niveau maximum artificiel.
+Variante à discuter seulement si les premiers niveaux sont trop lents en tests : premier palier plus précoce à 50 XP puis incréments de 100 XP. Ne PAS traiter cette variante comme validée.
+Les élèves doivent voir leur total XP, leur niveau actuel, le prochain seuil et l'avancement vers celui-ci.
+
+RÈGLES TECHNIQUES ET AVERTISSEMENTS POUR LA FUTURE INTÉGRATION
+- Document de référence de design pour les autres applications de calcul écrit.
+- Le moteur XP déjà déployé sur le pilote Addition ne suit PAS ENCORE ce barème ! Il utilise un calcul initial sur les scores, jusqu'à 750 XP. Ne jamais présenter 474 XP comme déjà actif.
+- Adapter le moteur backend, la sauvegarde/restauration, les crédits idempotents et l'affichage HUB aux jalons ci-dessus avant de mettre ce modèle en production.
+- Valider par le serveur les événements et preuves persistées, ne pas créditer un montant XP arbitraire envoyé par le navigateur.
+- Ne pas confondre niveau de difficulté du jeu (1, 2, 3) et niveau global Connect (1, 2, 3...).
+- Ce document prévaut, pour les règles XP de calcul écrit, sur les anciens barèmes de 500/750 XP décrits ailleurs.
+- Ne pas toucher au dépôt ancien « Mr-Tat/Mathas » ni au projet Supabase legacy.
