@@ -141,7 +141,7 @@ function drawIdentity(profile) {
   $('identity-extra').hidden = true;
   $('identity-action').onclick = () => {
     if (authorized) $('identity-extra').hidden = !$('identity-extra').hidden;
-    else { setFree(false); location.href = loginUrl(); }
+    else { sb.auth.getSession().then(({data:{session}})=>{setFree(false);if(session?.user&&!session.user.is_anonymous)showIdentity();else location.href=loginUrl()}).catch(()=>{setFree(false);location.href=loginUrl()}); }
   };
 }
 
