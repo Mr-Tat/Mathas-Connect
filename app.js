@@ -426,3 +426,14 @@ async function loadTeacherAppPreview(){
   }
  }catch(e){body.textContent=e.message||'Catalogue indisponible'}
 }
+
+// Réglage projection professeur : interface préparée, sans activation tant que la projection est provisoire.
+const projectionSettingsButton=document.getElementById('teacher-projection-toggle');
+const projectionSettingsPanel=document.getElementById('teacher-projection-options');
+if(projectionSettingsButton&&projectionSettingsPanel){
+ projectionSettingsButton.addEventListener('click',()=>{
+  const opened=projectionSettingsPanel.hidden;
+  projectionSettingsPanel.hidden=!opened;
+  projectionSettingsButton.setAttribute('aria-expanded',String(opened));
+ });
+}
