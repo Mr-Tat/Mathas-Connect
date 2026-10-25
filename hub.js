@@ -136,6 +136,8 @@ function drawIdentity(profile) {
   const avatar=$('identity-avatar');avatar.hidden=!authorized;
   if(authorized)paintAvatar(avatar,profile.avatar);
   $('edit-avatar').hidden=false;
+  $('rename-device').hidden=!!profile?.teacherPlayer;
+  $('forget-device').hidden=!!profile?.teacherPlayer;
   $('classLabel').textContent = classId ? classLabel : 'Jeux';
   $('identity-action').textContent = authorized ? 'Modifier' : 'Se connecter';
   $('identity-extra').hidden = true;
