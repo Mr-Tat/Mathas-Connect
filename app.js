@@ -253,10 +253,96 @@ function recentLabel(r){
  const mode={classic:'Classique',sudden:'Mort subite',hard:'HARD'}[r.mode]||r.mode;
  return mode+' N'+r.level+' : '+r.score+(r.total!=null?'/'+r.total:'');
 }
+
+const formatRecentTime=at=>{
+ const date=new Date(at||'');
+ return Number.isNaN(date.getTime())?'—':new Intl.DateTimeFormat('fr-BE',{timeZone:'Europe/Brussels',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(date);
+};
+function makeOverviewCell(state){
+ const cell=document.createElement('div');
+ if(!state){cell.className='results-no-data';cell.textContent='Aucun résultat';return cell}
+ cell.className='results-overview-cell';
+ const history=document.createElement('div');history.className='results-last';
+ const title=document.createElement('span');title.className='results-last-title';title.textContent='3 derniers';history.append(title);
+ for(let i=0;i<3;i++){
+  const r=state.recent?.[i],line=document.createElement('div');line.className='results-recent-line';
+  if(!r)line.textContent='—';
+  else{
+   const score=document.createElement('span');score.textContent=String(r.score??'—')+(r.total!=null?'/'+r.total:'')+' · ';
+   const time=document.createElement('time');time.dateTime=r.at||'';time.textContent=formatRecentTime(r.at);
+   line.append(score,time);
+  }
+  history.append(line);
+ }
+ const scores=document.createElement('div');scores.className='results-score-values';
+ for(const [label,value] of [['Jour',state.todayBest?.day===dateBE()?state.todayBest.points:null],['Record',state.bestPoints]]){
+  const t=document.createElement('span');t.className='results-score-label';t.textContent=label;
+  const p=document.createElement('span');p.className='results-score-value';p.textContent=points(value);
+  scores.append(t,p);
+ }
+ cell.append(history,scores);return cell;
+}
+async function showOverview(){
+ const [catalogRes,exported]=await Promise.all([fetch('./hub-catalog.json',{cache:'no-cache'}),resultCall('teacher-export')]);
+ if(!catalogRes.ok)throw Error('Catalogue indisponible');
+ const {apps=[]}=await catalogRes.json();
+ const people=(exported.students||[]).filter(x=>x.enrollments?.some(e=>e.left_at===null)).sort((a,b)=>a.displayName.localeCompare(b.displayName,'fr'));
+ const last=app=>Math.max(0,...people.map(p=>Date.parse(p.apps?.find(a=>a.appKey===app.app_key)?.state?.recent?.[0]?.at||0)||0));
+ const ordered=apps.slice().sort((a,b)=>last(b)-last(a)||a.display_order-b.display_order);
+ const container=$('results-list');container.replaceChildren();
+ if(!people.length){showResultMessage('Aucun élève dans cette classe.');return}
+ const scroll=document.createElement('div');scroll.className='results-overview-scroll';
+ const table=document.createElement('table');table.className='results-overview-table';
+ const tr=document.createElement('tr'),name=document.createElement('th');name.textContent='Élève';tr.append(name);
+ for(const app of ordered){
+  const th=document.createElement('th'),wrap=document.createElement('div');wrap.className='results-app-heading';
+  if(app.image_url){const img=document.createElement('img');img.src=app.image_url;img.alt='';wrap.append(img)}
+  const label=document.createElement('span');label.textContent=app.title;wrap.append(label);th.append(wrap);tr.append(th);
+ }
+ const thead=document.createElement('thead');thead.append(tr);table.append(thead);
+ const body=document.createElement('tbody');
+ for(const person of people){
+  const row=document.createElement('tr'),n=document.createElement('td'),btn=document.createElement('button');
+  btn.type='button';btn.className='results-student-link';btn.textContent=person.displayName;
+  btn.onclick=()=>showOverviewDetail(person,ordered);
+  n.append(btn);row.append(n);
+  for(const app of ordered){const td=document.createElement('td');td.append(makeOverviewCell(person.apps?.find(x=>x.appKey===app.app_key)?.state));row.append(td)}
+  body.append(row);
+ }
+ table.append(body);scroll.append(table);container.append(scroll);
+ showResultMessage(people.length+' élèves · '+ordered.length+' applications');
+}
+function showOverviewDetail(person,apps){
+ $('results-student-name').textContent=person.displayName;
+ $('results-list').hidden=true;$('results-detail').hidden=false;
+ const target=$('results-student-content');target.replaceChildren();
+ for(const app of apps){
+  const section=document.createElement('section');section.className='results-detail-block';
+  const heading=document.createElement('h3');heading.textContent=app.title;section.append(heading);
+  const state=person.apps?.find(x=>x.appKey===app.app_key)?.state;
+  section.append(makeOverviewCell(state));
+  if(state&&app.app_key==='addition-ecrite-simple'){
+   const table=document.createElement('table');table.className='result-table';
+   const header=document.createElement('tr');
+   for(const label of ['Niveau','/4','/10','/20','Mort subite','HARD']){const th=document.createElement('th');th.textContent=label;header.append(th)}
+   table.append(header);
+   for(let i=0;i<3;i++){
+    const row=document.createElement('tr');
+    for(const x of ['Niveau '+(i+1),...[4,10,20].map(c=>state.classic?.[i]?.[c]==null?'—':state.classic[i][c]+'/'+c),state.sudden?.[i]??'—',state.hard?.[i]??'—']){
+     const td=document.createElement('td');td.textContent=String(x);row.append(td);
+    }
+    table.append(row);
+   }
+   section.append(table);
+  }
+  target.append(section);
+ }
+}
 async function showResults(){
  const id=$('class-selector').value;if(!id){showResultMessage('Aucune classe.');return}
  $('results-detail').hidden=true;$('results-list').hidden=false;
  showResultMessage('Lecture des résultats…');
+ if($('results-app').value==='__summary__')return showOverview();
  const v=await resultCall('teacher-summary');
  const list=$('results-list');list.replaceChildren();
  for(const student of v.students){
