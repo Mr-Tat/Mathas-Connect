@@ -93,9 +93,25 @@ async function handle(req:Request){
    const student=await one(db.from('connect_students').select('id,display_name,archived_at').eq('id',b.studentId));
    if(!student)return fail('not_found',404);
    if(b.operation==='delete'&&(!student.archived_at||b.confirmName!==student.display_name||b.confirmPhrase!=='SUPPRIMER DÉFINITIVEMENT'))return fail('confirmation_required',400);
+   const known=b.operation==='delete'?await db.from('connect_devices').select('auth_user_id').eq('student_id',b.studentId):null;
+   if(known?.error)return fail('db_failed',500);
    const result=await db.rpc('connect_manage_student',{p_teacher:user.id,p_class:b.classId,p_student:b.studentId,p_action:b.operation});
    if(result.error)return fail('manage_failed',409);
-   return ok({operation:result.data});
+   let accountCleanupPending=false;
+   if(b.operation==='delete'){
+     for(const authId of new Set((known?.data||[]).map((x:any)=>x.auth_user_id))){
+       const [devices,requests]=await Promise.all([db.from('connect_devices').select('id').eq('auth_user_id',authId).limit(1),db.from('connect_join_requests').select('id').eq('auth_user_id',authId).limit(1)]);
+       if(devices.error||requests.error){accountCleanupPending=true;continue}
+       if(devices.data.length||requests.data.length)continue;
+       const verified=await db.auth.admin.getUserById(authId);
+       if(verified.error){accountCleanupPending=true;continue}
+       if(verified.data.user?.is_anonymous){
+         const removed=await db.auth.admin.deleteUser(authId);
+         if(removed.error)accountCleanupPending=true;
+       }
+     }
+   }
+   return ok({operation:result.data,accountCleanupPending});
  }
  case 'teacher-dashboard':{
    if(!await teacher())return fail('forbidden',403);
