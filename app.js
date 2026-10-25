@@ -99,12 +99,12 @@ async function status(){await ensureStudentSession();const {request:r}=await cal
  if(['approved','revoked'].includes(r.state)){if(r.state==='approved'){try{localStorage.removeItem('mathas.connect.mode-libre.v1')}catch{}}$('open-hub').hidden=r.state!=='approved';$('result-title').textContent=r.state==='approved'?'Appareil autorisé':'Appareil révoqué';$('result-description').textContent=r.state==='approved'?'L’accès est confirmé.':'Adresse-toi au professeur.';show('approved');return}
  if(r.state==='wrong_class'){show('welcome');msg('Cet appareil est associé à une autre classe. Ouvre le lien de ta classe ou demande au professeur de changer de profil.');return}
  $('verification-code').textContent=r.verify_code;show('waiting')}
-$('home').onclick=()=>show('welcome');
+$('home').onclick=()=>{if(!cls)show('login');else show('welcome')};
 $('teacher-entry').onclick=()=>show('login');
-$('back-login').onclick=()=>show('welcome');
+$('back-login').onclick=()=>{location.href=hubLink};
 $('student-entry').onclick=()=>run(student);
 $('login-form').onsubmit=e=>{e.preventDefault();run(async()=>{const r=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(r.error)throw Error('Identifiants incorrects');$('password').value='';await teacher()})};
-$('logout').onclick=()=>run(async()=>{await sb.auth.signOut();show('welcome')});
+$('logout').onclick=()=>run(async()=>{await sb.auth.signOut();show('login')});
 $('open-hub').onclick=()=>{location.href=hubLink};
 $('teacher-hub').onclick=()=>{location.href=hubLink};
 $('add-year-form').onsubmit=e=>{e.preventDefault();run(async()=>{const label=$('new-year-label').value.trim(),startsOn=$('year-start').value,endsOn=$('year-end').value;if(endsOn<=startsOn)throw Error('La date de fin doit suivre la date de début');await call('teacher-create-year',{label,startsOn,endsOn});$('add-year-form').reset();await teacher();msg('Année scolaire ajoutée',true)})};
@@ -119,7 +119,16 @@ $('check-status').onclick=()=>run(status);
 $('cancel-request').onclick=()=>run(async()=>{await call('student-cancel-join',{classId:cls});show('student-form')});
 $('result-home').onclick=()=>show('welcome');
 $('reset-local').onclick=()=>run(async()=>{if(!confirm('Révoquer cet appareil et oublier ce profil ici ? Les résultats Connect restent enregistrés. Pour reprendre le compte, il faudra une nouvelle autorisation du professeur.'))return;await call('student-release');const {error}=await sb.auth.signOut({scope:'local'});if(error)throw error;location.href=hubLink});
-if(cls){show('student-form');run(student)}else show('welcome');
+if(cls){show('student-form');run(student)}
+else {
+  show('login');
+  run(async()=>{
+    const {data:{session}}=await sb.auth.getSession();
+    if(session && !session.user?.is_anonymous){
+      await teacher();
+    }
+  });
+}
 const resultsUrl=url+'/functions/v1/connect-results';
 async function resultCall(action,data={}) {
  const {data:{session}}=await sb.auth.getSession();
