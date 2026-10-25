@@ -13,8 +13,10 @@ const snapshot={format:'mathas-connect-emergency-snapshot-v1',createdAt:new Date
 for(const table of tables){
  const rows=[];
  for(let start=0;start<50000;start+=500){
-  const res=await fetch(base+'/rest/v1/'+table+'?select=*',{headers:{apikey:serviceKey,Authorization:'Bearer '+serviceKey,Range:start+'-'+(start+499)}});
-  if(!res.ok)throw Error('Lecture '+table+' : HTTP '+res.status);
+  const authHeaders={apikey:serviceKey,Range:start+'-'+(start+499)};
+  if(!serviceKey.startsWith('sb_secret_'))authHeaders.Authorization='Bearer '+serviceKey;
+  const res=await fetch(base+'/rest/v1/'+table+'?select=*',{headers:authHeaders});
+  if(!res.ok)throw Error('Lecture '+table+' : HTTP '+res.status+(res.status===401?' — clé Supabase refusée : vérifier le secret GitHub et le projet':'') );
   const part=await res.json();
   if(!Array.isArray(part))throw Error('Réponse inattendue : '+table);
   rows.push(...part);
