@@ -191,6 +191,19 @@ Deno.serve(async req=>{
    const [name,state]=await Promise.all([read(db.from('connect_students').select('display_name').eq('id',b.studentId)),read(db.from('connect_states').select('revision,state_data').eq('student_id',b.studentId).eq('app_key',selected))]);
    return answer({ok:true,name:name?.display_name||'Élève',state:state?.state_data||null,revision:state?.revision??0});
   }
+  if(b.action==='student-xp'){
+   if(b.appKey!==app)return deny('forbidden',403);
+   const studentId=await identity();if(!studentId)return deny('forbidden',403);
+   const [earned,credits]=await Promise.all([
+     db.from('connect_xp_milestones').select('milestone_key').eq('student_id',studentId).eq('app_key',app).limit(60),
+     db.from('connect_xp_credits').select('app_key,xp_credited').eq('student_id',studentId).limit(60)
+   ]);
+   if(earned.error||credits.error)throw Error('db_error');
+   const total=credits.data.reduce((a:number,v:any)=>a+v.xp_credited,0);
+   const level=total<300?1+Math.floor(total/50):7+Math.floor((total-300)/100);
+   return answer({ok:true,appXp:credits.data.find((c:any)=>c.app_key===app)?.xp_credited||0,total,level,
+    next:level<7?level*50:300+(level-6)*100,milestones:earned.data.map((v:any)=>v.milestone_key),max:474});
+  }
   if(b.action==='student-load'||b.action==='student-save'||b.action==='lab-record'||b.action==='game-record'||b.action==='legacy-import'||b.action==='game-reset'){
    if(!selected||(b.action==='lab-record'&&selected!==lab)||(b.action==='game-record'&&selected!==app))return deny('forbidden',403);
    const studentId=await identity();if(!studentId)return deny('forbidden',403);
