@@ -100,7 +100,7 @@ Deno.serve(async req=>{
  const selected=appAllowed(b.appKey)?b.appKey:null;
  try{
   const managed=async()=>!user.is_anonymous&&!!await read(db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('class_id',b.classId).eq('can_manage',true));
-  const identity=async()=>{if(!user.is_anonymous){if(!await managed())return null;const player=await read(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));return player?.student_id||null;}const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;return await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null))?device.student_id:null};
+  const identity=async()=>{if(!user.is_anonymous){if(!await managed())return null;const player=await read(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));return player?.student_id||null;}const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;const enrolled=await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null));if(!enrolled)return null;const active=await read(db.from('connect_students').select('id').eq('id',device.student_id).is('archived_at',null));return active?device.student_id:null};
   // Restauration de secours : fusion des acquis, sans nouvelles tables ni RPC.
   if(b.action==='teacher-restore-preview'||b.action==='teacher-restore-apply'){
     if(!await managed()||!valid(b.studentId)||b.appKey!==app)return deny('forbidden',403);
@@ -108,7 +108,7 @@ Deno.serve(async req=>{
     if(b.backupProjectRef!=null&&b.backupProjectRef!=='awmhpfofacaglewammxt')return deny('wrong_project',403);
     if(!int(b.backupRevision,0,1000000000)||!int(b.backupResetEpoch,0,1000000000))return deny('invalid_backup');
     const member=await read(db.from('connect_enrollments').select('id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));
-    if(!member)return deny('student_not_in_class',403);
+    if(!member||!await read(db.from('connect_students').select('id').eq('id',b.studentId).is('archived_at',null)))return deny('student_not_active',403);
     const record=await read(db.from('connect_states').select('revision,reset_epoch,state_data').eq('student_id',b.studentId).eq('app_key',app));
     const rev=record?.revision??0,epoch=record?.reset_epoch??0;
     if(record&&b.backupResetEpoch>epoch)return deny('backup_newer_epoch',409);
@@ -173,7 +173,7 @@ Deno.serve(async req=>{
   }
   if(b.action==='teacher-detail'){
    if(!selected||!await managed()||!valid(b.studentId))return deny('forbidden',403);
-   const enrolled=await read(db.from('connect_enrollments').select('id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));if(!enrolled)return deny('forbidden',403);
+   const enrolled=await read(db.from('connect_enrollments').select('id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));if(!enrolled||!await read(db.from('connect_students').select('id').eq('id',b.studentId).is('archived_at',null)))return deny('forbidden',403);
    const [name,state]=await Promise.all([read(db.from('connect_students').select('display_name').eq('id',b.studentId)),read(db.from('connect_states').select('revision,state_data').eq('student_id',b.studentId).eq('app_key',selected))]);
    return answer({ok:true,name:name?.display_name||'Élève',state:state?.state_data||null,revision:state?.revision??0});
   }
