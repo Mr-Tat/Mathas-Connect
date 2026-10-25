@@ -44,12 +44,12 @@ async function handle(req:Request){
    return ok({status:'approved',displayName:profile?.display_name||'Monsieur T',avatar:{kind:profile?.avatar_kind||'letter',value:profile?.avatar_value||'T',color:profile?.avatar_color||'ocean'},level:{number:1,xp:0,next:90,active:false},teacherPlayer:true});
  }
  case 'student-avatar':{
-   if(!user.is_anonymous)return fail('forbidden',403);
+   if(!user.is_anonymous&&!await teacher())return fail('forbidden',403);
    const kind=b.kind,value=b.value,color=b.color;
    const animals=['fox','panda','frog','lion','penguin','owl','cat','dog','rabbit','bear','koala','wolf','tiger','monkey','elephant','giraffe','zebra','horse','cow','pig','sheep','deer','hedgehog','squirrel','otter','dolphin','whale','octopus','turtle','seal','duck','parrot','flamingo','bee','butterfly','dragon'];
    const colors=['ocean','sky','indigo','violet','plum','rose','coral','sun','amber','mint','forest','slate'];
    if(!colors.includes(color)||!['animal','letter'].includes(kind)||(kind==='animal'?!animals.includes(value):!(/^[A-Z]$/).test(value)))return fail('input_invalid');
-   const device=await one(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));
+   const device=user.is_anonymous?await one(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1)):await one(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));
    if(!device)return fail('forbidden',403);
    const updated=await db.from('connect_students').update({avatar_kind:kind,avatar_value:value,avatar_color:color}).eq('id',device.student_id);
    return updated.error?fail('db_failed',500):ok({avatar:{kind,value,color}});
