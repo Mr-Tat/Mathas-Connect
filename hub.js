@@ -135,6 +135,7 @@ function drawIdentity(profile) {
   $('identity-level').hidden=!authorized;
   const avatar=$('identity-avatar');avatar.hidden=!authorized;
   if(authorized)paintAvatar(avatar,profile.avatar);
+  $('edit-avatar').hidden=!!profile?.teacherPlayer;
   $('classLabel').textContent = classId ? classLabel : 'Jeux';
   $('identity-action').textContent = authorized ? 'Modifier' : 'Se connecter';
   $('identity-extra').hidden = true;
@@ -189,15 +190,15 @@ async function showIdentity() {
   if (!classId || inFreeMode()) return;
   try {
     const { data: { session } } = await sb.auth.getSession();
-    if (!session?.user?.is_anonymous) return;
+    if (!session?.user) return;
     const response = await fetch(url + '/functions/v1/connect-api', {
       method: 'POST',
       headers: { apikey: key, authorization: 'Bearer ' + session.access_token, 'content-type': 'application/json' },
-      body: JSON.stringify({ action: 'student-me', classId })
+      body: JSON.stringify({ action: session.user.is_anonymous ? 'student-me' : 'teacher-player', classId })
     });
     if (!response.ok) return;
     const profile = await response.json();
-    if (profile.ok && profile.status === 'approved' && profile.classId === classId) drawIdentity(profile);
+    if (profile.ok && profile.status === 'approved' && (profile.classId === classId || profile.teacherPlayer)) drawIdentity(profile);
     // Aucun accès reconnu au seul motif de connaître le lien de classe.
   } catch { /* Toujours laisser le HUB et les jeux accessibles en mode libre. */ }
 }
