@@ -115,7 +115,7 @@ $('avatar-save').onclick=async()=>{
  const button=$('avatar-save');button.disabled=true;
  try{
   const {data:{session}}=await sb.auth.getSession();
-  if(!session?.user?.is_anonymous)throw Error('Connecte-toi en élève');
+  if(!session?.user)throw Error('Connecte-toi à ton profil');
   const response=await fetch(url+'/functions/v1/connect-api',{method:'POST',
    headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
    body:JSON.stringify({action:'student-avatar',...avatarChoice})});
@@ -135,7 +135,7 @@ function drawIdentity(profile) {
   $('identity-level').hidden=!authorized;
   const avatar=$('identity-avatar');avatar.hidden=!authorized;
   if(authorized)paintAvatar(avatar,profile.avatar);
-  $('edit-avatar').hidden=!!profile?.teacherPlayer;
+  $('edit-avatar').hidden=false;
   $('classLabel').textContent = classId ? classLabel : 'Jeux';
   $('identity-action').textContent = authorized ? 'Modifier' : 'Se connecter';
   $('identity-extra').hidden = true;
