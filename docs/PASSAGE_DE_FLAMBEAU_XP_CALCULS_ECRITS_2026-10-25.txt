@@ -1,6 +1,6 @@
 # MATH’AS CONNECT — PASSAGE DE FLAMBEAU : XP ET NIVEAUX
 Décisions de Brainmathing — 25 octobre 2026
-Statut : barème XP VALIDÉ pour conception. Barème des niveaux PROPOSÉ, à valider avant codage.
+Statut : barème XP et paliers des niveaux VALIDÉS en conception ; implémentation technique à faire.
 Périmètre : Addition écrite, Soustraction écrite et Multiplication écrite sur le même modèle pédagogique.
 
 OBJECTIF PÉDAGOGIQUE
@@ -54,13 +54,16 @@ Trois grandes applications identiques :
 - Trois classiques avec sans-faute : 1062 XP.
 Les petites applications à contenu plus court recevront un plafond inférieur, défini selon leurs étapes réelles ; éviter de gonfler artificiellement les XP pour les faire correspondre au barème des niveaux.
 
-NIVEAUX CONNECT — PROPOSITION, PAS ENCORE DÉCISION CODÉE
-Hypothèse simple privilégiée : niveau = 1 + partie entière(XP cumulés / 100).
-Niveau 1 : 0 XP ; niveau 2 : 100 ; niveau 3 : 200 ; niveau 4 : 300 ; niveau 5 : 400 ; niveau 6 : 500 ; niveau 10 : 900 ; niveau 15 : 1400 ; niveau 20 : 1900.
-Exemples : Addition classique 306 XP -> niveau 4 ; Addition parfaite 474 XP -> niveau 5 ; trois classiques 918 XP -> niveau 10 ; trois grandes applis parfaites 1422 XP -> niveau 15.
-Avantages : transparent, extensible, peu de maintenance, aucun niveau maximum artificiel.
-Variante à discuter seulement si les premiers niveaux sont trop lents en tests : premier palier plus précoce à 50 XP puis incréments de 100 XP. Ne PAS traiter cette variante comme validée.
-Les élèves doivent voir leur total XP, leur niveau actuel, le prochain seuil et l'avancement vers celui-ci.
+NIVEAUX CONNECT — DÉCISION VALIDÉE
+- Niveau 1 commence à 0 XP.
+- Six passages de niveau de 50 XP chacun : niveau 2 à 50 XP, niveau 3 à 100, niveau 4 à 150, niveau 5 à 200, niveau 6 à 250, niveau 7 à 300.
+- À partir du niveau 8 : +100 XP par niveau, sans plafond de niveau. Niveau 8 à 400 XP, 9 à 500, 10 à 600, 13 à 900, 15 à 1100, 18 à 1400, 20 à 1600.
+- Formule : si xp<300, niveau = 1 + floor(xp/50) ; sinon niveau = 7 + floor((xp-300)/100).
+- Exemples : classique Addition à 80 % (306 XP) -> niveau 7 ; Addition entière (474 XP) -> niveau 8 ; trois classiques (918 XP) -> niveau 13 ; les trois applications entièrement réussies (1422 XP) -> niveau 18.
+- L'élève voit en permanence son total XP, son niveau et le prochain seuil (jauge possible dans le HUB).
+- **AUCUNE célébration pour des étapes intermédiaires (25 %, 50 %, 75 %) de la jauge. Seul le passage effectif au niveau supérieur peut être célébré.** Les niveaux sont déjà suffisamment fréquents.
+- Aucun bonus XP attribué au passage de niveau (pas de double comptabilisation).
+- **Cette décision de conception n'est pas encore implémentée dans le moteur XP déployé.**
 
 RÈGLES TECHNIQUES ET AVERTISSEMENTS POUR LA FUTURE INTÉGRATION
 - Document de référence de design pour les autres applications de calcul écrit.
