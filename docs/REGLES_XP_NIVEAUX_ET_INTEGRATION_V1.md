@@ -186,3 +186,14 @@ Cette décision **remplace** toute phrase antérieure de ce document imposant de
 - **Important : les anciennes tables `connect_level_profiles.highest_level_reached` et `connect_xp_credits` reflètent encore l'ancien modèle tant que la migration n'est pas confirmée.** Ne pas prétendre que le nouveau modèle est déployé. Une migration transactionnelle et un moteur de simulation fiable restent à réaliser.
 - Conserver les exports privés avant un recalibrage et signaler que l'ancien fichier peut réintroduire des résultats supprimés.
 - Les réglages seront versionnés, avec un barème activé et un brouillon. Ne jamais publier un brouillon automatiquement.
+
+
+## Pilote XP effectif et catégories — 25 octobre 2026
+
+**Nouveau plafond par application** : grande application (Addition, Soustraction, Multiplication) **750 XP**, moyenne **300 XP**, courte **150 XP**. Pour une grande application : 500 performance, 180 trophées, 70 défis. Les trois grandes applications donnent jusqu'à 2250 XP (niveau 10 selon T(L)).
+
+**Production actuellement câblée :** Addition écrite simple uniquement, depuis les données persistées par `connect-results` ; fonction SQL `connect_xp_from_state_v1`, enregistrement avec `connect_refresh_xp_v1`, lecture `player-xp` dans `connect-api` et affichage dans HUB. La fonction utilise un score de référence de 600 points (plafond 500 XP), 8 XP/trophée (plafond 180), et les jalons HARD 5 calculs (plafond 70). Toutes les preuves viennent de `connect_states`, pas du montant XP déclaré par le client. **Cela reste une confiance pédagogique raisonnable, car le jeu s'exécute dans le navigateur et les résultats transmis ne sont pas cryptographiquement vérifiables.**
+
+**Encore NON opérationnels :** intégration réelle de Soustraction/Multiplication, barèmes versionnés actifs/brouillons, simulation globale et bouton professeur « Recalculer les niveaux », application pouvant diminuer les niveaux, restauration complète des XP/profils. Le RPC `connect_refresh_xp_v1` possède déjà un argument `p_force_recalculate`, mais ce n'est **pas** un mécanisme d'administration global ; ne pas exposer directement aux navigateurs.
+
+Le niveau est actuellement stocké dans la colonne historiquement nommée `highest_level_reached` ; le recalibrage final devra donner au niveau la sémantique de **niveau courant**, éventuellement plus bas que précédemment. Ne jamais présenter le calcul local d'XP comme une preuve autonome.
