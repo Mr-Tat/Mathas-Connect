@@ -303,8 +303,8 @@ function showTeacherTab(tab){
 document.querySelectorAll('[data-teacher-tab]').forEach(b=>b.addEventListener('click',()=>showTeacherTab(b.dataset.teacherTab)));
 document.querySelectorAll('[data-results]').forEach(b=>b.addEventListener('click',()=>{
  const label=CLASS_SPACES[b.dataset.results]?.name; if(!label)return; currentTeacherSpace=b.dataset.results; $('class-selector').value=CLASS_SPACES[currentTeacherSpace].id;
- $('teacher-results-context').textContent='Espace '+label+' · résultats des élèves de la classe administrative sélectionnée. Le filtrage par espace sera ajouté au prochain bloc.';
- refresh().then(showResults).catch(e=>msg(e.message)); showTeacherTab('results');
+ $('teacher-results-context').textContent='Résultats de '+label+' : élèves inscrits dans ce HUB.';
+ showTeacherTab('results'); refresh().then(showResults).catch(e=>msg(e.message));
 }));
 document.querySelectorAll('[data-space]').forEach(a=>{
  const space=CLASS_SPACES[a.dataset.space];
