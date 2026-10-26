@@ -663,3 +663,7 @@ body.theme-partage {
 @media(max-width:650px){.connect-brand .brand-wordmark{width:clamp(138px,49vw,265px);height:auto;max-height:none}.connect-brand .connect-brand-suffix{font-size:clamp(18px,5.2vw,29px);margin-bottom:0}.student-space-title{font-size:clamp(27px,7vw,36px)}}
 
 .connect-brand .connect-brand-suffix{background:linear-gradient(90deg,#7139a8 0%,#4c42a9 47%,#2059ae 100%);-webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent}
+
+/* Mot Connect : intérieur bleu nuit et contour dégradé mauve-bleu. */
+.connect-brand .connect-brand-suffix{position:relative;isolation:isolate;background:none!important;color:#0d2342!important;-webkit-text-fill-color:#0d2342!important;text-shadow:0 1px 0 #06111e}
+.connect-brand .connect-brand-suffix::before{content:"Connect";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(90deg,#7139a8,#4c42a9 47%,#2059ae);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;-webkit-text-stroke:2px transparent}
