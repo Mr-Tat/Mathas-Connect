@@ -4,7 +4,7 @@ Plateforme indépendante, légère, destinée aux élèves et aux professeurs.
 
 ## Référence actuelle
 
-- HUB et interface professeur : https://mr-tat.github.io/Mathas-Connect/
+- HUB élèves : https://mr-tat.github.io/Mathas-Connect/hub.html\n- Espace professeur : https://mr-tat.github.io/Mathas-Connect/prof.html
 - Première application pilote : https://mr-tat.github.io/CE-Addition-simple/
 - GitHub Pages héberge les pages statiques ; Supabase **Connect** (projet `awmhpfofacaglewammxt`) gère identités, sauvegardes, progression et XP.
 - **Ne jamais modifier l'ancien projet Math’as** `jftzuslpelgzbdrftszw` pour mettre en place Connect.
