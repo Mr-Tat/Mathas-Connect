@@ -158,12 +158,24 @@ function drawIdentity(profile) {
   };
 }
 
-function switchToFree() {
-  setFree(true);
-  drawIdentity(null);
-}
-
-$('mode-toggle').onclick = switchToFree;
+$('mode-toggle').onclick = async () => {
+  if(!confirm('Se déconnecter de Math’as Connect sur cet appareil ? Les XP et les résultats restent sauvegardés. Pour revenir, le professeur devra autoriser une nouvelle connexion.'))return;
+  const button=$('mode-toggle');button.disabled=true;
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(session?.user?.is_anonymous){
+      const response=await fetch(url+'/functions/v1/connect-api',{method:'POST',headers:{
+        apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'
+      },body:JSON.stringify({action:'student-release'})});
+      if(!response.ok||(await response.json()).ok!==true)throw Error('Déconnexion impossible. Réessaie.');
+    }
+    const {error}=await sb.auth.signOut({scope:'local'});
+    if(error)throw error;
+    setFree(false);
+    drawIdentity(null);
+  }catch(e){alert(e.message||'Déconnexion impossible.');}
+  finally{button.disabled=false;}
+};
 async function showIdentity() {
   drawIdentity(null);
   if (!classId || inFreeMode()) return;
