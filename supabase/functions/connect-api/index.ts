@@ -226,20 +226,34 @@ async function handle(req:Request){
      return fail('input_invalid');
    const r=await db.rpc('connect_submit_join',{
      p_class:b.classId,p_auth_user:user.id,p_first:b.firstName,p_initial:b.lastInitial});
-   return r.error?fail('join_failed',409):ok({request:r.data});
+   return r.error?fail(r.error.message?.includes('device_already_approved')?'device_already_approved':'join_failed',409):ok({request:r.data});
  }
  case 'student-join-status':{
    if(!user.is_anonymous||!U.test(b.classId||''))return fail('forbidden',403);
    const r=await db.from('connect_join_requests').select('id,verify_code,state,expires_at')
      .eq('class_id',b.classId).eq('auth_user_id',user.id).maybeSingle();
    if(r.error)return fail('db_failed',500);
-   if(!r.data)return ok({request:null});
-   if(r.data.state==='approved'){
-     const d=await db.from('connect_devices').select('state,student_id').eq('auth_user_id',user.id)
-       .eq('state','approved').maybeSingle();
-     const student=d.data?await one(db.from('connect_students').select('id').eq('id',d.data.student_id).is('archived_at',null)):null;
-     return ok({request:{state:student?'approved':'revoked'}});
+   // Un appareil approuvé doit proposer le profil courant, même lorsque
+   // le lien ouvert appartient à une autre classe. Aucune identité n'est
+   // révélée avant validation du JWT anonyme et de l'appareil approuvé.
+   if(!r.data||r.data.state!=='pending'){
+     const d=await one(db.from('connect_devices').select('student_id')
+       .eq('auth_user_id',user.id).eq('state','approved').limit(1));
+     if(d){
+       const [student,enrolled]=await Promise.all([
+         one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color')
+           .eq('id',d.student_id).is('archived_at',null)),
+         one(db.from('connect_enrollments').select('class_id')
+           .eq('student_id',d.student_id).is('left_at',null).limit(1))
+       ]);
+       if(student&&enrolled)return ok({request:{state:'already_approved',
+         classId:enrolled.class_id,displayName:student.display_name,
+         avatar:{kind:student.avatar_kind||'animal',value:student.avatar_value||'fox',color:student.avatar_color||'ocean'}}});
+       return ok({request:{state:'revoked'}});
+     }
    }
+   if(!r.data)return ok({request:null});
+   if(r.data.state==='approved')return ok({request:{state:'revoked'}});
    if(r.data.state==='pending'&&new Date(r.data.expires_at)<new Date())
      return ok({request:{state:'expired'}});
    return ok({request:r.data});
