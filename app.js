@@ -5,8 +5,9 @@ const sb=createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,d
 const $=id=>document.getElementById(id), cls=new URLSearchParams(location.search).get('class');
 const hubLink=hubUrl();
 const teacherPortal=new URLSearchParams(location.search).get('portail')==='prof'&&!cls;
-if(!teacherPortal){document.getElementById('teacher-entry')?.remove();document.querySelector('[data-view="login"]')?.remove();document.querySelector('[data-view="teacher"]')?.remove();}
-if(teacherPortal){for(const view of ['student-form','waiting','account-choice','approved','welcome'])document.querySelector('[data-view="'+view+'"]')?.remove();}
+// Les sections restent dans le DOM pour les événements, mais sont inaccessibles
+// via show() et invisibles dans le parcours élève. Aucun lien élève vers Professeur.
+if(!teacherPortal){document.getElementById('teacher-entry').hidden=true;}
 
 const CLASS_SPACES={
  observation:{id:'8fe170fa-9e8f-4e80-885a-b0ba68026f64',name:'Observation'},
