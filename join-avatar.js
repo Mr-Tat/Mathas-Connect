@@ -3,6 +3,7 @@ const colors={ocean:'#2563a5',sky:'#247cb5',indigo:'#5444b7',violet:'#8147bb',pl
 const cls=new URLSearchParams(location.search).get('class');
 const key='mathas.connect.avatar-pending:'+cls;
 let picked={kind:'animal',value:'fox',color:'ocean'};
+try{const stored=JSON.parse(localStorage.getItem(key)||'null');if(stored&&['animal','letter'].includes(stored.kind)&&colors[stored.color])picked=stored}catch{}
 const $=id=>document.getElementById(id);
 function draw(){
  const grid=$('join-avatar-choices'),palette=$('join-avatar-colors');
