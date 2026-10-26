@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="./assets/brand/favicon.png">
   <link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png">
   <link rel="stylesheet" href="./style.css?v=20261026avatar4">
-  <script type="module" src="./app.js?v=20261026avatar3"></script>
+  <script type="module" src="./app.js?v=20261026demandes2"></script>
 <link rel="stylesheet" href="./join-avatar.css?v=20261026avatar3">
 <link rel="stylesheet" href="./student-entry-dark.css?v=20261026go2">
 <script type="module" src="./join-avatar.js?v=20261026avatar3"></script>
@@ -158,23 +158,23 @@
         <input id="first-name" type="text" maxlength="40" autocomplete="given-name" placeholder="Lucas" required>
         <label for="last-initial">Première lettre du nom</label>
         <input id="last-initial" type="text" maxlength="1" placeholder="D" required>
-        <fieldset class="join-avatar-field"><legend>Choisis ton avatar</legend><p class="hint">Un animal ou une lettre majuscule, puis une couleur.</p>
-          <div id="join-avatar-choices" class="join-avatar-grid" role="group" aria-label="Animal ou lettre"></div>
-          <div id="join-avatar-colors" class="join-avatar-colors" role="group" aria-label="Couleur de l'avatar"></div>
-          <div class="join-avatar-preview" id="join-avatar-preview" aria-label="Aperçu de ton avatar">🦊</div>
-        </fieldset>
+
         <div class="button-row">
           <button type="button" id="clear-form" class="soft">Effacer</button>
           <button type="submit">Demander l’accès</button>
         </div>
       </form>
-      <p class="hint">Un professeur doit autoriser cet appareil.</p>
+      <p class="hint">Une fois la demande envoyée, tu pourras choisir ton avatar pendant l’attente.</p>
     </section>
 
     <section class="panel" data-view="waiting" hidden>
       <h1>Demande envoyée !</h1><p class="centered">Le professeur doit autoriser ton appareil. Tu peux choisir ton avatar pendant l’attente.</p><p class="centered">Montre ces chiffres au professeur :</p>
       <div id="verification-code" class="verification-code">••••</div>
-      <p class="centered">Il les voit déjà de son côté.</p><div id="waiting-avatar-editor"></div><p id="waiting-status-note" class="centered" role="status">En attente du professeur…</p><button id="finish-avatar" type="button" hidden>OK, j’ai fini de choisir</button>
+      <p class="centered">Il les voit déjà de son côté.</p><div id="waiting-avatar-editor">        <fieldset class="join-avatar-field"><legend>Choisis ton avatar</legend><p class="hint">Un animal ou une lettre majuscule, puis une couleur.</p>
+          <div id="join-avatar-choices" class="join-avatar-grid" role="group" aria-label="Animal ou lettre"></div>
+          <div id="join-avatar-colors" class="join-avatar-colors" role="group" aria-label="Couleur de l'avatar"></div>
+          <div class="join-avatar-preview" id="join-avatar-preview" aria-label="Aperçu de ton avatar">🦊</div>
+        </fieldset></div><p id="waiting-status-note" class="centered" role="status">En attente du professeur…</p><button id="finish-avatar" type="button" hidden>OK, j’ai fini de choisir</button>
       <div class="button-row">
         <button id="check-status">Vérifier</button>
         <button id="cancel-request" class="soft">Annuler</button>
