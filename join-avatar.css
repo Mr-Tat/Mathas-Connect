@@ -6,3 +6,7 @@
 .join-avatar-colors{display:flex;gap:9px;flex-wrap:wrap;padding:13px 3px}
 .join-avatar-colors button{width:32px;height:32px;border-radius:50%;border:1px solid #fff8;min-height:32px;padding:0}
 .join-avatar-preview{font-size:39px;border-radius:14px;width:66px;height:66px;display:grid;place-items:center;color:white;font-weight:900;margin:2px auto 6px}
+
+.avatar-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0 14px}
+.avatar-tabs button{font:700 13px system-ui;min-height:38px;padding:7px 11px;color:#eef6ff;background:#294864;border:1px solid #6e94b2;border-radius:9px;cursor:pointer}
+.avatar-tabs button.selected{background:#225f9a;border-color:#a8d8ff;outline:2px solid #78b8ec}
