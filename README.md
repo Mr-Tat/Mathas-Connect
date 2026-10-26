@@ -1,31 +1,36 @@
-# Math’as Connect
+# Math’as Connect — Base de référence (26 octobre 2026)
 
-Fondation indépendante et gratuite de Math’as, en cours de construction.
+Plateforme indépendante, légère, destinée aux élèves et aux professeurs.
 
-## Répartition claire
-- **GitHub Pages** : interface sobre professeur et élève (`index.html`, `style.css`, `app.js`).
-- **Supabase Connect** : authentification et données (projet `awmhpfofacaglewammxt`).
-- **Applications mathématiques** : leurs propres dépôts et moteurs de jeu, jamais copiés dans le HUB.
+## Référence actuelle
 
-Site d’essai : https://mr-tat.github.io/Mathas-Connect/
+- HUB et interface professeur : https://mr-tat.github.io/Mathas-Connect/
+- Première application pilote : https://mr-tat.github.io/CE-Addition-simple/
+- GitHub Pages héberge les pages statiques ; Supabase **Connect** (projet `awmhpfofacaglewammxt`) gère identités, sauvegardes, progression et XP.
+- **Ne jamais modifier l'ancien projet Math’as** `jftzuslpelgzbdrftszw` pour mettre en place Connect.
 
-### Pour publier
-Dans **Settings → Pages** : **Deploy from a branch**, `main`, `/ (root)`. L’activation doit être vérifiée sur GitHub avant un essai réel.
+## Décision stable : aucun import historique vers Connect
 
-### Essai prévu
-Professeur : se connecter, classe de démonstration, copier le lien élève, actualiser, autoriser/refuser.
-Élève (navigation privée distincte) : prénom + initiale, demander l’accès, montrer les quatre chiffres, puis vérifier l’autorisation.
+- Chaque élève commence Connect au niveau global **1** avec **0 XP** et des records Connect vierges.
+- Une nouvelle application est intégrée avec ses propres règles de déblocage et son propre barème XP ; les XP s'additionnent dans le HUB.
+- Le **mode Classique** est local, indépendant de Supabase Connect. L'ancien jeu et le mode Classique du nouveau pilote Addition partagent les résultats locaux lorsque l'origine GitHub Pages et le navigateur sont identiques.
+- En mode Connecté, les données de partie restent isolées des résultats classiques ; le serveur fait foi et les validations doivent réussir avant toute écriture cloud.
+- Pas de conversion des anciens résultats en XP Connect. Les anciennes migrations SQL restent uniquement comme historique technique, leurs fonctions/tables actives d'import ont été supprimées.
 
-Les quatre chiffres sont une **vérification visuelle, pas un mot de passe**. Seule l’approbation du professeur donne l’autorisation.
+## Contrat opérationnel
 
-### Sécurité et état
-- Aucun secret Supabase n'est publié dans ce dépôt. La clé publishable est publique par nature.
-- Aucune table métier n'est ouverte aux rôles des navigateurs.
-- L'essai de bout en bout reste à faire avec un vrai navigateur.
-- Le service `connect-api` existe sur Supabase mais **son code déployé n'est pas encore versionné ici** : tâche prioritaire avant les prochains développements.
-- L'ancienne fonction `connect-ui` sur Supabase n'est **pas** le site officiel et ne doit plus être utilisée.
-- Réinitialiser le navigateur ne révoque pas l'appareil côté serveur.
-- Ne jamais engager de frais, toucher au Math’as public ni aux jeux existants sans autorisation explicite.
+- Une ligne `connect_states` par (élève, application), avec `revision` et `reset_epoch`. Conflits et réinitialisations ne doivent pas écraser silencieusement une progression plus récente.
+- Une requête par partie terminée, pas de requête par frappe ; file locale d'envoi bornée, contrôles d'identité/appareil/classe côté fonction serveur.
+- Déblocages et records rechargés depuis le serveur. Jalons XP uniques dans `connect_xp_milestones`, crédits cumulés dans `connect_xp_credits` ; règle effective `connect_xp_sync_v2` / `connect_xp_read_v2`.
+- Les XP déjà acquis sont conservés lorsque seuls les résultats sont effacés ; la remise à zéro n'efface pas automatiquement la progression.
+- Sauvegarde chiffrée hebdomadaire vers le dépôt GitHub **privé** `Mathas-Connect-Sauvegardes`. Une sauvegarde déposée n'équivaut pas à un test complet de restauration.
+- Tableau professeur : utiliser `teacher-overview` (résumé léger), garder `teacher-export` pour les sauvegardes explicites uniquement.
+- Future projection : ne pas diffuser d'identités sensibles, limiter les requêtes et prévoir la lecture de résumés agrégés.
 
-### Règles
-Simplicité, extensibilité générique 100+ jeux, permissions minimales, vrai test end-to-end à chaque bloc, aucune fonctionnalité annoncée fonctionnelle sans vérification réelle.
+## Statut de validation
+
+Code et base audités le 26 octobre 2026. Les scénarios SQL des XP ont été vérifiés dans des transactions annulées, y compris la conservation des jalons après remise à zéro des records. La recette réelle sur appareils élèves et la restauration d'une sauvegarde chiffrée restent à terminer avant usage généralisé.
+
+## Documents d'archives
+
+Les fichiers `docs/*` datés d'étapes précédentes sont **des archives historiques** : certaines hypothèses (import XP historique, anciens contrats ou version de pilote) sont annulées. Ce README fait foi pour le prochain développement.
