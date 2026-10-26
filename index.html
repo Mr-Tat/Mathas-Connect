@@ -9,11 +9,11 @@
   <link rel="icon" type="image/png" href="./assets/brand/favicon.png">
   <link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png">
   <link rel="stylesheet" href="./style.css?v=20261025j">
-  <script type="module" src="./app.js?v=20261025n"></script>
+  <script type="module" src="./app.js?v=20261026go2"></script>
 <link rel="stylesheet" href="./join-avatar.css?v=1">
 <link rel="stylesheet" href="./student-entry-dark.css?v=1">
-<script type="module" src="./join-avatar.js?v=1"></script>
-<script type="module" src="./join-avatar-sync.js?v=1"></script>
+<script type="module" src="./join-avatar.js?v=20261026go2"></script>
+<script type="module" src="./join-avatar-sync.js?v=20261026go2"></script>
 </head>
 <body>
   <main class="shell">
@@ -164,8 +164,8 @@
           <div class="join-avatar-preview" id="join-avatar-preview" aria-label="Aperçu de ton avatar">🦊</div>
         </fieldset>
         <div class="button-row">
-          <button type="submit">Demander l’accès</button>
           <button type="button" id="clear-form" class="soft">Effacer</button>
+          <button type="submit">Demander l’accès</button>
         </div>
       </form>
       <p class="hint">Un professeur doit autoriser cet appareil.</p>
@@ -174,7 +174,7 @@
     <section class="panel" data-view="waiting" hidden>
       <h1>Demande envoyée !</h1><p class="centered">Le professeur doit autoriser ton appareil. Tu peux choisir ton avatar pendant l’attente.</p><p class="centered">Montre ces chiffres au professeur :</p>
       <div id="verification-code" class="verification-code">••••</div>
-      <p class="centered">Il les voit déjà de son côté.</p>
+      <p class="centered">Il les voit déjà de son côté.</p><div id="waiting-avatar-editor"></div><p id="waiting-status-note" class="centered" role="status">En attente du professeur…</p><button id="finish-avatar" type="button" hidden>OK, j’ai fini de choisir</button>
       <div class="button-row">
         <button id="check-status">Vérifier</button>
         <button id="cancel-request" class="soft">Annuler</button>
@@ -182,6 +182,7 @@
       <p class="hint">Ce code expire après 15 minutes.</p>
     </section>
 
+    <section class="panel" data-view="account-choice" hidden><h1>Qui veut jouer ?</h1><p class="centered">Un profil est déjà autorisé sur cet appareil.</p><div class="account-existing"><div class="join-avatar-preview" id="account-avatar">🦊</div><strong id="account-name">Élève</strong></div><div class="button-row"><button id="continue-profile" type="button">Continuer avec ce profil</button><button id="switch-profile" class="soft" type="button">Utiliser un autre compte</button></div><p class="hint">Changer de profil ne supprime aucun score ni XP. Il faudra faire autoriser de nouveau cet appareil pour revenir à ce profil.</p></section>
     <section class="panel" data-view="approved" hidden>
       <div class="big-check" aria-hidden="true">✓</div>
       <h1 id="result-title">Appareil autorisé</h1>
