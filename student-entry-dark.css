@@ -15,3 +15,12 @@ body:has([data-view="student-form"]:not([hidden])) .panel,body:has([data-view="w
 [data-view="student-form"] .message{background:#26384b;color:#f0d3b8;border-color:#a57a56}
 body:has([data-view="student-form"]:not([hidden])) #message:not([hidden]),body:has([data-view="waiting"]:not([hidden])) #message:not([hidden]),body:has([data-view="approved"]:not([hidden])) #message:not([hidden]){background:#25394c;color:#d7e7f5;border-color:#668cab}
 [data-view="student-form"] .soft,[data-view="approved"] .soft{background:#244663;color:#e4f1ff}
+
+body:has([data-view="account-choice"]:not([hidden])){background:radial-gradient(circle at 15% 10%,#16354f,#071322 70%);color:#e5f1fd;min-height:100svh}
+body:has([data-view="account-choice"]:not([hidden])) .shell{max-width:690px;margin:18px auto}
+body:has([data-view="account-choice"]:not([hidden])) .brand{font-size:0}
+body:has([data-view="account-choice"]:not([hidden])) .student-entry-brand{display:flex}
+body:has([data-view="account-choice"]:not([hidden])) .panel{background:linear-gradient(145deg,#173049,#0b1c2d);border:1px solid #426685;color:#e7f2ff}
+[data-view="waiting"] .join-avatar-field{background:#1b3853;color:#ebf5fc;border-color:#547d9e}
+[data-view="waiting"] .join-avatar-grid button{background:#2c4b68;color:white;border-color:#597996}
+[data-view="waiting"] .soft,[data-view="account-choice"] .soft{background:#244663;color:#e4f1ff}
