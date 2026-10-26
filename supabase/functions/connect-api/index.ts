@@ -145,7 +145,24 @@ async function handle(req:Request){
      if(!ids.length)return ok({years:years.data,classes:classes.data,requests:[],students:[],devices:[]});
      const p=await db.from('connect_join_requests').select('id,class_id,first_name,last_initial,verify_code,expires_at,state')
        .in('class_id',ids).eq('state','pending').gt('expires_at',new Date().toISOString()).order('created_at').limit(100);
-     return p.error?fail('db_failed',500):ok({years:years.data,classes:classes.data,requests:p.data,students:[],devices:[]});
+     if(p.error)return fail('db_failed',500);
+     const rows=p.data||[];
+     if(!rows.length)return ok({years:years.data,classes:classes.data,requests:[],students:[],devices:[]});
+     const classesWithRequests=[...new Set(rows.map((r:any)=>r.class_id))];
+     const en=await db.from('connect_enrollments').select('class_id,student_id')
+       .in('class_id',classesWithRequests).is('left_at',null).limit(1000);
+     if(en.error)return fail('db_failed',500);
+     const idsWithStudent=[...new Set((en.data||[]).map((e:any)=>e.student_id))];
+     const students=idsWithStudent.length?await db.from('connect_students')
+       .select('id,display_name,archived_at').in('id',idsWithStudent):{data:[],error:null};
+     if(students.error)return fail('db_failed',500);
+     const names=new Map((students.data||[]).filter((e:any)=>!e.archived_at).map((e:any)=>[e.id,e.display_name]));
+     const grouped=new Map<string,any[]>();
+     for(const e of en.data||[]){const n=names.get(e.student_id);if(n){const arr=grouped.get(e.class_id)||[];arr.push({id:e.student_id,display_name:n});grouped.set(e.class_id,arr)}}
+     const normalized=(v:string)=>String(v||'').normalize('NFC').toLocaleLowerCase('fr').replace(/[.\\s]+/g,'');
+     return ok({years:years.data,classes:classes.data,students:[],devices:[],
+       requests:rows.map((r:any)=>({...r,matches:(grouped.get(r.class_id)||[])
+         .filter((st:any)=>normalized(st.display_name)===normalized(r.first_name+'.'+r.last_initial))}))});
    }
    const [requests,enrollments]=await Promise.all([
      db.from('connect_join_requests').select('id,first_name,last_initial,verify_code,state,created_at,expires_at,student_id')
