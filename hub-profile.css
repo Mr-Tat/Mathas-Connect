@@ -43,3 +43,11 @@
 }
 
 .avatar-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}.avatar-tabs button{font:700 13px system-ui;padding:8px 11px;min-height:38px;border-radius:9px;border:1px solid #7199bb;background:#294864;color:white;cursor:pointer}.avatar-tabs button.selected{background:#225f9a;border-color:#bee4ff;outline:2px solid #78b8ec}
+
+/* Niveau Connect : le CHIFFRE domine visuellement, les XP restent secondaires. */
+#identity-box.identity-connected .student-level{display:inline-flex;align-items:center;gap:12px;max-width:100%;width:max-content;padding:5px 9px 5px 18px;border-radius:999px;background:linear-gradient(115deg,#4a287e,#273f83);border:2px solid #b9a1fb;box-shadow:0 4px 14px #0004;margin:6px 0 0;color:#f2e9ff}
+#identity-box.identity-connected .student-level-label{font-size:clamp(15px,1.5vw,20px);font-weight:800;letter-spacing:.01em;color:#e9dfff}
+#identity-box.identity-connected .student-level-number{font:900 clamp(38px,4vw,55px)/1 "Fredoka",system-ui,sans-serif;min-width:56px;text-align:center;padding:7px 13px 8px;border-radius:999px;background:#f8d66a;color:#26205c;text-shadow:none;box-shadow:inset 0 -3px 0 #eab85a,0 2px 10px #0004}
+#identity-box.identity-connected .student-xp{font-size:clamp(13px,1.35vw,17px);color:#9ed4ef;font-weight:800}
+#identity-box.identity-connected .student-level[hidden],#identity-box.identity-connected .student-xp[hidden]{display:none!important}
+@media(max-width:720px){#identity-box.identity-connected .student-level{gap:7px;padding-left:12px}#identity-box.identity-connected .student-level-number{font-size:39px;min-width:47px;padding:6px 9px}}
