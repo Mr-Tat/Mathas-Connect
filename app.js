@@ -146,12 +146,14 @@ function waitAvatar(){
 function stopWaiting(){if(waitingTimer){clearTimeout(waitingTimer);waitingTimer=null}}
 function startWaiting(){
  stopWaiting();waitAvatar();show('waiting');$('finish-avatar').hidden=!waitingApproved;
+ $('waiting-actions').hidden=waitingApproved;
+ $('waiting-expiry').hidden=waitingApproved;
  if(waitingApproved){$('waiting-status-note').textContent='✅ Demande acceptée ! Termine ton avatar, puis appuie sur le bouton.';return}
  $('waiting-status-note').textContent='En attente du professeur…';
  // Contrôle rare : une requête toutes les 15 secondes maximum, onglet visible.
  waitingTimer=setTimeout(async()=>{
   waitingTimer=null;
-  if(document.hidden||document.querySelector('[data-view="waiting"]').hidden){if(!document.querySelector('[data-view="waiting"]').hidden)startWaiting();return}
+  if(document.hidden||document.querySelector('[data-view="waiting"]').hidden)return;
   if(waitingBusy)return;
   waitingBusy=true;
   try{await status(true)}catch{ /* le bouton Vérifier reste disponible */ }
@@ -159,6 +161,9 @@ function startWaiting(){
   if(!waitingApproved&&!document.querySelector('[data-view="waiting"]').hidden)startWaiting();
  },15000);
 }
+document.addEventListener('visibilitychange',()=>{
+ if(!document.hidden&&!waitingApproved&&!document.querySelector('[data-view="waiting"]').hidden&&!waitingTimer&&!waitingBusy)startWaiting();
+});
 async function status(silent=false){
  await ensureStudentSession();
  const {request:r}=await call('student-join-status',{classId:cls,awaitingApproval:waitingApproved||!document.querySelector('[data-view="waiting"]').hidden});
@@ -218,8 +223,8 @@ $('switch-profile').onclick=()=>run(async()=>{
  await call('student-release');const {error}=await sb.auth.signOut({scope:'local'});if(error)throw error;
  existingProfileClass=null;waitingApproved=false;localStorage.removeItem(avatarKey);location.reload()
 });
-$('check-status').onclick=()=>run(status);
-$('cancel-request').onclick=()=>run(async()=>{await call('student-cancel-join',{classId:cls});show('student-form')});
+$('check-status').onclick=()=>run(async()=>{if(!waitingApproved)await status()});
+$('cancel-request').onclick=()=>run(async()=>{if(waitingApproved)return;stopWaiting();await call('student-cancel-join',{classId:cls});show('student-form')});
 $('result-home').onclick=()=>location.assign(hubLink);
 $('reset-local').onclick=()=>run(async()=>{if(!confirm('Révoquer cet appareil et oublier ce profil ici ? Les résultats Connect restent enregistrés. Pour reprendre le compte, il faudra une nouvelle autorisation du professeur.'))return;await call('student-release');const {error}=await sb.auth.signOut({scope:'local'});if(error)throw error;location.href=hubLink});
 if(!teacherPortal){if(cls){show('student-form');run(student)}else location.replace(hubLink)}
