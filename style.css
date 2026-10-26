@@ -150,3 +150,10 @@ body:has(.login-panel:not([hidden])) footer{color:#afc8d9}
 .results-detail-block .result-table th,.results-detail-block .result-table td{padding:9px!important}
 .results-detail-block .recent-history{line-height:1.8;font-size:14px}
 @media(max-width:580px){.results-overview-table tbody td:first-child{min-width:125px;max-width:155px}.results-overview-table th,.results-overview-table td{padding:10px 9px}.results-overview-cell{grid-template-columns:163px 92px;gap:8px;min-width:263px}.results-recent-line{font-size:14px}}
+
+/* Identité Connect : mauve vers bleu, légèrement assombri. */
+:root{--connect-gradient:linear-gradient(90deg,#7139a8 0%,#4c42a9 47%,#2059ae 100%)}
+.brand em,.login-brand span,.teacher-connect-suffix,.student-entry-brand span{background:var(--connect-gradient);-webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent}
+.account-existing{display:grid;justify-items:center;gap:10px;margin:18px auto 24px;padding:16px;border-radius:14px;background:#1c3a54;color:#edf6ff;max-width:340px}
+#finish-avatar{width:100%;background:#1b75a3;color:#fff;margin:12px 0;font-size:16px}
+#waiting-status-note{font-size:16px;font-weight:750;color:#b6e9c8}
