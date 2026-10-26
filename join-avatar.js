@@ -2,7 +2,7 @@ import {avatarCategories,avatarGlyph,avatarColors,avatarColor} from './avatar-ca
 const cls=new URLSearchParams(location.search).get('class');
 const key='mathas.connect.avatar-pending:'+cls;
 let picked={kind:'animal',value:'fox',color:'ocean'};
-try{const stored=JSON.parse(localStorage.getItem(key)||'null');if(stored&&['animal','letter'].includes(stored.kind)&&avatarColors[stored.color])picked=stored}catch{}
+try{const stored=JSON.parse(localStorage.getItem(key)||'null');if(stored&&avatarCategories.some(category=>category.kind===stored.kind&&Object.hasOwn(category.icons,stored.value))&&avatarColors[stored.color])picked=stored}catch{}
 const $=id=>document.getElementById(id);
 function draw(){
  const grid=$('join-avatar-choices'),palette=$('join-avatar-colors');
