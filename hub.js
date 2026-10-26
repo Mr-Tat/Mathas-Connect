@@ -1,3 +1,4 @@
+import {avatarCategories,avatarGlyph,avatarColors,avatarColor} from './avatar-catalog.js';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 import { classId, classLabel, loginUrl } from './connect-context.js';
 
@@ -80,31 +81,27 @@ async function showCatalog() {
   }
 }
 
-const animalOptions={fox:'🦊',panda:'🐼',frog:'🐸',lion:'🦁',penguin:'🐧',owl:'🦉',cat:'🐱',dog:'🐶',rabbit:'🐰',bear:'🐻',koala:'🐨',wolf:'🐺',tiger:'🐯',monkey:'🐵',elephant:'🐘',giraffe:'🦒',zebra:'🦓',horse:'🐴',cow:'🐮',pig:'🐷',sheep:'🐑',deer:'🦌',hedgehog:'🦔',squirrel:'🐿️',otter:'🦦',dolphin:'🐬',whale:'🐳',octopus:'🐙',turtle:'🐢',seal:'🦭',duck:'🦆',parrot:'🦜',flamingo:'🦩',bee:'🐝',butterfly:'🦋',dragon:'🐲'};
-const palette={ocean:'#2563a5',sky:'#247cb5',indigo:'#5444b7',violet:'#8147bb',plum:'#963d86',rose:'#ac4568',coral:'#bc5948',sun:'#b47b27',amber:'#946122',mint:'#238c81',forest:'#297246',slate:'#4b657d'};
 let activeProfile=null,avatarChoice={kind:'animal',value:'fox',color:'ocean'};
 function paintAvatar(node,avatar){
  const v=avatar||avatarChoice;
- node.textContent=v.kind==='animal'?(animalOptions[v.value]||'🦊'):(v.value||'M');
- node.style.background=palette[v.color]||palette.ocean;
+ node.textContent=avatarGlyph(v);
+ node.style.background=avatarColor(v.color);
 }
 function openAvatarEditor(){
  const dialog=$('avatar-dialog');dialog.hidden=false;
  const choices=$('avatar-choices');choices.replaceChildren();
- for(const [value,emoji] of Object.entries(animalOptions)){
-  const b=document.createElement('button');b.type='button';b.textContent=emoji;b.title=value;b.setAttribute('aria-label','Animal : '+value);
-  b.className=avatarChoice.kind==='animal'&&avatarChoice.value===value?'selected':'';
-  b.onclick=()=>{avatarChoice.kind='animal';avatarChoice.value=value;openAvatarEditor()};
-  choices.append(b);
+ let tabs=$('hub-avatar-tabs');if(!tabs){tabs=document.createElement('div');tabs.id='hub-avatar-tabs';tabs.className='avatar-tabs';choices.before(tabs)}tabs.replaceChildren();
+ for(const category of avatarCategories){
+  const tab=document.createElement('button');tab.type='button';tab.textContent=category.label;tab.className=avatarChoice.kind===category.kind?'selected':'';
+  tab.onclick=()=>{avatarChoice.kind=category.kind;avatarChoice.value=Object.keys(category.icons)[0];openAvatarEditor()};tabs.append(tab)
  }
- for(const letter of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'){
-  const b=document.createElement('button');b.type='button';b.textContent=letter;
-  b.className=avatarChoice.kind==='letter'&&avatarChoice.value===letter?'selected':'';
-  b.onclick=()=>{avatarChoice.kind='letter';avatarChoice.value=letter;openAvatarEditor()};
-  choices.append(b);
+ for(const [value,emoji] of Object.entries(avatarCategories.find(x=>x.kind===avatarChoice.kind)?.icons||{})){
+  const b=document.createElement('button');b.type='button';b.textContent=emoji;b.title=value;b.setAttribute('aria-label','Avatar : '+value);
+  b.className=avatarChoice.value===value?'selected':'';
+  b.onclick=()=>{avatarChoice.value=value;openAvatarEditor()};choices.append(b)
  }
  const colors=$('avatar-colors');colors.replaceChildren();
- for(const [name,hex] of Object.entries(palette)){
+ for(const [name,hex] of Object.entries(avatarColors)){
   const b=document.createElement('button');b.type='button';b.style.background=hex;b.setAttribute('aria-label','Couleur '+name);b.title=name;b.className=avatarChoice.color===name?'selected':'';
   b.onclick=()=>{avatarChoice.color=name;openAvatarEditor()};colors.append(b);
  }
