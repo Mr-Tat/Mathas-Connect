@@ -41,3 +41,5 @@
  .topbar>.connect-nav{flex:1 1 100%;max-width:100%;justify-content:flex-end}
  .topbar #identity-box.identity-connected{width:min(475px,100%)}
 }
+
+.avatar-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}.avatar-tabs button{font:700 13px system-ui;padding:8px 11px;min-height:38px;border-radius:9px;border:1px solid #7199bb;background:#294864;color:white;cursor:pointer}.avatar-tabs button.selected{background:#225f9a;border-color:#bee4ff;outline:2px solid #78b8ec}
