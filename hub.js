@@ -141,18 +141,20 @@ function drawIdentity(profile) {
   }
   $('identity-class').hidden=true;
   $('identity-level').hidden=!authorized;
-  if(authorized)$('identity-level').textContent=profile.xp?.active?('Niveau '+profile.xp.level+' · '+profile.xp.total+' XP Connect'):'Niveau 1 · 0 XP Connect';
+  $('identity-xp').hidden=!authorized;
+  if(authorized){
+    $('identity-level-number').textContent=String(profile.xp?.active?profile.xp.level:1);
+    $('identity-xp').textContent=(profile.xp?.active?profile.xp.total:0)+' XP Connect';
+  }
   const avatar=$('identity-avatar');avatar.hidden=!authorized;
   if(authorized)paintAvatar(avatar,profile.avatar);
-  $('edit-avatar').hidden=false;
-  $('rename-device').hidden=!!profile?.teacherPlayer;
-  $('forget-device').hidden=!!profile?.teacherPlayer;
+  $('edit-avatar').hidden=!authorized;
   $('classLabel').textContent = classId ? classLabel : 'Jeux';
   $('identity-action').textContent = authorized ? 'Modifier' : 'Se connecter';
   $('identity-extra').hidden = true;
   $('identity-action').onclick = () => {
     if (authorized) $('identity-extra').hidden = !$('identity-extra').hidden;
-    else { sb.auth.getSession().then(({data:{session}})=>{setFree(false);if(session?.user&&!session.user.is_anonymous)showIdentity();else location.href=loginUrl()}).catch(()=>{setFree(false);location.href=loginUrl()}); }
+    else { sb.auth.getSession().then(({data:{session}})=>{if(session?.user){setFree(false);showIdentity()}else location.href=loginUrl()}).catch(()=>{location.href=loginUrl()}); }
   };
 }
 
@@ -162,40 +164,6 @@ function switchToFree() {
 }
 
 $('mode-toggle').onclick = switchToFree;
-$('rename-device').onclick = async () => {
- const label=prompt('Nom de cet appareil (par exemple : Chrome FOPA, Chrome Tatouille) :');
- if(label===null)return;
- const name=label.trim();
- if(!name||name.length>40){alert('Choisis un nom de 1 à 40 caractères.');return}
- try{
-  const {data:{session}}=await sb.auth.getSession();
-  if(!session?.user?.is_anonymous)throw Error('Profil élève non connecté');
-  const response=await fetch(url+'/functions/v1/connect-api',{method:'POST',headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},body:JSON.stringify({action:'student-device-label',label:name})});
-  const out=await response.json();
-  if(!response.ok||!out.ok)throw Error(out.error||'Enregistrement impossible');
-  alert('Nom enregistré : '+name+'. Le professeur le verra après actualisation.');
- }catch(e){alert('Nom non enregistré : '+e.message)}
-};
-
-$('forget-device').onclick = async () => {
-  if (!confirm('Retirer l’autorisation de cet ordinateur et oublier le profil ? Les résultats Connect resteront enregistrés. Il faudra une nouvelle autorisation du professeur pour revenir.')) return;
-  const btn=$('forget-device');btn.disabled=true;
-  try {
-    const {data:{session}}=await sb.auth.getSession();
-    if(!session?.user?.is_anonymous)throw Error('Session élève introuvable');
-    const r=await fetch(url+'/functions/v1/connect-api',{method:'POST',
-      headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
-      body:JSON.stringify({action:'student-release'})});
-    const data=await r.json();
-    if(!r.ok||!data.ok||!data.released)throw Error('Révocation impossible');
-    const {error}=await sb.auth.signOut({scope:'local'});
-    if(error)throw error;
-    switchToFree();
-    alert('Appareil retiré de Connect. Les résultats sont conservés sur le compte élève.');
-  }catch(e){alert('Attention : '+e.message+'. Si la révocation a été acceptée, ferme puis rouvre le HUB.');}
-  finally{btn.disabled=false}
-};
-
 async function showIdentity() {
   drawIdentity(null);
   if (!classId || inFreeMode()) return;
