@@ -165,7 +165,7 @@ async function status(silent=false){
  if(!r||['cancelled','expired','rejected'].includes(r.state)){
   stopWaiting();waitingApproved=false;
   if(silent&&r?.state==='expired'){show('student-form');msg('Demande expirée après 15 minutes. Tu peux recommencer.');return}
-  show('student-form');if(r?.state==='rejected')msg('Demande refusée : adresse-toi au professeur.');return
+  show('student-form');if(r?.state==='rejected')msg('Demande refusée. Tu peux refaire une demande, avec le même prénom ou un autre.');return
  }
  if(r.state==='already_approved'){
   stopWaiting();existingProfileClass=r.classId;
