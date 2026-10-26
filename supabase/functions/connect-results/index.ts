@@ -215,28 +215,45 @@ Deno.serve(async req=>{
    if(xpError||!summary)return deny('xp_unavailable',503);
    return answer({ok:true,appXp:summary.appXp,total:summary.total,level:summary.level,next:summary.next,milestones:summary.milestones,max:summary.max});
   }
-  if(b.action==='student-load'||b.action==='student-save'||b.action==='lab-record'||b.action==='game-record'||b.action==='legacy-import'||b.action==='game-reset'){
+  if(b.action==='student-load'||b.action==='student-save'||b.action==='lab-record'||b.action==='game-record'||b.action==='legacy-import'||b.action==='legacy-import-once'||b.action==='legacy-import-skip'||b.action==='game-reset'){
    if(!selected||(b.action==='lab-record'&&selected!==lab)||(b.action==='game-record'&&selected!==app))return deny('forbidden',403);
    const studentId=await identity();if(!studentId)return deny('forbidden',403);
    const current=await read(db.from('connect_states').select('revision,state_data,reset_epoch').eq('student_id',studentId).eq('app_key',selected));
-   if(b.action==='student-load')return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,state:current?.state_data||null});
+   if(b.action==='student-load'){
+    const {data:decision,error:decisionError}=await db.from('connect_legacy_import_decisions')
+      .select('decision').eq('student_id',studentId).eq('app_key',selected).maybeSingle();
+    if(decisionError)throw Error('db_error');
+    return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,
+     state:current?.state_data||null,importDecision:decision?.decision??(current?'progress_exists':null)});
+   }
    // Les jeux réels restent en lecture seule. Écriture exclusivement pour le laboratoire.
-   if(b.action==='legacy-import'){
+   if(b.action==='legacy-import')return deny('legacy_import_upgrade_required',409);
+   if(b.action==='legacy-import-once'||b.action==='legacy-import-skip'){
     if(selected!==app||!int(b.expectedRevision,0,1000000000)||!int(b.expectedResetEpoch,0,1000000000))return deny('invalid_import');
-    if((current?.reset_epoch??0)!==b.expectedResetEpoch)return deny('stale_reset_epoch',409);
-    const rev=current?.revision??0;if(rev!==b.expectedRevision)return deny('revision_conflict',409);
-    let before=validate(current?.state_data||{}),next=mergeHistorical(before,b.legacy);
-    if(JSON.stringify(before)===JSON.stringify(next)){const xp=await refreshXp(studentId,app);return answer({ok:true,revision:rev,state:next,unchanged:true,...(xp?{xp}:{} )});}
-    const payload={state_data:next,schema_version:1,updated_at:new Date().toISOString(),revision:rev+1};
-    if(current){
-     const r=await db.from('connect_states').update(payload).eq('student_id',studentId).eq('app_key',app).eq('revision',rev).eq('reset_epoch',b.expectedResetEpoch).select('revision').maybeSingle();
-     if(r.error)throw Error('db_error');if(!r.data)return deny('revision_conflict',409);
-    }else{
-     const r=await db.from('connect_states').insert({...payload,student_id:studentId,app_key:app}).select('revision').single();
-     if(r.error)return deny(r.error.code==='23505'?'revision_conflict':'db_error',r.error.code==='23505'?409:500);
+    const skip=b.action==='legacy-import-skip';
+    let state:any=null;
+    if(!skip){
+     try{
+      const x=b.legacy;
+      if(!x||typeof x!=='object'||Array.isArray(x))return deny('invalid_import');
+      state=validate({classic:x.classic,sudden:x.sudden,hard:x.hard,hardThree:x.hardThree,
+       progress:x.progress,topThree:x.topThree,bestPoints:x.bestPoints,rewards:x.rewards});
+     }catch{return deny('invalid_import')}
     }
-    const xp=await refreshXp(studentId,app);
-    return answer({ok:true,revision:rev+1,resetEpoch:b.expectedResetEpoch,state:next,...(xp?{xp}:{} )});
+    const {data:decision,error:issue}=await db.rpc('connect_legacy_import_once_v1',{
+     p_student:studentId,p_app:app,p_revision:b.expectedRevision,p_epoch:b.expectedResetEpoch,
+     p_snapshot:state,p_skip:skip
+    });
+    if(issue){
+     if(issue.message?.includes('already_started'))return deny('import_closed_progress_exists',409);
+     if(issue.message?.includes('revision_conflict'))return deny('revision_conflict',409);
+     console.error('legacy_import_once_failed',issue.code);return deny('legacy_import_unavailable',503);
+    }
+    const currentAfter=await read(db.from('connect_states').select('revision,reset_epoch,state_data')
+      .eq('student_id',studentId).eq('app_key',app));
+    return answer({ok:true,importDecision:decision.decision||decision.status,
+     revision:currentAfter?.revision??0,resetEpoch:currentAfter?.reset_epoch??0,
+     state:currentAfter?.state_data??null,xp:decision.xp??null});
    }
    if(b.action==='game-reset'){
     if(selected!==app||!int(b.expectedRevision,0,1000000000)||!int(b.expectedResetEpoch,0,1000000000)||!['restart','erase-results'].includes(b.resetType))return deny('invalid_reset');
