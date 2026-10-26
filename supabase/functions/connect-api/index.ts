@@ -252,6 +252,7 @@ async function handle(req:Request){
          one(db.from('connect_enrollments').select('class_id')
            .eq('student_id',d.student_id).is('left_at',null).limit(1))
        ]);
+       if(student&&enrolled&&b.awaitingApproval===true&&r.data?.state==='approved'&&enrolled.class_id===b.classId)return ok({request:{state:'approved'}});
        if(student&&enrolled)return ok({request:{state:'already_approved',
          classId:enrolled.class_id,displayName:student.display_name,
          avatar:{kind:student.avatar_kind||'animal',value:student.avatar_value||'fox',color:student.avatar_color||'ocean'}}});
