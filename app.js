@@ -1,3 +1,4 @@
+import {avatarGlyph,avatarColor} from './avatar-catalog.js';
 import {hubUrl} from './connect-context.js';
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 const url='https://awmhpfofacaglewammxt.supabase.co', key='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
@@ -169,7 +170,8 @@ async function status(silent=false){
  if(r.state==='already_approved'){
   stopWaiting();existingProfileClass=r.classId;
   $('account-name').textContent=r.displayName||'Élève';
-  $('account-avatar').textContent=r.avatar?.kind==='animal'?({fox:'🦊',cat:'🐱',panda:'🐼',frog:'🐸',lion:'🦁'}[r.avatar.value]||'🙂'):(r.avatar?.value||'🙂');
+  $('account-avatar').textContent=avatarGlyph(r.avatar);
+  $('account-avatar').style.background=avatarColor(r.avatar?.color);
   show('account-choice');return
  }
  if(r.state==='approved'){
