@@ -52,7 +52,7 @@ async function refresh(){const id=$('class-selector').value;if(!id){$('request-c
  // Une correspondance de nom NE PROUVE PAS l'identité : le professeur valide toujours la demande et le code.
  const canonicalName=v=>String(v||'').normalize('NFC').toLocaleLowerCase('fr').replace(/[.\\s]+/g,'');
  const requestedName=canonicalName(req.first_name+'.'+req.last_initial);
- const matches=(req.class_id&&req.class_id!==id?[]:s.students).filter(e=>canonicalName(e.display_name)===requestedName);
+ const matches=req.matches??(req.class_id&&req.class_id!==id?[]:s.students).filter(e=>canonicalName(e.display_name)===requestedName);
  if(matches.length){
    const sel=document.createElement('select');sel.setAttribute('aria-label','Associer la demande à une fiche élève');sel.className='match-selector';
    const first=new Option(matches.length>1?'Plusieurs élèves homonymes : choisis la bonne fiche':'Créer une nouvelle fiche (autre élève)',matches.length>1?'':'__new__');
@@ -197,6 +197,9 @@ $('add-class-form').onsubmit=e=>{e.preventDefault();run(async()=>{const yearId=$
 $('add-student-form').onsubmit=e=>{e.preventDefault();run(async()=>{const classId=$('class-selector').value,name=$('new-student-name').value.trim();await call('teacher-create-student',{classId,name});$('new-student-name').value='';await refresh();msg('Élève ajouté',true)})};
 $('class-selector').onchange=()=>run(async()=>{await refresh();await showResults().catch(e=>showResultMessage('Suivi indisponible : '+e.message))});
 $('refresh-teacher').onclick=()=>run(refresh);
+$('requests-refresh')?.addEventListener('click',()=>run(refresh));
+// Rafraîchissement lent, seulement quand l'accueil professeur est ouvert et visible.
+setInterval(()=>{if(!document.hidden&&teacherPortal&&!document.querySelector('[data-view="teacher"]').hidden&&!$('teacher-home').hidden&&!busy)run(refresh)},45000);
 $('copy-student-link').onclick=()=>run(async()=>{const box=$('class-selector');if(!box.value)throw Error('Aucune classe');await navigator.clipboard.writeText(hubUrl(box.value,box.selectedOptions[0]?.textContent||'Ma classe'));msg('Lien du HUB de classe copié',true)});
 $('clear-form').onclick=()=>{$('first-name').value='';$('last-initial').value=''};
 $('join-form').onsubmit=e=>{e.preventDefault();run(async()=>{const firstName=$('first-name').value.trim(),lastInitial=$('last-initial').value.trim().toUpperCase();if(!/^[\p{L}][\p{L} '-]{0,39}$/u.test(firstName)||!/^[\p{L}]$/u.test(lastInitial))throw Error('Vérifie le prénom et la lettre du nom');await ensureStudentSession();const {request}=await call('student-join',{classId:cls,firstName,lastInitial});$('verification-code').textContent=request.code;waitingApproved=false;startWaiting()})};
