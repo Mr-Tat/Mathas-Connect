@@ -4,6 +4,10 @@ const url='https://awmhpfofacaglewammxt.supabase.co', key='sb_publishable_oI2Pyl
 const sb=createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 const $=id=>document.getElementById(id), cls=new URLSearchParams(location.search).get('class');
 const hubLink=hubUrl();
+const teacherPortal=new URLSearchParams(location.search).get('portail')==='prof'&&!cls;
+if(!teacherPortal){document.getElementById('teacher-entry')?.remove();document.querySelector('[data-view="login"]')?.remove();document.querySelector('[data-view="teacher"]')?.remove();}
+if(teacherPortal){for(const view of ['student-form','waiting','account-choice','approved','welcome'])document.querySelector('[data-view="'+view+'"]')?.remove();}
+
 const CLASS_SPACES={
  observation:{id:'8fe170fa-9e8f-4e80-885a-b0ba68026f64',name:'Observation'},
  phase1:{id:'71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e',name:'Phase 1'},
@@ -13,7 +17,7 @@ const CLASS_SPACES={
 let currentTeacherSpace=null;
 
 let busy=false;
-function show(v){document.querySelectorAll('[data-view]').forEach(e=>e.hidden=e.dataset.view!==v);msg('')}
+function show(v){if(!teacherPortal&&['teacher','login','welcome'].includes(v)){location.replace(hubLink);return}if(teacherPortal&&!['teacher','login'].includes(v))v='login';document.querySelectorAll('[data-view]').forEach(e=>e.hidden=e.dataset.view!==v);msg('')}
 function msg(s='',success=false){const e=$('message');e.textContent=s;e.hidden=!s;e.classList.toggle('ok',success)}
 async function run(fn){if(busy)return;busy=true;try{await fn()}catch(e){msg(e.message||'Erreur')}finally{busy=false}}
 async function ensureStudentSession(){
@@ -129,7 +133,7 @@ function renderArchives(data,classId){
   const row=document.createElement('div');row.className='button-row';row.append(restore,remove);item.append(name,row);list.append(item);
  }
 }
-async function student(){if(!cls){show('welcome');msg('Ouvre le lien donné par le professeur.');return}
+async function student(){if(!cls){location.replace(hubLink);return}
  await ensureStudentSession();await status()}
 let waitingTimer=null,waitingApproved=false,waitingBusy=false,existingProfileClass=null;
 const avatarKey='mathas.connect.avatar-pending:'+cls;
@@ -177,8 +181,8 @@ async function status(silent=false){
  if(document.querySelector('[data-view="waiting"]').hidden)startWaiting();
 }
 
-$('home').onclick=()=>{if(!cls)show('login');else show('welcome')};
-$('teacher-entry').onclick=()=>show('login');
+$('home').onclick=()=>{if(teacherPortal)show('login');else location.assign(hubLink)};
+if(teacherPortal&&$('teacher-entry'))$('teacher-entry').onclick=()=>show('login');
 $('back-login').onclick=()=>{location.href=hubLink};
 $('student-entry').onclick=()=>run(student);
 $('login-form').onsubmit=e=>{e.preventDefault();run(async()=>{const r=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(r.error)throw Error('Identifiants incorrects');$('password').value='';await teacher()})};
@@ -212,7 +216,7 @@ $('check-status').onclick=()=>run(status);
 $('cancel-request').onclick=()=>run(async()=>{await call('student-cancel-join',{classId:cls});show('student-form')});
 $('result-home').onclick=()=>show('welcome');
 $('reset-local').onclick=()=>run(async()=>{if(!confirm('Révoquer cet appareil et oublier ce profil ici ? Les résultats Connect restent enregistrés. Pour reprendre le compte, il faudra une nouvelle autorisation du professeur.'))return;await call('student-release');const {error}=await sb.auth.signOut({scope:'local'});if(error)throw error;location.href=hubLink});
-if(cls){show('student-form');run(student)}
+if(!teacherPortal){if(cls){show('student-form');run(student)}else location.replace(hubLink)}
 else {
   show('login');
   run(async()=>{
