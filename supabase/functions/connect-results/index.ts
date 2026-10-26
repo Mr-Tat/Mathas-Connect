@@ -192,6 +192,26 @@ Deno.serve(async req=>{
      apps:states.data.filter((state:any)=>state.student_id===p.id).map((state:any)=>({appKey:state.app_key,revision:state.revision,resetEpoch:state.reset_epoch,state:state.state_data}))}))
    });
   }
+  if(b.action==='teacher-overview'){
+   if(!await managed())return deny('forbidden',403);
+   const en=await db.from('connect_enrollments').select('student_id').eq('class_id',b.classId).is('left_at',null).limit(250);
+   if(en.error)throw Error('db_error');
+   const ids=[...new Set(en.data.map((x:any)=>x.student_id))];
+   if(!ids.length)return answer({ok:true,students:[]});
+   const [names,states]=await Promise.all([
+    db.from('connect_students').select('id,display_name').in('id',ids).is('archived_at',null),
+    db.from('connect_states').select('student_id,app_key,state_data').in('student_id',ids)
+   ]);
+   if(names.error||states.error)throw Error('db_error');
+   const byStudent=new Map<string,any[]>();
+   for(const row of states.data){
+    let apps=byStudent.get(row.student_id);if(!apps){apps=[];byStudent.set(row.student_id,apps)}
+    const state=row.state_data||{};
+    apps.push({appKey:row.app_key,state:{recent:Array.isArray(state.recent)?state.recent.slice(0,3).map((r:any)=>({at:r.at,score:r.score,total:r.total})):[],
+     bestPoints:state.bestPoints??null,todayBest:state.todayBest??null}});
+   }
+   return answer({ok:true,students:names.data.map((p:any)=>({id:p.id,displayName:p.display_name,apps:byStudent.get(p.id)||[]}))});
+  }
   if(b.action==='teacher-summary'){
    if(!selected||!await managed())return deny('forbidden',403);
    const en=await db.from('connect_enrollments').select('student_id').eq('class_id',b.classId).is('left_at',null).limit(100);
