@@ -61,8 +61,10 @@ async function handle(req:Request){
    if(!user.is_anonymous&&!await teacher())return fail('forbidden',403);
    const kind=b.kind,value=b.value,color=b.color;
    const animals=['fox','panda','frog','lion','penguin','owl','cat','dog','rabbit','bear','koala','wolf','tiger','monkey','elephant','giraffe','zebra','horse','cow','pig','sheep','deer','hedgehog','squirrel','otter','dolphin','whale','octopus','turtle','seal','duck','parrot','flamingo','bee','butterfly','dragon'];
+   const objects=['soccer','basketball','tennis','volleyball','bicycle','airplane','rocket','car','train','skateboard','guitar','microphone','headphones','controller','paint','books','camera','star','trophy','music'];
+   const smileys=['smile','cool','starstruck','grin','angel','party','cowboy','catface','heartcat','ghost','robot','alien','laughing','happy','wink','hug'];
    const colors=['ocean','sky','indigo','violet','plum','rose','coral','sun','amber','mint','forest','slate'];
-   if(!colors.includes(color)||!['animal','letter'].includes(kind)||(kind==='animal'?!animals.includes(value):!(/^[A-Z]$/).test(value)))return fail('input_invalid');
+   if(!colors.includes(color)||!(['animal','letter','object','smiley'].includes(kind))||(kind==='animal'?!animals.includes(value):kind==='object'?!objects.includes(value):kind==='smiley'?!smileys.includes(value):!(/^[A-Z]$/).test(value)))return fail('input_invalid');
    const device=user.is_anonymous?await one(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1)):await one(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));
    if(!device)return fail('forbidden',403);
    const updated=await db.from('connect_students').update({avatar_kind:kind,avatar_value:value,avatar_color:color}).eq('id',device.student_id).is('archived_at',null).select('id');
