@@ -141,8 +141,12 @@ async function handle(req:Request){
      ids.length?db.from('connect_classes').select('id,name,year_id').in('id',ids).order('created_at',{ascending:true}):Promise.resolve({data:[],error:null})
    ]);
    if(years.error||classes.error)return fail('db_failed',500);
-   if(!U.test(b.classId||'')||!ids.includes(b.classId))
-     return ok({years:years.data,classes:classes.data,requests:[],students:[],devices:[]});
+   if(!U.test(b.classId||'')||!ids.includes(b.classId)){
+     if(!ids.length)return ok({years:years.data,classes:classes.data,requests:[],students:[],devices:[]});
+     const p=await db.from('connect_join_requests').select('id,class_id,first_name,last_initial,verify_code,expires_at,state')
+       .in('class_id',ids).eq('state','pending').gt('expires_at',new Date().toISOString()).order('created_at').limit(100);
+     return p.error?fail('db_failed',500):ok({years:years.data,classes:classes.data,requests:p.data,students:[],devices:[]});
+   }
    const [requests,enrollments]=await Promise.all([
      db.from('connect_join_requests').select('id,first_name,last_initial,verify_code,state,created_at,expires_at,student_id')
        .eq('class_id',b.classId).eq('state','pending').gt('expires_at',new Date().toISOString()).order('created_at').limit(100),
