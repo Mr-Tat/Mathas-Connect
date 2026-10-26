@@ -661,3 +661,5 @@ body.theme-partage {
 .connect-brand .connect-brand-suffix{font-family:"Nunito",system-ui,sans-serif;font-size:clamp(22px,3.3vw,40px);font-weight:900;line-height:1.13;letter-spacing:-.045em;color:#2358b6;margin-bottom:0;white-space:nowrap;text-shadow:0 1px 0 #06111c}
 .student-space-title{font-family:"Fredoka",system-ui,sans-serif;font-size:clamp(27px,3.6vw,46px);font-weight:900;line-height:1.12;color:#5d9deb;margin:7px 0 0;text-shadow:0 4px 22px #19739244}
 @media(max-width:650px){.connect-brand .brand-wordmark{width:clamp(138px,49vw,265px);height:auto;max-height:none}.connect-brand .connect-brand-suffix{font-size:clamp(18px,5.2vw,29px);margin-bottom:0}.student-space-title{font-size:clamp(27px,7vw,36px)}}
+
+.connect-brand .connect-brand-suffix{background:linear-gradient(90deg,#7139a8 0%,#4c42a9 47%,#2059ae 100%);-webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent}
