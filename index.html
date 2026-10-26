@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="./assets/brand/favicon.png">
   <link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png">
   <link rel="stylesheet" href="./style.css?v=20261026retry1">
-  <script type="module" src="./app.js?v=20261026retry1"></script>
+  <script type="module" src="./app.js?v=20261026waiting2"></script>
 <link rel="stylesheet" href="./join-avatar.css?v=20261026avatar3">
 <link rel="stylesheet" href="./student-entry-dark.css?v=20261026go2">
 <script type="module" src="./join-avatar.js?v=20261026avatar3"></script>
@@ -175,11 +175,11 @@
           <div id="join-avatar-colors" class="join-avatar-colors" role="group" aria-label="Couleur de l'avatar"></div>
           <div class="join-avatar-preview" id="join-avatar-preview" aria-label="Aperçu de ton avatar">🦊</div>
         </fieldset></div><p id="waiting-status-note" class="centered" role="status">En attente du professeur…</p><button id="finish-avatar" type="button" hidden>OK, j’ai fini de choisir</button>
-      <div class="button-row">
-        <button id="check-status">Vérifier</button>
-        <button id="cancel-request" class="soft">Annuler</button>
+      <div class="button-row" id="waiting-actions">
+        <button id="check-status" type="button">Vérifier</button>
+        <button id="cancel-request" type="button" class="soft">Annuler</button>
       </div>
-      <p class="hint">Ce code expire après 15 minutes.</p>
+      <p class="hint" id="waiting-expiry">Ce code expire après 15 minutes.</p>
     </section>
 
     <section class="panel" data-view="account-choice" hidden><h1>Qui veut jouer ?</h1><p class="centered">Un profil est déjà autorisé sur cet appareil.</p><div class="account-existing"><div class="join-avatar-preview" id="account-avatar">🦊</div><strong id="account-name">Élève</strong></div><div class="button-row"><button id="continue-profile" type="button">Continuer avec ce profil</button><button id="switch-profile" class="soft" type="button">Utiliser un autre compte</button></div><p class="hint">Changer de profil ne supprime aucun score ni XP. Il faudra faire autoriser de nouveau cet appareil pour revenir à ce profil.</p></section>
