@@ -19,6 +19,7 @@ function draw(){
  }
  $('join-avatar-preview').style.backgroundColor=colors[picked.color];
  $('join-avatar-preview').textContent=picked.kind==='animal'?animals[picked.value]:picked.value;
+ try{localStorage.setItem(key,JSON.stringify(picked))}catch{}
 }
 draw();
 $('join-form')?.addEventListener('submit',()=>{try{localStorage.setItem(key,JSON.stringify(picked))}catch{}},true);
