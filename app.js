@@ -37,7 +37,7 @@ async function ensureStudentSession(){
 }
 async function call(action,data={}){const {data:{session}}=await sb.auth.getSession();if(!session)throw Error('Connexion requise');
  const r=await fetch(url+'/functions/v1/connect-api',{method:'POST',headers:{'content-type':'application/json','apikey':key,'authorization':'Bearer '+session.access_token},body:JSON.stringify({action,...data})});
- const v=await r.json().catch(()=>({}));if(!r.ok||!v.ok)throw Error(({forbidden:'Accès refusé',join_failed:'Demande impossible',decision_failed:'Demande déjà traitée ou expirée',auth_required:'Connexion expirée'})[v.error]||v.error||'Erreur réseau');return v}
+ const v=await r.json().catch(()=>({}));if(!r.ok||!v.ok)throw Error(({forbidden:'Accès refusé',join_failed:'Demande impossible. Vérifie ton profil actuel ou demande au professeur',device_already_approved:'Cet appareil est déjà associé à un élève. Choisis le profil existant ou change de compte',decision_failed:'Demande déjà traitée ou expirée',auth_required:'Connexion expirée'})[v.error]||v.error||'Erreur réseau');return v}
 async function teacher(){const r=await call('teacher-dashboard');const box=$('class-selector');box.replaceChildren(...r.classes.filter(c=>!c.name.includes('TEST')).map(c=>new Option(c.name,c.id)));$('year-selector').replaceChildren(...r.years.map(v=>new Option(v.label,v.id)));show('teacher');showTeacherTab('home');await refresh();await showResults().catch(e=>showResultMessage('Suivi indisponible : '+e.message))}
 async function refresh(){const id=$('class-selector').value;if(!id){$('request-count').textContent='0';$('requests-list').textContent='Aucune demande.';$('students-list').textContent='Aucun élève.';return;}const data=await call('teacher-dashboard',{classId:id});renderArchives(data,id);const j={requests:data.requests},s={students:data.students},d={devices:data.devices};$('request-count').textContent=j.requests.length;const out=$('requests-list');out.replaceChildren();
  if(!j.requests.length)out.textContent='Aucune demande.';
@@ -131,11 +131,52 @@ function renderArchives(data,classId){
 }
 async function student(){if(!cls){show('welcome');msg('Ouvre le lien donné par le professeur.');return}
  await ensureStudentSession();await status()}
-async function status(){await ensureStudentSession();const {request:r}=await call('student-join-status',{classId:cls});
- if(!r||['cancelled','expired','rejected'].includes(r.state)){show('student-form');if(r?.state==='rejected')msg('Demande refusée : adresse-toi au professeur.');return}
- if(['approved','revoked'].includes(r.state)){if(r.state==='approved'){try{localStorage.removeItem('mathas.connect.mode-libre.v1')}catch{}}$('open-hub').hidden=r.state!=='approved';$('result-title').textContent=r.state==='approved'?'Appareil autorisé':'Appareil révoqué';$('result-description').textContent=r.state==='approved'?'L’accès est confirmé.':'Adresse-toi au professeur.';show('approved');return}
- if(r.state==='wrong_class'){show('welcome');msg('Cet appareil est associé à une autre classe. Ouvre le lien de ta classe ou demande au professeur de changer de profil.');return}
- $('verification-code').textContent=r.verify_code;show('waiting')}
+let waitingTimer=null,waitingApproved=false,waitingBusy=false,existingProfileClass=null;
+const avatarKey='mathas.connect.avatar-pending:'+cls;
+function waitAvatar(){
+ const target=$('waiting-avatar-editor'),field=document.querySelector('.join-avatar-field');
+ if(target&&field&&!target.contains(field))target.append(field);
+}
+function stopWaiting(){if(waitingTimer){clearTimeout(waitingTimer);waitingTimer=null}}
+function startWaiting(){
+ stopWaiting();waitAvatar();show('waiting');$('finish-avatar').hidden=!waitingApproved;
+ if(waitingApproved){$('waiting-status-note').textContent='✅ Demande acceptée ! Termine ton avatar, puis appuie sur le bouton.';return}
+ $('waiting-status-note').textContent='En attente du professeur…';
+ // Contrôle rare : une requête toutes les 15 secondes maximum, onglet visible.
+ waitingTimer=setTimeout(async()=>{
+  waitingTimer=null;
+  if(document.hidden||document.querySelector('[data-view="waiting"]').hidden){if(!document.querySelector('[data-view="waiting"]').hidden)startWaiting();return}
+  if(waitingBusy)return;
+  waitingBusy=true;
+  try{await status(true)}catch{ /* le bouton Vérifier reste disponible */ }
+  finally{waitingBusy=false}
+  if(!waitingApproved&&!document.querySelector('[data-view="waiting"]').hidden)startWaiting();
+ },15000);
+}
+async function status(silent=false){
+ await ensureStudentSession();
+ const {request:r}=await call('student-join-status',{classId:cls});
+ if(!r||['cancelled','expired','rejected'].includes(r.state)){
+  stopWaiting();waitingApproved=false;
+  if(silent&&r?.state==='expired'){$('waiting-status-note').textContent='Code expiré : recommence une demande.';return}
+  show('student-form');if(r?.state==='rejected')msg('Demande refusée : adresse-toi au professeur.');return
+ }
+ if(r.state==='already_approved'){
+  stopWaiting();existingProfileClass=r.classId;
+  $('account-name').textContent=r.displayName||'Élève';
+  $('account-avatar').textContent=r.avatar?.kind==='animal'?({fox:'🦊',cat:'🐱',panda:'🐼',frog:'🐸',lion:'🦁'}[r.avatar.value]||'🙂'):(r.avatar?.value||'🙂');
+  show('account-choice');return
+ }
+ if(r.state==='approved'){
+  waitingApproved=true;stopWaiting();
+  try{localStorage.removeItem('mathas.connect.mode-libre.v1')}catch{}
+  startWaiting();return
+ }
+ if(r.state==='revoked'){stopWaiting();$('open-hub').hidden=true;$('result-title').textContent='Appareil révoqué';$('result-description').textContent='Adresse-toi au professeur.';show('approved');return}
+ $('verification-code').textContent=r.verify_code||r.code||'••••';
+ if(document.querySelector('[data-view="waiting"]').hidden)startWaiting();
+}
+
 $('home').onclick=()=>{if(!cls)show('login');else show('welcome')};
 $('teacher-entry').onclick=()=>show('login');
 $('back-login').onclick=()=>{location.href=hubLink};
@@ -151,7 +192,22 @@ $('class-selector').onchange=()=>run(async()=>{await refresh();await showResults
 $('refresh-teacher').onclick=()=>run(refresh);
 $('copy-student-link').onclick=()=>run(async()=>{const box=$('class-selector');if(!box.value)throw Error('Aucune classe');await navigator.clipboard.writeText(hubUrl(box.value,box.selectedOptions[0]?.textContent||'Ma classe'));msg('Lien du HUB de classe copié',true)});
 $('clear-form').onclick=()=>{$('first-name').value='';$('last-initial').value=''};
-$('join-form').onsubmit=e=>{e.preventDefault();run(async()=>{const firstName=$('first-name').value.trim(),lastInitial=$('last-initial').value.trim().toUpperCase();if(!/^[\p{L}][\p{L} '-]{0,39}$/u.test(firstName)||!/^[\p{L}]$/u.test(lastInitial))throw Error('Vérifie le prénom et la lettre du nom');await ensureStudentSession();const {request}=await call('student-join',{classId:cls,firstName,lastInitial});$('verification-code').textContent=request.code;show('waiting')})};
+$('join-form').onsubmit=e=>{e.preventDefault();run(async()=>{const firstName=$('first-name').value.trim(),lastInitial=$('last-initial').value.trim().toUpperCase();if(!/^[\p{L}][\p{L} '-]{0,39}$/u.test(firstName)||!/^[\p{L}]$/u.test(lastInitial))throw Error('Vérifie le prénom et la lettre du nom');await ensureStudentSession();const {request}=await call('student-join',{classId:cls,firstName,lastInitial});$('verification-code').textContent=request.code;waitingApproved=false;startWaiting()})};
+$('finish-avatar').onclick=()=>run(async()=>{
+ if(!waitingApproved)return;
+ const raw=localStorage.getItem(avatarKey);
+ if(raw){
+  try{const avatar=JSON.parse(raw);await call('student-avatar',avatar);localStorage.removeItem(avatarKey)}
+  catch(e){$('waiting-status-note').textContent='Avatar non enregistré. Vérifie la connexion et réessaie.';return}
+ }
+ stopWaiting();location.href=hubLink;
+});
+$('continue-profile').onclick=()=>{if(existingProfileClass)location.href=hubUrl(existingProfileClass);else location.href=hubLink};
+$('switch-profile').onclick=()=>run(async()=>{
+ if(!confirm('Changer de profil sur cet appareil ? Les scores et XP restent sauvegardés. Le professeur devra autoriser de nouveau cet appareil si tu reviens à ce profil.'))return;
+ await call('student-release');const {error}=await sb.auth.signOut({scope:'local'});if(error)throw error;
+ existingProfileClass=null;waitingApproved=false;localStorage.removeItem(avatarKey);location.reload()
+});
 $('check-status').onclick=()=>run(status);
 $('cancel-request').onclick=()=>run(async()=>{await call('student-cancel-join',{classId:cls});show('student-form')});
 $('result-home').onclick=()=>show('welcome');
