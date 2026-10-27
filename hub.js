@@ -1,7 +1,7 @@
 import {avatarCategories,avatarGlyph,avatarColors,avatarColor} from './avatar-catalog.js';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 import { classId, classLabel, loginUrl } from './connect-context.js';
-import {rememberRecentProfile} from './recent-profiles.js';
+import {rememberRecentProfile} from './recent-profiles.js?v=20261027recents2';
 
 const url = 'https://awmhpfofacaglewammxt.supabase.co';
 const key = 'sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
@@ -124,23 +124,29 @@ $('avatar-save').onclick=async()=>{
  }catch(e){$('avatar-feedback').textContent=e.message||'Erreur';}finally{button.disabled=false}
 };
 
+// Groupement visuel uniquement : aucun effet sur les comptes et les XP.
+const progressGroup=document.createElement('div');
+progressGroup.id='identity-progress';
+const main=$('identity-box').querySelector('.identity-main');
+for(const id of ['identity-xp','identity-action','identity-extra'])progressGroup.append($ (id));
+main.append(progressGroup);
 function drawIdentity(profile) {
   const authorized = profile?.status === 'approved';
   activeProfile=authorized?profile:null;
   if(authorized && classId && !profile.teacherPlayer && profile.classId===classId)
     rememberRecentProfile(classId,profile.displayName);
   $('identity-box').className=authorized?'identity-connected':'identity-classic';
-  $('identity-title').textContent = authorized ? 'Bienvenue '+profile.displayName+' !' : 'Mode Classique';
+  $('identity-title').textContent = authorized ? String(profile.displayName||'Élève').replace(/\.\s*(?=[\p{L}]$)/u,' ') : 'Mode Classique';
   const oldBar=$('connect-xp-bar');if(oldBar)oldBar.remove();
   if(authorized&&profile.xp?.active){
     const level=profile.xp.level,total=profile.xp.total,from=level<=7?(level-1)*50:300+(level-7)*100,to=profile.xp.next;
     const detail=document.createElement('div');detail.id='connect-xp-bar';detail.title='XP Connect : '+total+' / '+to+' pour atteindre le prochain niveau';
-    detail.style.cssText='width:min(235px,100%);margin-top:5px;display:grid;gap:3px';
+    detail.style.cssText='width:100%;display:grid;gap:5px';
     const rail=document.createElement('div');rail.style.cssText='height:7px;background:rgba(135,174,191,.25);overflow:hidden;border-radius:20px';
     const fill=document.createElement('div');fill.style.cssText='height:100%;background:#c99b2c;border-radius:20px;width:'+Math.max(0,Math.min(100,100*(total-from)/(to-from)))+'%';rail.append(fill);
     const label=document.createElement('small');label.style.cssText='font-size:10px;opacity:.78';label.textContent='Niveau '+(level+1)+' à '+to+' XP';
     detail.append(rail,label);
-    $('identity-level').after(detail);
+    $('identity-xp').after(detail);
   }
   $('identity-class').hidden=true;
   $('identity-level').hidden=!authorized;
@@ -154,7 +160,7 @@ function drawIdentity(profile) {
   $('edit-avatar').hidden=!authorized;
   $('classLabel').textContent = classId ? classLabel : 'Jeux';
   const action = $('identity-action');
-  action.textContent = authorized ? 'Modifier' : 'Se connecter';
+  action.textContent = authorized ? '⚙ Mon profil' : 'Se connecter';
   // Le lien fonctionne nativement, sans attendre Supabase et même si le script échoue.
   if (authorized) action.removeAttribute('href');
   else action.setAttribute('href', classId ? loginUrl() : './connexion.html');
