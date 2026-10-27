@@ -166,3 +166,9 @@ body:has(.login-panel:not([hidden])) footer{color:#afc8d9}
 
 /* L'approbation ne doit laisser que le bouton de confirmation de l'avatar. */
 #waiting-actions[hidden],#waiting-expiry[hidden]{display:none!important}
+
+/* Choix des profils déjà utilisés sur cet appareil (aucun appel réseau). */
+.recent-profiles-list{display:grid;gap:9px;margin:12px 0}
+.recent-profiles-list button{width:100%;text-align:left;background:#244d72;color:#fff;border:1px solid #7aa4c8}
+.recent-profiles-list button:hover{background:#30638c}
+#other-profile{width:100%}
