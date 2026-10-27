@@ -54,15 +54,24 @@ async function ensureStudentSession(){
 async function call(action,data={}){const {data:{session}}=await sb.auth.getSession();if(!session)throw Error('Connexion requise');
  const r=await fetch(url+'/functions/v1/connect-api',{method:'POST',headers:{'content-type':'application/json','apikey':key,'authorization':'Bearer '+session.access_token},body:JSON.stringify({action,...data})});
  const v=await r.json().catch(()=>({}));if(!r.ok||!v.ok)throw Error(({forbidden:'Accès refusé',join_failed:'Demande impossible. Vérifie ton profil actuel ou demande au professeur',device_already_approved:'Cet appareil est déjà associé à un élève. Choisis le profil existant ou change de compte',decision_failed:'Demande déjà traitée ou expirée',auth_required:'Connexion expirée'})[v.error]||v.error||'Erreur réseau');return v}
-async function teacher(){const r=await call('teacher-dashboard');const box=$('class-selector');box.replaceChildren(...r.classes.filter(c=>!c.name.includes('TEST')).map(c=>new Option(c.name,c.id)));$('year-selector').replaceChildren(...r.years.map(v=>new Option(v.label,v.id)));show('teacher');showTeacherTab('home');await refresh();await showResults().catch(e=>showResultMessage('Suivi indisponible : '+e.message))}
-async function refresh(){const id=$('class-selector').value;if(!id){$('request-count').textContent='0';$('requests-list').textContent='Aucune demande.';$('students-list').textContent='Aucun élève.';return;}const data=await call('teacher-dashboard',{classId:id});renderArchives(data,id);const all=await call('teacher-dashboard');const j={requests:all.requests||[]},s={students:data.students},d={devices:data.devices};$('request-count').textContent=j.requests.length;const out=$('requests-list');out.replaceChildren();
- if(!j.requests.length)out.textContent='Aucune demande.';
- for(const req of j.requests){const card=document.createElement('div');card.className='request-card';const head=document.createElement('div');head.className='request-heading';const name=document.createElement('strong');name.textContent=req.first_name+'.'+req.last_initial+' · '+(all.classes.find(c=>c.id===(req.class_id||id))?.name||'Classe');const code=document.createElement('span');code.className='request-code';code.textContent=req.verify_code;const person=document.createElement('div');person.className='request-person';person.append(name);head.append(person,code);card.append(head);const row=document.createElement('div');row.className='button-row';
+async function teacher(){
+ const r=await call('teacher-dashboard');
+ const box=$('class-selector');
+ box.replaceChildren(...(r.classes||[]).filter(c=>!c.name.includes('TEST')).map(c=>new Option(c.name,c.id)));
+ $('year-selector').replaceChildren(...(r.years||[]).map(v=>new Option(v.label,v.id)));
+ show('teacher');showTeacherTab('home');
+ // Accueil GLOBAL : une seule requête pour toutes les classes.
+ renderGlobalRequests(r);
+}
+function renderGlobalRequests(all){
+ const requests=Array.isArray(all.requests)?all.requests:[];
+ $('request-count').textContent=String(requests.length);
+ const out=$('requests-list');out.replaceChildren();
+ if(!requests.length){out.textContent='Aucune demande en attente dans tes classes.';return;}
+ for(const req of requests){const card=document.createElement('div');card.className='request-card';const head=document.createElement('div');head.className='request-heading';const name=document.createElement('strong');name.textContent=req.first_name+'.'+req.last_initial+' · '+(all.classes.find(c=>c.id===req.class_id)?.name||'Classe');const code=document.createElement('span');code.className='request-code';code.textContent=req.verify_code;const person=document.createElement('div');person.className='request-person';person.append(name);head.append(person,code);card.append(head);const row=document.createElement('div');row.className='button-row';
  // Même prénom + initiale : présélection seulement si une seule fiche correspond.
  // Une correspondance de nom NE PROUVE PAS l'identité : le professeur valide toujours la demande et le code.
- const canonicalName=v=>String(v||'').normalize('NFC').toLocaleLowerCase('fr').replace(/[.\s]+/g,'');
- const requestedName=canonicalName(req.first_name+'.'+req.last_initial);
- const matches=req.matches??(req.class_id&&req.class_id!==id?[]:s.students).filter(e=>canonicalName(e.display_name)===requestedName);
+ const matches=Array.isArray(req.matches)?req.matches:[];
  if(matches.length){
    // Cette correspondance de NOM n'est pas une preuve d'identité :
    // la fiche et le code restent à vérifier manuellement avant approbation.
@@ -92,12 +101,31 @@ async function refresh(){const id=$('class-selector').value;if(!id){$('request-c
         &&!confirm('Une fiche de ce nom existe déjà. Créer une fiche différente malgré cette correspondance ?'))return;
      const existingStudentId=approve&&selected&&selected!=='__new__'?selected:undefined;
      await call('teacher-review-join',{requestId:req.id,approve,...(existingStudentId?{existingStudentId}:{})});
-     await refresh();
+     await refreshGlobalRequests();
      msg(approve?(existingStudentId?'Appareil associé à la fiche élève existante':'Appareil autorisé : nouvelle fiche élève'):'Demande refusée',true)
    });
    row.append(btn)
  }
  card.append(row);out.append(card)}
+}
+async function refreshGlobalRequests(){
+ const out=$('requests-list');
+ try{
+  const all=await call('teacher-dashboard');
+  renderGlobalRequests(all);
+ }catch(e){
+  $('request-count').textContent='!';
+  out.textContent='Impossible de récupérer les demandes. Vérifie ta session professeur puis clique sur « Actualiser les demandes ».';
+  throw e;
+ }
+}
+async function refresh(){
+ // Réservé à la gestion des élèves et des appareils de la classe sélectionnée.
+ const id=$('class-selector').value;
+ if(!id){$('students-list').textContent='Aucun élève.';return;}
+ const data=await call('teacher-dashboard',{classId:id});
+ renderArchives(data,id);
+ const s={students:data.students||[]},d={devices:data.devices||[]};
  const students=$('students-list');students.replaceChildren();
  if(!s.students.length){students.textContent='Aucun élève.';return}
  const devicesByStudent=new Map();
@@ -260,9 +288,9 @@ $('add-class-form').onsubmit=e=>{e.preventDefault();run(async()=>{const yearId=$
 $('add-student-form').onsubmit=e=>{e.preventDefault();run(async()=>{const classId=$('class-selector').value,name=$('new-student-name').value.trim();await call('teacher-create-student',{classId,name});$('new-student-name').value='';await refresh();msg('Élève ajouté',true)})};
 $('class-selector').onchange=()=>run(async()=>{await refresh();await showResults().catch(e=>showResultMessage('Suivi indisponible : '+e.message))});
 $('refresh-teacher').onclick=()=>run(refresh);
-$('requests-refresh')?.addEventListener('click',()=>run(refresh));
+$('requests-refresh')?.addEventListener('click',()=>run(refreshGlobalRequests));
 // Rafraîchissement lent, seulement quand l'accueil professeur est ouvert et visible.
-setInterval(()=>{if(!document.hidden&&teacherPortal&&!document.querySelector('[data-view="teacher"]').hidden&&!$('teacher-home').hidden&&!busy)run(refresh)},45000);
+setInterval(()=>{if(!document.hidden&&teacherPortal&&!document.querySelector('[data-view="teacher"]').hidden&&!$('teacher-home').hidden&&!busy)run(refreshGlobalRequests)},45000);
 $('copy-student-link').onclick=()=>run(async()=>{const box=$('class-selector');if(!box.value)throw Error('Aucune classe');await navigator.clipboard.writeText(hubUrl(box.value,box.selectedOptions[0]?.textContent||'Ma classe'));msg('Lien du HUB de classe copié',true)});
 $('clear-form').onclick=()=>{$('first-name').value='';$('last-initial').value=''};
 async function requestStudentAccess(firstName, lastInitial) {
@@ -565,6 +593,8 @@ function showTeacherTab(tab){
   if(node)node.hidden=t!==selected;
  }
  if(selected==='apps')loadTeacherAppPreview();
+ if(selected==='management'&&!busy)run(refresh);
+ if(selected==='home'&&!busy)run(refreshGlobalRequests);
  if(selected==='results' && !currentTeacherSpace)run(showResults);
  window.scrollTo({top:0,behavior:'instant'});
 }
