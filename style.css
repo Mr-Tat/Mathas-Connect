@@ -172,3 +172,14 @@ body:has(.login-panel:not([hidden])) footer{color:#afc8d9}
 .recent-profiles-list button{width:100%;text-align:left;background:#244d72;color:#fff;border:1px solid #7aa4c8}
 .recent-profiles-list button:hover{background:#30638c}
 #other-profile{width:100%}
+
+/* Identité visuelle : couleur exacte du rectangle de référence (uniquement le mot Connect). */
+.brand em,.login-brand span,.teacher-connect-suffix,.student-entry-brand span{
+  background:none!important;color:#0256B8!important;-webkit-text-fill-color:#0256B8!important;
+  text-shadow:0 1px 0 #06111e;
+}
+.brand em::before,.login-brand span::before,.teacher-connect-suffix::before,.student-entry-brand span::before{content:none!important;display:none!important}
+/* Sélection des comptes locaux, accessible même sur petit PC. */
+#recent-profiles[hidden],#join-form[hidden]{display:none!important}
+#recent-profiles-list button{min-height:48px;padding:12px 15px;font-size:16px;background:#215783;color:#fff;border:1px solid #689bc4}
+#recent-profiles-list button:focus-visible,#other-profile:focus-visible{outline:3px solid #9ad0ff;outline-offset:2px}
