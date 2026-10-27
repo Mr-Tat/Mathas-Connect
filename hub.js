@@ -1,7 +1,7 @@
 import {avatarCategories,avatarGlyph,avatarColors,avatarColor} from './avatar-catalog.js';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 import { classId, classLabel, loginUrl } from './connect-context.js';
-import {rememberRecentProfile} from './recent-profiles.js?v=20261027recents2';
+import {rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
 
 const url = 'https://awmhpfofacaglewammxt.supabase.co';
 const key = 'sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
@@ -133,8 +133,10 @@ main.append(progressGroup);
 function drawIdentity(profile) {
   const authorized = profile?.status === 'approved' && profile?.classId === classId;
   activeProfile=authorized?profile:null;
-  if(authorized && classId && profile.classId===classId)
+  if(authorized && classId && profile.classId===classId){
     rememberRecentProfile(classId,profile.displayName);
+    rememberRecentAvatar(classId,profile.displayName,profile.avatar);
+  }
   $('identity-box').className=authorized?'identity-connected':'identity-classic';
   $('identity-title').textContent = authorized ? String(profile.displayName||'Élève').replace(/\.\s*(?=[\p{L}]$)/u,' ') : 'Mode Classique';
   const oldBar=$('connect-xp-bar');if(oldBar)oldBar.remove();
