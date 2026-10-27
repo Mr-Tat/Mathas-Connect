@@ -131,9 +131,9 @@ const main=$('identity-box').querySelector('.identity-main');
 for(const id of ['identity-xp','identity-action','identity-extra'])progressGroup.append($ (id));
 main.append(progressGroup);
 function drawIdentity(profile) {
-  const authorized = profile?.status === 'approved';
+  const authorized = profile?.status === 'approved' && profile?.classId === classId;
   activeProfile=authorized?profile:null;
-  if(authorized && classId && !profile.teacherPlayer && profile.classId===classId)
+  if(authorized && classId && profile.classId===classId)
     rememberRecentProfile(classId,profile.displayName);
   $('identity-box').className=authorized?'identity-connected':'identity-classic';
   $('identity-title').textContent = authorized ? String(profile.displayName||'Élève').replace(/\.\s*(?=[\p{L}]$)/u,' ') : 'Mode Classique';
@@ -203,7 +203,7 @@ async function showIdentity() {
     });
     if (!response.ok) return;
     const profile = await response.json();
-    if (profile.ok && profile.status === 'approved' && (profile.classId === classId || profile.teacherPlayer)) {
+    if (profile.ok && profile.status === 'approved' && (profile.classId === classId)) {
       try {const x=await fetch(url+'/functions/v1/connect-api',{method:'POST',headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},body:JSON.stringify({action:'player-xp',classId})}).then(r=>r.json());if(x.ok)profile.xp=x.xp;}catch{}
       drawIdentity(profile);
     }
