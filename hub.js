@@ -1,6 +1,7 @@
 import {avatarCategories,avatarGlyph,avatarColors,avatarColor} from './avatar-catalog.js';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 import { classId, classLabel, loginUrl } from './connect-context.js';
+import {rememberRecentProfile} from './recent-profiles.js';
 
 const url = 'https://awmhpfofacaglewammxt.supabase.co';
 const key = 'sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
@@ -126,6 +127,8 @@ $('avatar-save').onclick=async()=>{
 function drawIdentity(profile) {
   const authorized = profile?.status === 'approved';
   activeProfile=authorized?profile:null;
+  if(authorized && classId && !profile.teacherPlayer && profile.classId===classId)
+    rememberRecentProfile(classId,profile.displayName);
   $('identity-box').className=authorized?'identity-connected':'identity-classic';
   $('identity-title').textContent = authorized ? 'Bienvenue '+profile.displayName+' !' : 'Mode Classique';
   const oldBar=$('connect-xp-bar');if(oldBar)oldBar.remove();
