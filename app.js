@@ -1,6 +1,7 @@
 import {avatarGlyph,avatarColor} from './avatar-catalog.js';
 import {hubUrl} from './connect-context.js';
-import {listRecentProfiles,rememberRecentProfile} from './recent-profiles.js?v=20261027recents2';
+import {listRecentProfiles,rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
+import {beginJoinAvatar,useApprovedAvatar,editedJoinAvatar,clearJoinAvatarDraft} from './join-avatar.js?v=20261027avatars2';
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 const url='https://awmhpfofacaglewammxt.supabase.co', key='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const params=new URLSearchParams(location.search);
@@ -239,7 +240,7 @@ async function student(){if(!cls){location.replace('./connexion.html');return}
  renderRecentProfiles();
  await ensureStudentSession();await status()}
 let waitingTimer=null,waitingApproved=false,waitingBusy=false,existingProfileClass=null;
-const avatarKey='mathas.connect.avatar-pending:'+cls;
+
 function waitAvatar(){
  const target=$('waiting-avatar-editor'),field=document.querySelector('.join-avatar-field');
  if(target&&field&&!target.contains(field))target.append(field);
@@ -249,7 +250,7 @@ function startWaiting(){
  stopWaiting();waitAvatar();show('waiting');$('finish-avatar').hidden=!waitingApproved;
  $('waiting-actions').hidden=waitingApproved;
  $('waiting-expiry').hidden=waitingApproved;
- if(waitingApproved){$('waiting-status-note').textContent='✅ Demande acceptée ! Termine ton avatar, puis appuie sur le bouton.';return}
+ if(waitingApproved){$('waiting-status-note').textContent='✅ Demande acceptée ! Conserve ton avatar ou change-le, puis appuie sur le bouton.';return}
  $('waiting-status-note').textContent='En attente du professeur…';
  // Contrôle rare : une requête toutes les 15 secondes maximum, onglet visible.
  waitingTimer=setTimeout(async()=>{
@@ -275,6 +276,7 @@ async function status(silent=false){
  }
  if(r.state==='already_approved'){
   rememberRecentProfile(cls,r.displayName);
+  rememberRecentAvatar(r.classId,r.displayName,r.avatar);
   stopWaiting();existingProfileClass=r.classId;
   $('account-name').textContent=(r.displayName||'Élève').replace(/\.\s*(?=[\p{L}]$)/u,' ');
   $('account-avatar').textContent=avatarGlyph(r.avatar);
@@ -284,6 +286,14 @@ async function status(silent=false){
  if(r.state==='approved'){
   waitingApproved=true;stopWaiting();
   try{localStorage.removeItem('mathas.connect.mode-libre.v1')}catch{}
+  try{
+   const profile=await call('student-me',{classId:cls});
+   if(profile.status==='approved'){
+    useApprovedAvatar(profile.avatar);
+    rememberRecentProfile(cls,profile.displayName);
+    rememberRecentAvatar(cls,profile.displayName,profile.avatar);
+   }
+  }catch(e){console.warn('Impossible de préselectionner l’avatar officiel : l’ancien choix reste conservé.',e)}
   startWaiting();return
  }
  if(r.state==='revoked'){stopWaiting();$('open-hub').hidden=true;$('result-title').textContent='Appareil révoqué';$('result-description').textContent='Adresse-toi au professeur.';show('approved');return}
@@ -315,6 +325,7 @@ async function requestStudentAccess(firstName, lastInitial) {
    throw Error('Vérifie le prénom et la lettre du nom');
  await ensureStudentSession();
  const {request}=await call('student-join',{classId:cls,firstName,lastInitial});
+ beginJoinAvatar(firstName+' '+lastInitial);
  // Les valeurs restent disponibles pour mémoriser le profil après approbation.
  $('first-name').value=firstName;
  $('last-initial').value=lastInitial;
@@ -328,17 +339,19 @@ async function cancelStudentRequestAndReturn() {
  if(!document.querySelector('[data-view="waiting"]').hidden){
    await call('student-cancel-join',{classId:cls});
  }
- stopWaiting();
+ clearJoinAvatarDraft();stopWaiting();
  location.assign(hubLink);
 }
 $('cancel-student-form').onclick=()=>run(cancelStudentRequestAndReturn);
 $('finish-avatar').onclick=()=>run(async()=>{
  if(!waitingApproved)return;
- const raw=localStorage.getItem(avatarKey);
- if(raw){
-  try{const avatar=JSON.parse(raw);await call('student-avatar',avatar);localStorage.removeItem(avatarKey)}
+ const choice=editedJoinAvatar();
+ if(choice){
+  try{await call('student-avatar',choice)}
   catch(e){$('waiting-status-note').textContent='Avatar non enregistré. Vérifie la connexion et réessaie.';return}
+  rememberRecentAvatar(cls,$('first-name').value.trim()+' '+$('last-initial').value.trim(),choice);
  }
+ clearJoinAvatarDraft();
  rememberRecentProfile(cls,$('first-name').value.trim()+' '+$('last-initial').value.trim().toUpperCase());
  stopWaiting();location.href=hubLink;
 });
@@ -346,7 +359,7 @@ $('continue-profile').onclick=()=>{if(existingProfileClass)location.href=hubUrl(
 $('switch-profile').onclick=()=>run(async()=>{
  if(!confirm('Changer de profil sur cet appareil ? Les scores et XP restent sauvegardés. Le professeur devra autoriser de nouveau cet appareil si tu reviens à ce profil.'))return;
  await call('student-release');const {error}=await sb.auth.signOut({scope:'local'});if(error)throw error;
- existingProfileClass=null;waitingApproved=false;localStorage.removeItem(avatarKey);location.reload()
+ existingProfileClass=null;waitingApproved=false;clearJoinAvatarDraft();location.reload()
 });
 $('check-status').onclick=()=>run(async()=>{if(!waitingApproved)await status()});
 $('cancel-request').onclick=()=>run(async()=>{if(waitingApproved)return;await cancelStudentRequestAndReturn()});
