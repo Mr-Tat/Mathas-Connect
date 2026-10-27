@@ -253,7 +253,7 @@ $('check-status').onclick=()=>run(async()=>{if(!waitingApproved)await status()})
 $('cancel-request').onclick=()=>run(async()=>{if(waitingApproved)return;stopWaiting();await call('student-cancel-join',{classId:cls});show('student-form')});
 $('result-home').onclick=()=>location.assign(hubLink);
 $('reset-local').onclick=()=>run(async()=>{if(!confirm('Révoquer cet appareil et oublier ce profil ici ? Les résultats Connect restent enregistrés. Pour reprendre le compte, il faudra une nouvelle autorisation du professeur.'))return;await call('student-release');const {error}=await sb.auth.signOut({scope:'local'});if(error)throw error;location.href=hubLink});
-if(!teacherPortal){if(cls){show('student-form');run(student)}else location.replace(hubLink)}
+if(!teacherPortal){if(cls){show('student-form');run(student)}else location.replace('./connexion.html')}
 else {
   show('login');
   run(async()=>{
