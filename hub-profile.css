@@ -55,3 +55,32 @@
 /* Le bouton de compte est aussi un lien natif : il reste fonctionnel sans JS. */
 #identity-action{display:inline-flex;align-items:center;justify-content:center;min-height:32px;text-decoration:none;cursor:pointer;border-radius:9px}
 #identity-box.identity-connected #identity-action{padding:8px 12px;background:#245b87;color:#fff;border:1px solid #7199b8;font:700 13px system-ui}
+
+/* Profil Connect compact : avatar et nom en haut ; niveau et XP côte à côte. */
+#identity-box.identity-connected{position:relative;display:block;padding:19px 20px;min-height:208px;width:min(100%,520px)}
+#identity-box.identity-connected .identity-avatar{position:absolute;left:20px;top:19px;width:60px;height:60px;font-size:36px;border-radius:16px}
+#identity-box.identity-connected .identity-main{display:grid;grid-template-columns:max-content minmax(0,1fr);column-gap:17px;row-gap:12px;align-items:center;justify-items:stretch;min-width:0}
+#identity-box.identity-connected #identity-title{grid-column:1/-1;margin-left:74px;display:flex;align-items:center;min-height:60px;font-size:clamp(19px,2vw,28px);overflow-wrap:anywhere}
+#identity-box.identity-connected #identity-level{grid-column:1;grid-row:2;margin:0}
+#identity-box.identity-connected .student-level-number{font-size:clamp(34px,3.2vw,47px);min-width:48px}
+#identity-box.identity-connected #identity-progress{grid-column:2;grid-row:2;display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0;border-left:1px solid #526f8e;padding-left:14px}
+#identity-box.identity-connected #identity-xp{order:0;font-size:clamp(12px,1.2vw,16px);line-height:1.2}
+#identity-box.identity-connected #connect-xp-bar{order:1;width:100%;min-width:0}
+#identity-box.identity-connected #identity-action{order:2;font:700 12px system-ui;padding:7px 10px;min-height:32px}
+#identity-box.identity-connected #identity-extra{order:3;max-width:100%}
+#identity-box.identity-classic #identity-progress{display:grid;justify-items:end;gap:4px}
+#identity-box.identity-connected #identity-progress #identity-extra[hidden]{display:none!important}
+@media(max-width:520px){
+ #identity-box.identity-connected{padding:15px;min-height:0}
+ #identity-box.identity-connected .identity-avatar{left:15px;top:15px;width:51px;height:51px;font-size:31px}
+ #identity-box.identity-connected #identity-title{margin-left:63px;min-height:51px}
+ #identity-box.identity-connected .identity-main{column-gap:8px}
+ #identity-box.identity-connected .student-level{gap:5px;padding:4px 7px 4px 10px}
+ #identity-box.identity-connected .student-level-label{font-size:13px}
+ #identity-box.identity-connected .student-level-number{font-size:34px;min-width:40px;padding:5px 7px}
+ #identity-box.identity-connected #identity-progress{padding-left:9px;gap:6px}
+}
+
+/* Couleur de remplissage du mot Connect, identique au rectangle de référence. */
+.connect-brand .connect-brand-suffix{background:none!important;color:#0256B8!important;-webkit-text-fill-color:#0256B8!important}
+.connect-brand .connect-brand-suffix::before{content:none!important;display:none!important}
