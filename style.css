@@ -183,3 +183,10 @@ body:has(.login-panel:not([hidden])) footer{color:#afc8d9}
 #recent-profiles[hidden],#join-form[hidden]{display:none!important}
 #recent-profiles-list button{min-height:48px;padding:12px 15px;font-size:16px;background:#215783;color:#fff;border:1px solid #689bc4}
 #recent-profiles-list button:focus-visible,#other-profile:focus-visible{outline:3px solid #9ad0ff;outline-offset:2px}
+
+/* Demandes existantes : pastille uniquement informative, jamais une association automatique. */
+.request-heading{gap:10px;flex-wrap:wrap}
+.request-person{display:flex;align-items:center;flex-wrap:wrap;gap:7px 10px;min-width:0}
+.request-person strong{overflow-wrap:anywhere}
+.request-reconnect-badge{display:inline-flex;align-items:center;justify-content:center;padding:5px 11px;border:1px solid #26835f;border-radius:999px;background:#e1f8e9;color:#155c41;font:850 11px/1.1 system-ui,sans-serif;letter-spacing:.055em;white-space:nowrap}
+#cancel-student-form{display:block;margin-top:12px;width:100%}
