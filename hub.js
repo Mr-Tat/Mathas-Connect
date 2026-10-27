@@ -124,6 +124,45 @@ $('avatar-save').onclick=async()=>{
  }catch(e){$('avatar-feedback').textContent=e.message||'Erreur';}finally{button.disabled=false}
 };
 
+// Le HUB général n'a pas de classe : éviter une redirection circulaire vers lui-même.
+function openStudentLogin() {
+  if (classId) { location.href = loginUrl(); return; }
+  let dialog = document.getElementById('choose-connect-class');
+  if (!dialog) {
+    dialog = document.createElement('dialog');
+    dialog.id = 'choose-connect-class';
+    dialog.setAttribute('aria-label', 'Choisir sa classe pour se connecter');
+    dialog.style.cssText = 'box-sizing:border-box;width:min(400px,94vw);max-height:85vh;overflow:auto;border:1px solid #6395be;border-radius:17px;padding:24px;background:#142b42;color:#f2f7fc;box-shadow:0 25px 85px #0009';
+    const heading = document.createElement('h2');
+    heading.textContent = 'Dans quelle classe es-tu ?';
+    heading.style.cssText = 'margin:0 0 8px;font-size:21px';
+    const explanation = document.createElement('p');
+    explanation.textContent = 'Choisis ta classe pour demander l’accès à ton compte.';
+    explanation.style.cssText = 'margin:0 0 16px;color:#c7d9e9;font-size:14px';
+    const list = document.createElement('div');
+    list.style.cssText = 'display:grid;gap:9px';
+    for (const [name,id] of [
+      ['Observation','8fe170fa-9e8f-4e80-885a-b0ba68026f64'],
+      ['Phase 1','71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e'],
+      ['Phase 2','1b021ed9-4846-4203-9c7b-4b5fa8d7adab'],
+      ['2 ECO','a9195199-0a28-4e86-99ce-47b36dd6e646']
+    ]) {
+      const button = document.createElement('button');
+      button.type = 'button'; button.textContent = name;
+      button.style.cssText = 'width:100%;min-height:45px;border:1px solid #759bbb;border-radius:9px;background:#245782;color:white;font-weight:750;cursor:pointer';
+      button.onclick = () => { location.href = loginUrl(id,name); };
+      list.append(button);
+    }
+    const close = document.createElement('button');
+    close.type = 'button'; close.textContent = 'Annuler';
+    close.style.cssText = 'margin-top:14px;padding:10px;background:transparent;border:1px solid #759bbb;color:#d5e6f3;border-radius:8px;cursor:pointer';
+    close.onclick = () => dialog.close();
+    dialog.append(heading,explanation,list,close);
+    document.body.append(dialog);
+  }
+  if (!dialog.open) dialog.showModal();
+}
+
 function drawIdentity(profile) {
   const authorized = profile?.status === 'approved';
   activeProfile=authorized?profile:null;
@@ -157,7 +196,14 @@ function drawIdentity(profile) {
   $('identity-extra').hidden = true;
   $('identity-action').onclick = () => {
     if (authorized) $('identity-extra').hidden = !$('identity-extra').hidden;
-    else { sb.auth.getSession().then(({data:{session}})=>{if(session?.user){setFree(false);showIdentity()}else location.href=loginUrl()}).catch(()=>{location.href=loginUrl()}); }
+    else {
+      sb.auth.getSession()
+        .then(({data:{session}}) => {
+          if (session?.user && classId) { setFree(false); showIdentity(); }
+          else openStudentLogin();
+        })
+        .catch(() => openStudentLogin());
+    }
   };
 }
 
