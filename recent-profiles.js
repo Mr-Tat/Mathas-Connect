@@ -35,3 +35,23 @@ export function rememberRecentProfile(classId, displayName) {
   try { localStorage.setItem(storageKey(classId), JSON.stringify([name, ...previous].slice(0, 8))); }
   catch { /* Navigation privée ou stockage bloqué : l'inscription reste disponible. */ }
 }
+
+// Avatar mémorisé sur CET appareil, par classe et par nom. Ne donne aucun droit d'accès.
+// La fiche officielle Supabase prend le relais une fois la reconnexion autorisée.
+const avatarStorageKey=(classId,displayName)=>{
+ const name=canonicalName(displayName);
+ return classId&&name?'mathas.connect.avatar-known.v1:'+classId+':'+name.toLocaleLowerCase('fr'):null;
+};
+export function rememberRecentAvatar(classId,displayName,avatar){
+ const key=avatarStorageKey(classId,displayName);
+ if(!key||!avatar||typeof avatar.kind!=='string'||typeof avatar.value!=='string'||typeof avatar.color!=='string')return;
+ try{localStorage.setItem(key,JSON.stringify({kind:avatar.kind,value:avatar.value,color:avatar.color}))}catch{}
+}
+export function loadRecentAvatar(classId,displayName){
+ const key=avatarStorageKey(classId,displayName);
+ if(!key)return null;
+ try{
+  const a=JSON.parse(localStorage.getItem(key)||'null');
+  return a&&typeof a.kind==='string'&&typeof a.value==='string'&&typeof a.color==='string'?a:null;
+ }catch{return null}
+}
