@@ -57,13 +57,19 @@ async function call(action,data={}){const {data:{session}}=await sb.auth.getSess
 async function teacher(){const r=await call('teacher-dashboard');const box=$('class-selector');box.replaceChildren(...r.classes.filter(c=>!c.name.includes('TEST')).map(c=>new Option(c.name,c.id)));$('year-selector').replaceChildren(...r.years.map(v=>new Option(v.label,v.id)));show('teacher');showTeacherTab('home');await refresh();await showResults().catch(e=>showResultMessage('Suivi indisponible : '+e.message))}
 async function refresh(){const id=$('class-selector').value;if(!id){$('request-count').textContent='0';$('requests-list').textContent='Aucune demande.';$('students-list').textContent='Aucun élève.';return;}const data=await call('teacher-dashboard',{classId:id});renderArchives(data,id);const all=await call('teacher-dashboard');const j={requests:all.requests||[]},s={students:data.students},d={devices:data.devices};$('request-count').textContent=j.requests.length;const out=$('requests-list');out.replaceChildren();
  if(!j.requests.length)out.textContent='Aucune demande.';
- for(const req of j.requests){const card=document.createElement('div');card.className='request-card';const head=document.createElement('div');head.className='request-heading';const name=document.createElement('strong');name.textContent=req.first_name+'.'+req.last_initial+' · '+(all.classes.find(c=>c.id===(req.class_id||id))?.name||'Classe');const code=document.createElement('span');code.className='request-code';code.textContent=req.verify_code;head.append(name,code);card.append(head);const row=document.createElement('div');row.className='button-row';
+ for(const req of j.requests){const card=document.createElement('div');card.className='request-card';const head=document.createElement('div');head.className='request-heading';const name=document.createElement('strong');name.textContent=req.first_name+'.'+req.last_initial+' · '+(all.classes.find(c=>c.id===(req.class_id||id))?.name||'Classe');const code=document.createElement('span');code.className='request-code';code.textContent=req.verify_code;const person=document.createElement('div');person.className='request-person';person.append(name);head.append(person,code);card.append(head);const row=document.createElement('div');row.className='button-row';
  // Même prénom + initiale : présélection seulement si une seule fiche correspond.
  // Une correspondance de nom NE PROUVE PAS l'identité : le professeur valide toujours la demande et le code.
  const canonicalName=v=>String(v||'').normalize('NFC').toLocaleLowerCase('fr').replace(/[.\s]+/g,'');
  const requestedName=canonicalName(req.first_name+'.'+req.last_initial);
  const matches=req.matches??(req.class_id&&req.class_id!==id?[]:s.students).filter(e=>canonicalName(e.display_name)===requestedName);
  if(matches.length){
+   // Cette correspondance de NOM n'est pas une preuve d'identité :
+   // la fiche et le code restent à vérifier manuellement avant approbation.
+   const reconnect=document.createElement('span');reconnect.className='request-reconnect-badge';
+   reconnect.textContent='RECONNEXION';
+   reconnect.title='Fiche existante portant ce nom. Vérifie le code et la bonne personne.';
+   person.append(reconnect);
    const sel=document.createElement('select');sel.setAttribute('aria-label','Associer la demande à une fiche élève');sel.className='match-selector';
    const first=new Option(matches.length>1?'Plusieurs élèves homonymes : choisis la bonne fiche':'Créer une nouvelle fiche (autre élève)',matches.length>1?'':'__new__');
    if(matches.length>1){first.disabled=true;first.selected=true}
@@ -158,13 +164,14 @@ function renderRecentProfiles() {
     button.className = 'recent-profile';
     button.textContent = name;
     button.setAttribute('aria-label', 'Demander l’accès pour ' + name);
-    button.onclick = () => {
+    button.onclick = () => run(async () => {
+      // Nom mémorisé localement : envoi immédiat de la demande normale.
+      // Le professeur doit TOUJOURS vérifier le code et autoriser l'appareil.
       const space = name.lastIndexOf(' ');
-      $('first-name').value = name.slice(0, space);
-      $('last-initial').value = name.slice(space + 1);
-      wrapper.hidden = true; $('join-form').hidden = false;
-      $('join-form').querySelector('[type="submit"]').focus();
-    };
+      const firstName = name.slice(0, space);
+      const lastInitial = name.slice(space + 1);
+      await requestStudentAccess(firstName, lastInitial);
+    });
     list.append(button);
   }
 }
@@ -258,7 +265,29 @@ $('requests-refresh')?.addEventListener('click',()=>run(refresh));
 setInterval(()=>{if(!document.hidden&&teacherPortal&&!document.querySelector('[data-view="teacher"]').hidden&&!$('teacher-home').hidden&&!busy)run(refresh)},45000);
 $('copy-student-link').onclick=()=>run(async()=>{const box=$('class-selector');if(!box.value)throw Error('Aucune classe');await navigator.clipboard.writeText(hubUrl(box.value,box.selectedOptions[0]?.textContent||'Ma classe'));msg('Lien du HUB de classe copié',true)});
 $('clear-form').onclick=()=>{$('first-name').value='';$('last-initial').value=''};
-$('join-form').onsubmit=e=>{e.preventDefault();run(async()=>{const firstName=$('first-name').value.trim(),lastInitial=$('last-initial').value.trim().toUpperCase();if(!/^[\p{L}][\p{L} '-]{0,39}$/u.test(firstName)||!/^[\p{L}]$/u.test(lastInitial))throw Error('Vérifie le prénom et la lettre du nom');await ensureStudentSession();const {request}=await call('student-join',{classId:cls,firstName,lastInitial});$('verification-code').textContent=request.code;waitingApproved=false;startWaiting()})};
+async function requestStudentAccess(firstName, lastInitial) {
+ firstName=firstName.trim();lastInitial=lastInitial.trim().toUpperCase();
+ if(!/^[\p{L}][\p{L} '-]{0,39}$/u.test(firstName)||!/^[\p{L}]$/u.test(lastInitial))
+   throw Error('Vérifie le prénom et la lettre du nom');
+ await ensureStudentSession();
+ const {request}=await call('student-join',{classId:cls,firstName,lastInitial});
+ // Les valeurs restent disponibles pour mémoriser le profil après approbation.
+ $('first-name').value=firstName;
+ $('last-initial').value=lastInitial;
+ $('verification-code').textContent=request.code;
+ waitingApproved=false;startWaiting();
+}
+$('join-form').onsubmit=e=>{e.preventDefault();run(()=>requestStudentAccess($('first-name').value,$('last-initial').value))};
+async function cancelStudentRequestAndReturn() {
+ // Annulation serveur avant navigation : la demande disparaît du portail professeur.
+ // En l'absence de demande, le retour au HUB est simplement une navigation.
+ if(!document.querySelector('[data-view="waiting"]').hidden){
+   await call('student-cancel-join',{classId:cls});
+ }
+ stopWaiting();
+ location.assign(hubLink);
+}
+$('cancel-student-form').onclick=()=>run(cancelStudentRequestAndReturn);
 $('finish-avatar').onclick=()=>run(async()=>{
  if(!waitingApproved)return;
  const raw=localStorage.getItem(avatarKey);
@@ -276,7 +305,7 @@ $('switch-profile').onclick=()=>run(async()=>{
  existingProfileClass=null;waitingApproved=false;localStorage.removeItem(avatarKey);location.reload()
 });
 $('check-status').onclick=()=>run(async()=>{if(!waitingApproved)await status()});
-$('cancel-request').onclick=()=>run(async()=>{if(waitingApproved)return;stopWaiting();await call('student-cancel-join',{classId:cls});show('student-form')});
+$('cancel-request').onclick=()=>run(async()=>{if(waitingApproved)return;await cancelStudentRequestAndReturn()});
 $('result-home').onclick=()=>location.assign(hubLink);
 $('reset-local').onclick=()=>run(async()=>{if(!confirm('Révoquer cet appareil et oublier ce profil ici ? Les résultats Connect restent enregistrés. Pour reprendre le compte, il faudra une nouvelle autorisation du professeur.'))return;await call('student-release');const {error}=await sb.auth.signOut({scope:'local'});if(error)throw error;location.href=hubLink});
 if(!teacherPortal){if(cls){show('student-form');renderRecentProfiles();run(student)}else location.replace('./connexion.html')}
