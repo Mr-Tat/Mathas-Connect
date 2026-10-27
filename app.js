@@ -1,5 +1,6 @@
 import {avatarGlyph,avatarColor} from './avatar-catalog.js';
 import {hubUrl} from './connect-context.js';
+import {listRecentProfiles,rememberRecentProfile} from './recent-profiles.js';
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 const url='https://awmhpfofacaglewammxt.supabase.co', key='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const sb=createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
@@ -135,6 +136,29 @@ function renderArchives(data,classId){
   const row=document.createElement('div');row.className='button-row';row.append(restore,remove);item.append(name,row);list.append(item);
  }
 }
+function renderRecentProfiles() {
+  const known = listRecentProfiles(cls);
+  const wrapper = $('recent-profiles'), list = $('recent-profiles-list');
+  list.replaceChildren();
+  wrapper.hidden = known.length === 0;
+  $('join-form').hidden = known.length > 0;
+  for (const name of known) {
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'recent-profile'; button.textContent = name;
+    button.onclick = () => {
+      const dot = name.lastIndexOf('.');
+      $('first-name').value = name.slice(0, dot);
+      $('last-initial').value = name.slice(dot + 1);
+      wrapper.hidden = true; $('join-form').hidden = false;
+      $('join-form').querySelector('[type="submit"]').focus();
+    };
+    list.append(button);
+  }
+}
+$('other-profile').onclick = () => {
+  $('recent-profiles').hidden = true; $('join-form').hidden = false;
+  $('first-name').value = ''; $('last-initial').value = ''; $('first-name').focus();
+};
 async function student(){if(!cls){location.replace(hubLink);return}
  await ensureStudentSession();await status()}
 let waitingTimer=null,waitingApproved=false,waitingBusy=false,existingProfileClass=null;
@@ -170,9 +194,10 @@ async function status(silent=false){
  if(!r||['cancelled','expired','rejected'].includes(r.state)){
   stopWaiting();waitingApproved=false;
   if(silent&&r?.state==='expired'){show('student-form');msg('Demande expirée après 15 minutes. Tu peux recommencer.');return}
-  show('student-form');if(r?.state==='rejected')msg('Demande refusée. Tu peux refaire une demande, avec le même prénom ou un autre.');return
+  show('student-form');if(!r)renderRecentProfiles();if(r?.state==='rejected')msg('Demande refusée. Tu peux refaire une demande, avec le même prénom ou un autre.');return
  }
  if(r.state==='already_approved'){
+  rememberRecentProfile(cls,r.displayName);
   stopWaiting();existingProfileClass=r.classId;
   $('account-name').textContent=r.displayName||'Élève';
   $('account-avatar').textContent=avatarGlyph(r.avatar);
@@ -215,6 +240,7 @@ $('finish-avatar').onclick=()=>run(async()=>{
   try{const avatar=JSON.parse(raw);await call('student-avatar',avatar);localStorage.removeItem(avatarKey)}
   catch(e){$('waiting-status-note').textContent='Avatar non enregistré. Vérifie la connexion et réessaie.';return}
  }
+ rememberRecentProfile(cls,$('first-name').value.trim()+'.'+$('last-initial').value.trim().toUpperCase());
  stopWaiting();location.href=hubLink;
 });
 $('continue-profile').onclick=()=>{if(existingProfileClass)location.href=hubUrl(existingProfileClass);else location.href=hubLink};
