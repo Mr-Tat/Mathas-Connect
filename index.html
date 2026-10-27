@@ -8,8 +8,8 @@
   <title>Math’as Connect — Professeur</title>
   <link rel="icon" type="image/png" href="./assets/brand/favicon.png">
   <link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png">
-  <link rel="stylesheet" href="./style.css?v=20261026bleu175">
-  <script type="module" src="./app.js?v=20261026waiting2"></script>
+  <link rel="stylesheet" href="./style.css?v=20261027profils1">
+  <script type="module" src="./app.js?v=20261027profils1"></script>
 <link rel="stylesheet" href="./join-avatar.css?v=20261026avatar3">
 <link rel="stylesheet" href="./student-entry-dark.css?v=20261026go2">
 <script type="module" src="./join-avatar.js?v=20261026avatar3"></script>
@@ -153,6 +153,12 @@
 
     <section class="panel" data-view="student-form" hidden>
       <h1>Je rejoins ma classe</h1>
+      <div id="recent-profiles" class="recent-profiles" hidden>
+        <h2>Compte déjà connecté ?</h2>
+        <p class="hint">Comptes déjà utilisés sur cet appareil. Tu devras redemander l’accès au professeur.</p>
+        <div id="recent-profiles-list" class="recent-profiles-list" role="group" aria-label="Comptes déjà utilisés"></div>
+        <button id="other-profile" class="soft" type="button">Autre élève</button>
+      </div>
       <form id="join-form">
         <label for="first-name">Prénom</label>
         <input id="first-name" type="text" maxlength="40" autocomplete="given-name" placeholder="Lucas" required>
