@@ -75,22 +75,38 @@ function renderGlobalRequests(all){
  if(matches.length){
    // Cette correspondance de NOM n'est pas une preuve d'identité :
    // la fiche et le code restent à vérifier manuellement avant approbation.
-   const reconnect=document.createElement('span');reconnect.className='request-reconnect-badge';
+   const reconnect=document.createElement(matches.length===1?'button':'span');
+   reconnect.className='request-reconnect-badge';
    reconnect.textContent='RECONNEXION';
-   reconnect.title='Fiche existante portant ce nom. Vérifie le code et la bonne personne.';
+   reconnect.title='Une fiche porte ce nom. Vérifie le code et l’identité de l’élève avant d’autoriser.';
+   if(matches.length===1){
+     reconnect.type='button';
+     reconnect.title+=' Clique ici pour choisir une autre fiche si nécessaire.';
+     reconnect.setAttribute('aria-expanded','false');
+     reconnect.setAttribute('aria-label','RECONNEXION : modifier l’association à la fiche élève');
+   }
    person.append(reconnect);
    const sel=document.createElement('select');sel.setAttribute('aria-label','Associer la demande à une fiche élève');sel.className='match-selector';
    const first=new Option(matches.length>1?'Plusieurs élèves homonymes : choisis la bonne fiche':'Créer une nouvelle fiche (autre élève)',matches.length>1?'':'__new__');
    if(matches.length>1){first.disabled=true;first.selected=true}
    sel.append(first,...matches.map(e=>new Option('Élève existant : '+e.display_name,e.id)));
    if(matches.length>1)sel.append(new Option('Créer une nouvelle fiche (autre élève)','__new__'));
-   if(matches.length===1)sel.value=matches[0].id;
+   if(matches.length===1){
+     sel.value=matches[0].id;
+     // Conserver l'association choisie, mais masquer l'ancienne section redondante.
+     // La pastille permet de rouvrir le choix en cas d'homonyme non reconnu.
+     sel.hidden=true;
+     reconnect.onclick=()=>{
+       sel.hidden=!sel.hidden;
+       reconnect.setAttribute('aria-expanded',String(!sel.hidden));
+     };
+   }
    card.append(sel);
-   const notice=document.createElement('p');notice.className='match-note';
-   notice.textContent=matches.length===1
-     ?'Élève déjà présent : fiche présélectionnée. Vérifie le code et l’identité avant d’autoriser.'
-     :'Homonymes : choisis manuellement la bonne fiche avant d’autoriser.';
-   card.append(notice);
+   if(matches.length>1){
+     const notice=document.createElement('p');notice.className='match-note';
+     notice.textContent='Plusieurs fiches portent ce nom : choisis la bonne avant d’autoriser.';
+     card.append(notice);
+   }
  }
  for(const [label,approve] of [['Autoriser',true],['Refuser',false]]){
    const btn=document.createElement('button');btn.textContent=label;if(!approve)btn.className='danger';
