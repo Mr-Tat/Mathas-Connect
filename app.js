@@ -3,10 +3,16 @@ import {hubUrl} from './connect-context.js';
 import {listRecentProfiles,rememberRecentProfile} from './recent-profiles.js?v=20261027recents2';
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 const url='https://awmhpfofacaglewammxt.supabase.co', key='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
-const sb=createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
-const $=id=>document.getElementById(id), cls=new URLSearchParams(location.search).get('class');
+const params=new URLSearchParams(location.search);
+const cls=params.get('class');
+const teacherPortal=params.get('portail')==='prof'&&!cls;
+// Administrateur : stockage séparé ; joueur : stockage historique préservé.
+const sb=createClient(url,key,{auth:{
+ persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
+ ...(teacherPortal?{storageKey:'mathas-connect-professor-auth-v1'}:{})
+}});
+const $=id=>document.getElementById(id);
 const hubLink=hubUrl();
-const teacherPortal=new URLSearchParams(location.search).get('portail')==='prof'&&!cls;
 // Les sections restent dans le DOM pour les événements, mais sont inaccessibles
 // via show() et invisibles dans le parcours élève. Aucun lien élève vers Professeur.
 if(!teacherPortal){document.getElementById('teacher-entry').hidden=true;}
@@ -27,7 +33,10 @@ async function ensureStudentSession(){
  const {data:{session},error}=await sb.auth.getSession();
  if(error)throw Error('Impossible de vérifier la connexion élève.');
  if(session?.access_token){
-   if(!session.user?.is_anonymous)throw Error('Compte professeur actif ici : utilise une fenêtre privée pour l’élève.');
+   if(!session.user?.is_anonymous){
+     $('legacy-professor-session').hidden=false;
+     throw Error('Ancienne connexion professeur détectée. Clique « Activer la connexion élève » pour utiliser une session élève indépendante.');
+   }
    return session;
  }
  const created=await sb.auth.signInAnonymously();
@@ -51,7 +60,7 @@ async function refresh(){const id=$('class-selector').value;if(!id){$('request-c
  for(const req of j.requests){const card=document.createElement('div');card.className='request-card';const head=document.createElement('div');head.className='request-heading';const name=document.createElement('strong');name.textContent=req.first_name+'.'+req.last_initial+' · '+(all.classes.find(c=>c.id===(req.class_id||id))?.name||'Classe');const code=document.createElement('span');code.className='request-code';code.textContent=req.verify_code;head.append(name,code);card.append(head);const row=document.createElement('div');row.className='button-row';
  // Même prénom + initiale : présélection seulement si une seule fiche correspond.
  // Une correspondance de nom NE PROUVE PAS l'identité : le professeur valide toujours la demande et le code.
- const canonicalName=v=>String(v||'').normalize('NFC').toLocaleLowerCase('fr').replace(/[.\\s]+/g,'');
+ const canonicalName=v=>String(v||'').normalize('NFC').toLocaleLowerCase('fr').replace(/[.\s]+/g,'');
  const requestedName=canonicalName(req.first_name+'.'+req.last_initial);
  const matches=req.matches??(req.class_id&&req.class_id!==id?[]:s.students).filter(e=>canonicalName(e.display_name)===requestedName);
  if(matches.length){
@@ -163,7 +172,20 @@ $('other-profile').onclick = () => {
   $('recent-profiles').hidden = true; $('join-form').hidden = false;
   $('first-name').value = ''; $('last-initial').value = ''; $('first-name').focus();
 };
-async function student(){if(!cls){location.replace(hubLink);return}
+$('free-student-session').onclick=()=>run(async()=>{
+  // Transition unique des anciens navigateurs où la session professeur
+  // partageait le stockage du joueur. Ne rien révoquer sans consentement.
+  if(!confirm('Une ancienne connexion professeur utilise encore cet espace. Pour connecter un élève sur ce navigateur, fermer cette ancienne session ? Les comptes, résultats et XP seront conservés. Tu pourras te reconnecter à la page professeur séparément.'))return;
+  const {data:{session}}=await sb.auth.getSession();
+  if(session?.user&&!session.user.is_anonymous){
+    const {error}=await sb.auth.signOut({scope:'local'});
+    if(error)throw error;
+  }
+  $('legacy-professor-session').hidden=true;
+  await student();
+});
+async function student(){if(!cls){location.replace('./connexion.html');return}
+ renderRecentProfiles();
  await ensureStudentSession();await status()}
 let waitingTimer=null,waitingApproved=false,waitingBusy=false,existingProfileClass=null;
 const avatarKey='mathas.connect.avatar-pending:'+cls;
@@ -257,7 +279,7 @@ $('check-status').onclick=()=>run(async()=>{if(!waitingApproved)await status()})
 $('cancel-request').onclick=()=>run(async()=>{if(waitingApproved)return;stopWaiting();await call('student-cancel-join',{classId:cls});show('student-form')});
 $('result-home').onclick=()=>location.assign(hubLink);
 $('reset-local').onclick=()=>run(async()=>{if(!confirm('Révoquer cet appareil et oublier ce profil ici ? Les résultats Connect restent enregistrés. Pour reprendre le compte, il faudra une nouvelle autorisation du professeur.'))return;await call('student-release');const {error}=await sb.auth.signOut({scope:'local'});if(error)throw error;location.href=hubLink});
-if(!teacherPortal){if(cls){show('student-form');run(student)}else location.replace('./connexion.html')}
+if(!teacherPortal){if(cls){show('student-form');renderRecentProfiles();run(student)}else location.replace('./connexion.html')}
 else {
   show('login');
   run(async()=>{
