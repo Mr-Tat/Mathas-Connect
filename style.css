@@ -190,3 +190,10 @@ body:has(.login-panel:not([hidden])) footer{color:#afc8d9}
 .request-person strong{overflow-wrap:anywhere}
 .request-reconnect-badge{display:inline-flex;align-items:center;justify-content:center;padding:5px 11px;border:1px solid #26835f;border-radius:999px;background:#e1f8e9;color:#155c41;font:850 11px/1.1 system-ui,sans-serif;letter-spacing:.055em;white-space:nowrap}
 #cancel-student-form{display:block;margin-top:12px;width:100%}
+
+/* Pastille reconnexion : clic facultatif pour changer la fiche correspondante.
+   Le sélecteur reste visible s'il existe plusieurs homonymes. */
+.match-selector[hidden]{display:none!important}
+button.request-reconnect-badge{min-height:0;padding:5px 11px;cursor:pointer;background:#e1f8e9;color:#155c41}
+button.request-reconnect-badge:hover,button.request-reconnect-badge[aria-expanded="true"]{background:#c4efd6}
+button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-offset:2px}
