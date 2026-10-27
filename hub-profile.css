@@ -51,3 +51,7 @@
 #identity-box.identity-connected .student-xp{font-size:clamp(13px,1.35vw,17px);color:#9ed4ef;font-weight:800}
 #identity-box.identity-connected .student-level[hidden],#identity-box.identity-connected .student-xp[hidden]{display:none!important}
 @media(max-width:720px){#identity-box.identity-connected .student-level{gap:7px;padding-left:12px}#identity-box.identity-connected .student-level-number{font-size:39px;min-width:47px;padding:6px 9px}}
+
+/* Le bouton de compte est aussi un lien natif : il reste fonctionnel sans JS. */
+#identity-action{display:inline-flex;align-items:center;justify-content:center;min-height:32px;text-decoration:none;cursor:pointer;border-radius:9px}
+#identity-box.identity-connected #identity-action{padding:8px 12px;background:#245b87;color:#fff;border:1px solid #7199b8;font:700 13px system-ui}
