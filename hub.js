@@ -80,17 +80,18 @@ async function showCatalog() {
     // Une lecture globale courte, mise en cache côté navigateur. Le catalogue statique reste le secours.
     try{
       const cacheKey='mathas.connect.global-catalog.v1';
-      const cached=JSON.parse(sessionStorage.getItem(cacheKey)||'null');
+      const scopedKey=cacheKey+':'+(new URLSearchParams(location.search).get('space')||'observation');
+      const cached=JSON.parse(sessionStorage.getItem(scopedKey)||'null');
       if(cached&&Date.now()-cached.at<60000&&Array.isArray(cached.apps))apps=cached.apps;
       else{
         const controller=new AbortController();
         const timeout=setTimeout(()=>controller.abort(),1600);
         try{
-          const r=await fetch(url+'/functions/v1/connect-catalog',{signal:controller.signal,cache:'default'});
+          const r=await fetch(url+'/functions/v1/connect-catalog?space='+encodeURIComponent(new URLSearchParams(location.search).get('space')||'observation'),{signal:controller.signal,cache:'default'});
           if(r.ok){const data=await r.json();if(data.ok&&Array.isArray(data.apps)){
             const images=new Map(fallbackApps.map(a=>[a.app_key,a.image_url]));
             apps=data.apps.map(a=>({...a,image_url:a.image_url||images.get(a.app_key)}));
-            sessionStorage.setItem(cacheKey,JSON.stringify({at:Date.now(),apps}));
+            sessionStorage.setItem(scopedKey,JSON.stringify({at:Date.now(),apps}));
           }}
         }finally{clearTimeout(timeout)}
       }
