@@ -23,6 +23,14 @@ async function handle(req:Request){
  if(!b||typeof b!=='object'||Array.isArray(b))return fail('invalid_json');
  const teacher=async()=>!!(!user.is_anonymous&&await one(db.from('connect_teachers').select('auth_user_id').eq('auth_user_id',user.id)));
  const manage=async(id:string)=>!!await one(db.from('connect_class_permissions').select('class_id').eq('class_id',id).eq('teacher_id',user.id).eq('can_manage',true));
+ // Optionnelle, uniquement après validation des droits ; une réponse XP indisponible
+ // ne doit pas masquer un profil pourtant autorisé.
+ const optionalXp=async(studentId:string)=>{
+   try{
+     const {data,error}=await db.rpc('connect_xp_read_v2',{p_student:studentId,p_app:'addition-ecrite-simple',p_include_milestones:false});
+     return error||!data?null:{total:data.total,level:data.level,next:data.next,apps:data.apps,active:true};
+   }catch{return null;}
+ };
  try{
  switch(b.action){
  
@@ -36,7 +44,8 @@ async function handle(req:Request){
    if(!await manage(b.classId))return fail('forbidden',403);
    const student=await one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color,archived_at').eq('id',player.student_id));
    if(!student||student.archived_at)return ok({status:'revoked'});
-   return ok({status:'approved',displayName:student.display_name,avatar:{kind:student.avatar_kind||'letter',value:student.avatar_value||'T',color:student.avatar_color||'ocean'},classId:b.classId});
+   const xp=b.includeXp===true?await optionalXp(player.student_id):undefined;
+   return ok({status:'approved',displayName:student.display_name,avatar:{kind:student.avatar_kind||'letter',value:student.avatar_value||'T',color:student.avatar_color||'ocean'},classId:b.classId,...(b.includeXp===true?{xp}:{})});
  }
  case 'player-xp':{
    let id:string|null=null;
@@ -102,7 +111,8 @@ async function handle(req:Request){
      if(!e)return ok({status:'wrong_class'});
      const student=await one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color,archived_at').eq('id',d.student_id));
      if(!student||student.archived_at)return ok({status:'revoked'});
-     return ok({status:'approved',displayName:student?.display_name??'Élève',avatar:{kind:student?.avatar_kind||'letter',value:student?.avatar_value||String(student?.display_name||'E').slice(0,1).toUpperCase(),color:student?.avatar_color||'ocean'},level:{number:1,xp:0,next:90,active:false},classId:b.classId});
+     const xp=b.includeXp===true?await optionalXp(d.student_id):undefined;
+     return ok({status:'approved',displayName:student?.display_name??'Élève',avatar:{kind:student?.avatar_kind||'letter',value:student?.avatar_value||String(student?.display_name||'E').slice(0,1).toUpperCase(),color:student?.avatar_color||'ocean'},level:{number:1,xp:0,next:90,active:false},classId:b.classId,...(b.includeXp===true?{xp}:{})});
    }
    const revoked=await one(db.from('connect_devices').select('id').eq('auth_user_id',user.id).eq('state','revoked').limit(1));
    return ok({status:revoked?'revoked':'unregistered'});
@@ -134,15 +144,20 @@ async function handle(req:Request){
    return ok({operation:result.data,accountCleanupPending});
  }
  case 'teacher-dashboard':{
-   if(!await teacher())return fail('forbidden',403);
-   const perms=await db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('can_manage',true).limit(100);
-   if(perms.error)return fail('db_failed',500);
-   const ids=perms.data.map((x:any)=>x.class_id);
-   const [years,classes]=await Promise.all([
-     db.from('connect_school_years').select('id,label,starts_on,ends_on').order('starts_on',{ascending:false}).limit(100),
-     ids.length?db.from('connect_classes').select('id,name,year_id').in('id',ids).order('created_at',{ascending:true}):Promise.resolve({data:[],error:null})
+   // Identité JWT vérifiée en amont ; exécuter les lectures indépendantes
+   // en parallèle réduit la latence sans augmenter le nombre de requêtes.
+   const [authorized,perms,years]=await Promise.all([
+     teacher(),
+     db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('can_manage',true).limit(100),
+     db.from('connect_school_years').select('id,label,starts_on,ends_on').order('starts_on',{ascending:false}).limit(100)
    ]);
-   if(years.error||classes.error)return fail('db_failed',500);
+   if(!authorized)return fail('forbidden',403);
+   if(perms.error||years.error)return fail('db_failed',500);
+   const ids=perms.data.map((x:any)=>x.class_id);
+   const classes=ids.length
+     ?await db.from('connect_classes').select('id,name,year_id').in('id',ids).order('created_at',{ascending:true})
+     :{data:[],error:null};
+   if(classes.error)return fail('db_failed',500);
    if(!U.test(b.classId||'')||!ids.includes(b.classId)){
      if(!ids.length)return ok({years:years.data,classes:classes.data,requests:[],students:[],devices:[]});
      const p=await db.from('connect_join_requests').select('id,class_id,first_name,last_initial,verify_code,expires_at,state')
