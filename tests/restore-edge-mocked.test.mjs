@@ -31,6 +31,7 @@ function startHarness({allowed=true,enrolled=true}={}){
     return {data:previous,error:null};
    }
   };
+  q.then=(resolve,reject)=>Promise.resolve({data:table==='connect_xp_milestones'?[]:null,error:null}).then(resolve,reject);
   q.single=async()=>({data:null,error:{code:'unexpected_insert'}});
   return q;
  }};
