@@ -53,6 +53,7 @@ function mergeHistorical(current:any,old:any){
  if(!old||typeof old!=='object'||Array.isArray(old))throw Error('invalid_import');
  const next=structuredClone(current);
  for(let i=0;i<3;i++){
+  for(const method of ['addBottom','takeTop']){const v=old.suddenMethods?.[method]?.[i];if(v!=null){if(!int(v,0,100000))throw Error('invalid_import');next.suddenMethods[method][i]=Math.max(next.suddenMethods[method][i]??0,v)}}
   for(const n of [4,10,20]){const value=old.classic?.[i]?.[n];if(value!=null){if(!int(value,0,n))throw Error('invalid_import');next.classic[i][n]=Math.max(next.classic[i][n]??0,value)}}
   for(const group of ['sudden','hard']){const value=old[group]?.[i];if(value!=null){if(!int(value,0,100000))throw Error('invalid_import');next[group][i]=Math.max(next[group][i]??0,value)}}
   const hardThree=old.hardThree?.[i];if(hardThree!=null){if(!int(hardThree,0,5))throw Error('invalid_import');next.hardThree[i]=Math.max(next.hardThree[i]??0,hardThree)}
@@ -84,7 +85,7 @@ function restorePreviewState(current:any,snapshot:any){
 }
 function restoreSummary(state:any){
  return {bestPoints:state.bestPoints??null,classic:state.classic,sudden:state.sudden,
-   hard:state.hard,hardThree:state.hardThree,progress:state.progress,
+   hard:state.hard,hardThree:state.hardThree,suddenMethods:state.suddenMethods,progress:state.progress,
    trophies:state.rewards?Object.values(state.rewards.mastery).flat().filter(Boolean).length+Object.values(state.rewards.hardAwards).flat().filter(Boolean).length+state.rewards.sudden.filter(Boolean).length+Object.values(state.rewards.scoreOne).filter(Boolean).length+Number(state.rewards.unlockedGold):0,
    lastThree:state.recent.map((v:any)=>({mode:v.mode,level:v.level,score:v.score,total:v.total,at:v.at})),
    topThree:state.topThree};
@@ -330,7 +331,7 @@ Deno.serve(async req=>{
     let apps=byStudent.get(row.student_id);if(!apps){apps=[];byStudent.set(row.student_id,apps)}
     const state=row.state_data||{};
     apps.push({appKey:row.app_key,state:{recent:Array.isArray(state.recent)?state.recent.slice(0,3).map((r:any)=>({at:r.at,score:r.score,total:r.total})):[],
-     bestPoints:state.bestPoints??null,todayBest:state.todayBest??null,classic:state.classic??null,sudden:state.sudden??null,hard:state.hard??null,hardThree:state.hardThree??null}});
+     bestPoints:state.bestPoints??null,todayBest:state.todayBest??null,classic:state.classic??null,sudden:state.sudden??null,suddenMethods:state.suddenMethods??null,hard:state.hard??null,hardThree:state.hardThree??null}});
    }
    return answer({ok:true,students:names.data.map((p:any)=>({id:p.id,displayName:p.display_name,apps:byStudent.get(p.id)||[]}))});
   }
@@ -384,7 +385,7 @@ Deno.serve(async req=>{
    if(rev!==b.expectedRevision)return deny('revision_conflict',409);
    const next=structuredClone(prior),i=b.level-1,when=new Date().toISOString();
    next.ids=[b.eventId,...next.ids].slice(0,50);
-   next.recent=[{eventId:b.eventId,mode:b.mode,level:b.level,score:b.score,total:b.total??null,points:b.points,at:when},...next.recent].slice(0,3);
+   next.recent=[{eventId:b.eventId,mode:b.mode,level:b.level,score:b.score,total:b.total??null,points:b.points,at:when,...(selected===sub&&b.mode==='sudden'?{method:b.method}:{})},...next.recent].slice(0,3);
    if(b.mode==='classic'){
       next.classic[i][b.total]=Math.max(next.classic[i][b.total]??0,b.score);
       if(b.total>=10&&b.score*5>=b.total*4){
