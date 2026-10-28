@@ -25,6 +25,8 @@ const CLASS_SPACES={
  '2eco':{id:'a9195199-0a28-4e86-99ce-47b36dd6e646',name:'2 ECO'}
 };
 let currentTeacherSpace=null;
+let teacherPlayerActive=false;
+const teacherPlayerKey=id=>'mathas.connect.teacher-player-enabled.v1:'+id;
 
 let busy=false;
 function show(v){if(!teacherPortal&&['teacher','login','welcome'].includes(v)){location.replace(hubLink);return}if(teacherPortal&&!['teacher','login'].includes(v))v='login';document.querySelectorAll('[data-view]').forEach(e=>e.hidden=e.dataset.view!==v);msg('')}
@@ -63,6 +65,9 @@ async function teacher(){
  show('teacher');showTeacherTab('home');
  // Accueil GLOBAL : une seule requête pour toutes les classes.
  renderGlobalRequests(r);
+ const currentTeacher=(await sb.auth.getSession()).data.session?.user;
+ teacherPlayerActive=!!currentTeacher&&localStorage.getItem(teacherPlayerKey(currentTeacher.id))==='1';
+ applyTeacherPlayerMode();
  // Le raccourci Master Mode mène à la classe concernée, après authentification.
  const linkedClass=params.get('profClass');
  if(teacherPortal&&linkedClass&&[...box.options].some(o=>o.value===linkedClass)){
@@ -316,7 +321,13 @@ if(teacherPortal&&$('teacher-entry'))$('teacher-entry').onclick=()=>show('login'
 $('back-login').onclick=()=>{location.href=hubLink};
 $('student-entry').onclick=()=>run(student);
 $('login-form').onsubmit=e=>{e.preventDefault();run(async()=>{const r=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(r.error)throw Error('Identifiants incorrects');$('password').value='';await teacher()})};
-$('logout').onclick=()=>run(async()=>{await sb.auth.signOut();show('login')});
+$('logout').onclick=()=>run(async()=>{
+ const account=(await sb.auth.getSession()).data.session?.user;
+ if(account)try{localStorage.removeItem(teacherPlayerKey(account.id))}catch{}
+ teacherPlayerActive=false;
+ applyTeacherPlayerMode();
+ await sb.auth.signOut();show('login');
+});
 $('open-hub').onclick=()=>{location.href=hubLink};
 $('teacher-hub').onclick=()=>{location.href=hubLink};
 $('add-year-form').onsubmit=e=>{e.preventDefault();run(async()=>{const label=$('new-year-label').value.trim(),startsOn=$('year-start').value,endsOn=$('year-end').value;if(endsOn<=startsOn)throw Error('La date de fin doit suivre la date de début');await call('teacher-create-year',{label,startsOn,endsOn});$('add-year-form').reset();await teacher();msg('Année scolaire ajoutée',true)})};
@@ -738,6 +749,32 @@ document.querySelectorAll('[data-results]').forEach(b=>b.addEventListener('click
  syncResultsClassPicker();
  showTeacherTab('results'); refresh().then(showResults).catch(e=>msg(e.message));
 }));
+function applyTeacherPlayerMode(){
+ const btn=$('teacher-player-connect');
+ if(btn)btn.hidden=teacherPlayerActive;
+ document.querySelectorAll('.teacher-space-main[data-space]').forEach(link=>{
+  const target=new URL(link.href);
+  if(teacherPlayerActive)target.searchParams.set('joueur','prof');
+  else target.searchParams.delete('joueur');
+  link.href=target.href;
+ });
+}
+$('teacher-player-connect').onclick=()=>run(async()=>{
+ const classroom=$('class-selector').value;
+ if(!classroom)throw Error('Aucune classe professeur disponible.');
+ // Le serveur vérifie la session professeur et sa fiche joueur, sans créer de compte.
+ const player=await call('teacher-player',{classId:classroom});
+ if(player.status!=='approved'||player.displayName!=='Monsieur T')
+  throw Error('Le profil Monsieur T n’est pas disponible pour ce compte professeur.');
+ const owner=(await sb.auth.getSession()).data.session?.user;
+ if(!owner||owner.is_anonymous)throw Error('Session professeur requise.');
+ try{localStorage.setItem(teacherPlayerKey(owner.id),'1')}catch{
+  throw Error('Impossible d’enregistrer la connexion joueur sur cet appareil.');
+ }
+ teacherPlayerActive=true;
+ applyTeacherPlayerMode();
+ alert('Connecté à Monsieur T');
+});
 document.querySelectorAll('[data-space]').forEach(a=>{
  const space=CLASS_SPACES[a.dataset.space];
  if(!space)return;
