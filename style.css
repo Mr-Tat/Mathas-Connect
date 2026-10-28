@@ -351,3 +351,54 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
     border-radius: 10px;
   }
 }
+
+
+/* En-tête professeur sur GSM : boutons côte à côte à droite du titre,
+   plutôt qu'une colonne verticale qui gêne la navigation. */
+@media (max-width: 650px) {
+  .teacher-panel .teacher-header {
+    align-items: flex-end;
+    gap: 7px;
+  }
+  .teacher-panel .teacher-header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    flex: 0 0 55%;
+    width: 55%;
+    max-width: 250px;
+    gap: 6px;
+    align-self: flex-end;
+    align-items: stretch;
+    margin-bottom: 12px;
+    min-width: 0;
+  }
+  .teacher-panel .teacher-header-actions > button {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    margin: 0;
+    padding: 7px 4px;
+    border-radius: 10px;
+    font-size: clamp(10px, 2.8vw, 12px);
+    line-height: 1.2;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+  .teacher-panel .teacher-header-actions .teacher-player-link {
+    font-weight: 800;
+  }
+  .teacher-panel .teacher-header-actions .teacher-logout {
+    font-weight: 700;
+  }
+  /* Quand Monsieur T est déjà connecté, le seul bouton restant
+     garde sa place à droite sans laisser une grande zone vide. */
+  .teacher-panel .teacher-header-actions:has(.teacher-player-link[hidden]) {
+    grid-template-columns: 1fr;
+    justify-items: end;
+  }
+  .teacher-panel .teacher-header-actions:has(.teacher-player-link[hidden]) .teacher-logout {
+    width: min(100%, 120px);
+  }
+}
