@@ -7,24 +7,26 @@ const teacher=read('../app.js'),hub=read('../hub.js'),html=read('../index.html')
 const result=read('../supabase/functions/connect-results/index.ts');
 const catalog=read('../supabase/functions/connect-catalog/index.ts');
 test('GLOBAL table exposes visibility, daily, section and order',()=>{
- for(const name of ['Visible','Du jour','Section','Ordre'])assert.ok(html.includes(name));
- assert.match(teacher,/teacher-catalog-global-save/);
- assert.match(teacher,/teacher-catalog-global-get/);
+ for(const name of ['Observation','Phase 1','Phase 2','2 ECO','Partout','Ordre'])assert.ok(html.includes(name));
+ assert.match(teacher,/teacher-app-matrix-save/);
+ assert.match(teacher,/teacher-app-matrix-get/);
 });
 test('only authorized managing teacher may modify catalog',()=>{
  assert.match(result,/if\(!await managed\(\)\)return deny\('forbidden',403\)/);
- assert.match(result,/teacher-catalog-global-save/);
- assert.match(result,/\.update\(\{enabled:item\.enabled/);
+ assert.match(result,/teacher-app-matrix-save/);
+ assert.match(result,/connect_hub_preset_entries/);
 });
 test('public catalog is read-only and separate from protected results',()=>{
  assert.match(catalog,/request\.method!=='GET'/);
- assert.match(catalog,/\.eq\('enabled',true\)/);
+ assert.match(catalog,/\.eq\('visible',true\)/);
  assert.doesNotMatch(catalog,/\.update\(|\.upsert\(|\.insert\(/);
  assert.match(hub,/functions\/v1\/connect-catalog/);
 });
 test('hub uses session cache and static fallback without SDK',()=>{
- assert.match(hub,/sessionStorage\.getItem\(cacheKey\)/);
+ assert.match(hub,/sessionStorage\.getItem\(scopedKey\)/);
  assert.match(hub,/const \{ apps: fallbackApps \}/);
  assert.match(hub,/controller\.abort\(\),1600/);
 });
 test('teacher browser JavaScript module parses',()=>{execFileSync(process.execPath,['--check','--input-type=module'],{input:teacher})});
+
+test('four class columns and separate scoped caches',()=>{for(const name of ['Observation','Phase 1','Phase 2','2 ECO','Partout','Position'])assert.ok(html.includes(name));assert.match(hub,/classPresets\[classId\]/);assert.match(result,/teacher-app-matrix-save/)});
