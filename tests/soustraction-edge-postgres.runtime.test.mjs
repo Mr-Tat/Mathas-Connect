@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {stripTypeScriptTypes} from 'node:module';
-import pg from 'pg';
+// Ce test exige pg seulement dans le workflow PostgreSQL isolé.
+// Dans la CI Node générale, l'absence du paquet fait ignorer ce test coûteux.
+const pg=(await import('pg').catch(()=>null))?.default;
 
 // Test du vrai code Edge + des vraies fonctions PostgreSQL, sans Supabase distant.
 // Auth et REST sont adaptés localement ; aucune connexion à des comptes d'élèves.
@@ -17,11 +19,11 @@ const blob=readFileSync(new URL('../supabase/functions/connect-results/index.ts'
 const source=stripTypeScriptTypes(blob.replace(/^import .*;\n/,''),{mode:'strip'});
 const uuid=n=>'bbbbbbbb-bbbb-4bbb-8bbb-'+String(n).padStart(12,'0');
 
-const db=new pg.Client({
+const db=pg?new pg.Client({
  host:process.env.PGHOST||'127.0.0.1',port:Number(process.env.PGPORT||5432),
  user:process.env.PGUSER||'postgres',password:process.env.PGPASSWORD||'local_fake_only',
  database:process.env.PGDATABASE||'postgres'
-});
+}):null;
 
 const identifier=x=>{
  if(!/^[a-z][a-z0-9_]*$/.test(x))throw Error('identifier_invalid');
@@ -102,7 +104,7 @@ function makeEdge(){
   return {status:response.status,body:await response.json()};
  };
 }
-test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et reprise isolée',async()=>{
+test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et reprise isolée', {skip:!pg?'Nécessite pg dans la CI PostgreSQL':false},async()=>{
  await db.connect();
  try{
   await db.query("CREATE TABLE IF NOT EXISTS public.connect_devices(auth_user_id uuid,student_id uuid,state text)");
