@@ -41,7 +41,7 @@ test('Parcours restart is scoped by student AND app; global XP survives',()=>{
 });
 test('Known follow-up risks remain explicitly visible until resolved',()=>{
  // This test documents current behaviour; it does not claim the risk is fixed.
- assert.match(game,/MathasPilotBridge\?\.completed\?\.\(item\),750/);
+ assert.match(game,/timer=setTimeout\(emit,750\)/);
  assert.match(launcher,/if\(q\.length>1000\)throw Error/);
 });
 
@@ -50,4 +50,12 @@ test('Synchronization failures are shown and do not silently stop the queue',()=
  assert.match(launcher,/syncWarning='ATTENTION : sauvegarde locale impossible/);
  assert.match(launcher,/catch\(error\)\{syncWarning=/);
  assert.match(launcher,/window\.addEventListener\('online',\(\)=>/);
+});
+
+test('Multiplication notifies Connect at most once, including page exit',()=>{
+ assert.match(game,/function notifyConnectResult\(item\)/);
+ assert.match(game,/if\(sent\)return/);
+ assert.match(game,/window\.addEventListener\('pagehide',emit,\{once:true\}\)/);
+ assert.match(game,/timer=setTimeout\(emit,750\)/);
+ assert.equal((game.match(/notifyConnectResult\(item\);/g)||[]).length,3);
 });
