@@ -837,7 +837,8 @@ async function loadTeacherAppPreview(){
  try{
   const data=await resultCall('teacher-app-matrix-get');
   const entries=new Map((data.entries||[]).map(e=>[e.preset_slug+'|'+e.app_key,e]));
-  const apps=(data.apps||[]).filter(a=>a.app_key!=='connect-lab').sort((a,b)=>(a.display_order??0)-(b.display_order??0)||a.title.localeCompare(b.title,'fr'));
+  const commonOrder=app=>{const values=APP_SPACES.map(([slug])=>entries.get(slug+'|'+app.app_key)?.display_order).filter(Number.isFinite);return values.length&&values.every(v=>v===values[0])?values[0]:(app.display_order??0)};
+  const apps=(data.apps||[]).filter(a=>a.app_key!=='connect-lab').sort((a,b)=>commonOrder(a)-commonOrder(b)||a.title.localeCompare(b.title,'fr'));
   const images={'addition-ecrite-simple':'./assets/miniatures/addition-ecrite-simple.webp','multiplication-ecrite-simple':'./assets/miniatures/multiplication-ecrite-simple.webp'};
   const feedback=$('teacher-app-feedback');
   const info=(text,error=false)=>{if(feedback){feedback.textContent=text;feedback.classList.toggle('error',error)}};
@@ -847,7 +848,7 @@ async function loadTeacherAppPreview(){
   async function save(changes,controls=[]){
    if(saving)return false;saving=true;controls.forEach(c=>c.disabled=true);info('Enregistrement…');
    try{
-    await resultCall('teacher-app-matrix-save',{changes});
+    for(const item of changes){await resultCall('teacher-app-matrix-save',{changes:[item]});const k=item.slug+'|'+item.appKey;entries.set(k,{...entries.get(k),preset_slug:item.slug,app_key:item.appKey,visible:item.visible,featured:item.featured,section:item.section,display_order:item.order})}
     for(const c of changes){const k=c.slug+'|'+c.appKey;entries.set(k,{...entries.get(k),preset_slug:c.slug,app_key:c.appKey,visible:c.visible,featured:c.featured,section:c.section,display_order:c.order})}
     info('✓ Réglages enregistrés');return true;
    }catch(e){info('Échec de l’enregistrement : '+e.message,true);return false}
@@ -855,7 +856,7 @@ async function loadTeacherAppPreview(){
   }
   body.replaceChildren();
   for(const [index,app] of apps.entries()){
-   const tr=document.createElement('tr');tr.className='teacher-matrix-row';tr.dataset.order=String(app.display_order??(index+1)*10);tr.dataset.title=app.title;
+   const tr=document.createElement('tr');tr.className='teacher-matrix-row';tr.dataset.order=String(commonOrder(app));tr.dataset.title=app.title;
    const identity=document.createElement('td'),link=document.createElement('a');identity.className='teacher-app-identity';link.className='teacher-matrix-app-link';link.target='_blank';link.rel='noopener noreferrer';
    const href=app.launch_url||app.url;if(href)link.href=href;else link.classList.add('no-link');
    const img=document.createElement('img');img.loading='lazy';img.alt='';img.src=app.image_url||images[app.app_key]||'./assets/brand/favicon.png';
@@ -883,7 +884,7 @@ async function loadTeacherAppPreview(){
     btn.onclick=async()=>{const changes=controls.map(c=>change(c.slug,app,{visible:value}));if(await save(changes,[...all.querySelectorAll('button')]))controls.forEach(c=>c.visible.checked=value)};all.append(btn)};
    bulk('Visible partout',true);bulk('Cacher partout',false);tr.append(all);
    const orderCell=document.createElement('td');orderCell.className='teacher-matrix-order';
-   const order=document.createElement('input');order.type='number';order.min='0';order.max='100000';order.value=String(app.display_order??(index+1)*10);order.setAttribute('aria-label','Ordre global — '+app.title);
+   const order=document.createElement('input');order.type='number';order.min='0';order.max='100000';order.value=String(commonOrder(app));order.setAttribute('aria-label','Ordre global — '+app.title);
    const ok=document.createElement('button');ok.type='button';ok.textContent='OK';ok.className='teacher-matrix-order-ok';
    const applyOrder=async()=>{const num=Number(order.value);if(!Number.isInteger(num)||num<0||num>100000){info('Ordre incorrect : entier entre 0 et 100000',true);return}
     if(await save(APP_SPACES.map(([slug])=>change(slug,app,{order:num})),[order,ok])){app.display_order=num;tr.dataset.order=String(num);order.classList.remove('dirty');ok.classList.remove('dirty');sortRows()}
