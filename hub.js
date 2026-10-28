@@ -74,8 +74,28 @@ async function showCatalog() {
     // Petit fichier statique sur GitHub Pages : zéro appel Supabase pour jouer librement.
     const response = await fetch('./hub-catalog.json', { cache: 'no-cache' });
     if (!response.ok) throw Error('catalog');
-    const { apps } = await response.json();
-    if (!Array.isArray(apps)) throw Error('catalog');
+    const { apps: fallbackApps } = await response.json();
+    if (!Array.isArray(fallbackApps)) throw Error('catalog');
+    let apps=fallbackApps;
+    // Une lecture globale courte, mise en cache côté navigateur. Le catalogue statique reste le secours.
+    try{
+      const cacheKey='mathas.connect.global-catalog.v1';
+      const cached=JSON.parse(sessionStorage.getItem(cacheKey)||'null');
+      if(cached&&Date.now()-cached.at<60000&&Array.isArray(cached.apps))apps=cached.apps;
+      else{
+        const controller=new AbortController();
+        const timeout=setTimeout(()=>controller.abort(),1600);
+        try{
+          const r=await fetch(url+'/functions/v1/connect-results',{signal:controller.signal,cache:'default'});
+          if(r.ok){const data=await r.json();if(data.ok&&Array.isArray(data.apps)){
+            const images=new Map(fallbackApps.map(a=>[a.app_key,a.image_url]));
+            apps=data.apps.map(a=>({...a,image_url:a.image_url||images.get(a.app_key)}));
+            sessionStorage.setItem(cacheKey,JSON.stringify({at:Date.now(),apps}));
+          }}
+        }finally{clearTimeout(timeout)}
+      }
+    }catch{ /* Le HUB reste utilisable avec le catalogue statique. */ }
+    apps=apps.filter(a=>a.enabled!==false).sort((a,b)=>(a.display_order||0)-(b.display_order||0));
     const featured = apps.filter(a => a.featured);
     $('dailyCount').textContent = featured.length + ' app' + (featured.length === 1 ? '' : 's');
     $('dailyApps').replaceChildren(...(featured.length ? featured.map(card) : [
