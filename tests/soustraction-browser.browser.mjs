@@ -95,3 +95,54 @@ test('Chromium réel : Connect -> fin de partie -> trophée -> file -> serveur f
   await page.close();
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
+
+test('Chromium petit PC et GSM : en-tête Connect, lien HUB, XP et jeu restent dans la fenêtre', {timeout:120000},async()=>{
+ const {server,url}=await serve();
+ const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
+ try{
+  for(const width of [320,360,390,768,1024]){
+   const page=await browser.newPage({viewport:{width,height:740},reducedMotion:'reduce'});
+   const errors=[];
+   page.on('pageerror',e=>errors.push(e.message));
+   await page.route('**/*',async route=>{
+    const uri=route.request().url();
+    if(uri.startsWith(url))return route.continue();
+    if(uri.startsWith('https://esm.sh/'))return route.fulfill({status:200,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'},body:browserStub});
+    if(uri.startsWith('https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/')){
+      const bytes=await readFile(resolve(root,'apps/soustraction-simple',uri.split('/').pop()));
+      return route.fulfill({status:200,contentType:types[extname(uri)]||'application/octet-stream',headers:{'access-control-allow-origin':'*'},body:bytes});
+    }
+    if(uri.includes('.supabase.co/functions/v1/')){
+      const data=JSON.parse(route.request().postData()||'{}');
+      const response=data.action==='student-load'?{ok:true,state:null,revision:0,resetEpoch:0}:
+                     data.action==='student-me'?{ok:true,status:'approved',classId:klass,displayName:'Élève test'}:
+                     data.action==='student-xp'?{ok:true,appXp:22,total:22,level:1,delta:0,milestones:[],currentMilestones:[],parcours:1,repeatXp:false,max:474}:
+                     {ok:false,error:'unexpected_action'};
+      return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(response)});
+    }
+    return route.abort();
+   });
+   await page.goto(url+'/apps/soustraction-simple/?class='+klass,{waitUntil:'domcontentloaded'});
+   await page.frameLocator('iframe').locator('#menuScreen').waitFor({timeout:25000});
+   const geom=await page.evaluate(()=>{
+      const rect=id=>{const r=document.querySelector(id).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
+      return {viewport:innerWidth,bodyScroll:document.documentElement.scrollWidth,
+       toolbar:rect('#ce-toolbar'),iframe:rect('iframe'),
+       global:rect('#ce-global-info'),app:rect('#ce-application-info'),
+       hub:rect('#ce-hub-link'),xp:rect('#ce-xp-meter'),button:rect('#xp-toolbar-button'),
+       sync:rect('#ce-sync')};
+   });
+   assert.ok(geom.bodyScroll<=width+2,'largeur '+width+' : débordement horizontal '+JSON.stringify(geom));
+   for(const id of ['toolbar','iframe','hub','xp','button']){
+     assert.ok(geom[id].left>=-2&&geom[id].right<=width+2,
+       'largeur '+width+' : '+id+' hors écran '+JSON.stringify(geom));
+   }
+   assert.ok(geom.global.bottom<=geom.app.top+1||geom.app.bottom<=geom.global.top+1||
+       geom.global.right<=geom.app.left+1||geom.app.right<=geom.global.left+1,
+       'largeur '+width+' : colonnes Connect se chevauchent '+JSON.stringify(geom));
+   assert.ok(geom.iframe.top>=geom.toolbar.bottom-1,'largeur '+width+' : jeu derrière barre Connect '+JSON.stringify(geom));
+   assert.deepEqual(errors,[],'largeur '+width+' : erreurs JS');
+   await page.close();
+  }
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
