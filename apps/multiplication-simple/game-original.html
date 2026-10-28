@@ -5437,7 +5437,7 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
 
   function loadSettings(){
     const s=safeGet(SETTINGS_KEY,{});carryMethod=s.carryMethod==='side'?'side':'top';tensFirst=!!s.tensFirst;window.__mathasTensFirst=tensFirst;if(tensFirstToggle)tensFirstToggle.checked=tensFirst;
-    const list=Array.isArray(s.multipliers)?s.multipliers.map(Number).filter(n=>n>=2&&n<=9):[2,3,4,5,6,7,8,9];if(list.length)selectedMultipliers=new Set(list);if(teacherMultiplierLock)selectedMultipliers=new Set([...selectedMultipliers,...teacherMultiplierLock]);
+    const list=Array.isArray(s.multipliers)?s.multipliers.map(Number).filter(n=>n>=2&&n<=9):[2,3,4,5,6,7,8,9];if(list.length)selectedMultipliers=new Set(list);if(teacherMultiplierLock)selectedMultipliers=new Set([...(Array.isArray(s.multipliers)&&s.multipliers.length?selectedMultipliers:[]),...teacherMultiplierLock]);
     selectedCount=[4,10,20].includes(+s.count)?+s.count:10;
     const level=[1,2,3].includes(+s.level)?+s.level:1;
     levelSelects.forEach(x=>x.dataset.initialLevel=String(level));
