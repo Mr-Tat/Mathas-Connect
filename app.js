@@ -312,7 +312,22 @@ $('teacher-hub').onclick=()=>{location.href=hubLink};
 $('add-year-form').onsubmit=e=>{e.preventDefault();run(async()=>{const label=$('new-year-label').value.trim(),startsOn=$('year-start').value,endsOn=$('year-end').value;if(endsOn<=startsOn)throw Error('La date de fin doit suivre la date de début');await call('teacher-create-year',{label,startsOn,endsOn});$('add-year-form').reset();await teacher();msg('Année scolaire ajoutée',true)})};
 $('add-class-form').onsubmit=e=>{e.preventDefault();run(async()=>{const yearId=$('year-selector').value,name=$('new-class-name').value.trim();if(!yearId)throw Error('Ajoute d’abord une année scolaire.');const r=await call('teacher-create-class',{yearId,name});$('new-class-name').value='';await teacher();$('class-selector').value=r.class.id;await refresh();msg('Classe créée',true)})};
 $('add-student-form').onsubmit=e=>{e.preventDefault();run(async()=>{const classId=$('class-selector').value,name=$('new-student-name').value.trim();await call('teacher-create-student',{classId,name});$('new-student-name').value='';await refresh();msg('Élève ajouté',true)})};
-$('class-selector').onchange=()=>run(async()=>{await refresh();await showResults().catch(e=>showResultMessage('Suivi indisponible : '+e.message))});
+$('class-selector').onchange=()=>run(async()=>{syncResultsClassPicker();await refresh();await showResults().catch(e=>showResultMessage('Suivi indisponible : '+e.message))});
+function syncResultsClassPicker(){
+ const management=$('class-selector'),picker=$('results-class-selector');if(!picker)return;
+ picker.replaceChildren(...[...management.options].map(o=>new Option(o.textContent,o.value)));
+ picker.value=management.value;
+ const name=management.selectedOptions[0]?.textContent||'Aucune classe';
+ $('teacher-results-context').textContent='Résultats de '+name+' · classe sélectionnée';
+}
+$('results-class-selector').onchange=()=>run(async()=>{
+ const id=$('results-class-selector').value;
+ if(!id)return;
+ $('class-selector').value=id;
+ currentTeacherSpace=Object.keys(CLASS_SPACES).find(k=>CLASS_SPACES[k].id===id)||null;
+ syncResultsClassPicker();
+ await refresh();await showResults();
+});
 $('refresh-teacher').onclick=()=>run(refresh);
 $('requests-refresh')?.addEventListener('click',()=>run(refreshGlobalRequests));
 // Rafraîchissement lent, seulement quand l'accueil professeur est ouvert et visible.
@@ -578,6 +593,7 @@ function showOverviewDetail(person,apps){
  }
 }
 async function showResults(){
+ syncResultsClassPicker();
  const id=$('class-selector').value;if(!id){showResultMessage('Aucune classe.');return}
  $('results-detail').hidden=true;$('results-list').hidden=false;
  showResultMessage('Lecture des résultats…');
@@ -630,7 +646,7 @@ function showTeacherTab(tab){
 document.querySelectorAll('[data-teacher-tab]').forEach(b=>b.addEventListener('click',()=>showTeacherTab(b.dataset.teacherTab)));
 document.querySelectorAll('[data-results]').forEach(b=>b.addEventListener('click',()=>{
  const label=CLASS_SPACES[b.dataset.results]?.name; if(!label)return; currentTeacherSpace=b.dataset.results; $('class-selector').value=CLASS_SPACES[currentTeacherSpace].id;
- $('teacher-results-context').textContent='Résultats de '+label+' : élèves inscrits dans ce HUB.';
+ syncResultsClassPicker();
  showTeacherTab('results'); refresh().then(showResults).catch(e=>msg(e.message));
 }));
 document.querySelectorAll('[data-space]').forEach(a=>{
