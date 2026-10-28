@@ -101,3 +101,16 @@ test('copie identique du moteur autonome (empreinte Git blob figée)',async()=>{
  const sha=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
  assert.equal(sha,'7588301f21428277e5d2c9b7aa2821bf606cb27a');
 });
+
+test('fin de partie : observateur trophées natif appelé immédiatement, suppression Master neutralisée',()=>{
+ const launcher=read('../apps/soustraction-simple/index.html');
+ const start=launcher.indexOf('const bridge='),end=launcher.indexOf('const scopedBootstrap=',start);
+ const bridge=launcher.slice(start,end);
+ assert.match(launcher,/window\.__mathasConnectFlushRewards=watch/);
+ assert.match(launcher,/if\(!html\.includes\(flushAnchor\)\)throw Error/);
+ assert.match(bridge,/window\.__mathasConnectFlushRewards\(\)/);
+ assert.ok(bridge.indexOf('window.__mathasConnectFlushRewards()')<bridge.indexOf('pilot.completed(final,{defer:true})'));
+ assert.match(bridge,/#masterModeReset,#masterModeEraseResults/);
+ assert.match(bridge,/stopImmediatePropagation\(\)/);
+ assert.match(bridge,/if\(rewardsReady\)pilot\.finalize\(eventId\)/);
+});
