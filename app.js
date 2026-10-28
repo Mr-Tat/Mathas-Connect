@@ -619,11 +619,11 @@ function showOverviewDetail(person,apps,focusedApp=false){
   if(state&&['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple'].includes(app.app_key)){
    const table=document.createElement('table');table.className='result-table';
    const header=document.createElement('tr');
-   for(const label of ['Niveau','/4','/10','/20','Mort subite','HARD','HARD 5 calculs']){const th=document.createElement('th');th.textContent=label;header.append(th)}
+   for(const label of ['Niveau','/4','/10','/20','Mort subite',...(isSubtraction?['Mort subite · Compensation','Mort subite · Emprunt direct']:[]),'HARD','HARD 5 calculs']){const th=document.createElement('th');th.textContent=label;header.append(th)}
    table.append(header);
    for(let i=0;i<3;i++){
     const row=document.createElement('tr');
-    for(const x of ['Niveau '+(i+1),...[4,10,20].map(c=>state.classic?.[i]?.[c]==null?'—':state.classic[i][c]+'/'+c),state.sudden?.[i]??'—',state.hard?.[i]??'—',state.hardThree?.[i]==null?'—':state.hardThree[i]+'/5']){
+    for(const x of ['Niveau '+(i+1),...[4,10,20].map(c=>state.classic?.[i]?.[c]==null?'—':state.classic[i][c]+'/'+c),state.sudden?.[i]??'—',...(isSubtraction?['addBottom','takeTop'].map(m=>state.suddenMethods?.[m]?.[i]??'—'):[]),state.hard?.[i]??'—',state.hardThree?.[i]==null?'—':state.hardThree[i]+'/5']){
      const td=document.createElement('td');td.textContent=String(x);row.append(td);
     }
     table.append(row);
