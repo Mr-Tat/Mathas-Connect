@@ -52,7 +52,7 @@ test('teacher selector lists both apps and backup restore is isolated',()=>{
  assert.match(html,/<option value="multiplication-ecrite-simple">/);
  assert.match(teacher,/appKey:o\.app\.appKey/);
  assert.match(teacher,/\.filter\(x=>x\.appKey===o\.app\.appKey\)/);
- assert.match(backend,/\!\[app,mul\]\.includes\(b\.appKey\)/);
+ assert.match(backend,/\!\[app,mul,sub\]\.includes\(b\.appKey\)/);
  assert.match(backend,/x\.appKey!==b\.appKey/);
 });
 test('HARD arrow navigation uses its actual DOM and side carry navigation',()=>{
@@ -66,7 +66,7 @@ test('repeated XP cap supports at least two full parcours',()=>{
 });
 
 test('restore rejects unrelated app keys, and professor sees HARD five-score',()=>{
- assert.match(backend,/!\[app,mul\]\.includes\(b\.appKey\)/);
+ assert.match(backend,/!\[app,mul,sub\]\.includes\(b\.appKey\)/);
  assert.doesNotMatch(backend,/\[b\.appKey,mul\]/);
  assert.match(backend,/hardThree:state\.hardThree\?\?null/);
  const teacher=src('../app.js');

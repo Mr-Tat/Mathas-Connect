@@ -5,8 +5,8 @@ const headers={'content-type':'application/json','cache-control':'no-store','acc
 const answer=(v:object,status=200)=>new Response(JSON.stringify(v),{status,headers});
 const deny=(e:string,status=400)=>answer({ok:false,error:e},status);
 const valid=(v:any)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
-const app='addition-ecrite-simple',mul='multiplication-ecrite-simple',lab='connect-lab';
-const appAllowed=(k:any)=>k===app||k===mul||k===lab;
+const app='addition-ecrite-simple',mul='multiplication-ecrite-simple',sub='soustraction-ecrite-simple',lab='connect-lab';
+const appAllowed=(k:any)=>k===app||k===mul||k===sub||k===lab;
 const belgianDay=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const read=async(q:any)=>{const {data,error}=await q.maybeSingle();if(error)throw Error('db_error');return data};
 const int=(n:any,min:number,max:number)=>Number.isSafeInteger(n)&&n>=min&&n<=max;
@@ -39,19 +39,21 @@ function validate(s:any){
  const classic=Array.from({length:3},(_,i)=>{const x=s.classic?.[i]??{};if(typeof x!=='object'||Array.isArray(x))throw Error('classic');const y:any={};for(const count of [4,10,20])if(x[count]!=null){if(!int(x[count],0,count))throw Error('classic');y[count]=x[count]}return y});
  const sequence=(k:string)=>Array.from({length:3},(_,i)=>{const v=s[k]?.[i];if(v==null)return null;if(!int(v,0,100000))throw Error(k);return v});
  const recent=(s.recent??[]);if(!Array.isArray(recent)||recent.length>3)throw Error('recent');
- const runs=recent.map((v:any)=>{if(!v||!['classic','sudden','hard','hard-challenge'].includes(v.mode)||!int(v.level,1,3)||!int(v.score,0,100000)||!/^\d{4}-\d{2}-\d{2}T/.test(v.at||''))throw Error('recent');if(v.total!=null&&(![4,5,10,20].includes(v.total)||v.score>v.total))throw Error('recent');return {mode:v.mode,level:v.level,score:v.score,total:v.total??null,points:int(v.points,0,10000000)?v.points:0,eventId:valid(v.eventId)?v.eventId:null,at:String(v.at).slice(0,32)}});
+ const runs=recent.map((v:any)=>{if(!v||!['classic','sudden','hard','hard-challenge'].includes(v.mode)||!int(v.level,1,3)||!int(v.score,0,100000)||!/^\d{4}-\d{2}-\d{2}T/.test(v.at||''))throw Error('recent');if(v.total!=null&&(![4,5,10,20].includes(v.total)||v.score>v.total))throw Error('recent');return {mode:v.mode,level:v.level,score:v.score,total:v.total??null,points:int(v.points,0,10000000)?v.points:0,eventId:valid(v.eventId)?v.eventId:null,at:String(v.at).slice(0,32),...(v.mode==='sudden'&&['addBottom','takeTop'].includes(v.method)?{method:v.method}:{})}});
  const best=s.bestPoints??null;if(best!==null&&!int(best,0,10000000))throw Error('best');
  const today=s.todayBest??null;if(today!==null&&(!/^\d{4}-\d{2}-\d{2}$/.test(today.day||'')||!int(today.points,0,10000000)))throw Error('today');
  const prog:any={};for(const k of ['level2','level3','sudden1','sudden2','sudden3','perfect1','perfect2','perfect3','hard']){if(s.progress?.[k]!=null){if(typeof s.progress[k]!=='boolean')throw Error('progress');prog[k]=s.progress[k]}}
  const ids=Array.isArray(s.ids)?s.ids.slice(0,50).filter(valid):[];
  const topThree=Array.isArray(s.topThree)?s.topThree.filter((v:any)=>int(v,0,10000000)).slice(0,3):[];
  const hardThree=Array.from({length:3},(_,i)=>{const value=s.hardThree?.[i];if(value==null)return null;if(!int(value,0,5))throw Error('hardThree');return value});
- return {classic,sudden:sequence('sudden'),hard:sequence('hard'),recent:runs,bestPoints:best,todayBest:today,progress:prog,ids,topThree,hardThree,rewards:normalizeRewards(s.rewards)};
+ const suddenMethods:any={};for(const method of ['addBottom','takeTop'])suddenMethods[method]=Array.from({length:3},(_,i)=>{const v=s.suddenMethods?.[method]?.[i];if(v==null)return null;if(!int(v,0,100000))throw Error('suddenMethods');return v});
+ return {classic,sudden:sequence('sudden'),suddenMethods,hard:sequence('hard'),recent:runs,bestPoints:best,todayBest:today,progress:prog,ids,topThree,hardThree,rewards:normalizeRewards(s.rewards)};
 }
 function mergeHistorical(current:any,old:any){
  if(!old||typeof old!=='object'||Array.isArray(old))throw Error('invalid_import');
  const next=structuredClone(current);
  for(let i=0;i<3;i++){
+  for(const method of ['addBottom','takeTop']){const v=old.suddenMethods?.[method]?.[i];if(v!=null){if(!int(v,0,100000))throw Error('invalid_import');next.suddenMethods[method][i]=Math.max(next.suddenMethods[method][i]??0,v)}}
   for(const n of [4,10,20]){const value=old.classic?.[i]?.[n];if(value!=null){if(!int(value,0,n))throw Error('invalid_import');next.classic[i][n]=Math.max(next.classic[i][n]??0,value)}}
   for(const group of ['sudden','hard']){const value=old[group]?.[i];if(value!=null){if(!int(value,0,100000))throw Error('invalid_import');next[group][i]=Math.max(next[group][i]??0,value)}}
   const hardThree=old.hardThree?.[i];if(hardThree!=null){if(!int(hardThree,0,5))throw Error('invalid_import');next.hardThree[i]=Math.max(next.hardThree[i]??0,hardThree)}
@@ -83,9 +85,9 @@ function restorePreviewState(current:any,snapshot:any){
 }
 function restoreSummary(state:any){
  return {bestPoints:state.bestPoints??null,classic:state.classic,sudden:state.sudden,
-   hard:state.hard,hardThree:state.hardThree,progress:state.progress,
+   hard:state.hard,hardThree:state.hardThree,suddenMethods:state.suddenMethods,progress:state.progress,
    trophies:state.rewards?Object.values(state.rewards.mastery).flat().filter(Boolean).length+Object.values(state.rewards.hardAwards).flat().filter(Boolean).length+state.rewards.sudden.filter(Boolean).length+Object.values(state.rewards.scoreOne).filter(Boolean).length+Number(state.rewards.unlockedGold):0,
-   lastThree:state.recent.map((v:any)=>({mode:v.mode,level:v.level,score:v.score,total:v.total,at:v.at})),
+   lastThree:state.recent.map((v:any)=>({mode:v.mode,level:v.level,score:v.score,total:v.total,at:v.at,...(v.method?{method:v.method}:{})})),
    topThree:state.topThree};
 }
 Deno.serve(async req=>{
@@ -110,7 +112,7 @@ Deno.serve(async req=>{
      return active?player.student_id:null;
     }const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;const enrolled=await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null));if(!enrolled)return null;const active=await read(db.from('connect_students').select('id').eq('id',device.student_id).is('archived_at',null));return active?device.student_id:null};
   const refreshXp=async(studentId:string,appKey:string)=>{
-   if(appKey!==app&&appKey!==mul)return null;
+   if(appKey!==app&&appKey!==mul&&appKey!==sub)return null;
    const result=await db.rpc('connect_xp_sync_v2',{p_student:studentId,p_app:appKey,p_force:false});
    if(result.error){console.error('xp_credit_error',result.error.code);throw Error('xp_sync_failed')}
    return result.data;
@@ -197,7 +199,7 @@ Deno.serve(async req=>{
   }
   // Parcours de révision : opération réservée au professeur, jamais au JWT élève.
   if(b.action==='teacher-parcours-restart'){
-   if(!await managed()||![app,mul].includes(b.appKey)||typeof b.repeatXp!=='boolean'
+   if(!await managed()||![app,mul,sub].includes(b.appKey)||typeof b.repeatXp!=='boolean'
       ||!['student','class'].includes(b.scope))return deny('forbidden',403);
    if(b.scope==='student'&&!valid(b.studentId))return deny('invalid_student');
    const name=b.scope==='class'?'connect_parcours_restart_class':'connect_parcours_restart_one';
@@ -208,7 +210,7 @@ Deno.serve(async req=>{
    return answer({ok:true,...result.data});
   }
   if(b.action==='teacher-parcours-history'){
-   if(!await managed()||![app,mul].includes(b.appKey)||!valid(b.studentId))return deny('forbidden',403);
+   if(!await managed()||![app,mul,sub].includes(b.appKey)||!valid(b.studentId))return deny('forbidden',403);
    const member=await read(db.from('connect_enrollments').select('student_id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));
    if(!member)return deny('forbidden',403);
    const [current,history]=await Promise.all([
@@ -220,7 +222,7 @@ Deno.serve(async req=>{
   }
   // Restauration de secours : fusion des acquis, sans nouvelles tables ni RPC.
   if(b.action==='teacher-restore-preview'||b.action==='teacher-restore-apply'){
-    if(!await managed()||!valid(b.studentId)||![app,mul].includes(b.appKey))return deny('forbidden',403);
+    if(!await managed()||!valid(b.studentId)||![app,mul,sub].includes(b.appKey))return deny('forbidden',403);
     if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2','mathas-connect-class-backup-v3','mathas-connect-class-backup-v4'].includes(b.backupFormat))return deny('invalid_backup_format');
     if(b.backupProjectRef!=null&&b.backupProjectRef!=='awmhpfofacaglewammxt')return deny('wrong_project',403);
     if(!int(b.backupRevision,0,1000000000)||!int(b.backupResetEpoch,0,1000000000))return deny('invalid_backup');
@@ -329,7 +331,7 @@ Deno.serve(async req=>{
     let apps=byStudent.get(row.student_id);if(!apps){apps=[];byStudent.set(row.student_id,apps)}
     const state=row.state_data||{};
     apps.push({appKey:row.app_key,state:{recent:Array.isArray(state.recent)?state.recent.slice(0,3).map((r:any)=>({at:r.at,score:r.score,total:r.total})):[],
-     bestPoints:state.bestPoints??null,todayBest:state.todayBest??null,classic:state.classic??null,sudden:state.sudden??null,hard:state.hard??null,hardThree:state.hardThree??null}});
+     bestPoints:state.bestPoints??null,todayBest:state.todayBest??null,classic:state.classic??null,sudden:state.sudden??null,suddenMethods:state.suddenMethods??null,hard:state.hard??null,hardThree:state.hardThree??null}});
    }
    return answer({ok:true,students:names.data.map((p:any)=>({id:p.id,displayName:p.display_name,apps:byStudent.get(p.id)||[]}))});
   }
@@ -350,14 +352,14 @@ Deno.serve(async req=>{
    return answer({ok:true,studentId:b.studentId,name:name?.display_name||'Élève',state:state?.state_data||null,revision:state?.revision??0});
   }
   if(b.action==='student-xp'){
-   if(b.appKey!==app&&b.appKey!==mul)return deny('forbidden',403);
+   if(b.appKey!==app&&b.appKey!==mul&&b.appKey!==sub)return deny('forbidden',403);
    const studentId=await identity();if(!studentId)return deny('forbidden',403);
    const {data:summary,error:xpError}=await db.rpc('connect_xp_read_v2',{p_student:studentId,p_app:b.appKey,p_include_milestones:true});
    if(xpError||!summary)return deny('xp_unavailable',503);
    return answer({ok:true,appXp:summary.appXp,total:summary.total,level:summary.level,next:summary.next,milestones:summary.milestones,currentMilestones:summary.currentMilestones,parcours:summary.parcours,repeatXp:summary.repeatXp,max:summary.max});
   }
   if(b.action==='student-load'||b.action==='student-save'||b.action==='lab-record'||b.action==='game-record'||b.action==='game-reset'){
-   if(!selected||(b.action==='lab-record'&&selected!==lab)||(b.action==='game-record'&&selected!==app&&selected!==mul))return deny('forbidden',403);
+   if(!selected||(b.action==='lab-record'&&selected!==lab)||(b.action==='game-record'&&selected!==app&&selected!==mul&&selected!==sub))return deny('forbidden',403);
    const studentId=await identity();if(!studentId)return deny('forbidden',403);
    const current=await read(db.from('connect_states').select('revision,state_data,reset_epoch').eq('student_id',studentId).eq('app_key',selected));
    if(b.action==='student-load'){
@@ -383,7 +385,7 @@ Deno.serve(async req=>{
    if(rev!==b.expectedRevision)return deny('revision_conflict',409);
    const next=structuredClone(prior),i=b.level-1,when=new Date().toISOString();
    next.ids=[b.eventId,...next.ids].slice(0,50);
-   next.recent=[{eventId:b.eventId,mode:b.mode,level:b.level,score:b.score,total:b.total??null,points:b.points,at:when},...next.recent].slice(0,3);
+   next.recent=[{eventId:b.eventId,mode:b.mode,level:b.level,score:b.score,total:b.total??null,points:b.points,at:when,...(selected===sub&&b.mode==='sudden'?{method:b.method}:{})},...next.recent].slice(0,3);
    if(b.mode==='classic'){
       next.classic[i][b.total]=Math.max(next.classic[i][b.total]??0,b.score);
       if(b.total>=10&&b.score*5>=b.total*4){
@@ -394,7 +396,8 @@ Deno.serve(async req=>{
       if(b.total>=10&&b.score===b.total)next.progress['perfect'+b.level]=true;
       if(next.progress.perfect1&&next.progress.perfect2&&next.progress.perfect3)next.progress.hard=true;
    }else if(b.mode==='hard-challenge')next.hardThree[i]=Math.max(next.hardThree[i]??0,b.score);
-   else next[b.mode][i]=Math.max(next[b.mode][i]??0,b.score);
+   else if(b.mode==='sudden'&&selected===sub){if(!['addBottom','takeTop'].includes(b.method))return deny('invalid_method');next.suddenMethods[b.method][i]=Math.max(next.suddenMethods[b.method][i]??0,b.score);next.sudden[i]=Math.max(next.sudden[i]??0,b.score)}
+    else next[b.mode][i]=Math.max(next[b.mode][i]??0,b.score);
    if(b.action==='game-record'&&b.rewards!=null){
      const received=normalizeRewards(b.rewards);
      next.rewards=mergeRewards(next.rewards,received);

@@ -479,13 +479,13 @@ $('results-restore-file').addEventListener('change',async event=>{
   const choices=[];
   for(const student of doc.students){
    if(!student||typeof student.id!=='string'||!Array.isArray(student.apps))continue;
-   for(const app of student.apps)if(['addition-ecrite-simple','multiplication-ecrite-simple'].includes(app.appKey)&&app.state&&Number.isInteger(app.revision)&&Number.isInteger(app.resetEpoch))
+   for(const app of student.apps)if(['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple'].includes(app.appKey)&&app.state&&Number.isInteger(app.revision)&&Number.isInteger(app.resetEpoch))
      choices.push({student,app});
   }
   if(!choices.length)throw Error("Aucun résultat d'application Connect à restaurer dans ce fichier");
   window.__restoreOptions=choices;
   const menu=$('results-restore-select');menu.replaceChildren();
-  choices.forEach((o,i)=>{const option=document.createElement('option');option.value=String(i);option.textContent=o.student.displayName+' · '+(o.app.appKey==='addition-ecrite-simple'?'Addition':'Multiplication')+' écrite (sauvegarde rev. '+o.app.revision+')';menu.appendChild(option)});
+  choices.forEach((o,i)=>{const option=document.createElement('option');option.value=String(i);option.textContent=o.student.displayName+' · '+(o.app.appKey==='addition-ecrite-simple'?'Addition':o.app.appKey==='soustraction-ecrite-simple'?'Soustraction':'Multiplication')+' écrite (sauvegarde rev. '+o.app.revision+')';menu.appendChild(option)});
   $('results-restore-panel').hidden=false;$('results-restore-summary').textContent='Fichier chargé. Choisis un élève et clique « Prévisualiser ». Aucune donnée modifiée.';
  }catch(err){msg(err.message||'Fichier illisible')}
 });
@@ -615,15 +615,16 @@ function showOverviewDetail(person,apps,focusedApp=false){
   const section=document.createElement('section');section.className='results-detail-block';
   const heading=document.createElement('h3');heading.textContent=app.title;section.append(heading);
   const state=person.apps?.find(x=>x.appKey===app.app_key)?.state;
+  const isSubtraction=app.app_key==='soustraction-ecrite-simple';
   section.append(makeOverviewCell(state));
-  if(state&&['addition-ecrite-simple','multiplication-ecrite-simple'].includes(app.app_key)){
+  if(state&&['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple'].includes(app.app_key)){
    const table=document.createElement('table');table.className='result-table';
    const header=document.createElement('tr');
-   for(const label of ['Niveau','/4','/10','/20','Mort subite','HARD','HARD 5 calculs']){const th=document.createElement('th');th.textContent=label;header.append(th)}
+   for(const label of ['Niveau','/4','/10','/20','Mort subite',...(isSubtraction?['Mort subite · Compensation','Mort subite · Emprunt direct']:[]),'HARD','HARD 5 calculs']){const th=document.createElement('th');th.textContent=label;header.append(th)}
    table.append(header);
    for(let i=0;i<3;i++){
     const row=document.createElement('tr');
-    for(const x of ['Niveau '+(i+1),...[4,10,20].map(c=>state.classic?.[i]?.[c]==null?'—':state.classic[i][c]+'/'+c),state.sudden?.[i]??'—',state.hard?.[i]??'—',state.hardThree?.[i]==null?'—':state.hardThree[i]+'/5']){
+    for(const x of ['Niveau '+(i+1),...[4,10,20].map(c=>state.classic?.[i]?.[c]==null?'—':state.classic[i][c]+'/'+c),state.sudden?.[i]??'—',...(isSubtraction?['addBottom','takeTop'].map(m=>state.suddenMethods?.[m]?.[i]??'—'):[]),state.hard?.[i]??'—',state.hardThree?.[i]==null?'—':state.hardThree[i]+'/5']){
      const td=document.createElement('td');td.textContent=String(x);row.append(td);
     }
     table.append(row);
@@ -632,12 +633,12 @@ function showOverviewDetail(person,apps,focusedApp=false){
   }
   target.append(section);
   // Le reboot appartient à l'application sélectionnée, jamais à la fiche globale.
-  if(focusedApp&&['addition-ecrite-simple','multiplication-ecrite-simple'].includes(app.app_key))
+  if(focusedApp&&['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple'].includes(app.app_key))
    addParcoursControls(section,person.id,person.displayName,app.app_key,app.title);
  }
 }
 async function showResults(){
- $('results-class-restart').hidden=!['addition-ecrite-simple','multiplication-ecrite-simple'].includes($('results-app').value);
+ $('results-class-restart').hidden=!['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple'].includes($('results-app').value);
  syncResultsClassPicker();
  const id=$('class-selector').value;if(!id){showResultMessage('Aucune classe.');return}
  $('results-detail').hidden=true;$('results-list').hidden=false;
@@ -670,7 +671,7 @@ function showDetail(v){
  if(s.hard?.some(x=>x!=null)){const hard=document.createElement('p');hard.textContent='HARD : '+[1,2,3].map(i=>'H'+i+' '+(s.hard[i-1]??'—')).join(' · ');div.append(hard)}
  const summary=document.createElement('p');summary.textContent='Record absolu : '+points(s.bestPoints)+' · Aujourd’hui : '+points(s.todayBest?.day===dateBE()?s.todayBest.points:null);div.append(summary);
  const last=document.createElement('p');last.textContent='Derniers exercices : '+(s.recent?.length?s.recent.map(recentLabel).join(' ; '):'aucun');div.append(last);
- if(v.studentId&&['addition-ecrite-simple','multiplication-ecrite-simple'].includes($('results-app').value))addParcoursControls(div,v.studentId,v.name,$('results-app').value,$('results-app').selectedOptions[0]?.textContent||'Application');
+ if(v.studentId&&['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple'].includes($('results-app').value))addParcoursControls(div,v.studentId,v.name,$('results-app').value,$('results-app').selectedOptions[0]?.textContent||'Application');
 }
 
 function openParcoursDialog({scope,studentId=null,studentName='',count=null,appKey='addition-ecrite-simple',appName='Addition écrite simple'}){
@@ -749,7 +750,7 @@ function multiplierLockPanel(container,studentId=null){
 }
 function addParcoursControls(container,studentId,name,appKey,appName){
  // Chaque application Connect pourra brancher ici son propre parcours.
- if(!studentId||!['addition-ecrite-simple','multiplication-ecrite-simple'].includes(appKey))return;
+ if(!studentId||!['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple'].includes(appKey))return;
  const panel=document.createElement('section');panel.className='parcours-student-actions';
  const title=document.createElement('strong');title.textContent='Parcours de cet élève';
  const summary=document.createElement('div');summary.textContent='Chargement des anciens parcours…';
@@ -853,7 +854,7 @@ async function loadTeacherAppPreview(){
   const entries=new Map((data.entries||[]).map(e=>[e.preset_slug+'|'+e.app_key,e]));
   const commonOrder=app=>{const values=APP_SPACES.map(([slug])=>entries.get(slug+'|'+app.app_key)?.display_order).filter(Number.isFinite);return values.length&&values.every(v=>v===values[0])?values[0]:(app.display_order??0)};
   const apps=(data.apps||[]).filter(a=>a.app_key!=='connect-lab').sort((a,b)=>commonOrder(a)-commonOrder(b)||a.title.localeCompare(b.title,'fr'));
-  const images={'addition-ecrite-simple':'./assets/miniatures/addition-ecrite-simple.webp','multiplication-ecrite-simple':'./assets/miniatures/multiplication-ecrite-simple.webp'};
+  const images={'addition-ecrite-simple':'./assets/miniatures/addition-ecrite-simple.webp','multiplication-ecrite-simple':'./assets/miniatures/multiplication-ecrite-simple.webp','soustraction-ecrite-simple':'./assets/miniatures/soustraction-ecrite-simple.webp'};
   const feedback=$('teacher-app-feedback');
   const info=(text,error=false)=>{if(feedback){feedback.textContent=text;feedback.classList.toggle('error',error)}};
   let saving=false;

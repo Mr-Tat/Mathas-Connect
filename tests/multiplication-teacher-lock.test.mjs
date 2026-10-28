@@ -20,10 +20,14 @@ test('effective student lock prefers personal override to class',()=>{
  assert.match(backend,/scope_key==='class'/);
  assert.match(launcher,/multiplierLock=Array\.isArray\(x\.multiplierLock\)/);
 });
-test('game enforces locked multipliers even for HARD',()=>{
- assert.match(game,/teacherMultiplierLock\|\|\[2,3,4,5,6,7,8,9\]/);
- assert.match(game,/if\(teacherMultiplierLock\)return/);
- assert.match(game,/selectedMultipliers=new Set\(teacherMultiplierLock\)/);
+test('teacher required tables are always selected and cannot be unchecked, including HARD',()=>{
+ // Depuis le changement sur main : l'élève peut ajouter des tables LIBRES.
+ // Les tables fixées par l'enseignant restent obligatoires, y compris en HARD.
+ assert.match(game,/const teacherMultiplierLock=Array\.isArray/);
+ assert.match(game,/teacherMultiplierLock\.includes\(n\)/);
+ assert.match(game,/b\.disabled=required/);
+ assert.match(game,/teacherMultiplierLock\.forEach\(n=>selectedMultipliers\.add\(n\)\)/);
+ assert.match(game,/hardState=generateMultiplication\(hardSession\.digits,\[\.\.\.selectedMultipliers\],false\)/);
 });
 test('teacher controls in results for class and individual pupil',()=>{
  assert.match(teacher,/function multiplierLockPanel/);
