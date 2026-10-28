@@ -63,6 +63,14 @@ async function teacher(){
  show('teacher');showTeacherTab('home');
  // Accueil GLOBAL : une seule requête pour toutes les classes.
  renderGlobalRequests(r);
+ // Le raccourci Master Mode mène à la classe concernée, après authentification.
+ const linkedClass=params.get('profClass');
+ if(teacherPortal&&linkedClass&&[...box.options].some(o=>o.value===linkedClass)){
+  box.value=linkedClass;
+  currentTeacherSpace=Object.keys(CLASS_SPACES).find(k=>CLASS_SPACES[k].id===linkedClass)||null;
+  syncResultsClassPicker();showTeacherTab('results');
+  await showResults().catch(e=>showResultMessage('Résultats indisponibles : '+e.message));
+ }
 }
 function renderGlobalRequests(all){
  const requests=Array.isArray(all.requests)?all.requests:[];
