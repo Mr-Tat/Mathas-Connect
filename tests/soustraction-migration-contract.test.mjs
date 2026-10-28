@@ -5,7 +5,7 @@ const sql=readFileSync(new URL('../supabase/migrations/20261028_soustraction_con
 test('migration : le catalogue utilise une URL HTTPS absolue',()=>{
  const insert=sql.match(/INSERT INTO public\.connect_apps[^;]*;/i)?.[0];
  assert.ok(insert,'insert catalogue');
- assert.match(insert,/https:\/\/mr-tat\.github\.io\/Mathas-Connect\/apps\/soustraction-simple\/illustration\.webp/);
+ assert.match(insert,/https:\/\/mr-tat\.github\.io\/Mathas-Connect\/assets\/miniatures\/soustraction-ecrite-simple\.webp/);
  assert.doesNotMatch(insert,/'\.\/apps\//);
 });
 test('migration : la grille XP Soustraction comporte neuf jalons explicites et totalise 474 XP',()=>{
