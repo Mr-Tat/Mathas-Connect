@@ -256,7 +256,7 @@ Deno.serve(async req=>{
    const studentId=await identity();if(!studentId)return deny('forbidden',403);
    const {data:summary,error:xpError}=await db.rpc('connect_xp_read_v2',{p_student:studentId,p_app:app,p_include_milestones:true});
    if(xpError||!summary)return deny('xp_unavailable',503);
-   return answer({ok:true,appXp:summary.appXp,total:summary.total,level:summary.level,next:summary.next,milestones:summary.milestones,max:summary.max});
+   return answer({ok:true,appXp:summary.appXp,total:summary.total,level:summary.level,next:summary.next,milestones:summary.milestones,currentMilestones:summary.currentMilestones,parcours:summary.parcours,repeatXp:summary.repeatXp,max:summary.max});
   }
   if(b.action==='student-load'||b.action==='student-save'||b.action==='lab-record'||b.action==='game-record'||b.action==='game-reset'){
    if(!selected||(b.action==='lab-record'&&selected!==lab)||(b.action==='game-record'&&selected!==app))return deny('forbidden',403);
@@ -265,31 +265,6 @@ Deno.serve(async req=>{
    if(b.action==='student-load')return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,state:current?.state_data||null});
    // Les jeux réels restent en lecture seule. Écriture exclusivement pour le laboratoire.
    if(b.action==='game-reset')return deny('teacher_only',403);
-   if(false){
-    if(selected!==app||!int(b.expectedRevision,0,1000000000)||!int(b.expectedResetEpoch,0,1000000000)||!['restart','erase-results'].includes(b.resetType))return deny('invalid_reset');
-    const rev=current?.revision??0,epoch=current?.reset_epoch??0;
-    if(rev!==b.expectedRevision)return deny('revision_conflict',409);
-    if(epoch!==b.expectedResetEpoch)return deny('stale_reset_epoch',409);
-    const next=validate(current?.state_data||{});
-    next.recent=[];next.ids=[];next.bestPoints=null;next.topThree=[];next.todayBest=null;
-    if(b.resetType==='restart'){
-      next.classic=[{},{},{}];next.progress={};next.hardThree=[null,null,null];
-      // Records Mort subite et trophées acquis conservés : sémantique V6.0.2.
-    }else{
-      next.classic=[{},{},{}];next.sudden=[null,null,null];next.hard=[null,null,null];next.hardThree=[null,null,null];next.rewards=null;
-      // Déblocages et progression HARD conservés : sémantique V6.0.2.
-    }
-    const payload={state_data:next,schema_version:1,updated_at:new Date().toISOString(),reset_epoch:epoch+1,revision:rev+1};
-    if(current){
-      const updated=await db.from('connect_states').update(payload)
-        .eq('student_id',studentId).eq('app_key',app).eq('revision',rev).eq('reset_epoch',epoch).select('revision').maybeSingle();
-      if(updated.error)throw Error('db_error');if(!updated.data)return deny('revision_conflict',409);
-    }else{
-      const created=await db.from('connect_states').insert({...payload,student_id:studentId,app_key:app}).select('revision').single();
-      if(created.error)return deny(created.error.code==='23505'?'revision_conflict':'db_error',created.error.code==='23505'?409:500);
-    }
-    return answer({ok:true,revision:rev+1,resetEpoch:epoch+1,state:next});
-   }
    if(b.action==='student-save')return deny('write_not_enabled',403);
    if(!valid(b.eventId)||!int(b.expectedRevision,0,1000000000)||!int(b.expectedResetEpoch,0,1000000000)||!['classic','sudden','hard','hard-challenge'].includes(b.mode)
      ||!int(b.level,1,3)||!int(b.score,0,100000)||!int(b.points,0,10000000)
