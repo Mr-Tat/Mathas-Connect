@@ -482,7 +482,7 @@ $('results-restore-file').addEventListener('change',async event=>{
    for(const app of student.apps)if(['addition-ecrite-simple','multiplication-ecrite-simple'].includes(app.appKey)&&app.state&&Number.isInteger(app.revision)&&Number.isInteger(app.resetEpoch))
      choices.push({student,app});
   }
-  if(!choices.length)throw Error('Aucun résultat d'application Connect à restaurer dans ce fichier');
+  if(!choices.length)throw Error("Aucun résultat d'application Connect à restaurer dans ce fichier");
   window.__restoreOptions=choices;
   const menu=$('results-restore-select');menu.replaceChildren();
   choices.forEach((o,i)=>{const option=document.createElement('option');option.value=String(i);option.textContent=o.student.displayName+' · '+(o.app.appKey==='addition-ecrite-simple'?'Addition':'Multiplication')+' écrite (sauvegarde rev. '+o.app.revision+')';menu.appendChild(option)});
