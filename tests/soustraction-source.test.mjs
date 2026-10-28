@@ -83,3 +83,13 @@ test('une fermeture avant le délai de trophées ne perd pas le résultat en fil
  assert.ok(launcher.includes('setTimeout(()=>pilot.finalize(eventId),750)'));
  assert.ok(launcher.includes('if(!options.defer)'));
 });
+
+test('file : acquittement ciblé, conservation des parties concurrentes et ancien parcours archivé',()=>{
+ const launcher=read('../apps/soustraction-simple/index.html');
+ assert.ok(launcher.includes('function removeQueuedEvent(eventId)'));
+ assert.ok(launcher.includes('pending.filter(x=>x.eventId!==eventId)'));
+ assert.ok(launcher.includes('removeQueuedEvent(e.eventId)'));
+ assert.ok(launcher.includes("reason:'reset-epoch-changed'"));
+ assert.ok(launcher.includes('archiveOldEvent(e);q=readQueue()'));
+ assert.ok(launcher.includes("const staleKey=queueKey+'.previous-parcours.v1'"));
+});
