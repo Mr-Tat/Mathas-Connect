@@ -1,0 +1,36 @@
+name: Import Soustraction miniature (branch only)
+on:
+  pull_request:
+    paths:
+      - 'scripts/import-soustraction-miniature.py'
+      - '.github/workflows/soustraction-miniature.yml'
+permissions:
+  contents: write
+jobs:
+  optimize:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'integration/soustraction-stage1-20261028'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Installer Pillow
+        run: python -m pip install --disable-pip-version-check 'Pillow==11.3.0'
+      - name: Importer et optimiser la miniature originale
+        run: python scripts/import-soustraction-miniature.py
+      - name: Commit seulement sur la branche d'intégration
+        run: |
+          git add assets/miniatures/soustraction-ecrite-simple.webp
+          if git diff --cached --quiet; then
+            echo 'Miniature identique, aucune modification'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'assets(soustraction): vraie miniature WebP optimisée'
+          git push origin HEAD:refs/heads/integration/soustraction-stage1-20261028
