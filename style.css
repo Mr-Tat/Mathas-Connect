@@ -206,3 +206,22 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
 .results-class-banner label{font-size:12px;font-weight:900;letter-spacing:.11em;color:#c2e9fb;margin:0}
 .teacher-panel .results-class-banner select{font-size:clamp(18px,2.1vw,25px);font-weight:900;flex:1;min-width:180px;width:auto;padding:11px 42px 11px 13px;border:2px solid #a5dbfc;background:#eff8ff;color:#11365b}
 .results-class-banner .teacher-context{flex-basis:100%;margin:0;color:#d4eafb;font-size:13px}
+
+.results-app-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:15px 0}
+.results-app-toolbar label{margin:0;color:#d7eafd}
+.results-app-toolbar select{max-width:330px;min-width:160px;flex:1}
+.results-restart-button{border:1px solid #c89e9e;border-radius:10px;background:#653745;color:#fff;min-height:38px;padding:8px 12px;font-weight:750;cursor:pointer}
+.results-restart-button:hover{background:#834a58}
+.results-restart-button[hidden]{display:none!important}
+.parcours-student-actions{margin:16px 0;padding:15px;border:1px solid #648ca9;border-radius:12px;background:#142e43;color:#edf7ff;display:grid;justify-items:start;gap:9px}
+.parcours-student-actions p{margin:5px 0}
+.parcours-dialog{width:min(530px,calc(100vw - 22px));max-height:90vh;overflow:auto;background:#14283d;color:#f4f9ff;border:2px solid #80afc8;border-radius:16px;padding:24px;box-shadow:0 18px 55px #0008}
+.parcours-dialog::backdrop{background:#07141ed9}
+.parcours-dialog form{display:grid;gap:13px}
+.parcours-dialog h2{margin:0;font-size:24px;color:#fff}
+.parcours-dialog p{margin:0;line-height:1.5;color:#d3e5f2}
+.parcours-dialog label{display:grid;gap:7px;font-weight:750;color:#f2f8ff}
+.parcours-dialog input:not([type=checkbox]){width:100%;color:#14324c;background:#fff;box-sizing:border-box}
+.parcours-xp-choice{display:flex!important;align-items:flex-start;gap:11px!important;background:#24435d;border:1px solid #6b93ad;border-radius:9px;padding:12px;font-size:14px}
+.parcours-xp-choice input{width:21px;height:21px;flex:none}
+.parcours-dialog .button-row{display:flex;gap:10px;flex-wrap:wrap}
