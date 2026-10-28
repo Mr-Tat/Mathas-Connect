@@ -282,12 +282,12 @@ async function drain(){
   let conflicts=0;
   while(q.length){
    const e=q[0],a=(await cloud.auth.getSession()).data.session;
-   if(!a)break;
+   if(!a){syncWarning='Session interrompue : résultats conservés sur cet appareil.';break;}
    if(e.expectedResetEpoch!==resetEpoch){q.shift();saveQueue(q);continue}
    e.expectedRevision=revision;
    const headers={apikey:KEY,authorization:'Bearer '+a.access_token,'content-type':'application/json'};
    let res,data;
-   try{res=await fetch(URL+'/functions/v1/connect-results',{method:'POST',headers,body:JSON.stringify(e)});data=await res.json()}catch{break}
+   try{res=await fetch(URL+'/functions/v1/connect-results',{method:'POST',headers,body:JSON.stringify(e)});data=await res.json()}catch{syncWarning='Connexion indisponible : résultats en attente sur cet appareil.';break}
    if(res.ok&&data.ok){revision=data.revision;resetEpoch=data.resetEpoch??resetEpoch;q.shift();saveQueue(q);syncWarning='';conflicts=0;if(data.xp&&Number.isFinite(Number(data.xp.appXp))){xpUiVersion++;if(data.xp.delta>0)queueXpGain(data.xp);else if(!xpVisualPending){showEarnedXp(data.xp.appXp);renderXpMeter(data.xp.total,data.xp.level,true)}}continue}
    if(data.error==='stale_reset_epoch'){q.shift();saveQueue(q);break}
    if(data.error==='revision_conflict'&&conflicts++<2){
