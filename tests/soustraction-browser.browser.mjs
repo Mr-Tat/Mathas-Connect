@@ -73,7 +73,7 @@ test('Chromium réel : Connect -> fin de partie -> trophée -> file -> serveur f
   const frame=page.frameLocator('iframe');
   await frame.locator('#menuScreen').waitFor({timeout:30000});
   assert.match(await page.locator('#ce-identity').textContent(),/Élève test/);
-  await frame.locator('input[name="borrowMethod"][value="takeTop"]').check();
+  await frame.locator('input[name="borrowMethod"][value="takeTop"]').evaluate(input=>input.closest('label').click());
   await frame.locator('body').evaluate(()=>window.__setLastWork({label:'Mort subite · Niveau 1',score:'5',rulerUsed:false}));
   await page.waitForFunction(()=>document.querySelector('#ce-sync')?.textContent?.includes('Synchronisé'),{timeout:20000});
   assert.equal(received.length,1,'une seule partie envoyée');
@@ -82,7 +82,7 @@ test('Chromium réel : Connect -> fin de partie -> trophée -> file -> serveur f
   assert.equal(received[0].mode,'sudden');
   assert.equal(received[0].score,5);
   assert.ok(received[0].rewards?.version===3,'trophées natifs envoyés dans la même requête');
-  await frame.locator('input[name="borrowMethod"][value="addBottom"]').check();
+  await frame.locator('input[name="borrowMethod"][value="addBottom"]').evaluate(input=>input.closest('label').click());
   await frame.locator('body').evaluate(()=>window.__setLastWork({label:'Calculs · Niveau 1',score:'4/4',rulerUsed:false}));
   await page.waitForFunction(()=>document.querySelector('#ce-sync')?.textContent?.includes('Synchronisé'),{timeout:20000});
   await page.waitForTimeout(500);
