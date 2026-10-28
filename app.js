@@ -827,25 +827,31 @@ document.querySelectorAll('.teacher-space .teacher-space-small[href]').forEach(a
  const space=CLASS_SPACES[slug];
  if(space){const u=new URL(a.href);u.searchParams.set('class',space.id);u.searchParams.set('name',space.name);a.href=u.href}
 });
+const APP_SECTIONS=[['objectif','Objectif'],['calculs_ecrits','Calculs écrits'],['depassement','Dépassement'],['revision','Révision'],['outil','Outils'],['jeux','Jeux']];
 async function loadTeacherAppPreview(){
- const body=$('teacher-app-tbody');
- if(!body)return;
+ const body=$('teacher-app-tbody');if(!body)return;
+ body.textContent='Chargement des réglages globaux…';
  try{
-  const response=await fetch('./hub-catalog.json',{cache:'no-cache'});
-  if(!response.ok)throw Error('Catalogue non disponible');
-  const data=await response.json();
-  const apps=Array.isArray(data.apps)?data.apps:[];
+  const response=await resultCall('teacher-catalog-global-get');
   body.replaceChildren();
-  if(!apps.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=8;td.textContent='Aucune application pour le moment.';tr.append(td);body.append(tr);return}
-  for(const [i,app] of apps.entries()){
-   const tr=document.createElement('tr'),cell=document.createElement('td');
-   const link=document.createElement('a');link.className='teacher-app-title';link.href=app.launch_url;link.target='_blank';link.rel='noopener noreferrer';
-   if(app.image_url){const im=document.createElement('img');im.src=app.image_url;im.alt='';im.loading='lazy';link.append(im)}
-   const name=document.createElement('span');name.textContent=app.title;link.append(name);cell.append(link);tr.append(cell);
-   for(let j=0;j<4;j++){const td=document.createElement('td');const small=document.createElement('small');small.textContent='Réglages à venir';td.append(small);tr.append(td)}
-   for(const value of ['À venir',String(app.display_order??'—'),String(i+1)]){const td=document.createElement('td');td.textContent=value;tr.append(td)}
-   body.append(tr);
+  const apps=response.apps||[];
+  for(const app of apps){
+   const tr=document.createElement('tr'),name=document.createElement('td');
+   name.textContent=app.title;tr.append(name);
+   const visible=document.createElement('input');visible.type='checkbox';visible.checked=!!app.enabled;
+   const featured=document.createElement('input');featured.type='checkbox';featured.checked=!!app.featured;
+   const section=document.createElement('select');
+   for(const [value,label] of APP_SECTIONS){const opt=document.createElement('option');opt.value=value;opt.textContent=label;section.append(opt)}
+   section.value=app.hub_section||'calculs_ecrits';
+   const order=document.createElement('input');order.type='number';order.min='0';order.max='100000';order.value=String(app.display_order??0);order.style.width='75px';
+   for(const control of [visible,featured,section,order]){const td=document.createElement('td');td.append(control);tr.append(td)}
+   const status=document.createElement('td');status.textContent='—';tr.append(status);
+   const save=document.createElement('button');save.type='button';save.className='soft';save.textContent='Enregistrer';
+   save.onclick=async()=>{save.disabled=true;status.textContent='Enregistrement…';try{
+    await resultCall('teacher-catalog-global-save',{changes:[{appKey:app.app_key,enabled:visible.checked,featured:featured.checked,section:section.value,order:Number(order.value)}]});
+    status.textContent='Enregistré · visible dans le HUB après actualisation';
+   }catch(e){status.textContent='Erreur : '+e.message}finally{save.disabled=false}};
+   const td=document.createElement('td');td.append(save);tr.append(td);body.append(tr);
   }
- }catch(e){body.textContent=e.message||'Catalogue indisponible'}
+ }catch(e){body.textContent='Chargement impossible : '+(e.message||'Erreur')}
 }
-
