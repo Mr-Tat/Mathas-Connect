@@ -42,8 +42,21 @@ test('Chromium réel : Connect -> fin de partie -> trophée -> file -> serveur f
  const {server,url}=await serve(),received=[],unmocked=[];
  const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
  try{
-  const context=await browser.newContext({viewport:{width:1024,height:768}});
+  const context=await browser.newContext({viewport:{width:1024,height:768},reducedMotion:'reduce'});
   const page=await context.newPage();
+  // Instrumentation isolée : surveiller le vol réel des XP, sans attribuer de XP en production.
+  await page.addInitScript(()=>{
+   window.__xpFlights=[];
+   const nativeAnimate=Element.prototype.animate;
+   Element.prototype.animate=function(frames,options){
+    if(this.id==='xp-toast')window.__xpFlights.push({
+     duration:options?.duration,
+     start:frames?.[0]?.transform,
+     end:frames?.[1]?.transform
+    });
+    return nativeAnimate.call(this,frames,options);
+   };
+  });
   await page.route('**/*',async route=>{
    const uri=route.request().url();
    if(uri.startsWith(url))return route.continue();
@@ -86,6 +99,13 @@ test('Chromium réel : Connect -> fin de partie -> trophée -> file -> serveur f
   assert.notEqual(toast.display,'none','toast XP visible');
   assert.equal(toast.hidden,false,'toast XP non caché');
   assert.ok(toast.height>15&&toast.width>100&&toast.top<toast.viewport,'popup XP positionné');
+  assert.equal(await page.evaluate(()=>matchMedia('(prefers-reduced-motion: reduce)').matches),true,
+    'préférence reduced-motion réellement activée dans le navigateur du test');
+  await page.waitForFunction(()=>window.__xpFlights?.some(f=>f.duration===550&&
+    f.start?.includes('scale(1)')&&f.end?.includes('scale(.16)')),
+    null,{timeout:20000});
+  assert.equal(await page.evaluate(()=>window.__xpFlights.length),1,
+    'exactement un vol XP malgré la réduction des mouvements');
   await page.waitForFunction(()=>document.querySelector('#ce-xp-meter-track')?.getAttribute('aria-valuenow')==='22',{timeout:20000});
   await page.waitForFunction(()=>document.querySelector('#ce-sync')?.textContent?.includes('Synchronisé'),{timeout:20000});
   assert.equal(received.length,1,'une seule partie envoyée');
