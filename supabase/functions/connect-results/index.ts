@@ -90,6 +90,11 @@ function restoreSummary(state:any){
 }
 Deno.serve(async req=>{
  if(req.method==='OPTIONS')return new Response('',{headers});
+ if(req.method==='GET'){
+  const {data,error}=await db.from('connect_apps').select('app_key,title,launch_url,image_url,enabled,featured,hub_section,display_order').eq('enabled',true).order('display_order').limit(100);
+  if(error)return deny('catalog_unavailable',503);
+  return new Response(JSON.stringify({ok:true,apps:data||[]}),{headers:{...headers,'cache-control':'public, max-age=60'}});
+ }
  if(req.method!=='POST')return deny('method',405);
  const token=req.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];if(!token)return deny('auth',401);
  const client=createClient(url,pub,{auth:{persistSession:false,autoRefreshToken:false}});
@@ -136,10 +141,10 @@ Deno.serve(async req=>{
    const {data:existing,error:readError}=await db.from('connect_apps').select('app_key').in('app_key',[...unique]);
    if(readError)throw Error('db_error');
    if(existing?.length!==unique.size)return deny('unknown_app');
-   const {error:writeError}=await db.from('connect_apps').upsert(changes.map((item:any)=>({
-     app_key:item.appKey, enabled:item.enabled,featured:item.featured,hub_section:item.section,display_order:item.order
-   })),{onConflict:'app_key'});
-   if(writeError){console.error('catalog_save_error',writeError.code);throw Error('db_error')}
+   for(const item of changes){
+    const {error:writeError}=await db.from('connect_apps').update({enabled:item.enabled,featured:item.featured,hub_section:item.section,display_order:item.order}).eq('app_key',item.appKey);
+    if(writeError){console.error('catalog_save_error',writeError.code);throw Error('db_error')}
+   }
    return answer({ok:true});
   }
   // Multiplicateurs : une lecture au lancement, pas de polling pendant les calculs.
