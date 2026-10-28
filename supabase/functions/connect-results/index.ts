@@ -249,7 +249,7 @@ Deno.serve(async req=>{
    if(!selected||!await managed()||!valid(b.studentId))return deny('forbidden',403);
    const enrolled=await read(db.from('connect_enrollments').select('id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));if(!enrolled||!await read(db.from('connect_students').select('id').eq('id',b.studentId).is('archived_at',null)))return deny('forbidden',403);
    const [name,state]=await Promise.all([read(db.from('connect_students').select('display_name').eq('id',b.studentId)),read(db.from('connect_states').select('revision,state_data').eq('student_id',b.studentId).eq('app_key',selected))]);
-   return answer({ok:true,name:name?.display_name||'Élève',state:state?.state_data||null,revision:state?.revision??0});
+   return answer({ok:true,studentId:b.studentId,name:name?.display_name||'Élève',state:state?.state_data||null,revision:state?.revision??0});
   }
   if(b.action==='student-xp'){
    if(b.appKey!==app)return deny('forbidden',403);
@@ -264,7 +264,8 @@ Deno.serve(async req=>{
    const current=await read(db.from('connect_states').select('revision,state_data,reset_epoch').eq('student_id',studentId).eq('app_key',selected));
    if(b.action==='student-load')return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,state:current?.state_data||null});
    // Les jeux réels restent en lecture seule. Écriture exclusivement pour le laboratoire.
-   if(b.action==='game-reset'){
+   if(b.action==='game-reset')return deny('teacher_only',403);
+   if(false){
     if(selected!==app||!int(b.expectedRevision,0,1000000000)||!int(b.expectedResetEpoch,0,1000000000)||!['restart','erase-results'].includes(b.resetType))return deny('invalid_reset');
     const rev=current?.revision??0,epoch=current?.reset_epoch??0;
     if(rev!==b.expectedRevision)return deny('revision_conflict',409);
