@@ -590,9 +590,11 @@ function showOverviewDetail(person,apps){
    section.append(table);
   }
   target.append(section);
+  if(app.app_key==='addition-ecrite-simple')addParcoursControls(section,person.id,person.displayName);
  }
 }
 async function showResults(){
+ $('results-class-restart').hidden=$('results-app').value!=='addition-ecrite-simple';
  syncResultsClassPicker();
  const id=$('class-selector').value;if(!id){showResultMessage('Aucune classe.');return}
  $('results-detail').hidden=true;$('results-list').hidden=false;
@@ -624,7 +626,68 @@ function showDetail(v){
  if(s.hard?.some(x=>x!=null)){const hard=document.createElement('p');hard.textContent='HARD : '+[1,2,3].map(i=>'H'+i+' '+(s.hard[i-1]??'—')).join(' · ');div.append(hard)}
  const summary=document.createElement('p');summary.textContent='Record absolu : '+points(s.bestPoints)+' · Aujourd’hui : '+points(s.todayBest?.day===dateBE()?s.todayBest.points:null);div.append(summary);
  const last=document.createElement('p');last.textContent='Derniers exercices : '+(s.recent?.length?s.recent.map(recentLabel).join(' ; '):'aucun');div.append(last);
+ if(v.studentId)addParcoursControls(div,v.studentId,v.name);
 }
+
+function openParcoursDialog({scope,studentId=null,studentName='',count=null}){
+ const name=scope==='class'?$('class-selector').selectedOptions[0]?.textContent||'Classe':studentName;
+ const dialog=document.createElement('dialog');dialog.className='parcours-dialog';
+ const form=document.createElement('form');const title=document.createElement('h2');title.textContent='Recommencer le parcours';
+ const description=document.createElement('p');
+ description.textContent='Addition écrite simple · '+name+(scope==='class'?' · toute la classe ('+count+' élèves)':'')+'. Les anciens résultats sont archivés et les XP restent acquis.';
+ const xpLabel=document.createElement('label');xpLabel.className='parcours-xp-choice';const xp=document.createElement('input');xp.type='checkbox';
+ const xpText=document.createElement('span');xpText.textContent='Permettre de regagner des XP au cours du nouveau parcours (en plus des acquis)';xpLabel.append(xp,xpText);
+ const checkLabel=document.createElement('label');checkLabel.textContent='Pour confirmer, recopie exactement : '+name;
+ const check=document.createElement('input');check.required=true;check.autocomplete='off';checkLabel.append(check);
+ const feedback=document.createElement('p');feedback.setAttribute('role','alert');
+ const buttons=document.createElement('div');buttons.className='button-row';
+ const back=document.createElement('button');back.type='button';back.className='soft';back.textContent='Annuler';back.onclick=()=>dialog.close();
+ const go=document.createElement('button');go.type='submit';go.className='danger';go.textContent='Confirmer le nouveau parcours';
+ buttons.append(back,go);form.append(title,description,xpLabel,checkLabel,feedback,buttons);dialog.append(form);document.body.append(dialog);
+ dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+ form.onsubmit=async e=>{
+  e.preventDefault();
+  if(check.value.trim()!==name){feedback.textContent='Le nom de confirmation ne correspond pas.';return}
+  go.disabled=true;back.disabled=true;feedback.textContent='Enregistrement du nouveau parcours…';
+  try{
+   const outcome=await resultCall('teacher-parcours-restart',{scope,studentId,repeatXp:xp.checked,appKey:'addition-ecrite-simple'});
+   dialog.close();
+   msg(scope==='class'?'Nouveau parcours ouvert pour '+outcome.count+' élèves.':'Nouveau parcours ouvert pour '+studentName+'.',true);
+   await showResults();
+  }catch(e){feedback.textContent='Opération non confirmée : '+(e.message||'Erreur');go.disabled=false;back.disabled=false}
+ };
+ dialog.showModal();check.focus();
+}
+function addParcoursControls(container,studentId,name){
+ if(!studentId)return;
+ const panel=document.createElement('section');panel.className='parcours-student-actions';
+ const title=document.createElement('strong');title.textContent='Parcours de cet élève';
+ const summary=document.createElement('div');summary.textContent='Chargement des anciens parcours…';
+ const reset=document.createElement('button');reset.type='button';reset.className='results-restart-button';reset.textContent='↻ Recommencer le parcours';
+ reset.onclick=()=>openParcoursDialog({scope:'student',studentId,studentName:name});
+ panel.append(title,summary,reset);container.append(panel);
+ resultCall('teacher-parcours-history',{studentId,appKey:'addition-ecrite-simple'}).then(r=>{
+  if(!summary.isConnected)return;
+  summary.replaceChildren();
+  const current=document.createElement('p');current.textContent='Parcours '+(r.current?.parcours_number||1)+(r.current?.repeat_xp?' · XP à regagner activés':' · XP historiques protégés');
+  summary.append(current);
+  const history=r.history||[];
+  if(history.length){
+   const details=document.createElement('details');
+   const label=document.createElement('summary');label.textContent='Anciens parcours ('+history.length+')';details.append(label);
+   for(const row of history){
+    const p=document.createElement('p');p.textContent='Parcours '+row.parcours_number+' · record '+(row.state_data?.bestPoints??'—')+' pts · XP cumulés : '+row.archived_xp;
+    details.append(p)
+   }
+   summary.append(details)
+  }
+ }).catch(()=>{if(summary.isConnected)summary.textContent='Historique indisponible.'});
+}
+$('results-class-restart').onclick=()=>run(async()=>{
+ const students=await resultCall('teacher-overview');
+ openParcoursDialog({scope:'class',count:students.students?.length||0});
+});
+
 $('results-refresh').onclick=()=>run(showResults);
 $('results-app').onchange=()=>run(showResults);
 $('results-back').onclick=()=>{$('results-detail').hidden=true;$('results-list').hidden=false};
