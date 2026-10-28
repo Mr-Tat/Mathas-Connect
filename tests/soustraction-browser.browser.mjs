@@ -75,6 +75,18 @@ test('Chromium réel : Connect -> fin de partie -> trophée -> file -> serveur f
   assert.match(await page.locator('#ce-identity').textContent(),/Élève test/);
   await frame.locator('input[name="borrowMethod"][value="takeTop"]').evaluate(input=>input.closest('label').click());
   await frame.locator('body').evaluate(()=>window.__setLastWork({label:'Mort subite · Niveau 1',score:'5',rulerUsed:false}));
+  // Les XP peuvent être crédités par le serveur sans que l'élève voie la séquence.
+  // Tester le toast +22, son apparition et le remplissage FINAL de la jauge.
+  await page.waitForFunction(()=>document.querySelector('#xp-toast.open')?.textContent?.includes('+22 XP'),{timeout:20000});
+  const toast=await page.locator('#xp-toast').evaluate(el=>{
+   const css=getComputedStyle(el),r=el.getBoundingClientRect();
+   return {display:css.display,opacity:Number(css.opacity),width:r.width,height:r.height,top:r.top,
+    bottom:r.bottom,viewport:innerHeight,hidden:el.hidden}
+  });
+  assert.notEqual(toast.display,'none','toast XP visible');
+  assert.equal(toast.hidden,false,'toast XP non caché');
+  assert.ok(toast.height>15&&toast.width>100&&toast.top<toast.viewport,'popup XP positionné');
+  await page.waitForFunction(()=>document.querySelector('#ce-xp-meter-track')?.getAttribute('aria-valuenow')==='22',{timeout:20000});
   await page.waitForFunction(()=>document.querySelector('#ce-sync')?.textContent?.includes('Synchronisé'),{timeout:20000});
   assert.equal(received.length,1,'une seule partie envoyée');
   assert.equal(received[0].appKey,'soustraction-ecrite-simple');
