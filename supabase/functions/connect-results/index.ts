@@ -39,7 +39,7 @@ function validate(s:any){
  const classic=Array.from({length:3},(_,i)=>{const x=s.classic?.[i]??{};if(typeof x!=='object'||Array.isArray(x))throw Error('classic');const y:any={};for(const count of [4,10,20])if(x[count]!=null){if(!int(x[count],0,count))throw Error('classic');y[count]=x[count]}return y});
  const sequence=(k:string)=>Array.from({length:3},(_,i)=>{const v=s[k]?.[i];if(v==null)return null;if(!int(v,0,100000))throw Error(k);return v});
  const recent=(s.recent??[]);if(!Array.isArray(recent)||recent.length>3)throw Error('recent');
- const runs=recent.map((v:any)=>{if(!v||!['classic','sudden','hard','hard-challenge'].includes(v.mode)||!int(v.level,1,3)||!int(v.score,0,100000)||!/^\d{4}-\d{2}-\d{2}T/.test(v.at||''))throw Error('recent');if(v.total!=null&&(![4,5,10,20].includes(v.total)||v.score>v.total))throw Error('recent');return {mode:v.mode,level:v.level,score:v.score,total:v.total??null,points:int(v.points,0,10000000)?v.points:0,eventId:valid(v.eventId)?v.eventId:null,at:String(v.at).slice(0,32)}});
+ const runs=recent.map((v:any)=>{if(!v||!['classic','sudden','hard','hard-challenge'].includes(v.mode)||!int(v.level,1,3)||!int(v.score,0,100000)||!/^\d{4}-\d{2}-\d{2}T/.test(v.at||''))throw Error('recent');if(v.total!=null&&(![4,5,10,20].includes(v.total)||v.score>v.total))throw Error('recent');return {mode:v.mode,level:v.level,score:v.score,total:v.total??null,points:int(v.points,0,10000000)?v.points:0,eventId:valid(v.eventId)?v.eventId:null,at:String(v.at).slice(0,32),...(v.mode==='sudden'&&['addBottom','takeTop'].includes(v.method)?{method:v.method}:{})}});
  const best=s.bestPoints??null;if(best!==null&&!int(best,0,10000000))throw Error('best');
  const today=s.todayBest??null;if(today!==null&&(!/^\d{4}-\d{2}-\d{2}$/.test(today.day||'')||!int(today.points,0,10000000)))throw Error('today');
  const prog:any={};for(const k of ['level2','level3','sudden1','sudden2','sudden3','perfect1','perfect2','perfect3','hard']){if(s.progress?.[k]!=null){if(typeof s.progress[k]!=='boolean')throw Error('progress');prog[k]=s.progress[k]}}
@@ -87,7 +87,7 @@ function restoreSummary(state:any){
  return {bestPoints:state.bestPoints??null,classic:state.classic,sudden:state.sudden,
    hard:state.hard,hardThree:state.hardThree,suddenMethods:state.suddenMethods,progress:state.progress,
    trophies:state.rewards?Object.values(state.rewards.mastery).flat().filter(Boolean).length+Object.values(state.rewards.hardAwards).flat().filter(Boolean).length+state.rewards.sudden.filter(Boolean).length+Object.values(state.rewards.scoreOne).filter(Boolean).length+Number(state.rewards.unlockedGold):0,
-   lastThree:state.recent.map((v:any)=>({mode:v.mode,level:v.level,score:v.score,total:v.total,at:v.at})),
+   lastThree:state.recent.map((v:any)=>({mode:v.mode,level:v.level,score:v.score,total:v.total,at:v.at,...(v.method?{method:v.method}:{})})),
    topThree:state.topThree};
 }
 Deno.serve(async req=>{
