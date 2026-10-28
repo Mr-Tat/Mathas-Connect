@@ -1,15 +1,20 @@
 import {avatarCategories,avatarGlyph,avatarColors,avatarColor} from './avatar-catalog.js';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 import { classId, classLabel, loginUrl } from './connect-context.js';
 import {rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
 
 const url = 'https://awmhpfofacaglewammxt.supabase.co';
 const key = 'sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const playingAsTeacher=new URLSearchParams(location.search).get('joueur')==='prof';
-const sb = createClient(url, key, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false,
-    ...(playingAsTeacher?{storageKey:'mathas-connect-professor-auth-v1'}:{}) }
-});
+// Le catalogue et le mode libre ne chargent pas le SDK Supabase.
+let supabasePromise;
+function getSupabase(){
+  if(!supabasePromise)supabasePromise=import('https://esm.sh/@supabase/supabase-js@2.95.0')
+    .then(({createClient})=>createClient(url,key,{
+      auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
+        ...(playingAsTeacher?{storageKey:'mathas-connect-professor-auth-v1'}:{})}
+    })).catch(error=>{supabasePromise=null;throw error});
+  return supabasePromise;
+}
 const $ = id => document.getElementById(id);
 const FREE_KEY = 'mathas.connect.mode-libre.v1';
 const inFreeMode = () => { try { return localStorage.getItem(FREE_KEY) === '1' } catch { return false } };
@@ -115,6 +120,7 @@ $('edit-avatar').onclick=()=>{if(!activeProfile)return;avatarChoice={...activePr
 $('avatar-save').onclick=async()=>{
  const button=$('avatar-save');button.disabled=true;
  try{
+  const sb=await getSupabase();
   const {data:{session}}=await sb.auth.getSession();
   if(!session?.user)throw Error('Connecte-toi à ton profil');
   const response=await fetch(url+'/functions/v1/connect-api',{method:'POST',
@@ -157,8 +163,8 @@ function drawIdentity(profile) {
   $('identity-level').hidden=!authorized;
   $('identity-xp').hidden=!authorized;
   if(authorized){
-    $('identity-level-number').textContent=String(profile.xp?.active?profile.xp.level:1);
-    $('identity-xp').textContent=(profile.xp?.active?profile.xp.total:0)+' XP Connect';
+    $('identity-level-number').textContent=String(profile.xp?.active?profile.xp.level:'—');
+    $('identity-xp').textContent=profile.xp?.active?profile.xp.total+' XP Connect':'XP Connect : …';
   }
   const avatar=$('identity-avatar');avatar.hidden=!authorized;
   if(authorized)paintAvatar(avatar,profile.avatar);
@@ -183,7 +189,8 @@ $('mode-toggle').onclick = async () => {
   if(!confirm('Se déconnecter de Math’as Connect sur cet appareil ? Les XP et les résultats restent sauvegardés. Pour revenir, le professeur devra autoriser une nouvelle connexion.'))return;
   const button=$('mode-toggle');button.disabled=true;
   try{
-    const {data:{session}}=await sb.auth.getSession();
+    const sb=await getSupabase();
+  const {data:{session}}=await sb.auth.getSession();
     if(session?.user?.is_anonymous){
       const response=await fetch(url+'/functions/v1/connect-api',{method:'POST',headers:{
         apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'
@@ -201,6 +208,7 @@ async function showIdentity() {
   drawIdentity(null);
   if (!classId || (!playingAsTeacher&&inFreeMode())) return;
   try {
+    const sb=await getSupabase();
     const { data: { session } } = await sb.auth.getSession();
     if (!session?.user) return;
     const response = await fetch(url + '/functions/v1/connect-api', {
@@ -211,8 +219,18 @@ async function showIdentity() {
     if (!response.ok) return;
     const profile = await response.json();
     if (profile.ok && profile.status === 'approved' && (profile.classId === classId)) {
-      try {const x=await fetch(url+'/functions/v1/connect-api',{method:'POST',headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},body:JSON.stringify({action:'player-xp',classId})}).then(r=>r.json());if(x.ok)profile.xp=x.xp;}catch{}
+      // L'identité s'affiche sans attendre la lecture secondaire des XP.
       drawIdentity(profile);
+      try {
+        const xpResponse=await fetch(url+'/functions/v1/connect-api',{
+          method:'POST',headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
+          body:JSON.stringify({action:'player-xp',classId})
+        });
+        if(xpResponse.ok){
+          const x=await xpResponse.json();
+          if(x.ok&&activeProfile===profile){profile.xp=x.xp;drawIdentity(profile)}
+        }
+      }catch{}
     }
     // Aucun accès reconnu au seul motif de connaître le lien de classe.
   } catch { /* Toujours laisser le HUB et les jeux accessibles en mode libre. */ }
