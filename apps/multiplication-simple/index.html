@@ -1,0 +1,19 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Math’as · Multiplication écrite simple</title>
+<style>html,body{margin:0;height:100%;font-family:system-ui;background:#091e30;color:#fff}#load{max-width:600px;margin:10vh auto;padding:24px;border:1px solid #517b95;border-radius:16px}a{color:#c4eaff}header{height:46px;padding:0 12px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;background:#102f46;border-bottom:1px solid #286180;font:600 13px system-ui}iframe{display:block;width:100%;height:calc(100dvh - 46px);border:0}small{opacity:.85}</style>
+</head><body><main id="load"><h1>Multiplication écrite simple</h1><p>Chargement du moteur pédagogique…</p></main><script type="module">
+const prefix='mathas.ce-multiplication.libre.v1:';
+try {
+ const response=await fetch('./game-original.html');
+ if(!response.ok)throw Error('Moteur indisponible');
+ let html=await response.text();
+ // Lancement autonome et léger. Toutes les images sont dans le même dossier.
+ const bootstrap=`<script>(function(){var p=Storage.prototype,g=p.getItem,s=p.setItem,r=p.removeItem,ns=${JSON.stringify(prefix)};function key(k){k=String(k);return /^(multi1_|mathas_)/.test(k)?ns+k:k}p.getItem=function(k){return g.call(this,this===localStorage?key(k):k)};p.setItem=function(k,v){return s.call(this,this===localStorage?key(k):k,v)};p.removeItem=function(k){return r.call(this,this===localStorage?key(k):k)};})();<`+'/script>';
+ html=html.replace('<head>','<head>'+bootstrap);
+ const bar=document.createElement('header');
+ const left=document.createElement('span');left.textContent='Multiplication écrite simple · Mode Classique';
+ const right=document.createElement('a');right.href='../../hub.html';right.textContent='Retour au HUB';
+ bar.append(left,right);
+ const frame=document.createElement('iframe');frame.title='Multiplication écrite simple V7.0.0';frame.setAttribute('allow','fullscreen');frame.srcdoc=html;
+ document.body.replaceChildren(bar,frame);
+}catch(error){document.querySelector('#load p').textContent='Impossible de charger le jeu. Réessaie ou retourne au HUB.';console.error(error)}
+</script></body></html>
