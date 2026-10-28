@@ -17,7 +17,7 @@ test('shared client has separate identities and all the XP UI',()=>{
 });
 test('results hook exists for classic, sudden and both HARD modes',()=>{
  assert.ok(game.includes('window.parent.MathasPilotBridge?.completed?.(item)'));
- assert.ok(game.split('window.parent.MathasPilotBridge?.completed?.(item)').length===4);
+ assert.equal(game.split('notifyConnectResult(item);').length-1,3);
 });
 test('server authorizes only explicit apps and reads XP for the requested one',()=>{
  assert.match(backend,/mul='multiplication-ecrite-simple'/);
@@ -58,7 +58,7 @@ test('teacher selector lists both apps and backup restore is isolated',()=>{
 test('HARD arrow navigation uses its actual DOM and side carry navigation',()=>{
  assert.match(game,/hard\?current\.closest\('#hardOperationCard'\)/);
  assert.match(game,/\.side-carry-input:not\(:disabled\)/);
- assert.match(game,/window\.parent\.MathasPilotBridge\?\.completed\?\.\(item\),750/);
+ assert.ok(game.includes('timer=setTimeout(emit,750)'));
 });
 test('repeated XP cap supports at least two full parcours',()=>{
  const sql=src('../supabase/migrations/20261028_xp_multi_parcours_cap.sql');
