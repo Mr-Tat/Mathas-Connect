@@ -325,6 +325,10 @@ $('results-class-selector').onchange=()=>run(async()=>{
  if(!id)return;
  $('class-selector').value=id;
  currentTeacherSpace=Object.keys(CLASS_SPACES).find(k=>CLASS_SPACES[k].id===id)||null;
+ // Changer de classe invalide toute ancienne restauration prévisualisée.
+ restoreDraft=null;restoreCheck=null;restoreHasSafety=false;
+ $('results-restore-confirm').disabled=true;$('results-restore-panel').hidden=true;$('results-restore-file').value='';
+ updateBackupReminder();
  syncResultsClassPicker();
  await refresh();await showResults();
 });
