@@ -290,8 +290,13 @@ async function toggleXpDetails(){
 }
 // Nouvelle file pour le départ Connect à zéro : ne pas réémettre de résultats tests anciens.
 const queueKey='ce-soustraction.pending.'+classId+'.'+(session?.user?.id||'free')+'.v3';
-const readQueue=()=>{try{const a=JSON.parse(localStorage.getItem(queueKey)||'[]');return Array.isArray(a)?a:[]}catch{return []}};
-const saveQueue=q=>{if(q.length>1000)throw Error('File de synchronisation saturée : ne pas terminer de nouvelles parties avant reconnexion.');localStorage.setItem(queueKey,JSON.stringify(q))};
+const readQueue=()=>{const raw=localStorage.getItem(queueKey);if(raw===null)return [];const items=JSON.parse(raw);if(!Array.isArray(items))throw Error('local_queue_corrupt');return items};
+const saveQueue=q=>{
+ if(q.length>1000)throw Error('File de synchronisation saturée : ne pas terminer de nouvelles parties avant reconnexion.');
+ // Refuser d'écraser une file illisible : elle peut contenir les seuls résultats non synchronisés.
+ readQueue();
+ localStorage.setItem(queueKey,JSON.stringify(q));
+};
 // Un nouveau parcours ne reprend jamais un résultat ancien. Archive avant retrait.
 const staleKey=queueKey+'.previous-parcours.v1';
 const staleQueue=()=>{const raw=localStorage.getItem(staleKey);if(!raw)return [];const q=JSON.parse(raw);if(!Array.isArray(q))throw Error('Archives invalides');return q};
@@ -312,7 +317,7 @@ function archiveOldEvent(event){
 function staleCount(){try{return staleQueue().length}catch{return 1}}
 
 let draining=false, syncWarning='';
-function showSync(){const v=document.getElementById('ce-sync');if(v){const stale=staleCount();v.textContent=mode==='connected'?(syncWarning||(stale?'À vérifier : '+stale+' ancien(s) résultat(s)':readQueue().length?'En attente : '+readQueue().length:(!navigator.onLine?'Hors ligne':'Synchronisé'))):'';v.title=syncWarning||(stale?'Résultats archivés d’un parcours précédent : prévenir le professeur.':'')}}
+function showSync(){const v=document.getElementById('ce-sync');if(!v)return;let pending=0;try{pending=readQueue().length}catch{syncWarning='File locale illisible : prévenir le professeur.'}const stale=staleCount();v.textContent=mode==='connected'?(syncWarning||(stale?'À vérifier : '+stale+' ancien(s) résultat(s)':pending?'En attente : '+pending:(!navigator.onLine?'Hors ligne':'Synchronisé'))):'';v.title=syncWarning||(stale?'Résultats archivés d’un parcours précédent : prévenir le professeur.':'')}
 async function drain(){
  if(draining||mode!=='connected'||!cloud)return;
  draining=true;
@@ -367,6 +372,21 @@ window.MathasPilotBridge={mode,openTeacherParcours:()=>{
  if(event){const awards=currentRewards();if(awards?.version===3)event.rewards=awards;try{saveQueue(pending)}catch(error){console.error('Récompenses en attente non enregistrées',error)}}
  void drain();
 },points:item=>{const m=String(item.score||'').match(/^(\d+)(?:\s*[/]\s*(\d+))?$/);if(!m)return 0;const hard=/HARD/i.test(item.label),sudden=/Mort subite/i.test(item.label),n=Number(m[1]),total=m[2]?Number(m[2]):0;const level=Number((String(item.label).match(/(?:Niveau|NIV|Hard)\s*([123])/i)||[])[1]||1);const ml=[1,1.2,1.4,1.6,1.8,2][hard?level+2:level-1],mf=sudden?1.6:total===20?1.6:total===10?1.3:1;let weighted=n;if(sudden){weighted=0;for(let i=0;i<n;i++)weighted+=Math.min(4,Math.pow(1.035,i))}return 5*ml*mf*weighted}};
+// Dernière chance sans requête réseau : enrichir les événements durables avec les trophées
+// que le moteur a déjà enregistrés, même si l'élève ferme avant le délai de 750 ms.
+window.addEventListener('pagehide',()=>{
+ if(mode!=='connected')return;
+ try{
+  const awards=currentRewards();
+  if(awards?.version!==3)return;
+  const pending=readQueue();
+  let changed=false;
+  for(const event of pending)if(event.expectedResetEpoch===resetEpoch){
+   event.rewards=awards;changed=true;
+  }
+  if(changed)saveQueue(pending);
+ }catch(error){console.warn('Récompenses locales non finalisées',error)}
+});
 iframe.srcdoc=html;
 const toolbar=document.createElement('header');toolbar.id='ce-toolbar';
 toolbar.style.cssText='box-sizing:border-box;width:100%;min-height:46px;height:var(--ce-toolbar-height,46px);padding:0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#102f46;color:#fff;font:600 13px system-ui;border-bottom:1px solid #286180';
