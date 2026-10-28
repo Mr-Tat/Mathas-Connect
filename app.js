@@ -839,7 +839,7 @@ async function loadTeacherAppPreview(){
   const entries=new Map((data.entries||[]).map(e=>[e.preset_slug+'|'+e.app_key,e]));
   const commonOrder=app=>{const values=APP_SPACES.map(([slug])=>entries.get(slug+'|'+app.app_key)?.display_order).filter(Number.isFinite);return values.length&&values.every(v=>v===values[0])?values[0]:(app.display_order??0)};
   const apps=(data.apps||[]).filter(a=>a.app_key!=='connect-lab').sort((a,b)=>commonOrder(a)-commonOrder(b)||a.title.localeCompare(b.title,'fr'));
-  const images={'addition-ecrite-simple':'./assets/miniatures/addition-ecrite-simple.webp','multiplication-ecrite-simple':'./assets/miniatures/multiplication-ecrite-simple.webp','soustraction-ecrite-simple':'./apps/soustraction-simple/illustration.webp'};
+  const images={'addition-ecrite-simple':'./assets/miniatures/addition-ecrite-simple.webp','multiplication-ecrite-simple':'./assets/miniatures/multiplication-ecrite-simple.webp','soustraction-ecrite-simple':'./assets/miniatures/soustraction-ecrite-simple.webp'};
   const feedback=$('teacher-app-feedback');
   const info=(text,error=false)=>{if(feedback){feedback.textContent=text;feedback.classList.toggle('error',error)}};
   let saving=false;
