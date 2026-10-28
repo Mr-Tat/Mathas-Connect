@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {Script} from 'node:vm';
 const read=(path)=>readFileSync(new URL(path,import.meta.url),'utf8');
 const engine=read('../apps/soustraction-simple/game-original.html');
-const configMatch=engine.match(/window\\.MathasAppConfig=(\\{[^;]+\\});/);
+const configMatch=engine.match(/window\.MathasAppConfig=(\{[^;]+\});/);
 test('moteur Soustraction autonome copié avec identité et modes spécifiques',()=>{
   assert.ok(configMatch,'configuration autonome');
   const cfg=JSON.parse(configMatch[1]);
