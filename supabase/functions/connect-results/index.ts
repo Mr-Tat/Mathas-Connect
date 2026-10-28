@@ -206,11 +206,21 @@ Deno.serve(async req=>{
    if(credits.error||levels.error)throw Error('db_error');
    const milestones=ids.length?await db.from('connect_xp_milestones').select('student_id,app_key,milestone_key,achieved_at,evidence').in('student_id',ids).limit(10000):{data:[],error:null};
    if(milestones.error)throw Error('db_error');
+   // Sauvegarde privée : archives et XP des parcours antérieurs également exportés.
+   const [parcours,history,bonus]=await Promise.all([
+    ids.length?db.from('connect_parcours_current').select('student_id,app_key,parcours_number,repeat_xp,started_at').in('student_id',ids).limit(250):Promise.resolve({data:[],error:null}),
+    ids.length?db.from('connect_parcours_history').select('student_id,app_key,parcours_number,class_id,ended_at,repeat_xp,state_data,archived_xp').eq('class_id',b.classId).in('student_id',ids).limit(3000):Promise.resolve({data:[],error:null}),
+    ids.length?db.from('connect_parcours_xp_bonus').select('student_id,app_key,parcours_number,milestone_key,points,achieved_at').in('student_id',ids).limit(8000):Promise.resolve({data:[],error:null})
+   ]);
+   if(parcours.error||history.error||bonus.error)throw Error('db_error');
    return answer({ok:true,format:'mathas-connect-class-backup-v4',projectRef:'awmhpfofacaglewammxt',exportedAt:new Date().toISOString(),classId:b.classId,
     students:profiles.data.map((p:any)=>({id:p.id,displayName:p.display_name,publicAlias:p.public_alias,archivedAt:p.archived_at,avatar:{kind:p.avatar_kind,value:p.avatar_value,color:p.avatar_color},projectionOptIn:p.projection_opt_in,
      xpMilestones:milestones.data.filter((x:any)=>x.student_id===p.id).map((x:any)=>({appKey:x.app_key,key:x.milestone_key,achievedAt:x.achieved_at,evidence:x.evidence})),
      xpCredits:credits.data.filter((x:any)=>x.student_id===p.id).map((x:any)=>({appKey:x.app_key,xpCredited:x.xp_credited,evidence:x.evidence,rulesetVersion:x.ruleset_version,updatedAt:x.updated_at})),
      levelProfile:levels.data.find((x:any)=>x.student_id===p.id)||null,
+     parcoursCurrent:parcours.data.filter((x:any)=>x.student_id===p.id),
+     parcoursHistory:history.data.filter((x:any)=>x.student_id===p.id),
+     parcoursXpBonus:bonus.data.filter((x:any)=>x.student_id===p.id),
      enrollments:people.data.filter((e:any)=>e.student_id===p.id),
      apps:states.data.filter((state:any)=>state.student_id===p.id).map((state:any)=>({appKey:state.app_key,revision:state.revision,resetEpoch:state.reset_epoch,state:state.state_data}))}))
    });
