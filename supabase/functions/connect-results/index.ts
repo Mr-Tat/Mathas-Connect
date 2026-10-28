@@ -115,6 +115,32 @@ Deno.serve(async req=>{
    if(result.error){console.error('xp_credit_error',result.error.code);throw Error('xp_sync_failed')}
    return result.data;
   };
+  // Multiplicateurs : une lecture au lancement, pas de polling pendant les calculs.
+  if(b.action==='teacher-multipliers-get'||b.action==='teacher-multipliers-set'){
+   if(!await managed())return deny('forbidden',403);
+   if(b.action==='teacher-multipliers-get'){
+    const {data,error}=await db.from('connect_multiplier_locks').select('scope_key,multipliers').eq('class_id',b.classId).limit(260);
+    if(error)throw Error('db_error');
+    return answer({ok:true,locks:data||[]});
+   }
+   const student=b.studentId==null?null:b.studentId;
+   if(student!==null){
+    if(!valid(student))return deny('invalid_student');
+    const enrolled=await read(db.from('connect_enrollments').select('student_id').eq('class_id',b.classId).eq('student_id',student).is('left_at',null));
+    if(!enrolled)return deny('not_enrolled',403);
+   }
+   const scope=student||'class';
+   if(b.multipliers===null){
+    const {error}=await db.from('connect_multiplier_locks').delete().eq('class_id',b.classId).eq('scope_key',scope);
+    if(error)throw Error('db_error');
+   }else{
+    const values=b.multipliers;
+    if(!Array.isArray(values)||values.length<1||values.length>8||new Set(values).size!==values.length||values.some((v:any)=>!Number.isInteger(v)||v<2||v>9))return deny('invalid_multipliers');
+    const {error}=await db.from('connect_multiplier_locks').upsert({class_id:b.classId,scope_key:scope,multipliers:values.slice().sort((a:number,z:number)=>a-z),updated_at:new Date().toISOString()});
+    if(error)throw Error('db_error');
+   }
+   return answer({ok:true});
+  }
   // Parcours de révision : opération réservée au professeur, jamais au JWT élève.
   if(b.action==='teacher-parcours-restart'){
    if(!await managed()||![app,mul].includes(b.appKey)||typeof b.repeatXp!=='boolean'
@@ -280,7 +306,15 @@ Deno.serve(async req=>{
    if(!selected||(b.action==='lab-record'&&selected!==lab)||(b.action==='game-record'&&selected!==app&&selected!==mul))return deny('forbidden',403);
    const studentId=await identity();if(!studentId)return deny('forbidden',403);
    const current=await read(db.from('connect_states').select('revision,state_data,reset_epoch').eq('student_id',studentId).eq('app_key',selected));
-   if(b.action==='student-load')return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,state:current?.state_data||null});
+   if(b.action==='student-load'){
+    let multiplierLock=null;
+    if(selected===mul){
+     const {data,error}=await db.from('connect_multiplier_locks').select('scope_key,multipliers').eq('class_id',b.classId).in('scope_key',['class',studentId]).limit(2);
+     if(error)throw Error('db_error');
+     multiplierLock=(data||[]).find((r:any)=>r.scope_key===studentId)?.multipliers??(data||[]).find((r:any)=>r.scope_key==='class')?.multipliers??null;
+    }
+    return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,state:current?.state_data||null,...(selected===mul?{multiplierLock}:{})});
+   }
    // Les jeux réels restent en lecture seule. Écriture exclusivement pour le laboratoire.
    if(b.action==='game-reset')return deny('teacher_only',403);
    if(b.action==='student-save')return deny('write_not_enabled',403);
