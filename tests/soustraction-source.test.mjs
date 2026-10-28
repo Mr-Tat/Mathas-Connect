@@ -61,3 +61,5 @@ test('lanceur: module JavaScript syntaxiquement exécutable',async()=>{
  const result=spawnSync(process.execPath,['--input-type=module','--check'],{input:script,encoding:'utf8'});
  assert.equal(result.status,0,result.stderr);
 });
+
+test('HUB inclut Soustraction en compte professeur',()=>{const hub=read('../hub.js');assert.ok(hub.includes("'multiplication-ecrite-simple','soustraction-ecrite-simple'"));});
