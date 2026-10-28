@@ -292,8 +292,27 @@ async function toggleXpDetails(){
 const queueKey='ce-soustraction.pending.'+classId+'.'+(session?.user?.id||'free')+'.v3';
 const readQueue=()=>{try{const a=JSON.parse(localStorage.getItem(queueKey)||'[]');return Array.isArray(a)?a:[]}catch{return []}};
 const saveQueue=q=>{if(q.length>1000)throw Error('File de synchronisation saturée : ne pas terminer de nouvelles parties avant reconnexion.');localStorage.setItem(queueKey,JSON.stringify(q))};
+// Un nouveau parcours ne reprend jamais un résultat ancien. Archive avant retrait.
+const staleKey=queueKey+'.previous-parcours.v1';
+const staleQueue=()=>{const raw=localStorage.getItem(staleKey);if(!raw)return [];const q=JSON.parse(raw);if(!Array.isArray(q))throw Error('Archives invalides');return q};
+function removeQueuedEvent(eventId){
+ // Relecture APRES la réponse réseau : une autre partie a pu être ajoutée entre-temps.
+ const pending=readQueue(),remaining=pending.filter(x=>x.eventId!==eventId);
+ if(remaining.length!==pending.length)saveQueue(remaining);
+}
+function archiveOldEvent(event){
+ const past=staleQueue();
+ if(past.length>=1000)throw Error('Archives pleines');
+ if(!past.some(x=>x.eventId===event.eventId)){
+  past.push({...event,archivedAt:new Date().toISOString(),reason:'reset-epoch-changed'});
+  localStorage.setItem(staleKey,JSON.stringify(past));
+ }
+ removeQueuedEvent(event.eventId);
+}
+function staleCount(){try{return staleQueue().length}catch{return 1}}
+
 let draining=false, syncWarning='';
-function showSync(){const v=document.getElementById('ce-sync');if(v){v.textContent=mode==='connected'?(syncWarning|| (readQueue().length?'En attente : '+readQueue().length:(!navigator.onLine?'Hors ligne':'Synchronisé'))):'';v.title=syncWarning||''}}
+function showSync(){const v=document.getElementById('ce-sync');if(v){const stale=staleCount();v.textContent=mode==='connected'?(syncWarning||(stale?'À vérifier : '+stale+' ancien(s) résultat(s)':readQueue().length?'En attente : '+readQueue().length:(!navigator.onLine?'Hors ligne':'Synchronisé'))):'';v.title=syncWarning||(stale?'Résultats archivés d’un parcours précédent : prévenir le professeur.':'')}}
 async function drain(){
  if(draining||mode!=='connected'||!cloud)return;
  draining=true;
@@ -301,15 +320,22 @@ async function drain(){
   let q=readQueue();
   let conflicts=0;
   while(q.length){
+   q=readQueue();if(!q.length)break;
    const e=q[0],a=(await cloud.auth.getSession()).data.session;
    if(!a){syncWarning='Session interrompue : résultats conservés sur cet appareil.';break;}
-   if(e.expectedResetEpoch!==resetEpoch){syncWarning='Anciennes parties en attente : parcours différent. Préviens le professeur.';break}
+   if(e.expectedResetEpoch!==resetEpoch){
+    archiveOldEvent(e);q=readQueue();syncWarning='Ancienne partie archivée : préviens le professeur.';continue
+   }
    e.expectedRevision=revision;
    const headers={apikey:KEY,authorization:'Bearer '+a.access_token,'content-type':'application/json'};
    let res,data;
    try{res=await fetch(URL+'/functions/v1/connect-results',{method:'POST',headers,body:JSON.stringify(e)});data=await res.json()}catch{syncWarning='Connexion indisponible : résultats en attente sur cet appareil.';break}
-   if(res.ok&&data.ok){revision=data.revision;resetEpoch=data.resetEpoch??resetEpoch;q.shift();saveQueue(q);syncWarning='';conflicts=0;if(data.xp&&Number.isFinite(Number(data.xp.appXp))){xpUiVersion++;if(data.xp.delta>0)queueXpGain(data.xp);else if(!xpVisualPending){showEarnedXp(data.xp.appXp);renderXpMeter(data.xp.total,data.xp.level,true)}}continue}
-   if(data.error==='stale_reset_epoch'){syncWarning='Partie conservée : parcours redémarré. Préviens le professeur.';break}
+   if(res.ok&&data.ok){revision=data.revision;resetEpoch=data.resetEpoch??resetEpoch;removeQueuedEvent(e.eventId);q=readQueue();syncWarning='';conflicts=0;if(data.xp&&Number.isFinite(Number(data.xp.appXp))){xpUiVersion++;if(data.xp.delta>0)queueXpGain(data.xp);else if(!xpVisualPending){showEarnedXp(data.xp.appXp);renderXpMeter(data.xp.total,data.xp.level,true)}}continue}
+   if(data.error==='stale_reset_epoch'){
+    const latest=await fetch(URL+'/functions/v1/connect-results',{method:'POST',headers,body:JSON.stringify({action:'student-load',classId,appKey:APP})}).then(r=>r.ok?r.json():null).catch(()=>null);
+    if(!latest?.ok||latest.resetEpoch===resetEpoch){syncWarning='Parcours modifié : résultat conservé. Préviens le professeur.';break}
+    revision=latest.revision;resetEpoch=latest.resetEpoch;continue
+   }
    if(data.error==='revision_conflict'&&conflicts++<2){
     const v=await fetch(URL+'/functions/v1/connect-results',{method:'POST',headers,body:JSON.stringify({action:'student-load',classId,appKey:APP})}).then(r=>r.json()).catch(()=>null);
     if(!v?.ok)break;revision=v.revision;resetEpoch=v.resetEpoch??0;continue;
