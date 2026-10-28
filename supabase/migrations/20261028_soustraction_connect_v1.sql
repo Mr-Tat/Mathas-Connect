@@ -1,6 +1,6 @@
 -- Soustraction : ajout sans changer les données Addition/Multiplication.
 BEGIN;
-INSERT INTO public.connect_apps(app_key,title,launch_url,image_url,enabled,hub_section,featured,display_order) VALUES ('soustraction-ecrite-simple','Soustraction écrite','https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/','https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/illustration.webp',false,'calculs_ecrits',false,30) ON CONFLICT(app_key) DO NOTHING;
+INSERT INTO public.connect_apps(app_key,title,launch_url,image_url,enabled,hub_section,featured,display_order) VALUES ('soustraction-ecrite-simple','Soustraction écrite','https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/','https://mr-tat.github.io/Mathas-Connect/assets/miniatures/soustraction-ecrite-simple.webp',false,'calculs_ecrits',false,30) ON CONFLICT(app_key) DO NOTHING;
 INSERT INTO public.connect_hub_preset_entries(preset_slug,app_key,section,display_order,visible,featured) SELECT slug,'soustraction-ecrite-simple','calculs_ecrits',30,false,false FROM (VALUES ('observation'),('phase1'),('phase2'),('2eco')) AS presets(slug) ON CONFLICT(preset_slug,app_key) DO NOTHING;
 -- La grille de Soustraction est définie explicitement après vérification des modes
 -- classiques 4/10/20, Mort subite et HARD (9 jalons/niveau, 158 XP par niveau).
