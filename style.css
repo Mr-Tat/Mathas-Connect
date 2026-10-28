@@ -250,3 +250,6 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
 .results-overview-table .results-app-cell-button:focus-visible{
  outline:3px solid #a5e8ff;outline-offset:1px
 }
+
+/* Le bouton d'activation disparaît réellement lorsque Monsieur T est connecté. */
+.teacher-player-link[hidden]{display:none!important}
