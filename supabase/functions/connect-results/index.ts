@@ -107,6 +107,29 @@ Deno.serve(async req=>{
    if(result.error){console.error('xp_credit_error',result.error.code);throw Error('xp_sync_failed')}
    return result.data;
   };
+  // Parcours de révision : opération réservée au professeur, jamais au JWT élève.
+  if(b.action==='teacher-parcours-restart'){
+   if(!await managed()||b.appKey!==app||typeof b.repeatXp!=='boolean'
+      ||!['student','class'].includes(b.scope))return deny('forbidden',403);
+   if(b.scope==='student'&&!valid(b.studentId))return deny('invalid_student');
+   const name=b.scope==='class'?'connect_parcours_restart_class':'connect_parcours_restart_one';
+   const args:any={p_teacher:user.id,p_class:b.classId,p_app:app,p_repeat_xp:b.repeatXp};
+   if(b.scope==='student')args.p_student=b.studentId;
+   const result=await db.rpc(name,args);
+   if(result.error){console.error('parcours_restart',result.error.code);return deny('restart_failed',409)}
+   return answer({ok:true,...result.data});
+  }
+  if(b.action==='teacher-parcours-history'){
+   if(!await managed()||b.appKey!==app||!valid(b.studentId))return deny('forbidden',403);
+   const member=await read(db.from('connect_enrollments').select('student_id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));
+   if(!member)return deny('forbidden',403);
+   const [current,history]=await Promise.all([
+     db.from('connect_parcours_current').select('parcours_number,repeat_xp,started_at').eq('student_id',b.studentId).eq('app_key',app).maybeSingle(),
+     db.from('connect_parcours_history').select('parcours_number,ended_at,repeat_xp,state_data,archived_xp').eq('student_id',b.studentId).eq('app_key',app).order('parcours_number',{ascending:false}).limit(12)
+   ]);
+   if(current.error||history.error)return deny('db_error',500);
+   return answer({ok:true,current:current.data||{parcours_number:1,repeat_xp:false},history:history.data||[]});
+  }
   // Restauration de secours : fusion des acquis, sans nouvelles tables ni RPC.
   if(b.action==='teacher-restore-preview'||b.action==='teacher-restore-apply'){
     if(!await managed()||!valid(b.studentId)||b.appKey!==app)return deny('forbidden',403);
