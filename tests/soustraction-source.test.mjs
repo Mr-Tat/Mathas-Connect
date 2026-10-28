@@ -17,7 +17,7 @@ test('moteur Soustraction autonome copié avec identité et modes spécifiques',
   assert.ok(engine.includes('soustraction_hard_sudden_v1'));
 });
 test('scripts internes autonomes syntaxiquement valides',()=>{
-  const scripts=[...engine.matchAll(new RegExp('<script(?:\\s[^>]*)?>([\\s\\S]*?)</script>','gi'))];
+  const scripts=[...engine.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
   assert.ok(scripts.length>=25);
   for(const [i,m] of scripts.entries())assert.doesNotThrow(()=>new Script(m[1],{filename:'soustraction-'+i+'.js'}));
 });
