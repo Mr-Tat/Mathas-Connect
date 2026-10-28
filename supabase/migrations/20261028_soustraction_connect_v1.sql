@@ -1,6 +1,7 @@
 -- Soustraction : ajout sans changer les données Addition/Multiplication.
 BEGIN;
 INSERT INTO public.connect_apps(app_key,title,launch_url,image_url,enabled,hub_section,featured,display_order) VALUES ('soustraction-ecrite-simple','Soustraction écrite','https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/','./apps/soustraction-simple/illustration.webp',false,'calculs_ecrits',false,30) ON CONFLICT(app_key) DO NOTHING;
+INSERT INTO public.connect_hub_preset_entries(preset_slug,app_key,section,display_order,visible,featured) SELECT slug,'soustraction-ecrite-simple','calculs_ecrits',30,false,false FROM (VALUES ('observation'),('phase1'),('phase2'),('2eco')) AS presets(slug) ON CONFLICT(preset_slug,app_key) DO NOTHING;
 INSERT INTO public.connect_xp_award_rules(app_key,award_key,points) SELECT 'soustraction-ecrite-simple',award_key,points FROM public.connect_xp_award_rules WHERE app_key='addition-ecrite-simple' ON CONFLICT(app_key,award_key) DO NOTHING;
 CREATE OR REPLACE FUNCTION public.connect_parcours_restart_class(p_teacher uuid, p_class uuid, p_app text, p_repeat_xp boolean DEFAULT false)
  RETURNS jsonb
