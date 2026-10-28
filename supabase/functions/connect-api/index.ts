@@ -26,12 +26,26 @@ async function handle(req:Request){
  try{
  switch(b.action){
  
+ case 'teacher-player':{
+   // Profil joueur dédié au professeur. La session professeur reste indépendante des élèves.
+   if(user.is_anonymous||!await teacher()||!U.test(b.classId||''))return fail('forbidden',403);
+   const player=await one(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));
+   if(!player)return fail('player_not_configured',404);
+   const member=await one(db.from('connect_enrollments').select('student_id').eq('student_id',player.student_id).eq('class_id',b.classId).is('left_at',null));
+   if(!member)return ok({status:'wrong_class'});
+   const student=await one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color,archived_at').eq('id',player.student_id));
+   if(!student||student.archived_at)return ok({status:'revoked'});
+   return ok({status:'approved',displayName:student.display_name,avatar:{kind:student.avatar_kind||'letter',value:student.avatar_value||'T',color:student.avatar_color||'ocean'},classId:b.classId});
+ }
  case 'player-xp':{
    let id:string|null=null;
    if(user.is_anonymous){
      if(!U.test(b.classId||''))return fail('forbidden',403);
      const device=await one(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));
      if(device&&await one(db.from('connect_enrollments').select('id').eq('class_id',b.classId).eq('student_id',device.student_id).is('left_at',null)))id=device.student_id;
+   }else if(await teacher()&&U.test(b.classId||'')){
+     const player=await one(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));
+     if(player&&await one(db.from('connect_enrollments').select('id').eq('class_id',b.classId).eq('student_id',player.student_id).is('left_at',null)))id=player.student_id;
    }
    if(!id||!await one(db.from('connect_students').select('id').eq('id',id).is('archived_at',null)))return fail('forbidden',403);
    const {data:summary,error:xpError}=await db.rpc('connect_xp_read_v2',{p_student:id,p_app:'addition-ecrite-simple',p_include_milestones:false});
@@ -39,16 +53,22 @@ async function handle(req:Request){
    return ok({xp:{total:summary.total,level:summary.level,next:summary.next,apps:summary.apps,active:true}});
  }
  case 'student-avatar':{
-   if(!user.is_anonymous)return fail('forbidden',403);
    const kind=b.kind,value=b.value,color=b.color;
    const animals=['fox','panda','frog','lion','penguin','owl','cat','dog','rabbit','bear','koala','wolf','tiger','monkey','elephant','giraffe','zebra','horse','cow','pig','sheep','deer','hedgehog','squirrel','otter','dolphin','whale','octopus','turtle','seal','duck','parrot','flamingo','bee','butterfly','dragon'];
    const objects=['soccer','basketball','tennis','volleyball','bicycle','airplane','rocket','car','train','skateboard','guitar','microphone','headphones','controller','paint','books','camera','star','trophy','music'];
    const smileys=['smile','cool','starstruck','grin','angel','party','cowboy','catface','heartcat','ghost','robot','alien','laughing','happy','wink','hug'];
    const colors=['ocean','sky','indigo','violet','plum','rose','coral','sun','amber','mint','forest','slate'];
    if(!colors.includes(color)||!(['animal','letter','object','smiley'].includes(kind))||(kind==='animal'?!animals.includes(value):kind==='object'?!objects.includes(value):kind==='smiley'?!smileys.includes(value):!(/^[A-Z]$/).test(value)))return fail('input_invalid');
-   const device=await one(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));
-   if(!device)return fail('forbidden',403);
-   const updated=await db.from('connect_students').update({avatar_kind:kind,avatar_value:value,avatar_color:color}).eq('id',device.student_id).is('archived_at',null).select('id');
+   let studentId:string|null=null;
+   if(user.is_anonymous){
+     const device=await one(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));
+     studentId=device?.student_id||null;
+   }else if(await teacher()){
+     const player=await one(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));
+     studentId=player?.student_id||null;
+   }
+   if(!studentId)return fail('forbidden',403);
+   const updated=await db.from('connect_students').update({avatar_kind:kind,avatar_value:value,avatar_color:color}).eq('id',studentId).is('archived_at',null).select('id');
    if(!updated.error&&!updated.data?.length)return fail('profile_archived',403);
    return updated.error?fail('db_failed',500):ok({avatar:{kind,value,color}});
  }
