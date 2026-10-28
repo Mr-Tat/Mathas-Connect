@@ -52,3 +52,11 @@ test('sélecteur professeur et quatre HUB pilotés par la matrice',()=>{
  assert.ok(catalog.includes('"app_key": "soustraction-ecrite-simple"'));
  for(const slug of ['observation','phase1','phase2','2eco'])assert.ok(app.includes(slug));
 });
+
+test('lanceur: module JavaScript syntaxiquement exécutable',()=>{
+ const launcher=read('../apps/soustraction-simple/index.html');
+ const script=launcher.split('<script type="module">')[1]?.split('</script></body>')[0];
+ assert.ok(script);
+ assert.doesNotThrow(()=>new (requireScript())(script,{filename:'soustraction-launcher.mjs'}));
+});
+function requireScript(){return Script}
