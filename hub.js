@@ -5,8 +5,10 @@ import {rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v
 
 const url = 'https://awmhpfofacaglewammxt.supabase.co';
 const key = 'sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
+const playingAsTeacher=new URLSearchParams(location.search).get('joueur')==='prof';
 const sb = createClient(url, key, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false,
+    ...(playingAsTeacher?{storageKey:'mathas-connect-professor-auth-v1'}:{}) }
 });
 const $ = id => document.getElementById(id);
 const FREE_KEY = 'mathas.connect.mode-libre.v1';
@@ -27,6 +29,7 @@ function card(app) {
   const target = new URL(app.launch_url, location.href);
   // Le HUB fournit la classe au jeu Connect ; les autorisations restent vérifiées côté serveur.
   if (classId && target.origin === location.origin) target.searchParams.set('class', classId);
+   if (playingAsTeacher && app.app_key==='addition-ecrite-simple') target.searchParams.set('joueur','prof');
   node.href = target.href;
   node.target = '_blank';
   node.rel = 'noopener noreferrer';
@@ -167,6 +170,7 @@ function drawIdentity(profile) {
   if (authorized) action.removeAttribute('href');
   else action.setAttribute('href', classId ? loginUrl() : './connexion.html');
   $('identity-extra').hidden = true;
+  $('mode-toggle').textContent=playingAsTeacher?'Retour à l’espace professeur':'Se déconnecter';
   action.onclick = event => {
     if (!authorized) return; // Navigation native vers la connexion.
     event.preventDefault();
@@ -175,6 +179,7 @@ function drawIdentity(profile) {
 }
 
 $('mode-toggle').onclick = async () => {
+   if(playingAsTeacher){location.href='./index.html?portail=prof';return;}
   if(!confirm('Se déconnecter de Math’as Connect sur cet appareil ? Les XP et les résultats restent sauvegardés. Pour revenir, le professeur devra autoriser une nouvelle connexion.'))return;
   const button=$('mode-toggle');button.disabled=true;
   try{
@@ -194,7 +199,7 @@ $('mode-toggle').onclick = async () => {
 };
 async function showIdentity() {
   drawIdentity(null);
-  if (!classId || inFreeMode()) return;
+  if (!classId || (!playingAsTeacher&&inFreeMode())) return;
   try {
     const { data: { session } } = await sb.auth.getSession();
     if (!session?.user) return;
