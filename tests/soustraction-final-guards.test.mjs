@@ -36,3 +36,13 @@ test('le mode HOLD de Soustraction demeure invisible avant activation serveur',(
  assert.ok(sql.includes("false,'calculs_ecrits',false,30"));
  assert.ok(sql.includes("'soustraction-ecrite-simple','calculs_ecrits',30,false,false"));
 });
+
+test('tableau professeur : Soustraction utilise un indicateur défini et ses deux méthodes',()=>{
+ const start=app.indexOf('function showOverviewDetail('),end=app.indexOf('async function showResults()',start);
+ assert.ok(start>=0 && end>start);
+ const detail=app.slice(start,end);
+ assert.match(detail,/const isSubtraction=app\.app_key==='soustraction-ecrite-simple'/);
+ assert.match(detail,/isSubtraction\?\['Mort subite · Compensation','Mort subite · Emprunt direct'\]/);
+ assert.match(detail,/\['addBottom','takeTop'\]\.map\(m=>state\.suddenMethods/);
+ assert.ok(app.includes("'Soustraction':'Multiplication')+' écrite (sauvegarde rev."));
+});
