@@ -203,3 +203,92 @@ test('Chromium : une partie hors connexion survit au rechargement et arrive une 
   await reopened.close();
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
+
+test('Chromium : quatre vrais calculs résolus au pavé -> résultat 4/4 envoyé par le moteur', {timeout:120000},async()=>{
+ const {server,url}=await serve(),received=[],errors=[];
+ const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
+ try{
+  const context=await browser.newContext({viewport:{width:1024,height:768},reducedMotion:'reduce'});
+  await context.route('**/*',async route=>{
+   const uri=route.request().url();
+   if(uri.startsWith(url))return route.continue();
+   if(uri.startsWith('https://esm.sh/'))return route.fulfill({status:200,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'},body:browserStub});
+   if(uri.startsWith('https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/')){
+     const bytes=await readFile(resolve(root,'apps/soustraction-simple',uri.split('/').pop()));
+     return route.fulfill({status:200,contentType:'application/octet-stream',headers:{'access-control-allow-origin':'*'},body:bytes});
+   }
+   if(uri.includes('.supabase.co/functions/v1/')){
+    const data=JSON.parse(route.request().postData()||'{}');
+    const reply=body=>route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(body)});
+    if(data.action==='student-load')return reply({ok:true,state:null,revision:received.length,resetEpoch:0});
+    if(data.action==='student-me')return reply({ok:true,status:'approved',classId:klass,displayName:'Élève test'});
+    if(data.action==='student-xp')return reply({ok:true,appXp:received.length*22,total:received.length*22,level:1,next:50,milestones:[],currentMilestones:[],parcours:1,repeatXp:false,max:474});
+    if(data.action==='game-record'){
+     received.push(data);
+     return reply({ok:true,revision:received.length,resetEpoch:0,duplicate:false,xp:{appXp:22,total:22,level:1,previousLevel:1,next:50,delta:22}});
+    }
+    throw new Error('Action inattendue : '+data.action);
+   }
+   return route.abort();
+  });
+  const page=await context.newPage();
+  page.on('pageerror',error=>errors.push(error.message));
+  await page.goto(url+'/apps/soustraction-simple/?class='+klass,{waitUntil:'domcontentloaded'});
+  const frame=page.frameLocator('iframe');
+  await frame.locator('#menuScreen').waitFor({timeout:30000});
+  // La vraie interface choisit 4 calculs, Niveau 1 et Compensation.
+  await frame.locator('.classic-count-btn[data-count="4"]').click();
+  await frame.locator('input[name="borrowMethod"][value="addBottom"]').evaluate(input=>input.closest('label').click());
+  await frame.locator('#startClassic').click();
+  await frame.locator('#calculationsPair .calc-box').first().waitFor();
+  async function solveCurrentPair(){
+   const work=await frame.locator('#calculationsPair').evaluate(pair=>{
+    const answers=[];
+    for(const box of pair.querySelectorAll('.calc-box')){
+     const digits=selector=>[...box.querySelectorAll(selector)].sort((a,b)=>Number(b.dataset.topCol??b.dataset.bottomCol)-Number(a.dataset.topCol??a.dataset.bottomCol)).map(x=>x.textContent.trim()).join('');
+     const top=Number(digits('.top-digit'));
+     const bottomDigits=[...box.querySelectorAll('.bottom-digit')].sort((a,b)=>Number(b.dataset.bottomCol)-Number(a.dataset.bottomCol)).map(x=>x.querySelector('.bottom-main').textContent.trim()).join('');
+     const answer=String(top-Number(bottomDigits)).padStart(box.querySelectorAll('.answer-input').length,'0').split('').reverse();
+     if(top<=Number(bottomDigits)||answer.some(x=>!/^\\d$/.test(x)))throw Error('invalid operation '+top+'-'+bottomDigits);
+     for(let col=0;col<answer.length;col++){
+      const input=box.querySelector('.answer-input[data-col="'+col+'"]');
+      input.focus();
+      const key=document.querySelector('#numpad .num-key[data-key="'+answer[col]+'"]');
+      if(!key)throw Error('digit key absent');
+      key.click();
+     }
+     answers.push({top,bottom:Number(bottomDigits),result:top-Number(bottomDigits)});
+    }
+    return answers;
+   });
+   assert.equal(work.length,2);
+   return work;
+  }
+  const first=await solveCurrentPair();
+  await frame.locator('#primaryBtn').evaluate(async btn=>{
+   const limit=Date.now()+8000;
+   while(!btn.textContent.includes('Passer aux 2 calculs suivants')){
+    if(Date.now()>limit)throw Error('première paire non validée : '+btn.textContent);
+    await new Promise(resolve=>setTimeout(resolve,50));
+   }
+  });
+  await frame.locator('#primaryBtn').click();
+  const second=await solveCurrentPair();
+  await frame.locator('#primaryBtn').evaluate(async btn=>{
+   const limit=Date.now()+8000;
+   while(!btn.textContent.includes('Retour au menu')){
+    if(Date.now()>limit)throw Error('partie 4 calculs non terminée : '+btn.textContent);
+    await new Promise(resolve=>setTimeout(resolve,50));
+   }
+  });
+  await page.waitForFunction(()=>document.querySelector('#ce-sync')?.textContent?.includes('Synchronisé'),{timeout:20000});
+  assert.equal(received.length,1,'le vrai moteur a produit UNE fin de partie');
+  assert.deepEqual({mode:received[0].mode,score:received[0].score,total:received[0].total,level:received[0].level},
+   {mode:'classic',score:4,total:4,level:1});
+  assert.equal(received[0].appKey,'soustraction-ecrite-simple');
+  assert.ok(received[0].rewards?.version===3);
+  assert.deepEqual(errors,[],'aucune erreur JS au cours des vraies opérations');
+  assert.equal(first.length+second.length,4);
+  await page.close();
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
