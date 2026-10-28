@@ -83,7 +83,7 @@ function currentRewards(){
 }
 
 // Injecte uniquement la configuration de verrouillage, sans modifier le placement des outils.
-const multiplierBootstrap=`<script>window.__mathasMultiplierLock=${JSON.stringify(multiplierLock)};<\\/script>`;
+const multiplierBootstrap='<script>window.__mathasMultiplierLock='+JSON.stringify(multiplierLock)+';<'+'/script>';
 const bridge=`<script>
 (function(){
  const pilot=window.parent.MathasPilotBridge; if(!pilot)return;
