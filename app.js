@@ -29,7 +29,7 @@ let teacherPlayerActive=false;
 const teacherPlayerKey=id=>'mathas.connect.teacher-player-enabled.v1:'+id;
 
 let busy=false;
-function show(v){if(!teacherPortal&&['teacher','login','welcome'].includes(v)){location.replace(hubLink);return}if(teacherPortal&&!['teacher','login'].includes(v))v='login';document.querySelectorAll('[data-view]').forEach(e=>e.hidden=e.dataset.view!==v);msg('')}
+function show(v){if(!teacherPortal&&['teacher','login','welcome','checking'].includes(v)){location.replace(hubLink);return}if(teacherPortal&&!['teacher','login','checking'].includes(v))v='login';document.documentElement.classList.remove('prof-initial-loading');const loading=document.getElementById('prof-initial-loading');if(loading)loading.hidden=v!=='checking';document.querySelectorAll('[data-view]').forEach(e=>e.hidden=e.dataset.view!==v);msg('')}
 function msg(s='',success=false){const e=$('message');e.textContent=s;e.hidden=!s;e.classList.toggle('ok',success)}
 async function run(fn){if(busy)return;busy=true;try{await fn()}catch(e){msg(e.message||'Erreur')}finally{busy=false}}
 async function ensureStudentSession(){
@@ -407,11 +407,18 @@ $('result-home').onclick=()=>location.assign(hubLink);
 $('reset-local').onclick=()=>run(async()=>{if(!confirm('Révoquer cet appareil et oublier ce profil ici ? Les résultats Connect restent enregistrés. Pour reprendre le compte, il faudra une nouvelle autorisation du professeur.'))return;await call('student-release');const {error}=await sb.auth.signOut({scope:'local'});if(error)throw error;location.href=hubLink});
 if(!teacherPortal){if(cls){show('student-form');renderRecentProfiles();run(student)}else location.replace('./connexion.html')}
 else {
-  show('login');
+  // Afficher l'accueil sans passage visible par le formulaire si la session est conservée.
+  show('checking');
   run(async()=>{
-    const {data:{session}}=await sb.auth.getSession();
-    if(session && !session.user?.is_anonymous){
-      await teacher();
+    try{
+      const {data:{session},error}=await sb.auth.getSession();
+      if(error)throw error;
+      if(session&&!session.user?.is_anonymous)await teacher();
+      else show('login');
+    }catch(e){
+      show('login');
+      msg('Vérification automatique indisponible. Connecte-toi si nécessaire.');
+      console.warn('Session professeur non vérifiée',e);
     }
   });
 }
