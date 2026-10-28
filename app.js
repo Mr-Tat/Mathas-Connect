@@ -641,6 +641,7 @@ async function showResults(){
  syncResultsClassPicker();
  const id=$('class-selector').value;if(!id){showResultMessage('Aucune classe.');return}
  $('results-detail').hidden=true;$('results-list').hidden=false;
+ const lockRoot=$('results-multiplier-class-lock');if(lockRoot){lockRoot.hidden=$('results-app').value!=='multiplication-ecrite-simple';if(!lockRoot.hidden){lockRoot.replaceChildren();multiplierLockPanel(lockRoot)}}
  showResultMessage('Lecture des résultats…');
  if($('results-app').value==='__summary__')return showOverview();
  const v=await resultCall('teacher-summary');
@@ -701,6 +702,37 @@ function openParcoursDialog({scope,studentId=null,studentName='',count=null,appK
  };
  dialog.showModal();check.focus();
 }
+// Gestion légère des multiplicateurs : un appel à l'ouverture et un à l'enregistrement.
+function multiplierLockPanel(container,studentId=null){
+ const details=document.createElement('details');details.className='management';
+ const summary=document.createElement('summary');summary.textContent=studentId?'🔒 Multiplicateurs de cet élève':'🔒 Multiplicateurs de toute la classe';
+ const area=document.createElement('div');area.style.cssText='padding:12px 0;display:flex;gap:9px;flex-wrap:wrap;align-items:center';
+ const checks=new Map();
+ for(let n=2;n<=9;n++){const label=document.createElement('label');label.style.cssText='display:inline-flex;align-items:center;gap:3px;padding:5px';
+ const cb=document.createElement('input');cb.type='checkbox';cb.value=String(n);cb.checked=true;checks.set(n,cb);label.append(cb,document.createTextNode(String(n)));area.append(label)}
+ const save=document.createElement('button');save.type='button';save.className='soft';save.textContent='Verrouiller les tables choisies';
+ const unlock=document.createElement('button');unlock.type='button';unlock.className='soft';unlock.textContent='Retirer le verrouillage';
+ const feedback=document.createElement('p');feedback.className='hint';feedback.setAttribute('role','status');
+ details.append(summary,area,save,unlock,feedback);container.append(details);
+ details.addEventListener('toggle',async()=>{if(!details.open)return;feedback.textContent='Lecture du réglage…';
+ try{const r=await resultCall('teacher-multipliers-get',{appKey:'multiplication-ecrite-simple'});
+ const key=studentId||'class',found=(r.locks||[]).find(x=>x.scope_key===key);
+ const fallback=(r.locks||[]).find(x=>x.scope_key==='class');
+ const chosen=found?.multipliers||(studentId?fallback?.multipliers:null);
+ for(const [n,cb] of checks)cb.checked=!chosen||chosen.includes(n);
+ feedback.textContent=found?'Verrouillage actif'+(studentId?' (personnalisé)':''):studentId&&fallback?'Réglage hérité de la classe':'Aucun verrouillage actif';
+ }catch(e){feedback.textContent='Impossible de charger : '+e.message}});
+ async function update(values){
+ save.disabled=unlock.disabled=true;feedback.textContent='Enregistrement…';
+ try{await resultCall('teacher-multipliers-set',{appKey:'multiplication-ecrite-simple',studentId,multipliers:values});
+ feedback.textContent=values?'Enregistré. Appliqué au prochain lancement du jeu.':'Verrouillage retiré. Application au prochain lancement.';
+ }catch(e){feedback.textContent='Échec : '+e.message}
+ finally{save.disabled=unlock.disabled=false}
+ }
+ save.onclick=()=>{const selected=[...checks].filter(([,cb])=>cb.checked).map(([n])=>n);
+ if(!selected.length){feedback.textContent='Choisis au moins un multiplicateur.';return}update(selected)};
+ unlock.onclick=()=>update(null);
+}
 function addParcoursControls(container,studentId,name,appKey,appName){
  // Chaque application Connect pourra brancher ici son propre parcours.
  if(!studentId||!['addition-ecrite-simple','multiplication-ecrite-simple'].includes(appKey))return;
@@ -709,7 +741,7 @@ function addParcoursControls(container,studentId,name,appKey,appName){
  const summary=document.createElement('div');summary.textContent='Chargement des anciens parcours…';
  const reset=document.createElement('button');reset.type='button';reset.className='results-restart-button';reset.textContent='↻ Recommencer le parcours';
  reset.onclick=()=>openParcoursDialog({scope:'student',studentId,studentName:name,appKey,appName});
- panel.append(title,summary,reset);container.append(panel);
+ panel.append(title,summary,reset);container.append(panel);if(appKey==='multiplication-ecrite-simple')multiplierLockPanel(container,studentId);
  resultCall('teacher-parcours-history',{studentId,appKey}).then(r=>{
   if(!summary.isConnected)return;
   summary.replaceChildren();

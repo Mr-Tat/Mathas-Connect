@@ -2,7 +2,7 @@
 const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM',APP='multiplication-ecrite-simple';
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
-const free=!teacherPlayer&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,studentName='',connectionCheckRequired=false;
+const free=!teacherPlayer&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,multiplierLock=null,studentName='',connectionCheckRequired=false;
 const status=s=>document.getElementById('message').textContent=s;
 const originalPromise=fetch('./game-original.html').then(r=>{if(!r.ok)throw Error('Copie du jeu non disponible');return r.text()});
 // Un visiteur sans profil approuvé ouvre directement le jeu classique.
@@ -23,7 +23,7 @@ try{
    const r=await statePromise;
    const x=await r.json().catch(()=>({}));
    if(r.ok&&x.ok){
-    mode='connected';revision=x.revision;resetEpoch=x.resetEpoch??0;initial=x.state;cloud=sb;
+    mode='connected';revision=x.revision;resetEpoch=x.resetEpoch??0;initial=x.state;multiplierLock=Array.isArray(x.multiplierLock)?x.multiplierLock:null;cloud=sb;
     try{
       const profile=await profilePromise;
       if(profile?.ok&&profile.status==='approved'&&profile.classId===classId&&typeof profile.displayName==='string')
@@ -82,6 +82,8 @@ function currentRewards(){
  try{return JSON.parse(localStorage.getItem('mathas_trophies_v3_multiplication-simple')||'null')}catch{return null}
 }
 
+// Injecte uniquement la configuration de verrouillage, sans modifier le placement des outils.
+const multiplierBootstrap=`<script>window.__mathasMultiplierLock=${JSON.stringify(multiplierLock)};<\\/script>`;
 const bridge=`<script>
 (function(){
  const pilot=window.parent.MathasPilotBridge; if(!pilot)return;
@@ -106,7 +108,7 @@ const scopedBootstrap=`<script>(function(){var ns=${JSON.stringify(ns)};var p=St
 // partir d'un trophée conservé. Le trophée reste acquis, mais ne doit jamais
 // rétablir un record Classique effacé dans le compte Connecté.
 let html=original.replaceAll('./logo-m.png','https://mr-tat.github.io/Mathas-Connect/apps/multiplication-simple/logo-m.png').replaceAll('./logo-mot.webp','https://mr-tat.github.io/Mathas-Connect/apps/multiplication-simple/logo-mot.webp').replaceAll('./illustration.webp','https://mr-tat.github.io/Mathas-Connect/apps/multiplication-simple/illustration.webp');
-html=html.replace('<head>','<head>'+scopedBootstrap).replace('</body>',bridge+'</body>');
+html=html.replace('<head>','<head>'+scopedBootstrap+multiplierBootstrap).replace('</body>',bridge+'</body>');
 // The child frame uses the same origin and isolated storage keys. No public classic game is changed.
 const iframe=document.createElement('iframe');iframe.title='Multiplication écrite simple V7.0.0';iframe.style.cssText='border:0;width:100%;height:calc(100dvh - var(--ce-toolbar-height,46px));display:block';iframe.setAttribute('allow','fullscreen');
 // XP Connect : overlay non bloquant et consultation permanente des jalons.

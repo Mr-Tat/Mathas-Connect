@@ -5432,11 +5432,12 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
   const safeGet=(k,d)=>{try{const x=JSON.parse(localStorage.getItem(k));return x??d}catch{return d}};
   const safeSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
   const digitAt=(s,c)=>{const i=s.length-1-c;return i>=0?Number(s[i]):0};
+  const teacherMultiplierLock=Array.isArray(window.__mathasMultiplierLock)&&window.__mathasMultiplierLock.length>0&&window.__mathasMultiplierLock.every(n=>Number.isInteger(n)&&n>=2&&n<=9)?[...new Set(window.__mathasMultiplierLock)]:null;
   const isAllMultipliers=()=>[2,3,4,5,6,7,8,9].every(n=>selectedMultipliers.has(n));
 
   function loadSettings(){
     const s=safeGet(SETTINGS_KEY,{});carryMethod=s.carryMethod==='side'?'side':'top';tensFirst=!!s.tensFirst;window.__mathasTensFirst=tensFirst;if(tensFirstToggle)tensFirstToggle.checked=tensFirst;
-    const list=Array.isArray(s.multipliers)?s.multipliers.map(Number).filter(n=>n>=2&&n<=9):[2,3,4,5,6,7,8,9];if(list.length)selectedMultipliers=new Set(list);
+    const list=Array.isArray(s.multipliers)?s.multipliers.map(Number).filter(n=>n>=2&&n<=9):[2,3,4,5,6,7,8,9];if(list.length)selectedMultipliers=new Set(list);if(teacherMultiplierLock)selectedMultipliers=new Set(teacherMultiplierLock);
     selectedCount=[4,10,20].includes(+s.count)?+s.count:10;
     const level=[1,2,3].includes(+s.level)?+s.level:1;
     levelSelects.forEach(x=>x.dataset.initialLevel=String(level));
@@ -5470,7 +5471,8 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
       else b.classList.toggle('active',selectedMultipliers.has(+b.dataset.mult))
     })
   }
-  multiplierPicker.addEventListener('click',e=>{
+  if(teacherMultiplierLock){multiplierPicker.title='Multiplicateurs verrouillés par le professeur';multiplierPicker.querySelectorAll('[data-mult]').forEach(b=>{b.disabled=true;b.setAttribute('aria-disabled','true')});}
+  multiplierPicker.addEventListener('click',e=>{if(teacherMultiplierLock)return;
     const b=e.target.closest('[data-mult]');if(!b)return;
     const v=b.dataset.mult;
     if(v==='all'){
@@ -6487,7 +6489,7 @@ function hardThreeScore(level){const n=Number(hardThreeStore()[String(level)]);r
     hardMenu.classList.add('hidden');hardGame.classList.remove('hidden');document.body.classList.add('hard-mode-active');
     newHardCalc()
   }
-  function newHardCalc(){hardState=generateMultiplication(hardSession.digits,[2,3,4,5,6,7,8,9],false);hardPhase='answering';hardSession.currentFirstTry=true;hardActive={kind:'answer',col:0};renderHardCalc();hardPrimary.textContent='Valider';hardClear.disabled=false;setHardEnabled(true);updateHardHeader();setHardFeedback('');focusHardMulColumn(0)}
+  function newHardCalc(){hardState=generateMultiplication(hardSession.digits,teacherMultiplierLock||[2,3,4,5,6,7,8,9],false);hardPhase='answering';hardSession.currentFirstTry=true;hardActive={kind:'answer',col:0};renderHardCalc();hardPrimary.textContent='Valider';hardClear.disabled=false;setHardEnabled(true);updateHardHeader();setHardFeedback('');focusHardMulColumn(0)}
   function updateHardHeader(){
     hardSessionTitle.textContent=`${APP_CFG.hard.title} · HARD NIV ${hardSession.level}`;
     const label=hardSession.mode==='training'?'🧠 Entraînement':hardSession.mode==='challenge'?'🎯 5 calculs':'💀 Mort subite';
