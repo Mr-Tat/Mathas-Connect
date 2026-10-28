@@ -214,23 +214,13 @@ async function showIdentity() {
     const response = await fetch(url + '/functions/v1/connect-api', {
       method: 'POST',
       headers: { apikey: key, authorization: 'Bearer ' + session.access_token, 'content-type': 'application/json' },
-      body: JSON.stringify({ action: session.user.is_anonymous ? 'student-me' : 'teacher-player', classId })
+      body: JSON.stringify({ action: session.user.is_anonymous ? 'student-me' : 'teacher-player', classId, includeXp:true })
     });
     if (!response.ok) return;
     const profile = await response.json();
     if (profile.ok && profile.status === 'approved' && (profile.classId === classId)) {
-      // L'identité s'affiche sans attendre la lecture secondaire des XP.
+      // Une seule requête authentifiée pour identité + XP ; plus d'aller-retour supplémentaire.
       drawIdentity(profile);
-      try {
-        const xpResponse=await fetch(url+'/functions/v1/connect-api',{
-          method:'POST',headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
-          body:JSON.stringify({action:'player-xp',classId})
-        });
-        if(xpResponse.ok){
-          const x=await xpResponse.json();
-          if(x.ok&&activeProfile===profile){profile.xp=x.xp;drawIdentity(profile)}
-        }
-      }catch{}
     }
     // Aucun accès reconnu au seul motif de connaître le lien de classe.
   } catch { /* Toujours laisser le HUB et les jeux accessibles en mode libre. */ }
