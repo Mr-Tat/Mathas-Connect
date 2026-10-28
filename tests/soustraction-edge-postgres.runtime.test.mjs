@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
+import {readFile} from 'node:fs/promises';
+import {createServer} from 'node:http';
+import {resolve,extname} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {stripTypeScriptTypes} from 'node:module';
 // Ce test exige pg seulement dans le workflow PostgreSQL isolé.
 // Dans la CI Node générale, l'absence du paquet fait ignorer ce test coûteux.
@@ -162,5 +166,75 @@ test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et repr
    ['11111111-1111-4111-8111-111111111111',ADD]
   );
   assert.equal(unrelated.rows[0].xp_credited,100);
+
+  // Chaîne navigateur → HTTP Edge réel → PostgreSQL, mêmes données fictives.
+  // Après restart, un nouvel exercice doit être crédité côté serveur, pas seulement
+  // affiché comme synchronisé dans le lanceur.
+  const playwright=await import('playwright');
+  const browser=await playwright.chromium.launch({headless:true,args:['--no-sandbox']});
+  const root=resolve(fileURLToPath(new URL('..',import.meta.url)));
+  const http=createServer(async (req,res)=>{
+   const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
+   const target=resolve(root,'.'+(pathname.endsWith('/')?pathname+'index.html':pathname));
+   if(!target.startsWith(root+'/')){res.writeHead(403).end();return}
+   try{
+    const bytes=await readFile(target);
+    res.writeHead(200,{'content-type':extname(target)==='.html'?'text/html; charset=utf-8':'application/octet-stream'});
+    res.end(bytes);
+   }catch{res.writeHead(404).end()}
+  });
+  await new Promise(ok=>http.listen(0,'127.0.0.1',ok));
+  const host='http://127.0.0.1:'+http.address().port;
+  const ctx=await browser.newContext({viewport:{width:390,height:740},reducedMotion:'reduce'});
+  const responses=[];
+  try{
+   const jsStub="export function createClient(){return {auth:{getSession:async()=>({data:{session:{user:{id:'"+AUTH+"',is_anonymous:true},access_token:'FAKE_STUDENT'}}})}}}";
+   await ctx.route('**/*',async route=>{
+    const uri=route.request().url();
+    if(uri.startsWith(host))return route.continue();
+    if(uri.startsWith('https://esm.sh/'))return route.fulfill({status:200,contentType:'application/javascript',
+      headers:{'access-control-allow-origin':'*'},body:jsStub});
+    if(uri.startsWith('https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/')){
+      const file=resolve(root,'apps/soustraction-simple',uri.split('/').pop());
+      return route.fulfill({status:200,contentType:'application/octet-stream',
+        headers:{'access-control-allow-origin':'*'},body:await readFile(file)});
+    }
+    if(uri.includes('.supabase.co/functions/v1/')){
+      const data=JSON.parse(route.request().postData()||'{}');
+      const out=uri.endsWith('/connect-api')
+       ?{status:200,body:{ok:true,status:'approved',classId:CLASS,displayName:'Élève fictif'}}
+       :await call(data.action,data);
+      responses.push({action:data.action,body:out.body});
+      return route.fulfill({status:out.status,contentType:'application/json',
+        headers:{'access-control-allow-origin':'*'},body:JSON.stringify(out.body)});
+    }
+    return route.abort();
+   });
+   const page=await ctx.newPage(),errors=[];
+   page.on('pageerror',e=>errors.push(e.message));
+   await page.goto(host+'/apps/soustraction-simple/?class='+CLASS,{waitUntil:'domcontentloaded'});
+   const frame=page.frameLocator('iframe');
+   await frame.locator('#menuScreen').waitFor({timeout:25000});
+   await frame.locator('body').evaluate(()=>window.__setLastWork({label:'Calculs · Niveau 1',score:'4/4',rulerUsed:false}));
+   await page.waitForFunction(()=>document.querySelector('#ce-sync')?.textContent?.includes('Synchronisé'),{timeout:25000});
+   assert.equal(responses.filter(x=>x.action==='game-record').length,1);
+   assert.equal(responses.find(x=>x.action==='game-record').body.revision,4);
+   const persisted=await call('student-load');
+   assert.equal(persisted.body.resetEpoch,1);
+   assert.equal(persisted.body.state.classic[0]['4'],4);
+   await page.reload({waitUntil:'domcontentloaded'});
+   await frame.locator('#menuScreen').waitFor({timeout:25000});
+   const restored=await frame.locator('body').evaluate(()=>{
+      const state=JSON.parse(localStorage.getItem('soustraction_classic20_v6'));
+      return state?.['3']?.['4'];
+   });
+   assert.equal(restored,4,'record restauré localement depuis le vrai serveur + PostgreSQL');
+   assert.deepEqual(errors,[]);
+   await page.close();
+  }finally{
+   await ctx.close();await browser.close();
+   await new Promise(ok=>http.close(ok));
+  }
+
  }finally{await db.end()}
 });
