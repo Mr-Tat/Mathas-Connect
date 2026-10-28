@@ -46,7 +46,8 @@ function validate(s:any){
  const ids=Array.isArray(s.ids)?s.ids.slice(0,50).filter(valid):[];
  const topThree=Array.isArray(s.topThree)?s.topThree.filter((v:any)=>int(v,0,10000000)).slice(0,3):[];
  const hardThree=Array.from({length:3},(_,i)=>{const value=s.hardThree?.[i];if(value==null)return null;if(!int(value,0,5))throw Error('hardThree');return value});
- return {classic,sudden:sequence('sudden'),hard:sequence('hard'),recent:runs,bestPoints:best,todayBest:today,progress:prog,ids,topThree,hardThree,rewards:normalizeRewards(s.rewards)};
+ const suddenMethods:any={};for(const method of ['addBottom','takeTop'])suddenMethods[method]=Array.from({length:3},(_,i)=>{const v=s.suddenMethods?.[method]?.[i];if(v==null)return null;if(!int(v,0,100000))throw Error('suddenMethods');return v});
+ return {classic,sudden:sequence('sudden'),suddenMethods,hard:sequence('hard'),recent:runs,bestPoints:best,todayBest:today,progress:prog,ids,topThree,hardThree,rewards:normalizeRewards(s.rewards)};
 }
 function mergeHistorical(current:any,old:any){
  if(!old||typeof old!=='object'||Array.isArray(old))throw Error('invalid_import');
@@ -394,7 +395,8 @@ Deno.serve(async req=>{
       if(b.total>=10&&b.score===b.total)next.progress['perfect'+b.level]=true;
       if(next.progress.perfect1&&next.progress.perfect2&&next.progress.perfect3)next.progress.hard=true;
    }else if(b.mode==='hard-challenge')next.hardThree[i]=Math.max(next.hardThree[i]??0,b.score);
-   else next[b.mode][i]=Math.max(next[b.mode][i]??0,b.score);
+   else if(b.mode==='sudden'&&selected===sub){if(!['addBottom','takeTop'].includes(b.method))return deny('invalid_method');next.suddenMethods[b.method][i]=Math.max(next.suddenMethods[b.method][i]??0,b.score);next.sudden[i]=Math.max(next.sudden[i]??0,b.score)}
+    else next[b.mode][i]=Math.max(next[b.mode][i]??0,b.score);
    if(b.action==='game-record'&&b.rewards!=null){
      const received=normalizeRewards(b.rewards);
      next.rewards=mergeRewards(next.rewards,received);
