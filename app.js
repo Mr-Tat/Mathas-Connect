@@ -619,11 +619,11 @@ function showOverviewDetail(person,apps,focusedApp=false){
   if(state&&['addition-ecrite-simple','multiplication-ecrite-simple'].includes(app.app_key)){
    const table=document.createElement('table');table.className='result-table';
    const header=document.createElement('tr');
-   for(const label of ['Niveau','/4','/10','/20','Mort subite','HARD']){const th=document.createElement('th');th.textContent=label;header.append(th)}
+   for(const label of ['Niveau','/4','/10','/20','Mort subite','HARD','HARD 5 calculs']){const th=document.createElement('th');th.textContent=label;header.append(th)}
    table.append(header);
    for(let i=0;i<3;i++){
     const row=document.createElement('tr');
-    for(const x of ['Niveau '+(i+1),...[4,10,20].map(c=>state.classic?.[i]?.[c]==null?'—':state.classic[i][c]+'/'+c),state.sudden?.[i]??'—',state.hard?.[i]??'—']){
+    for(const x of ['Niveau '+(i+1),...[4,10,20].map(c=>state.classic?.[i]?.[c]==null?'—':state.classic[i][c]+'/'+c),state.sudden?.[i]??'—',state.hard?.[i]??'—',state.hardThree?.[i]==null?'—':state.hardThree[i]+'/5']){
      const td=document.createElement('td');td.textContent=String(x);row.append(td);
     }
     table.append(row);
@@ -663,8 +663,8 @@ function showDetail(v){
  const s=v.state||{},div=$('results-student-content');div.replaceChildren();
  const table=document.createElement('table');table.className='result-table';
  const head=document.createElement('tr');
- for(const text of ['Niveau','/4','/10','/20','Mort subite']){const th=document.createElement('th');th.textContent=text;head.append(th)}table.append(head);
- for(let i=0;i<3;i++){const tr=document.createElement('tr');const vals=['Niveau '+(i+1),...[4,10,20].map(c=>s.classic?.[i]?.[c]==null?'—':s.classic[i][c]+'/'+c),s.sudden?.[i]??'—'];for(const text of vals){const td=document.createElement('td');td.textContent=text;tr.append(td)}table.append(tr)}
+ for(const text of ['Niveau','/4','/10','/20','Mort subite','HARD','HARD 5 calculs']){const th=document.createElement('th');th.textContent=text;head.append(th)}table.append(head);
+ for(let i=0;i<3;i++){const tr=document.createElement('tr');const vals=['Niveau '+(i+1),...[4,10,20].map(c=>s.classic?.[i]?.[c]==null?'—':s.classic[i][c]+'/'+c),s.sudden?.[i]??'—',s.hard?.[i]??'—',s.hardThree?.[i]==null?'—':s.hardThree[i]+'/5'];for(const text of vals){const td=document.createElement('td');td.textContent=text;tr.append(td)}table.append(tr)}
  div.append(table);
  if(s.hard?.some(x=>x!=null)){const hard=document.createElement('p');hard.textContent='HARD : '+[1,2,3].map(i=>'H'+i+' '+(s.hard[i-1]??'—')).join(' · ');div.append(hard)}
  const summary=document.createElement('p');summary.textContent='Record absolu : '+points(s.bestPoints)+' · Aujourd’hui : '+points(s.todayBest?.day===dateBE()?s.todayBest.points:null);div.append(summary);
