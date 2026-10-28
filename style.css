@@ -335,3 +335,19 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
     hyphens: none;
   }
 }
+
+/* GLOBAL : miniatures plus lisibles sur ordinateur, sans toucher au GSM. */
+@media (min-width: 761px) {
+  #teacher-apps .teacher-app-table td:first-child {
+    padding-left: 12px;
+    padding-right: 10px;
+  }
+  #teacher-apps .teacher-matrix-app-link {
+    gap: 13px;
+  }
+  #teacher-apps .teacher-matrix-app-link img {
+    width: 68px;
+    height: 68px;
+    border-radius: 10px;
+  }
+}
