@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script>if(new URLSearchParams(location.search).get("portail")==="prof"&&!new URLSearchParams(location.search).has("class"))document.documentElement.classList.add("prof-initial-loading");</script>
-  <style>#prof-initial-loading{display:none}#prof-initial-loading[hidden]{display:none}html.prof-initial-loading #prof-initial-loading{display:block}#prof-initial-loading{max-width:580px;margin:9vh auto;padding:30px 22px;text-align:center;font:600 17px system-ui;color:#284c69}#prof-initial-loading small{display:block;font-weight:400;font-size:14px;margin-top:12px;color:#526b7f}</style>
+  <script>if(new URLSearchParams(location.search).get("portail")==="prof"&&!new URLSearchParams(location.search).has("class")){document.documentElement.classList.add("prof-initial-loading","prof-only");}</script>
+  <style>#prof-initial-loading{display:none}html.prof-only #connect-footer{display:none}html.prof-only .topbar{visibility:hidden}html.prof-only.prof-initial-loading .topbar{visibility:hidden}html.prof-only:not(.prof-initial-loading) .topbar{visibility:visible}#prof-initial-loading[hidden]{display:none}html.prof-initial-loading #prof-initial-loading{display:block}#prof-initial-loading{max-width:580px;margin:9vh auto;padding:30px 22px;text-align:center;font:600 17px system-ui;color:#284c69}#prof-initial-loading small{display:block;font-weight:400;font-size:14px;margin-top:12px;color:#526b7f}</style>
   <meta name="theme-color" content="#f7f8fa">
   <meta name="description" content="Math’as Connect — espace professeur et élèves">
   <title>Math’as Connect — Professeur</title>
@@ -207,7 +207,7 @@
       <p class="hint">Réinitialiser efface seulement cette connexion locale, pas l’autorisation conservée chez le professeur.</p>
     </section>
 
-    <footer>Math’as Connect · Espace professeur et élèves</footer>
+    <footer id="connect-footer">Math’as Connect · Espace professeur et élèves</footer>
   </main>
 </body>
 </html>
