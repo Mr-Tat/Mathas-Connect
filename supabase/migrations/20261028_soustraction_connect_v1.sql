@@ -1,8 +1,21 @@
 -- Soustraction : ajout sans changer les données Addition/Multiplication.
 BEGIN;
-INSERT INTO public.connect_apps(app_key,title,launch_url,image_url,enabled,hub_section,featured,display_order) VALUES ('soustraction-ecrite-simple','Soustraction écrite','https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/','./apps/soustraction-simple/illustration.webp',false,'calculs_ecrits',false,30) ON CONFLICT(app_key) DO NOTHING;
+INSERT INTO public.connect_apps(app_key,title,launch_url,image_url,enabled,hub_section,featured,display_order) VALUES ('soustraction-ecrite-simple','Soustraction écrite','https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/','https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/illustration.webp',false,'calculs_ecrits',false,30) ON CONFLICT(app_key) DO NOTHING;
 INSERT INTO public.connect_hub_preset_entries(preset_slug,app_key,section,display_order,visible,featured) SELECT slug,'soustraction-ecrite-simple','calculs_ecrits',30,false,false FROM (VALUES ('observation'),('phase1'),('phase2'),('2eco')) AS presets(slug) ON CONFLICT(preset_slug,app_key) DO NOTHING;
-INSERT INTO public.connect_xp_award_rules(app_key,award_key,points) SELECT 'soustraction-ecrite-simple',award_key,points FROM public.connect_xp_award_rules WHERE app_key='addition-ecrite-simple' ON CONFLICT(app_key,award_key) DO NOTHING;
+-- La grille de Soustraction est définie explicitement après vérification des modes
+-- classiques 4/10/20, Mort subite et HARD (9 jalons/niveau, 158 XP par niveau).
+-- Aucun double jalon XP pour les deux techniques de Mort subite : records séparés.
+INSERT INTO public.connect_xp_award_rules(app_key,award_key,points) VALUES
+('soustraction-ecrite-simple','classic:4:perfect',22),
+('soustraction-ecrite-simple','classic:10:pass',30),
+('soustraction-ecrite-simple','classic:10:bonus',6),
+('soustraction-ecrite-simple','classic:20:pass',50),
+('soustraction-ecrite-simple','classic:20:bonus',10),
+('soustraction-ecrite-simple','sudden:5',10),
+('soustraction-ecrite-simple','sudden:10',10),
+('soustraction-ecrite-simple','hard:3',10),
+('soustraction-ecrite-simple','hard:7',10)
+ON CONFLICT(app_key,award_key) DO NOTHING;
 CREATE OR REPLACE FUNCTION public.connect_parcours_restart_class(p_teacher uuid, p_class uuid, p_app text, p_repeat_xp boolean DEFAULT false)
  RETURNS jsonb
  LANGUAGE plpgsql
