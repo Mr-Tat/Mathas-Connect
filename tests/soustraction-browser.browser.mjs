@@ -146,3 +146,58 @@ test('Chromium petit PC et GSM : en-tête Connect, lien HUB, XP et jeu restent d
   }
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
+
+test('Chromium : une partie hors connexion survit au rechargement et arrive une seule fois après retour réseau', {timeout:120000},async()=>{
+ const {server,url}=await serve();
+ const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
+ let connectionAvailable=false,posted=0,storedRevision=0;
+ try{
+  const context=await browser.newContext({viewport:{width:390,height:740},reducedMotion:'reduce'});
+  const page=await context.newPage();
+  await page.route('**/*',async route=>{
+   const uri=route.request().url();
+   if(uri.startsWith(url))return route.continue();
+   if(uri.startsWith('https://esm.sh/'))return route.fulfill({status:200,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'},body:browserStub});
+   if(uri.startsWith('https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/')){
+    const bytes=await readFile(resolve(root,'apps/soustraction-simple',uri.split('/').pop()));
+    return route.fulfill({status:200,contentType:'application/octet-stream',headers:{'access-control-allow-origin':'*'},body:bytes});
+   }
+   if(uri.includes('.supabase.co/functions/v1/')){
+    const data=JSON.parse(route.request().postData()||'{}');
+    if(data.action==='game-record'&&!connectionAvailable)return route.abort('failed');
+    const reply=body=>route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(body)});
+    if(data.action==='student-load')return reply({ok:true,state:null,revision:storedRevision,resetEpoch:0});
+    if(data.action==='student-me')return reply({ok:true,status:'approved',classId:klass,displayName:'Élève test'});
+    if(data.action==='student-xp')return reply({ok:true,appXp:posted*22,total:posted*22,level:1,next:50,milestones:[],currentMilestones:[],parcours:1,repeatXp:false,max:474});
+    if(data.action==='game-record'){
+      assert.equal(data.appKey,'soustraction-ecrite-simple');
+      assert.equal(data.mode,'classic');
+      assert.equal(data.score,4);
+      assert.equal(data.expectedResetEpoch,0);
+      assert.equal(data.expectedRevision,storedRevision);
+      posted++;storedRevision++;
+      return reply({ok:true,revision:storedRevision,resetEpoch:0,duplicate:false,xp:{appXp:posted*22,total:posted*22,level:1,previousLevel:1,next:50,delta:22}});
+    }
+    throw new Error('Action de test non prévue : '+data.action);
+   }
+   return route.abort();
+  });
+  await page.goto(url+'/apps/soustraction-simple/?class='+klass,{waitUntil:'domcontentloaded'});
+  await page.frameLocator('iframe').locator('#menuScreen').waitFor({timeout:30000});
+  await page.frameLocator('iframe').locator('body').evaluate(()=>window.__setLastWork({label:'Calculs · Niveau 1',score:'4/4',rulerUsed:false}));
+  await page.waitForFunction(()=>document.querySelector('#ce-sync')?.textContent?.includes('attente'),{timeout:20000});
+  assert.equal(posted,0,'aucun envoi pendant la coupure');
+  // Fermeture totale de l’onglet puis réouverture du même profil local.
+  await page.close();
+  connectionAvailable=true;
+  const reopened=await context.newPage();
+  await reopened.goto(url+'/apps/soustraction-simple/?class='+klass,{waitUntil:'domcontentloaded'});
+  await reopened.frameLocator('iframe').locator('#menuScreen').waitFor({timeout:30000});
+  await reopened.waitForFunction(()=>document.querySelector('#ce-sync')?.textContent?.includes('Synchronisé'),{timeout:20000});
+  assert.equal(posted,1,'partie enregistrée exactement une fois après retour réseau');
+  await reopened.reload({waitUntil:'domcontentloaded'});
+  await reopened.frameLocator('iframe').locator('#menuScreen').waitFor({timeout:30000});
+  assert.equal(posted,1,'un rechargement supplémentaire ne crée pas de doublon');
+  await reopened.close();
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
