@@ -18,6 +18,15 @@
       "featured": true,
       "display_order": 20,
       "image_url": "./apps/multiplication-simple/illustration.webp"
+    },
+    {
+      "app_key": "soustraction-ecrite-simple",
+      "title": "Soustraction écrite",
+      "launch_url": "https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/",
+      "hub_section": "calculs_ecrits",
+      "featured": false,
+      "display_order": 30,
+      "image_url": "./apps/soustraction-simple/illustration.webp"
     }
   ]
 }
