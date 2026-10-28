@@ -53,10 +53,11 @@ test('sélecteur professeur et quatre HUB pilotés par la matrice',()=>{
  for(const slug of ['observation','phase1','phase2','2eco'])assert.ok(app.includes(slug));
 });
 
-test('lanceur: module JavaScript syntaxiquement exécutable',()=>{
+test('lanceur: module JavaScript syntaxiquement exécutable',async()=>{
  const launcher=read('../apps/soustraction-simple/index.html');
  const script=launcher.split('<script type="module">')[1]?.split('</script></body>')[0];
  assert.ok(script);
- assert.doesNotThrow(()=>new (requireScript())(script,{filename:'soustraction-launcher.mjs'}));
+ const {spawnSync}=await import('node:child_process');
+ const result=spawnSync(process.execPath,['--input-type=module','--check'],{input:script,encoding:'utf8'});
+ assert.equal(result.status,0,result.stderr);
 });
-function requireScript(){return Script}
