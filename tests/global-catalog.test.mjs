@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {Script} from 'node:vm';
+import {execFileSync} from 'node:child_process';
 const read=p=>readFileSync(new URL(p,import.meta.url),'utf8');
 const teacher=read('../app.js'),hub=read('../hub.js'),html=read('../index.html');
 const result=read('../supabase/functions/connect-results/index.ts');
@@ -27,4 +27,4 @@ test('hub uses session cache and static fallback without SDK',()=>{
  assert.match(hub,/const \{ apps: fallbackApps \}/);
  assert.match(hub,/controller\.abort\(\),1600/);
 });
-test('teacher browser JavaScript parses',()=>{new Script(teacher)});
+test('teacher browser JavaScript module parses',()=>{execFileSync(process.execPath,['--check','--input-type=module'],{input:teacher})});
