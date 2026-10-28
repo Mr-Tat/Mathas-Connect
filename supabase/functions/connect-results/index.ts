@@ -90,11 +90,6 @@ function restoreSummary(state:any){
 }
 Deno.serve(async req=>{
  if(req.method==='OPTIONS')return new Response('',{headers});
- if(req.method==='GET'){
-  const {data,error}=await db.from('connect_apps').select('app_key,title,launch_url,image_url,enabled,featured,hub_section,display_order').eq('enabled',true).order('display_order').limit(100);
-  if(error)return deny('catalog_unavailable',503);
-  return new Response(JSON.stringify({ok:true,apps:data||[]}),{headers:{...headers,'cache-control':'public, max-age=60'}});
- }
  if(req.method!=='POST')return deny('method',405);
  const token=req.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];if(!token)return deny('auth',401);
  const client=createClient(url,pub,{auth:{persistSession:false,autoRefreshToken:false}});
