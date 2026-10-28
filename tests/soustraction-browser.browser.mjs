@@ -237,9 +237,9 @@ test('Chromium : quatre vrais calculs résolus au pavé -> résultat 4/4 envoyé
   const frame=page.frameLocator('iframe');
   await frame.locator('#menuScreen').waitFor({timeout:30000});
   // La vraie interface choisit 4 calculs, Niveau 1 et Compensation.
-  await frame.locator('.classic-count-btn[data-count="4"]').click();
   await frame.locator('input[name="borrowMethod"][value="addBottom"]').evaluate(input=>input.closest('label').click());
-  await frame.locator('#startClassic').click();
+  // Le bouton « 4 calculs » DÉMARRE la série ; le bouton startClassic historique est masqué.
+  await frame.locator('.classic-count-btn[data-count="4"]').click();
   await frame.locator('#calculationsPair .calc-box').first().waitFor();
   async function solveCurrentPair(){
    const work=await frame.locator('#calculationsPair').evaluate(pair=>{
