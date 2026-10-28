@@ -5,8 +5,8 @@ const headers={'content-type':'application/json','cache-control':'no-store','acc
 const answer=(v:object,status=200)=>new Response(JSON.stringify(v),{status,headers});
 const deny=(e:string,status=400)=>answer({ok:false,error:e},status);
 const valid=(v:any)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
-const app='addition-ecrite-simple',mul='multiplication-ecrite-simple',lab='connect-lab';
-const appAllowed=(k:any)=>k===app||k===mul||k===lab;
+const app='addition-ecrite-simple',mul='multiplication-ecrite-simple',sub='soustraction-ecrite-simple',lab='connect-lab';
+const appAllowed=(k:any)=>k===app||k===mul||k===sub||k===lab;
 const belgianDay=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const read=async(q:any)=>{const {data,error}=await q.maybeSingle();if(error)throw Error('db_error');return data};
 const int=(n:any,min:number,max:number)=>Number.isSafeInteger(n)&&n>=min&&n<=max;
