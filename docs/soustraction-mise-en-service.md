@@ -3,14 +3,16 @@
 État au 28/10/2026 : PR #14 en brouillon. Production inchangée.
 
 ## Vérifications effectivement réalisées
-- Chromium avec le vrai moteur V6.0.2 : menus, technique d’emprunt, quatre vraies soustractions résolues au pavé numérique, événement Classique 4/4 émis par le moteur.
+- Chromium avec le vrai moteur V6.0.2 : menus, technique d’emprunt, quatre vraies soustractions résolues au pavé numérique, événement Classique 4/4 émis par le moteur. Une seconde recette Chromium suit maintenant les résultats jusqu'à PostgreSQL et vérifie leur restauration.
 - Chromium avec serveur simulé : fermeture d’onglet hors ligne, retour réseau, un seul envoi du résultat et aucun doublon.
 - Chromium : largeur 320, 360, 390, 768 et 1 024 px, contrôles du HUB, de la jauge XP et du conteneur du jeu.
 - PostgreSQL 16 isolé : migration réelle exécutée deux fois, jalons XP jusqu’à 474 points, reprise d’un parcours et non-régression d’Addition.
 - Tests du professeur : affichage séparé des deux techniques Mort subite ; régressions Multiplication et restauration d’urgence.
 - Miniature authentique Soustraction en WebP léger ; moteur autonome source inchangé.
 
-Limite : le navigateur et le serveur Edge sont simulés ensemble ; PostgreSQL est réel mais exécuté séparément. Aucune vraie instance Auth + Edge + Postgres n’a été testée de bout en bout.
+**Nouvelle recette combinée validée :** le vrai navigateur Chromium appelle le vrai code `connect-results/index.ts`, dont les requêtes et RPC sont exécutées sur une base PostgreSQL 16 temporaire. Après un redémarrage de parcours, une partie 4/4 est enregistrée par le lanceur ; le rechargement du jeu récupère le record `4/4` depuis le serveur et reconstitue le stockage du moteur. Les contrôles Edge/SQL vérifient également les 22 XP, les 10 XP de Mort subite, l'idempotence, les résultats professeur, la reprise et l'isolation d'Addition. CI : https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40776298244.
+
+**Limite résiduelle :** l'authentification Supabase Auth/GoTrue et la couche PostgREST sont remplacées dans cette recette par des adaptateurs locaux sur données fictives. Aucune véritable instance Auth + Edge + Postgres distante n'a encore été testée de bout en bout.
 
 ## Ordre de mise en service — après autorisation explicite
 1. Vérifier les autres PR en cours, la version de main et toutes les CI de la PR #14. Vérifier une sauvegarde privée récente des données de chaque classe concernée.
