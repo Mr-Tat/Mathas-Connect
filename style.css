@@ -197,3 +197,12 @@ body:has(.login-panel:not([hidden])) footer{color:#afc8d9}
 button.request-reconnect-badge{min-height:0;padding:5px 11px;cursor:pointer;background:#e1f8e9;color:#155c41}
 button.request-reconnect-badge:hover,button.request-reconnect-badge[aria-expanded="true"]{background:#c4efd6}
 button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-offset:2px}
+
+/* Les trois niveaux de couleur des tuiles professeur. */
+.teacher-space .teacher-space-main{background:linear-gradient(135deg,var(--space-b),var(--space-a))}
+.teacher-space .teacher-space-small[href]{background:linear-gradient(140deg,color-mix(in srgb,var(--space-b) 63%,#071a2a),color-mix(in srgb,var(--space-a) 72%,#071a2a))}
+.teacher-space .teacher-space-small[data-results]{background:linear-gradient(140deg,color-mix(in srgb,var(--space-b) 40%,#061424),color-mix(in srgb,var(--space-a) 52%,#061424))}
+.results-class-banner{display:flex;align-items:center;gap:13px;flex-wrap:wrap;padding:16px 18px;margin:12px 0 19px;border-radius:15px;border:2px solid #7dd0f9;background:linear-gradient(120deg,#204b75,#102d4e);box-shadow:0 9px 24px #0005}
+.results-class-banner label{font-size:12px;font-weight:900;letter-spacing:.11em;color:#c2e9fb;margin:0}
+.teacher-panel .results-class-banner select{font-size:clamp(18px,2.1vw,25px);font-weight:900;flex:1;min-width:180px;width:auto;padding:11px 42px 11px 13px;border:2px solid #a5dbfc;background:#eff8ff;color:#11365b}
+.results-class-banner .teacher-context{flex-basis:100%;margin:0;color:#d4eafb;font-size:13px}
