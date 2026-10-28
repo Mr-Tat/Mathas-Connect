@@ -7,7 +7,7 @@ const teacher=read('../app.js'),hub=read('../hub.js'),html=read('../index.html')
 const result=read('../supabase/functions/connect-results/index.ts');
 const catalog=read('../supabase/functions/connect-catalog/index.ts');
 test('GLOBAL table exposes visibility, daily, section and order',()=>{
- for(const name of ['Visible','Du jour','Section','Ordre'])assert.ok(html.includes(name));
+ for(const name of ['Observation','Phase 1','Phase 2','2 ECO','Partout','Ordre'])assert.ok(html.includes(name));
  assert.match(teacher,/teacher-app-matrix-save/);
  assert.match(teacher,/teacher-app-matrix-get/);
 });
