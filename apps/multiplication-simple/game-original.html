@@ -6416,7 +6416,7 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
     el.classList.remove('hidden')
   }
   function refreshMenuScores(){renderClassicMenuScores();renderSuddenMenuScores()}
-  function setLastWork(label,score){safeSet(LAST_KEY,{label,score,at:new Date().toISOString(),allTables:session?.allMultipliers||false,tablesUsed:session?.tablesUsed||false});refreshLastWork()}
+  function setLastWork(label,score){const item={label,score,at:new Date().toISOString(),allTables:session?.allMultipliers||false,tablesUsed:session?.tablesUsed||false};safeSet(LAST_KEY,item);if(window.parent!==window)window.parent.MathasPilotBridge?.completed?.(item);refreshLastWork()}
   function refreshLastWork(){let card=$('lastWorkCard'),d=safeGet(LAST_KEY,null);if(!card){card=document.createElement('div');card.id='lastWorkCard';card.className='last-work-card';card.innerHTML='<div class="last-work-title">Dernier travail</div><div class="last-work-main"></div><div class="last-work-sub"></div>';menuScreen.appendChild(card)}if(!d){card.style.display='none';return}card.style.display='block';const m=card.querySelector('.last-work-main');m.textContent=`${d.label} · Score : ${d.score}`;m.classList.toggle('sun-score',!!d.allTables);m.classList.toggle('tables-aid-used-score',!!d.tablesUsed);m.title=d.tablesUsed?'Aide utilisée : tables de multiplication affichées':'';try{card.querySelector('.last-work-sub').textContent=`Fait à ${new Date(d.at).toLocaleTimeString('fr-BE',{hour:'2-digit',minute:'2-digit'})}`}catch{}}
 
   // HARD
@@ -6575,7 +6575,7 @@ function hardThreeScore(level){const n=Number(hardThreeStore()[String(level)]);r
         if(hardSession.completed>=5){
           saveHardThreeBest();
           enregistrerResultatMathas(hardSession.score,5,`Hard ${hardSession.level}`,3+hardSession.level,!!hardSession.tablesUsed,true);
-          safeSet(LAST_KEY,{label:`Hard ${hardSession.level} · 5 calculs`,score:`${hardSession.score}/5`,at:new Date().toISOString(),allTables:true,tablesUsed:!!hardSession.tablesUsed});
+          const item={label:`Hard ${hardSession.level} · 5 calculs`,score:`${hardSession.score}/5`,at:new Date().toISOString(),allTables:true,tablesUsed:!!hardSession.tablesUsed};safeSet(LAST_KEY,item);if(window.parent!==window)window.parent.MathasPilotBridge?.completed?.(item);
           hardPhase='ended';setHardEnabled(false);hardPrimary.textContent='Retour au menu HARD';
           const next=HARD.some(x=>x.level===hardSession.level+1),perfect=hardSession.score===5;
           setHardFeedback(perfect?`5 / 5 ! Mort subite HARD ${hardSession.level} débloquée${next?`, ainsi que les 5 calculs du HARD ${hardSession.level+1}`:''}.`:`Série terminée : ${hardSession.score} / 5. Fais 5 / 5 pour continuer.`);
@@ -6596,7 +6596,7 @@ function hardThreeScore(level){const n=Number(hardThreeStore()[String(level)]);r
       saveHardBest();hardPhase='ended';setHardEnabled(false);hardPrimary.textContent='Retour au menu HARD';
       setHardFeedback(`Erreur. Score final : ${hardSession.score}.`);
       enregistrerResultatMathas(hardSession.score,hardSession.score+1,`Hard ${hardSession.level}`,3+hardSession.level,!!hardSession.tablesUsed,true);
-      safeSet(LAST_KEY,{label:`Hard ${hardSession.level} · Mort subite`,score:String(hardSession.score),at:new Date().toISOString(),allTables:true,tablesUsed:!!hardSession.tablesUsed});
+      const item={label:`Hard ${hardSession.level} · Mort subite`,score:String(hardSession.score),at:new Date().toISOString(),allTables:true,tablesUsed:!!hardSession.tablesUsed};safeSet(LAST_KEY,item);if(window.parent!==window)window.parent.MathasPilotBridge?.completed?.(item);
       if(isRecord)showRecordCelebration(`Score ${hardSession.score}`);
       else showFinishCelebration(`Score ${hardSession.score}`)
     }else{
