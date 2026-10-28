@@ -100,7 +100,15 @@ Deno.serve(async req=>{
  const selected=appAllowed(b.appKey)?b.appKey:null;
  try{
   const managed=async()=>!user.is_anonymous&&!!await read(db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('class_id',b.classId).eq('can_manage',true));
-  const identity=async()=>{if(!user.is_anonymous)return null;const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;const enrolled=await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null));if(!enrolled)return null;const active=await read(db.from('connect_students').select('id').eq('id',device.student_id).is('archived_at',null));return active?device.student_id:null};
+  const identity=async()=>{if(!user.is_anonymous){
+     if(!await managed())return null;
+     const player=await read(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));
+     if(!player)return null;
+     const member=await read(db.from('connect_enrollments').select('student_id').eq('student_id',player.student_id).eq('class_id',b.classId).is('left_at',null));
+     if(!member)return null;
+     const active=await read(db.from('connect_students').select('id').eq('id',player.student_id).is('archived_at',null));
+     return active?player.student_id:null;
+    }const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;const enrolled=await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null));if(!enrolled)return null;const active=await read(db.from('connect_students').select('id').eq('id',device.student_id).is('archived_at',null));return active?device.student_id:null};
   const refreshXp=async(studentId:string,appKey:string)=>{
    if(appKey!==app)return null;
    const result=await db.rpc('connect_xp_sync_v2',{p_student:studentId,p_app:appKey,p_force:false});
