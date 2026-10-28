@@ -64,3 +64,12 @@ test('repeated XP cap supports at least two full parcours',()=>{
  const sql=src('../supabase/migrations/20261028_xp_multi_parcours_cap.sql');
  assert.match(sql,/xp_credited <= 10000000/);
 });
+
+test('restore rejects unrelated app keys, and professor sees HARD five-score',()=>{
+ assert.match(backend,/!\[app,mul\]\.includes\(b\.appKey\)/);
+ assert.doesNotMatch(backend,/\[b\.appKey,mul\]/);
+ assert.match(backend,/hardThree:state\.hardThree\?\?null/);
+ const teacher=src('../app.js');
+ assert.match(teacher,/HARD 5 calculs/);
+ assert.match(teacher,/state\.hardThree\?\.\[i\]/);
+});
