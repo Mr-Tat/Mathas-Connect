@@ -31,8 +31,9 @@ async function handle(req:Request){
    if(user.is_anonymous||!await teacher()||!U.test(b.classId||''))return fail('forbidden',403);
    const player=await one(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));
    if(!player)return fail('player_not_configured',404);
-   const member=await one(db.from('connect_enrollments').select('student_id').eq('student_id',player.student_id).eq('class_id',b.classId).is('left_at',null));
-   if(!member)return ok({status:'wrong_class'});
+   // Monsieur T utilise sa fiche joueur personnelle dans n'importe quelle
+   // classe autorisée au professeur, sans inscription fictive comme élève.
+   if(!await manage(b.classId))return fail('forbidden',403);
    const student=await one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color,archived_at').eq('id',player.student_id));
    if(!student||student.archived_at)return ok({status:'revoked'});
    return ok({status:'approved',displayName:student.display_name,avatar:{kind:student.avatar_kind||'letter',value:student.avatar_value||'T',color:student.avatar_color||'ocean'},classId:b.classId});
@@ -43,9 +44,9 @@ async function handle(req:Request){
      if(!U.test(b.classId||''))return fail('forbidden',403);
      const device=await one(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));
      if(device&&await one(db.from('connect_enrollments').select('id').eq('class_id',b.classId).eq('student_id',device.student_id).is('left_at',null)))id=device.student_id;
-   }else if(await teacher()&&U.test(b.classId||'')){
+   }else if(await teacher()&&U.test(b.classId||'')&&await manage(b.classId)){
      const player=await one(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));
-     if(player&&await one(db.from('connect_enrollments').select('id').eq('class_id',b.classId).eq('student_id',player.student_id).is('left_at',null)))id=player.student_id;
+     id=player?.student_id||null;
    }
    if(!id||!await one(db.from('connect_students').select('id').eq('id',id).is('archived_at',null)))return fail('forbidden',403);
    const {data:summary,error:xpError}=await db.rpc('connect_xp_read_v2',{p_student:id,p_app:'addition-ecrite-simple',p_include_milestones:false});
