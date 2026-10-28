@@ -1,6 +1,7 @@
 name: Import Soustraction miniature (branch only)
 on:
-  pull_request:
+  push:
+    branches: ['integration/soustraction-stage1-20261028']
     paths:
       - 'scripts/import-soustraction-miniature.py'
       - '.github/workflows/soustraction-miniature.yml'
@@ -8,13 +9,11 @@ permissions:
   contents: write
 jobs:
   optimize:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'integration/soustraction-stage1-20261028'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
           persist-credentials: true
       - uses: actions/setup-python@v5
         with:
