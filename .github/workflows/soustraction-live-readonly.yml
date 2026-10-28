@@ -1,0 +1,24 @@
+name: Soustraction production smoke (read-only)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/soustraction-live-readonly.mjs'
+      - '.github/workflows/soustraction-live-readonly.yml'
+      - 'app.js'
+      - 'apps/soustraction-simple/**'
+      - 'assets/miniatures/soustraction-ecrite-simple.webp'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-read-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier les URLs réelles sans utilisateur ni écriture
+        run: node tests/soustraction-live-readonly.mjs
