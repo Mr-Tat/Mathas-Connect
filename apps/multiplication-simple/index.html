@@ -302,7 +302,7 @@ window.MathasPilotBridge={mode,openTeacherParcours:()=>{
  window.open('https://mr-tat.github.io/Mathas-Connect/index.html?portail=prof&profClass='+encodeURIComponent(classId),'_blank','noopener');
 },completed:async item=>{
  if(mode!=='connected'||!cloud)return;
- const label=item.label||'',match=label.match(/(?:Niveau|NIV)\s*([123])/i);if(!match)return;
+ const label=item.label||'',match=label.match(/(?:Niveau|NIV|Hard)\s*([123])/i);if(!match)return;
  const level=Number(match[1]),hard=/HARD/i.test(label),sudden=/Mort subite/i.test(label);
  const scoreText=String(item.score||'');const result=scoreText.match(/^(\d+)(?:\s*[/]\s*(\d+))?$/);if(!result)return;
  const score=Number(result[1]),total=result[2]?Number(result[2]):null;
@@ -314,7 +314,7 @@ window.MathasPilotBridge={mode,openTeacherParcours:()=>{
  const body={action:'game-record',classId,appKey:APP,eventId,expectedRevision:revision,expectedResetEpoch:resetEpoch,mode:modeKey,level,score,total:hardChallenge?5:sudden?null:total,points};
  const awards=currentRewards();if(awards?.version===3)body.rewards=awards;
  const pending=readQueue();pending.push(body);saveQueue(pending);showSync();await drain();
-},points:item=>{const m=String(item.score||'').match(/^(\d+)(?:\s*[/]\s*(\d+))?$/);if(!m)return 0;const hard=/HARD/i.test(item.label),sudden=/Mort subite/i.test(item.label),n=Number(m[1]),total=m[2]?Number(m[2]):0;const level=Number((String(item.label).match(/(?:Niveau|NIV)\s*([123])/i)||[])[1]||1);const ml=[1,1.2,1.4,1.6,1.8,2][hard?level+2:level-1],mf=sudden?1.6:total===20?1.6:total===10?1.3:1;let weighted=n;if(sudden){weighted=0;for(let i=0;i<n;i++)weighted+=Math.min(4,Math.pow(1.035,i))}return 5*ml*mf*weighted}};
+},points:item=>{const m=String(item.score||'').match(/^(\d+)(?:\s*[/]\s*(\d+))?$/);if(!m)return 0;const hard=/HARD/i.test(item.label),sudden=/Mort subite/i.test(item.label),n=Number(m[1]),total=m[2]?Number(m[2]):0;const level=Number((String(item.label).match(/(?:Niveau|NIV|Hard)\s*([123])/i)||[])[1]||1);const ml=[1,1.2,1.4,1.6,1.8,2][hard?level+2:level-1],mf=sudden?1.6:total===20?1.6:total===10?1.3:1;let weighted=n;if(sudden){weighted=0;for(let i=0;i<n;i++)weighted+=Math.min(4,Math.pow(1.035,i))}return 5*ml*mf*weighted}};
 iframe.srcdoc=html;
 const toolbar=document.createElement('header');toolbar.id='ce-toolbar';
 toolbar.style.cssText='box-sizing:border-box;width:100%;min-height:46px;height:var(--ce-toolbar-height,46px);padding:0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#102f46;color:#fff;font:600 13px system-ui;border-bottom:1px solid #286180';
