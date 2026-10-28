@@ -46,3 +46,30 @@ test('restarting a parcours affects only the selected application',()=>{
  assert.ok(teacher.includes("appKey:$('results-app').value"));
  assert.match(teacher,/resultCall\('teacher-parcours-restart',\{scope,studentId,repeatXp:xp\.checked,appKey\}\)/);
 });
+
+test('teacher selector lists both apps and backup restore is isolated',()=>{
+ const html=src('../index.html'),teacher=src('../app.js');
+ assert.match(html,/<option value="multiplication-ecrite-simple">/);
+ assert.match(teacher,/appKey:o\.app\.appKey/);
+ assert.match(teacher,/\.filter\(x=>x\.appKey===o\.app\.appKey\)/);
+ assert.match(backend,/\!\[app,mul\]\.includes\(b\.appKey\)/);
+ assert.match(backend,/x\.appKey!==b\.appKey/);
+});
+test('HARD arrow navigation uses its actual DOM and side carry navigation',()=>{
+ assert.match(game,/hard\?current\.closest\('#hardOperationCard'\)/);
+ assert.match(game,/\.side-carry-input:not\(:disabled\)/);
+ assert.match(game,/window\.parent\.MathasPilotBridge\?\.completed\?\.\(item\),750/);
+});
+test('repeated XP cap supports at least two full parcours',()=>{
+ const sql=src('../supabase/migrations/20261028_xp_multi_parcours_cap.sql');
+ assert.match(sql,/xp_credited <= 10000000/);
+});
+
+test('restore rejects unrelated app keys, and professor sees HARD five-score',()=>{
+ assert.match(backend,/!\[app,mul\]\.includes\(b\.appKey\)/);
+ assert.doesNotMatch(backend,/\[b\.appKey,mul\]/);
+ assert.match(backend,/hardThree:state\.hardThree\?\?null/);
+ const teacher=src('../app.js');
+ assert.match(teacher,/HARD 5 calculs/);
+ assert.match(teacher,/state\.hardThree\?\.\[i\]/);
+});

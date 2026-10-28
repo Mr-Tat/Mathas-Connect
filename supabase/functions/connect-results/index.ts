@@ -140,13 +140,13 @@ Deno.serve(async req=>{
   }
   // Restauration de secours : fusion des acquis, sans nouvelles tables ni RPC.
   if(b.action==='teacher-restore-preview'||b.action==='teacher-restore-apply'){
-    if(!await managed()||!valid(b.studentId)||b.appKey!==app)return deny('forbidden',403);
+    if(!await managed()||!valid(b.studentId)||![app,mul].includes(b.appKey))return deny('forbidden',403);
     if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2','mathas-connect-class-backup-v3','mathas-connect-class-backup-v4'].includes(b.backupFormat))return deny('invalid_backup_format');
     if(b.backupProjectRef!=null&&b.backupProjectRef!=='awmhpfofacaglewammxt')return deny('wrong_project',403);
     if(!int(b.backupRevision,0,1000000000)||!int(b.backupResetEpoch,0,1000000000))return deny('invalid_backup');
     const member=await read(db.from('connect_enrollments').select('id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));
     if(!member||!await read(db.from('connect_students').select('id').eq('id',b.studentId).is('archived_at',null)))return deny('student_not_active',403);
-    const record=await read(db.from('connect_states').select('revision,reset_epoch,state_data').eq('student_id',b.studentId).eq('app_key',app));
+    const record=await read(db.from('connect_states').select('revision,reset_epoch,state_data').eq('student_id',b.studentId).eq('app_key',b.appKey));
     const rev=record?.revision??0,epoch=record?.reset_epoch??0;
     if(record&&b.backupResetEpoch>epoch)return deny('backup_newer_epoch',409);
     const different=!!record&&b.backupResetEpoch!==epoch;
@@ -154,18 +154,18 @@ Deno.serve(async req=>{
     const {before,after}=restorePreviewState(record?.state_data||{},b.backupState);
     // Une sauvegarde V4 restaure aussi les étapes XP indépendantes des records effacés.
     const backupKeys:any[]=b.backupFormat==='mathas-connect-class-backup-v4'?b.backupMilestones:[];
-    if(!Array.isArray(backupKeys)||backupKeys.length>100||backupKeys.some((x:any)=>!x||x.appKey!==app||typeof x.key!=='string'||! /^(classic:[123]:(4:perfect|10:(pass|bonus)|20:(pass|bonus))|sudden:[123]:(5|10)|hard:[123]:(3|7))$/.test(x.key)))return deny('invalid_backup_milestones');
+    if(!Array.isArray(backupKeys)||backupKeys.length>100||backupKeys.some((x:any)=>!x||x.appKey!==b.appKey||typeof x.key!=='string'||! /^(classic:[123]:(4:perfect|10:(pass|bonus)|20:(pass|bonus))|sudden:[123]:(5|10)|hard:[123]:(3|7))$/.test(x.key)))return deny('invalid_backup_milestones');
     const uniqueKeys=[...new Set(backupKeys.map((x:any)=>x.key))].sort();
-    const existing=await db.from('connect_xp_milestones').select('milestone_key').eq('student_id',b.studentId).eq('app_key',app);
+    const existing=await db.from('connect_xp_milestones').select('milestone_key').eq('student_id',b.studentId).eq('app_key',b.appKey);
     if(existing.error)throw Error('db_error');
     const currentKeys=new Set(existing.data.map((x:any)=>x.milestone_key));
     const missingKeys=uniqueKeys.filter((k:string)=>!currentKeys.has(k));
     const stateChanged=JSON.stringify(before)!==JSON.stringify(after);
     const changed=stateChanged||missingKeys.length>0;
     // Liaison de la confirmation à la prévisualisation exacte, sans table supplémentaire.
-    const digestInput=JSON.stringify([b.classId,b.studentId,app,rev,epoch,b.backupRevision,b.backupResetEpoch,different,after,uniqueKeys,[...currentKeys].sort()]);
+    const digestInput=JSON.stringify([b.classId,b.studentId,b.appKey,rev,epoch,b.backupRevision,b.backupResetEpoch,different,after,uniqueKeys,[...currentKeys].sort()]);
     const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(digestInput)))).map(v=>v.toString(16).padStart(2,'0')).join('');
-    const info={ok:true,changed,studentId:b.studentId,appKey:app,currentRevision:rev,currentResetEpoch:epoch,
+    const info={ok:true,changed,studentId:b.studentId,appKey:b.appKey,currentRevision:rev,currentResetEpoch:epoch,
       recoveringPastReset:different,previewDigest:digest,stateChanged,restoringXpMilestones:missingKeys.length,before:restoreSummary(before),after:restoreSummary(after)};
     if(b.action==='teacher-restore-preview')return answer(info);
     // Une sauvegarde privée préalable est impérative. Le clic navigateur ne prouve
@@ -174,26 +174,26 @@ Deno.serve(async req=>{
     if(!int(b.expectedRevision,0,1000000000)||!int(b.expectedResetEpoch,0,1000000000))return deny('invalid_revision');
     if(rev!==b.expectedRevision||epoch!==b.expectedResetEpoch)return deny('revision_conflict',409);
     if(typeof b.previewDigest!=='string'||b.previewDigest!==digest)return deny('preview_changed',409);
-    if(!changed){const xp=await refreshXp(b.studentId,app);return answer({...info,unchanged:true,...(xp?{xp}:{} )});}
+    if(!changed){const xp=await refreshXp(b.studentId,b.appKey);return answer({...info,unchanged:true,...(xp?{xp}:{} )});}
     const payload={state_data:after,schema_version:1,updated_at:new Date().toISOString(),revision:rev+1};
     if(stateChanged&&record){
       const update=await db.from('connect_states').update(payload)
-        .eq('student_id',b.studentId).eq('app_key',app).eq('revision',rev).eq('reset_epoch',epoch)
+        .eq('student_id',b.studentId).eq('app_key',b.appKey).eq('revision',rev).eq('reset_epoch',epoch)
         .select('revision').maybeSingle();
       if(update.error)throw Error('db_error');
       if(!update.data)return deny('revision_conflict',409);
     }else if(stateChanged){
       const created=await db.from('connect_states')
-        .insert({...payload,student_id:b.studentId,app_key:app,reset_epoch:epoch})
+        .insert({...payload,student_id:b.studentId,app_key:b.appKey,reset_epoch:epoch})
         .select('revision').single();
       if(created.error)return deny(created.error.code==='23505'?'revision_conflict':'db_error',created.error.code==='23505'?409:500);
     }
     if(missingKeys.length){
-      const rows=missingKeys.map((key:string)=>({student_id:b.studentId,app_key:app,milestone_key:key,evidence:{source:'teacher-backup-v4',restored:true}}));
+      const rows=missingKeys.map((key:string)=>({student_id:b.studentId,app_key:b.appKey,milestone_key:key,evidence:{source:'teacher-backup-v4',restored:true}}));
       const added=await db.from('connect_xp_milestones').upsert(rows,{onConflict:'student_id,app_key,milestone_key',ignoreDuplicates:true});
       if(added.error)return deny('milestone_restore_failed_after_state_write',500);
     }
-    const xp=await refreshXp(b.studentId,app);
+    const xp=await refreshXp(b.studentId,b.appKey);
     return answer({...info,restored:true,revision:stateChanged?rev+1:rev,...(xp?{xp}:{} )});
   }
   if(b.action==='teacher-export'){
@@ -249,7 +249,7 @@ Deno.serve(async req=>{
     let apps=byStudent.get(row.student_id);if(!apps){apps=[];byStudent.set(row.student_id,apps)}
     const state=row.state_data||{};
     apps.push({appKey:row.app_key,state:{recent:Array.isArray(state.recent)?state.recent.slice(0,3).map((r:any)=>({at:r.at,score:r.score,total:r.total})):[],
-     bestPoints:state.bestPoints??null,todayBest:state.todayBest??null,classic:state.classic??null,sudden:state.sudden??null,hard:state.hard??null}});
+     bestPoints:state.bestPoints??null,todayBest:state.todayBest??null,classic:state.classic??null,sudden:state.sudden??null,hard:state.hard??null,hardThree:state.hardThree??null}});
    }
    return answer({ok:true,students:names.data.map((p:any)=>({id:p.id,displayName:p.display_name,apps:byStudent.get(p.id)||[]}))});
   }
