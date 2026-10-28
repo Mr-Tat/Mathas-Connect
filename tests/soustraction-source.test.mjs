@@ -33,3 +33,21 @@ test('le lanceur isole la soustraction et garde les deux techniques',()=>{
  assert.ok(launcher.includes("expectedResetEpoch:resetEpoch"));
  assert.ok(launcher.includes("action:'game-record'"));
 });
+
+test('contrat serveur: Soustraction et techniques isolées',()=>{
+ const edge=read('../supabase/functions/connect-results/index.ts');
+ const migration=read('../supabase/migrations/20261028_soustraction_connect_v1.sql');
+ assert.ok(edge.includes("sub='soustraction-ecrite-simple'"));
+ assert.ok(edge.includes("next.suddenMethods[b.method][i]"));
+ assert.ok(edge.includes("deny('invalid_method')"));
+ assert.ok(edge.includes("selected===sub&&b.mode==='sudden'"));
+ assert.ok(migration.includes("'soustraction-ecrite-simple'"));
+ assert.ok(migration.includes("ON CONFLICT(app_key) DO NOTHING"));
+});
+test('sélecteur professeur et quatre HUB pilotés par la matrice',()=>{
+ const page=read('../index.html'),app=read('../app.js'),catalog=read('../hub-catalog.json');
+ assert.ok(page.includes('<option value="soustraction-ecrite-simple">'));
+ assert.ok(app.includes("'soustraction-ecrite-simple'"));
+ assert.ok(catalog.includes('"app_key": "soustraction-ecrite-simple"'));
+ for(const slug of ['observation','phase1','phase2','2eco'])assert.ok(app.includes(slug));
+});
