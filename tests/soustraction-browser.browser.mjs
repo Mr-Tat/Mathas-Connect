@@ -304,3 +304,60 @@ test('Chromium : quatre vrais calculs résolus au pavé -> résultat 4/4 envoyé
   await page.close();
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
+
+test('Animations XP Connect visibles sur Soustraction ET Multiplication, même en mouvement réduit', {timeout:180000},async()=>{
+ const {server,url}=await serve();
+ const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
+ try{
+  for(const game of ['soustraction-simple','multiplication-simple']){
+   for(const motion of ['no-preference','reduce']){
+    let posted=0;
+    const context=await browser.newContext({viewport:{width:1024,height:768},reducedMotion:motion});
+    await context.route('**/*',async route=>{
+     const uri=route.request().url();
+     if(uri.startsWith(url))return route.continue();
+     if(uri.startsWith('https://esm.sh/'))return route.fulfill({status:200,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'},body:browserStub});
+     if(uri.startsWith('https://mr-tat.github.io/Mathas-Connect/apps/')){
+      const path=new URL(uri).pathname.split('/').slice(-2);
+      if(!['soustraction-simple','multiplication-simple'].includes(path[0]))throw Error('ressource non prévue '+uri);
+      const target=resolve(root,'apps',path[0],path[1]);
+      const bytes=await readFile(target);
+      return route.fulfill({status:200,contentType:types[extname(target)]||'application/octet-stream',headers:{'access-control-allow-origin':'*'},body:bytes});
+     }
+     if(uri.includes('.supabase.co/functions/v1/')){
+      const data=JSON.parse(route.request().postData()||'{}');
+      const reply=body=>route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(body)});
+      if(data.action==='student-me')return reply({ok:true,status:'approved',classId:klass,displayName:'Élève test'});
+      if(data.action==='student-load')return reply({ok:true,state:null,revision:posted,resetEpoch:0});
+      if(data.action==='student-xp')return reply({ok:true,appXp:0,total:0,level:1,next:50,milestones:[],currentMilestones:[],parcours:1,repeatXp:false,max:474});
+      if(data.action==='game-record'){
+       posted++;
+       assert.equal(data.appKey,game==='soustraction-simple'?'soustraction-ecrite-simple':'multiplication-ecrite-simple');
+       return reply({ok:true,revision:posted,resetEpoch:0,duplicate:false,xp:{appXp:22,total:22,level:1,previousLevel:1,next:50,delta:22}});
+      }
+      throw Error('Action de test non prévue : '+data.action);
+     }
+     return route.abort();
+    });
+    const page=await context.newPage();
+    await page.goto(url+'/apps/'+game+'/?class='+klass,{waitUntil:'domcontentloaded'});
+    await page.frameLocator('iframe').locator('#menuScreen').waitFor({timeout:25000});
+    // Déclenche la fonction utilisée par le jeu à la fin d’une partie, sans XP fictifs persistés.
+    await page.evaluate(()=>window.MathasPilotBridge.completed({label:'Calculs · Niveau 1',score:'4/4',rulerUsed:false}));
+    await page.waitForFunction(()=>document.querySelector('#xp-toast.open')?.textContent?.includes('+22 XP'),{timeout:20000});
+    const seen=await page.locator('#xp-toast').evaluate(el=>{
+     const r=el.getBoundingClientRect(),css=getComputedStyle(el);
+     const top=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+     return {hidden:el.hidden,display:css.display,height:r.height,opacity:Number(css.opacity),front:el.contains(top)};
+    });
+    assert.equal(seen.hidden,false,game+' '+motion+': XP toast caché');
+    assert.notEqual(seen.display,'none',game+' '+motion+': XP toast non rendu');
+    assert.ok(seen.height>15,game+' '+motion+': XP toast sans hauteur');
+    assert.ok(seen.front,game+' '+motion+': XP toast masqué derrière le jeu');
+    await page.waitForFunction(()=>document.querySelector('#ce-xp-meter-track')?.getAttribute('aria-valuenow')==='22',{timeout:25000});
+    assert.equal(posted,1,game+' '+motion+': récompense serveur unique');
+    await context.close();
+   }
+  }
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
