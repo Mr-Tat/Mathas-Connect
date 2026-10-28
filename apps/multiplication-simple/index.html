@@ -49,7 +49,7 @@ if((connectionCheckRequired||teacherPlayer)&&mode!=='connected'){
  for(const b of [retry,classic])b.style.cssText='padding:12px;border:0;border-radius:10px;background:#176e8d;color:white;font:600 13px system-ui;cursor:pointer';
  actions.append(retry,classic);view.appendChild(actions);
 }else{
-const ns=mode==='connected'?'mathas.ce-multiplication.connect.'+(teacherPlayer?'monsieur-t':session.user.id)+'.v1:':'',GKEYS=new Set();
+const ns=mode==='connected'?'mathas.ce-multiplication.connect.'+(teacherPlayer?'monsieur-t':session.user.id)+'.v1:':'mathas.ce-multiplication.libre.v1:',GKEYS=new Set();
 const native={get:Storage.prototype.getItem,set:Storage.prototype.setItem,remove:Storage.prototype.removeItem};
 // Conservation des scores classiques sans migration invasive.
 function key(k){let s=String(k);if(mode==='free'&&s.startsWith('mathas_scores_'))s='mathas_scores_/multiplication-ecrite-simple/';return /^(multi1_|mathas_)/.test(s)?ns+s:s}
@@ -101,7 +101,7 @@ const bridge=`<script>
  },true);
 })();
 <\/script>`;
-const scopedBootstrap=`<script>(function(){var ns=${JSON.stringify(ns)};var p=Storage.prototype;var g=p.getItem,s=p.setItem,r=p.removeItem;function key(k){k=String(k);if(!ns&&k.indexOf('mathas_scores_')===0)k='mathas_scores_/multiplication-ecrite-simple/';return /^(multi1_|mathas_)/.test(k)?ns+k:k}p.getItem=function(k){return g.call(this,this===localStorage?key(k):k)};p.setItem=function(k,v){return s.call(this,this===localStorage?key(k):k,v)};p.removeItem=function(k){return r.call(this,this===localStorage?key(k):k)};})();<`+'/script>';
+const scopedBootstrap=`<script>(function(){var ns=${JSON.stringify(ns)};var p=Storage.prototype;var g=p.getItem,s=p.setItem,r=p.removeItem;function key(k){k=String(k);if(k.indexOf('mathas_scores_')===0)k='mathas_scores_/multiplication-ecrite-simple/';return /^(multi1_|mathas_)/.test(k)?ns+k:k}p.getItem=function(k){return g.call(this,this===localStorage?key(k):k)};p.setItem=function(k,v){return s.call(this,this===localStorage?key(k):k,v)};p.removeItem=function(k){return r.call(this,this===localStorage?key(k):k)};})();<`+'/script>';
 // Le panneau des records V6.0.2 peut reconstituer un ancien 10/10 à
 // partir d'un trophée conservé. Le trophée reste acquis, mais ne doit jamais
 // rétablir un record Classique effacé dans le compte Connecté.
@@ -314,7 +314,7 @@ window.MathasPilotBridge={mode,openTeacherParcours:()=>{
  const body={action:'game-record',classId,appKey:APP,eventId,expectedRevision:revision,expectedResetEpoch:resetEpoch,mode:modeKey,level,score,total:hardChallenge?5:sudden?null:total,points};
  const awards=currentRewards();if(awards?.version===3)body.rewards=awards;
  const pending=readQueue();pending.push(body);saveQueue(pending);showSync();await drain();
-},points:item=>{const m=String(item.score||'').match(/^(\d+)(?:\s*[/]\s*(\d+))?$/);if(!m)return 0;const hard=/HARD/i.test(item.label),sudden=/Mort subite/i.test(item.label),n=Number(m[1]),total=m[2]?Number(m[2]):0;const level=Number((String(item.label).match(/(?:Niveau|NIV|Hard)\s*([123])/i)||[])[1]||1);const ml=[1,1.2,1.4,1.6,1.8,2][hard?level+2:level-1],mf=sudden?1.6:total===20?1.6:total===10?1.3:1;let weighted=n;if(sudden){weighted=0;for(let i=0;i<n;i++)weighted+=Math.min(4,Math.pow(1.035,i))}return 5*ml*mf*weighted}};
+},points:item=>{const m=String(item.score||'').match(/^(\d+)(?:\s*[/]\s*(\d+))?$/);if(!m)return 0;const hard=/HARD/i.test(item.label),sudden=/Mort subite/i.test(item.label),n=Number(m[1]),total=m[2]?Number(m[2]):0;const level=Number((String(item.label).match(/(?:Niveau|NIV|Hard)\s*([123])/i)||[])[1]||1);const ml=[1,1.2,1.4,1.6,1.8,2][hard?level+2:level-1],mf=sudden?1.6:total===20?1.6:total===10?1.3:1;let weighted=n;if(sudden){weighted=0;for(let i=0;i<n;i++)weighted+=Math.min(4,Math.pow(1.035,i))}return 5*ml*mf*weighted*(item.allTables?1.15:1)}};
 iframe.srcdoc=html;
 const toolbar=document.createElement('header');toolbar.id='ce-toolbar';
 toolbar.style.cssText='box-sizing:border-box;width:100%;min-height:46px;height:var(--ce-toolbar-height,46px);padding:0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#102f46;color:#fff;font:600 13px system-ui;border-bottom:1px solid #286180';
