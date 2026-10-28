@@ -1,0 +1,47 @@
+name: Soustraction PostgreSQL isolated
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261028_soustraction_connect_v1.sql'
+      - 'tests/sql/soustraction-pg-fixture.sql'
+      - 'tests/sql/soustraction-pg-scenarios.sql'
+      - '.github/workflows/soustraction-postgres.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  xp-and-parcours:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: local_fake_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 8
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGDATABASE: postgres
+      PGUSER: postgres
+      PGPASSWORD: local_fake_only
+    steps:
+      - uses: actions/checkout@v4
+      - name: PostgreSQL client
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+      - name: Create isolated schema and fake student
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/soustraction-pg-fixture.sql
+      - name: Apply real Soustraction migration
+        run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261028_soustraction_connect_v1.sql
+      - name: Repeat migration to verify idempotence
+        run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261028_soustraction_connect_v1.sql
+      - name: Execute real XP, trophy milestones, teacher restart and ACL assertions
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/soustraction-pg-scenarios.sql
