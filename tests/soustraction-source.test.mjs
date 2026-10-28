@@ -63,3 +63,13 @@ test('lanceur: module JavaScript syntaxiquement exécutable',async()=>{
 });
 
 test('HUB inclut Soustraction en compte professeur',()=>{const hub=read('../hub.js');assert.ok(hub.includes("'multiplication-ecrite-simple','soustraction-ecrite-simple'"));});
+
+test('pont iframe : fermeture effective et stockage natif du moteur isolé',()=>{
+ const launcher=read('../apps/soustraction-simple/index.html');
+ assert.ok(launcher.includes(String.raw`<\/script>`));
+ assert.ok(!launcher.includes(String.raw`<\\/script>`));
+ assert.ok(launcher.includes('return /^(soustraction_|mathas_)/.test(k)?ns+k:k'));
+ const standalone=read('../apps/soustraction-simple/game-original.html');
+ assert.ok(standalone.includes('soustraction_classic20_v6'));
+ assert.ok(standalone.includes('soustraction_sudden_v6'));
+});
