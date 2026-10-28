@@ -616,7 +616,7 @@ function showOverviewDetail(person,apps,focusedApp=false){
   const heading=document.createElement('h3');heading.textContent=app.title;section.append(heading);
   const state=person.apps?.find(x=>x.appKey===app.app_key)?.state;
   section.append(makeOverviewCell(state));
-  if(state&&app.app_key==='addition-ecrite-simple'){
+  if(state&&['addition-ecrite-simple','multiplication-ecrite-simple'].includes(app.app_key)){
    const table=document.createElement('table');table.className='result-table';
    const header=document.createElement('tr');
    for(const label of ['Niveau','/4','/10','/20','Mort subite','HARD']){const th=document.createElement('th');th.textContent=label;header.append(th)}
@@ -632,12 +632,12 @@ function showOverviewDetail(person,apps,focusedApp=false){
   }
   target.append(section);
   // Le reboot appartient à l'application sélectionnée, jamais à la fiche globale.
-  if(focusedApp&&app.app_key==='addition-ecrite-simple')
+  if(focusedApp&&['addition-ecrite-simple','multiplication-ecrite-simple'].includes(app.app_key))
    addParcoursControls(section,person.id,person.displayName,app.app_key,app.title);
  }
 }
 async function showResults(){
- $('results-class-restart').hidden=$('results-app').value!=='addition-ecrite-simple';
+ $('results-class-restart').hidden=!['addition-ecrite-simple','multiplication-ecrite-simple'].includes($('results-app').value);
  syncResultsClassPicker();
  const id=$('class-selector').value;if(!id){showResultMessage('Aucune classe.');return}
  $('results-detail').hidden=true;$('results-list').hidden=false;
@@ -669,7 +669,7 @@ function showDetail(v){
  if(s.hard?.some(x=>x!=null)){const hard=document.createElement('p');hard.textContent='HARD : '+[1,2,3].map(i=>'H'+i+' '+(s.hard[i-1]??'—')).join(' · ');div.append(hard)}
  const summary=document.createElement('p');summary.textContent='Record absolu : '+points(s.bestPoints)+' · Aujourd’hui : '+points(s.todayBest?.day===dateBE()?s.todayBest.points:null);div.append(summary);
  const last=document.createElement('p');last.textContent='Derniers exercices : '+(s.recent?.length?s.recent.map(recentLabel).join(' ; '):'aucun');div.append(last);
- if(v.studentId)addParcoursControls(div,v.studentId,v.name,'addition-ecrite-simple','Addition écrite simple');
+ if(v.studentId&&['addition-ecrite-simple','multiplication-ecrite-simple'].includes($('results-app').value))addParcoursControls(div,v.studentId,v.name,$('results-app').value,$('results-app').selectedOptions[0]?.textContent||'Application');
 }
 
 function openParcoursDialog({scope,studentId=null,studentName='',count=null,appKey='addition-ecrite-simple',appName='Addition écrite simple'}){
@@ -703,7 +703,7 @@ function openParcoursDialog({scope,studentId=null,studentName='',count=null,appK
 }
 function addParcoursControls(container,studentId,name,appKey,appName){
  // Chaque application Connect pourra brancher ici son propre parcours.
- if(!studentId||appKey!=='addition-ecrite-simple')return;
+ if(!studentId||!['addition-ecrite-simple','multiplication-ecrite-simple'].includes(appKey))return;
  const panel=document.createElement('section');panel.className='parcours-student-actions';
  const title=document.createElement('strong');title.textContent='Parcours de cet élève';
  const summary=document.createElement('div');summary.textContent='Chargement des anciens parcours…';
