@@ -828,30 +828,42 @@ document.querySelectorAll('.teacher-space .teacher-space-small[href]').forEach(a
  if(space){const u=new URL(a.href);u.searchParams.set('class',space.id);u.searchParams.set('name',space.name);a.href=u.href}
 });
 const APP_SECTIONS=[['objectif','Objectif'],['calculs_ecrits','Calculs écrits'],['depassement','Dépassement'],['revision','Révision'],['outil','Outils'],['jeux','Jeux']];
+const APP_SPACES=[['observation','Observation'],['phase1','Phase 1'],['phase2','Phase 2'],['2eco','2 ECO']];
 async function loadTeacherAppPreview(){
  const body=$('teacher-app-tbody');if(!body)return;
- body.textContent='Chargement des réglages globaux…';
+ body.textContent='Chargement du tableau…';
  try{
-  const response=await resultCall('teacher-catalog-global-get');
-  body.replaceChildren();
-  const apps=response.apps||[];
-  for(const app of apps){
-   const tr=document.createElement('tr'),name=document.createElement('td');
-   name.textContent=app.title;tr.append(name);
-   const visible=document.createElement('input');visible.type='checkbox';visible.checked=!!app.enabled;
-   const featured=document.createElement('input');featured.type='checkbox';featured.checked=!!app.featured;
-   const section=document.createElement('select');
-   for(const [value,label] of APP_SECTIONS){const opt=document.createElement('option');opt.value=value;opt.textContent=label;section.append(opt)}
-   section.value=app.hub_section||'calculs_ecrits';
-   const order=document.createElement('input');order.type='number';order.min='0';order.max='100000';order.value=String(app.display_order??0);order.style.width='75px';
-   for(const control of [visible,featured,section,order]){const td=document.createElement('td');td.append(control);tr.append(td)}
-   const status=document.createElement('td');status.textContent='—';tr.append(status);
-   const save=document.createElement('button');save.type='button';save.className='soft';save.textContent='Enregistrer';
-   save.onclick=async()=>{save.disabled=true;status.textContent='Enregistrement…';try{
-    await resultCall('teacher-catalog-global-save',{changes:[{appKey:app.app_key,enabled:visible.checked,featured:featured.checked,section:section.value,order:Number(order.value)}]});
-    status.textContent='Enregistré · visible dans le HUB après actualisation';
+ const data=await resultCall('teacher-app-matrix-get');
+ body.replaceChildren();
+ const entries=new Map((data.entries||[]).map(x=>[x.preset_slug+'|'+x.app_key,x]));
+ for(const [i,app] of (data.apps||[]).entries()){
+  if(app.app_key==='connect-lab')continue;
+  const tr=document.createElement('tr'),first=document.createElement('td');
+  const title=document.createElement('strong');title.textContent=app.title;
+  first.append(title);tr.append(first);
+  const controls=[];
+  for(const [slug] of APP_SPACES){
+   const entry=entries.get(slug+'|'+app.app_key)||{visible:app.enabled,featured:false,section:'calculs_ecrits',display_order:app.display_order??i*10};
+   const td=document.createElement('td');td.style.minWidth='175px';
+   const makeCheck=(caption,val)=>{const label=document.createElement('label');label.style.display='block';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!val;label.append(cb,document.createTextNode(' '+caption));td.append(label);return cb};
+   const visible=makeCheck('Visible',entry.visible),featured=makeCheck('Du jour',entry.featured);
+   const section=document.createElement('select');for(const [value,label] of APP_SECTIONS){let o=document.createElement('option');o.value=value;o.textContent=label;section.append(o)}section.value=entry.section;td.append(section);
+   const save=document.createElement('button');save.type='button';save.className='soft';save.textContent='OK';
+   const status=document.createElement('small');status.setAttribute('role','status');
+   save.onclick=async()=>{save.disabled=true;status.textContent='…';try{
+    await resultCall('teacher-app-matrix-save',{changes:[{slug,appKey:app.app_key,visible:visible.checked,featured:featured.checked,section:section.value,order:Number(order.value)}]});
+    status.textContent='✓';
    }catch(e){status.textContent='Erreur : '+e.message}finally{save.disabled=false}};
-   const td=document.createElement('td');td.append(save);tr.append(td);body.append(tr);
+   td.append(save,status);tr.append(td);controls.push({visible,featured,save,slug});
   }
- }catch(e){body.textContent='Chargement impossible : '+(e.message||'Erreur')}
+  const everywhere=document.createElement('td');
+  for(const [label,on] of [['Visible partout',true],['Cacher partout',false]]){
+   const b=document.createElement('button');b.type='button';b.className='soft';b.textContent=label;
+   b.onclick=async()=>{b.disabled=true;try{for(const c of controls){c.visible.checked=on;await resultCall('teacher-app-matrix-save',{changes:[{slug:c.slug,appKey:app.app_key,visible:on,featured:c.featured.checked,section:c.save.parentElement.querySelector('select').value,order:Number(order.value)}]})}}catch(e){alert('Erreur : '+e.message)}finally{b.disabled=false}};everywhere.append(b)
+  }tr.append(everywhere);
+  const orderCell=document.createElement('td'),order=document.createElement('input');order.type='number';order.min='0';order.max='100000';order.value=String(app.display_order??(i+1)*10);order.style.width='72px';orderCell.append(order);tr.append(orderCell);
+  const pos=document.createElement('td');pos.textContent=String(i+1);tr.append(pos);
+  body.append(tr);
+ }
+ }catch(e){body.textContent='Impossible de charger : '+e.message}
 }
