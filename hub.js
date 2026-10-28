@@ -86,7 +86,7 @@ async function showCatalog() {
         const controller=new AbortController();
         const timeout=setTimeout(()=>controller.abort(),1600);
         try{
-          const r=await fetch(url+'/functions/v1/connect-results',{signal:controller.signal,cache:'default'});
+          const r=await fetch(url+'/functions/v1/connect-catalog',{signal:controller.signal,cache:'default'});
           if(r.ok){const data=await r.json();if(data.ok&&Array.isArray(data.apps)){
             const images=new Map(fallbackApps.map(a=>[a.app_key,a.image_url]));
             apps=data.apps.map(a=>({...a,image_url:a.image_url||images.get(a.app_key)}));
