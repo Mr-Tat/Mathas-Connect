@@ -249,7 +249,7 @@ Deno.serve(async req=>{
     let apps=byStudent.get(row.student_id);if(!apps){apps=[];byStudent.set(row.student_id,apps)}
     const state=row.state_data||{};
     apps.push({appKey:row.app_key,state:{recent:Array.isArray(state.recent)?state.recent.slice(0,3).map((r:any)=>({at:r.at,score:r.score,total:r.total})):[],
-     bestPoints:state.bestPoints??null,todayBest:state.todayBest??null,classic:state.classic??null,sudden:state.sudden??null,hard:state.hard??null}});
+     bestPoints:state.bestPoints??null,todayBest:state.todayBest??null,classic:state.classic??null,sudden:state.sudden??null,hard:state.hard??null,hardThree:state.hardThree??null}});
    }
    return answer({ok:true,students:names.data.map((p:any)=>({id:p.id,displayName:p.display_name,apps:byStudent.get(p.id)||[]}))});
   }
