@@ -1,6 +1,15 @@
 # Soustraction — recette et mise en service contrôlée
 
-État au 28/10/2026 : PR #14 en brouillon. Production inchangée.
+État au 28/10/2026 : **PR #14 fusionnée, moteur publié mais Soustraction volontairement masquée**.
+
+## Publication contrôlée effectuée
+- Code GitHub fusionné dans `main` : commit `7807656b1a8f89bf49a884f044e1f197d05f98f8`. GitHub Pages publié avec succès (run `40777228507`), régression `main` réussie.
+- Migration Supabase appliquée : `20261028220546_soustraction_connect_v1_20261028`. Application présente mais `enabled=false`, quatre entrées HUB `visible=false`, neuf règles XP.
+- Edge Function `connect-results` : version **38**, active, `verify_jwt=true`. Version précédente 37 enregistrée dans GitHub `main` avant fusion (`544355d88dc5e95e569076bf948959a4740086c8`) pour retour arrière rapide.
+- ACL après migration : aucun droit `EXECUTE` pour `anon` ou `authenticated` sur les RPC XP/reprise ; `service_role` autorisé.
+- Test transactionnel sur la vraie base : élève fictif, 4/4 donnant 22 XP, second calcul donnant 0 XP, sous-transaction **annulée volontairement**. Élève fictif absent après test.
+- Comptages élèves inchangés : 7 profils, 5 états, 3 crédits XP, 3 jalons XP, 2 historiques de parcours avant et après mise en service.
+- Restent avant activation : recette avec véritable authentification Supabase pour un compte de test ; comparaison visuelle sur petit PC réel. **Ne pas rendre `enabled=true` ni les HUB visibles avant ces vérifications.**
 
 ## Vérifications effectivement réalisées
 - Chromium avec le vrai moteur V6.0.2 : menus, technique d’emprunt, quatre vraies soustractions résolues au pavé numérique, événement Classique 4/4 émis par le moteur. Une seconde recette Chromium suit maintenant les résultats jusqu'à PostgreSQL et vérifie leur restauration.
@@ -14,7 +23,7 @@
 
 **Limite résiduelle :** l'authentification Supabase Auth/GoTrue et la couche PostgREST sont remplacées dans cette recette par des adaptateurs locaux sur données fictives. Aucune véritable instance Auth + Edge + Postgres distante n'a encore été testée de bout en bout.
 
-## Ordre de mise en service — après autorisation explicite
+## Plan de mise en service — historique des étapes et vérifications finales
 1. Vérifier les autres PR en cours, la version de main et toutes les CI de la PR #14. Vérifier une sauvegarde privée récente des données de chaque classe concernée.
 2. Fusionner #14 dans main. Vérifier GitHub Pages, game-original.html et la miniature authentique. Ne pas activer l’application dans les HUB.
 3. Appliquer la migration 20261028_soustraction_connect_v1.sql. Vérifier connect_apps.enabled=false, quatre presets visible=false, neuf règles XP totalisant 158 points par niveau et le maintien des droits restreints sur les fonctions XP/reprise.
