@@ -115,6 +115,33 @@ Deno.serve(async req=>{
    if(result.error){console.error('xp_credit_error',result.error.code);throw Error('xp_sync_failed')}
    return result.data;
   };
+  // Gestion GLOBALE du catalogue, réservée aux enseignants autorisés.
+  if(b.action==='teacher-catalog-global-get'||b.action==='teacher-catalog-global-save'){
+   if(!await managed())return deny('forbidden',403);
+   if(b.action==='teacher-catalog-global-get'){
+    const {data,error}=await db.from('connect_apps').select('app_key,title,launch_url,image_url,enabled,featured,hub_section,display_order').order('display_order');
+    if(error)throw Error('db_error');
+    return answer({ok:true,apps:data||[]});
+   }
+   const changes=b.changes;
+   const sections=['objectif','calculs_ecrits','depassement','revision','outil','jeux'];
+   if(!Array.isArray(changes)||changes.length<1||changes.length>60)return deny('invalid_changes');
+   const unique=new Set();
+   for(const item of changes){
+    if(!item||typeof item.appKey!=='string'||!/^[-a-z0-9]{1,80}$/.test(item.appKey)||unique.has(item.appKey)||
+      typeof item.enabled!=='boolean'||typeof item.featured!=='boolean'||
+      !sections.includes(item.section)||!int(item.order,0,100000))return deny('invalid_change');
+    unique.add(item.appKey);
+   }
+   const {data:existing,error:readError}=await db.from('connect_apps').select('app_key').in('app_key',[...unique]);
+   if(readError)throw Error('db_error');
+   if(existing?.length!==unique.size)return deny('unknown_app');
+   const {error:writeError}=await db.from('connect_apps').upsert(changes.map((item:any)=>({
+     app_key:item.appKey, enabled:item.enabled,featured:item.featured,hub_section:item.section,display_order:item.order
+   })),{onConflict:'app_key'});
+   if(writeError){console.error('catalog_save_error',writeError.code);throw Error('db_error')}
+   return answer({ok:true});
+  }
   // Multiplicateurs : une lecture au lancement, pas de polling pendant les calculs.
   if(b.action==='teacher-multipliers-get'||b.action==='teacher-multipliers-set'){
    if(!await managed())return deny('forbidden',403);
