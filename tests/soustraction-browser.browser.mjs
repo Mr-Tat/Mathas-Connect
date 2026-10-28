@@ -153,8 +153,9 @@ test('Chromium : une partie hors connexion survit au rechargement et arrive une 
  let connectionAvailable=false,posted=0,storedRevision=0;
  try{
   const context=await browser.newContext({viewport:{width:390,height:740},reducedMotion:'reduce'});
-  const page=await context.newPage();
-  await page.route('**/*',async route=>{
+  // La simulation doit survivre à la fermeture du PREMIER onglet :
+  // brancher le réseau au contexte navigateur, pas à une seule page.
+  await context.route('**/*',async route=>{
    const uri=route.request().url();
    if(uri.startsWith(url))return route.continue();
    if(uri.startsWith('https://esm.sh/'))return route.fulfill({status:200,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'},body:browserStub});
@@ -182,6 +183,7 @@ test('Chromium : une partie hors connexion survit au rechargement et arrive une 
    }
    return route.abort();
   });
+  const page=await context.newPage();
   await page.goto(url+'/apps/soustraction-simple/?class='+klass,{waitUntil:'domcontentloaded'});
   await page.frameLocator('iframe').locator('#menuScreen').waitFor({timeout:30000});
   await page.frameLocator('iframe').locator('body').evaluate(()=>window.__setLastWork({label:'Calculs · Niveau 1',score:'4/4',rulerUsed:false}));
