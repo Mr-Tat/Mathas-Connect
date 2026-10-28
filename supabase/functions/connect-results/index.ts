@@ -115,6 +115,33 @@ Deno.serve(async req=>{
    if(result.error){console.error('xp_credit_error',result.error.code);throw Error('xp_sync_failed')}
    return result.data;
   };
+  // Tableau GLOBAL historique : une seule interface pour quatre espaces indépendants.
+  if(b.action==='teacher-app-matrix-get'||b.action==='teacher-app-matrix-save'){
+   if(!await managed())return deny('forbidden',403);
+   const slugs=['observation','phase1','phase2','2eco'];
+   if(b.action==='teacher-app-matrix-get'){
+    const [apps,entries]=await Promise.all([
+     db.from('connect_apps').select('app_key,title,launch_url,image_url,enabled,display_order').order('display_order'),
+     db.from('connect_hub_preset_entries').select('preset_slug,app_key,section,display_order,visible,featured').in('preset_slug',slugs)
+    ]);
+    if(apps.error||entries.error)throw Error('db_error');
+    return answer({ok:true,apps:apps.data||[],entries:entries.data||[]});
+   }
+   const changes=b.changes;
+   const sections=['objectif','calculs_ecrits','depassement','revision','outil','jeux'];
+   if(!Array.isArray(changes)||changes.length!==1)return deny('invalid_changes');
+   const row=changes[0];
+   if(!row||!slugs.includes(row.slug)||typeof row.appKey!=='string'||!/^[-a-z0-9]{1,80}$/.test(row.appKey)||
+     !sections.includes(row.section)||typeof row.visible!=='boolean'||typeof row.featured!=='boolean'||!int(row.order,0,100000))return deny('invalid_changes');
+   const existing=await read(db.from('connect_apps').select('app_key').eq('app_key',row.appKey));
+   if(!existing)return deny('unknown_app');
+   const {error}=await db.from('connect_hub_preset_entries').upsert({
+    preset_slug:row.slug,app_key:row.appKey,visible:row.visible,featured:row.featured,
+    section:row.section,display_order:row.order
+   },{onConflict:'preset_slug,app_key'});
+   if(error)throw Error('db_error');
+   return answer({ok:true});
+  }
   // Gestion GLOBALE du catalogue, réservée aux enseignants autorisés.
   if(b.action==='teacher-catalog-global-get'||b.action==='teacher-catalog-global-save'){
    if(!await managed())return deny('forbidden',403);
