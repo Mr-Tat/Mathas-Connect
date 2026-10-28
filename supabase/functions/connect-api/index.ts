@@ -197,7 +197,7 @@ async function handle(req:Request){
  }
  case 'teacher-results':{
    if(!U.test(b.classId||'')||!await manage(b.classId))return fail('forbidden',403);
-   if(b.appKey!=='addition-ecrite-simple')return fail('input_invalid');
+   if(!['addition-ecrite-simple','multiplication-ecrite-simple'].includes(b.appKey))return fail('input_invalid');
    const enrollment=await db.from('connect_enrollments').select('student_id').eq('class_id',b.classId).is('left_at',null).limit(120);
    if(enrollment.error)return fail('db_failed',500);
    const ids=enrollment.data.map((v:any)=>v.student_id);
