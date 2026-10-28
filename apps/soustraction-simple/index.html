@@ -120,8 +120,8 @@ const bridge=`<script>
   e.preventDefault();e.stopImmediatePropagation();pilot.openTeacherParcours();
  },true);
 })();
-<\\/script>`;
-const scopedBootstrap=`<script>(function(){var ns=${JSON.stringify(ns)};var p=Storage.prototype;var g=p.getItem,s=p.setItem,r=p.removeItem;function key(k){k=String(k);if(k.indexOf('mathas_scores_')===0)k='mathas_scores_/soustraction-ecrite-simple/';return /^(multi1_|mathas_)/.test(k)?ns+k:k}p.getItem=function(k){return g.call(this,this===localStorage?key(k):k)};p.setItem=function(k,v){return s.call(this,this===localStorage?key(k):k,v)};p.removeItem=function(k){return r.call(this,this===localStorage?key(k):k)};})();<`+'/script>';
+<\/script>`;
+const scopedBootstrap=`<script>(function(){var ns=${JSON.stringify(ns)};var p=Storage.prototype;var g=p.getItem,s=p.setItem,r=p.removeItem;function key(k){k=String(k);if(k.indexOf('mathas_scores_')===0)k='mathas_scores_/soustraction-ecrite-simple/';return /^(soustraction_|mathas_)/.test(k)?ns+k:k}p.getItem=function(k){return g.call(this,this===localStorage?key(k):k)};p.setItem=function(k,v){return s.call(this,this===localStorage?key(k):k,v)};p.removeItem=function(k){return r.call(this,this===localStorage?key(k):k)};})();<`+'/script>';
 // Le panneau des records V6.0.2 peut reconstituer un ancien 10/10 à
 // partir d'un trophée conservé. Le trophée reste acquis, mais ne doit jamais
 // rétablir un record Classique effacé dans le compte Connecté.
