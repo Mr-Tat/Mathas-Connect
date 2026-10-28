@@ -829,41 +829,76 @@ document.querySelectorAll('.teacher-space .teacher-space-small[href]').forEach(a
 });
 const APP_SECTIONS=[['objectif','Objectif'],['calculs_ecrits','Calculs écrits'],['depassement','Dépassement'],['revision','Révision'],['outil','Outils'],['jeux','Jeux']];
 const APP_SPACES=[['observation','Observation'],['phase1','Phase 1'],['phase2','Phase 2'],['2eco','2 ECO']];
+
 async function loadTeacherAppPreview(){
  const body=$('teacher-app-tbody');if(!body)return;
- body.textContent='Chargement du tableau…';
- try{
- const data=await resultCall('teacher-app-matrix-get');
  body.replaceChildren();
- const entries=new Map((data.entries||[]).map(x=>[x.preset_slug+'|'+x.app_key,x]));
- for(const [i,app] of (data.apps||[]).entries()){
-  if(app.app_key==='connect-lab')continue;
-  const tr=document.createElement('tr'),first=document.createElement('td');
-  const title=document.createElement('strong');title.textContent=app.title;
-  first.append(title);tr.append(first);
-  const controls=[];
-  for(const [slug] of APP_SPACES){
-   const entry=entries.get(slug+'|'+app.app_key)||{visible:app.enabled,featured:false,section:'calculs_ecrits',display_order:app.display_order??i*10};
-   const td=document.createElement('td');td.style.minWidth='175px';
-   const makeCheck=(caption,val)=>{const label=document.createElement('label');label.style.display='block';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!val;label.append(cb,document.createTextNode(' '+caption));td.append(label);return cb};
-   const visible=makeCheck('Visible',entry.visible),featured=makeCheck('Du jour',entry.featured);
-   const section=document.createElement('select');for(const [value,label] of APP_SECTIONS){let o=document.createElement('option');o.value=value;o.textContent=label;section.append(o)}section.value=entry.section;td.append(section);
-   const save=document.createElement('button');save.type='button';save.className='soft';save.textContent='OK';
-   const status=document.createElement('small');status.setAttribute('role','status');
-   save.onclick=async()=>{save.disabled=true;status.textContent='…';try{
-    await resultCall('teacher-app-matrix-save',{changes:[{slug,appKey:app.app_key,visible:visible.checked,featured:featured.checked,section:section.value,order:Number(order.value)}]});
-    status.textContent='✓';
-   }catch(e){status.textContent='Erreur : '+e.message}finally{save.disabled=false}};
-   td.append(save,status);tr.append(td);controls.push({visible,featured,save,slug});
+ const loading=document.createElement('tr'),loadingCell=document.createElement('td');loadingCell.colSpan=8;loadingCell.textContent='Chargement du tableau GLOBAL…';loading.append(loadingCell);body.append(loading);
+ try{
+  const data=await resultCall('teacher-app-matrix-get');
+  const entries=new Map((data.entries||[]).map(e=>[e.preset_slug+'|'+e.app_key,e]));
+  const apps=(data.apps||[]).filter(a=>a.app_key!=='connect-lab').sort((a,b)=>(a.display_order??0)-(b.display_order??0)||a.title.localeCompare(b.title,'fr'));
+  const images={'addition-ecrite-simple':'./assets/miniatures/addition-ecrite-simple.webp','multiplication-ecrite-simple':'./assets/miniatures/multiplication-ecrite-simple.webp'};
+  const feedback=$('teacher-app-feedback');
+  const info=(text,error=false)=>{if(feedback){feedback.textContent=text;feedback.classList.toggle('error',error)}};
+  let saving=false;
+  const current=(slug,app)=>entries.get(slug+'|'+app.app_key)||{visible:app.enabled!==false,featured:false,section:'calculs_ecrits',display_order:app.display_order??0};
+  const change=(slug,app,extra={})=>{const e=current(slug,app);return {slug,appKey:app.app_key,visible:!!e.visible,featured:!!e.featured,section:e.section||'calculs_ecrits',order:Number(e.display_order??app.display_order??0),...extra}};
+  async function save(changes,controls=[]){
+   if(saving)return false;saving=true;controls.forEach(c=>c.disabled=true);info('Enregistrement…');
+   try{
+    await resultCall('teacher-app-matrix-save',{changes});
+    for(const c of changes){const k=c.slug+'|'+c.appKey;entries.set(k,{...entries.get(k),preset_slug:c.slug,app_key:c.appKey,visible:c.visible,featured:c.featured,section:c.section,display_order:c.order})}
+    info('✓ Réglages enregistrés');return true;
+   }catch(e){info('Échec de l’enregistrement : '+e.message,true);return false}
+   finally{saving=false;controls.forEach(c=>c.disabled=false)}
   }
-  const everywhere=document.createElement('td');
-  for(const [label,on] of [['Visible partout',true],['Cacher partout',false]]){
-   const b=document.createElement('button');b.type='button';b.className='soft';b.textContent=label;
-   b.onclick=async()=>{b.disabled=true;try{for(const c of controls){c.visible.checked=on;await resultCall('teacher-app-matrix-save',{changes:[{slug:c.slug,appKey:app.app_key,visible:on,featured:c.featured.checked,section:c.save.parentElement.querySelector('select').value,order:Number(order.value)}]})}}catch(e){alert('Erreur : '+e.message)}finally{b.disabled=false}};everywhere.append(b)
-  }tr.append(everywhere);
-  const orderCell=document.createElement('td'),order=document.createElement('input');order.type='number';order.min='0';order.max='100000';order.value=String(app.display_order??(i+1)*10);order.style.width='72px';orderCell.append(order);tr.append(orderCell);
-  const pos=document.createElement('td');pos.textContent=String(i+1);tr.append(pos);
-  body.append(tr);
- }
- }catch(e){body.textContent='Impossible de charger : '+e.message}
+  body.replaceChildren();
+  for(const [index,app] of apps.entries()){
+   const tr=document.createElement('tr');tr.className='teacher-matrix-row';tr.dataset.order=String(app.display_order??(index+1)*10);tr.dataset.title=app.title;
+   const identity=document.createElement('td'),link=document.createElement('a');identity.className='teacher-app-identity';link.className='teacher-matrix-app-link';link.target='_blank';link.rel='noopener noreferrer';
+   const href=app.launch_url||app.url;if(href)link.href=href;else link.classList.add('no-link');
+   const img=document.createElement('img');img.loading='lazy';img.alt='';img.src=app.image_url||images[app.app_key]||'./assets/brand/favicon.png';
+   img.onerror=()=>{img.onerror=null;img.src=images[app.app_key]||'./assets/brand/favicon.png'};
+   const name=document.createElement('strong');name.textContent=app.title;link.append(img,name);identity.append(link);tr.append(identity);
+   const controls=[];
+   for(const [slug,label] of APP_SPACES){
+    const td=document.createElement('td'),wrap=document.createElement('div');td.className='teacher-matrix-class-cell';wrap.className='teacher-matrix-controls';
+    function addCheck(field,caption){
+     const control=document.createElement('label'),input=document.createElement('input'),captionEl=document.createElement('span');
+     control.className='teacher-matrix-check';input.type='checkbox';input.checked=!!current(slug,app)[field];
+     input.setAttribute('aria-label',caption+' — '+label+' — '+app.title);captionEl.textContent=caption;control.append(input,captionEl);wrap.append(control);
+     input.onchange=async()=>{const previous=!input.checked;if(!await save([change(slug,app,{[field]:input.checked})],[input]))input.checked=previous};
+     return input;
+    }
+    const visible=addCheck('visible','Visible'),featured=addCheck('featured','Du jour');
+    const section=document.createElement('select');section.className='teacher-matrix-select';section.setAttribute('aria-label','Catégorie — '+label+' — '+app.title);
+    for(const [key,title] of APP_SECTIONS)section.add(new Option(title,key));
+    section.value=current(slug,app).section||'calculs_ecrits';
+    section.onchange=async()=>{const previous=current(slug,app).section||'calculs_ecrits';if(!await save([change(slug,app,{section:section.value})],[section]))section.value=previous};
+    wrap.append(section);td.append(wrap);tr.append(td);controls.push({slug,visible,featured,section});
+   }
+   const all=document.createElement('td');all.className='teacher-matrix-everywhere';
+   const bulk=(caption,value)=>{const btn=document.createElement('button');btn.type='button';btn.className='teacher-matrix-action'+(value?'':' subdued');btn.textContent=caption;
+    btn.onclick=async()=>{const changes=controls.map(c=>change(c.slug,app,{visible:value}));if(await save(changes,[...all.querySelectorAll('button')]))controls.forEach(c=>c.visible.checked=value)};all.append(btn)};
+   bulk('Visible partout',true);bulk('Cacher partout',false);tr.append(all);
+   const orderCell=document.createElement('td');orderCell.className='teacher-matrix-order';
+   const order=document.createElement('input');order.type='number';order.min='0';order.max='100000';order.value=String(app.display_order??(index+1)*10);order.setAttribute('aria-label','Ordre global — '+app.title);
+   const ok=document.createElement('button');ok.type='button';ok.textContent='OK';ok.className='teacher-matrix-order-ok';
+   const applyOrder=async()=>{const num=Number(order.value);if(!Number.isInteger(num)||num<0||num>100000){info('Ordre incorrect : entier entre 0 et 100000',true);return}
+    if(await save(APP_SPACES.map(([slug])=>change(slug,app,{order:num})),[order,ok])){app.display_order=num;tr.dataset.order=String(num);order.classList.remove('dirty');ok.classList.remove('dirty');sortRows()}
+   };
+   order.oninput=()=>{order.classList.add('dirty');ok.classList.add('dirty')};order.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();applyOrder()}};ok.onclick=applyOrder;
+   orderCell.append(order,ok);tr.append(orderCell);
+   const position=document.createElement('td');position.className='teacher-matrix-position';position.textContent=String(index+1);tr.append(position);body.append(tr);
+  }
+  function sortRows(){const rows=[...body.querySelectorAll('tr.teacher-matrix-row')];rows.sort((a,b)=>Number(a.dataset.order)-Number(b.dataset.order)||a.dataset.title.localeCompare(b.dataset.title,'fr'));rows.forEach((row,index)=>{row.lastElementChild.textContent=String(index+1);body.append(row)})}
+  document.querySelectorAll('[data-matrix-clear-day]').forEach(btn=>{btn.onclick=async()=>{
+   const slug=btn.dataset.matrixClearDay,affected=apps.filter(app=>current(slug,app).featured);
+   if(!affected.length){info('Aucune sélection « Du jour » à retirer');return}
+   if(!confirm('Retirer '+affected.length+' sélection(s) « Du jour » de cette colonne ?'))return;
+   if(await save(affected.map(app=>change(slug,app,{featured:false})),[btn]))loadTeacherAppPreview();
+  }});
+  if(!apps.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=8;td.textContent='Aucune application à afficher.';tr.append(td);body.append(tr)}
+ }catch(e){body.replaceChildren();const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=8;td.textContent='Impossible de charger : '+e.message;tr.append(td);body.append(tr)}
 }
