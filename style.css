@@ -286,4 +286,52 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
 #teacher-apps .teacher-matrix-feedback.error{color:#ffbdab}
 #teacher-apps .teacher-matrix-order .dirty{outline:2px solid #f0c46e}
 #teacher-apps .teacher-matrix-app-link.no-link{pointer-events:none}
-@media(max-width:760px){#teacher-apps .teacher-app-scroll{border-radius:8px}#teacher-apps .teacher-app-table{min-width:1110px}}
+
+/* GLOBAL — affichage téléphone uniquement : une identité compacte et fixe.
+   Bureau inchangé (miniature et nom côte à côte). */
+@media (max-width: 760px) {
+  #teacher-apps .teacher-app-scroll {
+    border-radius: 8px;
+    overscroll-behavior-x: contain;
+  }
+  #teacher-apps .teacher-app-table {
+    width: 1070px;
+    min-width: 1070px;
+  }
+  #teacher-apps .teacher-app-table th:first-child,
+  #teacher-apps .teacher-app-table td:first-child {
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+    text-align: center;
+  }
+  #teacher-apps .teacher-app-table td:first-child {
+    padding: 9px 6px;
+  }
+  #teacher-apps .teacher-matrix-app-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    text-align: center;
+  }
+  #teacher-apps .teacher-matrix-app-link img {
+    width: 50px;
+    height: 50px;
+  }
+  #teacher-apps .teacher-matrix-app-link strong {
+    display: block;
+    width: 100%;
+    max-width: 90px;
+    margin: 0 auto;
+    text-align: center;
+    font-size: 12.5px;
+    line-height: 1.28;
+    text-wrap: balance;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
+  }
+}
