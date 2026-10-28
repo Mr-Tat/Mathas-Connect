@@ -44,3 +44,10 @@ test('Known follow-up risks remain explicitly visible until resolved',()=>{
  assert.match(game,/MathasPilotBridge\?\.completed\?\.\(item\),750/);
  assert.match(launcher,/if\(q\.length>1000\)throw Error/);
 });
+
+test('Synchronization failures are shown and do not silently stop the queue',()=>{
+ assert.match(launcher,/syncWarning='Synchronisation interrompue/);
+ assert.match(launcher,/syncWarning='ATTENTION : sauvegarde locale impossible/);
+ assert.match(launcher,/catch\(error\)\{syncWarning=/);
+ assert.match(launcher,/window\.addEventListener\('online',\(\)=>/);
+});
