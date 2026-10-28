@@ -93,3 +93,11 @@ test('file : acquittement ciblé, conservation des parties concurrentes et ancie
  assert.ok(launcher.includes('archiveOldEvent(e);q=readQueue()'));
  assert.ok(launcher.includes("const staleKey=queueKey+'.previous-parcours.v1'"));
 });
+
+test('copie identique du moteur autonome (empreinte Git blob figée)',async()=>{
+ const {createHash}=await import('node:crypto');
+ const {readFileSync}=await import('node:fs');
+ const bytes=readFileSync(new URL('../apps/soustraction-simple/game-original.html',import.meta.url));
+ const sha=createHash('sha1').update('blob '+bytes.length+'\\0').update(bytes).digest('hex');
+ assert.equal(sha,'7588301f21428277e5d2c9b7aa2821bf606cb27a');
+});
