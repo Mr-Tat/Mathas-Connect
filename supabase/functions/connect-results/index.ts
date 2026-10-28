@@ -104,8 +104,8 @@ Deno.serve(async req=>{
      if(!await managed())return null;
      const player=await read(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));
      if(!player)return null;
-     const member=await read(db.from('connect_enrollments').select('student_id').eq('student_id',player.student_id).eq('class_id',b.classId).is('left_at',null));
-     if(!member)return null;
+     // Le compte joueur du professeur peut jouer dans chacune de ses classes.
+     // managed() ci-dessus vérifie l'autorisation pour la classe demandée.
      const active=await read(db.from('connect_students').select('id').eq('id',player.student_id).is('archived_at',null));
      return active?player.student_id:null;
     }const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;const enrolled=await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null));if(!enrolled)return null;const active=await read(db.from('connect_students').select('id').eq('id',device.student_id).is('archived_at',null));return active?device.student_id:null};
