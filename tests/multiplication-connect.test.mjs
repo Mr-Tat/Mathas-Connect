@@ -43,6 +43,6 @@ test('restarting a parcours affects only the selected application',()=>{
  const classRestart=migration.slice(migration.indexOf('CREATE OR REPLACE FUNCTION public.connect_parcours_restart_class'),migration.indexOf('CREATE OR REPLACE FUNCTION public.connect_parcours_restart_one'));
  assert.match(classRestart,/connect_parcours_restart_one\(p_teacher,p_class,member\.id,p_app,p_repeat_xp\)/);
  const teacher=src('../app.js');
- assert.match(teacher,/appKey:\$('results-app'\)\.value/);
+ assert.ok(teacher.includes("appKey:$('results-app').value"));
  assert.match(teacher,/resultCall\('teacher-parcours-restart',\{scope,studentId,repeatXp:xp\.checked,appKey\}\)/);
 });
