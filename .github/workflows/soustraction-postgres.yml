@@ -5,6 +5,8 @@ on:
       - 'supabase/migrations/20261028_soustraction_connect_v1.sql'
       - 'tests/sql/soustraction-pg-fixture.sql'
       - 'tests/sql/soustraction-pg-scenarios.sql'
+      - 'tests/soustraction-edge-postgres.runtime.test.mjs'
+      - 'supabase/functions/connect-results/index.ts'
       - '.github/workflows/soustraction-postgres.yml'
   workflow_dispatch:
 permissions:
@@ -45,3 +47,10 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261028_soustraction_connect_v1.sql
       - name: Execute real XP, trophy milestones, teacher restart and ACL assertions
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/soustraction-pg-scenarios.sql
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer adaptateur PostgreSQL léger pour Edge runtime
+        run: npm install --no-save --no-package-lock pg@8.16.3
+      - name: Appeler la vraie Edge Function sur PostgreSQL et vérifier les XP / reprises
+        run: node --test tests/soustraction-edge-postgres.runtime.test.mjs
