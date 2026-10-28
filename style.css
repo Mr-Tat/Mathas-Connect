@@ -402,3 +402,134 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
     width: min(100%, 120px);
   }
 }
+
+
+/* Résultats — tableau récapitulatif compact sur PC ET GSM.
+   Les colonnes restent fixes durant le défilement ; les fiches détaillées
+   conservent leur mise en page indépendante. */
+.results-overview-table {
+  width: max-content;
+  min-width: 0;
+  table-layout: fixed;
+  font-size: 13px;
+}
+.results-overview-table th,
+.results-overview-table td {
+  box-sizing: border-box;
+  padding: 10px 9px;
+}
+.results-overview-table thead th:first-child,
+.results-overview-table tbody td:first-child {
+  width: 150px;
+  min-width: 150px;
+  max-width: 150px;
+}
+.results-overview-table thead th:not(:first-child),
+.results-overview-table tbody td:not(:first-child) {
+  width: 240px;
+  min-width: 240px;
+  max-width: 240px;
+}
+.results-overview-table .results-student-link {
+  overflow-wrap: anywhere;
+  white-space: normal;
+  line-height: 1.35;
+}
+.results-overview-table .results-app-heading {
+  min-width: 0;
+  width: 100%;
+  gap: 8px;
+  align-items: center;
+  line-height: 1.3;
+}
+.results-overview-table .results-app-heading img {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+}
+.results-overview-table .results-app-heading span {
+  min-width: 0;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+.results-overview-table .results-app-cell-button {
+  min-width: 0;
+  padding: 4px 2px;
+}
+.results-overview-table .results-overview-cell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px;
+  gap: 7px;
+  min-width: 0;
+  width: 100%;
+}
+.results-overview-table .results-last,
+.results-overview-table .results-score-values {
+  min-width: 0;
+}
+.results-overview-table .results-recent-line {
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: normal;
+}
+.results-overview-table .results-recent-line time {
+  display: inline-block;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.results-overview-table .results-score-value {
+  font-size: 15px;
+}
+.results-overview-table .results-no-data {
+  min-width: 0;
+  white-space: normal;
+}
+.results-overview-table .results-app-cell-button::after {
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 680px) {
+  .results-overview-table th,
+  .results-overview-table td {
+    padding: 9px 7px;
+  }
+  .results-overview-table thead th:first-child,
+  .results-overview-table tbody td:first-child {
+    width: 114px;
+    min-width: 114px;
+    max-width: 114px;
+  }
+  .results-overview-table thead th:not(:first-child),
+  .results-overview-table tbody td:not(:first-child) {
+    width: 216px;
+    min-width: 216px;
+    max-width: 216px;
+  }
+  .results-overview-table .results-app-heading {
+    gap: 6px;
+    font-size: 12px;
+  }
+  .results-overview-table .results-app-heading img {
+    flex-basis: 36px;
+    width: 36px;
+    height: 36px;
+  }
+  .results-overview-table .results-overview-cell {
+    grid-template-columns: minmax(0, 1fr) 56px;
+    gap: 5px;
+  }
+  .results-overview-table .results-recent-line {
+    font-size: 12px;
+  }
+  .results-overview-table .results-recent-line time {
+    font-size: 11px;
+  }
+  .results-overview-table .results-score-value {
+    font-size: 14px;
+  }
+  .results-overview-table .results-app-cell-button::after {
+    content: "Voir le détail ›";
+  }
+}
