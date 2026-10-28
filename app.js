@@ -127,7 +127,9 @@ function renderGlobalRequests(all){
      const existingStudentId=approve&&selected&&selected!=='__new__'?selected:undefined;
      await call('teacher-review-join',{requestId:req.id,approve,...(existingStudentId?{existingStudentId}:{})});
      await refreshGlobalRequests();
-     msg(approve?(existingStudentId?'Appareil associé à la fiche élève existante':'Appareil autorisé : nouvelle fiche élève'):'Demande refusée',true)
+     const message=approve?(existingStudentId?'Appareil associé à la fiche élève existante':'Appareil autorisé : nouvelle fiche élève'):'Demande refusée';
+     const notice=$('teacher-requests-feedback');if(notice){notice.textContent=message;notice.hidden=false}
+     msg('')
    });
    row.append(btn)
  }
