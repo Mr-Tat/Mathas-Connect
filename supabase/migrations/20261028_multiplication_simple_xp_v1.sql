@@ -132,4 +132,59 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.connect_parcours_restart_class(p_teacher uuid, p_class uuid, p_app text, p_repeat_xp boolean DEFAULT false)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+declare member record; n integer:=0; details jsonb:='[]'::jsonb;
+begin
+ if p_app NOT IN ('addition-ecrite-simple','multiplication-ecrite-simple') or p_teacher is null or p_class is null then raise exception 'invalid_params';end if;
+ if not exists(select 1 from public.connect_class_permissions where teacher_id=p_teacher and class_id=p_class and can_manage=true) then raise exception 'forbidden';end if;
+ for member in select s.id from public.connect_students s join public.connect_enrollments e on e.student_id=s.id
+ where s.archived_at is null and e.class_id=p_class and e.left_at is null order by s.id loop
+  details:=details||public.connect_parcours_restart_one(p_teacher,p_class,member.id,p_app,p_repeat_xp);
+  n:=n+1;
+ end loop;
+ return jsonb_build_object('ok',true,'count',n,'classId',p_class,'xpReplay',coalesce(p_repeat_xp,false));
+end $function$
+;
+CREATE OR REPLACE FUNCTION public.connect_parcours_restart_one(p_teacher uuid, p_class uuid, p_student uuid, p_app text, p_repeat_xp boolean DEFAULT false)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+declare previous_number integer:=1; previous_repeat boolean:=false; state_old jsonb:='{}'::jsonb;
+ prev_xp integer:=0; next_number integer; old_rec record;
+begin
+ if p_app NOT IN ('addition-ecrite-simple','multiplication-ecrite-simple') or p_teacher is null or p_student is null or p_class is null then raise exception 'invalid_params';end if;
+ if not exists(select 1 from public.connect_class_permissions where teacher_id=p_teacher and class_id=p_class and can_manage=true) then raise exception 'forbidden';end if;
+ perform 1 from public.connect_students s join public.connect_enrollments e on e.student_id=s.id
+ where s.id=p_student and s.archived_at is null and e.class_id=p_class and e.left_at is null for update of s;
+ if not found then raise exception 'student_not_enrolled';end if;
+ select parcours_number,repeat_xp into old_rec from public.connect_parcours_current where student_id=p_student and app_key=p_app for update;
+ if found then previous_number:=old_rec.parcours_number;previous_repeat:=old_rec.repeat_xp;end if;
+ if previous_number>=10000 then raise exception 'too_many_parcours';end if;
+ select state_data into state_old from public.connect_states where student_id=p_student and app_key=p_app for update;
+ state_old:=coalesce(state_old,'{}'::jsonb);
+ -- Créditer toute réussite enregistrée AVANT d'archiver et de recommencer.
+ perform public.connect_xp_sync_v2(p_student,p_app,false);
+ -- xp_credited inclut déjà les bonus de rejeu : ne surtout pas les additionner deux fois.
+ select coalesce(sum(xp_credited),0) into prev_xp from public.connect_xp_credits where student_id=p_student and app_key=p_app;
+ insert into public.connect_parcours_history(student_id,app_key,parcours_number,class_id,repeat_xp,state_data,archived_xp)
+ values(p_student,p_app,previous_number,p_class,previous_repeat,state_old,coalesce(prev_xp,0));
+ next_number:=previous_number+1;
+ insert into public.connect_parcours_current(student_id,app_key,parcours_number,repeat_xp,started_at)
+ values(p_student,p_app,next_number,coalesce(p_repeat_xp,false),now())
+ on conflict(student_id,app_key) do update set parcours_number=excluded.parcours_number,repeat_xp=excluded.repeat_xp,started_at=excluded.started_at;
+ insert into public.connect_states(student_id,app_key,schema_version,revision,reset_epoch,state_data,updated_at)
+ values(p_student,p_app,1,1,1,'{}'::jsonb,now())
+ on conflict(student_id,app_key) do update
+ set revision=connect_states.revision+1,reset_epoch=connect_states.reset_epoch+1,
+ state_data='{}'::jsonb,updated_at=now();
+ return jsonb_build_object('ok',true,'studentId',p_student,'parcours',next_number,'xpReplay',coalesce(p_repeat_xp,false),'archived',previous_number);
+end $function$
+;
 COMMIT;
