@@ -9,6 +9,15 @@
       "featured": true,
       "display_order": 10,
       "image_url": "./assets/miniatures/addition-ecrite-simple.webp"
+    },
+    {
+      "app_key": "multiplication-ecrite-simple",
+      "title": "Multiplication écrite simple",
+      "launch_url": "https://mr-tat.github.io/Mathas-Connect/apps/multiplication-simple/",
+      "hub_section": "calculs_ecrits",
+      "featured": true,
+      "display_order": 20,
+      "image_url": "./apps/multiplication-simple/illustration.webp"
     }
   ]
 }

@@ -12,11 +12,11 @@ test('engine and all local images are independent of old Multiplication website'
  }
  assert.ok(!launcher.includes('https://mr-tat.github.io/Multiplication-simple/'));
 });
-test('classic launcher stores data separately from original Multiplication',()=>{
- assert.ok(launcher.includes('mathas.ce-multiplication.libre.v1:'));
+test('connected launcher isolates Multiplication from Addition',()=>{
+ assert.ok(launcher.includes('mathas.ce-multiplication.connect.'));
  assert.ok(launcher.includes('/^(multi1_|mathas_)/'));
- assert.ok(!launcher.includes('connect-results'));
- assert.ok(!launcher.includes('game-record'));
+ assert.ok(launcher.includes("APP='multiplication-ecrite-simple'"));
+ assert.ok(launcher.includes("action:'game-record'"));
 });
 test('guide layout remains present and arrow navigation is installed',()=>{
  for(const token of ['mathas-connect-arrows-v1','getBoundingClientRect','mathas-p120-guided-rail-js','mathas-hint-overlay'])

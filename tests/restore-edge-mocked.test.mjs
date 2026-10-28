@@ -20,6 +20,8 @@ function startHarness({allowed=true,enrolled=true}={}){
    async maybeSingle(){
     if(table==='connect_class_permissions')return {data:allowed?{class_id:klass}:null,error:null};
     if(table==='connect_enrollments')return {data:enrolled?{id:student}:null,error:null};
+    if(table==='connect_students')return {data:enrolled?{id:student}:null,error:null};
+    if(table==='connect_xp_milestones')return {data:[],error:null};
     if(table!=='connect_states')throw Error('unexpected table '+table);
     const previous=records.connect_states;
     if(action==='update'){
@@ -29,9 +31,11 @@ function startHarness({allowed=true,enrolled=true}={}){
     return {data:previous,error:null};
    }
   };
+  q.then=(resolve,reject)=>Promise.resolve({data:table==='connect_xp_milestones'?[]:null,error:null}).then(resolve,reject);
   q.single=async()=>({data:null,error:{code:'unexpected_insert'}});
   return q;
  }};
+ db.rpc=async()=>({data:{appXp:0,delta:0,total:0,level:1},error:null});
  const auth={auth:{getUser:async()=>({data:{user:{id:teacher,is_anonymous:false}},error:null})}};
  const ctx=vm.createContext({createClient:(_u,key)=>key==='private'?db:auth,
   Deno:{env:{get:k=>k==='SUPABASE_SERVICE_ROLE_KEY'?'private':'public'},serve:h=>{handler=h}},

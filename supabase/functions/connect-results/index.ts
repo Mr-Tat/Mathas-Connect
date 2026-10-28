@@ -5,8 +5,8 @@ const headers={'content-type':'application/json','cache-control':'no-store','acc
 const answer=(v:object,status=200)=>new Response(JSON.stringify(v),{status,headers});
 const deny=(e:string,status=400)=>answer({ok:false,error:e},status);
 const valid=(v:any)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
-const app='addition-ecrite-simple',lab='connect-lab';
-const appAllowed=(k:any)=>k===app||k===lab;
+const app='addition-ecrite-simple',mul='multiplication-ecrite-simple',lab='connect-lab';
+const appAllowed=(k:any)=>k===app||k===mul||k===lab;
 const belgianDay=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const read=async(q:any)=>{const {data,error}=await q.maybeSingle();if(error)throw Error('db_error');return data};
 const int=(n:any,min:number,max:number)=>Number.isSafeInteger(n)&&n>=min&&n<=max;
@@ -110,30 +110,30 @@ Deno.serve(async req=>{
      return active?player.student_id:null;
     }const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;const enrolled=await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null));if(!enrolled)return null;const active=await read(db.from('connect_students').select('id').eq('id',device.student_id).is('archived_at',null));return active?device.student_id:null};
   const refreshXp=async(studentId:string,appKey:string)=>{
-   if(appKey!==app)return null;
+   if(appKey!==app&&appKey!==mul)return null;
    const result=await db.rpc('connect_xp_sync_v2',{p_student:studentId,p_app:appKey,p_force:false});
    if(result.error){console.error('xp_credit_error',result.error.code);throw Error('xp_sync_failed')}
    return result.data;
   };
   // Parcours de révision : opération réservée au professeur, jamais au JWT élève.
   if(b.action==='teacher-parcours-restart'){
-   if(!await managed()||b.appKey!==app||typeof b.repeatXp!=='boolean'
+   if(!await managed()||![app,mul].includes(b.appKey)||typeof b.repeatXp!=='boolean'
       ||!['student','class'].includes(b.scope))return deny('forbidden',403);
    if(b.scope==='student'&&!valid(b.studentId))return deny('invalid_student');
    const name=b.scope==='class'?'connect_parcours_restart_class':'connect_parcours_restart_one';
-   const args:any={p_teacher:user.id,p_class:b.classId,p_app:app,p_repeat_xp:b.repeatXp};
+   const args:any={p_teacher:user.id,p_class:b.classId,p_app:b.appKey,p_repeat_xp:b.repeatXp};
    if(b.scope==='student')args.p_student=b.studentId;
    const result=await db.rpc(name,args);
    if(result.error){console.error('parcours_restart',result.error.code);return deny('restart_failed',409)}
    return answer({ok:true,...result.data});
   }
   if(b.action==='teacher-parcours-history'){
-   if(!await managed()||b.appKey!==app||!valid(b.studentId))return deny('forbidden',403);
+   if(!await managed()||![app,mul].includes(b.appKey)||!valid(b.studentId))return deny('forbidden',403);
    const member=await read(db.from('connect_enrollments').select('student_id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));
    if(!member)return deny('forbidden',403);
    const [current,history]=await Promise.all([
-     db.from('connect_parcours_current').select('parcours_number,repeat_xp,started_at').eq('student_id',b.studentId).eq('app_key',app).maybeSingle(),
-     db.from('connect_parcours_history').select('parcours_number,ended_at,repeat_xp,state_data,archived_xp').eq('student_id',b.studentId).eq('app_key',app).order('parcours_number',{ascending:false}).limit(12)
+     db.from('connect_parcours_current').select('parcours_number,repeat_xp,started_at').eq('student_id',b.studentId).eq('app_key',b.appKey).maybeSingle(),
+     db.from('connect_parcours_history').select('parcours_number,ended_at,repeat_xp,state_data,archived_xp').eq('student_id',b.studentId).eq('app_key',b.appKey).order('parcours_number',{ascending:false}).limit(12)
    ]);
    if(current.error||history.error)return deny('db_error',500);
    return answer({ok:true,current:current.data||{parcours_number:1,repeat_xp:false},history:history.data||[]});
@@ -270,14 +270,14 @@ Deno.serve(async req=>{
    return answer({ok:true,studentId:b.studentId,name:name?.display_name||'Élève',state:state?.state_data||null,revision:state?.revision??0});
   }
   if(b.action==='student-xp'){
-   if(b.appKey!==app)return deny('forbidden',403);
+   if(b.appKey!==app&&b.appKey!==mul)return deny('forbidden',403);
    const studentId=await identity();if(!studentId)return deny('forbidden',403);
-   const {data:summary,error:xpError}=await db.rpc('connect_xp_read_v2',{p_student:studentId,p_app:app,p_include_milestones:true});
+   const {data:summary,error:xpError}=await db.rpc('connect_xp_read_v2',{p_student:studentId,p_app:b.appKey,p_include_milestones:true});
    if(xpError||!summary)return deny('xp_unavailable',503);
    return answer({ok:true,appXp:summary.appXp,total:summary.total,level:summary.level,next:summary.next,milestones:summary.milestones,currentMilestones:summary.currentMilestones,parcours:summary.parcours,repeatXp:summary.repeatXp,max:summary.max});
   }
   if(b.action==='student-load'||b.action==='student-save'||b.action==='lab-record'||b.action==='game-record'||b.action==='game-reset'){
-   if(!selected||(b.action==='lab-record'&&selected!==lab)||(b.action==='game-record'&&selected!==app))return deny('forbidden',403);
+   if(!selected||(b.action==='lab-record'&&selected!==lab)||(b.action==='game-record'&&selected!==app&&selected!==mul))return deny('forbidden',403);
    const studentId=await identity();if(!studentId)return deny('forbidden',403);
    const current=await read(db.from('connect_states').select('revision,state_data,reset_epoch').eq('student_id',studentId).eq('app_key',selected));
    if(b.action==='student-load')return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,state:current?.state_data||null});
