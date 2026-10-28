@@ -479,13 +479,13 @@ $('results-restore-file').addEventListener('change',async event=>{
   const choices=[];
   for(const student of doc.students){
    if(!student||typeof student.id!=='string'||!Array.isArray(student.apps))continue;
-   for(const app of student.apps)if(app.appKey==='addition-ecrite-simple'&&app.state&&Number.isInteger(app.revision)&&Number.isInteger(app.resetEpoch))
+   for(const app of student.apps)if(['addition-ecrite-simple','multiplication-ecrite-simple'].includes(app.appKey)&&app.state&&Number.isInteger(app.revision)&&Number.isInteger(app.resetEpoch))
      choices.push({student,app});
   }
-  if(!choices.length)throw Error('Aucun résultat Addition à restaurer dans ce fichier');
+  if(!choices.length)throw Error('Aucun résultat d'application Connect à restaurer dans ce fichier');
   window.__restoreOptions=choices;
   const menu=$('results-restore-select');menu.replaceChildren();
-  choices.forEach((o,i)=>{const option=document.createElement('option');option.value=String(i);option.textContent=o.student.displayName+' · Addition écrite (sauvegarde rev. '+o.app.revision+')';menu.appendChild(option)});
+  choices.forEach((o,i)=>{const option=document.createElement('option');option.value=String(i);option.textContent=o.student.displayName+' · '+(o.app.appKey==='addition-ecrite-simple'?'Addition':'Multiplication')+' écrite (sauvegarde rev. '+o.app.revision+')';menu.appendChild(option)});
   $('results-restore-panel').hidden=false;$('results-restore-summary').textContent='Fichier chargé. Choisis un élève et clique « Prévisualiser ». Aucune donnée modifiée.';
  }catch(err){msg(err.message||'Fichier illisible')}
 });
@@ -493,8 +493,8 @@ $('results-restore-preview').addEventListener('click',()=>run(async()=>{
  const o=window.__restoreOptions?.[Number($('results-restore-select').value)];if(!o)throw Error('Choisis un élève');
  restoreCheck=null;restoreHasSafety=false;$('results-restore-confirm').disabled=true;
  async function preview(recoverPastReset){
-  return resultCall('teacher-restore-preview',{studentId:o.student.id,appKey:'addition-ecrite-simple',backupFormat:restoreDraft.format,backupProjectRef:restoreDraft.projectRef,
-   backupRevision:o.app.revision,backupResetEpoch:o.app.resetEpoch,backupState:o.app.state,backupMilestones:restoreDraft.format==='mathas-connect-class-backup-v4'?(o.student.xpMilestones||[]):[],recoverPastReset});
+  return resultCall('teacher-restore-preview',{studentId:o.student.id,appKey:o.app.appKey,backupFormat:restoreDraft.format,backupProjectRef:restoreDraft.projectRef,
+   backupRevision:o.app.revision,backupResetEpoch:o.app.resetEpoch,backupState:o.app.state,backupMilestones:restoreDraft.format==='mathas-connect-class-backup-v4'?(o.student.xpMilestones||[]).filter(x=>x.appKey===o.app.appKey):[],recoverPastReset});
  }
  let v;
  try{v=await preview(false)}
@@ -521,10 +521,10 @@ $('results-restore-confirm').addEventListener('click',()=>run(async()=>{
  if(!confirm('Vérifie maintenant que le fichier « AVANT-restauration » a bien été téléchargé et conservé en lieu sûr.\\n\\nConfirmer la restauration de '+o.student.displayName+' ?'))return;
  const phrase=prompt('Dernière confirmation : écris RESTAURER en majuscules');
  if(phrase!=='RESTAURER')return;
- const out=await resultCall('teacher-restore-apply',{studentId:o.student.id,appKey:'addition-ecrite-simple',
+ const out=await resultCall('teacher-restore-apply',{studentId:o.student.id,appKey:o.app.appKey,
   backupFormat:restoreDraft.format,backupProjectRef:restoreDraft.projectRef,
   backupRevision:o.app.revision,backupResetEpoch:o.app.resetEpoch,backupState:o.app.state,
-  backupMilestones:restoreDraft.format==='mathas-connect-class-backup-v4'?(o.student.xpMilestones||[]):[],
+  backupMilestones:restoreDraft.format==='mathas-connect-class-backup-v4'?(o.student.xpMilestones||[]).filter(x=>x.appKey===o.app.appKey):[],
   recoverPastReset:v.recoveringPastReset,expectedRevision:v.currentRevision,expectedResetEpoch:v.currentResetEpoch,previewDigest:v.previewDigest,
   confirmed:true,confirmationPhrase:'RESTAURER',safetyBackupExported:true});
  $('results-restore-summary').textContent='Restauration enregistrée pour '+o.student.displayName+'. Révision : '+out.revision+'. Relire les résultats professeur.';
