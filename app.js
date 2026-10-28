@@ -874,6 +874,20 @@ async function loadTeacherAppPreview(){
    const tr=document.createElement('tr');tr.className='teacher-matrix-row';tr.dataset.order=String(commonOrder(app));tr.dataset.title=app.title;
    const identity=document.createElement('td'),link=document.createElement('a');identity.className='teacher-app-identity';link.className='teacher-matrix-app-link';link.target='_blank';link.rel='noopener noreferrer';
    const href=app.launch_url||app.url;if(href)link.href=href;else link.classList.add('no-link');
+   // Soustraction n'est pas encore visible dans les HUB. Pour la recette finale,
+   // le professeur utilise SON profil Monsieur T, jamais une fiche d'élève.
+   if(app.app_key==='soustraction-ecrite-simple'&&href){
+    link.title='Tester Soustraction avec le profil Monsieur T (compte professeur)';
+    link.onclick=event=>{
+     if(!teacherPlayerActive){event.preventDefault();info('Clique d’abord sur « Jouer avec Monsieur T » pour tester Soustraction.',true);return}
+     const currentClass=$('class-selector')?.value;
+     if(!currentClass){event.preventDefault();info('Sélectionne d’abord une classe pour tester Soustraction.',true);return}
+     const target=new URL(href,location.href);
+     target.searchParams.set('class',currentClass);
+     target.searchParams.set('joueur','prof');
+     link.href=target.href;
+    };
+   }
    const img=document.createElement('img');img.loading='lazy';img.alt='';img.src=app.image_url||images[app.app_key]||'./assets/brand/favicon.png';
    img.onerror=()=>{img.onerror=null;img.src=images[app.app_key]||'./assets/brand/favicon.png'};
    const name=document.createElement('strong');name.textContent=app.title;link.append(img,name);identity.append(link);tr.append(identity);
