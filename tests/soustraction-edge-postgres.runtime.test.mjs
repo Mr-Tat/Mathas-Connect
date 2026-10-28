@@ -6,6 +6,9 @@ import {stripTypeScriptTypes} from 'node:module';
 // Ce test exige pg seulement dans le workflow PostgreSQL isolé.
 // Dans la CI Node générale, l'absence du paquet fait ignorer ce test coûteux.
 const pg=(await import('pg').catch(()=>null))?.default;
+// PostgREST transmet les révisions bigint JSON comme nombres (bornées à 1e9
+// par l'Edge) ; le paquet pg les renvoie en chaînes par défaut.
+if(pg)pg.types.setTypeParser(20,value=>Number(value));
 
 // Test du vrai code Edge + des vraies fonctions PostgreSQL, sans Supabase distant.
 // Auth et REST sont adaptés localement ; aucune connexion à des comptes d'élèves.
