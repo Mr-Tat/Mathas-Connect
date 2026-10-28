@@ -101,6 +101,8 @@ const bridge=`<script>
   if(reset)reset.textContent='Recommencer le parcours (professeur)';
   const note=document.getElementById('masterModeResetNote');
   if(note)note.textContent='Connect : les reprises sont gérées par le professeur. Les XP historiques restent acquis.';
+  const erase=document.getElementById('masterModeEraseResults');
+  if(erase){erase.textContent='Résultats gérés par le professeur';erase.title='Impossible d’effacer les acquis dans un compte Connect : demander au professeur.'}
  }
  const original=window.__setLastWork;
  if(typeof original==='function'){
@@ -108,17 +110,23 @@ const bridge=`<script>
    original.apply(this,arguments);
    if(!item||!/(?:Calculs|Mort subite|HARD)/i.test(String(item.label||'')))return;
    const method=document.querySelector('input[name="borrowMethod"]:checked')?.value==='takeTop'?'takeTop':'addBottom';
-   // La fonction du moteur est appelée uniquement lors d'une vraie fin de partie.
-   // 750 ms pour laisser le moteur historiser trophées et points avant l'envoi.
+   // Le moteur original fournit son observateur de récompenses sans attendre le polling 650 ms.
+   // Il historise points, trophées et aides en une seule passe, en conservant son propre calcul.
+   let rewardsReady=false;
+   if(pilot.mode==='connected'&&typeof window.__mathasConnectFlushRewards==='function'){
+    try{window.__mathasConnectFlushRewards();rewardsReady=true}
+    catch(error){console.warn('Récompenses différées',error)}
+   }
    const final={...item,method};
-   // L'événement est persisté immédiatement avant toute animation.
+   // Écriture synchrone durable avant toute tentative réseau ou animation.
    const eventId=pilot.completed(final,{defer:true});
-   if(eventId)setTimeout(()=>pilot.finalize(eventId),750);
+   if(eventId){if(rewardsReady)pilot.finalize(eventId);else setTimeout(()=>pilot.finalize(eventId),750)}
   };
  }
  document.addEventListener('click',function(e){
-  const btn=e.target?.closest?.('button');
-  if(!btn||pilot.mode!=='connected'||!window.__masterMode||btn.id!=='masterModeReset')return;
+  const btn=e.target?.closest?.('#masterModeReset,#masterModeEraseResults');
+  if(!btn||pilot.mode!=='connected')return;
+  // L'effacement local ne doit pas désynchroniser trophées et records sauvegardés.
   e.preventDefault();e.stopImmediatePropagation();pilot.openTeacherParcours();
  },true);
 })();
@@ -128,6 +136,11 @@ const scopedBootstrap=`<script>(function(){var ns=${JSON.stringify(ns)};var p=St
 // partir d'un trophée conservé. Le trophée reste acquis, mais ne doit jamais
 // rétablir un record Classique effacé dans le compte Connecté.
 let html=original.replaceAll('./logo-m.png','https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/logo-m.png').replaceAll('./logo-mot.webp','https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/logo-mot.webp').replaceAll('./illustration.webp','https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/illustration.webp');
+// Dans cette COPIE EXECUTÉE uniquement, expose le watch natif pour créditer immédiatement
+// les trophées au moment officiel d'une fin de partie. game-original.html reste intact.
+const flushAnchor='setInterval(watch,650);';
+if(!html.includes(flushAnchor))throw Error('Observateur de récompenses du moteur introuvable');
+html=html.replace(flushAnchor,'window.__mathasConnectFlushRewards=watch;'+flushAnchor);
 html=html.replace('<head>','<head>'+scopedBootstrap).replace('</body>',bridge+'</body>');
 // The child frame uses the same origin and isolated storage keys. No public classic game is changed.
 const iframe=document.createElement('iframe');iframe.title='Soustraction écrite V6.0.2';iframe.style.cssText='border:0;width:100%;height:calc(100dvh - var(--ce-toolbar-height,46px));display:block';iframe.setAttribute('allow','fullscreen');
