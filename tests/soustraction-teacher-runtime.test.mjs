@@ -63,3 +63,29 @@ test('tableau professeur Addition : aucune colonne technique Soustraction ajout�
  assert.equal(rows[1].children.length,7);
  assert.equal(h.restartCalls[0][3],'addition-ecrite-simple');
 });
+
+test('GLOBAL : lien de test Soustraction réservé au profil Monsieur T et à la classe choisie',()=>{
+ const start=app.indexOf("   if(app.app_key==='soustraction-ecrite-simple'&&href){");
+ const end=app.indexOf("   const img=document.createElement('img');",start);
+ assert.ok(start>=0&&end>start,'bloc du lien professeur présent dans GLOBAL');
+ const context=vm.createContext({URL,location:{href:'https://mr-tat.github.io/Mathas-Connect/index.html'},teacherPlayerActive:false,
+   $:id=>id==='class-selector'?{value:'22222222-2222-4222-8222-222222222222'}:null});
+ const factory=vm.runInContext('(function(app,href,link,info){'+app.slice(start,end)+';return link;})',context);
+ const notifications=[],info=(message,error)=>notifications.push({message,error});
+ const url='https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/';
+ const link={href:url};
+ factory({app_key:'soustraction-ecrite-simple'},url,link,info);
+ let prevented=false;
+ link.onclick({preventDefault(){prevented=true}});
+ assert.equal(prevented,true,'sans Monsieur T la page ne s’ouvre pas');
+ assert.equal(link.href,url,'pas de faux compte élève');
+ vm.runInContext('teacherPlayerActive=true',context);
+ prevented=false;link.onclick({preventDefault(){prevented=true}});
+ assert.equal(prevented,false,'Monsieur T connecté peut ouvrir le jeu');
+ const target=new URL(link.href);
+ assert.equal(target.searchParams.get('class'),'22222222-2222-4222-8222-222222222222');
+ assert.equal(target.searchParams.get('joueur'),'prof');
+ const other={href:'https://example.org/multiplication/'};
+ factory({app_key:'multiplication-ecrite-simple'},other.href,other,info);
+ assert.equal(other.onclick,undefined,'Multiplication inchangée');
+});
