@@ -21,8 +21,9 @@ test('scripts internes autonomes syntaxiquement valides',()=>{
   assert.ok(scripts.length>=25);
   for(const [i,m] of scripts.entries())assert.doesNotThrow(()=>new Script(m[1],{filename:'soustraction-'+i+'.js'}));
 });
-test('original en attente de lanceur : aucune publication prématurée',()=>{
-  assert.ok(!read('../hub-catalog.json').includes('soustraction-ecrite-simple'));
+test('la matrice globale conserve la décision de visibilité',()=>{
+  assert.ok(read('../hub-catalog.json').includes('soustraction-ecrite-simple'));
+  assert.ok(read('../supabase/migrations/20261028_soustraction_connect_v1.sql').includes("false,'calculs_ecrits',false"));
 });
 
 test('le lanceur isole la soustraction et garde les deux techniques',()=>{
