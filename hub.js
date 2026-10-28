@@ -76,7 +76,8 @@ async function showCatalog() {
     if (!response.ok) throw Error('catalog');
     const { apps: fallbackApps } = await response.json();
     if (!Array.isArray(fallbackApps)) throw Error('catalog');
-    let apps=fallbackApps;
+    // Jeu nouvellement intégré : jamais visible via le secours statique avant activation du preset serveur.
+    let apps=fallbackApps.filter(a=>a.app_key!=='soustraction-ecrite-simple');
     // Une lecture globale courte, mise en cache côté navigateur. Le catalogue statique reste le secours.
     try{
       const cacheKey='mathas.connect.global-catalog.v1';
