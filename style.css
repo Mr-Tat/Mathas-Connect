@@ -232,3 +232,21 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
 .teacher-requests-feedback{padding:12px 15px;background:#dff5e9;color:#195c40;border:1px solid #a6ddbb;border-radius:10px;font-weight:650}
 .teacher-requests-feedback[hidden]{display:none!important}
 @media(max-width:650px){.teacher-header-actions{flex-direction:column;align-items:stretch}.teacher-player-link{font-size:13px;padding:9px 12px}}
+
+/* Cliquer dans une colonne d'application ouvre CETTE application uniquement. */
+.results-overview-table .results-app-cell-button{
+ display:block;width:100%;text-align:left;min-height:0;margin:0;padding:5px 6px;
+ border:1px solid transparent;border-radius:9px;color:inherit!important;
+ background:transparent!important;font:inherit;font-size:inherit;cursor:pointer;
+ box-shadow:none;transition:background-color .12s,border-color .12s
+}
+.results-overview-table .results-app-cell-button::after{
+ content:"Voir les résultats détaillés ›";display:block;margin-top:10px;
+ color:#ace5ff;font-size:12px;font-weight:750;text-decoration:underline;text-underline-offset:3px
+}
+.results-overview-table .results-app-cell-button:hover{
+ background:#325674!important;border-color:#8abed9
+}
+.results-overview-table .results-app-cell-button:focus-visible{
+ outline:3px solid #a5e8ff;outline-offset:1px
+}
