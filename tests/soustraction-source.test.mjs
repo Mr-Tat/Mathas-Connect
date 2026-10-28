@@ -94,12 +94,24 @@ test('file : acquittement ciblé, conservation des parties concurrentes et ancie
  assert.ok(launcher.includes("const staleKey=queueKey+'.previous-parcours.v1'"));
 });
 
-test('copie identique du moteur autonome (empreinte Git blob figée)',async()=>{
+test('moteur Soustraction : version animée protégée par empreinte Git',async()=>{
  const {createHash}=await import('node:crypto');
  const {readFileSync}=await import('node:fs');
  const bytes=readFileSync(new URL('../apps/soustraction-simple/game-original.html',import.meta.url));
  const sha=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
- assert.equal(sha,'7588301f21428277e5d2c9b7aa2821bf606cb27a');
+ // Le moteur a été modifié intentionnellement uniquement pour maintenir les animations.
+ assert.equal(sha,'1c3b57432ea0d56932fa688a74ac9a774476fa5e');
+});
+
+test('Soustraction : animation forcée sur le jeu et son lanceur (sans toucher aux règles XP)',()=>{
+ const launcher=read('../apps/soustraction-simple/index.html');
+ assert.match(engine,/const reducedMotion=\(\)=>false;/);
+ assert.match(launcher,/const reducedMotion=\(\)=>false;/);
+ assert.doesNotMatch(engine,/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{/);
+ assert.doesNotMatch(launcher,/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{/);
+ assert.match(launcher,/const movement=el\.animate\(\[/);
+ assert.match(launcher,/await movement\.finished/);
+ assert.match(launcher,/if\(!Number\.isFinite\(total\)\|\|!Number\.isFinite\(delta\)\|\|delta<=0\)return;/);
 });
 
 test('fin de partie : observateur trophées natif appelé immédiatement, suppression Master neutralisée',()=>{
