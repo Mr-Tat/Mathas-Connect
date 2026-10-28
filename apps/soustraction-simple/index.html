@@ -49,7 +49,7 @@ if((connectionCheckRequired||teacherPlayer)&&mode!=='connected'){
  for(const b of [retry,classic])b.style.cssText='padding:12px;border:0;border-radius:10px;background:#176e8d;color:white;font:600 13px system-ui;cursor:pointer';
  actions.append(retry,classic);view.appendChild(actions);
 }else{
-const ns=mode==='connected'?'mathas.ce-soustraction.connect.'+(teacherPlayer?'monsieur-t':session.user.id)+'.v1:':'mathas.ce-soustraction.libre.v1:',GKEYS=new Set();
+const ns=mode==='connected'?'mathas.ce-soustraction.connect.'+classId+'.'+(teacherPlayer?'monsieur-t':session.user.id)+'.v1:':'mathas.ce-soustraction.libre.v1:',GKEYS=new Set();
 const native={get:Storage.prototype.getItem,set:Storage.prototype.setItem,remove:Storage.prototype.removeItem};
 // Conservation des scores classiques sans migration invasive.
 function key(k){let s=String(k);if(mode==='free'&&s.startsWith('mathas_scores_'))s='mathas_scores_/soustraction-ecrite-simple/';return /^(soustraction_|mathas_)/.test(s)?ns+s:s}
@@ -89,7 +89,7 @@ function currentRewards(){
  try{return JSON.parse(localStorage.getItem('mathas_trophies_v3_soustraction-ecrite')||'null')}catch{return null}
 }
 
-// Injecte uniquement la configuration de verrouillage, sans modifier le placement des outils.
+// Aucune configuration de multiplicateurs : ce moteur a ses deux techniques d'emprunt propres.
 // Le pont se branche uniquement après l'initialisation du moteur autonome,
 // sans modifier les aides, guides, réglette, emprunts, pavé ou mises en page.
 const bridge=`<script>
@@ -301,13 +301,13 @@ async function drain(){
   while(q.length){
    const e=q[0],a=(await cloud.auth.getSession()).data.session;
    if(!a){syncWarning='Session interrompue : résultats conservés sur cet appareil.';break;}
-   if(e.expectedResetEpoch!==resetEpoch){q.shift();saveQueue(q);continue}
+   if(e.expectedResetEpoch!==resetEpoch){syncWarning='Anciennes parties en attente : parcours différent. Préviens le professeur.';break}
    e.expectedRevision=revision;
    const headers={apikey:KEY,authorization:'Bearer '+a.access_token,'content-type':'application/json'};
    let res,data;
    try{res=await fetch(URL+'/functions/v1/connect-results',{method:'POST',headers,body:JSON.stringify(e)});data=await res.json()}catch{syncWarning='Connexion indisponible : résultats en attente sur cet appareil.';break}
    if(res.ok&&data.ok){revision=data.revision;resetEpoch=data.resetEpoch??resetEpoch;q.shift();saveQueue(q);syncWarning='';conflicts=0;if(data.xp&&Number.isFinite(Number(data.xp.appXp))){xpUiVersion++;if(data.xp.delta>0)queueXpGain(data.xp);else if(!xpVisualPending){showEarnedXp(data.xp.appXp);renderXpMeter(data.xp.total,data.xp.level,true)}}continue}
-   if(data.error==='stale_reset_epoch'){q.shift();saveQueue(q);break}
+   if(data.error==='stale_reset_epoch'){syncWarning='Partie conservée : parcours redémarré. Préviens le professeur.';break}
    if(data.error==='revision_conflict'&&conflicts++<2){
     const v=await fetch(URL+'/functions/v1/connect-results',{method:'POST',headers,body:JSON.stringify({action:'student-load',classId,appKey:APP})}).then(r=>r.json()).catch(()=>null);
     if(!v?.ok)break;revision=v.revision;resetEpoch=v.resetEpoch??0;continue;
