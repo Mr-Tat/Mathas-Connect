@@ -24,3 +24,12 @@ test('scripts internes autonomes syntaxiquement valides',()=>{
 test('original en attente de lanceur : aucune publication prématurée',()=>{
   assert.ok(!read('../hub-catalog.json').includes('soustraction-ecrite-simple'));
 });
+
+test('le lanceur isole la soustraction et garde les deux techniques',()=>{
+ const launcher=read('../apps/soustraction-simple/index.html');
+ assert.ok(launcher.includes("APP='soustraction-ecrite-simple'"));
+ assert.ok(launcher.includes("suddenMethods?.[method]"));
+ assert.ok(launcher.includes("['addBottom','takeTop']"));
+ assert.ok(launcher.includes("expectedResetEpoch:resetEpoch"));
+ assert.ok(launcher.includes("action:'game-record'"));
+});
