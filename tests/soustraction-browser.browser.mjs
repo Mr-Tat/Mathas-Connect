@@ -249,7 +249,7 @@ test('Chromium : quatre vrais calculs résolus au pavé -> résultat 4/4 envoyé
      const top=Number(digits('.top-digit'));
      const bottomDigits=[...box.querySelectorAll('.bottom-digit')].sort((a,b)=>Number(b.dataset.bottomCol)-Number(a.dataset.bottomCol)).map(x=>x.querySelector('.bottom-main').textContent.trim()).join('');
      const answer=String(top-Number(bottomDigits)).padStart(box.querySelectorAll('.answer-input').length,'0').split('').reverse();
-     if(top<=Number(bottomDigits)||answer.some(x=>!/^\\d$/.test(x)))throw Error('invalid operation '+top+'-'+bottomDigits);
+     if(top<=Number(bottomDigits)||answer.some(x=>!'0123456789'.includes(x)))throw Error('invalid operation '+top+'-'+bottomDigits);
      for(let col=0;col<answer.length;col++){
       const input=box.querySelector('.answer-input[data-col="'+col+'"]');
       input.focus();
