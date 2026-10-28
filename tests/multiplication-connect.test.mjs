@@ -17,7 +17,7 @@ test('shared client has separate identities and all the XP UI',()=>{
 });
 test('results hook exists for classic, sudden and both HARD modes',()=>{
  assert.ok(game.includes('window.parent.MathasPilotBridge?.completed?.(item)'));
- assert.ok(game.split('window.parent.MathasPilotBridge?.completed?.(item)').length===4);
+ assert.equal((game.match(/notifyConnectResult\\(item\\);/g)||[]).length,3);
 });
 test('server authorizes only explicit apps and reads XP for the requested one',()=>{
  assert.match(backend,/mul='multiplication-ecrite-simple'/);
