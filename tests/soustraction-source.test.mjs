@@ -73,3 +73,13 @@ test('pont iframe : fermeture effective et stockage natif du moteur isolé',()=>
  assert.ok(standalone.includes('soustraction_classic20_v6'));
  assert.ok(standalone.includes('soustraction_sudden_v6'));
 });
+
+test('une fermeture avant le délai de trophées ne perd pas le résultat en file',()=>{
+ const launcher=read('../apps/soustraction-simple/index.html');
+ const staged=launcher.indexOf('pending.push(body);saveQueue(pending)');
+ const rewards=launcher.indexOf('finalize:eventId=>');
+ assert.ok(staged>0&&rewards>staged);
+ assert.ok(launcher.includes('pilot.completed(final,{defer:true})'));
+ assert.ok(launcher.includes('setTimeout(()=>pilot.finalize(eventId),750)'));
+ assert.ok(launcher.includes('if(!options.defer)'));
+});
