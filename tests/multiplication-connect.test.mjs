@@ -33,3 +33,16 @@ test('all embedded scripts compile and keyboard guides remain',()=>{
  assert.match(game,/mathas-connect-arrows-v1/);
  assert.match(game,/mathas-p120-guided-rail-js/);
 });
+
+test('restarting a parcours affects only the selected application',()=>{
+ const restart=migration.slice(migration.indexOf('CREATE OR REPLACE FUNCTION public.connect_parcours_restart_one'));
+ assert.match(restart,/where student_id=p_student and app_key=p_app/);
+ assert.match(restart,/where s\.id=p_student/);
+ assert.match(restart,/values\(p_student,p_app,previous_number/);
+ assert.match(restart,/on conflict\(student_id,app_key\)/);
+ const classRestart=migration.slice(migration.indexOf('CREATE OR REPLACE FUNCTION public.connect_parcours_restart_class'),migration.indexOf('CREATE OR REPLACE FUNCTION public.connect_parcours_restart_one'));
+ assert.match(classRestart,/connect_parcours_restart_one\(p_teacher,p_class,member\.id,p_app,p_repeat_xp\)/);
+ const teacher=src('../app.js');
+ assert.match(teacher,/appKey:\$('results-app'\)\.value/);
+ assert.match(teacher,/resultCall\('teacher-parcours-restart',\{scope,studentId,repeatXp:xp\.checked,appKey\}\)/);
+});
