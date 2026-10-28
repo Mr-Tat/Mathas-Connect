@@ -347,7 +347,12 @@ test('Animations XP Connect visibles sur Soustraction ET Multiplication, même e
     await page.waitForFunction(()=>document.querySelector('#xp-toast.open')?.textContent?.includes('+22 XP'),{timeout:20000});
     const seen=await page.locator('#xp-toast').evaluate(el=>{
      const r=el.getBoundingClientRect(),css=getComputedStyle(el);
+     // pointer-events:none est voulu : il laisse jouer au clavier/souris dessous.
+     // Activer temporairement la détection du panneau POUR le contrôle de pile.
+     const previous=el.style.pointerEvents;
+     el.style.pointerEvents='auto';
      const top=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+     el.style.pointerEvents=previous;
      return {hidden:el.hidden,display:css.display,height:r.height,opacity:Number(css.opacity),front:el.contains(top)};
     });
     assert.equal(seen.hidden,false,game+' '+motion+': XP toast caché');
