@@ -15,3 +15,7 @@ test('disabled game cannot write on Edge; response includes server XP when avail
  assert.match(edge,/selected===addMulti&&b\.points!==0/);
  assert.match(edge,/\.\.\.\(xp\?\{xp\}:\{\}/);
 });
+
+test('duplicate server acknowledgement cannot trigger XP flight',()=>{
+ assert.match(pilot,/reply\.duplicate\?\{\.\.\.reply,xp:reply\.xp\?\{\.\.\.reply\.xp,delta:0\}/);
+});
