@@ -25,14 +25,22 @@ function loginRequired(message){
 async function api(functionName,action,data={}){
  const {data:{session},error}=await client.auth.getSession();
  if(error||!session?.access_token||session.user?.is_anonymous)throw Error('Connexion professeur requise.');
- const response=await fetch(endpoint+'/functions/v1/'+functionName,{
-  method:'POST',cache:'no-store',
-  headers:{apikey:publicKey,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
-  body:JSON.stringify({action,...data})
- });
- const result=await response.json().catch(()=>({}));
- if(!response.ok||result.ok!==true)throw Error(result.error==='forbidden'?'Accès professeur refusé.':result.error||'Données indisponibles.');
- return result;
+ // Une connexion instable ne doit jamais bloquer indéfiniment l'écran de classe.
+ const watchdog=new AbortController();
+ const deadline=setTimeout(()=>watchdog.abort(),12000);
+ try{
+  const response=await fetch(endpoint+'/functions/v1/'+functionName,{
+   method:'POST',cache:'no-store',signal:watchdog.signal,
+   headers:{apikey:publicKey,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
+   body:JSON.stringify({action,...data})
+  });
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||result.ok!==true)throw Error(result.error==='forbidden'?'Accès professeur refusé.':result.error||'Données indisponibles.');
+  return result;
+ }catch(error){
+  if(watchdog.signal.aborted)throw Error('Connexion trop lente : réessaie avec le bouton Actualiser.');
+  throw error;
+ }finally{clearTimeout(deadline)}
 }
 function metric(id,value){$(id).textContent=String(value)}
 function render(data,classLabel){
