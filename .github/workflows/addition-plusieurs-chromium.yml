@@ -4,7 +4,7 @@ on:
     paths:
       - 'apps/addition-plusieurs/**'
       - 'tests/addition-plusieurs-browser-smoke.mjs'
-      - 'tests/addition-plusieurs-connected-browser.test.mjs'
+      - 'tests/addition-plusieurs-connected-browser.e2e.mjs'
       - '.github/workflows/addition-plusieurs-chromium.yml'
   workflow_dispatch:
 jobs:
@@ -23,4 +23,4 @@ jobs:
       - name: Verify original game loads in Chromium
         run: node tests/addition-plusieurs-browser-smoke.mjs
       - name: Verify authenticated Connected flow with mocked isolated Edge
-        run: node tests/addition-plusieurs-connected-browser.test.mjs
+        run: node tests/addition-plusieurs-connected-browser.e2e.mjs
