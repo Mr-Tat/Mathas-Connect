@@ -23,7 +23,7 @@ export function createSync({queue,post,onAck=()=>{},onConflict=()=>{},onError=()
     }
     // Seule preuve d'acquittement serveur. Les réponses malformées conservent le résultat.
     if(!Number.isSafeInteger(response.revision)||!Number.isSafeInteger(response.resetEpoch)){onError(new Error('bad_server_ack'));break}
-    if(response.resetEpoch!==request.expectedResetEpoch||(!response.duplicate&&response.revision<=request.expectedRevision)|| (response.duplicate&&response.revision<request.expectedRevision)){onConflict({ok:false,error:'unexpected_server_revision',response});break}
+    if(response.resetEpoch!==request.expectedResetEpoch||(!response.duplicate&&response.revision!==request.expectedRevision+1)|| (response.duplicate&&response.revision<request.expectedRevision)){onConflict({ok:false,error:'unexpected_server_revision',response});break}
     if(queue.acknowledge(pending.eventId)){accepted++;revision=response.revision;resetEpoch=response.resetEpoch;onAck(pending,response)}
    }
    return {accepted,remaining:queue.count()};
