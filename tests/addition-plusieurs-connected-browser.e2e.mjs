@@ -78,9 +78,11 @@ try{
  await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='0 XP');
  // Trigger genuine engine completion callback; not an arithmetic click-through.
  await frame.locator('body').evaluate((_element,awards)=>{
+    // Simulate original game's ordering: completion callback runs before
+    // the synchronous trophy storage update that follows it.
+    window.__setLastWork({label:'Calculs · Niveau 1',score:'4/4',rulerUsed:false});
     localStorage.setItem('mathas_trophies_v3_addition-plusieurs',JSON.stringify(awards));
  },nativeTrophies);
- await frame.locator('body').evaluate(()=>window.__setLastWork({label:'Calculs · Niveau 1',score:'4/4',rulerUsed:false}));
  await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='22 XP',{timeout:15000});
  assert.equal(backend(pupil).appXp,22);
  assert.equal(backend(pupil).revision,1);
