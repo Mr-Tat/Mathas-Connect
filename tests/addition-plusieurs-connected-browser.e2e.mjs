@@ -138,7 +138,7 @@ try{
  refused.on('pageerror',e=>refusedErrors.push(e.message));
  const previousRecords=calls.filter(c=>c.action==='game-record').length;
  await refused.goto(base+basePath+'?class='+classroom,{waitUntil:'domcontentloaded'});
- await refused.locator('#result').getByText('Connexion Connect impossible ou non autorisée.',{exact:false}).waitFor({timeout:15000});
+ await refused.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('Connexion Connect impossible ou non autorisée.'),null,{timeout:15000});
  assert.equal(await refused.locator('#mode-note').innerText(),
   'Connexion indisponible — aucun résultat enregistré');
  assert.equal(await refused.locator('iframe#game').evaluate(el=>Boolean(el.srcdoc)),false,
