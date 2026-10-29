@@ -10,3 +10,18 @@ test('real completion to simulated XP, no duplicate award',async()=>{
  assert.equal(received[1].delta,0);
  assert.equal(received[1].appXp,22);
 });
+
+test('simulator persistence across a page reload cannot mint XP again',async()=>{
+ const saved=storage(),ack=[];
+ const play=async (lab,score)=>{assert.equal(lab.completed({label:'Calculs · Niveau 1',score}),true);assert.equal((await lab.flush()).remaining,0)};
+ const first=createLocalLab({storage:saved,onStatus:(s,r)=>{if(s==='saved')ack.push(r.xp)}});
+ await play(first,'4/4');
+ assert.equal(ack.at(-1).appXp,22);
+ const afterReload=createLocalLab({storage:saved,onStatus:(s,r)=>{if(s==='saved')ack.push(r.xp)}});
+ await play(afterReload,'4/4');
+ assert.equal(ack.at(-1).delta,0);
+ assert.equal(ack.at(-1).appXp,22);
+ await play(afterReload,'10/10');
+ assert.equal(ack.at(-1).delta,36);
+ assert.equal(ack.at(-1).appXp,58);
+});
