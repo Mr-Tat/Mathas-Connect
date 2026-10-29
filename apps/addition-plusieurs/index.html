@@ -4,6 +4,7 @@ import {createLocalLab} from './local-lab.mjs';
 import {buildConnectPilot,CONNECT_WRITE_READY as writeReady} from './connect-pilot.mjs';
 import {createEdgePost} from './edge-transport.mjs';
 import {createAuthenticatedHost} from './connect-host.mjs';
+import {hydrateNativeRecords} from './connect-hydration.mjs';
 (async()=>{const frame=document.getElementById('game'),output=document.getElementById('result'),recorded=[];
  // No Connect credentials are read until the backend has been validated and enabled.
  const launch=new URLSearchParams(location.search);
@@ -27,6 +28,10 @@ import {createAuthenticatedHost} from './connect-host.mjs';
    const loaded=await host.load();
    if(loaded?.ok!==true||!candidate.initialize(loaded.revision,loaded.resetEpoch))throw Error('connect_load_failed');
    connected=candidate;
+   const hydrated=hydrateNativeRecords({storage:localStorage,
+     scope:'connect.'+host.classId.toLowerCase()+'.'+host.studentId.toLowerCase(),
+     state:loaded.state,pending:candidate.pending()});
+   if(!hydrated)output.textContent='Connect : sauvegardes locales en attente de synchronisation';
    void connected.retry();
  }
  const lab=simulate?createLocalLab({storage:sessionStorage,onStatus:(status,reply)=>{
