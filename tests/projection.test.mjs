@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
 import {summarizeProjection} from '../projection-model.mjs';
 
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
@@ -71,4 +72,9 @@ test('projection : aucune écriture serveur, rafraîchissement automatique ou id
  assert.match(html,/<div id="board" hidden>/);
  assert.match(html,/Aucune modification des résultats ni des XP/);
  assert.match(html,/projection\.js/);
+});
+
+test('projection : le module navigateur reste syntaxiquement valide',()=>{
+ const check=spawnSync(process.execPath,['--check',new URL('../projection.js',import.meta.url).pathname],{encoding:'utf8'});
+ assert.equal(check.status,0,check.stderr);
 });
