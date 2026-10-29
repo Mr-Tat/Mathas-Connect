@@ -3,7 +3,7 @@ on:
   pull_request:
     paths:
       - 'apps/addition-plusieurs/**'
-      - 'tests/addition-plusieurs-source.test.mjs'
+      - 'tests/addition-plusieurs-*.test.mjs'
       - '.github/workflows/addition-plusieurs-stage.yml'
   workflow_dispatch:
 jobs:
@@ -17,4 +17,4 @@ jobs:
         with:
           node-version: '22'
       - name: Source and isolation contract
-        run: node --test tests/addition-plusieurs-source.test.mjs
+        run: node --test tests/addition-plusieurs-source.test.mjs tests/addition-plusieurs-completion.test.mjs
