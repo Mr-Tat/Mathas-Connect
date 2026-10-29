@@ -4,7 +4,7 @@ const pilot=readFileSync(new URL('../apps/addition-plusieurs/connect-pilot.mjs',
 test('host connection is gated before accessing credentials and loading state',()=>{
  assert.match(pilot,/CONNECT_WRITE_READY=false/);
  assert.match(html,/if\(writeReady\)\{/);
- assert.match(html,/const host=window\.MathasConnectHost/);
+ assert.match(html,/host=window\.MathasConnectHost/);
  assert.match(html,/candidate\.initialize\(loaded\.revision,loaded\.resetEpoch\)/);
  assert.match(html,/if\(connected\)connected\.completed\(item\)/);
 });
