@@ -99,3 +99,17 @@
 - La récupération de l'état serveur restaure `mathas_trophies_v3_addition-plusieurs` dans la bonne identité classe/élève, sans mélanger les PC partagés. Lors d'un nouveau parcours remis à zéro par le professeur, les trophées locaux du parcours précédent sont effacés; les XP acquis restent dans leur crédit serveur séparé.
 - Tests Node et PostgreSQL en base éphémère : persistance, merge monotone, doubles sauvegardes, mauvaises structures, données absentes, permissions `service_role` et isolation. Tests Chromium : transfert avec faux serveur Edge et reprise du trophée après rechargement.
 - **Restant avant activation :** vraie recette Edge/Supabase authentifiée dans un environnement isolé avec utilisateurs fictifs et interface professeur, puis test manuel des célébrations visuelles et d'une partie terminée par les vraies saisies. Les verrous `CONNECT_WRITE_READY=false`, `ADD_MULTI_SERVER_READY=false` et `ADD_MULTI_TEACHER_READY=false` demeurent fermés; aucune migration n'est déployée.
+
+## Contrôle complémentaire : anciens trophées après remise à zéro
+
+La réconciliation native du moteur V6.0.2 peut recréer des trophées à partir de la dernière partie, des anciens points et des anciennes versions de trophées, même quand le tableau officiel a été remis à zéro. Pour empêcher cette divergence, `connect-hydration.mjs` supprime uniquement les caches **dérivés du jeu Addition multiple** avant de charger l'état serveur : ancienne dernière partie, anciennes versions de records HARD, anciens points, anciens trophées V1/V2 et ancien historique `srcdoc`. Les préférences de jeu, les identifiants d'authentification, la file hors connexion, les autres applications et les récompenses officielles du parcours actuel ne sont pas touchés.
+
+Test Chromium ajouté : un ancien 4/4, un record de 900 points et un ancien trophée sont volontairement laissés dans le navigateur. Le professeur fictif remet ensuite le parcours à zéro. Après ouverture du jeu, les anciens scores et trophées ne réapparaissent pas; les 22 XP historiques restent acquis. Test spécifique Node vérifie également la conservation des paramètres de jeu.
+
+**Preuves CI :**
+- Test navigateur avec transferts de trophées et remise à zéro : https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40942220946
+- PostgreSQL 17 isolé avec transaction, trophées et rollback : https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40942220968
+- Régressions Math'as Connect : https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40942221043
+- Contrats Addition multiple : https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40942221144
+
+**Toujours non réalisé :** véritable déploiement sur un environnement Supabase de test, essai authentifié Edge/API end-to-end avec deux comptes fictifs et test manuel de calculs réellement saisis. La PR reste en brouillon, les trois verrous d'activation restent désactivés et aucune donnée réelle n'a été modifiée.
