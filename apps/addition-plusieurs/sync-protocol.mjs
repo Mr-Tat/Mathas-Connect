@@ -1,12 +1,16 @@
 // Protocole d'envoi transactionnel, activable seulement après déploiement Edge/RPC.
 // Aucun polling : lancement manuel, une seule requête en vol, conflit => arrêt sûr.
-export function createSync({queue,post,onAck=()=>{},onConflict=()=>{},onError=()=>{}}){
+export function createSync({queue,post,onAck=()=>{},onConflict=()=>{},onError=()=>{},getState=()=>null}){
  if(!queue||typeof post!=='function')throw Error('dependencies_required');
  let running=null;
  async function flush(){
   if(running)return running;
   running=(async()=>{
    let accepted=0, revision=null, resetEpoch=null;
+   const known=getState();
+   if(known&&Number.isSafeInteger(known.revision)&&Number.isSafeInteger(known.resetEpoch)){
+     revision=known.revision;resetEpoch=known.resetEpoch;
+   }
    for(const pending of queue.read()){
     // Never rebase queued results onto a new teacher-reset parcours.
     if(resetEpoch!==null&&pending.expectedResetEpoch!==resetEpoch){onConflict({ok:false,error:'queued_epoch_mismatch'});break}
