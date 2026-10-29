@@ -1,0 +1,20 @@
+name: Addition plusieurs - staging checks
+on:
+  pull_request:
+    paths:
+      - 'apps/addition-plusieurs/**'
+      - 'tests/addition-plusieurs-source.test.mjs'
+      - '.github/workflows/addition-plusieurs-stage.yml'
+  workflow_dispatch:
+jobs:
+  static-contract:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Source and isolation contract
+        run: node --test tests/addition-plusieurs-source.test.mjs
