@@ -55,6 +55,19 @@ export function hydrateNativeRecords({storage,scope,state,pending=0}){
   'addition2_hard_three_v2':hardThree,
   'mathas_progression_addition_plusieurs_v1':p
  }))storage.setItem(prefix+name,JSON.stringify(value));
+ // The native V6.0.2 engine migrates legacy HARD records and reconstructs
+ // trophies from lastWork and historic points. After teacher reset those are
+ // NOT authoritative: strip only game-derived caches, never preferences,
+ // authentication, queued attempts or other applications.
+ for(const legacy of [
+  'addition2_last_work',
+  'addition2_hard_sudden_v1','addition2_hard_sudden_v2',
+  'addition2_hard_three_v1',
+  'mathas_points_v1_addition-plusieurs',
+  'mathas_trophies_v1_addition-plusieurs','mathas_trophies_v2_addition-plusieurs',
+  'mathas_easy_trophies_v1_addition-plusieurs',
+  'mathas_scores_srcdoc'
+ ])storage.removeItem(prefix+legacy);
  const trophyKey=prefix+'mathas_trophies_v3_addition-plusieurs';
  if(awards)storage.setItem(trophyKey,JSON.stringify(awards));
  else storage.removeItem(trophyKey);
