@@ -69,3 +69,18 @@ test('malformed remote trophies never overwrite local results',()=>{
  assert.throws(()=>hydrateNativeRecords({storage:db,scope,state:{rewards:bad}}),/invalid_server_rewards/);
  assert.equal(db.map.size,0);
 });
+
+test('teacher reset prevents trophy reconstruction from native last-work and legacy records',()=>{
+ const db=storage();
+ const stale=[
+  'addition2_last_work','addition2_hard_sudden_v1','addition2_hard_sudden_v2',
+  'addition2_hard_three_v1','mathas_points_v1_addition-plusieurs',
+  'mathas_trophies_v1_addition-plusieurs','mathas_trophies_v2_addition-plusieurs',
+  'mathas_easy_trophies_v1_addition-plusieurs','mathas_scores_srcdoc'
+ ];
+ for(const name of stale)db.setItem(key(name),'stale-old-parcours');
+ db.setItem(key('addition2_settings_v1'),'preferred-game-settings');
+ hydrateNativeRecords({storage:db,scope,state:null});
+ for(const name of stale)assert.equal(db.getItem(key(name)),null,name);
+ assert.equal(db.getItem(key('addition2_settings_v1')),'preferred-game-settings');
+});
