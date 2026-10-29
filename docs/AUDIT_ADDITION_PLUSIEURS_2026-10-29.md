@@ -147,3 +147,20 @@ Scénario réussi : profil élève approuvé, autre utilisateur refusé 403, `st
 Les premiers essais ont permis de compléter les colonnes d'avatar dans le **fixture** et de corriger le bloc SQL de RLS du laboratoire ; ils n'ont entraîné aucune modification du schéma Supabase distant. La recette locale finale est verte. Les six autres workflows de la branche étaient également verts au même commit (Chromium, Node, PostgreSQL isolé, régressions et restauration).
 
 **Limites restantes :** la partie 4/4 est envoyée comme requête HTTP valide dans cette recette locale ; le navigateur Chromium joue de vraies additions dans une suite séparée avec serveur intercepté. L'enchaînement intégral `vraies saisies Chromium → Auth locale → Edge locale → PostgreSQL local → page professeur Chromium` dans un seul test n'est pas encore démontré. Aucun environnement Supabase hébergé de TEST n'a été réactivé, aucune Edge ou migration n'a été déployée, aucun PC élève physique n'a été essayé, et aucune activation HUB n'est autorisée.
+
+## 29 octobre — recette RÉUNIFIÉE Chromium → Auth locale → Edge → PostgreSQL → page professeur
+
+**Réussite GitHub Actions vérifiée :** [workflow réel local et Chromium, run 40960928938](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40960928938), commit `b1047f0d45e45e0651ea47864f593d65f4229aca`.
+
+Le scénario réunit désormais dans **une même exécution** :
+1. Session anonyme créée par le vrai GoTrue local, appareil approuvé, élève fictif avec 22 XP historiques fictifs dans Addition simple.
+2. L'interface originale V6.0.2 dans Chromium, quatre additions **réellement résolues par les commandes et retenues visibles** (aucun appel artificiel de fin de partie).
+3. Transmission HTTP à la **vraie fonction Edge connect-results** et enregistrement dans PostgreSQL local via `connect_addition_multiple_record_v1` ; +22 XP, total global 44, trophée V3 et révision = 1.
+4. Rechargement réel des résultats et trophées dans les clés natives cloisonnées.
+5. **Vraie page professeur `app.js`** chargée dans Chromium, vrai JWT professeur, `teacher-dashboard` et `teacher-overview` côté Edge, résultat 4/4 affiché ; commande de recommencement utilisée depuis la page avec confirmation explicite.
+6. Nouveau parcours sans conservation des vieux résultats/trophées, maintien des 22 XP Addition multiple et des 22 XP Addition simple déjà acquis.
+7. La suite SQL/API authentifiée autonome demeure également verte dans ce même job.
+
+**Important :** la session est réellement créée par Supabase Auth local, et les Edge, PostgREST et PostgreSQL sont réels. En revanche, **un adaptateur JavaScript de test fournit ce JWT déjà émis à Chromium** plutôt que d'utiliser intégralement le stockage et le rafraîchissement du SDK d'authentification navigateur. Les protections HTTPS des modules publiables restent inchangées : seule une interception Playwright dans cette recette autorise l'URL HTTP `127.0.0.1`. Les verrous `CONNECT_WRITE_READY`, `ADD_MULTI_SERVER_READY` et `ADD_MULTI_TEACHER_READY` restent **false dans le dépôt**, ouverts uniquement dans les réponses navigateur ou la copie Edge locale jetable. Aucun Supabase hébergé n'est touché.
+
+**Reste à faire :** recette de publication masquée contrôlée, validation sur un Supabase hébergé isolé si une place gratuite ou un accord de coût devient disponible, et surtout essai manuel sur vrai PC faible puissance avec vraie session navigateur, animations XP et interface professeur. Aucun feu vert d'activation élèves à ce stade.
