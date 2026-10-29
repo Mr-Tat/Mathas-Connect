@@ -143,7 +143,7 @@ test('Projection : 320 à 1024 pixels, aucun débordement et changement de class
      {ok:true,classes:[{id:klass,name:'Observation'},{id:other,name:'Phase 1'}]}:
      {ok:true,students:[
       {displayName:'PRIVE',apps:[{appKey:'addition-ecrite-simple',state:{recent:[{at:new Date().toISOString()}]}},
-       {appKey:'multiplication-ecrite-simple',state:{recent:[{at:new Date().toISOString()}]}}]},
+       {appKey:'multiplication-ecrite-simple',state:{recent:[{at:'2025-09-10T10:00:00Z'}]}}]},
       {displayName:'PRIVE 2',apps:[]}
      ]};
     return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(result)});
@@ -173,6 +173,18 @@ test('Projection : 320 à 1024 pixels, aucun débordement et changement de class
    }
   }
   assert.equal(overviewCalls,1,'viewport resize makes no extra Supabase call');
+  assert.equal(await page.locator('#period-recent').getAttribute('aria-pressed'),'true');
+  assert.deepEqual(await page.locator('#apps output').allTextContents(),['1 / 2','1 / 2']);
+  await page.locator('#period-today').click();
+  assert.equal(await page.locator('#period-today').getAttribute('aria-pressed'),'true');
+  assert.deepEqual(await page.locator('#apps output').allTextContents(),['1 / 2','0 / 2'],
+    'today count is distinct from recent history for each app');
+  assert.equal(await page.locator('.app-row:nth-child(2) .track').getAttribute('aria-valuenow'),'0');
+  assert.equal(overviewCalls,1,'period switch must not call Supabase');
+  await page.locator('#period-recent').click();
+  assert.deepEqual(await page.locator('#apps output').allTextContents(),['1 / 2','1 / 2']);
+  assert.equal(overviewCalls,1,'returning to recent history uses cached anonymous aggregates');
+
   await page.locator('#class-choice').selectOption(other);
   assert.equal(await page.locator('#board').isHidden(),true,'changing classes clears the projected numbers');
   assert.equal(await page.locator('#total').textContent(),'');

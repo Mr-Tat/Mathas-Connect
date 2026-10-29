@@ -75,6 +75,11 @@ test('projection : aucune écriture serveur, rafraîchissement automatique ou id
  assert.match(html,/<div id="board" hidden>/);
  assert.match(html,/Aucune modification des résultats ni des XP/);
  assert.match(html,/projection\.js/);
+ assert.match(html,/id="period-recent" aria-pressed="true"/);
+ assert.match(html,/id="period-today" aria-pressed="false"/);
+ assert.match(ui,/currentAggregate=null/);
+ assert.match(ui,/const count=isToday\?app\.today:app\.recent/);
+ assert.match(ui,/renderBars\(\)/);
 });
 
 test('projection : le module navigateur reste syntaxiquement valide',()=>{

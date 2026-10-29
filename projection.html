@@ -40,6 +40,11 @@ section.activity{margin-top:40px}
 .activity h3{font-size:clamp(1.4rem,2.3vw,2.1rem)}
 .app-row{display:grid;grid-template-columns:minmax(190px,1.5fr) minmax(80px,4fr) auto;align-items:center;gap:20px;padding:18px 0;border-bottom:1px solid #385b74;font-size:clamp(1rem,1.9vw,1.4rem)}
 .app-row strong{font-weight:750}
+.period-toggle{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:14px 0 20px}
+.period-toggle button{font-size:clamp(.92rem,1.65vw,1.2rem);min-height:48px;background:#15354c;border:2px solid #6187a1;padding:8px 18px}
+.period-toggle button[aria-pressed="true"]{background:#f3cd74;color:#182d3d;border-color:#f3cd74}
+.period-toggle button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+
 .track{height:21px;background:#0b2031;box-shadow:inset 0 0 0 1px #547087;border-radius:999px;overflow:hidden}
 .fill{height:100%;background:linear-gradient(90deg,#55b8dd,#f4d16f);border-radius:inherit}
 .app-row output{white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -75,7 +80,15 @@ footer{max-width:1500px;margin:10px auto 30px;padding:0 clamp(20px,4vw,54px);fon
   <div class="metric"><div id="participants" class="number">0</div><div class="description">Élèves avec au moins une partie dans l’historique récent</div></div>
   <div class="metric"><div id="today" class="number">0</div><div class="description">Élèves ayant joué aujourd’hui</div></div>
  </div>
- <section class="activity"><h3>Participation par application</h3><div id="apps"></div><p class="help">Pour chaque application : élèves avec une partie dans l’historique récent / élèves inscrits. L’historique disponible conserve jusqu’à trois parties par élève et par jeu.</p></section>
+ <section class="activity">
+<h3>Participation par application</h3>
+<div class="period-toggle" role="group" aria-label="Période de participation">
+ <button type="button" id="period-recent" aria-pressed="true">Historique récent</button>
+ <button type="button" id="period-today" aria-pressed="false">Aujourd’hui</button>
+</div>
+<div id="apps"></div>
+<p id="period-help" class="help">Élèves ayant une partie dans l’historique récent, sur les trois dernières parties disponibles par jeu. Il ne s’agit pas d’un décompte de tous les élèves ayant déjà joué.</p>
+</section>
 </div>
 </main>
 <footer>Aucune modification des résultats ni des XP · Pas de rafraîchissement automatique · Le tableau se masque lorsqu’on quitte la page.</footer>
