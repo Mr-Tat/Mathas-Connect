@@ -401,17 +401,19 @@ Deno.serve(async req=>{
        ||(b.mode==='classic'?(![4,10,20].includes(b.total)||b.score>b.total)
          :b.mode==='hard-challenge'?(b.total!==5||b.score>5):b.total!=null))
        return deny('invalid_result');
-     // Trophies remain an explicit release blocker, not falsely acknowledged.
-     if(b.rewards!=null)return deny('rewards_not_integrated',503);
+     // Reuse the V3 reward schema of all other apps, but save inside the
+     // same SQL transaction as the result and official XP (never separate).
+     let rewards=null;
+     try{rewards=normalizeRewards(b.rewards)}catch{return deny('invalid_rewards')}
      const {data:atomic,error:atomicError}=await db.rpc('connect_addition_multiple_record_v1',{
        p_student:studentId,p_event:b.eventId,p_expected_revision:b.expectedRevision,
        p_reset_epoch:b.expectedResetEpoch,p_mode:b.mode,p_level:b.level,
-       p_score:b.score,p_total:b.total??null
+       p_score:b.score,p_total:b.total??null,p_rewards:rewards
      });
      if(atomicError){
        if(['revision_conflict','stale_reset_epoch'].includes(atomicError.message))
          return deny(atomicError.message,409);
-       if(atomicError.message==='invalid_result')return deny('invalid_result');
+       if(['invalid_result','invalid_rewards'].includes(atomicError.message))return deny(atomicError.message);
        console.error('addition_multiple_atomic_failed',atomicError.code);
        return deny('atomic_save_unavailable',503);
      }
