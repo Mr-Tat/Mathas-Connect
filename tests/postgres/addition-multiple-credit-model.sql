@@ -36,6 +36,9 @@ BEGIN
  THEN RETURN jsonb_build_object('duplicate',true,'revision',s.revision,'resetEpoch',s.reset_epoch);END IF;
  IF s.revision<>p_revision THEN RAISE EXCEPTION 'revision_conflict'; END IF;
  next_state:=s.state_data;
+ IF jsonb_typeof(next_state->'classic')<>'array' THEN next_state:=jsonb_set(next_state,'{classic}','[{}, {}, {}]'::jsonb,true);END IF;
+ IF jsonb_typeof(next_state->'sudden')<>'array' THEN next_state:=jsonb_set(next_state,'{sudden}','[0,0,0]'::jsonb,true);END IF;
+ IF jsonb_typeof(next_state->'hard')<>'array' THEN next_state:=jsonb_set(next_state,'{hard}','[0,0,0]'::jsonb,true);END IF;
  IF p_mode='classic' THEN
    old_score:=COALESCE((next_state#>>ARRAY['classic',(p_level-1)::text,p_total::text])::integer,0);
    next_state:=jsonb_set(next_state,ARRAY['classic',(p_level-1)::text,p_total::text],to_jsonb(GREATEST(old_score,p_score)),true);
