@@ -27,13 +27,6 @@ try{
  assert.match(await page.locator('#result').innerText(),/22 XP/);
  // Contract tests of all four terminal-event formats, through real iframe postMessage.
  // These are intentionally injected game events, not completed arithmetic problems.
- await page.evaluate(()=>{window.__bridgeMessages=[];window.addEventListener('message',e=>{window.__bridgeMessages.push({type:e.data?.type,origin:e.origin,correctSource:e.source===document.getElementById('game')?.contentWindow});});});
- const iframeProbe=await frame.locator('body').evaluate(()=>{
-  window.parent.postMessage({type:'audit-ping'},window.parent.location.origin);
-  return {url:location.href,origin:location.origin,parentOrigin:window.parent.location.origin,parentIsSelf:window.parent===window,frameId:window.frameElement?.id};
- });
- await page.waitForTimeout(250);
- console.log('Chromium iframe origin probe',JSON.stringify({iframeProbe,messages:await page.evaluate(()=>window.__bridgeMessages)}));
  const cases=[
   [{label:'Calculs · Niveau 1',score:'10/10'},58],
   [{label:'Calculs · Niveau 1',score:'20/20'},118],
@@ -44,7 +37,7 @@ try{
  ];
  for(let i=0;i<cases.length;i++){
   const [payload,xp]=cases[i];
-  await frame.locator('body').evaluate(entry=>window.__setLastWork(entry),payload);
+  await frame.locator('body').evaluate((_body,entry)=>window.__setLastWork(entry),payload);
   try{
    await page.waitForFunction(({events,expected})=>
     document.querySelector('#audit')?.textContent?.includes('Événements : '+events)
@@ -56,8 +49,7 @@ try{
     audit:await page.locator('#audit').innerText(),
     displayed:await page.locator('#result').innerText(),
     errors,
-    messages:await page.evaluate(()=>window.__bridgeMessages),
-    fn:await frame.locator('body').evaluate(()=>String(window.__setLastWork).slice(0,360))
+    fn:await frame.locator('body').evaluate(()=>String(window.__setLastWork).slice(0,160))
    }));
    throw error;
   }
