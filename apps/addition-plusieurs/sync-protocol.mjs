@@ -8,6 +8,8 @@ export function createSync({queue,post,onAck=()=>{},onConflict=()=>{},onError=()
   running=(async()=>{
    let accepted=0, revision=null, resetEpoch=null;
    for(const pending of queue.read()){
+    // Never rebase queued results onto a new teacher-reset parcours.
+    if(resetEpoch!==null&&pending.expectedResetEpoch!==resetEpoch){onConflict({ok:false,error:'queued_epoch_mismatch'});break}
     const request=revision===null?pending:{...pending,expectedRevision:revision,expectedResetEpoch:resetEpoch};
     let response;
     try{response=await post(request)}catch(error){onError(error);break}
