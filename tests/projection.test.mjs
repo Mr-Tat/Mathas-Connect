@@ -67,6 +67,9 @@ test('projection : aucune écriture serveur, rafraîchissement automatique ou id
  assert.match(ui,/session\.user\?\.is_anonymous/);
  assert.doesNotMatch(ui,/teacher-export|game-record|teacher-parcours-restart|signInAnonymously|setInterval\s*\(/);
  assert.doesNotMatch(ui,/person\.displayName|innerHTML\s*=/);
+ assert.match(ui,/new AbortController\(\)/);
+ assert.match(ui,/setTimeout\(\(\)=>watchdog\.abort\(\),12000\)/);
+ assert.match(ui,/clearTimeout\(deadline\)/);
  assert.match(ui,/window\.addEventListener\('pagehide'/);
  assert.match(ui,/getElementById\('class-choice'\)|\$\('class-choice'\)/);
  assert.match(html,/<div id="board" hidden>/);

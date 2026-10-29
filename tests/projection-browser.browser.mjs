@@ -121,3 +121,115 @@ test('Projection : accès professeur, données anonymes, masquage et consommatio
   await new Promise(done=>server.close(done));
  }
 });
+
+test('Projection : 320 à 1024 pixels, aucun débordement et changement de classe sans requête', {timeout:120000},async()=>{
+ const {server,url}=await serve();
+ const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1024,height:740}});
+  const errors=[];let overviewCalls=0,failNext=false;
+  page.on('pageerror',error=>errors.push(error.message));
+  await page.route('**/*',async route=>{
+   const target=route.request().url();
+   if(target.startsWith(url))return route.continue();
+   if(target.startsWith('https://esm.sh/'))return route.fulfill({status:200,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'},body:authStub});
+   if(target.includes('.supabase.co/functions/v1/')){
+    const data=JSON.parse(route.request().postData()||'{}');
+    if(data.action==='teacher-overview'){
+     overviewCalls++;
+     if(failNext){failNext=false;return route.abort('failed');}
+    }
+    const result=data.action==='teacher-dashboard'?
+     {ok:true,classes:[{id:klass,name:'Observation'},{id:other,name:'Phase 1'}]}:
+     {ok:true,students:[
+      {displayName:'PRIVE',apps:[{appKey:'addition-ecrite-simple',state:{recent:[{at:new Date().toISOString()}]}},
+       {appKey:'multiplication-ecrite-simple',state:{recent:[{at:new Date().toISOString()}]}}]},
+      {displayName:'PRIVE 2',apps:[]}
+     ]};
+    return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(result)});
+   }
+   return route.abort();
+  });
+  await page.goto(url+'/projection.html?space=observation',{waitUntil:'domcontentloaded'});
+  await page.locator('#controls').waitFor({state:'visible'});
+  await page.locator('#load').click();
+  await page.locator('#board').waitFor({state:'visible'});
+  for(const width of [320,360,390,768,1024]){
+   await page.setViewportSize({width,height:740});
+   const layout=await page.evaluate(()=>{
+    const rect=selector=>{
+     const r=document.querySelector(selector).getBoundingClientRect();
+     return {left:r.left,right:r.right,width:r.width};
+    };
+    return {viewport:innerWidth,pageWidth:document.documentElement.scrollWidth,
+     board:rect('#board'),selector:rect('#class-choice'),cards:rect('.cards'),rows:[...document.querySelectorAll('.app-row')].map(el=>{
+      const r=el.getBoundingClientRect();return {left:r.left,right:r.right};
+     })};
+   });
+   assert.ok(layout.pageWidth<=width+2,'horizontal scroll at '+width+': '+JSON.stringify(layout));
+   for(const target of [layout.board,layout.selector,layout.cards,...layout.rows]){
+    assert.ok(target.left>=-2&&target.right<=width+2,
+     'element outside '+width+': '+JSON.stringify(layout));
+   }
+  }
+  assert.equal(overviewCalls,1,'viewport resize makes no extra Supabase call');
+  await page.locator('#class-choice').selectOption(other);
+  assert.equal(await page.locator('#board').isHidden(),true,'changing classes clears the projected numbers');
+  assert.equal(await page.locator('#total').textContent(),'');
+  assert.equal(overviewCalls,1,'changing classes makes no automatic data request');
+  await page.locator('#class-choice').selectOption(klass);
+  failNext=true;
+  await page.locator('#load').click();
+  await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.startsWith('Erreur :'));
+  assert.equal(await page.locator('#board').isHidden(),true,'offline results stay hidden');
+  assert.equal(await page.locator('#load').isEnabled(),true,'button returns after network error');
+  await page.locator('#load').click();
+  await page.locator('#board').waitFor({state:'visible'});
+  assert.equal(overviewCalls,3,'offline read retries once only when requested');
+  assert.deepEqual(errors,[],'no browser script errors');
+  await page.close();
+ }finally{
+  await browser.close();await new Promise(done=>server.close(done));
+ }
+});
+
+test('Projection : un résultat réseau retardé ne réaffiche jamais des chiffres masqués', {timeout:120000},async()=>{
+ const {server,url}=await serve();
+ const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
+ let respond,started=0;const waitReply=new Promise(resolve=>{respond=resolve});
+ try{
+  const page=await browser.newPage({viewport:{width:390,height:740}});
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.route('**/*',async route=>{
+   const target=route.request().url();
+   if(target.startsWith(url))return route.continue();
+   if(target.startsWith('https://esm.sh/'))return route.fulfill({status:200,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'},body:authStub});
+   if(target.includes('.supabase.co/functions/v1/')){
+    const data=JSON.parse(route.request().postData()||'{}');
+    if(data.action==='teacher-overview'){
+     started++;
+     await waitReply;
+    }
+    const result=data.action==='teacher-dashboard'?
+     {ok:true,classes:[{id:klass,name:'Observation'}]}:
+     {ok:true,students:[{displayName:'DONNEE-PRIVEE',apps:[{appKey:'addition-ecrite-simple',
+      state:{recent:[{at:new Date().toISOString()}]}}]}]};
+    return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(result)});
+   }
+   return route.abort();
+  });
+  await page.goto(url+'/projection.html?space=observation',{waitUntil:'domcontentloaded'});
+  await page.locator('#controls').waitFor({state:'visible'});
+  await page.locator('#load').click();
+  await page.waitForFunction(()=>document.querySelector('#status')?.textContent.includes('Chargement'));
+  assert.equal(started,1);
+  await page.locator('#hide').click();
+  respond();
+  await page.waitForFunction(()=>document.querySelector('#load')?.disabled===false);
+  assert.equal(await page.locator('#board').isHidden(),true,'a late response must not redraw hidden data');
+  assert.equal(await page.locator('#total').textContent(),'');
+  assert.doesNotMatch(await page.locator('body').textContent(),/DONNEE-PRIVEE/);
+  assert.deepEqual(errors,[]);
+  await page.close();
+ }finally{respond();await browser.close();await new Promise(done=>server.close(done))}
+});
