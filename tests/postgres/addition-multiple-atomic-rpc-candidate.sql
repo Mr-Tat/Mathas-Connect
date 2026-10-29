@@ -96,7 +96,7 @@ BEGIN
    THEN RAISE EXCEPTION 'invalid_rewards';END IF;
    FOR v_i IN 0..2 LOOP
     v_new_flag:=(p_rewards#>>array_append(v_path,v_i::text))::boolean;
-    v_old_flag:=coalesce((v_next#>>array_append(v_path,v_i::text))::boolean,false);
+    v_old_flag:=coalesce((v_next#>>(ARRAY['rewards']||array_append(v_path,v_i::text)))::boolean,false);
     v_rewards:=jsonb_set(v_rewards,array_append(v_path,v_i::text),
         to_jsonb(v_old_flag OR v_new_flag),false);
    END LOOP;
@@ -105,7 +105,7 @@ BEGIN
     v_path:=ARRAY['scoreOne',v_key];
     IF jsonb_typeof(p_rewards#>v_path)<>'boolean' THEN RAISE EXCEPTION 'invalid_rewards';END IF;
     v_new_flag:=(p_rewards#>>v_path)::boolean;
-    v_old_flag:=coalesce((v_next#>>v_path)::boolean,false);
+    v_old_flag:=coalesce((v_next#>>(ARRAY['rewards']||v_path))::boolean,false);
     v_rewards:=jsonb_set(v_rewards,v_path,to_jsonb(v_old_flag OR v_new_flag),false);
   END LOOP;
   v_rewards:=jsonb_set(v_rewards,'{unlockedGold}',to_jsonb(
