@@ -1,0 +1,40 @@
+# Prépublication masquée — Addition de plusieurs nombres
+**30 octobre 2026 — PR nº 29 — plan, pas une autorisation de déployer.**
+
+## État constaté
+- `main` toujours non modifiée par cette PR. Le moteur V6.0.2 est conservé.
+- Les trois verrous du **code versionné** restent fermés : `CONNECT_WRITE_READY=false`, `ADD_MULTI_SERVER_READY=false`, `ADD_MULTI_TEACHER_READY=false`.
+- Les quatre HUB n'ont pas la nouvelle entrée dans `hub-catalog.json`. Le catalogue Edge ne retourne que les presets `visible=true` liés aux applications `enabled=true`.
+- Lecture seule de la production Supabase Math'as Connect le 30/10 : **0** app, **0** preset, **0** règle XP, **0** fonction atomique Addition multiple. Dernière migration appliquée : Soustraction simple du 28/10.
+- La migration `20261029_addition_multiple_catalog_stage.sql` ajoute `enabled=false`, quatre entrées `visible=false`, neuf règles XP ; depuis cet audit elle **échoue volontairement** si elle trouve déjà une entrée activée ou visible. Ses exécutions répétées et ses rejets sont testés sur PostgreSQL éphémère.
+- Comparaison en lecture seule du 30/10 entre la production et les quatre RPC candidates du dossier `tests/postgres` : leur corps ne diffère que par l'ajout de `addition-ecrite-multiple` à la liste des applications autorisées (une ligne par fonction). **À refaire le jour du déploiement**, car la production peut évoluer entre-temps.
+- Recette réunifiée GoTrue local / Chromium / vraie Edge / vraie base / interface professeur : [réussie en CI](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40960928938).
+
+## Ce que « publication masquée » signifie réellement
+Fusionner le code statique dans `main` rendrait le fichier `/apps/addition-plusieurs/` **techniquement accessible par URL directe**, même si aucun des quatre HUB n'affiche sa carte. Avec les trois verrous fermés, le jeu demeure en mode laboratoire/libre, **sans XP Connect ni résultat enregistré**. Un lien non listé n'est **pas** une protection d'accès.
+
+**Ne pas fusionner** tant que le professeur n'a pas explicitement accepté cette nuance et donné son feu vert à la publication technique masquée. Une invisibilité absolue exige une autre méthode de publication (ou contrôle d'accès), pas simplement un preset invisible.
+
+## Déroulement proposé, sous autorisations séparées
+1. **Avant tout déploiement** : vérifier le SHA de `main` et le diff PR ; exécuter les sept workflows ; vérifier les trois verrous, l'absence des liens dans les quatre HUB, le moteur original, et les droits `service_role` des RPC candidates.
+2. **Préparer une sauvegarde logique des définitions SQL en lecture seule** (pas de résultats élèves) ; re-comparer les 4 fonctions `connect_parcours_restart_class`, `connect_parcours_restart_one`, `connect_xp_read_v2`, `connect_xp_sync_v2` avec les candidates. Refuser l'étape si une différence de logique apparaît.
+3. **Sur accord explicite uniquement**, créer/appliquer la migration additive de catalogue (`enabled=false`, quatre `visible=false`) et les nouvelles définitions RPC, idéalement dans une transaction contrôlée avec journal et plan de retour. Le projet Connect est en production : ne pas utiliser `db reset` ni une migration destructive.
+4. **Sur accord explicite distinct**, fusionner la PR et publier les fichiers statiques en masqué. Vérifier la présence de la page par URL directe, mais son absence de tous les HUB. Confirmer que l'Edge rejette l'app tant que son verrou est fermé.
+5. Pour des **essais Connect réellement hébergés**, définir une stratégie autorisée : projet TEST réactivé si forfait/place disponible, ou compte/classe fictifs isolés sur le projet actif avec toutes les précautions et l'accord du professeur. Les essais locaux réussis ne couvrent ni les déploiements réels, ni la persistance native de la session navigateur sur PC élève.
+6. Réaliser l'essai pédagogique manuel : quatre modes, clavier et retenues, trophées, animation +XP qui vole vers la jauge, historique des résultats et remise à zéro indépendante, vieux PC d'élève peu performant ; reconnection, coupure réseau.
+7. **Seulement sur feu vert pour l'ouverture aux élèves** : activation graduée et contrôles des quatre espaces ; préparer le plan de retrait immédiat, surveiller les erreurs sans polling supplémentaire.
+
+## Arrêts immédiats
+- Tout test vert basé uniquement sur un mock ne vaut pas validation sur un hébergement réel.
+- Fonction XP/Edge/code client désynchronisés ; risque de résultat sauvé sans XP : **stop**.
+- Apparition d'Addition multiple dans un HUB avant autorisation : **stop**.
+- Mutation des résultats, XP ou parcours d'un autre jeu ou d'un autre élève : **stop**.
+- Besoin de réactiver Mathas-Test, de libérer une place ou d'engager des coûts : **demander l'accord**.
+
+## Références versionnées
+- `docs/AUDIT_ADDITION_PLUSIEURS_2026-10-29.md`
+- `tests/addition-plusieurs-publish-guard.test.mjs`
+- `.github/workflows/addition-plusieurs-stage.yml`
+- `tests/postgres/addition-multiple-rpc-candidate.sql`
+- `tests/postgres/addition-multiple-atomic-rpc-candidate.sql`
+- `supabase/migrations/20261029_addition_multiple_catalog_stage.sql`
