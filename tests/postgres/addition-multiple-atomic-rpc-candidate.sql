@@ -78,21 +78,22 @@ BEGIN
  -- Preserve native V3 trophies in this SAME result+XP transaction.
  -- Only validated boolean awards are admitted; server merges monotonically.
  IF p_rewards IS NOT NULL THEN
-  IF jsonb_typeof(p_rewards)<>'object' OR p_rewards->>'version'<>'3'
-    OR jsonb_typeof(p_rewards->'mastery')<>'object'
-    OR jsonb_typeof(p_rewards->'hardAwards')<>'object'
-    OR jsonb_typeof(p_rewards->'scoreOne')<>'object'
-    OR jsonb_typeof(p_rewards->'unlockedGold')<>'boolean'
+  IF jsonb_typeof(p_rewards) IS DISTINCT FROM 'object' OR p_rewards->>'version' IS DISTINCT FROM '3'
+    OR jsonb_typeof(p_rewards->'mastery') IS DISTINCT FROM 'object'
+    OR jsonb_typeof(p_rewards->'hardAwards') IS DISTINCT FROM 'object'
+    OR jsonb_typeof(p_rewards->'scoreOne') IS DISTINCT FROM 'object'
+    OR jsonb_typeof(p_rewards->'unlockedGold') IS DISTINCT FROM 'boolean'
   THEN RAISE EXCEPTION 'invalid_rewards'; END IF;
   v_rewards:='{"version":3,"mastery":{"4":[false,false,false],"10":[false,false,false],"20":[false,false,false]},"sudden":[false,false,false],"hardAwards":{"bronze":[false,false,false],"silver":[false,false,false],"gold":[false,false,false]},"scoreOne":{"bronze":false,"silver":false,"gold":false},"unlockedGold":false}'::jsonb;
   FOREACH v_key IN ARRAY ARRAY['4','10','20','sudden','bronze','silver','gold'] LOOP
    IF v_key IN ('4','10','20') THEN v_path:=ARRAY['mastery',v_key];
    ELSIF v_key='sudden' THEN v_path:=ARRAY['sudden'];
    ELSE v_path:=ARRAY['hardAwards',v_key];END IF;
-   IF jsonb_typeof(p_rewards#>v_path)<>'array'
-      OR jsonb_array_length(p_rewards#>v_path)<>3
+   IF jsonb_typeof(p_rewards#>v_path) IS DISTINCT FROM 'array'
+   THEN RAISE EXCEPTION 'invalid_rewards';END IF;
+   IF jsonb_array_length(p_rewards#>v_path)<>3
       OR EXISTS(SELECT 1 FROM jsonb_array_elements(p_rewards#>v_path) AS a(value)
-                WHERE jsonb_typeof(a.value)<>'boolean')
+                WHERE jsonb_typeof(a.value) IS DISTINCT FROM 'boolean')
    THEN RAISE EXCEPTION 'invalid_rewards';END IF;
    FOR v_i IN 0..2 LOOP
     v_new_flag:=(p_rewards#>>array_append(v_path,v_i::text))::boolean;
@@ -103,7 +104,7 @@ BEGIN
   END LOOP;
   FOREACH v_key IN ARRAY ARRAY['bronze','silver','gold'] LOOP
     v_path:=ARRAY['scoreOne',v_key];
-    IF jsonb_typeof(p_rewards#>v_path)<>'boolean' THEN RAISE EXCEPTION 'invalid_rewards';END IF;
+    IF jsonb_typeof(p_rewards#>v_path) IS DISTINCT FROM 'boolean' THEN RAISE EXCEPTION 'invalid_rewards';END IF;
     v_new_flag:=(p_rewards#>>v_path)::boolean;
     v_old_flag:=coalesce((v_next#>>(ARRAY['rewards']||v_path))::boolean,false);
     v_rewards:=jsonb_set(v_rewards,v_path,to_jsonb(v_old_flag OR v_new_flag),false);
