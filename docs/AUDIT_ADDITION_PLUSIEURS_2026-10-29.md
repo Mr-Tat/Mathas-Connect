@@ -125,3 +125,13 @@ Le même pilote de quatre calculs a ensuite été exécuté avec une **session a
 **Preuve automatique :** https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40948852931 — tests du jeu original, quatre vraies additions, vraie capture du trophée, Connect HTTP simulé, jauge, rechargement et remise à zéro, tous réussis.
 
 **Blocages restants :** le HTTP Edge du test est volontairement simulé et ne touche pas Supabase. Il reste une recette authentifiée dans une base Supabase de TEST avec les RPC candidat déployées là-bas, ainsi qu'une vérification de la page professeur. Les verrous `CONNECT_WRITE_READY=false`, `ADD_MULTI_SERVER_READY=false`, `ADD_MULTI_TEACHER_READY=false` restent fermés. Ne pas présenter le jeu en production avant ces validations et autorisation explicite.
+
+## Recette de la vraie interface professeur — Chromium isolé
+
+- Contrôle Supabase en **lecture seule** : un projet séparé `Mathas-Test` existe, mais il est signalé `INACTIVE` ; le projet `Math'as Connect` est actif. Aucune réactivation, création de ressource, écriture en base ni consommation de quotas de projet n'a été déclenchée.
+- Nouveau test `tests/addition-plusieurs-teacher-browser.e2e.mjs` : ouverture du vrai `index.html?portail=prof&profClass=…` avec une session professeur fictive. Les requêtes `connect-api` et `connect-results` sont interceptées localement avec des réponses entièrement fictives. Aucun JWT ni résultat réel n'est lu.
+- **Verrou fermé (branche telle que publiée)** : le tableau global ne contient pas Addition multiple, et la liste des applications du professeur ne contient pas la nouvelle entrée.
+- **Verrou ouvert uniquement dans la réponse réseau du navigateur de test** : même page et même `app.js`, affichage de la quatrième colonne, fiche d'un élève fictif, 4/4, 8/10, 19/20, 6 en mort subite, 7 en HARD et 3/5 en HARD trois nombres. Les commandes de recommencement de cet élève et de toute la classe deviennent visibles pour Addition multiple, sans déclencher aucun appel d'écriture.
+- Le test simule également la lecture de l'historique de parcours lorsque la fiche est ouverte, tout en imposant qu'aucun appel de recommencement ne soit envoyé.
+- **Preuve :** https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40951909919 — navigateur d'élève (quatre additions réelles), navigateur professeur (consultation réelle avec données fictives) et navigateur Connect (HTTP fictif) tous au vert.
+- **Reste** : recette sur un véritable Supabase séparé et actif, enregistrement Edge→PostgreSQL authentifié et comparaison directe avec les résultats professeur via l'API réelle, avant déploiement supervisé. Les trois verrous d'activation sont toujours fermés.
