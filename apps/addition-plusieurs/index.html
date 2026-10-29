@@ -1,4 +1,4 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Math'as · Addition de plusieurs nombres · laboratoire</title><style>html,body{margin:0;width:100%;height:100%;background:#0c2235;color:white;font-family:system-ui}main{height:100dvh;display:flex;flex-direction:column}.notice{padding:7px 12px;background:#173956;font-size:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}iframe{flex:1;width:100%;border:0;min-height:0}a{color:#a3ebff}button{background:#225477;color:white;border:1px solid #739cba;border-radius:6px;padding:5px 9px;cursor:pointer}output{font-size:12px;color:#b0ebc1}.xp-meter{display:flex;align-items:center;gap:7px;min-width:170px;font-size:11px;font-weight:700}.xp-track{width:100px;height:11px;border-radius:10px;background:#667d8d;overflow:hidden;border:1px solid #a2c3d0}.xp-fill{width:0;height:100%;display:block;background:#1A4675;transition:width .35s ease}.xp-level{white-space:nowrap;color:#ffd66a}.xp-total{white-space:nowrap}</style></head><body><main><div class="notice"><strong>Laboratoire · Addition de plusieurs nombres</strong><span>Mode libre seulement — aucun XP Connect ni envoi serveur</span><button id="audit" type="button">Événements : 0</button><div class="xp-meter" aria-label="Progression XP"><span class="xp-level" id="xp-level">Niveau 1</span><div class="xp-track" id="xp-track"><i id="xp-fill" class="xp-fill"></i></div><span id="xp-total" class="xp-total">0 XP</span></div><output id="result" aria-live="polite"></output><a href="../../">Retour au HUB</a></div><iframe id="game" title="Addition de plusieurs nombres" allow="fullscreen"></iframe></main><script type="module">
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Math'as · Addition de plusieurs nombres · laboratoire</title><style>html,body{margin:0;width:100%;height:100%;background:#0c2235;color:white;font-family:system-ui}main{height:100dvh;display:flex;flex-direction:column}.notice{padding:7px 12px;background:#173956;font-size:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}iframe{flex:1;width:100%;border:0;min-height:0}a{color:#a3ebff}button{background:#225477;color:white;border:1px solid #739cba;border-radius:6px;padding:5px 9px;cursor:pointer}output{font-size:12px;color:#b0ebc1}.xp-meter{display:flex;align-items:center;gap:7px;min-width:170px;font-size:11px;font-weight:700}.xp-track{width:100px;height:11px;border-radius:10px;background:#667d8d;overflow:hidden;border:1px solid #a2c3d0}.xp-fill{width:0;height:100%;display:block;background:#1A4675;transition:width .35s ease}.xp-level{white-space:nowrap;color:#ffd66a}.xp-total{white-space:nowrap}</style></head><body><main><div class="notice"><strong>Laboratoire · Addition de plusieurs nombres</strong><span id="mode-note">Mode libre seulement — aucun XP Connect ni envoi serveur</span><button id="audit" type="button">Événements : 0</button><div class="xp-meter" aria-label="Progression XP"><span class="xp-level" id="xp-level">Niveau 1</span><div class="xp-track" id="xp-track"><i id="xp-fill" class="xp-fill"></i></div><span id="xp-total" class="xp-total">0 XP</span></div><output id="result" aria-live="polite"></output><a href="../../">Retour au HUB</a></div><iframe id="game" title="Addition de plusieurs nombres" allow="fullscreen"></iframe></main><script type="module">
 import {normalizeCompletion} from './completion-contract.mjs';
 import {createLocalLab} from './local-lab.mjs';
 import {buildConnectPilot,CONNECT_WRITE_READY as writeReady} from './connect-pilot.mjs';
@@ -9,6 +9,8 @@ import {hydrateNativeRecords} from './connect-hydration.mjs';
  // No Connect credentials are read until the backend has been validated and enabled.
  const launch=new URLSearchParams(location.search);
  const simulate=launch.get('simulation')==='1';
+ const modeNote=document.getElementById('mode-note');
+ if(simulate)modeNote.textContent='Laboratoire · simulation seulement — aucun envoi Supabase';
  let connected=null,host=null;
  let xpAnimationQueue=Promise.resolve();
  // Match existing integrated games: class launch + approved anonymous student
@@ -17,6 +19,7 @@ import {hydrateNativeRecords} from './connect-hydration.mjs';
  const teacherPlayer=launch.get('joueur')==='prof';
  const free=!teacherPlayer&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';
  if(writeReady&&classId&&!free){
+  try{
    const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.95.0');
    host=await createAuthenticatedHost({classId,teacherPlayer,createClient});
    const post=createEdgePost({endpoint:host.endpoint,apikey:host.apikey,getToken:host.getToken});
@@ -36,6 +39,16 @@ import {hydrateNativeRecords} from './connect-hydration.mjs';
    if(!hydrated)output.textContent='Connect : sauvegardes locales en attente de synchronisation';
    try{showXpMeter(await host.readXp())}catch{output.textContent='Connect : lecture XP momentanément indisponible'}
    void connected.retry();
+   modeNote.textContent='Mode connecté — résultats et XP sauvegardés côté serveur';
+  }catch(error){
+   // Fail closed: a missing/revoked session, wrong class or unavailable
+   // backend must NOT silently launch an unsaved game as if connected.
+   connected=null;host=null;
+   modeNote.textContent='Connexion indisponible — aucun résultat enregistré';
+   output.textContent='Connexion Connect impossible ou non autorisée. Jeu non lancé : vérifiez votre session et votre classe.';
+   console.warn('Addition plusieurs : connexion non disponible',error?.message||'unknown');
+   return;
+  }
  }
  const lab=simulate?createLocalLab({storage:sessionStorage,onStatus:(status,reply)=>{
   if(status==='saved'&&reply?.xp){
