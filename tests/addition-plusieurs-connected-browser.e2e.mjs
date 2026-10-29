@@ -10,6 +10,7 @@ const classroom='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const pupil='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const basePath='/apps/addition-plusieurs/';
 const states=new Map(), calls=[];
+let profileApproved=true;
 const initial=()=>({revision:0,resetEpoch:0,state:null,appXp:0,total:0});
 function backend(pupilId){if(!states.has(pupilId))states.set(pupilId,initial());return states.get(pupilId)}
 const browser=await chromium.launch({headless:true});
@@ -39,7 +40,7 @@ try{
    const respond=body=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)});
    if(req.headers().authorization!=='Bearer TEST-TOKEN')throw Error('missing_authenticated_token');
    if(payload.classId!==classroom)throw Error('wrong_class');
-   if(payload.action==='student-me')return respond({ok:true,status:'approved',classId:classroom,displayName:'Élève test'});
+   if(payload.action==='student-me')return respond({ok:true,status:profileApproved?'approved':'unregistered',classId:classroom,displayName:'Élève test'});
    if(payload.appKey!=='addition-ecrite-multiple')throw Error('wrong_game_key');
    if(payload.action==='student-load')return respond({ok:true,revision:st.revision,resetEpoch:st.resetEpoch,state:st.state});
    if(payload.action==='student-xp')return respond({ok:true,appXp:st.appXp,total:st.total,level:1,next:50});
@@ -129,5 +130,21 @@ try{
  await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='22 XP');
  assert.equal(calls.filter(c=>c.action==='game-record').length,2);
  assert.ok(!errors.length,'Browser JS errors: '+errors.join(' | '));
+
+ // A revoked/unapproved profile must never silently fall back to an
+ // unsaved game or leave a blank screen with an uncaught exception.
+ profileApproved=false;
+ const refused=await context.newPage(),refusedErrors=[];
+ refused.on('pageerror',e=>refusedErrors.push(e.message));
+ const previousRecords=calls.filter(c=>c.action==='game-record').length;
+ await refused.goto(base+basePath+'?class='+classroom,{waitUntil:'domcontentloaded'});
+ await refused.locator('#result').getByText('Connexion Connect impossible ou non autorisée.',{exact:false}).waitFor({timeout:15000});
+ assert.equal(await refused.locator('#mode-note').innerText(),
+  'Connexion indisponible — aucun résultat enregistré');
+ assert.equal(await refused.locator('iframe#game').evaluate(el=>Boolean(el.srcdoc)),false,
+  'game must not start under an unapproved class profile');
+ assert.equal(calls.filter(c=>c.action==='game-record').length,previousRecords);
+ assert.deepEqual(refusedErrors,[],'auth denial must be reported in UI rather than crashing JS');
+ await refused.close();
  console.log('PASS real Chromium: approved Supabase session, native event -> Edge HTTP -> server-authoritative 22 XP -> progress bar -> hydrated reload; repeat awards no extra XP');
 }finally{await browser.close()}
