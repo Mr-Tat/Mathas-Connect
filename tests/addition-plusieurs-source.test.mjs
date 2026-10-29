@@ -18,5 +18,5 @@ assert.doesNotMatch(audit, /connect-results|connect-api|game-record|SUPABASE/);
 console.log('PASS: source keys, four terminal-event calls, free-only staging wrapper. XP contract NOT tested.');
 
 const originalIllustration=readFileSync(new URL('illustration.webp',root));
-const catalogIllustration=readFileSync(new URL('../assets/miniatures/addition-ecrite-multiple.webp',root));
+const catalogIllustration=readFileSync(new URL('../../assets/miniatures/addition-ecrite-multiple.webp',root));
 assert.deepEqual(catalogIllustration,originalIllustration,'Staged catalog thumbnail missing or differs from native illustration');
