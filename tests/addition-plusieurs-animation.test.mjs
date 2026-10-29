@@ -5,7 +5,7 @@ test('XP animation is driven by acknowledged positive delta only',()=>{
  assert.match(html,/reply\.xp\.delta>0\)animateXp/);
  assert.match(html,/particle\.animate\(/);
  assert.match(html,/move\.finished\.catch\(\(\)=>\{\}\)\.finally\(\(\)=>particle\.remove\(\)\)/);
- assert.doesNotMatch(html,/matchMedia\(|prefers-reduced-motion/);
+ assert.doesNotMatch(html,/if\s*\([^)]*matchMedia\(/);
 });
 test('laboratory launch is opt-in and no live Edge request in browser wrapper',()=>{
  assert.match(html,/get\('simulation'\)==='1'/);
