@@ -113,3 +113,15 @@ Test Chromium ajouté : un ancien 4/4, un record de 900 points et un ancien trop
 - Contrats Addition multiple : https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40942221144
 
 **Toujours non réalisé :** véritable déploiement sur un environnement Supabase de test, essai authentifié Edge/API end-to-end avec deux comptes fictifs et test manuel de calculs réellement saisis. La PR reste en brouillon, les trois verrous d'activation restent désactivés et aucune donnée réelle n'a été modifiée.
+
+## Recette navigateur avec quatre VRAIS calculs (29 octobre, 21h)
+
+**Nouveau résultat validé.** Chromium ouvre la version originale V6.0.2, choisit le niveau 1, clique sur le véritable bouton visible « 4 calculs », lit chaque nombre affiché dans les quatre opérations, calcule chaque colonne et sa retenue, puis saisit les chiffres dans les vrais champs du jeu avec clavier/focus. Aucune fonction de fin de partie n'est appelée artificiellement. Le moteur conclut lui-même à **4/4**, le pont transmet le résultat et la jauge de simulation affiche **+22 XP**.
+
+Le même pilote de quatre calculs a ensuite été exécuté avec une **session authentifiée fictive et un faux Edge HTTP isolé** dans Chromium. Résultat confirmé : `4/4 → requête game-record avec points=0 → sauvegarde simulée → 22 XP confirmés → trophée de maîtrise V3 → rechargement avec score et trophée → remise à zéro professeur fictive qui supprime les vieux records, mais conserve les 22 XP historiques`.
+
+**Défaut réel découvert et réparé :** le moteur V6.0.2 ne met pas à jour le trophée au moment exact de `__setLastWork` ; son propre mécanisme de gamification le fait dans une boucle existante à 650 ms. L'ancien `audit-bridge.js` expédiait la partie trop tôt, sans trophée, dès que les quatre calculs étaient joués réellement. Le pont attend désormais **l'écriture effective dans le localStorage natif** et transmet alors le trophée, dans le même événement que la partie ; une seule temporisation de secours bornée (1,75 s) traite les cas où aucun trophée n'est émis. **Aucun polling supplémentaire** n'est créé par Connect. Le vrai moteur original reste bit-identique.
+
+**Preuve automatique :** https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40948852931 — tests du jeu original, quatre vraies additions, vraie capture du trophée, Connect HTTP simulé, jauge, rechargement et remise à zéro, tous réussis.
+
+**Blocages restants :** le HTTP Edge du test est volontairement simulé et ne touche pas Supabase. Il reste une recette authentifiée dans une base Supabase de TEST avec les RPC candidat déployées là-bas, ainsi qu'une vérification de la page professeur. Les verrous `CONNECT_WRITE_READY=false`, `ADD_MULTI_SERVER_READY=false`, `ADD_MULTI_TEACHER_READY=false` restent fermés. Ne pas présenter le jeu en production avant ces validations et autorisation explicite.
