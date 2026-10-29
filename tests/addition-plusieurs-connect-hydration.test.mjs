@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {hydrateNativeRecords} from '../apps/addition-plusieurs/connect-hydration.mjs';
 const a='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',b='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const scope='connect.'+a+'.'+b;
-const storage=()=>{const map=new Map();return {map,getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,String(v))}};
+const storage=()=>{const map=new Map();return {map,getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,String(v)),removeItem:k=>map.delete(k)}};
 const key=k=>'mathas.addition-plusieurs.game.'+scope+'.v1:'+k;
 test('server classics, sudden, hard and progress hydrate exact native V6.0.2 storage',()=>{
  const db=storage();
@@ -40,4 +40,32 @@ test('untrusted server score or foreign namespace cannot overwrite local storage
   assert.throws(()=>hydrateNativeRecords({storage:db,scope,state}),/invalid_/);
  assert.equal(db.map.size,0);
  assert.throws(()=>hydrateNativeRecords({storage:db,scope:'libre',state:{}}),/invalid_hydration_scope/);
+});
+
+const trophies=()=>({
+ version:3,mastery:{4:[true,false,false],10:[false,false,false],20:[false,false,false]},
+ sudden:[false,false,false],
+ hardAwards:{bronze:[false,false,false],silver:[false,false,false],gold:[false,false,false]},
+ scoreOne:{bronze:false,silver:false,gold:false},unlockedGold:false
+});
+test('server-recovered V3 trophies persist in original native scope on a new device',()=>{
+ const db=storage(),awards=trophies();
+ assert.equal(hydrateNativeRecords({storage:db,scope,state:{rewards:awards}}),true);
+ assert.deepEqual(JSON.parse(db.getItem(key('mathas_trophies_v3_addition-plusieurs'))),awards);
+});
+test('teacher reset removes native trophies from the old parcours',()=>{
+ const db=storage();
+ db.setItem(key('mathas_trophies_v3_addition-plusieurs'),JSON.stringify(trophies()));
+ hydrateNativeRecords({storage:db,scope,state:{}});
+ assert.equal(db.getItem(key('mathas_trophies_v3_addition-plusieurs')),null);
+});
+test('an offline score prevents overwriting unsynced trophies',()=>{
+ const db=storage();db.setItem(key('mathas_trophies_v3_addition-plusieurs'),'local-trophy');
+ assert.equal(hydrateNativeRecords({storage:db,scope,state:{},pending:2}),false);
+ assert.equal(db.getItem(key('mathas_trophies_v3_addition-plusieurs')),'local-trophy');
+});
+test('malformed remote trophies never overwrite local results',()=>{
+ const db=storage(),bad=trophies();bad.mastery[4]=[true];
+ assert.throws(()=>hydrateNativeRecords({storage:db,scope,state:{rewards:bad}}),/invalid_server_rewards/);
+ assert.equal(db.map.size,0);
 });
