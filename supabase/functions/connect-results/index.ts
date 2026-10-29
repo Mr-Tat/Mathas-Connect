@@ -390,6 +390,34 @@ Deno.serve(async req=>{
      ||!int(b.level,1,3)||!int(b.score,0,100000)||!int(b.points,0,10000000)
      ||(b.mode==='classic'?(![4,10,20].includes(b.total)||b.score>b.total):b.mode==='hard-challenge'?(b.total!==5||b.score>5||b.points!==0):b.total!=null))
       return deny('invalid_result');
+   if(selected===addMulti&&b.action==='game-record'){
+     // Never write state separately from XP. A single PostgreSQL RPC performs
+     // event CAS, native-record update, XP credit and idempotent acknowledgement.
+     // Still unreachable while ADD_MULTI_SERVER_READY=false.
+     if(!valid(b.eventId)||!int(b.expectedRevision,0,1000000000)
+       ||!int(b.expectedResetEpoch,0,1000000000)||b.points!==0
+       ||!['classic','sudden','hard','hard-challenge'].includes(b.mode)
+       ||!int(b.level,1,3)||!int(b.score,0,100000)
+       ||(b.mode==='classic'?(![4,10,20].includes(b.total)||b.score>b.total)
+         :b.mode==='hard-challenge'?(b.total!==5||b.score>5):b.total!=null))
+       return deny('invalid_result');
+     // Trophies remain an explicit release blocker, not falsely acknowledged.
+     if(b.rewards!=null)return deny('rewards_not_integrated',503);
+     const {data:atomic,error:atomicError}=await db.rpc('connect_addition_multiple_record_v1',{
+       p_student:studentId,p_event:b.eventId,p_expected_revision:b.expectedRevision,
+       p_reset_epoch:b.expectedResetEpoch,p_mode:b.mode,p_level:b.level,
+       p_score:b.score,p_total:b.total??null
+     });
+     if(atomicError){
+       if(['revision_conflict','stale_reset_epoch'].includes(atomicError.message))
+         return deny(atomicError.message,409);
+       if(atomicError.message==='invalid_result')return deny('invalid_result');
+       console.error('addition_multiple_atomic_failed',atomicError.code);
+       return deny('atomic_save_unavailable',503);
+     }
+     if(!atomic||atomic.ok!==true)return deny('invalid_atomic_ack',503);
+     return answer(atomic);
+   }
    const rev=current?.revision??0;
    if((current?.reset_epoch??0)!==b.expectedResetEpoch)return deny('stale_reset_epoch',409);
    const prior=validate(current?.state_data||{});
