@@ -11,5 +11,7 @@ test('host connection is gated before accessing credentials and loading state',(
 });
 test('server acknowledgements drive XP animation, not submitted event',()=>{
  assert.match(html,/status==='saved'&&reply\?\.xp/);
- assert.match(html,/reply\.xp\.delta>0\)animateXp/);
+ assert.match(html,/confirmXp\(reply\.xp\)/);
+ assert.match(html,/delta>0\?animateXp\(delta\)/);
+ assert.match(html,/getElementById\('xp-track'\)\.getBoundingClientRect\(\)/);
 });
