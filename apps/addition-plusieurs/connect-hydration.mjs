@@ -1,3 +1,4 @@
+import {normalizeRewards} from './completion-contract.mjs';
 // Read-only server-state -> original game's exact scoped record formats.
 // Called before iframe.srcdoc, so no old pupil records are displayed at startup.
 // Never merge an unsynced local result into the server's authoritative bests.
@@ -42,6 +43,10 @@ export function hydrateNativeRecords({storage,scope,state,pending=0}){
  p.level2=progress.level2===true||p.sudden1;
  p.level3=progress.level3===true||p.sudden2;
  p.hard=progress.hard===true||(p.perfect1&&p.perfect2&&p.perfect3);
+ // Server remains authoritative after a teacher parcours reset or device switch.
+ // Trophy flags use the same V3 key and object shape as the original engine.
+ const awards=src.rewards==null?null:normalizeRewards(src.rewards);
+ if(src.rewards!=null&&!awards)throw Error('invalid_server_rewards');
  const prefix='mathas.addition-plusieurs.game.'+scope+'.v1:';
  for(const [name,value] of Object.entries({
   'addition2_classic_v1':classic,
@@ -50,5 +55,8 @@ export function hydrateNativeRecords({storage,scope,state,pending=0}){
   'addition2_hard_three_v2':hardThree,
   'mathas_progression_addition_plusieurs_v1':p
  }))storage.setItem(prefix+name,JSON.stringify(value));
+ const trophyKey=prefix+'mathas_trophies_v3_addition-plusieurs';
+ if(awards)storage.setItem(trophyKey,JSON.stringify(awards));
+ else storage.removeItem(trophyKey);
  return true;
 }
