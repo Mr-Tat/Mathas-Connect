@@ -2,8 +2,29 @@
 import {normalizeCompletion} from './completion-contract.mjs';
 import {CONNECT_WRITE_READY} from './connect-pilot.mjs';
 import {createLocalLab} from './local-lab.mjs';
+import {buildConnectPilot,CONNECT_WRITE_READY as writeReady} from './connect-pilot.mjs';
+import {createEdgePost} from './edge-transport.mjs';
 (async()=>{const frame=document.getElementById('game'),output=document.getElementById('result'),recorded=[];
- const simulate=new URLSearchParams(location.search).get('simulation')==='1';
+ // No Connect credentials are read until the backend has been validated and enabled.
+ const launch=new URLSearchParams(location.search);
+ const simulate=launch.get('simulation')==='1';
+ let connected=null;
+ if(writeReady){
+   // Disabled unless a reviewed, authenticated host supplies all dependencies.
+   const host=window.MathasConnectHost;
+   if(!host||!host.classId||!host.studentId||!host.endpoint||!host.apikey||typeof host.getToken!=='function'||typeof host.load!=='function')throw Error('connect_host_missing');
+   const post=createEdgePost({endpoint:host.endpoint,apikey:host.apikey,getToken:host.getToken});
+   const candidate=buildConnectPilot({storage:localStorage,classId:host.classId,studentId:host.studentId,post,onStatus:(status,reply)=>{
+     if(status==='saved'&&reply?.xp){
+       output.textContent='Connect : '+reply.xp.appXp+' XP';
+       if(reply.xp.delta>0)animateXp(reply.xp.delta);
+     }else if(status==='offline'||status==='conflict')output.textContent='Connect : résultat en attente ('+status+')';
+   }});
+   const loaded=await host.load();
+   if(loaded?.ok!==true||!candidate.initialize(loaded.revision,loaded.resetEpoch))throw Error('connect_load_failed');
+   connected=candidate;
+   void connected.retry();
+ }
  const lab=simulate?createLocalLab({storage:sessionStorage,onStatus:(status,reply)=>{
   if(status==='saved'&&reply?.xp){
     output.textContent='Simulation : '+reply.xp.appXp+' XP';
@@ -27,7 +48,7 @@ import {createLocalLab} from './local-lab.mjs';
  window.addEventListener('message',e=>{if(e.source!==frame.contentWindow||e.origin!==location.origin||e.data?.type!=='mathas-addition-plusieurs-audit-v1')return;const item={label:String(e.data.label).slice(0,120),score:String(e.data.score).slice(0,30),rulerUsed:e.data.rulerUsed===true};if(!/^(Calculs|Mort subite|HARD)/i.test(item.label))return;const normalized=normalizeCompletion(item);if(!normalized)return;
 // Le branchement Connect restera explicitement interdit jusqu'à validation du serveur de production.
 if(CONNECT_WRITE_READY)throw new Error('Connect pilot activation requires reviewed wiring');
-recorded.push(normalized);output.textContent=item.label+' : '+item.score;if(lab){lab.completed(item);void lab.flush();}document.getElementById('audit').textContent='Événements : '+recorded.length;});
+recorded.push(normalized);output.textContent=item.label+' : '+item.score;if(lab){lab.completed(item);void lab.flush();}if(connected)connected.completed(item);document.getElementById('audit').textContent='Événements : '+recorded.length;});
  document.getElementById('audit').addEventListener('click',()=>alert(recorded.length?recorded.map((x,i)=>(i+1)+'. '+x.mode+' · niveau '+x.level+' = '+x.score+(x.total?'/'+x.total:'')).join('\n'):'Aucun événement final enregistré pour cette session.'));
  try{const r=await fetch('./game-original.html');if(!r.ok)throw Error('Jeu indisponible');let game=await r.text();if(!game.includes('window.__setLastWork=function'))throw Error('Pont natif introuvable');game=game.replace('</body>','<script src="./audit-bridge.js"></'+'script></body>');frame.srcdoc=game;}catch(e){output.textContent='Erreur : '+e.message}
 })();
