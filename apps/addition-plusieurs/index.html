@@ -3,15 +3,20 @@ import {normalizeCompletion} from './completion-contract.mjs';
 import {createLocalLab} from './local-lab.mjs';
 import {buildConnectPilot,CONNECT_WRITE_READY as writeReady} from './connect-pilot.mjs';
 import {createEdgePost} from './edge-transport.mjs';
+import {createAuthenticatedHost} from './connect-host.mjs';
 (async()=>{const frame=document.getElementById('game'),output=document.getElementById('result'),recorded=[];
  // No Connect credentials are read until the backend has been validated and enabled.
  const launch=new URLSearchParams(location.search);
  const simulate=launch.get('simulation')==='1';
  let connected=null,host=null;
- if(writeReady){
-   // Disabled unless a reviewed, authenticated host supplies all dependencies.
-   host=window.MathasConnectHost;
-   if(!host||!host.classId||!host.studentId||!host.endpoint||!host.apikey||typeof host.getToken!=='function'||typeof host.load!=='function')throw Error('connect_host_missing');
+ // Match existing integrated games: class launch + approved anonymous student
+ // (or the separate teacher player session). Explicit free mode never queries.
+ const classId=launch.get('class')||'';
+ const teacherPlayer=launch.get('joueur')==='prof';
+ const free=!teacherPlayer&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';
+ if(writeReady&&classId&&!free){
+   const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.95.0');
+   host=await createAuthenticatedHost({classId,teacherPlayer,createClient});
    const post=createEdgePost({endpoint:host.endpoint,apikey:host.apikey,getToken:host.getToken});
    const candidate=buildConnectPilot({storage:localStorage,classId:host.classId,studentId:host.studentId,post,onStatus:(status,reply)=>{
      if(status==='saved'&&reply?.xp){
@@ -46,7 +51,7 @@ import {createEdgePost} from './edge-transport.mjs';
  }
  window.addEventListener('message',e=>{if(e.source!==frame.contentWindow||e.origin!==location.origin||e.data?.type!=='mathas-addition-plusieurs-audit-v1')return;const item={label:String(e.data.label).slice(0,120),score:String(e.data.score).slice(0,30),rulerUsed:e.data.rulerUsed===true};if(!/^(Calculs|Mort subite|HARD)/i.test(item.label))return;const normalized=normalizeCompletion(item);if(!normalized)return;
 // Le branchement Connect restera explicitement interdit jusqu'à validation du serveur de production.
-if(writeReady&&!connected)throw new Error('Connect host not initialized');
+if(writeReady&&host&&!connected)throw new Error('Connect host not initialized');
 recorded.push(normalized);output.textContent=item.label+' : '+item.score;if(lab){lab.completed(item);void lab.flush();}if(connected)connected.completed(item);document.getElementById('audit').textContent='Événements : '+recorded.length;});
  document.getElementById('audit').addEventListener('click',()=>alert(recorded.length?recorded.map((x,i)=>(i+1)+'. '+x.mode+' · niveau '+x.level+' = '+x.score+(x.total?'/'+x.total:'')).join('\n'):'Aucun événement final enregistré pour cette session.'));
  try{
