@@ -25,6 +25,24 @@ try{
  await page.waitForFunction(()=>document.getElementById('audit')?.textContent?.includes('1'),{timeout:10000});
  await page.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('22 XP'),{timeout:10000});
  assert.match(await page.locator('#result').innerText(),/22 XP/);
- assert.ok(!errors.length,'JavaScript errors after completion: '+errors.join(' | '));
+ // Contract tests of all four terminal-event formats, through real iframe postMessage.
+ // These are intentionally injected game events, not completed arithmetic problems.
+ const cases=[
+  [{label:'Calculs · Niveau 1',score:'10/10'},58],
+  [{label:'Calculs · Niveau 1',score:'20/20'},118],
+  [{label:'Mort subite · Niveau 1',score:'10'},138],
+  [{label:'HARD NIV 1 · 5 calculs',score:'5/5'},138],
+  [{label:'HARD NIV 1 · Mort subite · 3 chiffres',score:'7'},158],
+  [{label:'Calculs · Niveau 1',score:'4/4'},158]
+ ];
+ for(let i=0;i<cases.length;i++){
+  const [payload,xp]=cases[i];
+  await frame.locator('body').evaluate(entry=>window.__setLastWork(entry),payload);
+  await page.waitForFunction(({events,expected})=>
+   document.querySelector('#audit')?.textContent?.includes('Événements : '+events)
+   &&document.querySelector('#result')?.textContent?.includes('Simulation : '+expected+' XP'),
+   {events:i+2,expected:xp},{timeout:10000});
+ }
+ assert.ok(!errors.length,'JavaScript errors after all completion modes: '+errors.join(' | '));
  console.log('PASS: Chromium game engine, native completion bridge, and simulated 22 XP acknowledgement');
 }finally{await browser.close()}
