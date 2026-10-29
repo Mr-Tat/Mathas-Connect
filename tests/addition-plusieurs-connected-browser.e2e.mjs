@@ -55,6 +55,7 @@ try{
    st.state??={classic:[{},{},{}],sudden:[null,null,null],hard:[null,null,null]};
    st.state.classic[0][4]=4;
    st.state.rewards=payload.rewards??st.state.rewards??null;
+   st.state.debugHadRewards=payload.rewards!=null;
    st.revision++;
    st.appXp=22;st.total=22;
    return respond({ok:true,revision:st.revision,resetEpoch:st.resetEpoch,
@@ -83,6 +84,7 @@ try{
  await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='22 XP',{timeout:15000});
  assert.equal(backend(pupil).appXp,22);
  assert.equal(backend(pupil).revision,1);
+ console.log('NATIVE TROPHY DEBUG',JSON.stringify({serverRewards:backend(pupil).state.rewards,hadRewards:backend(pupil).state.debugHadRewards,local:await frame.locator('body').evaluate(()=>localStorage.getItem('mathas_trophies_v3_addition-plusieurs')),key:await frame.locator('body').evaluate(()=>window.MathasAppConfig?.appId)}));
  assert.equal(backend(pupil).state.rewards?.mastery?.[4]?.[0],true,
   'real original gameplay must award a bronze mastery milestone');
 
