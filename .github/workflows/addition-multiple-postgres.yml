@@ -32,6 +32,8 @@ jobs:
       PGDATABASE: isolated
     steps:
       - uses: actions/checkout@v4
+      - name: Parse and install four XP and restart RPC candidates in disposable database
+        run: psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-rpc-candidate.sql
       - name: Create pure isolated XP function
         run: psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-xp-preview.sql
       - name: Build isolated credit tables and transaction
