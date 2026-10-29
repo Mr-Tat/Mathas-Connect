@@ -6,17 +6,18 @@ export function createSync({queue,post,onAck=()=>{},onConflict=()=>{},onError=()
  async function flush(){
   if(running)return running;
   running=(async()=>{
-   let accepted=0;
+   let accepted=0, revision=null, resetEpoch=null;
    for(const pending of queue.read()){
+    const request=revision===null?pending:{...pending,expectedRevision:revision,expectedResetEpoch:resetEpoch};
     let response;
-    try{response=await post(pending)}catch(error){onError(error);break}
+    try{response=await post(request)}catch(error){onError(error);break}
     if(!response||response.ok!==true){
      if(response?.status===409||['revision_conflict','stale_reset_epoch'].includes(response?.error)){onConflict(response);break}
      onError(response);break;
     }
     // Seule preuve d'acquittement serveur. Les réponses malformées conservent le résultat.
     if(!Number.isSafeInteger(response.revision)||!Number.isSafeInteger(response.resetEpoch)){onError(new Error('bad_server_ack'));break}
-    if(queue.acknowledge(pending.eventId)){accepted++;onAck(pending,response)}
+    if(queue.acknowledge(pending.eventId)){accepted++;revision=response.revision;resetEpoch=response.resetEpoch;onAck(pending,response)}
    }
    return {accepted,remaining:queue.count()};
   })().finally(()=>{running=null});
