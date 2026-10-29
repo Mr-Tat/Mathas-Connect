@@ -62,6 +62,7 @@ try{
   await page.goto(base+basePath+'?class='+classroom,{waitUntil:'domcontentloaded'});
   const frame=page.frameLocator('iframe#game');
   await frame.locator('body').waitFor({timeout:20000});
+  await page.waitForFunction(()=>document.getElementById('game')?.contentWindow?.__mathasGameStorageScope?.startsWith('connect.'),null,{timeout:20000});
   assert.equal(await frame.locator('body').evaluate(()=>window.__mathasGameStorageScope),
    'connect.'+classroom+'.'+pupil);
   return frame;
