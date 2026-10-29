@@ -5,3 +5,12 @@ test('accept only durable server acknowledgement, no double send',async()=>{let 
 test('network failure retains all unsent events',async()=>{let q=make();q.enqueue({eventId:'a'});const s=createSync({queue:q,post:async()=>{throw Error('offline')}});assert.equal((await s.flush()).remaining,1)});
 test('409 revision/reset epoch stops without removing queued event',async()=>{let q=make(),conflicts=0;q.enqueue({eventId:'a'});const s=createSync({queue:q,post:async()=>({ok:false,status:409,error:'stale_reset_epoch'}),onConflict:()=>conflicts++});assert.equal((await s.flush()).remaining,1);assert.equal(conflicts,1)});
 test('unverified success is not an acknowledgement',async()=>{let q=make();q.enqueue({eventId:'a'});const s=createSync({queue:q,post:async()=>({ok:true})});assert.equal((await s.flush()).remaining,1)});
+
+test('second queued event uses newly acknowledged revision and reset epoch',async()=>{
+ const q=make();q.enqueue({eventId:'a',expectedRevision:4,expectedResetEpoch:2});q.enqueue({eventId:'b',expectedRevision:4,expectedResetEpoch:2});
+ const sent=[];const sync=createSync({queue:q,post:async entry=>{sent.push({...entry});return {ok:true,revision:sent.length+4,resetEpoch:3}}});
+ assert.equal((await sync.flush()).remaining,0);
+ assert.equal(sent[0].expectedRevision,4);
+ assert.equal(sent[1].expectedRevision,5);
+ assert.equal(sent[1].expectedResetEpoch,3);
+});
