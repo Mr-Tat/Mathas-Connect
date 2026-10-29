@@ -7,10 +7,10 @@ import {createEdgePost} from './edge-transport.mjs';
  // No Connect credentials are read until the backend has been validated and enabled.
  const launch=new URLSearchParams(location.search);
  const simulate=launch.get('simulation')==='1';
- let connected=null;
+ let connected=null,host=null;
  if(writeReady){
    // Disabled unless a reviewed, authenticated host supplies all dependencies.
-   const host=window.MathasConnectHost;
+   host=window.MathasConnectHost;
    if(!host||!host.classId||!host.studentId||!host.endpoint||!host.apikey||typeof host.getToken!=='function'||typeof host.load!=='function')throw Error('connect_host_missing');
    const post=createEdgePost({endpoint:host.endpoint,apikey:host.apikey,getToken:host.getToken});
    const candidate=buildConnectPilot({storage:localStorage,classId:host.classId,studentId:host.studentId,post,onStatus:(status,reply)=>{
@@ -49,6 +49,17 @@ import {createEdgePost} from './edge-transport.mjs';
 if(writeReady&&!connected)throw new Error('Connect host not initialized');
 recorded.push(normalized);output.textContent=item.label+' : '+item.score;if(lab){lab.completed(item);void lab.flush();}if(connected)connected.completed(item);document.getElementById('audit').textContent='Événements : '+recorded.length;});
  document.getElementById('audit').addEventListener('click',()=>alert(recorded.length?recorded.map((x,i)=>(i+1)+'. '+x.mode+' · niveau '+x.level+' = '+x.score+(x.total?'/'+x.total:'')).join('\n'):'Aucun événement final enregistré pour cette session.'));
- try{const r=await fetch('./game-original.html');if(!r.ok)throw Error('Jeu indisponible');let game=await r.text();if(!game.includes('window.__setLastWork=function'))throw Error('Pont natif introuvable');game=game.replace('</body>','<script src="./audit-bridge.js"></'+'script></body>');frame.srcdoc=game;}catch(e){output.textContent='Erreur : '+e.message}
+ try{
+   const [r,storageFile]=await Promise.all([fetch('./game-original.html'),fetch('./storage-scope.js')]);
+   if(!r.ok||!storageFile.ok)throw Error('Moteur ou isolation des scores indisponible');
+   let game=await r.text(),storageCode=await storageFile.text();
+   if(!game.includes('window.__setLastWork=function')||!game.includes('<head>')||!storageCode.includes('__mathasGameStorageScope'))throw Error('Pont de résultats ou isolation introuvable');
+   const scope=connected?'connect.'+host.classId.toLowerCase()+'.'+host.studentId.toLowerCase():(simulate?'simulation':'libre');
+   if(!/^[a-z0-9.-]{1,120}$/.test(scope))throw Error('identité du jeu non valide');
+   frame.setAttribute('data-mathas-storage-scope',scope);
+   game=game.replace('<head>','<head><script>'+storageCode+'</'+'script>');
+   game=game.replace('</body>','<script src="./audit-bridge.js"></'+'script></body>');
+   frame.srcdoc=game;
+  }catch(e){output.textContent='Erreur : '+e.message}
 })();
 </script></body></html>
