@@ -1,0 +1,92 @@
+name: Addition plusieurs - Supabase AUTH Edge SQL local isolated
+on:
+  pull_request:
+    paths:
+      - 'tests/addition-plusieurs-auth-local.e2e.mjs'
+      - '.github/workflows/addition-plusieurs-auth-local.yml'
+      - 'supabase/functions/connect-results/index.ts'
+      - 'supabase/functions/connect-api/index.ts'
+      - 'tests/postgres/addition-multiple-*.sql'
+      - 'supabase/migrations/20261029_addition_multiple_catalog_stage.sql'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  auth-edge-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Actual local Auth, Edge and PostgreSQL (no hosted project)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$PWD"
+          LAB="$RUNNER_TEMP/addition-multiple-supabase-local"
+          mkdir -p "$LAB"
+          cd "$LAB"
+          # Never link, login, deploy, or import production data.
+          supabase init --yes
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('supabase/config.toml')
+          text=p.read_text()
+          assert 'enable_anonymous_sign_ins = false' in text
+          p.write_text(text.replace('enable_anonymous_sign_ins = false','enable_anonymous_sign_ins = true',1))
+          PY
+          mkdir -p supabase/functions/connect-results supabase/functions/connect-api
+          python3 - "$ROOT/supabase/functions/connect-results/index.ts" <<'PY'
+          from pathlib import Path
+          import sys
+          source=Path(sys.argv[1]).read_text()
+          marker='const ADD_MULTI_SERVER_READY=false;'
+          assert source.count(marker)==1
+          # Only the disposable Edge copy is unlocked, NEVER the PR source.
+          Path('supabase/functions/connect-results/index.ts').write_text(
+              source.replace(marker,'const ADD_MULTI_SERVER_READY=true;'))
+          PY
+          cp "$ROOT/supabase/functions/connect-api/index.ts" supabase/functions/connect-api/index.ts
+          supabase start -x studio,realtime,storage-api,imgproxy,postgres-meta,mailpit,logflare,vector,supavisor
+          trap 'supabase stop --no-backup >/dev/null 2>&1 || true' EXIT
+          supabase status -o env > "$LAB/local.env"
+          set -a
+          source "$LAB/local.env"
+          set +a
+          test -n "$DB_URL" && test -n "$API_URL" && test -n "$ANON_KEY" && test -n "$SERVICE_ROLE_KEY"
+          case "$API_URL" in http://127.0.0.1:*) ;; *) echo "Refusing nonlocal Supabase endpoint"; exit 1;; esac
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/tests/postgres/addition-multiple-rpc-candidate.sql" >/dev/null
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/tests/postgres/addition-multiple-catalog-fixture.sql" >/dev/null
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/supabase/migrations/20261029_addition_multiple_catalog_stage.sql" >/dev/null
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/tests/postgres/addition-multiple-real-rpc-fixture.sql" >/dev/null
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/tests/postgres/addition-multiple-atomic-rpc-candidate.sql" >/dev/null
+          psql "$DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          UPDATE public.connect_apps SET enabled=true WHERE app_key='addition-ecrite-multiple';
+          CREATE TABLE public.connect_devices (
+            id uuid primary key, auth_user_id uuid not null, student_id uuid not null,
+            state text not null
+          );
+          CREATE TABLE public.connect_teachers (auth_user_id uuid primary key);
+          DO $$
+          DECLARE item record;
+          BEGIN
+            FOR item IN SELECT tablename FROM pg_tables
+             WHERE schemaname='public' AND tablename LIKE 'connect_%'
+            LOOP EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY',item.tablename);
+            END LOOP;
+          END $$;
+          SQL
+          (supabase functions serve > "$LAB/edge.log" 2>&1 & echo $! > "$LAB/edge.pid")
+          npm install --prefix "$LAB" --no-save --no-audit --no-fund @supabase/supabase-js@2.95.0 >/dev/null
+          cp "$ROOT/tests/addition-plusieurs-auth-local.e2e.mjs" "$LAB/test.mjs"
+          for attempt in $(seq 1 45); do
+            if curl --silent --max-time 2 "$API_URL/functions/v1/connect-results" >/dev/null; then break; fi
+            sleep 2
+          done
+          node "$LAB/test.mjs" || { tail -n 150 "$LAB/edge.log"; exit 1; }
+          kill "$(cat "$LAB/edge.pid")" 2>/dev/null || true
