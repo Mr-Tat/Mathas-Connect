@@ -87,6 +87,11 @@ try{
    throw error;
   }
  }
+ await page.waitForFunction(()=>
+  document.getElementById('xp-total')?.textContent==='158 XP'
+  &&document.getElementById('xp-level')?.textContent==='Niveau 4'
+  &&document.getElementById('xp-fill')?.style.width==='16%',
+  null,{timeout:25000});
  assert.ok(!errors.length,'JavaScript errors after all completion modes: '+errors.join(' | '));
  console.log('PASS: Chromium native engine, isolated free/simulation storage, all completion modes and simulated XP');
 }finally{await browser.close()}
