@@ -2,7 +2,9 @@ import test from 'node:test';import assert from 'node:assert/strict';import {rea
 const html=readFileSync(new URL('../apps/addition-plusieurs/index.html',import.meta.url),'utf8');
 test('XP animation is driven by acknowledged positive delta only',()=>{
  assert.match(html,/status==='saved'&&reply\?\.xp/);
- assert.match(html,/reply\.xp\.delta>0\)animateXp/);
+ assert.match(html,/confirmXp\(reply\.xp\)/);
+ assert.match(html,/delta>0\?animateXp\(delta\)/);
+ assert.match(html,/getElementById\('xp-track'\)\.getBoundingClientRect\(\)/);
  assert.match(html,/particle\.animate\(/);
  assert.match(html,/move\.finished\.catch\(\(\)=>\{\}\)\.finally\(\(\)=>particle\.remove\(\)\)/);
  assert.doesNotMatch(html,/if\s*\([^)]*matchMedia\(/);
