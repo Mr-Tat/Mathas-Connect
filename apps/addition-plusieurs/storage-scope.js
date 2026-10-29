@@ -11,8 +11,8 @@
  const p=Storage.prototype;
  const get=p.getItem,set=p.setItem,remove=p.removeItem;
  const scoped=(key)=>{const str=String(key);return /^(addition2_|mathas_)/.test(str)?ns+str:str};
- p.getItem=function(key){return get.call(this,this===localStorage?scoped(key):key)};
- p.setItem=function(key,value){return set.call(this,this===localStorage?scoped(key):key,value)};
- p.removeItem=function(key){return remove.call(this,this===localStorage?scoped(key):key)};
+ p.getItem=function(key){return get.call(this,(this===localStorage||this===sessionStorage)?scoped(key):key)};
+ p.setItem=function(key,value){return set.call(this,(this===localStorage||this===sessionStorage)?scoped(key):key,value)};
+ p.removeItem=function(key){return remove.call(this,(this===localStorage||this===sessionStorage)?scoped(key):key)};
  Object.defineProperty(window,'__mathasGameStorageScope',{value:scope,configurable:false});
 })();
