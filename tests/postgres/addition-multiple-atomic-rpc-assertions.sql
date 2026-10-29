@@ -41,6 +41,14 @@ BEGIN
  EXCEPTION WHEN raise_exception THEN
   IF SQLERRM='invalid_trophy_accepted' OR SQLERRM<>'invalid_rewards' THEN RAISE;END IF;
  END;
+ -- Missing trophy fields also fail closed; SQL NULL must not become an award.
+ BEGIN
+  PERFORM public.connect_addition_multiple_record_v1(a,ev2,1,0,'classic',1,8,10,
+    '{"version":3,"mastery":{},"sudden":[false,false,false],"hardAwards":{"bronze":[false,false,false],"silver":[false,false,false],"gold":[false,false,false]},"scoreOne":{"bronze":false,"silver":false,"gold":false},"unlockedGold":false}'::jsonb);
+  RAISE EXCEPTION 'missing_trophy_field_accepted';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM IS DISTINCT FROM 'invalid_rewards' THEN RAISE; END IF;
+ END;
  -- If XP insert fails, all state mutations from that event roll back.
  CREATE OR REPLACE FUNCTION public.addmulti_fail_test_credit() RETURNS trigger
  LANGUAGE plpgsql AS $fail$
