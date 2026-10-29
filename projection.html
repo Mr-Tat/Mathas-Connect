@@ -1,24 +1,83 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Math’as Connect — Projection</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Math’as Connect — Projection collective</title>
 <link rel="icon" href="./assets/brand/favicon.png" type="image/png">
 <style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 *{box-sizing:border-box}
-body{margin:0;min-height:100svh;display:grid;place-items:center;padding:25px;color:#f5f8fd;background:radial-gradient(circle at 20% 12%,#183958,#081321 65%)}
-main{max-width:880px;text-align:center}
-h1{font-size:clamp(2rem,6vw,4.4rem);margin:.6em 0 .3em}
-p{font-size:clamp(1.1rem,2.7vw,1.6rem);color:#c2d5e3}
-a{color:#9fddf5}
-.label{font-size:clamp(.9rem,2vw,1.4rem);color:#74d6e9}
+body{min-height:100svh;margin:0;background:radial-gradient(ellipse at 20% -15%,#20517c 0,#0a1d31 47%,#071422 100%);color:#f3f8ff}
+header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:20px clamp(20px,4vw,64px);border-bottom:1px solid #375772;background:#0a1c2ad9}
+header strong{font-size:clamp(1.15rem,2.5vw,2rem);letter-spacing:.015em}
+header a{color:#a3d5ff;font-size:.92rem}
+main{max-width:1500px;margin:auto;padding:clamp(20px,4vw,54px)}
+.eyebrow{font-weight:750;text-transform:uppercase;letter-spacing:.13em;color:#8dd6f1}
+h1{font-size:clamp(2.25rem,5.2vw,5rem);line-height:1.07;margin:13px 0 12px}
+p{color:#c0d6e8;line-height:1.5}
+.actions{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin:30px 0}
+.actions label{display:grid;gap:7px;font-weight:700;color:#d7e7f7}
+button,select{font:inherit;min-height:49px;border-radius:12px;border:1px solid #6797b2}
+button{cursor:pointer;padding:10px 18px;background:#155b81;color:#fff;font-weight:700}
+button.secondary{background:#183347;color:#e1f0fc}
+button:disabled{cursor:not-allowed;opacity:.55}
+button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #ffd26a;outline-offset:3px}
+select{min-width:min(290px,85vw);padding:8px 12px;background:#102f46;color:#fff}
+.panel{border:1px solid #466982;border-radius:20px;padding:clamp(21px,3vw,36px);background:#102c40b9}
+#login-needed a{color:#b5e8ff}
+#status{min-height:1.4em;font-size:.97rem;margin:10px 0 25px}
+#board[hidden],#login-needed[hidden],#controls[hidden],#blank[hidden]{display:none!important}
+#board h2{font-size:clamp(1.5rem,3vw,2.8rem);margin:.2em 0}
+#board .subline{margin:0 0 24px}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.metric{background:#132f47;border:1px solid #4f758a;padding:clamp(20px,3vw,36px);border-radius:20px;min-width:0}
+.metric .number{font-size:clamp(3rem,7vw,6.6rem);line-height:1.1;font-weight:900;color:#ffdb84;font-variant-numeric:tabular-nums}
+.metric .description{font-size:clamp(1rem,1.8vw,1.35rem);color:#cee0ef;line-height:1.4}
+section.activity{margin-top:40px}
+.activity h3{font-size:clamp(1.4rem,2.3vw,2.1rem)}
+.app-row{display:grid;grid-template-columns:minmax(190px,1.5fr) minmax(80px,4fr) auto;align-items:center;gap:20px;padding:18px 0;border-bottom:1px solid #385b74;font-size:clamp(1rem,1.9vw,1.4rem)}
+.app-row strong{font-weight:750}
+.track{height:21px;background:#0b2031;box-shadow:inset 0 0 0 1px #547087;border-radius:999px;overflow:hidden}
+.fill{height:100%;background:linear-gradient(90deg,#55b8dd,#f4d16f);border-radius:inherit}
+.app-row output{white-space:nowrap;font-variant-numeric:tabular-nums}
+.help{font-size:.88rem;color:#aebfd0}
+footer{max-width:1500px;margin:10px auto 30px;padding:0 clamp(20px,4vw,54px);font-size:.86rem;color:#acc6d8}
+@media(max-width:720px){header{flex-wrap:wrap}.cards{grid-template-columns:1fr}.app-row{grid-template-columns:1fr auto}.track{grid-column:1/-1;grid-row:2}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important}}
 </style>
 </head>
-<body><main>
-<div class="label">Math’as Connect · Projection</div>
-<h1>Ici, futur tableau de projection</h1>
-<p>Ce tableau sera développé après le HUB professeur et le HUB élèves.</p>
-<p><a href="./index.html">Retour à Math’as Connect</a></p>
-</main></body>
-</html>
+<body>
+<header><strong>Math’as Connect <span aria-hidden="true">·</span> Projection</strong><a href="./index.html?portail=prof">Retour à l’espace professeur</a></header>
+<main>
+<div class="eyebrow">Tableau collectif · Lecture seule</div>
+<h1>Notre progression</h1>
+<p>Une vue pour la classe entière, sans prénom, résultat individuel ni classement. Les chiffres ne sont chargés que sur demande.</p>
+<div id="login-needed" class="panel" hidden>
+ <h2>Connexion professeur nécessaire</h2>
+ <p>Connecte-toi sur l’espace professeur, puis rouvre ce tableau dans ce navigateur.</p>
+ <a href="./index.html?portail=prof">Ouvrir l’espace professeur</a>
+</div>
+<div id="controls" class="actions" hidden>
+ <label>Classe à projeter <select id="class-choice" aria-label="Classe à projeter"></select></label>
+ <button id="load" type="button">Afficher / Actualiser</button>
+ <button id="hide" type="button" class="secondary">Masquer les chiffres</button>
+ <button id="fullscreen" type="button" class="secondary">Plein écran</button>
+</div>
+<p id="status" role="status" aria-live="polite">Vérification de l’accès professeur…</p>
+<div id="blank" class="panel"><p>Sélectionne une classe, puis clique sur « Afficher / Actualiser ».</p></div>
+<div id="board" hidden>
+ <h2 id="class-name"></h2><p id="updated" class="subline"></p>
+ <div class="cards">
+  <div class="metric"><div id="total" class="number">0</div><div class="description">Élèves inscrits dans la classe</div></div>
+  <div class="metric"><div id="participants" class="number">0</div><div class="description">Élèves avec au moins une partie dans l’historique récent</div></div>
+  <div class="metric"><div id="today" class="number">0</div><div class="description">Élèves ayant joué aujourd’hui</div></div>
+ </div>
+ <section class="activity"><h3>Participation par application</h3><div id="apps"></div><p class="help">Pour chaque application : élèves avec une partie dans l’historique récent / élèves inscrits. L’historique disponible conserve jusqu’à trois parties par élève et par jeu.</p></section>
+</div>
+</main>
+<footer>Aucune modification des résultats ni des XP · Pas de rafraîchissement automatique · Le tableau se masque lorsqu’on quitte la page.</footer>
+<script type="module" src="./projection.js"></script>
+</body></html>
