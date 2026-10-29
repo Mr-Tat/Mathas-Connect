@@ -58,6 +58,10 @@ La projection montre uniquement des nombres collectifs : inscrits, participants 
 4. Préparer une application suivante à partir de son moteur autonome réel ; examiner ses modes et ses niveaux avant de choisir les XP. Éviter une intégration groupée de plusieurs jeux tant que l'un d'eux n'a pas passé sa recette.
 5. Préserver les quotas GitHub/Supabase et la fluidité : lectures ciblées, écriture une fois par partie, pas de suivi par frappe ni de rafraîchissement permanent.
 
+## Références pour les prochaines applications
+
+Une première lecture des moteurs autonomes existants et un protocole d'intégration progressive figurent dans [la préparation des prochains calculs écrits](docs/PREPARATION_PROCHAINES_INTEGRATIONS_20261029.md). Le premier candidat technique est **Addition de plusieurs nombres**, puis **Multiplication à plusieurs chiffres** et enfin **Mélange** ; aucun de ces jeux n'est encore connecté ni annoncé aux élèves.
+
 ## Notes anciennes / historique
 
 Les fichiers datés sous `docs/*` documentent le raisonnement et les étapes précédentes. **Ils ne sont pas tous à jour** : plusieurs disent encore « XP non implémentés », « Soustraction à intégrer » ou « moteur original inchangé ». Ce sont des assertions historiques **supplantées par l'état de production et les tests du dépôt actuel**. Les décisions métier stables restent décrites dans `docs/PASSAGE_DE_FLAMBEAU_XP_CALCULS_ECRITS_2026-10-25.txt`, mais ne pas confondre ses notes de déploiement historiques avec la situation actuelle.
