@@ -13,6 +13,35 @@ try{
  assert.ok(body.length>100,'original game must render substantial content');
  assert.ok(!errors.length,'JavaScript errors: '+errors.join(' | '));
  assert.match(await page.locator('body').innerText(),/Laboratoire/);
+ // Shared classroom computer: records written by a simulated student must never
+ // appear in the unscoped HUB or the free-mode game (same browser context).
+ const scope=await frame.locator('body').evaluate(()=>{
+  localStorage.setItem('addition2_audit_probe','simulation-only');
+  localStorage.setItem('mathas_audit_probe','simulation-trophy');
+  return window.__mathasGameStorageScope;
+ });
+ assert.equal(scope,'simulation');
+ const keys=await page.evaluate(()=>({
+  raw:localStorage.getItem('addition2_audit_probe'),
+  scoped:localStorage.getItem('mathas.addition-plusieurs.game.simulation.v1:addition2_audit_probe'),
+  trophy:localStorage.getItem('mathas.addition-plusieurs.game.simulation.v1:mathas_audit_probe')
+ }));
+ assert.deepEqual(keys,{raw:null,scoped:'simulation-only',trophy:'simulation-trophy'});
+ const freePage=await page.context().newPage();
+ freePage.on('pageerror',e=>errors.push('free: '+e.message));
+ await freePage.goto('http://127.0.0.1:8765/apps/addition-plusieurs/',{waitUntil:'domcontentloaded'});
+ const freeFrame=freePage.frameLocator('iframe#game');
+ await freeFrame.locator('body').waitFor({timeout:20000});
+ const separated=await freeFrame.locator('body').evaluate(()=>{
+  const before=localStorage.getItem('addition2_audit_probe');
+  localStorage.setItem('addition2_audit_probe','free-only');
+  return {scope:window.__mathasGameStorageScope,before};
+ });
+ assert.deepEqual(separated,{scope:'libre',before:null});
+ assert.equal(await frame.locator('body').evaluate(()=>localStorage.getItem('addition2_audit_probe')),'simulation-only');
+ assert.equal(await page.evaluate(()=>localStorage.getItem('mathas.addition-plusieurs.game.libre.v1:addition2_audit_probe')),'free-only');
+ await freePage.close();
+
  // Exercise the actual native completion bridge through the loaded game frame.
  // This is a contract test, not a claim that every calculation UI was played.
  const native=await frame.locator('body').evaluate(()=>{
@@ -55,5 +84,5 @@ try{
   }
  }
  assert.ok(!errors.length,'JavaScript errors after all completion modes: '+errors.join(' | '));
- console.log('PASS: Chromium game engine, native completion bridge, and simulated 22 XP acknowledgement');
+ console.log('PASS: Chromium native engine, isolated free/simulation storage, all completion modes and simulated XP');
 }finally{await browser.close()}
