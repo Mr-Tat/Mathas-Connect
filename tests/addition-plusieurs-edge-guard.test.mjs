@@ -11,8 +11,10 @@ test('new app explicitly isolated and gated by disabled catalog',()=>{
  assert.match(migration,/false,'calculs_ecrits',false,40/);
  assert.match(migration,/40,false,false/);
 });
-test('existing applications remain authorized and native XP sync excludes new app',()=>{
+test('existing applications remain authorized and new XP routes share server readiness switch',()=>{
  assert.match(edge,/k===app\|\|k===mul\|\|k===sub\|\|k===lab\|\|k===addMulti/);
- assert.match(edge,/if\(appKey!==app&&appKey!==mul&&appKey!==sub\)return null/);
+ assert.match(edge,/const xpAppAllowed=\(k:any\)=>k===app\|\|k===mul\|\|k===sub\|\|\(ADD_MULTI_SERVER_READY&&k===addMulti\)/);
+ assert.match(edge,/if\(!xpAppAllowed\(appKey\)\)return null/);
+ assert.match(edge,/if\(!xpAppAllowed\(b.appKey\)\)return deny\('forbidden',403\)/);
  assert.doesNotMatch(migration,/DELETE FROM|TRUNCATE|DROP TABLE|UPDATE public\.connect_states/i);
 });
