@@ -27,6 +27,7 @@ test('Addition multiple result writes are atomic; legacy app code stays untouche
  const branch=edge.slice(start,legacyUpdate);
  assert.match(branch,/return answer\(atomic\)/);
  assert.match(branch,/atomic_save_unavailable/);
- assert.match(branch,/if\(b\.rewards!=null\)return deny\('rewards_not_integrated',503\)/);
+ assert.match(branch,/rewards=normalizeRewards\(b\.rewards\)/);
+ assert.match(branch,/p_rewards:rewards/);
  assert.doesNotMatch(branch,/db\.from\('connect_states'\)\.(update|insert)/);
 });
