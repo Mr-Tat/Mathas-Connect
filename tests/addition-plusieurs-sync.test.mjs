@@ -35,3 +35,16 @@ test('queued event from older parcours is never rebased after first acknowledgem
  assert.equal(sent,1);assert.equal(result.remaining,1);assert.equal(conflicts,1);
  assert.equal(q.read()[0].eventId,'b');
 });
+
+test('idempotent server duplicate is acknowledged without second XP award',async()=>{
+ const q=make();q.enqueue({eventId:'already-saved',expectedRevision:6,expectedResetEpoch:2});
+ let saved=0;const sync=createSync({queue:q,post:async()=>({ok:true,duplicate:true,revision:6,resetEpoch:2,xp:{delta:0}}),onAck:()=>saved++});
+ const result=await sync.flush();assert.equal(result.remaining,0);assert.equal(saved,1);
+});
+test('fake duplicate with lower revision or new epoch stays queued',async()=>{
+ for(const response of [{ok:true,duplicate:true,revision:5,resetEpoch:2},{ok:true,duplicate:true,revision:6,resetEpoch:3}]){
+  const q=make();q.enqueue({eventId:'x',expectedRevision:6,expectedResetEpoch:2});
+  const result=await createSync({queue:q,post:async()=>response}).flush();
+  assert.equal(result.remaining,1);
+ }
+});
