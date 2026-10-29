@@ -14,20 +14,23 @@ export function buildConnectPilot({storage,classId,studentId,post,onStatus=()=>{
   initialize(rev,epoch){
    if(!Number.isSafeInteger(rev)||!Number.isSafeInteger(epoch)||rev<0||epoch<0)throw Error('invalid_revision');
    revision=rev;resetEpoch=epoch;
-   // A teacher reset invalidates the old pending queue; keep it for review, never resubmit.
-   const pending=queue.read();
-   if(pending.some(e=>e.expectedResetEpoch!==epoch)){onStatus('conflict',{error:'queued_epoch_mismatch'});return false}
+   // Teacher reset: archive old offline attempts under this student profile,
+   // then continue the new parcours. Never replay them into a later epoch.
+   const stale=queue.quarantineEpoch(epoch);
+   if(stale)onStatus('quarantined',{error:'queued_epoch_mismatch',count:stale});
    return true;
   },
   completed(entry){
    const event=normalizeCompletion(entry);
    if(!event||revision===null)return false;
-   if(queue.read().some(e=>e.expectedResetEpoch!==resetEpoch)){onStatus('conflict',{error:'queued_epoch_mismatch'});return false}
+   const stale=queue.quarantineEpoch(resetEpoch);
+   if(stale)onStatus('quarantined',{error:'queued_epoch_mismatch',count:stale});
    const record={...event,action:'game-record',eventId:crypto.randomUUID(),expectedRevision:revision,expectedResetEpoch:resetEpoch,points:0,classId};
    if(!queue.enqueue(record))return false;
    onStatus('pending');void sync.flush();return true;
   },
   retry(){return sync.flush()},
-  pending(){return queue.count()}
+  pending(){return queue.count()},
+  quarantined(){return queue.archivedCount()}
  });
 }
