@@ -53,6 +53,7 @@ try{
    const old=st.appXp;
    st.state??={classic:[{},{},{}],sudden:[null,null,null],hard:[null,null,null]};
    st.state.classic[0][4]=4;
+   st.state.rewards=payload.rewards??st.state.rewards??null;
    st.revision++;
    st.appXp=22;st.total=22;
    return respond({ok:true,revision:st.revision,resetEpoch:st.resetEpoch,
@@ -67,13 +68,24 @@ try{
    'connect.'+classroom+'.'+pupil);
   return frame;
  };
+ const nativeTrophies={
+   version:3,mastery:{4:[true,false,false],10:[false,false,false],20:[false,false,false]},
+   sudden:[false,false,false],
+   hardAwards:{bronze:[false,false,false],silver:[false,false,false],gold:[false,false,false]},
+   scoreOne:{bronze:false,silver:false,gold:false},unlockedGold:false
+ };
  const frame=await launch();
  await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='0 XP');
  // Trigger genuine engine completion callback; not an arithmetic click-through.
+ await frame.locator('body').evaluate((_element,awards)=>{
+    localStorage.setItem('mathas_trophies_v3_addition-plusieurs',JSON.stringify(awards));
+ },nativeTrophies);
  await frame.locator('body').evaluate(()=>window.__setLastWork({label:'Calculs · Niveau 1',score:'4/4',rulerUsed:false}));
  await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='22 XP',{timeout:15000});
  assert.equal(backend(pupil).appXp,22);
  assert.equal(backend(pupil).revision,1);
+ assert.deepEqual(backend(pupil).state.rewards,nativeTrophies);
+
  assert.equal(calls.filter(c=>c.action==='game-record').length,1);
  // A repeated completion may update history but MUST NOT grant extra XP.
  await frame.locator('body').evaluate(()=>window.__setLastWork({label:'Calculs · Niveau 1',score:'4/4',rulerUsed:false}));
@@ -86,6 +98,10 @@ try{
  await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='22 XP');
  const classic=await fresh.locator('body').evaluate(()=>JSON.parse(localStorage.getItem('addition2_classic_v1')||'{}'));
  assert.equal(classic.levels?.['1']?.['4'],4);
+ const recovered=await fresh.locator('body').evaluate(()=>
+   JSON.parse(localStorage.getItem('mathas_trophies_v3_addition-plusieurs')||'null'));
+ assert.deepEqual(recovered,nativeTrophies);
+
  assert.equal(calls.filter(c=>c.action==='game-record').length,2);
  assert.ok(!errors.length,'Browser JS errors: '+errors.join(' | '));
  console.log('PASS real Chromium: approved Supabase session, native event -> Edge HTTP -> server-authoritative 22 XP -> progress bar -> hydrated reload; repeat awards no extra XP');
