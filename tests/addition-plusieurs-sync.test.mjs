@@ -67,3 +67,26 @@ test('server cannot silently advance by multiple revisions on a new event',async
  let conflicts=0;const sync=createSync({queue:q,post:async()=>({ok:true,revision:8,resetEpoch:2}),onConflict:()=>conflicts++});
  assert.equal((await sync.flush()).remaining,1);assert.equal(conflicts,1);
 });
+
+test('new completion arriving while HTTP request is in flight is flushed without polling',async()=>{
+ const q=make();q.enqueue({eventId:'first',expectedRevision:0,expectedResetEpoch:3});
+ let release,started;
+ const began=new Promise(resolve=>{started=resolve});
+ const gate=new Promise(resolve=>{release=resolve});
+ const sent=[];
+ const sync=createSync({queue:q,post:async event=>{
+  sent.push(event.eventId);
+  if(event.eventId==='first'){started();await gate}
+  return {ok:true,revision:event.expectedRevision+1,resetEpoch:3};
+ }});
+ const pending=sync.flush();
+ await began;
+ q.enqueue({eventId:'second',expectedRevision:0,expectedResetEpoch:3});
+ const joined=sync.flush();
+ release();
+ const result=await pending;
+ await joined;
+ assert.deepEqual(sent,['first','second']);
+ assert.equal(result.remaining,0);
+ assert.equal(q.count(),0);
+});
