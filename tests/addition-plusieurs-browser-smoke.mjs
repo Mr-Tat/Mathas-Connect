@@ -28,6 +28,12 @@ try{
  // Contract tests of all four terminal-event formats, through real iframe postMessage.
  // These are intentionally injected game events, not completed arithmetic problems.
  await page.evaluate(()=>{window.__bridgeMessages=[];window.addEventListener('message',e=>{window.__bridgeMessages.push({type:e.data?.type,origin:e.origin,correctSource:e.source===document.getElementById('game')?.contentWindow});});});
+ const iframeProbe=await frame.locator('body').evaluate(()=>{
+  window.parent.postMessage({type:'audit-ping'},window.parent.location.origin);
+  return {url:location.href,origin:location.origin,parentOrigin:window.parent.location.origin,parentIsSelf:window.parent===window,frameId:window.frameElement?.id};
+ });
+ await page.waitForTimeout(250);
+ console.log('Chromium iframe origin probe',JSON.stringify({iframeProbe,messages:await page.evaluate(()=>window.__bridgeMessages)}));
  const cases=[
   [{label:'Calculs · Niveau 1',score:'10/10'},58],
   [{label:'Calculs · Niveau 1',score:'20/20'},118],
