@@ -62,3 +62,11 @@
 - Correction de la file hors ligne pour vider aussi les nouvelles parties arrivées pendant une requête en cours. Aucun polling, une requête en vol.
 - Tests Playwright : même contexte navigateur libre + simulation ; vérifications de la séparation des clés natives et du mode maître. Tests VM : deux élèves, deux classes et validation stricte de l'identité de stockage.
 - Malgré ces réparations, les verrous serveur/client et le statut de brouillon restent en place. **Ne pas activer sans intégration des XP officiels, hydratation de l'état serveur, et recette professeur.**
+
+## Mise à jour : connexion et jauge préparées (29 octobre 2026)
+
+- Le lanceur ne dépend plus de window.MathasConnectHost, qui n'existait pas dans le HUB. Nouveau module connect-host.mjs : reprise de la session Supabase déjà utilisée par le site, vérification du profil approuvé, profil séparé du professeur, chargement de parcours et lecture XP. Vérifications avec fausses réponses HTTP seulement ; aucun accès authentifié à la nouvelle application en production.
+- Nouveau connect-hydration.mjs : conversion de la sauvegarde serveur en formats de records natifs du moteur (classiques, mort subite, HARD et progression). L'import est bloqué si des résultats hors connexion restent à synchroniser. Testé sans données élèves.
+- Barre XP en haut du lanceur, dont le total vient du serveur en mode Connect et du simulateur en laboratoire. Les gains volent vers la jauge, puis la jauge se met à jour ; les vols sont exécutés dans l'ordre. Vérification Chromium avec 158 XP et niveau 4.
+- Côté Edge, les actions de lecture XP et de parcours professeur sont préparées derrière le verrou ADD_MULTI_SERVER_READY=false. Les applications existantes restent autorisées comme avant.
+- Important : les verrous restent fermés. Il manque encore les migrations RPC réelles, les essais authentifiés de bout en bout, la concordance des trophées et la vérification manuelle professeur.
