@@ -61,3 +61,9 @@ test('separate flush after acknowledgement uses current server revision',async()
  assert.equal(sent[1].expectedRevision,1);
  assert.equal(revision,2);
 });
+
+test('server cannot silently advance by multiple revisions on a new event',async()=>{
+ const q=make();q.enqueue({eventId:'x',expectedRevision:4,expectedResetEpoch:2});
+ let conflicts=0;const sync=createSync({queue:q,post:async()=>({ok:true,revision:8,resetEpoch:2}),onConflict:()=>conflicts++});
+ assert.equal((await sync.flush()).remaining,1);assert.equal(conflicts,1);
+});
