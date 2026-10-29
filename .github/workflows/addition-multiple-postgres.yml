@@ -62,5 +62,9 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-real-rpc-fixture.sql
       - name: Execute real candidate XP and teacher RPCs with two fictitious pupils
         run: psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-real-rpc-assertions.sql
+      - name: Install atomic record and XP transaction candidate (disabled in production)
+        run: psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-atomic-rpc-candidate.sql
+      - name: Test actual atomic record RPC, duplicate and failed XP rollback
+        run: psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-atomic-rpc-assertions.sql
       - name: Verify examples and rejection without production database
         run: psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-xp-assertions.sql
