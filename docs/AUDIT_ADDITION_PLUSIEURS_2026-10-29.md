@@ -135,3 +135,15 @@ Le même pilote de quatre calculs a ensuite été exécuté avec une **session a
 - Le test simule également la lecture de l'historique de parcours lorsque la fiche est ouverte, tout en imposant qu'aucun appel de recommencement ne soit envoyé.
 - **Preuve :** https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40951909919 — navigateur d'élève (quatre additions réelles), navigateur professeur (consultation réelle avec données fictives) et navigateur Connect (HTTP fictif) tous au vert.
 - **Reste** : recette sur un véritable Supabase séparé et actif, enregistrement Edge→PostgreSQL authentifié et comparaison directe avec les résultats professeur via l'API réelle, avant déploiement supervisé. Les trois verrous d'activation sont toujours fermés.
+
+## 29 octobre — recette authentifiée Supabase LOCALE avec la vraie Edge et PostgreSQL (CI)
+
+**Nouvelle validation réussie :** [GitHub Actions, run 40958199501](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40958199501), commit de code `c9ec7ecf1a09597d13defee69ad7fa761cdec3cd`. Le test est versionné dans `tests/addition-plusieurs-auth-local.e2e.mjs`, orchestré par `.github/workflows/addition-plusieurs-auth-local.yml`.
+
+La recette démarre Supabase CLI en local sur un runner GitHub éphémère, avec GoTrue réel (authentification élève anonyme et professeur), les **vraies Edge** `connect-api` et `connect-results`, PostgREST réel et PostgreSQL. Elle reprend les RPC candidates déjà testées et une reproduction minimale des tables utiles. **Seule une copie temporaire** de `connect-results` reçoit `ADD_MULTI_SERVER_READY=true` et le catalogue local est activé pour l'essai. La branche et la production conservent tous leurs verrous fermés.
+
+Scénario réussi : profil élève approuvé, autre utilisateur refusé 403, `student-load` initial, `game-record` 4/4 avec trophée V3 et 22 XP atomiques, répétition idempotente à +0 XP, récupération de l'état et du trophée, lecture des résultats dans `teacher-overview` et `teacher-detail` avec **vrai JWT professeur**, `teacher-parcours-restart` et maintien des **44 XP globaux** (22 XP historiques d'Addition simple fictifs + 22 XP Addition multiple fictifs). Les anciennes réussites restent isolées.
+
+Les premiers essais ont permis de compléter les colonnes d'avatar dans le **fixture** et de corriger le bloc SQL de RLS du laboratoire ; ils n'ont entraîné aucune modification du schéma Supabase distant. La recette locale finale est verte. Les six autres workflows de la branche étaient également verts au même commit (Chromium, Node, PostgreSQL isolé, régressions et restauration).
+
+**Limites restantes :** la partie 4/4 est envoyée comme requête HTTP valide dans cette recette locale ; le navigateur Chromium joue de vraies additions dans une suite séparée avec serveur intercepté. L'enchaînement intégral `vraies saisies Chromium → Auth locale → Edge locale → PostgreSQL local → page professeur Chromium` dans un seul test n'est pas encore démontré. Aucun environnement Supabase hébergé de TEST n'a été réactivé, aucune Edge ou migration n'a été déployée, aucun PC élève physique n'a été essayé, et aucune activation HUB n'est autorisée.
