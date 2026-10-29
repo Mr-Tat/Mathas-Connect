@@ -3,7 +3,8 @@
 BEGIN;
 CREATE OR REPLACE FUNCTION public.connect_addition_multiple_record_v1(
  p_student uuid,p_event uuid,p_expected_revision bigint,p_reset_epoch bigint,
- p_mode text,p_level integer,p_score integer,p_total integer DEFAULT NULL
+ p_mode text,p_level integer,p_score integer,p_total integer DEFAULT NULL,
+ p_rewards jsonb DEFAULT NULL
 ) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp'
 AS $atomic$
@@ -12,6 +13,7 @@ DECLARE
  v_state public.connect_states%ROWTYPE;
  v_next jsonb;v_ids jsonb;v_recent jsonb;v_event jsonb;
  v_old integer;v_xp jsonb;v_when timestamptz:=now();v_i integer;
+ v_rewards jsonb;v_key text;v_path text[];v_old_flag boolean;v_new_flag boolean;
 BEGIN
  IF p_student IS NULL OR p_event IS NULL OR p_expected_revision IS NULL OR p_expected_revision<0
  OR p_reset_epoch IS NULL OR p_reset_epoch<0
@@ -73,6 +75,44 @@ BEGIN
   v_old:=coalesce((v_next#>>ARRAY[p_mode,v_i::text])::int,0);
   v_next:=jsonb_set(v_next,ARRAY[p_mode,v_i::text],to_jsonb(greatest(v_old,p_score)),true);
  END IF;
+ -- Preserve native V3 trophies in this SAME result+XP transaction.
+ -- Only validated boolean awards are admitted; server merges monotonically.
+ IF p_rewards IS NOT NULL THEN
+  IF jsonb_typeof(p_rewards)<>'object' OR p_rewards->>'version'<>'3'
+    OR jsonb_typeof(p_rewards->'mastery')<>'object'
+    OR jsonb_typeof(p_rewards->'hardAwards')<>'object'
+    OR jsonb_typeof(p_rewards->'scoreOne')<>'object'
+    OR jsonb_typeof(p_rewards->'unlockedGold')<>'boolean'
+  THEN RAISE EXCEPTION 'invalid_rewards'; END IF;
+  v_rewards:='{"version":3,"mastery":{"4":[false,false,false],"10":[false,false,false],"20":[false,false,false]},"sudden":[false,false,false],"hardAwards":{"bronze":[false,false,false],"silver":[false,false,false],"gold":[false,false,false]},"scoreOne":{"bronze":false,"silver":false,"gold":false},"unlockedGold":false}'::jsonb;
+  FOREACH v_key IN ARRAY ARRAY['4','10','20','sudden','bronze','silver','gold'] LOOP
+   IF v_key IN ('4','10','20') THEN v_path:=ARRAY['mastery',v_key];
+   ELSIF v_key='sudden' THEN v_path:=ARRAY['sudden'];
+   ELSE v_path:=ARRAY['hardAwards',v_key];END IF;
+   IF jsonb_typeof(p_rewards#>v_path)<>'array'
+      OR jsonb_array_length(p_rewards#>v_path)<>3
+      OR EXISTS(SELECT 1 FROM jsonb_array_elements(p_rewards#>v_path) AS a(value)
+                WHERE jsonb_typeof(a.value)<>'boolean')
+   THEN RAISE EXCEPTION 'invalid_rewards';END IF;
+   FOR v_i IN 0..2 LOOP
+    v_new_flag:=(p_rewards#>>array_append(v_path,v_i::text))::boolean;
+    v_old_flag:=coalesce((v_next#>>array_append(v_path,v_i::text))::boolean,false);
+    v_rewards:=jsonb_set(v_rewards,array_append(v_path,v_i::text),
+        to_jsonb(v_old_flag OR v_new_flag),false);
+   END LOOP;
+  END LOOP;
+  FOREACH v_key IN ARRAY ARRAY['bronze','silver','gold'] LOOP
+    v_path:=ARRAY['scoreOne',v_key];
+    IF jsonb_typeof(p_rewards#>v_path)<>'boolean' THEN RAISE EXCEPTION 'invalid_rewards';END IF;
+    v_new_flag:=(p_rewards#>>v_path)::boolean;
+    v_old_flag:=coalesce((v_next#>>v_path)::boolean,false);
+    v_rewards:=jsonb_set(v_rewards,v_path,to_jsonb(v_old_flag OR v_new_flag),false);
+  END LOOP;
+  v_rewards:=jsonb_set(v_rewards,'{unlockedGold}',to_jsonb(
+    coalesce((v_next#>>'{rewards,unlockedGold}')::boolean,false)
+       OR (p_rewards->>'unlockedGold')::boolean),false);
+  v_next:=jsonb_set(v_next,'{rewards}',v_rewards,true);
+ END IF;
  v_ids:=jsonb_build_array(p_event::text)||v_ids;
  SELECT coalesce(jsonb_agg(value ORDER BY ord),'[]'::jsonb) INTO v_ids
  FROM jsonb_array_elements(v_ids) WITH ORDINALITY AS q(value,ord) WHERE ord<=50;
@@ -91,6 +131,6 @@ BEGIN
  RETURN jsonb_build_object('ok',true,'duplicate',false,'revision',v_state.revision+1,
   'resetEpoch',v_state.reset_epoch,'state',v_next,'xp',v_xp);
 END $atomic$;
-REVOKE ALL ON FUNCTION public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer) TO service_role;
+REVOKE ALL ON FUNCTION public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer,jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer,jsonb) TO service_role;
 COMMIT;
