@@ -104,6 +104,30 @@ try{
    JSON.parse(localStorage.getItem('mathas_trophies_v3_addition-plusieurs')||'null'));
  assert.deepEqual(recovered,nativeTrophies);
 
+ // Reproduce real teacher reset after old device has local evidence that
+ // the original engine could otherwise use to regenerate a withdrawn trophy.
+ await fresh.locator('body').evaluate((_element,old)=>{
+   localStorage.setItem('addition2_last_work',JSON.stringify({label:'Calculs · Niveau 1',score:'4/4'}));
+   localStorage.setItem('mathas_points_v1_addition-plusieurs',JSON.stringify({version:1,bestOne:{points:900}}));
+   localStorage.setItem('mathas_trophies_v2_addition-plusieurs',JSON.stringify(old));
+ },nativeTrophies);
+ const state=backend(pupil);
+ state.revision++;state.resetEpoch=1;state.state=null; // fixture teacher restart
+ const restarted=await launch();
+ const resetProof=await restarted.locator('body').evaluate(()=>({
+   oldWork:localStorage.getItem('addition2_last_work'),
+   oldPoints:localStorage.getItem('mathas_points_v1_addition-plusieurs'),
+   legacyTrophy:localStorage.getItem('mathas_trophies_v2_addition-plusieurs'),
+   classic:JSON.parse(localStorage.getItem('addition2_classic_v1')||'{}'),
+   trophy:JSON.parse(localStorage.getItem('mathas_trophies_v3_addition-plusieurs')||'null')
+ }));
+ assert.equal(resetProof.oldWork,null);
+ assert.equal(resetProof.oldPoints,null);
+ assert.equal(resetProof.legacyTrophy,null);
+ assert.deepEqual(resetProof.classic,{levels:{}});
+ assert.ok(resetProof.trophy==null||
+   !resetProof.trophy.mastery?.[4]?.some(Boolean),'old trophy cannot reappear after teacher reset');
+ await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='22 XP');
  assert.equal(calls.filter(c=>c.action==='game-record').length,2);
  assert.ok(!errors.length,'Browser JS errors: '+errors.join(' | '));
  console.log('PASS real Chromium: approved Supabase session, native event -> Edge HTTP -> server-authoritative 22 XP -> progress bar -> hydrated reload; repeat awards no extra XP');
