@@ -42,6 +42,7 @@ export async function createAuthenticatedHost({classId,teacherPlayer=false,creat
   endpoint:baseUrl+'/functions/v1/connect-results',
   apikey,
   getToken,
-  load:()=>call('student-load','connect-results')
+  load:()=>call('student-load','connect-results'),
+  readXp:()=>call('student-xp','connect-results')
  });
 }
