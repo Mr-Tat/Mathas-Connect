@@ -4,6 +4,7 @@ on:
     paths:
       - 'apps/addition-plusieurs/**'
       - 'tests/addition-plusieurs-browser-smoke.mjs'
+      - 'tests/addition-plusieurs-connected-browser.test.mjs'
       - '.github/workflows/addition-plusieurs-chromium.yml'
   workflow_dispatch:
 jobs:
@@ -21,3 +22,5 @@ jobs:
         run: python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/addmulti-http.log 2>&1 &
       - name: Verify original game loads in Chromium
         run: node tests/addition-plusieurs-browser-smoke.mjs
+      - name: Verify authenticated Connected flow with mocked isolated Edge
+        run: node tests/addition-plusieurs-connected-browser.test.mjs
