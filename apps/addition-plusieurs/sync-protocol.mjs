@@ -11,7 +11,13 @@ export function createSync({queue,post,onAck=()=>{},onConflict=()=>{},onError=()
    if(known&&Number.isSafeInteger(known.revision)&&Number.isSafeInteger(known.resetEpoch)){
      revision=known.revision;resetEpoch=known.resetEpoch;
    }
-   for(const pending of queue.read()){
+   // Re-read after each acknowledgment: a second completion can arrive while
+   // the first HTTP request is in flight. No polling or overlapping sends.
+   let examined=0;
+   while(examined<100){
+    const pending=queue.read()[0];
+    if(!pending)break;
+    examined++;
     // Never rebase queued results onto a new teacher-reset parcours.
     if(resetEpoch!==null&&pending.expectedResetEpoch!==resetEpoch){onConflict({ok:false,error:'queued_epoch_mismatch'});break}
     const request=revision===null?pending:{...pending,expectedRevision:revision,expectedResetEpoch:resetEpoch};
