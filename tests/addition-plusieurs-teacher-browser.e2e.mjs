@@ -66,6 +66,7 @@ try{
     id:student,name:'Élève fictif',recent:record.recent,bestPoints:null,todayBest:null
    }]});
    if(p.action==='teacher-detail')return answer({ok:true,name:'Élève fictif',state:record});
+   if(p.action==='teacher-parcours-history')return answer({ok:true,current:{parcours_number:1,repeat_xp:false},history:[]});
    throw Error('Unexpected teacher results action: '+p.action);
   });
   await page.goto(origin+'/?portail=prof&profClass='+classroom,
