@@ -48,3 +48,16 @@ test('fake duplicate with lower revision or new epoch stays queued',async()=>{
   assert.equal(result.remaining,1);
  }
 });
+
+test('separate flush after acknowledgement uses current server revision',async()=>{
+ const q=make();let revision=0,epoch=1;const sent=[];
+ const sync=createSync({queue:q,getState:()=>({revision,resetEpoch:epoch}),
+   post:async e=>{sent.push({...e});return {ok:true,revision:e.expectedRevision+1,resetEpoch:epoch}},
+   onAck:(_e,response)=>{revision=response.revision}});
+ q.enqueue({eventId:'first',expectedRevision:0,expectedResetEpoch:1});
+ assert.equal((await sync.flush()).remaining,0);
+ q.enqueue({eventId:'second',expectedRevision:0,expectedResetEpoch:1});
+ assert.equal((await sync.flush()).remaining,0);
+ assert.equal(sent[1].expectedRevision,1);
+ assert.equal(revision,2);
+});
