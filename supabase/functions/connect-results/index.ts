@@ -9,6 +9,8 @@ const app='addition-ecrite-simple',mul='multiplication-ecrite-simple',sub='soust
 // Audit 2026-10-29: keep the new game blocked EVEN IF the catalog is accidentally enabled.
 // Lift only after atomic real XP/RPC, scoped storage and Chromium connected E2E validation.
 const ADD_MULTI_SERVER_READY=false;
+// All XP/teacher operations share the same audited enablement boundary.
+const xpAppAllowed=(k:any)=>k===app||k===mul||k===sub||(ADD_MULTI_SERVER_READY&&k===addMulti);
 const appAllowed=(k:any)=>k===app||k===mul||k===sub||k===lab||k===addMulti;
 const belgianDay=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const read=async(q:any)=>{const {data,error}=await q.maybeSingle();if(error)throw Error('db_error');return data};
@@ -115,7 +117,7 @@ Deno.serve(async req=>{
      return active?player.student_id:null;
     }const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;const enrolled=await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null));if(!enrolled)return null;const active=await read(db.from('connect_students').select('id').eq('id',device.student_id).is('archived_at',null));return active?device.student_id:null};
   const refreshXp=async(studentId:string,appKey:string)=>{
-   if(appKey!==app&&appKey!==mul&&appKey!==sub)return null;
+   if(!xpAppAllowed(appKey))return null;
    const result=await db.rpc('connect_xp_sync_v2',{p_student:studentId,p_app:appKey,p_force:false});
    if(result.error){console.error('xp_credit_error',result.error.code);throw Error('xp_sync_failed')}
    return result.data;
@@ -202,7 +204,7 @@ Deno.serve(async req=>{
   }
   // Parcours de révision : opération réservée au professeur, jamais au JWT élève.
   if(b.action==='teacher-parcours-restart'){
-   if(!await managed()||![app,mul,sub].includes(b.appKey)||typeof b.repeatXp!=='boolean'
+   if(!await managed()||!xpAppAllowed(b.appKey)||typeof b.repeatXp!=='boolean'
       ||!['student','class'].includes(b.scope))return deny('forbidden',403);
    if(b.scope==='student'&&!valid(b.studentId))return deny('invalid_student');
    const name=b.scope==='class'?'connect_parcours_restart_class':'connect_parcours_restart_one';
@@ -213,7 +215,7 @@ Deno.serve(async req=>{
    return answer({ok:true,...result.data});
   }
   if(b.action==='teacher-parcours-history'){
-   if(!await managed()||![app,mul,sub].includes(b.appKey)||!valid(b.studentId))return deny('forbidden',403);
+   if(!await managed()||!xpAppAllowed(b.appKey)||!valid(b.studentId))return deny('forbidden',403);
    const member=await read(db.from('connect_enrollments').select('student_id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));
    if(!member)return deny('forbidden',403);
    const [current,history]=await Promise.all([
@@ -225,7 +227,7 @@ Deno.serve(async req=>{
   }
   // Restauration de secours : fusion des acquis, sans nouvelles tables ni RPC.
   if(b.action==='teacher-restore-preview'||b.action==='teacher-restore-apply'){
-    if(!await managed()||!valid(b.studentId)||![app,mul,sub].includes(b.appKey))return deny('forbidden',403);
+    if(!await managed()||!valid(b.studentId)||!xpAppAllowed(b.appKey))return deny('forbidden',403);
     if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2','mathas-connect-class-backup-v3','mathas-connect-class-backup-v4'].includes(b.backupFormat))return deny('invalid_backup_format');
     if(b.backupProjectRef!=null&&b.backupProjectRef!=='awmhpfofacaglewammxt')return deny('wrong_project',403);
     if(!int(b.backupRevision,0,1000000000)||!int(b.backupResetEpoch,0,1000000000))return deny('invalid_backup');
@@ -355,7 +357,7 @@ Deno.serve(async req=>{
    return answer({ok:true,studentId:b.studentId,name:name?.display_name||'Élève',state:state?.state_data||null,revision:state?.revision??0});
   }
   if(b.action==='student-xp'){
-   if(b.appKey!==app&&b.appKey!==mul&&b.appKey!==sub)return deny('forbidden',403);
+   if(!xpAppAllowed(b.appKey))return deny('forbidden',403);
    const studentId=await identity();if(!studentId)return deny('forbidden',403);
    const {data:summary,error:xpError}=await db.rpc('connect_xp_read_v2',{p_student:studentId,p_app:b.appKey,p_include_milestones:true});
    if(xpError||!summary)return deny('xp_unavailable',503);
