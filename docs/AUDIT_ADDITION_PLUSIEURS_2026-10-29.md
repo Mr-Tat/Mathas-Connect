@@ -70,3 +70,12 @@
 - Barre XP en haut du lanceur, dont le total vient du serveur en mode Connect et du simulateur en laboratoire. Les gains volent vers la jauge, puis la jauge se met à jour ; les vols sont exécutés dans l'ordre. Vérification Chromium avec 158 XP et niveau 4.
 - Côté Edge, les actions de lecture XP et de parcours professeur sont préparées derrière le verrou ADD_MULTI_SERVER_READY=false. Les applications existantes restent autorisées comme avant.
 - Important : les verrous restent fermés. Il manque encore les migrations RPC réelles, les essais authentifiés de bout en bout, la concordance des trophées et la vérification manuelle professeur.
+
+## Recette PostgreSQL et affichage professeur — complément
+
+- **Testé dans PostgreSQL 17 éphémère** : la vraie définition candidate de `connect_xp_sync_v2`, `connect_xp_read_v2`, `connect_parcours_restart_one` et `connect_parcours_restart_class` s'exécute désormais sur des tables reproduisant les colonnes et contraintes vérifiées en lecture seule sur Supabase. Ce n'est plus seulement le modèle de crédits simulé.
+- **Deux élèves fictifs et une application existante :** premier 4/4 = +22 XP, second élève 8/10 = +30 XP, lecture des XP globaux avec +22 XP historiques d'Addition simple, pas de crédit doublé, états visibles dans la même structure que les résultats professeur.
+- **Parcours professeur :** archivage, remise à zéro indépendante, XP historiques conservés, refus de re-crédit sans autorisation, autorisation explicite de rejeu, remise à zéro de classe pour deux élèves. La révision de l'autre application reste inchangée.
+- **Interface professeur préparée dans `app.js` :** tableau global, tableaux détaillés par niveau et commandes de recommencement acceptent Addition multiple **uniquement** si `ADD_MULTI_TEACHER_READY=true`. Ce verrou reste `false` ; pas de quatrième colonne visible aux professeurs pour l'instant. Le HUB principal et le catalogue visible restent inchangés.
+- **Important :** la recette SQL utilise le candidat RPC dans une base de test, pas une fonction déployée sur les données réelles. Le parcours complet `authentification → Edge → RPC → affichage professeur` et les trophées restent non validés. Maintenir les verrous du navigateur, de l'Edge et de la page professeur jusqu'à la recette supervisée.
+- Test réel des RPC : https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40925072304
