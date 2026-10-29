@@ -5,7 +5,7 @@ import {classId as requestedClassId} from './connect-context.js';
 const endpoint='https://awmhpfofacaglewammxt.supabase.co';
 const publicKey='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const $=id=>document.getElementById(id);
-let client,catalog=[],generation=0,loading=false;
+let client,catalog=[],generation=0,loading=false,accessRevoked=false;
 
 function note(message){$('status').textContent=message}
 function clearBoard(message='Chiffres masqués. Clique sur « Afficher / Actualiser » pour les consulter.'){
@@ -73,7 +73,7 @@ async function refresh(){
  note('Chargement du résumé collectif…');
  try{
   const results=await api('connect-results','teacher-overview',{classId});
-  if(ticket!==generation||$('class-choice').value!==classId)return;
+  if(accessRevoked||ticket!==generation||$('class-choice').value!==classId)return;
   const aggregate=summarizeProjection(results.students,catalog,new Date());
   render(aggregate,label);
  }catch(error){
@@ -91,6 +91,14 @@ async function initialize(){
    persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
    storageKey:'mathas-connect-professor-auth-v1'
   }});
+  // Une fermeture de session depuis l'autre onglet doit masquer immédiatement
+  // les statistiques déjà projetées, même sans actualisation manuelle.
+  client.auth.onAuthStateChange((event)=>{
+   if(event==='SIGNED_OUT'||event==='USER_DELETED'){
+    accessRevoked=true;
+    loginRequired('Session professeur terminée. Reconnecte-toi pour continuer.');
+   }
+  });
   const {data:{session}}=await client.auth.getSession();
   if(!session?.access_token||session.user?.is_anonymous){
    loginRequired('Connecte-toi d’abord à l’espace professeur.');
@@ -103,6 +111,7 @@ async function initialize(){
   ]);
   if(!response.ok)throw Error('Catalogue indisponible.');
   const config=await response.json();
+  if(accessRevoked)return; // La connexion a pu être fermée pendant le chargement.
   catalog=Array.isArray(config.apps)?config.apps:[];
   const classes=(Array.isArray(dashboard.classes)?dashboard.classes:[])
    .filter(c=>c?.id&&typeof c.name==='string'&&!c.name.includes('TEST'));
