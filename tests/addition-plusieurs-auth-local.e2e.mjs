@@ -143,7 +143,7 @@ try{
  });
  const failedRequests=[];
  pupilPage.on('requestfailed',req=>failedRequests.push(req.url()+' '+(req.failure()?.errorText||'')));
- pupilPage.on('console',message=>{if(message.type()==='error')errors.push('console: '+message.text())});
+ pupilPage.on('console',message=>{if(['error','warning'].includes(message.type()))errors.push('console: '+message.text())});
  const openGame=async()=>{
   const response=await pupilPage.goto(site+'/apps/addition-plusieurs/?class='+classId,{waitUntil:'domcontentloaded'});
   try{
