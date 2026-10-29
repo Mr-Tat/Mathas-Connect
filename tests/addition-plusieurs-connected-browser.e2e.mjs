@@ -1,5 +1,6 @@
 import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
+import {playFourAdditions} from './addition-plusieurs-real-play-helper.mjs';
 
 // Browser integration test: the released code is always gated off.
 // Only the two JS module responses in THIS isolated test context are unlocked.
@@ -77,16 +78,13 @@ try{
  const frame=await launch();
  await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='0 XP');
  // Trigger genuine engine completion callback; not an arithmetic click-through.
- await frame.locator('body').evaluate((_element,awards)=>{
-    // Simulate original game's ordering: completion callback runs before
-    // the synchronous trophy storage update that follows it.
-    window.__setLastWork({label:'Calculs · Niveau 1',score:'4/4',rulerUsed:false});
-    localStorage.setItem('mathas_trophies_v3_addition-plusieurs',JSON.stringify(awards));
- },nativeTrophies);
+ // Actual four written additions, all carries and answers entered by keyboard.
+ await playFourAdditions({frame,page});
  await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='22 XP',{timeout:15000});
  assert.equal(backend(pupil).appXp,22);
  assert.equal(backend(pupil).revision,1);
- assert.deepEqual(backend(pupil).state.rewards,nativeTrophies);
+ assert.equal(backend(pupil).state.rewards?.mastery?.[4]?.[0],true,
+  'real original gameplay must award a bronze mastery milestone');
 
  assert.equal(calls.filter(c=>c.action==='game-record').length,1);
  // A repeated completion may update history but MUST NOT grant extra XP.
@@ -102,7 +100,8 @@ try{
  assert.equal(classic.levels?.['1']?.['4'],4);
  const recovered=await fresh.locator('body').evaluate(()=>
    JSON.parse(localStorage.getItem('mathas_trophies_v3_addition-plusieurs')||'null'));
- assert.deepEqual(recovered,nativeTrophies);
+ assert.equal(recovered?.mastery?.[4]?.[0],true);
+ assert.deepEqual(recovered,backend(pupil).state.rewards);
 
  // Reproduce real teacher reset after old device has local evidence that
  // the original engine could otherwise use to regenerate a withdrawn trophy.
