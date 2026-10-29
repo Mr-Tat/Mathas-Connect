@@ -9,7 +9,7 @@ export function buildConnectPilot({storage,classId,studentId,post,onStatus=()=>{
  if(!/^[0-9a-f-]{36}$/i.test(classId)||!/^[0-9a-f-]{36}$/i.test(studentId))throw Error('invalid_identity');
  const queue=createQueue(storage,'mathas.addition-plusieurs.connect.'+classId+'.'+studentId+'.v1');
  let revision=null,resetEpoch=null;
- const sync=createSync({queue,post,onAck:(_,reply)=>{revision=reply.revision;resetEpoch=reply.resetEpoch;onStatus('saved',reply)},onConflict:()=>onStatus('conflict'),onError:()=>onStatus('offline')});
+ const sync=createSync({queue,post,onAck:(_,reply)=>{revision=reply.revision;resetEpoch=reply.resetEpoch;onStatus('saved',reply.duplicate?{...reply,xp:reply.xp?{...reply.xp,delta:0}:undefined}:reply)},onConflict:()=>onStatus('conflict'),onError:()=>onStatus('offline')});
  return Object.freeze({
   initialize(rev,epoch){
    if(!Number.isSafeInteger(rev)||!Number.isSafeInteger(epoch)||rev<0||epoch<0)throw Error('invalid_revision');
