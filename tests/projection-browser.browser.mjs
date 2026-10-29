@@ -127,7 +127,7 @@ test('Projection : 320 à 1024 pixels, aucun débordement et changement de class
  const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
  try{
   const page=await browser.newPage({viewport:{width:1024,height:740}});
-  const errors=[];let overviewCalls=0;
+  const errors=[];let overviewCalls=0,failNext=false;
   page.on('pageerror',error=>errors.push(error.message));
   await page.route('**/*',async route=>{
    const target=route.request().url();
@@ -135,7 +135,10 @@ test('Projection : 320 à 1024 pixels, aucun débordement et changement de class
    if(target.startsWith('https://esm.sh/'))return route.fulfill({status:200,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'},body:authStub});
    if(target.includes('.supabase.co/functions/v1/')){
     const data=JSON.parse(route.request().postData()||'{}');
-    if(data.action==='teacher-overview')overviewCalls++;
+    if(data.action==='teacher-overview'){
+     overviewCalls++;
+     if(failNext){failNext=false;return route.abort('failed');}
+    }
     const result=data.action==='teacher-dashboard'?
      {ok:true,classes:[{id:klass,name:'Observation'},{id:other,name:'Phase 1'}]}:
      {ok:true,students:[
@@ -174,6 +177,15 @@ test('Projection : 320 à 1024 pixels, aucun débordement et changement de class
   assert.equal(await page.locator('#board').isHidden(),true,'changing classes clears the projected numbers');
   assert.equal(await page.locator('#total').textContent(),'');
   assert.equal(overviewCalls,1,'changing classes makes no automatic data request');
+  await page.locator('#class-choice').selectOption(klass);
+  failNext=true;
+  await page.locator('#load').click();
+  await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.startsWith('Erreur :'));
+  assert.equal(await page.locator('#board').isHidden(),true,'offline results stay hidden');
+  assert.equal(await page.locator('#load').isEnabled(),true,'button returns after network error');
+  await page.locator('#load').click();
+  await page.locator('#board').waitFor({state:'visible'});
+  assert.equal(overviewCalls,3,'offline read retries once only when requested');
   assert.deepEqual(errors,[],'no browser script errors');
   await page.close();
  }finally{
