@@ -16,9 +16,9 @@ BEGIN
  IF p_student IS NULL OR p_event IS NULL OR p_expected_revision IS NULL OR p_expected_revision<0
  OR p_reset_epoch IS NULL OR p_reset_epoch<0
  OR p_level NOT BETWEEN 1 AND 3 OR p_score IS NULL OR p_score<0 OR p_score>100000
- OR p_mode NOT IN ('classic','sudden','hard','hard-challenge')
- OR (p_mode='classic' AND (p_total NOT IN (4,10,20) OR p_score>p_total))
- OR (p_mode='hard-challenge' AND (p_total<>5 OR p_score>5))
+ OR p_mode IS NULL OR p_mode NOT IN ('classic','sudden','hard','hard-challenge')
+ OR (p_mode='classic' AND (p_total IS NULL OR p_total NOT IN (4,10,20) OR p_score>p_total))
+ OR (p_mode='hard-challenge' AND (p_total IS NULL OR p_total<>5 OR p_score>5))
  OR (p_mode IN ('sudden','hard') AND p_total IS NOT NULL)
  THEN RAISE EXCEPTION 'invalid_result';END IF;
  -- Lock also synchronizes with XP and parcours reset. No unauthorised JWT
