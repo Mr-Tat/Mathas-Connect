@@ -5,11 +5,12 @@ import {classId as requestedClassId} from './connect-context.js';
 const endpoint='https://awmhpfofacaglewammxt.supabase.co';
 const publicKey='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const $=id=>document.getElementById(id);
-let client,catalog=[],generation=0,loading=false,accessRevoked=false;
+let client,catalog=[],generation=0,loading=false,accessRevoked=false,currentAggregate=null,period='recent';
 
 function note(message){$('status').textContent=message}
 function clearBoard(message='Chiffres masqués. Clique sur « Afficher / Actualiser » pour les consulter.'){
  generation++;
+ currentAggregate=null; // Un masquage efface aussi la copie anonyme en mémoire.
  $('board').hidden=true;
  $('blank').hidden=false;
  $('blank').firstElementChild.textContent=message;
@@ -43,30 +44,43 @@ async function api(functionName,action,data={}){
  }finally{clearTimeout(deadline)}
 }
 function metric(id,value){$(id).textContent=String(value)}
+function renderBars(){
+ const data=currentAggregate;
+ const apps=$('apps');apps.replaceChildren();
+ if(!data)return;
+ const isToday=period==='today';
+ $('period-recent').setAttribute('aria-pressed',String(!isToday));
+ $('period-today').setAttribute('aria-pressed',String(isToday));
+ $('period-help').textContent=isToday
+  ?'Élèves ayant joué aujourd’hui, selon les trois dernières parties conservées par application. Les parties plus anciennes ne sont pas comptabilisées.'
+  :'Élèves ayant une partie dans les trois dernières parties disponibles par application. Ce n’est pas un décompte de toutes les parties historiques.';
+ if(!data.apps.length){
+  const p=document.createElement('p');p.textContent='Aucune application publique dans cette première version.';apps.append(p);
+ }
+ for(const app of data.apps){
+  const count=isToday?app.today:app.recent;
+  const row=document.createElement('div');row.className='app-row';
+  const name=document.createElement('strong');name.textContent=app.title;
+  const track=document.createElement('div');track.className='track';
+  track.setAttribute('role','progressbar');
+  track.setAttribute('aria-label',(isToday?'Participation aujourd’hui : ':'Historique récent : ')+app.title);
+  track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax',String(data.total));
+  track.setAttribute('aria-valuenow',String(count));
+  const fill=document.createElement('div');fill.className='fill';
+  fill.style.width=(data.total?Math.round(100*count/data.total):0)+'%';
+  track.append(fill);
+  const amount=document.createElement('output');amount.textContent=count+' / '+data.total;
+  row.append(name,track,amount);apps.append(row);
+ }
+}
 function render(data,classLabel){
  $('class-name').textContent=classLabel;
  $('updated').textContent='Actualisé à '+new Intl.DateTimeFormat('fr-BE',{hour:'2-digit',minute:'2-digit'}).format(new Date());
  metric('total',data.total);
  metric('participants',data.participants);
  metric('today',data.activeToday);
- const apps=$('apps');apps.replaceChildren();
- if(!data.apps.length){
-  const p=document.createElement('p');p.textContent='Aucune application publique dans cette première version.';apps.append(p);
- }
- for(const app of data.apps){
-  const row=document.createElement('div');row.className='app-row';
-  const name=document.createElement('strong');name.textContent=app.title;
-  const track=document.createElement('div');track.className='track';
-  track.setAttribute('role','progressbar');
-  track.setAttribute('aria-label','Participation dans '+app.title);
-  track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax',String(data.total));
-  track.setAttribute('aria-valuenow',String(app.recent));
-  const fill=document.createElement('div');fill.className='fill';
-  fill.style.width=(data.total?Math.round(100*app.recent/data.total):0)+'%';
-  track.append(fill);
-  const amount=document.createElement('output');amount.textContent=app.recent+' / '+data.total;
-  row.append(name,track,amount);apps.append(row);
- }
+ currentAggregate=data; // Aucun nom ni résultat individuel dans cet objet.
+ renderBars();
  $('blank').hidden=true;
  $('board').hidden=false;
  note('Tableau collectif affiché · lecture seule · actualisation manuelle.');
@@ -136,6 +150,8 @@ async function initialize(){
   loginRequired('Accès impossible : '+(error?.message||'Erreur réseau')+'. Ouvre l’espace professeur et réessaie.');
  }
 }
+$('period-recent').addEventListener('click',()=>{period='recent';renderBars()});
+$('period-today').addEventListener('click',()=>{period='today';renderBars()});
 $('class-choice').addEventListener('change',()=>clearBoard('Classe changée : le tableau précédent a été effacé.'));
 $('load').addEventListener('click',refresh);
 $('hide').addEventListener('click',()=>clearBoard());
