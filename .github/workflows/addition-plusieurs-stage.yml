@@ -17,4 +17,4 @@ jobs:
         with:
           node-version: '22'
       - name: Source and isolation contract
-        run: node --test tests/addition-plusieurs-source.test.mjs tests/addition-plusieurs-completion.test.mjs tests/addition-plusieurs-server-record.test.mjs tests/addition-plusieurs-offline-queue.test.mjs tests/addition-plusieurs-sync.test.mjs tests/addition-plusieurs-edge-guard.test.mjs tests/addition-plusieurs-pilot.test.mjs tests/addition-plusieurs-xp-model.test.mjs tests/addition-plusieurs-xp-sql.test.mjs
+        run: node --test tests/addition-plusieurs-source.test.mjs tests/addition-plusieurs-completion.test.mjs tests/addition-plusieurs-server-record.test.mjs tests/addition-plusieurs-offline-queue.test.mjs tests/addition-plusieurs-sync.test.mjs tests/addition-plusieurs-edge-guard.test.mjs tests/addition-plusieurs-pilot.test.mjs tests/addition-plusieurs-xp-model.test.mjs tests/addition-plusieurs-xp-sql.test.mjs tests/addition-plusieurs-simulated-session.test.mjs
