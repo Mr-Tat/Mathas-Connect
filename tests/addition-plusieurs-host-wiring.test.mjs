@@ -3,7 +3,7 @@ const html=readFileSync(new URL('../apps/addition-plusieurs/index.html',import.m
 const pilot=readFileSync(new URL('../apps/addition-plusieurs/connect-pilot.mjs',import.meta.url),'utf8');
 test('host connection is gated before accessing credentials and loading state',()=>{
  assert.match(pilot,/CONNECT_WRITE_READY=false/);
- assert.match(html,/if\(writeReady\)\{/);
+ assert.match(html,/if\(writeReady&&classId&&!free\)\{/);
  assert.match(html,/createAuthenticatedHost\(\{classId,teacherPlayer,createClient\}\)/);
  assert.doesNotMatch(html,/window\.MathasConnectHost/);
  assert.match(html,/candidate\.initialize\(loaded\.revision,loaded\.resetEpoch\)/);
