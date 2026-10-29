@@ -173,4 +173,16 @@ begin
 end $function$
 ;
 
+-- These SECURITY DEFINER RPCs must not be callable with a student's public JWT.
+REVOKE ALL ON FUNCTION public.connect_parcours_restart_class(uuid,uuid,text,boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.connect_parcours_restart_class(uuid,uuid,text,boolean) TO service_role;
+-- These SECURITY DEFINER RPCs must not be callable with a student's public JWT.
+REVOKE ALL ON FUNCTION public.connect_parcours_restart_one(uuid,uuid,uuid,text,boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.connect_parcours_restart_one(uuid,uuid,uuid,text,boolean) TO service_role;
+-- These SECURITY DEFINER RPCs must not be callable with a student's public JWT.
+REVOKE ALL ON FUNCTION public.connect_xp_read_v2(uuid,text,boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.connect_xp_read_v2(uuid,text,boolean) TO service_role;
+-- These SECURITY DEFINER RPCs must not be callable with a student's public JWT.
+REVOKE ALL ON FUNCTION public.connect_xp_sync_v2(uuid,text,boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.connect_xp_sync_v2(uuid,text,boolean) TO service_role;
 COMMIT;
