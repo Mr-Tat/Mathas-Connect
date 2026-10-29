@@ -1,6 +1,20 @@
 -- STAGING ONLY. Ne pas exécuter sur la production avant validation explicite.
 -- Ajout exclusivement additif : aucune modification des données des trois jeux.
 BEGIN;
+-- Refuser un catalogue déjà activé au lieu de laisser ON CONFLICT DO NOTHING
+-- conserver par erreur une ancienne visibilité. Cette garde est lecture seule.
+DO $addition_multiple_hidden_preflight$
+BEGIN
+ IF EXISTS (
+   SELECT 1 FROM public.connect_apps
+   WHERE app_key='addition-ecrite-multiple' AND (enabled IS DISTINCT FROM false OR featured IS DISTINCT FROM false)
+ ) OR EXISTS (
+   SELECT 1 FROM public.connect_hub_preset_entries
+   WHERE app_key='addition-ecrite-multiple' AND (visible IS DISTINCT FROM false OR featured IS DISTINCT FROM false)
+ ) THEN
+   RAISE EXCEPTION 'addition_multiple_preexisting_publication';
+ END IF;
+END $addition_multiple_hidden_preflight$;
 INSERT INTO public.connect_apps
 (app_key,title,launch_url,image_url,enabled,hub_section,featured,display_order)
 VALUES ('addition-ecrite-multiple','Addition de plusieurs nombres',
