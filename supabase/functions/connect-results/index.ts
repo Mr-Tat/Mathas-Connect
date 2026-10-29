@@ -204,7 +204,7 @@ Deno.serve(async req=>{
   }
   // Parcours de révision : opération réservée au professeur, jamais au JWT élève.
   if(b.action==='teacher-parcours-restart'){
-   if(!await managed()||!xpAppAllowed(b.appKey)||typeof b.repeatXp!=='boolean'
+   if(!await managed()||(![app,mul,sub].includes(b.appKey)&&!(ADD_MULTI_SERVER_READY&&b.appKey===addMulti))||typeof b.repeatXp!=='boolean'
       ||!['student','class'].includes(b.scope))return deny('forbidden',403);
    if(b.scope==='student'&&!valid(b.studentId))return deny('invalid_student');
    const name=b.scope==='class'?'connect_parcours_restart_class':'connect_parcours_restart_one';
@@ -215,7 +215,7 @@ Deno.serve(async req=>{
    return answer({ok:true,...result.data});
   }
   if(b.action==='teacher-parcours-history'){
-   if(!await managed()||!xpAppAllowed(b.appKey)||!valid(b.studentId))return deny('forbidden',403);
+   if(!await managed()||(![app,mul,sub].includes(b.appKey)&&!(ADD_MULTI_SERVER_READY&&b.appKey===addMulti))||!valid(b.studentId))return deny('forbidden',403);
    const member=await read(db.from('connect_enrollments').select('student_id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));
    if(!member)return deny('forbidden',403);
    const [current,history]=await Promise.all([
@@ -227,7 +227,7 @@ Deno.serve(async req=>{
   }
   // Restauration de secours : fusion des acquis, sans nouvelles tables ni RPC.
   if(b.action==='teacher-restore-preview'||b.action==='teacher-restore-apply'){
-    if(!await managed()||!valid(b.studentId)||!xpAppAllowed(b.appKey))return deny('forbidden',403);
+    if(!await managed()||!valid(b.studentId)||(![app,mul,sub].includes(b.appKey)&&!(ADD_MULTI_SERVER_READY&&b.appKey===addMulti)))return deny('forbidden',403);
     if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2','mathas-connect-class-backup-v3','mathas-connect-class-backup-v4'].includes(b.backupFormat))return deny('invalid_backup_format');
     if(b.backupProjectRef!=null&&b.backupProjectRef!=='awmhpfofacaglewammxt')return deny('wrong_project',403);
     if(!int(b.backupRevision,0,1000000000)||!int(b.backupResetEpoch,0,1000000000))return deny('invalid_backup');
