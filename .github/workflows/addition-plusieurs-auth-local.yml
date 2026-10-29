@@ -67,6 +67,11 @@ jobs:
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/tests/postgres/addition-multiple-atomic-rpc-candidate.sql" >/dev/null
           psql "$DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
           UPDATE public.connect_apps SET enabled=true WHERE app_key='addition-ecrite-multiple';
+          -- The production connect-api also reads avatar columns.
+          ALTER TABLE public.connect_students
+            ADD COLUMN avatar_kind text DEFAULT 'letter',
+            ADD COLUMN avatar_value text DEFAULT 'E',
+            ADD COLUMN avatar_color text DEFAULT 'ocean';
           CREATE TABLE public.connect_devices (
             id uuid primary key, auth_user_id uuid not null, student_id uuid not null,
             state text not null
@@ -79,7 +84,8 @@ jobs:
              WHERE schemaname='public' AND tablename LIKE 'connect_%'
             LOOP EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY',item.tablename);
             END LOOP;
-          END $$;
+          END $;
+          NOTIFY pgrst, 'reload schema';
           SQL
           (supabase functions serve > "$LAB/edge.log" 2>&1 & echo $! > "$LAB/edge.pid")
           npm install --prefix "$LAB" --no-save --no-audit --no-fund @supabase/supabase-js@2.95.0 >/dev/null
