@@ -20,7 +20,8 @@ export function createQueue(storage,key){
    if(!Array.isArray(archived))archived=[];
    const known=new Set(archived.map(e=>e?.eventId));
    for(const event of stale)if(!known.has(event.eventId)){archived.push(event);known.add(event.eventId)}
-   storage.setItem(archiveKey,JSON.stringify(archived.slice(-100)));
+   if(archived.length>100)throw Error('quarantine_archive_full');
+   storage.setItem(archiveKey,JSON.stringify(archived));
    write(list.filter(e=>e.expectedResetEpoch===epoch));
    return stale.length;
   },
