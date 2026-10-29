@@ -40,5 +40,7 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-credit-model.sql
       - name: Verify duplicate, conflict, rollback and XP
         run: psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-credit-assertions.sql
+      - name: Verify student separation, XP milestones and hard challenge
+        run: psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-isolation-assertions.sql
       - name: Verify examples and rejection without production database
         run: psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-xp-assertions.sql
