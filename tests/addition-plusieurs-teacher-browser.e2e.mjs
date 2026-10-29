@@ -24,9 +24,11 @@ try{
   const context=await browser.newContext();
   const page=await context.newPage();
   const errors=[],edgeCalls=[];
+  let interceptedTeacherModule=false;
   page.on('pageerror',error=>errors.push(error.message));
   if(enabled){
-   await context.route('**/app.js',async route=>{
+   await context.route(/\\/app\\.js(?:\\?.*)?$/,async route=>{
+    interceptedTeacherModule=true;
     const response=await route.fetch();
     const src=await response.text();
     assert.ok(src.includes('const ADD_MULTI_TEACHER_READY=false;'));
@@ -69,6 +71,7 @@ try{
   await page.goto(origin+'/?portail=prof&profClass='+classroom,
    {waitUntil:'domcontentloaded'});
   await page.locator('.results-overview-table').waitFor({timeout:20000});
+  assert.equal(interceptedTeacherModule,enabled,'test must override the actual versioned app.js URL');
   const labels=await page.locator('.results-overview-table thead th').allTextContents();
   assert.ok(labels.some(x=>x==='Élève'));
   assert.equal(labels.some(x=>x.includes('Addition de plusieurs nombres')),enabled,
