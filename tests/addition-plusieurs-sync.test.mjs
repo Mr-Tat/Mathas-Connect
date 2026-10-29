@@ -8,9 +8,21 @@ test('unverified success is not an acknowledgement',async()=>{let q=make();q.enq
 
 test('second queued event uses newly acknowledged revision and reset epoch',async()=>{
  const q=make();q.enqueue({eventId:'a',expectedRevision:4,expectedResetEpoch:2});q.enqueue({eventId:'b',expectedRevision:4,expectedResetEpoch:2});
- const sent=[];const sync=createSync({queue:q,post:async entry=>{sent.push({...entry});return {ok:true,revision:sent.length+4,resetEpoch:3}}});
+ const sent=[];const sync=createSync({queue:q,post:async entry=>{sent.push({...entry});return {ok:true,revision:sent.length+4,resetEpoch:2}}});
  assert.equal((await sync.flush()).remaining,0);
  assert.equal(sent[0].expectedRevision,4);
  assert.equal(sent[1].expectedRevision,5);
- assert.equal(sent[1].expectedResetEpoch,3);
+ assert.equal(sent[1].expectedResetEpoch,2);
+});
+
+test('unexpected server epoch cannot discard pending results',async()=>{
+ const q=make();q.enqueue({eventId:'a',expectedRevision:3,expectedResetEpoch:1});
+ let conflicts=0;
+ const sync=createSync({queue:q,post:async()=>({ok:true,revision:4,resetEpoch:2}),onConflict:()=>conflicts++});
+ assert.equal((await sync.flush()).remaining,1);assert.equal(conflicts,1);
+});
+test('nonadvancing revision retains event',async()=>{
+ const q=make();q.enqueue({eventId:'a',expectedRevision:3,expectedResetEpoch:1});
+ const sync=createSync({queue:q,post:async()=>({ok:true,revision:3,resetEpoch:1})});
+ assert.equal((await sync.flush()).remaining,1);
 });
