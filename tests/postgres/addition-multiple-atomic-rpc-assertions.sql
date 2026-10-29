@@ -1,5 +1,13 @@
 \set ON_ERROR_STOP on
 -- Real candidate RPC on disposable production-shaped tables.
+DO $privileges$
+BEGIN
+ IF has_function_privilege('anon','public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer)','EXECUTE')
+ OR has_function_privilege('authenticated','public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer)','EXECUTE')
+ OR NOT has_function_privilege('service_role','public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer)','EXECUTE')
+ THEN RAISE EXCEPTION 'atomic_rpc_not_service_role_only';END IF;
+END $privileges$;
+
 DO $scenario$
 DECLARE
  a uuid:='66666666-6666-4666-8666-666666666666';
