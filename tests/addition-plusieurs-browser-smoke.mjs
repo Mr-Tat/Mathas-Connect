@@ -13,5 +13,18 @@ try{
  assert.ok(body.length>100,'original game must render substantial content');
  assert.ok(!errors.length,'JavaScript errors: '+errors.join(' | '));
  assert.match(await page.locator('body').innerText(),/Laboratoire/);
- console.log('PASS: Chromium rendered original addition multiple engine; no browser script errors');
+ // Exercise the actual native completion bridge through the loaded game frame.
+ // This is a contract test, not a claim that every calculation UI was played.
+ const native=await frame.locator('body').evaluate(()=>{
+   const fn=window.__setLastWork;
+   if(typeof fn!=='function')return 'missing';
+   fn({label:'Calculs · Niveau 1',score:'4/4',rulerUsed:false});
+   return 'called';
+ });
+ assert.equal(native,'called','native game completion function must exist');
+ await page.waitForFunction(()=>document.getElementById('audit')?.textContent?.includes('1'),{timeout:10000});
+ await page.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('22 XP'),{timeout:10000});
+ assert.match(await page.locator('#result').innerText(),/22 XP/);
+ assert.ok(!errors.length,'JavaScript errors after completion: '+errors.join(' | '));
+ console.log('PASS: Chromium game engine, native completion bridge, and simulated 22 XP acknowledgement');
 }finally{await browser.close()}
