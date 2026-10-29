@@ -68,3 +68,155 @@ const previous=checked(await admin.from('connect_xp_credits').select('xp_credite
  .eq('student_id',studentId).eq('app_key',oldApp).single(),'historical XP');
 assert.equal(previous.xp_credited,22);
 console.log('PASS genuine LOCAL Supabase Auth+Edge+PostgreSQL: 4/4, 22 XP, trophy, professor, reset, 44 global XP, outsider denied');
+
+
+// Joined end-to-end recipe: real rendered V6 arithmetic + real local Auth,
+// real Edge HTTP and PostgreSQL, and the real professor screen. The browser
+// receives a REAL GoTrue JWT via a test-only getSession adapter. We do not
+// fake, intercept or replace ANY request/response to the Edge functions.
+const {chromium}=await import('playwright');
+const {playFourAdditions}=await import('./addition-plusieurs-real-play-helper.mjs');
+const browserStudentId=randomUUID();
+const browserAuth=client(anon);
+const browserSession=checked(await browserAuth.auth.signInAnonymously(),'browser anonymous GoTrue').session;
+assert.ok(browserSession?.user?.is_anonymous&&browserSession?.access_token);
+checked(await admin.from('connect_students').insert({
+ id:browserStudentId,display_name:'Élève Chromium'
+}),'browser pupil');
+checked(await admin.from('connect_enrollments').insert({
+ id:randomUUID(),class_id:classId,student_id:browserStudentId
+}),'browser pupil enrollment');
+checked(await admin.from('connect_devices').insert({
+ id:randomUUID(),student_id:browserStudentId,auth_user_id:browserSession.user.id,state:'approved'
+}),'browser approved device');
+checked(await admin.from('connect_xp_credits').insert({
+ student_id:browserStudentId,app_key:oldApp,xp_credited:22
+}),'browser historical XP');
+checked(await admin.from('connect_classes').insert({
+ id:classId,name:'Classe fictive addition',year_id:null
+}),'browser professor class');
+const site='http://127.0.0.1:8765';
+const browser=await chromium.launch({headless:true});
+const errors=[];
+const SDK_URL='https://esm.sh/@supabase/supabase-js@2.95.0';
+function localSessionSdk(signedIn){
+ return 'export function createClient(){return {auth:{getSession:async()=>({data:{session:'
+  +JSON.stringify(signedIn)+'}}),signOut:async()=>({error:null})}}}';
+}
+async function provideSdk(context,signedIn){
+ await context.route(SDK_URL,route=>route.fulfill({
+  status:200,contentType:'text/javascript',
+  headers:{'access-control-allow-origin':'*'},
+  body:localSessionSdk(signedIn)
+ }));
+}
+try{
+ const pupilContext=await browser.newContext();
+ const pupilPage=await pupilContext.newPage();
+ pupilPage.on('pageerror',e=>errors.push('pupil: '+e.message));
+ await provideSdk(pupilContext,browserSession);
+ // All three changes below are Playwright response overrides, NOT files
+ // in the repository or Edge deployments. A future production URL cannot
+ // accidentally receive our anonymous pupil's local request.
+ await pupilContext.route('**/apps/addition-plusieurs/connect-pilot.mjs',async route=>{
+  const res=await route.fetch(),original=await res.text();
+  assert.equal(original.split('CONNECT_WRITE_READY=false').length,2);
+  await route.fulfill({response:res,contentType:'text/javascript',
+   body:original.replace('CONNECT_WRITE_READY=false','CONNECT_WRITE_READY=true')});
+ });
+ await pupilContext.route('**/apps/addition-plusieurs/connect-host.mjs',async route=>{
+  const res=await route.fetch(),original=await res.text();
+  assert.ok(original.includes('https://awmhpfofacaglewammxt.supabase.co'));
+  const parts=original.split('\n'),i=parts.findIndex(line=>line.includes("throw Error('untrusted_connect_endpoint')"));
+  assert.ok(i>=0);
+  parts[i]=" if(baseUrl!=="+JSON.stringify(url)+"||apikey!=="+JSON.stringify(anon)+")throw Error('untrusted_connect_endpoint');";
+  let testVersion=parts.join('\n');
+  testVersion=testVersion.replace(
+   "export const CONNECT_URL='https://awmhpfofacaglewammxt.supabase.co';",
+   'export const CONNECT_URL='+JSON.stringify(url)+';');
+  testVersion=testVersion.replace(
+   "export const CONNECT_PUBLISHABLE_KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';",
+   'export const CONNECT_PUBLISHABLE_KEY='+JSON.stringify(anon)+';');
+  assert.ok(testVersion.includes('export const CONNECT_URL='+JSON.stringify(url)));
+  assert.ok(testVersion.includes('export const CONNECT_PUBLISHABLE_KEY='+JSON.stringify(anon)));
+  await route.fulfill({response:res,contentType:'text/javascript',body:testVersion});
+ });
+ const openGame=async()=>{
+  await pupilPage.goto(site+'/apps/addition-plusieurs/?class='+classId,{waitUntil:'domcontentloaded'});
+  await pupilPage.waitForFunction(()=>document.getElementById('game')?.contentWindow?.__mathasGameStorageScope?.startsWith('connect.'),null,{timeout:30000});
+  return pupilPage.frameLocator('iframe#game');
+ };
+ const frame=await openGame();
+ await pupilPage.waitForFunction(()=>document.querySelector('#xp-total')?.textContent==='22 XP',null,{timeout:15000});
+ await playFourAdditions({frame,page:pupilPage});
+ await pupilPage.waitForFunction(()=>document.querySelector('#xp-total')?.textContent==='44 XP',null,{timeout:30000});
+ const stored=checked(await admin.from('connect_states')
+  .select('revision,reset_epoch,state_data').eq('student_id',browserStudentId)
+  .eq('app_key',appKey).single(),'browser actual PostgreSQL save');
+ assert.equal(stored.revision,1,'native engine must send exactly one valid completion');
+ assert.equal(stored.state_data.classic[0]['4'],4);
+ assert.equal(stored.state_data.rewards.mastery['4'][0],true);
+ const browserXp=checked(await admin.from('connect_xp_credits').select('xp_credited')
+  .eq('student_id',browserStudentId).eq('app_key',appKey).single(),'browser real XP');
+ assert.equal(browserXp.xp_credited,22);
+ const reloaded=await openGame();
+ await pupilPage.waitForFunction(()=>document.querySelector('#xp-total')?.textContent==='44 XP',null,{timeout:15000});
+ const native=await reloaded.locator('body').evaluate(()=>({
+  classic:JSON.parse(localStorage.getItem('addition2_classic_v1')||'{}'),
+  trophy:JSON.parse(localStorage.getItem('mathas_trophies_v3_addition-plusieurs')||'null')
+ }));
+ assert.equal(native.classic.levels['1']['4'],4);
+ assert.equal(native.trophy.mastery['4'][0],true);
+
+ // Real teacher portal, actual professor JWT, real Edge teacher-dashboard,
+ // teacher-overview, history, and reset via visible confirmation controls.
+ const teacherContext=await browser.newContext();
+ await provideSdk(teacherContext,teacher);
+ await teacherContext.route(urlToMatch=>urlToMatch.pathname==='/app.js',async route=>{
+  const res=await route.fetch(),original=await res.text();
+  const config="const url='https://awmhpfofacaglewammxt.supabase.co', key='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';";
+  assert.ok(original.includes(config));
+  assert.ok(original.includes('const ADD_MULTI_TEACHER_READY=false;'));
+  const testVersion=original.replace(config,'const url='+JSON.stringify(url)+', key='+JSON.stringify(anon)+';')
+   .replace('const ADD_MULTI_TEACHER_READY=false;','const ADD_MULTI_TEACHER_READY=true;');
+  await route.fulfill({response:res,contentType:'text/javascript',body:testVersion});
+ });
+ const professor=await teacherContext.newPage();
+ professor.on('pageerror',e=>errors.push('teacher: '+e.message));
+ await professor.goto(site+'/?portail=prof&profClass='+classId,{waitUntil:'domcontentloaded'});
+ await professor.locator('.results-overview-table').waitFor({timeout:30000});
+ const open=professor.getByRole('button',{
+  name:'Voir les résultats de Élève Chromium dans Addition de plusieurs nombres'
+ });
+ await open.click();
+ const rows=await professor.locator('#results-student-content .result-table tr').allTextContents();
+ assert.match(rows.join(' | '),/4\/4/,'real professor DOM must show actual PostgreSQL result');
+ await professor.locator('#results-student-content .results-restart-button').click();
+ const dialog=professor.locator('dialog.parcours-dialog');
+ await dialog.waitFor();
+ await dialog.locator('input[type=checkbox]').uncheck();
+ await dialog.locator('input[required]').fill('Élève Chromium');
+ await dialog.getByRole('button',{name:'Confirmer le nouveau parcours'}).click();
+ await dialog.waitFor({state:'detached',timeout:15000});
+ const afterReset=await openGame();
+ await pupilPage.waitForFunction(()=>document.querySelector('#xp-total')?.textContent==='44 XP',null,{timeout:15000});
+ const cleared=await afterReset.locator('body').evaluate(()=>({
+  classic:JSON.parse(localStorage.getItem('addition2_classic_v1')||'{}'),
+  trophy:JSON.parse(localStorage.getItem('mathas_trophies_v3_addition-plusieurs')||'null')
+ }));
+ assert.deepEqual(cleared.classic,{levels:{}});
+ assert.ok(cleared.trophy==null||!cleared.trophy.mastery?.['4']?.some(Boolean));
+ const savedAfterReset=checked(await admin.from('connect_states').select('reset_epoch,state_data')
+  .eq('student_id',browserStudentId).eq('app_key',appKey).single(),'browser reset on DB');
+ assert.equal(savedAfterReset.reset_epoch,1);
+ assert.deepEqual(savedAfterReset.state_data,{});
+ const afterXp=checked(await admin.from('connect_xp_credits').select('xp_credited')
+  .eq('student_id',browserStudentId).eq('app_key',appKey).single(),'real XP after teacher reset');
+ assert.equal(afterXp.xp_credited,22);
+ assert.deepEqual(errors,[],'Browser JavaScript errors');
+ await teacherContext.close();
+ await pupilContext.close();
+ console.log('PASS UNITED Chromium 4 actual additions -> local GoTrue JWT -> real Edge -> atomic PostgreSQL +22 XP/trophy -> real professor DOM + reset -> XP kept');
+}finally{
+ await browser.close();
+}
