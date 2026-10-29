@@ -141,9 +141,26 @@ try{
   assert.ok(testVersion.includes('export const CONNECT_PUBLISHABLE_KEY='+JSON.stringify(anon)));
   await route.fulfill({response:res,contentType:'text/javascript',body:testVersion});
  });
+ const failedRequests=[];
+ pupilPage.on('requestfailed',req=>failedRequests.push(req.url()+' '+(req.failure()?.errorText||'')));
+ pupilPage.on('console',message=>{if(message.type()==='error')errors.push('console: '+message.text())});
  const openGame=async()=>{
-  await pupilPage.goto(site+'/apps/addition-plusieurs/?class='+classId,{waitUntil:'domcontentloaded'});
-  await pupilPage.waitForFunction(()=>document.getElementById('game')?.contentWindow?.__mathasGameStorageScope?.startsWith('connect.'),null,{timeout:30000});
+  const response=await pupilPage.goto(site+'/apps/addition-plusieurs/?class='+classId,{waitUntil:'domcontentloaded'});
+  try{
+   await pupilPage.waitForFunction(()=>document.getElementById('game')?.contentWindow?.__mathasGameStorageScope?.startsWith('connect.'),null,{timeout:18000});
+  }catch(error){
+   const info=await pupilPage.evaluate(()=>({
+    url:location.href,title:document.title,
+    result:document.getElementById('result')?.textContent,
+    notice:document.getElementById('mode-note')?.textContent,
+    iframe:document.getElementById('game')?.getAttribute('srcdoc')?.length||0,
+    body:document.body?.textContent?.slice(0,500)
+   })).catch(e=>({evaluationError:String(e)}));
+   console.error('BROWSER START DIAGNOSTIC',JSON.stringify({
+    status:response?.status(),info,errors,failedRequests
+   }));
+   throw error;
+  }
   return pupilPage.frameLocator('iframe#game');
  };
  const frame=await openGame();
