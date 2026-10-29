@@ -12,7 +12,7 @@ test('Addition multiple professor results are gated before release, never added 
  assert.match(teacher,/additionMultipleAllowed\(appKey\)/);
  assert.match(edge,/const ADD_MULTI_SERVER_READY=false/);
 });
-test('teacher sees new app's native classic, sudden, hard and challenge records once approved',()=>{
+test('teacher sees native classic, sudden, hard and challenge records once approved',()=>{
  assert.match(teacher,/state\.classic\?\.\[i\]/);
  assert.match(teacher,/state\.sudden\?\.\[i\]/);
  assert.match(teacher,/state\.hard\?\.\[i\]/);
