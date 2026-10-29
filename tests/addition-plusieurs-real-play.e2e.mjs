@@ -11,11 +11,12 @@ try{
  page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:8765/apps/addition-plusieurs/?simulation=1',{waitUntil:'domcontentloaded'});
  const frame=page.frameLocator('iframe#game');
- await frame.locator('#startClassic').waitFor({timeout:20000});
- await frame.locator('.classic-count-btn[data-count="4"]').click();
- await frame.locator('#classicMaxDigits').selectOption('5');
+ await frame.locator('#menuScreen:not(.hidden) .classic-count-btn[data-count="4"]').waitFor({timeout:20000});
+ // The V6 UI hides #startClassic deliberately. The visible 4-calculs button
+ // is the real user action and internally triggers the original launch code.
+ await frame.locator('#trainingMaxDigits').selectOption('5');
  await frame.locator('#tensFirstToggle').uncheck();
- await frame.locator('#startClassic').click();
+ await frame.locator('.classic-count-btn[data-count="4"]').click();
  await frame.locator('#gameScreen:not(.hidden)').waitFor();
  assert.match(await frame.locator('#sessionLevel').innerText(),/Niveau 1/);
 
@@ -65,9 +66,9 @@ try{
   if(message==='Valider')await frame.locator('#primaryBtn').click();
   await frame.locator('#sessionScore').waitFor();
   if(pair===0){
-   await frame.locator('#primaryBtn').getByText('Passer aux 2 calculs suivants').waitFor({timeout:15000}).catch(async()=>{
-    assert.match(await frame.locator('#primaryBtn').innerText(),/Passer aux 2 calculs suivants/);
-   });
+   await page.waitForFunction(()=>
+     document.getElementById('game')?.contentDocument?.getElementById('primaryBtn')?.textContent?.includes('Passer aux 2 calculs suivants'),
+     null,{timeout:15000});
    await frame.locator('#primaryBtn').click({force:true});
    await frame.locator('#gameScreen .operation').first().waitFor();
   }
