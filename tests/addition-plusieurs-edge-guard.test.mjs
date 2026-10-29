@@ -18,3 +18,15 @@ test('existing applications remain authorized and new XP routes share server rea
  assert.match(edge,/if\(!xpAppAllowed\(b.appKey\)\)return deny\('forbidden',403\)/);
  assert.doesNotMatch(migration,/DELETE FROM|TRUNCATE|DROP TABLE|UPDATE public\.connect_states/i);
 });
+
+test('Addition multiple result writes are atomic; legacy app code stays untouched',()=>{
+ const start=edge.indexOf("if(selected===addMulti&&b.action==='game-record'){");
+ const atomicCall=edge.indexOf("db.rpc('connect_addition_multiple_record_v1'",start);
+ const legacyUpdate=edge.indexOf("const rev=current?.revision??0;",start);
+ assert.ok(start>0&&atomicCall>start&&legacyUpdate>atomicCall);
+ const branch=edge.slice(start,legacyUpdate);
+ assert.match(branch,/return answer\(atomic\)/);
+ assert.match(branch,/atomic_save_unavailable/);
+ assert.match(branch,/if\(b\.rewards!=null\)return deny\('rewards_not_integrated',503\)/);
+ assert.doesNotMatch(branch,/db\.from\('connect_states'\)\.(update|insert)/);
+});
