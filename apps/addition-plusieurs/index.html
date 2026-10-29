@@ -24,7 +24,8 @@ import {hydrateNativeRecords} from './connect-hydration.mjs';
      if(status==='saved'&&reply?.xp){
        output.textContent='Connect : '+reply.xp.appXp+' XP';
        confirmXp(reply.xp);
-     }else if(status==='offline'||status==='conflict')output.textContent='Connect : résultat en attente ('+status+')';
+     }else if(status==='quarantined')output.textContent='Ancien parcours : '+reply.count+' résultat(s) hors ligne conservé(s) à part après la remise à zéro.';
+     else if(status==='offline'||status==='conflict')output.textContent='Connect : résultat en attente ('+status+')';
    }});
    const loaded=await host.load();
    if(loaded?.ok!==true||!candidate.initialize(loaded.revision,loaded.resetEpoch))throw Error('connect_load_failed');
