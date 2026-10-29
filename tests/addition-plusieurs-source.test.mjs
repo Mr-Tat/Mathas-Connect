@@ -12,4 +12,7 @@ const ends = (game.match(/window\.__setLastWork\s*&&\s*window\.__setLastWork/g)|
 assert.equal(ends,4,'Unexpected terminal event count: review mapping manually');
 assert.match(launcher, /src="\.\/game-original\.html"/);
 assert.doesNotMatch(launcher, /connect-results|connect-api|game-record|SUPABASE/);
+const audit = readFileSync(new URL('audit-bridge.js',root),'utf8');
+assert.match(audit, /__setLastWork/);
+assert.doesNotMatch(audit, /connect-results|connect-api|game-record|SUPABASE/);
 console.log('PASS: source keys, four terminal-event calls, free-only staging wrapper. XP contract NOT tested.');
