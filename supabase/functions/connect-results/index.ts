@@ -6,6 +6,9 @@ const answer=(v:object,status=200)=>new Response(JSON.stringify(v),{status,heade
 const deny=(e:string,status=400)=>answer({ok:false,error:e},status);
 const valid=(v:any)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 const app='addition-ecrite-simple',mul='multiplication-ecrite-simple',sub='soustraction-ecrite-simple',lab='connect-lab',addMulti='addition-ecrite-multiple';
+// Audit 2026-10-29: keep the new game blocked EVEN IF the catalog is accidentally enabled.
+// Lift only after atomic real XP/RPC, scoped storage and Chromium connected E2E validation.
+const ADD_MULTI_SERVER_READY=false;
 const appAllowed=(k:any)=>k===app||k===mul||k===sub||k===lab||k===addMulti;
 const belgianDay=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const read=async(q:any)=>{const {data,error}=await q.maybeSingle();if(error)throw Error('db_error');return data};
@@ -362,6 +365,7 @@ Deno.serve(async req=>{
    if(!selected||(b.action==='lab-record'&&selected!==lab)||(b.action==='game-record'&&selected!==app&&selected!==mul&&selected!==sub&&selected!==addMulti))return deny('forbidden',403);
    // L'application reste interdite tant que le catalogue ne l'active pas explicitement.
    if(selected===addMulti){
+    if(!ADD_MULTI_SERVER_READY)return deny('integration_not_ready',403);
     const row=await read(db.from('connect_apps').select('enabled').eq('app_key',addMulti));
     if(!row?.enabled)return deny('app_disabled',403);
    }
