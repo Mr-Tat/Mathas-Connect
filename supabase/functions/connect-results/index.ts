@@ -5,8 +5,8 @@ const headers={'content-type':'application/json','cache-control':'no-store','acc
 const answer=(v:object,status=200)=>new Response(JSON.stringify(v),{status,headers});
 const deny=(e:string,status=400)=>answer({ok:false,error:e},status);
 const valid=(v:any)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
-const app='addition-ecrite-simple',mul='multiplication-ecrite-simple',sub='soustraction-ecrite-simple',lab='connect-lab';
-const appAllowed=(k:any)=>k===app||k===mul||k===sub||k===lab;
+const app='addition-ecrite-simple',mul='multiplication-ecrite-simple',sub='soustraction-ecrite-simple',lab='connect-lab',addMulti='addition-ecrite-multiple';
+const appAllowed=(k:any)=>k===app||k===mul||k===sub||k===lab||k===addMulti;
 const belgianDay=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const read=async(q:any)=>{const {data,error}=await q.maybeSingle();if(error)throw Error('db_error');return data};
 const int=(n:any,min:number,max:number)=>Number.isSafeInteger(n)&&n>=min&&n<=max;
@@ -359,7 +359,12 @@ Deno.serve(async req=>{
    return answer({ok:true,appXp:summary.appXp,total:summary.total,level:summary.level,next:summary.next,milestones:summary.milestones,currentMilestones:summary.currentMilestones,parcours:summary.parcours,repeatXp:summary.repeatXp,max:summary.max});
   }
   if(b.action==='student-load'||b.action==='student-save'||b.action==='lab-record'||b.action==='game-record'||b.action==='game-reset'){
-   if(!selected||(b.action==='lab-record'&&selected!==lab)||(b.action==='game-record'&&selected!==app&&selected!==mul&&selected!==sub))return deny('forbidden',403);
+   if(!selected||(b.action==='lab-record'&&selected!==lab)||(b.action==='game-record'&&selected!==app&&selected!==mul&&selected!==sub&&selected!==addMulti))return deny('forbidden',403);
+   // L'application reste interdite tant que le catalogue ne l'active pas explicitement.
+   if(selected===addMulti){
+    const row=await read(db.from('connect_apps').select('enabled').eq('app_key',addMulti));
+    if(!row?.enabled)return deny('app_disabled',403);
+   }
    const studentId=await identity();if(!studentId)return deny('forbidden',403);
    const current=await read(db.from('connect_states').select('revision,state_data,reset_epoch').eq('student_id',studentId).eq('app_key',selected));
    if(b.action==='student-load'){
@@ -374,6 +379,7 @@ Deno.serve(async req=>{
    // Les jeux réels restent en lecture seule. Écriture exclusivement pour le laboratoire.
    if(b.action==='game-reset')return deny('teacher_only',403);
    if(b.action==='student-save')return deny('write_not_enabled',403);
+   if(selected===addMulti&&b.points!==0)return deny('invalid_points');
    if(!valid(b.eventId)||!int(b.expectedRevision,0,1000000000)||!int(b.expectedResetEpoch,0,1000000000)||!['classic','sudden','hard','hard-challenge'].includes(b.mode)
      ||!int(b.level,1,3)||!int(b.score,0,100000)||!int(b.points,0,10000000)
      ||(b.mode==='classic'?(![4,10,20].includes(b.total)||b.score>b.total):b.mode==='hard-challenge'?(b.total!==5||b.score>5||b.points!==0):b.total!=null))
