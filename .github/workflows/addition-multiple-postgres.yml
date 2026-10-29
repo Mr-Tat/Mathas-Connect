@@ -1,0 +1,38 @@
+name: Addition multiple PostgreSQL isolated
+on:
+  pull_request:
+    paths:
+      - 'tests/postgres/addition-multiple-*.sql'
+      - '.github/workflows/addition-multiple-postgres.yml'
+  workflow_dispatch:
+jobs:
+  sql-preview:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: testing
+          POSTGRES_PASSWORD: testing
+          POSTGRES_DB: isolated
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U testing -d isolated"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: testing
+      PGPASSWORD: testing
+      PGDATABASE: isolated
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create pure isolated XP function
+        run: psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-xp-preview.sql
+      - name: Verify examples and rejection without production database
+        run: psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-xp-assertions.sql
