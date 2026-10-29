@@ -27,6 +27,7 @@ try{
  assert.match(await page.locator('#result').innerText(),/22 XP/);
  // Contract tests of all four terminal-event formats, through real iframe postMessage.
  // These are intentionally injected game events, not completed arithmetic problems.
+ await page.evaluate(()=>{window.__bridgeMessages=[];window.addEventListener('message',e=>{window.__bridgeMessages.push({type:e.data?.type,origin:e.origin,correctSource:e.source===document.getElementById('game')?.contentWindow});});});
  const cases=[
   [{label:'Calculs · Niveau 1',score:'10/10'},58],
   [{label:'Calculs · Niveau 1',score:'20/20'},118],
@@ -48,7 +49,9 @@ try{
     step:i,expected:xp,payload,
     audit:await page.locator('#audit').innerText(),
     displayed:await page.locator('#result').innerText(),
-    errors
+    errors,
+    messages:await page.evaluate(()=>window.__bridgeMessages),
+    fn:await frame.locator('body').evaluate(()=>String(window.__setLastWork).slice(0,360))
    }));
    throw error;
   }
