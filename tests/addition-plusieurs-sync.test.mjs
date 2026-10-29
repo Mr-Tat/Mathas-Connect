@@ -26,3 +26,12 @@ test('nonadvancing revision retains event',async()=>{
  const sync=createSync({queue:q,post:async()=>({ok:true,revision:3,resetEpoch:1})});
  assert.equal((await sync.flush()).remaining,1);
 });
+
+test('queued event from older parcours is never rebased after first acknowledgement',async()=>{
+ const q=make();q.enqueue({eventId:'a',expectedRevision:0,expectedResetEpoch:2});q.enqueue({eventId:'b',expectedRevision:0,expectedResetEpoch:1});
+ let sent=0,conflicts=0;
+ const sync=createSync({queue:q,post:async()=>{sent++;return {ok:true,revision:1,resetEpoch:2}},onConflict:()=>conflicts++});
+ const result=await sync.flush();
+ assert.equal(sent,1);assert.equal(result.remaining,1);assert.equal(conflicts,1);
+ assert.equal(q.read()[0].eventId,'b');
+});
