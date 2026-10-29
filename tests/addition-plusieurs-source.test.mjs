@@ -10,7 +10,7 @@ assert.match(game, /"appId":"addition-plusieurs"/);
 assert.match(game, /MathasAppConfig/);
 const ends = (game.match(/window\.__setLastWork\s*&&\s*window\.__setLastWork/g)||[]).length;
 assert.equal(ends,4,'Unexpected terminal event count: review mapping manually');
-assert.match(launcher, /src="\.\/game-original\.html"/);
+assert.match(launcher, /fetch\('\.\/game-original\.html'\)/);
 assert.doesNotMatch(launcher, /connect-results|connect-api|game-record|SUPABASE/);
 const audit = readFileSync(new URL('audit-bridge.js',root),'utf8');
 assert.match(audit, /__setLastWork/);
