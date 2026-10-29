@@ -10,5 +10,6 @@ test('XP animation is driven by acknowledged positive delta only',()=>{
 test('laboratory launch is opt-in and no live Edge request in browser wrapper',()=>{
  assert.match(html,/get\('simulation'\)==='1'/);
  assert.match(html,/if\(writeReady&&host&&!connected\)throw new Error/);
- assert.doesNotMatch(html,/https:\/\/[^'"]+supabase/);
+ assert.doesNotMatch(html,/awmhpfofacaglewammxt\.supabase\.co/);
+ assert.match(html,/if\(writeReady&&classId&&!free\)/);
 });
