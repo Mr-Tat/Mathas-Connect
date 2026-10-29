@@ -57,6 +57,12 @@ test('projection : aucune écriture serveur, rafraîchissement automatique ou id
  assert.match(ui,/teacher-dashboard/);
  assert.match(ui,/teacher-overview/);
  assert.match(ui,/mathas-connect-professor-auth-v1/);
+ assert.match(ui,/classId as requestedClassId/);
+ assert.match(ui,/classes.some\(c=>c.id===requestedClassId\)/);
+ const professor=read('../index.html');
+ for(const space of ['observation','phase1','phase2','2eco'])
+  assert.ok(professor.includes('./projection.html?space='+space));
+
  assert.match(ui,/session\.user\?\.is_anonymous/);
  assert.doesNotMatch(ui,/teacher-export|game-record|teacher-parcours-restart|signInAnonymously|setInterval\s*\(/);
  assert.doesNotMatch(ui,/person\.displayName|innerHTML\s*=/);
