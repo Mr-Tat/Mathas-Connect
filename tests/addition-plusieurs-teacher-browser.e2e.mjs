@@ -27,7 +27,7 @@ try{
   let interceptedTeacherModule=false;
   page.on('pageerror',error=>errors.push(error.message));
   if(enabled){
-   await context.route(/\\/app\\.js(?:\\?.*)?$/,async route=>{
+   await context.route(url=>url.pathname==='/app.js',async route=>{
     interceptedTeacherModule=true;
     const response=await route.fetch();
     const src=await response.text();
