@@ -11,10 +11,18 @@ export function buildConnectPilot({storage,classId,studentId,post,onStatus=()=>{
  let revision=null,resetEpoch=null;
  const sync=createSync({queue,post,onAck:(_,reply)=>{revision=reply.revision;resetEpoch=reply.resetEpoch;onStatus('saved',reply)},onConflict:()=>onStatus('conflict'),onError:()=>onStatus('offline')});
  return Object.freeze({
-  initialize(rev,epoch){if(!Number.isSafeInteger(rev)||!Number.isSafeInteger(epoch)||rev<0||epoch<0)throw Error('invalid_revision');revision=rev;resetEpoch=epoch;},
+  initialize(rev,epoch){
+   if(!Number.isSafeInteger(rev)||!Number.isSafeInteger(epoch)||rev<0||epoch<0)throw Error('invalid_revision');
+   revision=rev;resetEpoch=epoch;
+   // A teacher reset invalidates the old pending queue; keep it for review, never resubmit.
+   const pending=queue.read();
+   if(pending.some(e=>e.expectedResetEpoch!==epoch)){onStatus('conflict',{error:'queued_epoch_mismatch'});return false}
+   return true;
+  },
   completed(entry){
    const event=normalizeCompletion(entry);
    if(!event||revision===null)return false;
+   if(queue.read().some(e=>e.expectedResetEpoch!==resetEpoch)){onStatus('conflict',{error:'queued_epoch_mismatch'});return false}
    const record={...event,action:'game-record',eventId:crypto.randomUUID(),expectedRevision:revision,expectedResetEpoch:resetEpoch,points:0,classId};
    if(!queue.enqueue(record))return false;
    onStatus('pending');void sync.flush();return true;
