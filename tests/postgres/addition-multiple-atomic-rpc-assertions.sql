@@ -2,9 +2,9 @@
 -- Real candidate RPC on disposable production-shaped tables.
 DO $privileges$
 BEGIN
- IF has_function_privilege('anon','public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer)','EXECUTE')
- OR has_function_privilege('authenticated','public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer)','EXECUTE')
- OR NOT has_function_privilege('service_role','public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer)','EXECUTE')
+ IF has_function_privilege('anon','public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer,jsonb)','EXECUTE')
+ OR has_function_privilege('authenticated','public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer,jsonb)','EXECUTE')
+ OR NOT has_function_privilege('service_role','public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer,jsonb)','EXECUTE')
  THEN RAISE EXCEPTION 'atomic_rpc_not_service_role_only';END IF;
 END $privileges$;
 
@@ -20,16 +20,27 @@ DECLARE
 BEGIN
  INSERT INTO public.connect_students(id,display_name)VALUES(a,'Transaction A'),(b,'Transaction B');
  INSERT INTO public.connect_xp_credits(student_id,app_key,xp_credited)VALUES(a,'addition-ecrite-simple',22);
- answer:=public.connect_addition_multiple_record_v1(a,ev1,0,0,'classic',1,4,4);
+ answer:=public.connect_addition_multiple_record_v1(a,ev1,0,0,'classic',1,4,4,'{"version":3,"mastery":{"4":[true,false,false],"10":[false,false,false],"20":[false,false,false]},"sudden":[false,false,false],"hardAwards":{"bronze":[false,false,false],"silver":[false,false,false],"gold":[false,false,false]},"scoreOne":{"bronze":false,"silver":false,"gold":false},"unlockedGold":false}'::jsonb);
  IF (answer->>'revision')::int<>1 OR (answer->'xp'->>'delta')::int<>22
   OR (answer->'xp'->>'total')::int<>44
  THEN RAISE EXCEPTION 'atomic_first_credit: %',answer;END IF;
+ IF (SELECT state_data#>>'{rewards,mastery,4,0}' FROM public.connect_states
+    WHERE student_id=a AND app_key=m)<>'true'
+ THEN RAISE EXCEPTION 'atomic_trophy_not_saved';END IF;
  SELECT revision INTO rev FROM public.connect_states WHERE student_id=a AND app_key=m;
  IF rev<>1 THEN RAISE EXCEPTION 'atomic_revision_missing';END IF;
  answer:=public.connect_addition_multiple_record_v1(a,ev1,0,0,'classic',1,4,4);
  IF (answer->>'duplicate')::boolean IS DISTINCT FROM true
   OR (answer->'xp'->>'delta')::int<>0 OR (answer->>'revision')::int<>1
  THEN RAISE EXCEPTION 'atomic_duplicate_credit: %',answer;END IF;
+ -- Malformed trophy arrays must not advance revision or credit XP.
+ BEGIN
+  PERFORM public.connect_addition_multiple_record_v1(a,ev2,1,0,'classic',1,8,10,
+    '{"version":3,"mastery":{"4":[true],"10":[false,false,false],"20":[false,false,false]},"sudden":[false,false,false],"hardAwards":{"bronze":[false,false,false],"silver":[false,false,false],"gold":[false,false,false]},"scoreOne":{"bronze":false,"silver":false,"gold":false},"unlockedGold":false}'::jsonb);
+  RAISE EXCEPTION 'invalid_trophy_accepted';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM='invalid_trophy_accepted' OR SQLERRM<>'invalid_rewards' THEN RAISE;END IF;
+ END;
  -- If XP insert fails, all state mutations from that event roll back.
  CREATE OR REPLACE FUNCTION public.addmulti_fail_test_credit() RETURNS trigger
  LANGUAGE plpgsql AS $fail$
@@ -54,10 +65,15 @@ BEGIN
  THEN RAISE EXCEPTION 'atomic_rollback_did_not_restore_state';END IF;
  DROP TRIGGER addmulti_fail_test_credit_trigger ON public.connect_xp_credits;
  DROP FUNCTION public.addmulti_fail_test_credit();
- answer:=public.connect_addition_multiple_record_v1(a,ev2,1,0,'classic',1,8,10);
+ answer:=public.connect_addition_multiple_record_v1(a,ev2,1,0,'classic',1,8,10,
+ '{"version":3,"mastery":{"4":[false,false,false],"10":[false,false,false],"20":[false,false,false]},"sudden":[false,false,false],"hardAwards":{"bronze":[false,false,false],"silver":[false,false,false],"gold":[false,false,false]},"scoreOne":{"bronze":false,"silver":false,"gold":false},"unlockedGold":false}'::jsonb);
  IF (answer->>'revision')::int<>2 OR (answer->'xp'->>'delta')::int<>30
  OR (answer->'xp'->>'total')::int<>74 THEN
  RAISE EXCEPTION 'atomic_retry_credit: %',answer;END IF;
+ -- Later false flags cannot remove an already acquired trophy.
+ IF (SELECT state_data#>>'{rewards,mastery,4,0}' FROM public.connect_states
+    WHERE student_id=a AND app_key=m)<>'true'
+ THEN RAISE EXCEPTION 'previous_trophy_lost';END IF;
  answer:=public.connect_addition_multiple_record_v1(b,ev3,0,0,'classic',1,10,10);
  IF (answer->'xp'->>'appXp')::int<>36 THEN RAISE EXCEPTION 'second_student_independence: %',answer;END IF;
  IF (SELECT xp_credited FROM public.connect_xp_credits WHERE student_id=a AND app_key='addition-ecrite-simple')<>22
