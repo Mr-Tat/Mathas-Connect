@@ -19,6 +19,7 @@ try{
  const scope=await frame.locator('body').evaluate(()=>{
   localStorage.setItem('addition2_audit_probe','simulation-only');
   localStorage.setItem('mathas_audit_probe','simulation-trophy');
+  sessionStorage.setItem('mathas_master_mode_session_v1_audit','simulation-master');
   return window.__mathasGameStorageScope;
  });
  assert.equal(scope,'simulation');
@@ -39,6 +40,8 @@ try{
   return {scope:window.__mathasGameStorageScope,before};
  });
  assert.deepEqual(separated,{scope:'libre',before:null});
+ assert.equal(await freeFrame.locator('body').evaluate(()=>sessionStorage.getItem('mathas_master_mode_session_v1_audit')),null);
+ assert.equal(await frame.locator('body').evaluate(()=>sessionStorage.getItem('mathas_master_mode_session_v1_audit')),'simulation-master');
  assert.equal(await frame.locator('body').evaluate(()=>localStorage.getItem('addition2_audit_probe')),'simulation-only');
  assert.equal(await page.evaluate(()=>localStorage.getItem('mathas.addition-plusieurs.game.libre.v1:addition2_audit_probe')),'free-only');
  await freePage.close();
