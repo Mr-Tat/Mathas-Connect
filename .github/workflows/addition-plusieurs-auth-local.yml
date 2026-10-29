@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'tests/addition-plusieurs-auth-local.e2e.mjs'
+      - 'tests/addition-plusieurs-real-play-helper.mjs'
+      - 'apps/addition-plusieurs/**'
+      - 'app.js'
       - '.github/workflows/addition-plusieurs-auth-local.yml'
       - 'supabase/functions/connect-results/index.ts'
       - 'supabase/functions/connect-api/index.ts'
@@ -77,14 +80,28 @@ jobs:
             state text not null
           );
           CREATE TABLE public.connect_teachers (auth_user_id uuid primary key);
+          CREATE TABLE public.connect_school_years (
+            id uuid primary key, label text not null, starts_on date, ends_on date
+          );
+          CREATE TABLE public.connect_classes (
+            id uuid primary key, name text not null, year_id uuid,
+            created_at timestamptz not null default now()
+          );
+          CREATE TABLE public.connect_join_requests (
+            id uuid primary key, class_id uuid, first_name text, last_initial text,
+            verify_code text, expires_at timestamptz, state text, created_at timestamptz
+          );
           SELECT format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', tablename)
           FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'connect_%'
           \gexec
           NOTIFY pgrst, 'reload schema';
           SQL
           (supabase functions serve > "$LAB/edge.log" 2>&1 & echo $! > "$LAB/edge.pid")
-          npm install --prefix "$LAB" --no-save --no-audit --no-fund @supabase/supabase-js@2.95.0 >/dev/null
+          npm install --prefix "$LAB" --no-save --no-audit --no-fund @supabase/supabase-js@2.95.0 playwright@1.58.2 >/dev/null
+          "$LAB/node_modules/.bin/playwright" install --with-deps chromium >/dev/null
           cp "$ROOT/tests/addition-plusieurs-auth-local.e2e.mjs" "$LAB/test.mjs"
+          cp "$ROOT/tests/addition-plusieurs-real-play-helper.mjs" "$LAB/addition-plusieurs-real-play-helper.mjs"
+          (cd "$ROOT" && python3 -m http.server 8765 --bind 127.0.0.1 > "$LAB/static.log" 2>&1 &)
           for attempt in $(seq 1 45); do
             if curl --silent --max-time 2 "$API_URL/functions/v1/connect-results" >/dev/null; then break; fi
             sleep 2
