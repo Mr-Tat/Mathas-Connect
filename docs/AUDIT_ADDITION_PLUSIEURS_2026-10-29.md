@@ -20,7 +20,7 @@
 ## Vérifications positives
 
 - Moteur original inchangé ; fourchette et labels des quatre modes contrôlés.
-- Vrai navigateur Chromium : démarrage du moteur et événement natif 4/4 vers 22 XP simulés déjà validés ; parcours multiévénements en cours de vérification.
+- Vrai navigateur Chromium : démarrage du moteur et toutes les fins de partie injectées dans le pont natif (4/4, 10/10, 20/20, Mort subite, HARD 5 et HARD Mort subite) validés ; cumul simulé de 158 XP pour un niveau et non-double comptage d'un 4/4 répété. **Ce n'est pas une partie jouée par clics.**
 - PostgreSQL 17 isolé : version candidate des quatre fonctions chargée, modèle de crédits, rejets de conflits, isolation de deux élèves, règles 474 XP et permissions du rôle serveur testés.
 - Migration de catalogue exécutée deux fois dans une reproduction isolée des contraintes réelles : application désactivée, quatre presets invisibles, neuf règles XP, entrées préexistantes inchangées.
 - Vérifications en lecture seule du schéma réel : colonnes, contraintes, droits des fonctions et absence de la nouvelle application au catalogue. Aucune ligne de résultats élève n'a été consultée.
@@ -45,3 +45,11 @@
 - Ne lever ni le verrou du lanceur, ni celui de l'Edge avant les tests connectés et la validation explicite du professeur.
 - N'effectuer aucune modification destructive des véritables données élèves. Les essais de crédits/remises à zéro utilisent exclusivement des identités de test dans une base isolée.
 - Faire un test manuel avec le professeur avant activation.
+
+## Dernière recette automatisée validée
+
+- Node (contrats et régressions) : https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40915570318 et https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40915570379
+- PostgreSQL 17 isolé (RPC, droits, attribution, migration catalogue exécutée deux fois) : https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40915570324
+- Chromium réel (pont multiévénements et XP simulés) : https://github.com/Mr-Tat/Mathas-Connect/actions/runs/40915570252
+
+**Verdict de recette :** les tests automatisés disponibles passent, mais les bloqueurs de vraie connexion, stockage par élève, XP officiels, résultats professeur et authentification restent ouverts. Ne pas interpréter « CI verte » comme « prêt à mettre en classe ».
