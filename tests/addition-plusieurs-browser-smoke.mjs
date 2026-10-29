@@ -38,10 +38,20 @@ try{
  for(let i=0;i<cases.length;i++){
   const [payload,xp]=cases[i];
   await frame.locator('body').evaluate(entry=>window.__setLastWork(entry),payload);
-  await page.waitForFunction(({events,expected})=>
-   document.querySelector('#audit')?.textContent?.includes('Événements : '+events)
-   &&document.querySelector('#result')?.textContent?.includes('Simulation : '+expected+' XP'),
-   {events:i+2,expected:xp},{timeout:10000});
+  try{
+   await page.waitForFunction(({events,expected})=>
+    document.querySelector('#audit')?.textContent?.includes('Événements : '+events)
+    &&document.querySelector('#result')?.textContent?.includes('Simulation : '+expected+' XP'),
+    {events:i+2,expected:xp},{timeout:10000});
+  }catch(error){
+   console.error('Chromium stage failed',JSON.stringify({
+    step:i,expected:xp,payload,
+    audit:await page.locator('#audit').innerText(),
+    displayed:await page.locator('#result').innerText(),
+    errors
+   }));
+   throw error;
+  }
  }
  assert.ok(!errors.length,'JavaScript errors after all completion modes: '+errors.join(' | '));
  console.log('PASS: Chromium game engine, native completion bridge, and simulated 22 XP acknowledgement');
