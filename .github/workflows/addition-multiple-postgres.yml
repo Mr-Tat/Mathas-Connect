@@ -32,8 +32,15 @@ jobs:
       PGDATABASE: isolated
     steps:
       - uses: actions/checkout@v4
+      - name: Create mock Supabase database roles
+        run: |
+          psql -v ON_ERROR_STOP=1 -c 'CREATE ROLE anon;'
+          psql -v ON_ERROR_STOP=1 -c 'CREATE ROLE authenticated;'
+          psql -v ON_ERROR_STOP=1 -c 'CREATE ROLE service_role;'
       - name: Parse and install four XP and restart RPC candidates in disposable database
         run: psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-rpc-candidate.sql
+      - name: Verify privileged RPC access is restricted
+        run: psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-rpc-permissions.sql
       - name: Create pure isolated XP function
         run: psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-xp-preview.sql
       - name: Build isolated credit tables and transaction
