@@ -3,6 +3,8 @@ const edge=readFileSync(new URL('../supabase/functions/connect-results/index.ts'
 const migration=readFileSync(new URL('../supabase/migrations/20261029_addition_multiple_catalog_stage.sql',import.meta.url),'utf8');
 test('new app explicitly isolated and gated by disabled catalog',()=>{
  assert.match(edge,/addMulti='addition-ecrite-multiple'/);
+ assert.match(edge,/const ADD_MULTI_SERVER_READY=false/);
+ assert.match(edge,/if\(!ADD_MULTI_SERVER_READY\)return deny\('integration_not_ready',403\)/);
  assert.match(edge,/selected===addMulti[\s\S]*?select\('enabled'\)[\s\S]*?app_disabled/);
  assert.match(edge,/selected===addMulti&&b.points!==0/);
  assert.match(edge,/const studentId=await identity\(\)/);
