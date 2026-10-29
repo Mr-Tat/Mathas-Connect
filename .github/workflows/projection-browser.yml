@@ -1,0 +1,27 @@
+name: Projection browser smoke (isolated)
+on:
+  pull_request:
+    paths:
+      - 'projection.html'
+      - 'projection.js'
+      - 'projection-model.mjs'
+      - 'tests/projection-browser.browser.mjs'
+      - '.github/workflows/projection-browser.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  projection-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Chromium isolé pour le test
+        run: |
+          npm install --no-save --no-package-lock playwright@1.57.0
+          npx playwright install chromium --with-deps
+      - name: Test navigateur avec données fictives et réseau simulé
+        run: node --test tests/projection-browser.browser.mjs
