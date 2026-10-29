@@ -124,6 +124,15 @@ try{
   await route.fulfill({response:res,contentType:'text/javascript',
    body:original.replace('CONNECT_WRITE_READY=false','CONNECT_WRITE_READY=true')});
  });
+ await pupilContext.route('**/apps/addition-plusieurs/edge-transport.mjs',async route=>{
+  const res=await route.fetch(),original=await res.text();
+  const lines=original.split('\n');
+  const i=lines.findIndex(line=>line.includes("throw Error('invalid_transport')"));
+  assert.ok(i>=0,'real Edge transport validation must exist');
+  lines[i]=" if(endpoint!=="+JSON.stringify(url+'/functions/v1/connect-results')
+   +"||typeof getToken!=='function'||typeof fetchImpl!=='function')throw Error('invalid_transport');";
+  await route.fulfill({response:res,contentType:'text/javascript',body:lines.join('\n')});
+ });
  await pupilContext.route('**/apps/addition-plusieurs/connect-host.mjs',async route=>{
   const res=await route.fetch(),original=await res.text();
   assert.ok(original.includes('https://awmhpfofacaglewammxt.supabase.co'));
