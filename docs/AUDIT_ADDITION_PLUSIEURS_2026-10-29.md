@@ -164,3 +164,22 @@ Le scénario réunit désormais dans **une même exécution** :
 **Important :** la session est réellement créée par Supabase Auth local, et les Edge, PostgREST et PostgreSQL sont réels. En revanche, **un adaptateur JavaScript de test fournit ce JWT déjà émis à Chromium** plutôt que d'utiliser intégralement le stockage et le rafraîchissement du SDK d'authentification navigateur. Les protections HTTPS des modules publiables restent inchangées : seule une interception Playwright dans cette recette autorise l'URL HTTP `127.0.0.1`. Les verrous `CONNECT_WRITE_READY`, `ADD_MULTI_SERVER_READY` et `ADD_MULTI_TEACHER_READY` restent **false dans le dépôt**, ouverts uniquement dans les réponses navigateur ou la copie Edge locale jetable. Aucun Supabase hébergé n'est touché.
 
 **Reste à faire :** recette de publication masquée contrôlée, validation sur un Supabase hébergé isolé si une place gratuite ou un accord de coût devient disponible, et surtout essai manuel sur vrai PC faible puissance avec vraie session navigateur, animations XP et interface professeur. Aucun feu vert d'activation élèves à ce stade.
+
+## 30 octobre — audit de prépublication masquée
+
+La PR reste non fusionnée et les trois verrous sont toujours `false` dans les fichiers versionnés. Les différences avec `main` dans `app.js` sont strictement les ajouts protégés par `ADD_MULTI_TEACHER_READY=false`. Les différences avec `main` dans `supabase/functions/connect-results/index.ts` consistent à ajouter Addition multiple dans les listes et dans son chemin atomique, derrière `ADD_MULTI_SERVER_READY=false`; les chemins existants sont conservés.
+
+**Vérification Supabase en lecture seule le 30/10/2026 :** projet Math'as Connect `ACTIVE_HEALTHY` ; application Addition multiple = 0 ligne ; presets = 0 ; presets visibles = 0 ; règles XP = 0 ; fonction `connect_addition_multiple_record_v1` = 0. La dernière migration appliquée est `soustraction_connect_v1_20261028`. Aucune lecture de résultats élèves.
+
+**Diff SQL important :** comparaison ligne par ligne du corps des quatre fonctions publiques **réellement installées** et des candidates versionnées dans `tests/postgres/addition-multiple-rpc-candidate.sql` :
+- `connect_parcours_restart_class` : 11 lignes contre 11 ; seule modification : ajout de `addition-ecrite-multiple` à `p_app NOT IN`.
+- `connect_parcours_restart_one` : 30 lignes contre 30 ; seule modification : même ajout.
+- `connect_xp_read_v2` : 24 lignes contre 24 ; seule modification : même ajout.
+- `connect_xp_sync_v2` : 78 lignes contre 78 ; seule modification : même ajout.
+Le jour d'une future application SQL, cette comparaison doit être refaite, sinon risque d'écrasement d'une fonction plus récente.
+
+**Défaut identifié et corrigé dans le SQL de staging :** `ON CONFLICT DO NOTHING` pouvait laisser intacte une hypothétique ligne d'application `enabled=true` ou un preset `visible=true` préexistant. Une précondition SQL de lecture seule bloque désormais ce cas via `addition_multiple_preexisting_publication`, avant tout INSERT. Les scénarios négatifs PostgreSQL vérifient le refus et l'absence d'écrasement ; la migration reste additive et idempotente. Nouveau test Node `tests/addition-plusieurs-publish-guard.test.mjs` intégré au workflow staging, déclenché aussi lors de changements du HUB, du catalogue, des Edge ou de la migration.
+
+**Limite fondamentale :** une publication des fichiers statiques sur GitHub Pages rend le lien direct du jeu accessible même si les quatre HUB n'affichent aucune carte ; seule la persistance Connect et les XP restent bloqués par les verrous. La publication masquée n'est pas une protection d'accès à l'URL. Ne pas fusionner sans accord du professeur. Plan complet : `docs/PLAN_PUBLICATION_MASQUEE_ADDITION_PLUSIEURS_2026-10-30.md`.
+
+Toujours à réaliser : essai sur Supabase hébergé isolé autorisé et PC élève réel, validation du cycle natif de stockage/renouvellement de session navigateur, décision explicite de publication masquée puis activation élèves.
