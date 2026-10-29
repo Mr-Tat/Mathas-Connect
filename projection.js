@@ -1,4 +1,5 @@
 import {summarizeProjection} from './projection-model.mjs';
+import {classId as requestedClassId} from './connect-context.js';
 
 // Vue professeur uniquement. Lecture de résumés existants, jamais d'écriture serveur.
 const endpoint='https://awmhpfofacaglewammxt.supabase.co';
@@ -108,6 +109,9 @@ async function initialize(){
   const select=$('class-choice');
   select.replaceChildren(new Option('Choisir une classe',''),
    ...classes.map(c=>new Option(c.name,c.id)));
+  // Les quatre boutons Projection du professeur présélectionnent leur classe.
+  // L'identifiant URL ne donne aucun droit et ne déclenche aucune lecture de résultats.
+  if(requestedClassId&&classes.some(c=>c.id===requestedClassId))select.value=requestedClassId;
   $('login-needed').hidden=true;
   $('controls').hidden=false;
   clearBoard(classes.length?'Sélectionne une classe et lance l’affichage collectif.':'Aucune classe disponible pour cette connexion professeur.');
