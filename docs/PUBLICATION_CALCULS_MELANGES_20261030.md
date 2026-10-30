@@ -6,7 +6,7 @@
 
 `melange-calculs-ecrits` est une application indépendante dans `apps/calculs-melanges/`, issue du moteur `e11c88b4e449e8cdb17b0fee78c7daa6ea5bf279`. Le pont terminal, les preuves 4/10/20, l’isolation classe/JWT/élève/app, la file offline, l’ACK, les reçus durables et l’atomicité état/XP sont préparés. Les sessions élève approuvé et Monsieur T, résultats/reset professeur et tables obligatoires par classe ou élève sont testés localement.
 
-Les trois constantes restent `false` : `CONNECT_WRITE_READY`, `MIXED_SERVER_READY`, `MIXED_TEACHER_READY`. `CONNECT_MIXED_ACCESS` vaut `closed` par défaut ; les valeurs pilote et `open` n’ajoutent aucun droit d’identité. Le catalogue statique ne contient aucune carte Mélange et les quatre presets du candidat sont invisibles.
+La version de publication compile les trois chemins Connect (`CONNECT_WRITE_READY`, `MIXED_SERVER_READY`, `MIXED_TEACHER_READY` à `true`) ; cela ne déploie ni n’active rien. `CONNECT_MIXED_ACCESS` reste `closed` par défaut et refuse Mélange même si une ligne de catalogue est activée par erreur ; les valeurs pilote et `open` n’ajoutent aucun droit d’identité. Le SQL d’installation laisse l’app désactivée et ses quatre presets invisibles ; le catalogue statique ne contient aucune carte Mélange. L’ancien patch de constantes est retiré : la livraison autorisée devra utiliser le commit complet testé, sans patcher des fichiers en production.
 
 Le [barème validé](CALCULS_MELANGES_XP_SELECTION_20261030.md) conserve 594 XP : trois opérations cochées au départ donnent 100 %, deux donnent 50 % et une seule 25 %, puis une nouvelle réussite avec davantage d’opérations peut verser seulement le complément. Le tirage chanceux ne réduit pas le taux. Les aides suivent la convention existante ; les tables sont propres à Mélange, sans modifier Multiplication simple. La miniature native demeure provisoire et doit être approuvée ou remplacée avant visibilité publique de sa carte. Le pilote masqué n’en dépend pas.
 
@@ -22,7 +22,7 @@ Cette session a analysé les fichiers et exécuté les recettes locales. Elle n�
 
 ## À finaliser avant une autorisation de publication
 
-1. Préparer la livraison d’activation : revoir le patch des trois constantes, adapter les attentes de tests actuellement fixées à l’état fermé et les textes de laboratoire, puis obtenir les résultats Node/PostgreSQL/Auth/Chromium et CI au nouveau SHA. Le patch de constantes seul n’est pas une version finale déjà validée.
+1. Valider la livraison au SHA exact : Node/PostgreSQL/Auth/Chromium exécutent les chemins compilés réels, sans remplacement des constantes dans la recette positive. Seuls le SDK et les adresses de service sont dirigés vers le laboratoire isolé. Les tests de fermeture d’urgence compilent explicitement une copie fermée ; l’accès hébergé reste fermé par défaut. Le titre de l’application est prêt pour le pilote, tandis que `?simulation=1` s’annonce toujours comme simulation.
 2. Reconfirmer HEAD/SHA, versions Edge et absence de dérive depuis les fichiers fournis. Toute différence pertinente doit être revue avant remplacement.
 3. Présenter le lot exact à autoriser : fichiers SQL et empreintes, commit à publier, source/configuration JWT Edge, classe fictive pilote, recette et arrêt non destructif. La validation pédagogique ne remplace pas cette autorisation.
 
@@ -32,7 +32,7 @@ Cette session a analysé les fichiers et exécuté les recettes locales. Elle n�
 2. Contrôler le résultat en lecture seule avec `check-report --stage installed-hidden` : signatures et droits privés, RLS, neuf règles version 3 totalisant 198 par niveau, quatre presets invisibles, app désactivée. Vérifier les objets existants conservés.
 3. Préparer des identités et une classe fictives dédiées via Auth/Connect. Ne pas réaffecter de vrai élève ou appareil. Configurer la portée hébergée `CONNECT_MIXED_ACCESS=pilot:<uuid-réel-de-la-classe-fictive>` ; ce n’est pas une variable du seul environnement cloud.
 4. Comparer puis déployer uniquement la version revue de `connect-results`, en conservant `verify_jwt=true` et les routes des autres jeux, sans `--prune`. Ne pas remplacer `connect-catalog`.
-5. Fusionner/publier le commit d’activation revu avec sa CI réussie, selon Pages/main/racine. Vérifier le SHA effectivement livré, pas seulement celui de la PR.
+5. Fusionner/publier le commit de publication complet revu avec sa CI réussie, selon Pages/main/racine. Ne pas appliquer de patch de constantes séparé. Vérifier le SHA effectivement livré, pas seulement celui de la PR.
 6. Après contrôle du schéma, de la portée, de l’Edge et du site, activer le pilote via `calculs_melanges_enable_hidden.sql`. Le fichier refuse la dérive de règles/version XP, signatures/droits et visibilité. Les cartes restent masquées et les classes hors pilote sont refusées, y compris par URL directe.
 7. Réaliser la recette hébergée ci-dessous. Ensuite seulement, selon l’ouverture choisie par l’enseignant, élargir la portée aux classes retenues et rendre visibles les espaces voulus depuis la matrice GLOBAL. Vérifier les quatre catalogues après leur cache de 60 secondes.
 
@@ -40,7 +40,7 @@ Cette session a analysé les fichiers et exécuté les recettes locales. Elle n�
 
 Sur identités fictives : approbation native et appartenance à la classe ; refus des autres classes ; vraie saisie à une opération → ACK 7, puis réussite à deux hors ligne sans XP anticipé → ACK +7, puis à trois → ACK +14, puis répétition sans crédit nouveau. Vérifier aussi un tirage chanceux à sélection complète, le second appareil, les deux ordres 4/10/20, les résultats/XP professeur, reset sans recollection, Monsieur T et tables obligatoires classe/élève. Les quatre cartes restent cachées et les quatre autres jeux doivent continuer à fonctionner.
 
-Le journal reste borné à 1 000 calculs ; au-delà, le moteur conserve le résultat natif localement et avertit. Les preuves sont des observations du navigateur, pas une attestation cryptographique des réponses. Le serveur contrôle identité, cohérence, seuils, taux, unicité et transaction.
+Le lancement Connect sans session approuvée ne démarre ni iframe de jeu, ni file d’événements, ni XP. Monsieur T sans classe reçoit un lien de retour explicite au HUB. Ces refus sont aussi vérifiés dans Chromium. Le journal reste borné à 1 000 calculs ; au-delà, le moteur conserve le résultat natif localement et avertit. Les preuves sont des observations du navigateur, pas une attestation cryptographique des réponses. Le serveur contrôle identité, cohérence, seuils, taux, unicité et transaction.
 
 ## Retour arrière non destructif
 

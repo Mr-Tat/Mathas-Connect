@@ -14,7 +14,10 @@ function harness({enabled=true,approved=true,enrolled=true,anonymous=true,manage
   return {data:rows[table]??null,error:null};
  }};q.then=(yes,no)=>Promise.resolve({data:[],error:null}).then(yes,no);return q;},
  async rpc(name,args){calls.push({name,args});return {data:{ok:true,revision:1,resetEpoch:0,xp:{appXp:28,total:28,delta:28}},error:null}}};
- const code=locked?source:source.replace('const MIXED_SERVER_READY=false;','const MIXED_SERVER_READY=true;');
+ // Ordinary cases execute the actual release candidate; only the explicit
+ // emergency-lock regression compiles a locked copy.
+ assert.ok(source.includes('const MIXED_SERVER_READY=true;'));
+ const code=locked?source.replace('const MIXED_SERVER_READY=true;','const MIXED_SERVER_READY=false;'):source;
  const context={createClient:(_u,key)=>key==='private'?db:{auth:{getUser:async()=>({data:{user:{id:authId,is_anonymous:anonymous}},error:null})}},
  Deno:{env:{get:k=>k==='CONNECT_MIXED_ACCESS'?access:k==='SUPABASE_SERVICE_ROLE_KEY'?'private':'public'},serve:h=>handler=h},Response,Headers,Date,Intl,Number,Object,Array,Map,Set,JSON,Error,RegExp,structuredClone,console};
  vm.runInNewContext(stripTypeScriptTypes(code,{mode:'strip'}),context);
@@ -29,7 +32,11 @@ test('compiled production lock rejects every mixed operation, even if catalogue 
 });
 test('masked release defaults closed; only explicitly configured pilot classes can use the mixed RPCs',async()=>{
  for(const access of [undefined,'','closed','pilot:','pilot:'+randomUUID(),'pilot:'+classId+',invalid','opne']){
-  const h=harness({access:access??null}),r=await h.call();assert.equal(r.status,403);assert.equal(r.body.error,'integration_not_open_for_class');assert.equal(h.calls.length,0);
+  const h=harness({access:access??null});
+  for(const action of ['game-record','student-load','student-xp','teacher-detail','teacher-parcours-restart','teacher-multipliers-set']){
+   const r=await h.call({action});assert.equal(r.status,403);assert.equal(r.body.error,'integration_not_open_for_class');
+  }
+  assert.equal(h.calls.length,0);
  }
  assert.equal((await harness({access:'pilot:'+classId.toUpperCase()}).call()).status,200);
  assert.equal((await harness({access:'pilot:'+randomUUID()+', '+classId}).call()).status,200);

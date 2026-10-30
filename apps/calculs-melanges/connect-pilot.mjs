@@ -1,8 +1,9 @@
 import {normalizeCompletion} from './completion-contract.mjs';
 import {createQueue} from './offline-queue.mjs';
 import {createSync} from './sync-protocol.mjs';
-// No URL parameter or storage setting may open the hosted integration.
-export const CONNECT_WRITE_READY=false;
+// Release candidate only: the hosted app and class access remain closed by default.
+// Neither a URL parameter nor local storage can enable server-side access.
+export const CONNECT_WRITE_READY=true;
 // Dependency-injected protocol is also used by the isolated laboratory.
 export function createPilot({storage,classId,studentId,pupilId=studentId,post,onStatus=()=>{}}){
  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

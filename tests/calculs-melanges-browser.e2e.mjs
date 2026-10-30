@@ -70,9 +70,13 @@ try{
  assert.match(await frame.locator('#hardFeedback').innerText(),/Score final : 7/);
  console.log('PASS real HARD level'+hardLevel+' sudden7 + wrong terminal, exactly one completion');
  }
- // Class URL and teacher query cannot open compiled Connect gate.
+ // Explicitly exercise a recompiled emergency-closed copy. The Auth recipe
+ // separately tests the actual enabled release candidate without gate rewrites.
+ const pilotRoute=async route=>{const response=await route.fetch(),source=await response.text();assert.ok(source.includes('CONNECT_WRITE_READY=true;'));await route.fulfill({response,contentType:'text/javascript',body:source.replace('CONNECT_WRITE_READY=true;','CONNECT_WRITE_READY=false;')})};
+ await context.route('**/apps/calculs-melanges/connect-pilot.mjs',pilotRoute);
  await page.goto(site+'/apps/calculs-melanges/?class=00000000-0000-4000-8000-000000000001&joueur=prof');
  await page.waitForTimeout(100);assert.match(await page.locator('#result').innerText(),/Aucun résultat ni XP Connect/);assert.equal(await page.locator('#game').getAttribute('srcdoc'),null);
+ await context.unroute('**/apps/calculs-melanges/connect-pilot.mjs',pilotRoute);
  // Free / simulated scope separation on a shared device, with no historical cache import.
  await page.goto(site+'/apps/calculs-melanges/');await page.waitForFunction(()=>document.querySelector('#game')?.contentDocument?.querySelector('.countBtn'));
  frame=page.frames().find(f=>f.parentFrame());assert.equal(await frame.evaluate(()=>window.__mathasGameStorageScope),'libre');

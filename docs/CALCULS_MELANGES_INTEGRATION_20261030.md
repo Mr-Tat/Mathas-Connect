@@ -58,7 +58,7 @@ Le candidat `supabase/release-candidates/calculs_melanges_locked_v1.sql` est une
 
 L'Edge garde l'authentification native existante : JWT vérifié, appareil approuvé, inscription dans la classe, élève actif ; pour Monsieur T, professeur gestionnaire et profil joueur séparé. Le seul paramètre `joueur=prof` ne donne aucun droit. Les montants XP du navigateur ne sont jamais utilisés.
 
-Trois verrous compilés restent **false** : `CONNECT_WRITE_READY`, `MIXED_SERVER_READY`, `MIXED_TEACHER_READY`. Les tests les ouvrent uniquement dans des copies jetables utilisant des services loopback. La carte reste absente du catalogue statique. Le candidat disable-only désactive uniquement l'app et ses presets, sans effacer état, XP, reçus ni archives. Ne jamais lancer `supabase db push` pour installer ce candidat.
+Le candidat de publication compile désormais `CONNECT_WRITE_READY`, `MIXED_SERVER_READY`, `MIXED_TEACHER_READY` à **true** pour tester les chemins réellement livrés. Les recettes positives ne changent plus ces constantes. La portée Edge reste **closed** par défaut ; l’installation SQL laisse l’app désactivée et ses quatre presets invisibles, indépendamment du client. Les anciens bilans de ce document décrivent la revue initiale aux trois constantes fermées. La carte reste absente du catalogue statique. Le candidat disable-only désactive uniquement l'app et ses presets, sans effacer état, XP, reçus ni archives. Ne jamais lancer `supabase db push` pour installer ce candidat.
 
 ## Reproduire les validations
 
@@ -190,3 +190,12 @@ La régression Node de cette actualisation compte 224 tests : 223 réussis, 0 é
 La recette Auth/Edge/PostgreSQL/Chromium du nouveau changement et la recette complète du moteur natif sont réussies, uniquement avec des services locaux et des identités fictives. Les tests ajoutés couvrent les commandes réelles du hub (classe, élève, retrait et héritage), leur application dans les sélecteurs natifs, et la conservation des réglages de Multiplication simple. Ils couvrent aussi des parties réelles aux trois taux, les compléments hors ligne sans XP anticipés et une répétition sans crédit supplémentaire.
 
 Le corps de PR actualisé est dans `docs/PR_CALCULS_MELANGES_DRAFT.md`. Une modification de ce fichier ne synchronise pas à elle seule la description GitHub si son API est inaccessible. La PR reste Draft ; aucun changement de `main`, déploiement ou activation n’est autorisé.
+
+
+## Préparation du commit de publication, sans opération hébergée
+
+Le code du pilote utilise maintenant les constantes compilées ouvertes. La recette Auth/Chromium ne réécrit plus ces constantes : elle ne redirige que le SDK et les services vers le laboratoire. Les tests de fermeture d’urgence restent explicites et distincts. Les six routes Mélange sont refusées quand la portée Edge est absente, fermée ou invalide, avant tout appel RPC ; la matrice GLOBAL reste accessible au professeur autorisé.
+
+Les lancements élève/professeur sans session ne démarrent ni iframe native, ni file, ni XP. Monsieur T sans classe reçoit une instruction pour revenir au HUB. Le titre et le bandeau sont ceux du jeu ; la simulation explicite conserve son avertissement de laboratoire. L’interface native et son moteur ne changent pas.
+
+Les candidats SQL, leurs empreintes, les XP 25/50/100 et le plafond 594 sont inchangés par cette étape. L’ancien patch de trois constantes est retiré pour éviter une livraison partielle : la publication devra porter sur le commit complet qui aura passé la CI. Aucun changement de `main`, SQL hébergé, déploiement Edge, activation ou profil réel n’est autorisé par cette préparation. Le pilote devra rester limité à une classe fictive et aux cartes masquées, puis être recetté en ligne avant tout accès élève réel.

@@ -86,7 +86,6 @@ if(process.env.SDK_BROWSER_PATH){
   const context=await browser.newContext();await setup(context);
   await context.addInitScript(()=>{let seed=5168789;Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296}});
   async function configureGame(context){
-  await context.route('**/apps/calculs-melanges/connect-pilot.mjs',async route=>{const response=await route.fetch();const original=await response.text();assert.ok(original.includes('CONNECT_WRITE_READY=false;'));await route.fulfill({response,contentType:'text/javascript',body:original.replace('CONNECT_WRITE_READY=false;','CONNECT_WRITE_READY=true;')})});
   await context.route('**/apps/calculs-melanges/connect-host.mjs',async route=>{
    const response=await route.fetch(),lines=(await response.text()).split('\n');const i=lines.findIndex(x=>x.includes("throw Error('untrusted_connect_endpoint')"));assert.ok(i>=0);
    lines[i]=' if(baseUrl!=='+JSON.stringify(url)+'||apikey!=='+JSON.stringify(anon)+")throw Error('untrusted_connect_endpoint');";
@@ -99,6 +98,20 @@ if(process.env.SDK_BROWSER_PATH){
    await route.fulfill({response,contentType:'text/javascript',body:lines.join('\n')});
   });
   }
+  const unauthenticated=await browser.newContext();await setup(unauthenticated);await configureGame(unauthenticated);
+  const noSession=await unauthenticated.newPage();noSession.on('pageerror',e=>errors.push('unauthenticated: '+e.message));
+  for(const suffix of ['?class='+classId,'?class='+classId+'&joueur=prof']){
+   await noSession.goto(site+'/apps/calculs-melanges/'+suffix);
+   await noSession.getByText('Connexion Connect impossible ou non autorisée.',{exact:false}).waitFor();
+   assert.equal(await noSession.locator('#game').getAttribute('srcdoc'),null);
+   assert.equal(await noSession.locator('#xp-total').innerText(),'0 XP');
+   assert.equal(await noSession.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith('mathas.calculs-melanges.connect.')).length),0);
+  }
+  await noSession.goto(site+'/apps/calculs-melanges/?joueur=prof');
+  await noSession.getByText('Ouvrez le jeu depuis votre classe dans le HUB pour jouer avec Monsieur T.').waitFor();
+  assert.equal(await noSession.locator('#game').getAttribute('srcdoc'),null);
+  await unauthenticated.close();
+  console.log('PASS actual release candidate: unauthenticated class/teacher and teacher-without-class never start the game, queue or XP');
   await configureGame(context);
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')console.error('browser console:',m.text())});page.on('requestfailed',r=>console.error('browser failed:',new URL(r.url()).pathname,r.failure()?.errorText));
   await page.goto(site+'/tests/.mixed-auth-only.html');
@@ -130,10 +143,12 @@ if(process.env.SDK_BROWSER_PATH){
   const refreshed=await page.evaluate(async({url,anon,SDK_URL})=>{const {createClient}=await import(SDK_URL);const sb=createClient(url,anon,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});const r=await sb.auth.refreshSession();if(r.error)throw r.error;return r.data.user.id},{url,anon,SDK_URL});
   assert.equal(refreshed,signed);
   frame=await openGame();assert.equal(await frame.evaluate(()=>JSON.parse(localStorage.getItem('mixcalc_classic_v1'))[1].score),4);
-  // Actual professor password login and actual UI; only endpoint/compiled gate are changed in this lab copy.
+  // Actual professor password login and actual compiled UI; only endpoints
+  // are redirected to this isolated laboratory.
   const tc=await browser.newContext();await setup(tc);await configureGame(tc);await tc.route(u=>u.pathname==='/app.js',async route=>{
    const response=await route.fetch(),source=await response.text();const config="const url='https://awmhpfofacaglewammxt.supabase.co', key='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';";assert.ok(source.includes(config));
-   await route.fulfill({response,contentType:'text/javascript',body:source.replace(config,'const url='+JSON.stringify(url)+', key='+JSON.stringify(anon)+';').replace('const MIXED_TEACHER_READY=false;','const MIXED_TEACHER_READY=true;')});
+   assert.ok(source.includes('const MIXED_TEACHER_READY=true;'));
+   await route.fulfill({response,contentType:'text/javascript',body:source.replace(config,'const url='+JSON.stringify(url)+', key='+JSON.stringify(anon)+';')});
   });
   const professor=await tc.newPage();professor.on('pageerror',e=>errors.push('teacher: '+e.message));await professor.goto(site+'/?portail=prof&profClass='+classId);
   await professor.locator('#login-form:visible').waitFor();await professor.locator('#email').fill(teacherEmail);await professor.locator('#password').fill(teacherPassword);await professor.locator('#login-form button[type=submit]').click();

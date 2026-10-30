@@ -108,7 +108,7 @@ export function schemaQuery(){
 export function releasePlan(){
  const files=['app.js','apps/calculs-melanges/connect-pilot.mjs','supabase/functions/connect-results/index.ts',
   'apps/calculs-melanges/source-manifest.json',sqlFile,'supabase/release-candidates/calculs_melanges_locked_v1.sql',
-  'supabase/release-candidates/calculs_melanges_connect_enable.patch',
+  'docs/PUBLICATION_CALCULS_MELANGES_20261030.md',
   'supabase/release-candidates/calculs_melanges_enable_hidden.sql','supabase/release-candidates/calculs_melanges_disable_only.sql'];
  const flags=[['app.js','MIXED_TEACHER_READY'],['apps/calculs-melanges/connect-pilot.mjs','CONNECT_WRITE_READY'],['supabase/functions/connect-results/index.ts','MIXED_SERVER_READY']];
  const gates=Object.fromEntries(flags.map(([file,name])=>{const value=read(file).match(new RegExp('\\bconst '+name+'=(true|false);'))?.[1];if(!value)throw Error('missing_gate:'+name);return [name,value==='true'];}));

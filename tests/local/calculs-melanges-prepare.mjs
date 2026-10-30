@@ -15,7 +15,9 @@ env('rest.env',`NO_PROXY=mathas-mixed-db,localhost,127.0.0.1\nPGRST_DB_URI=postg
 for(const name of ['results','api']){
  const dir=path.join(lab,name);mkdirSync(dir,{recursive:true});
  const original=readFileSync(path.join(root,'supabase/functions/connect-'+name+'/index.ts'),'utf8');
- if(name==='results'&&!original.includes('const MIXED_SERVER_READY=false;'))throw Error('expected_closed_source');
- writeFileSync(path.join(dir,'index.ts'),original.replace("from 'npm:@supabase/supabase-js@2.95.0'","from './sdk.mjs'").replace('const MIXED_SERVER_READY=false;','const MIXED_SERVER_READY=true;'));
+ if(name==='results'&&!original.includes('const MIXED_SERVER_READY=true;'))throw Error('expected_release_candidate_source');
+ // Test the actual compiled release path. Only the SDK is bundled for the
+ // network-isolated lab; no integration constant is changed here.
+ writeFileSync(path.join(dir,'index.ts'),original.replace("from 'npm:@supabase/supabase-js@2.95.0'","from './sdk.mjs'"));
  env(name+'/edge.env',`SUPABASE_URL=http://mathas-mixed-kong:8000\nSUPABASE_ANON_KEY=${anon}\nSUPABASE_SERVICE_ROLE_KEY=${service}\nCONNECT_MIXED_ACCESS=pilot:${pilotClass}\nNO_PROXY=mathas-mixed-kong,localhost,127.0.0.1\n`);
 }

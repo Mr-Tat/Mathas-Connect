@@ -9,8 +9,9 @@ const app='addition-ecrite-simple',mul='multiplication-ecrite-simple',sub='soust
 // Audit 2026-10-29: keep the new game blocked EVEN IF the catalog is accidentally enabled.
 // Lift only after atomic real XP/RPC, scoped storage and Chromium connected E2E validation.
 const ADD_MULTI_SERVER_READY=true;
-// Candidate only. Remains closed even if a catalogue row is accidentally enabled.
-const MIXED_SERVER_READY=false;
+// Release candidate only: CONNECT_MIXED_ACCESS defaults closed, independently
+// of the catalogue. Publication and the hosted pilot need separate approval.
+const MIXED_SERVER_READY=true;
 const mixed='melange-calculs-ecrits';
 // A hidden HUB card does not restrict a direct URL. Hosted pilot sessions must
 // stay inside explicitly chosen fictitious classes until the teacher opens it.

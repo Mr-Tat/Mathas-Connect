@@ -146,7 +146,7 @@ test('queue persists until ACK, retries same event, suppresses duplicate animati
  assert.equal(p.completed(e),false);p=createPilot(args);p.initialize(0,0);
  const other=createPilot({...args,studentId:randomUUID()});other.initialize(0,0);assert.equal(other.pending(),0);
  online=true;await p.retry();assert.equal(p.pending(),0);assert.equal(statuses.at(-1)[1].xp.delta,0);assert.equal(calls.at(-1).eventId,e.eventId);
- assert.equal(CONNECT_WRITE_READY,false);assert.throws(()=>buildConnectPilot(args),/connect_not_ready/);
+ assert.equal(CONNECT_WRITE_READY,true);assert.equal(buildConnectPilot(args).pending(),0);
 });
 test('malformed HTTP-success ACK retains queue; reset quarantines old events',async()=>{
  const storage=memory(),p=createPilot({storage,classId:randomUUID(),studentId:randomUUID(),post:async()=>({ok:true}),onStatus:()=>{}});p.initialize(0,0);
