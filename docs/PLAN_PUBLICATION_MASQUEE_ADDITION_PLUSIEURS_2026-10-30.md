@@ -38,3 +38,36 @@ Fusionner le code statique dans `main` rendrait le fichier `/apps/addition-plusi
 - `tests/postgres/addition-multiple-rpc-candidate.sql`
 - `tests/postgres/addition-multiple-atomic-rpc-candidate.sql`
 - `supabase/migrations/20261029_addition_multiple_catalog_stage.sql`
+
+## Package SQL de publication verrouillée — préparé le 30/10, non déployé
+
+**Fichiers de recette :**
+- `supabase/release-candidates/addition_multiple_locked_v1.sql` : SQL complet de première installation, **une seule transaction**, 4 fonctions existantes avec uniquement l'extension de liste d'applications, nouvelle RPC atomique, catalogue désactivé avec 4 presets invisibles et neuf règles XP (158 XP par niveau).
+- `supabase/release-candidates/addition_multiple_disable_only.sql` : arrêt d'urgence **non destructif**. Ne désactive que le catalogue et les presets du nouveau jeu, **sans effacer les résultats, trophées ou XP** ; les verrous client/Edge doivent aussi rester fermés si le code connecté a été activé séparément.
+- `.github/workflows/addition-multiple-release-preview.yml` : prévisualisation intégralement **jetable**, sans aucun secret ni lien Supabase hébergé. Vérifie l'empreinte de quatre fonctions sur une base reconstituée, le refus d'une fonction divergente, une installation réelle, les droits SQL, les 4 HUB invisibles, les XP et les trophées, et le refus d'une nouvelle exécution.
+- `tests/addition-plusieurs-release-bundle.test.mjs` : contrôle que le paquet SQL correspond exactement aux trois sources SQL candidates et ne contient aucune suppression d'acquis élèves.
+
+### Alerte : ne pas lancer `supabase db push` contre ce dépôt
+
+Le dépôt contient des fichiers `supabase/migrations/20261026_...`, `20261028_...` et `20261029_...` alors que l'historique effectif `supabase_migrations` de Math'as Connect enregistre des versions **à 14 chiffres** créées par les outils Supabase (exemple `20261028220546` pour Soustraction). Les noms et versions ne sont donc pas alignés. Un `db push` global peut essayer de rejouer des migrations déjà exécutées ou en appliquer d'autres non souhaitées.
+
+**Le nouveau paquet est volontairement placé sous `supabase/release-candidates/` plutôt que `supabase/migrations/`**. Il n'est pas une migration Supabase CLI prête à pousser. Avant toute application autorisée, rapprocher les historiques et choisir une méthode de migration enregistrée une seule fois. Employer la CLI pour créer le nom/version de migration, jamais un timestamp inventé.
+
+### Garde de version sur les fonctions officielles
+
+La production a été contrôlée le 30/10 par requêtes SQL **en lecture seule**. Le paquet garde les empreintes MD5 de `pg_get_functiondef` des quatre RPC installées :
+- `connect_parcours_restart_class` : `62194222ad2e5cfaec4999cea3f5363c`
+- `connect_parcours_restart_one` : `eec598806f7950112b21920689a45baa`
+- `connect_xp_read_v2` : `c5b879034329e6e03b7547e9661f642e`
+- `connect_xp_sync_v2` : `d3a11bdef68483ccffa4ffe2c2b13f35`
+
+La transaction refuse toute empreinte modifiée, tout droit RPC public existant anormal et toute fonction atomique déjà présente. Elle refuse aussi toute entrée catalogue déjà activée/visible et vérifie en fin de transaction les 4 presets invisibles, les 9 règles, les 158 XP et les droits des 5 RPC au rôle `service_role` seulement. Toute erreur annule **l'ensemble** de la transaction. Il ne faut jamais supprimer ces gardes pour forcer un déploiement : si la production a changé, reconstituer une candidate revue et tester à nouveau.
+
+### Limites du retour arrière
+
+- **Avant installation** : aucune action requise, rien n'a été touché.
+- **Erreur d'installation** : la transaction SQL complète effectue automatiquement un rollback PostgreSQL.
+- **Après installation mais avant ouverture du jeu** : l'arrêt d'urgence peut rendre le catalogue désactivé/invisible, en conservant le schéma et les données. Il n'est pas nécessaire de supprimer les RPC pour retirer la visibilité.
+- **Après ouverture effective aux élèves** : conserver les résultats et XP acquis ; ne jamais restaurer une ancienne table ou effacer les crédits. Les modules client et Edge doivent être remis en mode sécurisé par une procédure de livraison de code indépendante.
+
+**Accord du professeur indispensable pour toute migration réelle, fusion, publication masquée ou activation.** Ce document ne constitue pas cet accord.
