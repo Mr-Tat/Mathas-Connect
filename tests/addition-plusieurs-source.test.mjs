@@ -19,4 +19,14 @@ console.log('PASS: source keys, four terminal-event calls, free-only staging wra
 
 const originalIllustration=readFileSync(new URL('illustration.webp',root));
 const catalogIllustration=readFileSync(new URL('../../assets/miniatures/addition-ecrite-multiple.webp',root));
-assert.deepEqual(catalogIllustration,originalIllustration,'Staged catalog thumbnail missing or differs from native illustration');
+// The teacher-approved HUB miniature is deliberately DIFFERENT from the
+// original engine illustration. Validate the image without dumping huge binary
+// differences into CI logs or mistakenly requiring identical content.
+for(const [name,bytes] of [['illustration',originalIllustration],['HUB miniature',catalogIllustration]]){
+ assert.equal(bytes.subarray(0,4).toString('ascii'),'RIFF',name+' must be a RIFF WebP');
+ assert.equal(bytes.subarray(8,12).toString('ascii'),'WEBP',name+' must be a WebP');
+}
+assert.ok(catalogIllustration.length>=1024&&catalogIllustration.length<=60000,
+ 'The approved HUB thumbnail must be available and optimized for low-power devices');
+assert.equal(catalogIllustration.equals(originalIllustration),false,
+ 'The approved HUB thumbnail must not be reverted to the original in-game illustration');
