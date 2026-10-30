@@ -97,7 +97,11 @@ jobs:
           NOTIFY pgrst, 'reload schema';
           SQL
           (supabase functions serve > "$LAB/edge.log" 2>&1 & echo $! > "$LAB/edge.pid")
-          npm install --prefix "$LAB" --no-save --no-audit --no-fund @supabase/supabase-js@2.95.0 playwright@1.58.2 >/dev/null
+          npm install --prefix "$LAB" --no-save --no-audit --no-fund @supabase/supabase-js@2.95.0 playwright@1.58.2 esbuild@0.25.12 >/dev/null
+          printf "export {createClient} from '@supabase/supabase-js';\n" > "$LAB/browser-sdk-entry.mjs"
+          "$LAB/node_modules/.bin/esbuild" "$LAB/browser-sdk-entry.mjs" \
+            --bundle --platform=browser --format=esm --target=es2022 \
+            --outfile="$LAB/sdk-browser.mjs" >/dev/null
           "$LAB/node_modules/.bin/playwright" install --with-deps chromium >/dev/null
           cp "$ROOT/tests/addition-plusieurs-auth-local.e2e.mjs" "$LAB/test.mjs"
           cp "$ROOT/tests/addition-plusieurs-real-play-helper.mjs" "$LAB/addition-plusieurs-real-play-helper.mjs"
