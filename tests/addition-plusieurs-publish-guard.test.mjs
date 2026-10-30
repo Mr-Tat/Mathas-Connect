@@ -18,13 +18,13 @@ test('no Addition multiple link is discoverable from the four current HUB catalo
  for(const slug of ['observation','phase1','phase2','2eco'])
   assert.ok(serverCatalog.includes(slug),'HUB missing from Edge filter: '+slug);
 });
-test('three independent release switches stay closed in committed code',()=>{
+test('three independent Connect readiness checks are on for direct-link pilot',()=>{
  const pilot=file('apps/addition-plusieurs/connect-pilot.mjs');
  const edge=file('supabase/functions/connect-results/index.ts');
  const teacher=file('app.js');
- assert.match(pilot,/export const CONNECT_WRITE_READY=false;/);
- assert.match(edge,/const ADD_MULTI_SERVER_READY=false;/);
- assert.match(teacher,/const ADD_MULTI_TEACHER_READY=false;/);
+ assert.match(pilot,/export const CONNECT_WRITE_READY=true;/);
+ assert.match(edge,/const ADD_MULTI_SERVER_READY=true;/);
+ assert.match(teacher,/const ADD_MULTI_TEACHER_READY=true;/);
  assert.match(edge,/if\(!ADD_MULTI_SERVER_READY\)return deny\('integration_not_ready',403\)/);
  assert.match(edge,/if\(!row\?\.enabled\)return deny\('app_disabled',403\)/);
 });
