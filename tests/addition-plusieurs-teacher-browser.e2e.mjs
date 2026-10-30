@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 
 // Real teacher DOM and app.js, but fake professor JWT + fake read-only Edge.
-// ADD_MULTI_TEACHER_READY is overridden in test traffic ONLY, not in GitHub.
+// The disabled professor UI is overridden in test traffic ONLY; the direct-link pilot is enabled in GitHub.
 // No request reaches a genuine Supabase project, no teacher restart is sent.
 const origin='http://127.0.0.1:8765';
 const classroom='8fe170fa-9e8f-4e80-885a-b0ba68026f64'; // app's existing demo-space identifier
@@ -26,15 +26,15 @@ try{
   const errors=[],edgeCalls=[];
   let interceptedTeacherModule=false;
   page.on('pageerror',error=>errors.push(error.message));
-  if(enabled){
+  if(!enabled){
    await context.route(url=>url.pathname==='/app.js',async route=>{
     interceptedTeacherModule=true;
     const response=await route.fetch();
     const src=await response.text();
-    assert.ok(src.includes('const ADD_MULTI_TEACHER_READY=false;'));
+    assert.ok(src.includes('const ADD_MULTI_TEACHER_READY=true;'));
     await route.fulfill({response,contentType:'text/javascript',
-      body:src.replace('const ADD_MULTI_TEACHER_READY=false;',
-       'const ADD_MULTI_TEACHER_READY=true;')});
+      body:src.replace('const ADD_MULTI_TEACHER_READY=true;',
+       'const ADD_MULTI_TEACHER_READY=false;')});
    });
   }
   await context.route('https://esm.sh/@supabase/supabase-js@2.95.0',async route=>
@@ -72,11 +72,11 @@ try{
   await page.goto(origin+'/?portail=prof&profClass='+classroom,
    {waitUntil:'domcontentloaded'});
   await page.locator('.results-overview-table').waitFor({timeout:20000});
-  assert.equal(interceptedTeacherModule,enabled,'test must override the actual versioned app.js URL');
+  assert.equal(interceptedTeacherModule,!enabled,'test must override the actual versioned app.js URL');
   const labels=await page.locator('.results-overview-table thead th').allTextContents();
   assert.ok(labels.some(x=>x==='Élève'));
   assert.equal(labels.some(x=>x.includes('Addition de plusieurs nombres')),enabled,
-   'new game column must remain hidden until test-only flag is lifted');
+   'new game column must respect the test-only professor flag');
   const selector=page.locator('#results-app option[value="addition-ecrite-multiple"]');
   assert.equal(await selector.count(),Number(enabled));
   if(enabled){
@@ -106,5 +106,5 @@ try{
   assert.deepEqual(errors,[]);
   await context.close();
  }
- console.log('PASS professor UI Chromium: disabled 4th app invisible, authorized test flag shows fake student, 4/4 and 3/5 results, scoped reset controls; zero writes');
+ console.log('PASS professor UI Chromium: direct-link pilot shows fourth app, test-only disabled mode hides it, 4/4 and 3/5 results, scoped reset controls; zero writes');
 }finally{await browser.close()}
