@@ -167,6 +167,11 @@ try{
  await pupilPage.goto(site+'/apps/addition-plusieurs/?class='+classId);
  await pupilPage.waitForFunction(()=>document.querySelector('#mode-note')?.textContent?.includes('Connexion indisponible'),null,{timeout:20000});
  assert.equal(await pupilPage.locator('iframe#game').evaluate(el=>Boolean(el.srcdoc)),false);
+ // The fail-closed warning is expected while this profile is not signed in.
+ // Count it as a successful denial rather than an unexpected JS error.
+ assert.ok(errors.some(e=>e.includes('connect_session_missing')),
+  'Missing browser session must be visibly and explicitly rejected');
+ errors.splice(0);
  const signed=await pupilPage.evaluate(async({endpoint,key,sdkUrl})=>{
    const {createClient}=await import(sdkUrl);
    const sb=createClient(endpoint,key,{auth:{
