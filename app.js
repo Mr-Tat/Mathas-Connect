@@ -569,7 +569,7 @@ function makeOverviewCell(state){
  cell.append(history,scores);return cell;
 }
 // Addition multiple reste invisible au professeur jusqu'à recette Connect validée.
-const ADD_MULTI_TEACHER_READY=false;
+const ADD_MULTI_TEACHER_READY=true;
 const additionMultipleAllowed=appKey=>ADD_MULTI_TEACHER_READY&&appKey==='addition-ecrite-multiple';
 const multiTeacherMeta={app_key:'addition-ecrite-multiple',title:'Addition de plusieurs nombres',
  display_order:40,image_url:'./assets/miniatures/addition-ecrite-multiple.webp'};

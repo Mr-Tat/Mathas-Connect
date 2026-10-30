@@ -8,7 +8,7 @@ const valid=(v:any)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f
 const app='addition-ecrite-simple',mul='multiplication-ecrite-simple',sub='soustraction-ecrite-simple',lab='connect-lab',addMulti='addition-ecrite-multiple';
 // Audit 2026-10-29: keep the new game blocked EVEN IF the catalog is accidentally enabled.
 // Lift only after atomic real XP/RPC, scoped storage and Chromium connected E2E validation.
-const ADD_MULTI_SERVER_READY=false;
+const ADD_MULTI_SERVER_READY=true;
 // All XP/teacher operations share the same audited enablement boundary.
 const xpAppAllowed=(k:any)=>k===app||k===mul||k===sub||(ADD_MULTI_SERVER_READY&&k===addMulti);
 const appAllowed=(k:any)=>k===app||k===mul||k===sub||k===lab||k===addMulti;

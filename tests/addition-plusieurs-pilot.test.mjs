@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {CONNECT_WRITE_READY,buildConnectPilot} from '../apps/addition-plusieurs/connect-pilot.mjs';
-test('Connect pilot remains impossible to activate before end-to-end validation',()=>{
- assert.equal(CONNECT_WRITE_READY,false);
- assert.throws(()=>buildConnectPilot({}),/connect_not_ready/);
+test('Connect pilot is activated for limited direct-link testing',()=>{
+ assert.equal(CONNECT_WRITE_READY,true);
+ assert.throws(()=>buildConnectPilot({}),/invalid_identity/);
 });
 
 test('pilot source archives stale queued results after teacher reset',async()=>{

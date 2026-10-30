@@ -2,8 +2,8 @@ import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
 import {playFourAdditions} from './addition-plusieurs-real-play-helper.mjs';
 
-// Browser integration test: the released code is always gated off.
-// Only the two JS module responses in THIS isolated test context are unlocked.
+// Browser integration test: the reviewed direct-link pilot code is enabled.
+// The mocked HTTP responses are confined to THIS isolated test context.
 // No writes, deploys or auth sessions to the real Supabase project.
 const base='http://127.0.0.1:8765';
 const classroom='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -21,8 +21,8 @@ try{
  page.on('pageerror',e=>errors.push(e.message));
  await context.route('**/apps/addition-plusieurs/connect-pilot.mjs',async route=>{
    const res=await route.fetch();
-   const body=(await res.text()).replace('CONNECT_WRITE_READY=false','CONNECT_WRITE_READY=true');
-   assert.notEqual(body,await res.text(),'gated module must be changed in test only');
+   const body=await res.text();
+   assert.ok(body.includes('export const CONNECT_WRITE_READY=true;'),'direct-link pilot must be enabled');
    await route.fulfill({response:res,body,contentType:'text/javascript'});
  });
  await context.route('https://esm.sh/@supabase/supabase-js@2.95.0',async route=>{

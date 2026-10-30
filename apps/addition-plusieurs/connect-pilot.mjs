@@ -3,7 +3,7 @@
 import {normalizeCompletion} from './completion-contract.mjs';
 import {createQueue} from './offline-queue.mjs';
 import {createSync} from './sync-protocol.mjs';
-export const CONNECT_WRITE_READY=false;
+export const CONNECT_WRITE_READY=true;
 export function buildConnectPilot({storage,classId,studentId,post,onStatus=()=>{}}){
  if(!CONNECT_WRITE_READY)throw Error('connect_not_ready');
  if(!/^[0-9a-f-]{36}$/i.test(classId)||!/^[0-9a-f-]{36}$/i.test(studentId))throw Error('invalid_identity');
