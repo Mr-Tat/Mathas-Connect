@@ -227,6 +227,13 @@ try{
  await pupilPage.waitForFunction(()=>document.querySelector('#xp-total')?.textContent==='44 XP',null,{timeout:30000});
  const queuedAfter=await pupilPage.evaluate(key=>JSON.parse(localStorage.getItem(key)||'[]'),durableQueueKey);
  assert.equal(queuedAfter.length,0,'server acknowledgment must clear the durable queue');
+ // The only acceptable browser console error during intentional Wi-Fi loss
+ // is Chromium's own ERR_INTERNET_DISCONNECTED for the failed HTTP request.
+ // Do not ignore JavaScript errors, auth problems or other failed resources.
+ const offlineConsole=errors.splice(0);
+ assert.deepEqual(offlineConsole.filter(message=>
+  message!=='console: Failed to load resource: net::ERR_INTERNET_DISCONNECTED'),
+  [],'only the intentional Chromium network-disconnection error may occur');
  const stored=checked(await admin.from('connect_states')
   .select('revision,reset_epoch,state_data').eq('student_id',browserStudentId)
   .eq('app_key',appKey).single(),'browser actual PostgreSQL save');
