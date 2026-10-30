@@ -172,6 +172,9 @@ try{
  assert.ok(errors.some(e=>e.includes('connect_session_missing')),
   'Missing browser session must be visibly and explicitly rejected');
  errors.splice(0);
+ // Change document before creating the SDK used for login: the previous
+ // fail-closed game client must not overlap this dedicated auth client.
+ await pupilPage.goto(site+'/tests/.addition-multiple-auth-only.html');
  const signed=await pupilPage.evaluate(async({endpoint,key,sdkUrl})=>{
    const {createClient}=await import(sdkUrl);
    const sb=createClient(endpoint,key,{auth:{
@@ -212,6 +215,9 @@ try{
  assert.equal(browserXp.xp_credited,22);
  // The real SDK must refresh a token in-browser, persist it and then rehydrate
  // it after a full page reload without a shim or auth-specific test injection.
+ // Close the active game document before refreshing through the native SDK.
+ // This avoids two GoTrueClient instances sharing one storage key at once.
+ await pupilPage.goto(site+'/tests/.addition-multiple-auth-only.html');
  const refreshed=await pupilPage.evaluate(async({endpoint,key,sdkUrl})=>{
   const {createClient}=await import(sdkUrl);
   const sb=createClient(endpoint,key,{auth:{
