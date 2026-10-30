@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'supabase/release-candidates/**'
+      - 'tests/addition-plusieurs-release-bundle.test.mjs'
       - 'supabase/migrations/20261029_addition_multiple_catalog_stage.sql'
       - 'tests/postgres/addition-multiple-*.sql'
       - '.github/workflows/addition-multiple-release-preview.yml'
@@ -34,6 +35,8 @@ jobs:
       PGDATABASE: isolated
     steps:
       - uses: actions/checkout@v4
+      - name: Verify release artifact integrity and refusal to mutate pupil records
+        run: node --test tests/addition-plusieurs-release-bundle.test.mjs
       - name: Install anonymous, authenticated and Edge service roles in disposable PostgreSQL
         run: |
           psql -v ON_ERROR_STOP=1 -c 'CREATE ROLE anon;'
