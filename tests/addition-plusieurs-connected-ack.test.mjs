@@ -6,7 +6,7 @@ const edge=readFileSync(new URL('../supabase/functions/connect-results/index.ts'
 test('connected pilot delivers server acknowledgement to UI, never computes XP locally',()=>{
  assert.match(pilot,/onStatus\('saved',reply\.duplicate\?/);
  assert.match(pilot,/onAck:\(_,reply\)=>/);
- assert.match(pilot,/export const CONNECT_WRITE_READY=false/);
+ assert.match(pilot,/export const CONNECT_WRITE_READY=true/);
  assert.match(pilot,/points:0,classId/);
  assert.doesNotMatch(pilot,/milestones\(|xp-model/);
 });
