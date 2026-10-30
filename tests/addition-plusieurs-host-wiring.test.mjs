@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import {rea
 const html=readFileSync(new URL('../apps/addition-plusieurs/index.html',import.meta.url),'utf8');
 const pilot=readFileSync(new URL('../apps/addition-plusieurs/connect-pilot.mjs',import.meta.url),'utf8');
 test('host connection is gated before accessing credentials and loading state',()=>{
- assert.match(pilot,/CONNECT_WRITE_READY=false/);
+ assert.match(pilot,/CONNECT_WRITE_READY=true/);
  assert.match(html,/if\(writeReady&&classId&&!free\)\{/);
  assert.match(html,/createAuthenticatedHost\(\{classId,teacherPlayer,createClient\}\)/);
  assert.doesNotMatch(html,/window\.MathasConnectHost/);
