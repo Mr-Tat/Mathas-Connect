@@ -34,14 +34,14 @@ function card(app) {
   const target = new URL(app.launch_url, location.href);
   // Le HUB fournit la classe au jeu Connect ; les autorisations restent vérifiées côté serveur.
   if (classId && target.origin === location.origin) target.searchParams.set('class', classId);
-   if (playingAsTeacher && ['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple'].includes(app.app_key)) target.searchParams.set('joueur','prof');
+   if (playingAsTeacher && ['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple'].includes(app.app_key)) target.searchParams.set('joueur','prof');
   node.href = target.href;
   node.target = '_blank';
   node.rel = 'noopener noreferrer';
   node.querySelector('.app-name').textContent = app.title;
   node.querySelector('.app-initial').textContent = app.title.charAt(0).toUpperCase();
   node.querySelector('.app-scores').textContent =
-    ['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple'].includes(app.app_key)
+    ['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple'].includes(app.app_key)
       ? 'Classique : local · Connecté : compte élève'
       : 'Jeu actuel · scores locaux';
   if (app.image_url && !app.image_url.includes('jftzuslpelgzbdrftszw')) {
