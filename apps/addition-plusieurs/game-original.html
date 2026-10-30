@@ -5727,7 +5727,7 @@ body.light-mode #hardMenuScreen .hard-welcome-v6 strong {color:#9d3046;}
 <div class="master-mode-reset-note" hidden="" id="masterModeResetNote">La remise à zéro efface les scores des séries et les déblocages. Les records de Mort subite sont conservés.</div>
 <div class="master-mode-status" id="masterModeStatus"></div>
 </div>
-<script>window.MathasAppConfig={"appId":"addition-plusieurs","title":"Addition de plusieurs nombres","family":"addition","visibleVersion":"V6.0.2","assets":{"favicon":"./logo-m.png","wordmark":"./logo-mot.webp"},"storage":{"normal":{"classic":"addition2_classic_v1","sudden":"addition2_sudden_v1","settings":"addition2_settings_v1","rulerUsage":"addition2_ruler_usage_v1"},"theme":"addition2_theme_mode_v2","hardRecords":"addition2_hard_sudden_v3","hardRecordsPrevious":"addition2_hard_sudden_v2","hardRecordsLegacy":"addition2_hard_sudden_v1","hardThree":"addition2_hard_three_v2","lastWork":"addition2_last_work","progression":"mathas_progression_addition_plusieurs_v1","aids":"mathas_aids_addition_plusieurs_v1","masterReset":["addition2_classic_v1","addition2_last_work","mathas_progression_addition_plusieurs_v1","addition2_hard_three_v1","addition2_hard_three_v2","addition2_ruler_usage_v1","mathas_recent_two_scores_v1_addition-plusieurs"]},"aids":{"defaults":{"ruler":true},"controls":{"ruler":{"button":"scoreRulerBtn","panel":"scoreRuler"}}},"hard":{"type":"addition","title":"Addition de plusieurs nombres","levels":[{"level":1,"digits":9,"addends":6},{"level":2,"digits":12,"addends":6},{"level":3,"digits":14,"addends":7}],"hardSelects":["trainingMaxDigits"]},"layers":{"L2":"#menuScreen.menu-panel, #menuScreen .mathas-menu-zone, #gameScreen > .card","L3":".calc-box, .mode-card, .settings-box, .method-card, .choice-card, .level-wrap, .numpad, .hard-numpad, .instruction, .session-bar","L4":"button, input, select, .digit, .digit-cell, .operator, .answer-input, .carry-input, .side-carry-input"}};
+<script>window.MathasAppConfig={"appId":"addition-plusieurs","title":"Addition de plusieurs nombres","family":"addition","visibleVersion":"V6.0.2","assets":{"favicon":"./logo-m.png","wordmark":"./logo-mot.webp"},"storage":{"normal":{"classic":"addition2_classic_v1","sudden":"addition2_sudden_v1","settings":"addition2_settings_v1","rulerUsage":"addition2_ruler_usage_v1"},"theme":"addition2_theme_mode_v2","hardRecords":"addition2_hard_sudden_v3","hardRecordsPrevious":"addition2_hard_sudden_v2","hardRecordsLegacy":"addition2_hard_sudden_v1","hardThree":"addition2_hard_three_v2","lastWork":"addition2_last_work","progression":"mathas_progression_addition_plusieurs_v1","aids":"mathas_aids_addition_plusieurs_v1","masterReset":["addition2_classic_v1","addition2_last_work","mathas_progression_addition_plusieurs_v1","addition2_hard_three_v1","addition2_hard_three_v2","addition2_ruler_usage_v1","mathas_recent_two_scores_v1_addition-plusieurs"]},"aids":{"defaults":{"ruler":true},"controls":{"ruler":{"button":"scoreRulerBtn","panel":"scoreRuler"}}},"hard":{"type":"addition","title":"Addition de plusieurs nombres","levels":[{"level":1,"digits":9,"addends":5},{"level":2,"digits":10,"addends":6},{"level":3,"digits":12,"addends":7}],"hardSelects":["trainingMaxDigits"]},"layers":{"L2":"#menuScreen.menu-panel, #menuScreen .mathas-menu-zone, #gameScreen > .card","L3":".calc-box, .mode-card, .settings-box, .method-card, .choice-card, .level-wrap, .numpad, .hard-numpad, .instruction, .session-bar","L4":"button, input, select, .digit, .digit-cell, .operator, .answer-input, .carry-input, .side-carry-input"}};
 
 function estMeilleurResultat(nouveau, ancien) {
   if (!ancien) return true;
@@ -6012,8 +6012,8 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
   }
   function normalizeLevelMax(v){v=+v||5;return v<=5?5:v===6?6:7}
   function normalLevelFromMax(v){return +v===5?1:+v===6?2:3}
-  function levelAddendChoices(level){return level===1?[3,4]:level===2?[4,5]:[5,6]}
-  function randomAddendCount(level){const choices=levelAddendChoices(level);return choices[rnd(0,choices.length-1)]}
+  function addendCountForLevel(level){return level===1?3:level===2?4:5}
+  function minimumDigitsForLevel(level){return level===1?3:level===2?3:4}
   function fillAddendSelect(s){
     for(let n=2;n<=5;n++){
       const o=document.createElement('option');o.value=n;o.textContent=`${n} nombres`;s.appendChild(o)
@@ -6099,18 +6099,18 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     return{incoming,outgoing,hasCarry:outgoing.some(v=>v>0)}
   }
 
-  function generateAddition(maxDigits,addendCount){
+  function generateAddition(maxDigits,addendCount,minDigits){
     const wantCarry=Math.random()<.80;
     for(let tries=0;tries<1800;tries++){
       const count=maxDigits;
 
       // Une majorité reste à la taille MAX, mais les autres varient
-      // davantage entre MAX-1 et MAX-2.
+      // de la longueur minimale du niveau jusqu'à MAX-1.
       const maxCount=addendCount<=2?1:Math.floor(addendCount/2)+1;
       const lengths=Array(maxCount).fill(maxDigits);
       while(lengths.length<addendCount){
-        const less=Math.random()<.56?1:2;
-        lengths.push(Math.max(1,maxDigits-less))
+        const less=rnd(1,maxDigits-minDigits);
+        lengths.push(maxDigits-less)
       }
 
       // Mélange l'ordre pour que les tailles ne suivent pas un motif fixe.
@@ -6148,7 +6148,7 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
   function goMenu(){removeCelebrations();clearHint();showTrainingHint._step=0;showTrainingHint._key=null;setScoreRulerVisible(false);gameScreen.classList.add('hidden');menuScreen.classList.remove('hidden');refreshMenuScores();window.scrollTo({top:0,behavior:'smooth'})}
   function makePair(){
     removeCelebrations();clearHint();showTrainingHint._step=0;showTrainingHint._key=null;
-    states=[0,1].map(()=>{const addendCount=randomAddendCount(session.level);const s=generateAddition(session.maxDigits,addendCount);s.addendCount=addendCount;return s});phase='answering';
+    states=[0,1].map(()=>{const addendCount=addendCountForLevel(session.level);const s=generateAddition(session.maxDigits,addendCount,minimumDigitsForLevel(session.level));s.addendCount=addendCount;return s});phase='answering';
     active={kind:'answer',calc:0,col:0};calculationsPair.innerHTML='';states.forEach((s,i)=>renderCalc(s,i));
     setPrimaryLabel('Valider');resetBtn.disabled=false;setNumpadDisabled(false);hintBtn.classList.remove('hidden');hintBtn.textContent=session.mode==='training'?'🧭 Guide':'💡 Indice';
     updateInstruction();updateBar();setFeedback('','');focusColumnStart(0,0)
@@ -6837,7 +6837,7 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
   maxLabel.textContent='Niveau';
   const sharedNote=document.createElement('p');
   sharedNote.className='shared-note';
-  sharedNote.textContent='Le nombre de termes et leur taille sont choisis automatiquement selon le niveau.';
+  sharedNote.textContent='Chaque niveau impose un nombre de termes et une plage de chiffres.';
   settingsWrap.append(maxLabel,trainingMax,sharedNote,startTraining);
   startTraining.style.display='none';
   trainingAdd.style.display='none';
@@ -6879,6 +6879,8 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     suddenMax.value=value;
     const level=normalLevelFromMaxForMenu(value);
     const representative=level===1?'3':level===2?'4':'5';
+    const min=level===3?4:3,max=level+4;
+    sharedNote.textContent=`Niveau ${level} : ${representative} nombres de ${min} à ${max} chiffres.`;
     trainingAdd.value=classicAdd.value=suddenAdd.value=representative;
     notifyHidden(classicMax);
   }
@@ -6977,7 +6979,7 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
   function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
   function levelSpec(l){
     return CFG.type==='addition' && l.addends>2
-      ? `${l.addends} nombres · ${l.digits} chiffres`
+      ? `${l.addends} nombres · ${l.digits-2} à ${l.digits} chiffres`
       : `${l.digits} chiffres`
   }
 
