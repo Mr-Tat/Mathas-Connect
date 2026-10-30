@@ -33,6 +33,9 @@ import {hydrateNativeRecords} from './connect-hydration.mjs';
    const loaded=await host.load();
    if(loaded?.ok!==true||!candidate.initialize(loaded.revision,loaded.resetEpoch))throw Error('connect_load_failed');
    connected=candidate;
+   // No polling: when classroom Wi-Fi returns, retry queued results automatically.
+   // The queue remains durable until the server confirms each event.
+   window.addEventListener('online',()=>{void connected?.retry()});
    const hydrated=hydrateNativeRecords({storage:localStorage,
      scope:'connect.'+host.classId.toLowerCase()+'.'+host.studentId.toLowerCase(),
      state:loaded.state,pending:candidate.pending()});
