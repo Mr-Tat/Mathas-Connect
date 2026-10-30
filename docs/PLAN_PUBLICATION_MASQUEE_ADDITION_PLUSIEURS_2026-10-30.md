@@ -20,7 +20,7 @@ Fusionner le code statique dans `main` rendrait le fichier `/apps/addition-plusi
 2. **Préparer une sauvegarde logique des définitions SQL en lecture seule** (pas de résultats élèves) ; re-comparer les 4 fonctions `connect_parcours_restart_class`, `connect_parcours_restart_one`, `connect_xp_read_v2`, `connect_xp_sync_v2` avec les candidates. Refuser l'étape si une différence de logique apparaît.
 3. **Sur accord explicite uniquement**, créer/appliquer la migration additive de catalogue (`enabled=false`, quatre `visible=false`) et les nouvelles définitions RPC, idéalement dans une transaction contrôlée avec journal et plan de retour. Le projet Connect est en production : ne pas utiliser `db reset` ni une migration destructive.
 4. **Sur accord explicite distinct**, fusionner la PR et publier les fichiers statiques en masqué. Vérifier la présence de la page par URL directe, mais son absence de tous les HUB. Confirmer que l'Edge rejette l'app tant que son verrou est fermé.
-5. Pour des **essais Connect réellement hébergés**, définir une stratégie autorisée : projet TEST réactivé si forfait/place disponible, ou compte/classe fictifs isolés sur le projet actif avec toutes les précautions et l'accord du professeur. Les essais locaux réussis ne couvrent ni les déploiements réels, ni la persistance native de la session navigateur sur PC élève.
+5. Pour des **essais Connect réellement hébergés**, définir une stratégie autorisée : projet TEST réactivé si forfait/place disponible, ou compte/classe fictifs isolés sur le projet actif avec toutes les précautions et l'accord du professeur. La persistance et le renouvellement natifs ont été validés dans Chromium CI local ; restent à valider l'hébergement réel et le comportement sur les PC élèves.
 6. Réaliser l'essai pédagogique manuel : quatre modes, clavier et retenues, trophées, animation +XP qui vole vers la jauge, historique des résultats et remise à zéro indépendante, vieux PC d'élève peu performant ; reconnection, coupure réseau.
 7. **Seulement sur feu vert pour l'ouverture aux élèves** : activation graduée et contrôles des quatre espaces ; préparer le plan de retrait immédiat, surveiller les erreurs sans polling supplémentaire.
 
@@ -71,3 +71,9 @@ La transaction refuse toute empreinte modifiée, tout droit RPC public existant 
 - **Après ouverture effective aux élèves** : conserver les résultats et XP acquis ; ne jamais restaurer une ancienne table ou effacer les crédits. Les modules client et Edge doivent être remis en mode sécurisé par une procédure de livraison de code indépendante.
 
 **Accord du professeur indispensable pour toute migration réelle, fusion, publication masquée ou activation.** Ce document ne constitue pas cet accord.
+
+## Recette native navigateur — succès du 30/10/2026
+
+Le [workflow local complet 41025519295](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41025519295) est réussi avec la **vraie bibliothèque `supabase-js` côté Chromium** : connexion anonyme, `localStorage`, `refreshSession()`, rechargement, saisie réelle des quatre additions et XP, connexion professeur par mot de passe et redémarrage de parcours. Le navigateur n'utilise plus l'adaptateur `getSession()` des tests précédents. Les fonctions Edge/PostgreSQL utilisent toujours un laboratoire local jetable.
+
+**La vérification du cycle navigateur native n'est donc plus un blocage CI.** Il reste : publication masquée uniquement sur accord, essais hébergés autorisés, vérification des XP/animations sur les petits PC élèves en classe, et activation uniquement après feu vert.

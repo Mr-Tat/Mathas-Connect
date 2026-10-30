@@ -182,4 +182,18 @@ Le jour d'une future application SQL, cette comparaison doit être refaite, sino
 
 **Limite fondamentale :** une publication des fichiers statiques sur GitHub Pages rend le lien direct du jeu accessible même si les quatre HUB n'affichent aucune carte ; seule la persistance Connect et les XP restent bloqués par les verrous. La publication masquée n'est pas une protection d'accès à l'URL. Ne pas fusionner sans accord du professeur. Plan complet : `docs/PLAN_PUBLICATION_MASQUEE_ADDITION_PLUSIEURS_2026-10-30.md`.
 
-Toujours à réaliser : essai sur Supabase hébergé isolé autorisé et PC élève réel, validation du cycle natif de stockage/renouvellement de session navigateur, décision explicite de publication masquée puis activation élèves.
+Toujours à réaliser : essai sur Supabase hébergé isolé autorisé, essai sur véritable PC élève peu puissant, décision explicite de publication masquée puis activation élèves.
+
+## 30 octobre 2026 — authentification native navigateur validée de bout en bout
+
+**Recette verte :** [GitHub Actions 41025519295](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41025519295), code testé au commit `1a39848a940f4f0c5af159ee5834ca739b4aa04f`.
+
+- **Vraie bibliothèque `@supabase/supabase-js@2.95.0` :** compilée en ESM local dans GitHub Actions via esbuild, utilisée telle quelle par Chromium à la place d'une réponse de CDN. **Aucun faux `createClient` ni faux `getSession`** ; les requêtes d'authentification, de fonctions Edge et de PostgreSQL restent réelles et locales.
+- Nouvelle fenêtre élève sans session : ouverture refusée sans lancer un jeu qui perdrait les résultats.
+- Connexion anonyme depuis le navigateur par `auth.signInAnonymously()` ; le SDK crée son propre jeton, le conserve dans `localStorage`, et le relit lors du lancement réel du jeu. Renouvellement par `auth.refreshSession()`, nouvel accès au jeu avec la même identité.
+- Quatre additions avec leurs saisies et retenues réelles dans Chromium, résultat 4/4 sur la fonction Edge et PostgreSQL ; **+22 XP**, 44 XP cumulés avec les 22 XP antérieurs fictifs, trophée V3 ; résultats récupérés au rechargement.
+- Formulaire professeur réel avec `auth.signInWithPassword()`, séparation du stockage de session professeur, connexion rechargée ; consultation du 4/4 et remise à zéro confirmée par l'interface ; les XP restent acquis.
+- Les premiers avertissements `Multiple GoTrueClient instances` venaient exclusivement d'un ancien montage de test lançant plusieurs clients avec la même clé dans une même page. Le laboratoire utilise désormais **une page HTML neutre jetable** pour l'authentification et le rafraîchissement, sans clients concurrents. Le dernier workflow est vert.
+- Les trois verrous demeurent `false` dans le dépôt ; le SDK local remplace seulement son URL CDN dans Playwright et les URL HTTP de loopback sont autorisées **uniquement dans les copies de test**. Aucune écriture sur la production ni réactivation de Mathas-Test.
+
+**Limites :** le test se déroule sur un navigateur Chromium de CI, avec une base et des fonctions locales reproduites. Il ne démontre pas les réglages ni la qualité du déploiement hébergé, la performance réelle des PC scolaires, les animations visuellement observées par un enseignant ni la fiabilité du réseau de classe. La fusion, la migration distante et l'activation élèves restent interdites sans accord explicite.
