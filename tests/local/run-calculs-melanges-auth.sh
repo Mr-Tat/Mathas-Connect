@@ -30,7 +30,18 @@ docker_local info >/dev/null
 for image in postgres:17-alpine supabase/gotrue:v2.186.0 postgrest/postgrest:v14.3 supabase/edge-runtime:v1.70.0 kong:2.8.1; do docker_local image inspect "$image" >/dev/null 2>&1 || docker_local pull "$image" >/dev/null; done
 docker_local network create --internal "$RUN_NAME" >/dev/null
 docker_local run -d --name "$RUN_NAME-db" --network "$RUN_NAME" --network-alias mathas-mixed-db --env-file "$LAB/postgres.env" postgres:17-alpine >/dev/null
-for attempt in $(seq 1 30); do if docker_local exec "$RUN_NAME-db" pg_isready -U postgres >/dev/null 2>&1; then break; fi; sleep 1; done
+# Do not accept the socket-only temporary server used during image init.
+MIXED_POSTGRES_READY=false
+for attempt in $(seq 1 60); do
+ if docker_local exec "$RUN_NAME-db" pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1; then MIXED_POSTGRES_READY=true;break;fi
+ sleep 1
+done
+if [ "$MIXED_POSTGRES_READY" != true ]; then
+ printf 'ERROR: disposable PostgreSQL did not start its final TCP server within 60 seconds\n' >&2
+ # Startup only: Auth and fictitious pupil fixtures have not been started yet.
+ docker_local logs --tail 40 "$RUN_NAME-db" >&2 || true
+ exit 1
+fi
 docker_local exec -i "$RUN_NAME-db" psql -U postgres -v ON_ERROR_STOP=1 <<'SQL' >/dev/null
 CREATE SCHEMA auth;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;

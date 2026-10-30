@@ -8,7 +8,19 @@ cleanup(){ docker_local rm -fv "$RUN_NAME" >/dev/null 2>&1 || true; rm -f "$LOG"
 trap cleanup EXIT
 docker_local run -d --name "$RUN_NAME" --network none -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17-alpine >/dev/null
 psql_local(){ docker_local exec -i "$RUN_NAME" psql -U postgres -v ON_ERROR_STOP=1 "$@"; }
-for attempt in $(seq 1 30); do if docker_local exec "$RUN_NAME" pg_isready -U postgres >/dev/null 2>&1; then break; fi; sleep 1; done
+# The Docker entrypoint's temporary init server accepts Unix sockets only.
+# Waiting on TCP prevents racing its shutdown before the final server starts.
+MIXED_POSTGRES_READY=false
+for attempt in $(seq 1 60); do
+ if docker_local exec "$RUN_NAME" pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1; then MIXED_POSTGRES_READY=true;break;fi
+ sleep 1
+done
+if [ "$MIXED_POSTGRES_READY" != true ]; then
+ printf 'ERROR: disposable PostgreSQL did not start its final TCP server within 60 seconds\n' >&2
+ # Startup only: no identities, proofs or credentials have been inserted yet.
+ docker_local logs --tail 40 "$RUN_NAME" >&2 || true
+ exit 1
+fi
 psql_local < "$ROOT/tests/postgres/calculs-melanges-fixture.sql" >/dev/null
 psql_local < "$ROOT/tests/postgres/calculs-melanges-auth-fixture.sql" >/dev/null
 psql_local <<'SQL' >/dev/null

@@ -5,12 +5,14 @@ on:
     paths:
       - 'scripts/backup-weekly.mjs'
       - 'tests/backup-weekly.test.mjs'
+      - 'tests/calculs-melanges-backup.test.mjs'
       - 'tests/xp-parcours-model.test.mjs'
       - '.github/workflows/connect-safety.yml'
   pull_request:
     paths:
       - 'scripts/backup-weekly.mjs'
       - 'tests/backup-weekly.test.mjs'
+      - 'tests/calculs-melanges-backup.test.mjs'
       - 'tests/xp-parcours-model.test.mjs'
       - '.github/workflows/connect-safety.yml'
   workflow_dispatch:
@@ -19,10 +21,13 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    # Includes checkout and Node setup on a cold hosted runner.
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/backup-weekly.test.mjs tests/xp-parcours-model.test.mjs
+      - name: Check encrypted backups and XP without hosted services
+        timeout-minutes: 2
+        run: node --test tests/backup-weekly.test.mjs tests/calculs-melanges-backup.test.mjs tests/xp-parcours-model.test.mjs

@@ -144,15 +144,32 @@ Aucune vérification Supabase hébergée n’est indispensable pour compléter c
 | Chromium moteur réel | Exécuté ici : calculs réellement saisis, méthodes natives, 4/10/20 dans les deux ordres, mort subite, HARD 1/2/3 et entraînement sans XP ; contrôles 320/768/1366 |
 | HEAD main et moteur | Lus via Git ici : respectivement `91bcca7aba97d9fb00460a7e4ff56a0675f1459b` et `e11c88b4e449e8cdb17b0fee78c7daa6ea5bf279`, inchangés |
 | Projet hébergé / quatre RPC historiques | Présence et projet actif rapportés par le professeur depuis sa connexion autorisée ; pas de nouvelles requêtes Supabase ici |
-| CI distante de la PR | À vérifier une fois la PR créée ; aucune réussite distante déduite des tests locaux |
+| CI distante de la PR | PR #34 créée et vérifiée en brouillon ; résultats initiaux du commit `972db1d` lus directement sur GitHub : 6 réussis, 1 échec SQL, 1 job arrêté au délai maximal ; correctifs décrits ci-dessous |
 | Compatibilité hébergée complète / recette publiée | Différées à une éventuelle préparation de publication ; aucune modification réelle autorisée dans cette mission |
 
 Aucun accès d’administration Supabase ne manque à l’implémentation livrée. Les métadonnées de publication sont préparées pour un échange en lecture seule ; elles ne conditionnent pas la complétude de la PR draft.
 
-## Création de la PR draft
+## PR draft n°34 et revue des contrôles
 
-La branche testée a été poussée. L’appel `gh pr create --draft` depuis cet environnement échoue sur `https://api.github.com/graphql` avec `Forbidden` ; il n’a créé aucune PR. Ce blocage concerne l’API GitHub, pas Supabase ni l’implémentation. Aucune nouvelle autorisation Supabase n’est nécessaire.
+La [PR #34](https://github.com/Mr-Tat/Mathas-Connect/pull/34) a été créée depuis la connexion GitHub autorisée du professeur. Son état **Draft** et son head `972db1d` ont ensuite été vérifiés directement par cette session via Git et les pages GitHub. L’API GraphQL reste bloquée ici, mais les pages web publiques permettent de consulter les résultats. Les logs détaillés demandent une connexion ; les extraits ci-dessous ont été transmis par le professeur après lecture depuis sa connexion autorisée.
 
-Demande prête à transmettre à la conversation disposant déjà de la connexion GitHub :
+Résultats initiaux du commit `972db1d`, indépendants de la nouvelle exécution après correction :
 
-> Dans `Mr-Tat/Mathas-Connect`, vérifie s’il existe une PR depuis `integration/calculs-melanges-connect-20261030` vers `main`. Si elle n’existe pas, crée-la en **draft**, avec le titre « Calculs écrits mélangés : intégration Connect, XP 594 validés et verrous fermés » et le corps intégral du fichier `docs/PR_CALCULS_MELANGES_DRAFT.md` lu sur cette branche. Retourne son URL et le statut des contrôles connus, en distinguant les contrôles en attente. Aucune fusion, publication, activation ni opération Supabase.
+| Contrôle | Résultat initial |
+| --- | --- |
+| Restore emergency smoke tests | Réussi — run `41101217758` |
+| Mathas Connect regression tests | Réussi — run `41101217779` |
+| Addition multiple SQL release preview | Réussi — run `41101217824` |
+| Backup and XP checks | Job annulé au délai maximal de 3 minutes — run `41101217833` ; journal transmis : 8 tests réussis, 0 échec |
+| Addition plusieurs Auth/Edge/PostgreSQL | Réussi — run `41101217855` |
+| Soustraction PostgreSQL | Réussi — run `41101217886` |
+| Addition plusieurs staging | Réussi — run `41101217916` |
+| Calculs mélangés local integration | Échec de connexion PostgreSQL dans `run-calculs-melanges-postgres.sh` — run `41101217961` |
+
+Erreur SQL précise transmise : socket `/var/run/postgresql/.s.PGSQL.5432` absente, sortie psql 2. L’image PostgreSQL avait bien été téléchargée et la régression Node avait 0 échec.
+
+La course de démarrage a été reproduite ici avec un conteneur PostgreSQL jetable et un script d’initialisation fictif retardé : `pg_isready` sur socket répondait prêt à 7,81 secondes, alors que TCP ne devenait prêt qu’à 10 secondes, après l’arrêt du serveur temporaire d’initialisation. Les deux runners Mélange attendent maintenant le **serveur TCP définitif**, bornent explicitement l’attente et affichent les seuls logs de démarrage du conteneur si celle-ci échoue, avant insertion des fixtures. Aucun contrat, crédit XP, verrou ou moteur n’est modifié.
+
+Le job backup/XP dispose de 8 minutes pour inclure checkout et installation de Node sur runner froid, mais son étape d’assertions reste bornée à 2 minutes. Les assertions existantes sont conservées et les trois tests de sauvegarde chiffrée Mélange sont inclus : **11 tests locaux réussis, 0 échec**. Les recettes PostgreSQL et Auth/Edge/PostgreSQL/Chromium sont toutes deux réussies après la correction TCP.
+
+Le push des correctifs relance les contrôles de la même PR draft. Leur verdict doit être lu pour le nouveau head ; les six succès initiaux ne sont pas présentés comme validation du commit corrigé. Source à suivre : [Checks de la PR](https://github.com/Mr-Tat/Mathas-Connect/pull/34/checks). Aucune fusion, publication, activation ni opération Supabase hébergée n’est effectuée.
