@@ -21,7 +21,7 @@ function setup(){
  const $=id=>{if(!ids.has(id))ids.set(id,node('div'));return ids.get(id)};
  const restartCalls=[];
  const context=vm.createContext({
-  document:{createElement:node},$,
+  document:{createElement:node},$,mixedAllowed:()=>false,
   makeOverviewCell:()=>node('summary'),
   addParcoursControls:(...a)=>restartCalls.push(a),
   String
@@ -65,10 +65,10 @@ test('tableau professeur Addition : aucune colonne technique Soustraction ajout�
 });
 
 test('GLOBAL : lien de test Soustraction réservé au profil Monsieur T et à la classe choisie',()=>{
- const start=app.indexOf("   if((app.app_key==='soustraction-ecrite-simple'||app.app_key==='addition-ecrite-multiple')&&href){");
+ const start=app.indexOf("   if((app.app_key==='soustraction-ecrite-simple'||app.app_key==='addition-ecrite-multiple'||mixedAllowed(app.app_key))&&href){");
  const end=app.indexOf("   const img=document.createElement('img');",start);
  assert.ok(start>=0&&end>start,'bloc du lien professeur présent dans GLOBAL');
- const context=vm.createContext({URL,location:{href:'https://mr-tat.github.io/Mathas-Connect/index.html'},teacherPlayerActive:false,
+ const context=vm.createContext({URL,location:{href:'https://mr-tat.github.io/Mathas-Connect/index.html'},teacherPlayerActive:false,mixedAllowed:()=>false,
    $:id=>id==='class-selector'?{value:'22222222-2222-4222-8222-222222222222'}:null});
  const factory=vm.runInContext('(function(app,href,link,info){'+app.slice(start,end)+';return link;})',context);
  const notifications=[],info=(message,error)=>notifications.push({message,error});

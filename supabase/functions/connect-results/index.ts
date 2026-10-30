@@ -9,9 +9,12 @@ const app='addition-ecrite-simple',mul='multiplication-ecrite-simple',sub='soust
 // Audit 2026-10-29: keep the new game blocked EVEN IF the catalog is accidentally enabled.
 // Lift only after atomic real XP/RPC, scoped storage and Chromium connected E2E validation.
 const ADD_MULTI_SERVER_READY=true;
+// Candidate only. Remains closed even if a catalogue row is accidentally enabled.
+const MIXED_SERVER_READY=false;
+const mixed='melange-calculs-ecrits';
 // All XP/teacher operations share the same audited enablement boundary.
 const xpAppAllowed=(k:any)=>k===app||k===mul||k===sub||(ADD_MULTI_SERVER_READY&&k===addMulti);
-const appAllowed=(k:any)=>k===app||k===mul||k===sub||k===lab||k===addMulti;
+const appAllowed=(k:any)=>k===app||k===mul||k===sub||k===lab||k===addMulti||(MIXED_SERVER_READY&&k===mixed);
 const belgianDay=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const read=async(q:any)=>{const {data,error}=await q.maybeSingle();if(error)throw Error('db_error');return data};
 const int=(n:any,min:number,max:number)=>Number.isSafeInteger(n)&&n>=min&&n<=max;
@@ -104,6 +107,7 @@ Deno.serve(async req=>{
  const raw=await req.text();if(raw.length>18000)return deny('too_large',413);
  let b:any;try{b=JSON.parse(raw)}catch{return deny('json')};
  if(!valid(b?.classId))return deny('class');
+ if(b.appKey===mixed&&!MIXED_SERVER_READY)return deny('integration_not_ready',403);
  const selected=appAllowed(b.appKey)?b.appKey:null;
  try{
   const managed=async()=>!user.is_anonymous&&!!await read(db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('class_id',b.classId).eq('can_manage',true));
@@ -116,6 +120,77 @@ Deno.serve(async req=>{
      const active=await read(db.from('connect_students').select('id').eq('id',player.student_id).is('archived_at',null));
      return active?player.student_id:null;
     }const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;const enrolled=await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null));if(!enrolled)return null;const active=await read(db.from('connect_students').select('id').eq('id',device.student_id).is('archived_at',null));return active?device.student_id:null};
+  // Isolated mixed application. No change to existing game RPCs or XP scales.
+  if(b.appKey===mixed){
+   if(b.action==='teacher-multipliers-get'||b.action==='teacher-multipliers-set'){
+    if(!await managed())return deny('forbidden',403);
+    if(b.action==='teacher-multipliers-get'){
+     const r=await db.from('connect_mixed_multiplier_locks').select('scope_key,multipliers').eq('class_id',b.classId).limit(260);
+     return r.error?deny('db_error',500):answer({ok:true,locks:r.data??[]});
+    }
+    const student=b.studentId??null;
+    if(student!==null){if(!valid(student))return deny('invalid_student');
+     const member=await read(db.from('connect_enrollments').select('student_id').eq('class_id',b.classId).eq('student_id',student).is('left_at',null));
+     if(!member)return deny('not_enrolled',403);}
+    const values=b.multipliers;
+    if(values!==null&&(!Array.isArray(values)||!values.length||values.length>8||new Set(values).size!==values.length||values.some((v:any)=>!int(v,2,9))))return deny('invalid_multipliers');
+    const r=values===null?await db.from('connect_mixed_multiplier_locks').delete().eq('class_id',b.classId).eq('scope_key',student??'class'):
+     await db.from('connect_mixed_multiplier_locks').upsert({class_id:b.classId,scope_key:student??'class',multipliers:values},{onConflict:'class_id,scope_key'});
+    return r.error?deny('db_error',500):answer({ok:true});
+   }
+   if(['student-load','student-xp','game-record'].includes(b.action)){
+    const row=await read(db.from('connect_apps').select('enabled').eq('app_key',mixed));
+    if(!row?.enabled)return deny('app_disabled',403);
+    const studentId=await identity();if(!studentId)return deny('forbidden',403);
+    // Bind offline proofs to the actual pupil, including device reassignment with the SAME JWT.
+    if((b.action!=='student-load'||b.expectedStudentId!=null)&&(!valid(b.expectedStudentId)||b.expectedStudentId!==studentId))return deny('identity_binding_conflict',409);
+    if(b.action==='student-load'){
+     const current=await read(db.from('connect_states').select('revision,state_data,reset_epoch').eq('student_id',studentId).eq('app_key',mixed));
+     const locks=await db.from('connect_mixed_multiplier_locks').select('scope_key,multipliers').eq('class_id',b.classId).in('scope_key',['class',studentId]).limit(2);
+     if(locks.error)return deny('db_error',500);
+     const multiplierLock=(locks.data??[]).find((x:any)=>x.scope_key===studentId)?.multipliers??(locks.data??[]).find((x:any)=>x.scope_key==='class')?.multipliers??null;
+     return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,state:current?.state_data??null,multiplierLock,storageSubject:studentId});
+    }
+    if(b.action==='student-xp'){
+     const r=await db.rpc('connect_mixed_xp_read_v1',{p_student:studentId,p_app:mixed,p_include_milestones:true});
+     return r.error?deny('xp_unavailable',503):answer({ok:true,...r.data});
+    }
+    // SQL revalidates every bound and journal entry, then commits state + XP atomically.
+    if(b.schemaVersion!==1||b.points!==0||!valid(b.eventId)||!int(b.expectedRevision,0,1e9)||!int(b.expectedResetEpoch,0,1e9)
+     ||!['classic','sudden','hard'].includes(b.mode)||!int(b.level,1,3)||!int(b.score,0,1000)
+     ||(b.mode==='classic'?(![4,10,20].includes(b.total)||b.score>b.total):b.total!==null)
+     ||typeof b.aidUsed!=='boolean'||typeof b.masterMode!=='boolean'
+     ||!Array.isArray(b.operationsSelectedAtStart)||!Array.isArray(b.operationsCompleted)||!Array.isArray(b.firstTry)
+     ||b.operationsSelectedAtStart.length>3||b.operationsCompleted.length>1000||b.firstTry.length!==b.operationsCompleted.length)return deny('invalid_result');
+    let rewards=null;try{rewards=normalizeRewards(b.rewards)}catch{return deny('invalid_rewards')}
+    const {data,error}=await db.rpc('connect_mixed_record_v1',{
+     p_student:studentId,p_event:b.eventId,p_expected_revision:b.expectedRevision,p_reset_epoch:b.expectedResetEpoch,
+     p_mode:b.mode,p_level:b.level,p_score:b.score,p_total:b.total,p_rewards:rewards,
+     p_selected:b.operationsSelectedAtStart,p_completed:b.operationsCompleted,p_first:b.firstTry,p_aid:b.aidUsed,p_master:b.masterMode
+    });
+    if(error){if(['revision_conflict','stale_reset_epoch'].includes(error.message))return deny(error.message,409);
+     return ['invalid_result','invalid_proof'].includes(error.message)?deny(error.message):deny('atomic_save_unavailable',503)}
+    return data?.ok===true?answer(data):deny('invalid_atomic_ack',503);
+   }
+   if(b.action==='teacher-parcours-restart'){
+    if(!await managed()||typeof b.repeatXp!=='boolean'||!['student','class'].includes(b.scope)||b.scope==='student'&&!valid(b.studentId))return deny('forbidden',403);
+    const args:any={p_teacher:user.id,p_class:b.classId,p_app:mixed,p_repeat_xp:b.repeatXp};
+    if(b.scope==='student')args.p_student=b.studentId;
+    const r=await db.rpc(b.scope==='class'?'connect_mixed_restart_class_v1':'connect_mixed_restart_one_v1',args);
+    return r.error?deny('restart_failed',409):answer({ok:true,...r.data});
+   }
+   if(b.action==='teacher-parcours-history'){
+    if(!await managed()||!valid(b.studentId))return deny('forbidden',403);
+    const member=await read(db.from('connect_enrollments').select('student_id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));
+    if(!member)return deny('forbidden',403);
+    const [current,history]=await Promise.all([
+     db.from('connect_parcours_current').select('parcours_number,repeat_xp,started_at').eq('student_id',b.studentId).eq('app_key',mixed).maybeSingle(),
+     db.from('connect_parcours_history').select('parcours_number,ended_at,repeat_xp,state_data,archived_xp').eq('student_id',b.studentId).eq('app_key',mixed).order('parcours_number',{ascending:false}).limit(12)]);
+    if(current.error||history.error)return deny('db_error',500);
+    return answer({ok:true,current:current.data??{parcours_number:1,repeat_xp:false},history:history.data??[]});
+   }
+   if(!['teacher-summary','teacher-detail'].includes(b.action))return deny('forbidden',403);
+  }
   const refreshXp=async(studentId:string,appKey:string)=>{
    if(!xpAppAllowed(appKey))return null;
    const result=await db.rpc('connect_xp_sync_v2',{p_student:studentId,p_app:appKey,p_force:false});

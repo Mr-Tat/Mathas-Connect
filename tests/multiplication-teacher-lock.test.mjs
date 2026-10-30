@@ -33,7 +33,7 @@ test('teacher controls in results for class and individual pupil',()=>{
  assert.match(teacher,/function multiplierLockPanel/);
  assert.match(teacher,/teacher-multipliers-get/);
  assert.match(teacher,/teacher-multipliers-set/);
- assert.match(teacher,/multiplierLockPanel\(container,studentId\)/);
+ assert.match(teacher,/multiplierLockPanel\(container,studentId,appKey\)/);
 });
 test('scripts still parse',()=>{
  const scripts=[...game.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];

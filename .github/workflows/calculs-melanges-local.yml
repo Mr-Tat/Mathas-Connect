@@ -1,0 +1,49 @@
+name: Calculs melanges - isolated draft validation
+on:
+  pull_request:
+    paths:
+      - 'apps/calculs-melanges/**'
+      - 'tests/calculs-melanges-*'
+      - 'tests/local/calculs-melanges-*'
+      - 'tests/local/run-calculs-melanges-*'
+      - 'tests/postgres/calculs-melanges-*'
+      - 'supabase/release-candidates/calculs_melanges*'
+      - 'supabase/functions/connect-results/index.ts'
+      - 'app.js'
+      - 'hub.js'
+      - '.github/workflows/calculs-melanges-local.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  local-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Node regression
+        run: node --test tests/*.test.mjs
+      - name: Install test tooling outside checkout
+        run: |
+          npm install --prefix "$RUNNER_TEMP/mathas-tools" --no-audit --no-fund playwright@1.58.2 @supabase/supabase-js@2.95.0 esbuild@0.25.12
+          "$RUNNER_TEMP/mathas-tools/node_modules/.bin/playwright" install --with-deps chromium
+      - name: SQL candidate, real concurrent CAS, rollback (disposable PostgreSQL)
+        run: bash tests/local/run-calculs-melanges-postgres.sh
+      - name: Real arithmetic browser recipe (no hosted services)
+        run: |
+          set -euo pipefail
+          python -m http.server 8765 --bind 127.0.0.1 > "$RUNNER_TEMP/mixed-static.log" 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          export PLAYWRIGHT_MODULE="$RUNNER_TEMP/mathas-tools/node_modules/playwright/index.mjs"
+          export CHROMIUM_PATH=$(node -e "console.log(require(process.env.RUNNER_TEMP+'/mathas-tools/node_modules/playwright').chromium.executablePath())")
+          node tests/calculs-melanges-browser.e2e.mjs
+      - name: Native JWT, Edge Runtime, PostgreSQL, offline ACK and professor UI
+        run: |
+          set -euo pipefail
+          export MATHAS_TEST_TOOLS="$RUNNER_TEMP/mathas-tools"
+          export CHROMIUM_PATH=$(node -e "console.log(require(process.env.MATHAS_TEST_TOOLS+'/node_modules/playwright').chromium.executablePath())")
+          bash tests/local/run-calculs-melanges-auth.sh
