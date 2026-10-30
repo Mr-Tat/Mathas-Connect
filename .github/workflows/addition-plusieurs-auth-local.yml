@@ -105,6 +105,7 @@ jobs:
           "$LAB/node_modules/.bin/playwright" install --with-deps chromium >/dev/null
           cp "$ROOT/tests/addition-plusieurs-auth-local.e2e.mjs" "$LAB/test.mjs"
           cp "$ROOT/tests/addition-plusieurs-real-play-helper.mjs" "$LAB/addition-plusieurs-real-play-helper.mjs"
+          printf "<!doctype html><html><title>Local native Supabase Auth</title><body>Test auth local seulement</body></html>\n" > "$ROOT/tests/.addition-multiple-auth-only.html"
           (cd "$ROOT" && python3 -m http.server 8765 --bind 127.0.0.1 > "$LAB/static.log" 2>&1 &)
           for attempt in $(seq 1 45); do
             if curl --silent --max-time 2 "$API_URL/functions/v1/connect-results" >/dev/null; then break; fi
