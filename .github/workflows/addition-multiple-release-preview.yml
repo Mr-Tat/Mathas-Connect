@@ -1,0 +1,145 @@
+name: Addition multiple - locked release SQL PREVIEW only
+on:
+  pull_request:
+    paths:
+      - 'supabase/release-candidates/**'
+      - 'tests/addition-plusieurs-release-bundle.test.mjs'
+      - 'supabase/migrations/20261029_addition_multiple_catalog_stage.sql'
+      - 'tests/postgres/addition-multiple-*.sql'
+      - '.github/workflows/addition-multiple-release-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sql-release-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: testing
+          POSTGRES_PASSWORD: testing
+          POSTGRES_DB: isolated
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U testing -d isolated"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: testing
+      PGPASSWORD: testing
+      PGDATABASE: isolated
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify release artifact integrity and refusal to mutate pupil records
+        run: node --test tests/addition-plusieurs-release-bundle.test.mjs
+      - name: Install anonymous, authenticated and Edge service roles in disposable PostgreSQL
+        run: |
+          psql -v ON_ERROR_STOP=1 -c 'CREATE ROLE anon;'
+          psql -v ON_ERROR_STOP=1 -c 'CREATE ROLE authenticated;'
+          psql -v ON_ERROR_STOP=1 -c 'CREATE ROLE service_role;'
+      - name: Construct production-shaped baseline without Addition multiple allowlist
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          raw=Path('tests/postgres/addition-multiple-rpc-candidate.sql').read_text()
+          needle="'soustraction-ecrite-simple','addition-ecrite-multiple'"
+          assert raw.count(needle)==4
+          Path('/tmp/addition-multiple-baseline.sql').write_text(raw.replace(needle,"'soustraction-ecrite-simple'"))
+          PY
+          psql -v ON_ERROR_STOP=1 -f /tmp/addition-multiple-baseline.sql > /dev/null
+          psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-catalog-fixture.sql > /dev/null
+          psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-real-rpc-fixture.sql > /dev/null
+      - name: Compare disposable baseline fingerprints with read-only production audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -At <<'SQL'
+          DO $verify_fingerprint$
+          DECLARE spec record; actual text;
+          BEGIN
+            FOR spec IN SELECT * FROM (VALUES
+              ('connect_parcours_restart_class','uuid,uuid,text,boolean','62194222ad2e5cfaec4999cea3f5363c'),
+              ('connect_parcours_restart_one','uuid,uuid,uuid,text,boolean','eec598806f7950112b21920689a45baa'),
+              ('connect_xp_read_v2','uuid,text,boolean','c5b879034329e6e03b7547e9661f642e'),
+              ('connect_xp_sync_v2','uuid,text,boolean','d3a11bdef68483ccffa4ffe2c2b13f35')
+            ) AS v(name,signature,expected_md5) LOOP
+             SELECT md5(pg_get_functiondef(to_regprocedure('public.'||spec.name||'('||spec.signature||')'))) INTO actual;
+             IF actual IS DISTINCT FROM spec.expected_md5 THEN
+              RAISE EXCEPTION 'disposable_function_not_equivalent_to_production: %, %',spec.name,actual;
+             END IF;
+            END LOOP;
+          END $verify_fingerprint$;
+          SQL
+      - name: Refuse a production RPC changed since audit; make no partial changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -c "ALTER FUNCTION public.connect_xp_read_v2(uuid,text,boolean) RENAME TO connect_xp_read_v2_modified"
+          if psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/addition_multiple_locked_v1.sql > /tmp/addmulti-stale-rejected.log 2>&1; then
+            echo 'Failed: stale RPC not refused'; exit 1
+          fi
+          grep -q 'addition_multiple_stale_production_rpc' /tmp/addmulti-stale-rejected.log
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM public.connect_apps WHERE app_key='addition-ecrite-multiple'" | grep -qx 0
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT to_regprocedure('public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer,jsonb)') IS NULL" | grep -qx t
+          psql -v ON_ERROR_STOP=1 -c "ALTER FUNCTION public.connect_xp_read_v2_modified(uuid,text,boolean) RENAME TO connect_xp_read_v2"
+      - name: Refuse a same-signature function drift and preserve transaction state
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A changed search_path changes the installed function definition
+          # without changing its name or signature. No hosted database used.
+          psql -v ON_ERROR_STOP=1 -c "ALTER FUNCTION public.connect_xp_read_v2(uuid,text,boolean) SET search_path TO 'public'"
+          if psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/addition_multiple_locked_v1.sql > /tmp/addmulti-changed-body-rejected.log 2>&1; then
+            echo 'Failed: changed function config not refused'; exit 1
+          fi
+          grep -q 'addition_multiple_stale_production_rpc' /tmp/addmulti-changed-body-rejected.log
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM public.connect_apps WHERE app_key='addition-ecrite-multiple'" | grep -qx 0
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT to_regprocedure('public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer,jsonb)') IS NULL" | grep -qx t
+          psql -v ON_ERROR_STOP=1 -c "ALTER FUNCTION public.connect_xp_read_v2(uuid,text,boolean) SET search_path TO 'public', 'pg_temp'"
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT md5(pg_get_functiondef(to_regprocedure('public.connect_xp_read_v2(uuid,text,boolean)')))" | grep -qx c5b879034329e6e03b7547e9661f642e
+      - name: Simulate Supabase direct default EXECUTE grants on new functions
+        run: |
+          # Some existing Supabase projects automatically grant execution on
+          # freshly created public functions to anon and authenticated.
+          # The release SQL must explicitly revoke those grants before COMMIT.
+          psql -v ON_ERROR_STOP=1 -c "ALTER DEFAULT PRIVILEGES FOR ROLE testing IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon, authenticated"
+      - name: Apply ONE-TIME candidate only to fictitious local database
+        run: psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/addition_multiple_locked_v1.sql
+      - name: Assert 4 HUBs hidden, exact XP rules and privileged RPCs
+        run: |
+          psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-catalog-assertions.sql
+          psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-rpc-permissions.sql
+      - name: Verify actual XP/parcours and atomic transactions for fictitious students
+        run: |
+          psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-real-rpc-assertions.sql
+          psql -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-atomic-rpc-assertions.sql
+      - name: Refuse unintended repeated candidate execution without deleting data
+        shell: bash
+        run: |
+          set -euo pipefail
+          if psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/addition_multiple_locked_v1.sql > /tmp/addmulti-repeat-rejected.log 2>&1; then
+            echo 'Failed: repeated SQL could overwrite installed functions'; exit 1
+          fi
+          grep -Eq 'addition_multiple_stale_production_rpc|addition_multiple_atomic_rpc_already_exists' /tmp/addmulti-repeat-rejected.log
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM public.connect_apps WHERE app_key='addition-ecrite-multiple' AND enabled=false" | grep -qx 1
+
+
+      - name: Exercise non-destructive emergency disable without removing earned XP
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Simulate only a hypothetical accidentally enabled version of THIS app.
+          psql -v ON_ERROR_STOP=1 -c "UPDATE public.connect_apps SET enabled=true WHERE app_key='addition-ecrite-multiple'"
+          psql -v ON_ERROR_STOP=1 -c "UPDATE public.connect_hub_preset_entries SET visible=true WHERE app_key='addition-ecrite-multiple' AND preset_slug='phase1'"
+          psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/addition_multiple_disable_only.sql
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM public.connect_apps WHERE app_key='addition-ecrite-multiple' AND enabled=false" | grep -qx 1
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM public.connect_hub_preset_entries WHERE app_key='addition-ecrite-multiple' AND visible=false AND featured=false" | grep -qx 4
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT xp_credited FROM public.connect_xp_credits WHERE student_id='66666666-6666-4666-8666-666666666666' AND app_key='addition-ecrite-multiple'" | grep -qx 52
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT xp_credited FROM public.connect_xp_credits WHERE student_id='66666666-6666-4666-8666-666666666666' AND app_key='addition-ecrite-simple'" | grep -qx 22
+          psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/addition_multiple_disable_only.sql

@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {milestones,MAX_XP} from '../apps/addition-plusieurs/xp-model.mjs';
+test('zero and complete progression, no free XP',()=>{assert.equal(milestones({}).xp,0);const all={classic:Array.from({length:3},()=>({4:4,10:10,20:20})),sudden:[10,10,10],hard:[7,7,7]};assert.equal(MAX_XP,474);assert.equal(milestones(all).xp,MAX_XP);assert.equal(milestones(all).keys.length,27)});
+test('same best scores never award XP twice and hard 5 calculations do not counterfeit sudden',()=>{const state={classic:[{4:4}],hardThree:[5,5,5]};assert.equal(milestones(state).xp,22);assert.equal(milestones(state).xp,milestones(state).xp)});
+test('80 percent threshold and perfect bonuses',()=>{const s={classic:[{10:8,20:16}]};assert.equal(milestones(s).xp,80);s.classic[0]={10:10,20:20};assert.equal(milestones(s).xp,96)});

@@ -1,0 +1,26 @@
+name: Addition plusieurs - staging checks
+on:
+  pull_request:
+    paths:
+      - 'apps/addition-plusieurs/**'
+      - 'tests/addition-plusieurs-*.test.mjs'
+      - 'hub-catalog.json'
+      - 'hub.html'
+      - 'app.js'
+      - 'supabase/functions/connect-catalog/index.ts'
+      - 'supabase/functions/connect-results/index.ts'
+      - 'supabase/migrations/20261029_addition_multiple_catalog_stage.sql'
+      - '.github/workflows/addition-plusieurs-stage.yml'
+  workflow_dispatch:
+jobs:
+  static-contract:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Source and isolation contract
+        run: node --test tests/addition-plusieurs-publish-guard.test.mjs tests/addition-plusieurs-source.test.mjs tests/addition-plusieurs-completion.test.mjs tests/addition-plusieurs-server-record.test.mjs tests/addition-plusieurs-offline-queue.test.mjs tests/addition-plusieurs-sync.test.mjs tests/addition-plusieurs-edge-guard.test.mjs tests/addition-plusieurs-pilot.test.mjs tests/addition-plusieurs-xp-model.test.mjs tests/addition-plusieurs-xp-sql.test.mjs tests/addition-plusieurs-simulated-session.test.mjs tests/addition-plusieurs-edge-transport.test.mjs tests/addition-plusieurs-local-lab.test.mjs tests/addition-plusieurs-animation.test.mjs tests/addition-plusieurs-rpc-candidate.test.mjs tests/addition-plusieurs-connected-ack.test.mjs tests/addition-plusieurs-host-wiring.test.mjs tests/addition-plusieurs-connect-host.test.mjs tests/addition-plusieurs-connect-hydration.test.mjs tests/addition-plusieurs-teacher-stage.test.mjs tests/addition-plusieurs-storage-scope.test.mjs

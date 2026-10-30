@@ -5,8 +5,13 @@ const headers={'content-type':'application/json','cache-control':'no-store','acc
 const answer=(v:object,status=200)=>new Response(JSON.stringify(v),{status,headers});
 const deny=(e:string,status=400)=>answer({ok:false,error:e},status);
 const valid=(v:any)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
-const app='addition-ecrite-simple',mul='multiplication-ecrite-simple',sub='soustraction-ecrite-simple',lab='connect-lab';
-const appAllowed=(k:any)=>k===app||k===mul||k===sub||k===lab;
+const app='addition-ecrite-simple',mul='multiplication-ecrite-simple',sub='soustraction-ecrite-simple',lab='connect-lab',addMulti='addition-ecrite-multiple';
+// Audit 2026-10-29: keep the new game blocked EVEN IF the catalog is accidentally enabled.
+// Lift only after atomic real XP/RPC, scoped storage and Chromium connected E2E validation.
+const ADD_MULTI_SERVER_READY=false;
+// All XP/teacher operations share the same audited enablement boundary.
+const xpAppAllowed=(k:any)=>k===app||k===mul||k===sub||(ADD_MULTI_SERVER_READY&&k===addMulti);
+const appAllowed=(k:any)=>k===app||k===mul||k===sub||k===lab||k===addMulti;
 const belgianDay=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const read=async(q:any)=>{const {data,error}=await q.maybeSingle();if(error)throw Error('db_error');return data};
 const int=(n:any,min:number,max:number)=>Number.isSafeInteger(n)&&n>=min&&n<=max;
@@ -112,7 +117,7 @@ Deno.serve(async req=>{
      return active?player.student_id:null;
     }const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;const enrolled=await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null));if(!enrolled)return null;const active=await read(db.from('connect_students').select('id').eq('id',device.student_id).is('archived_at',null));return active?device.student_id:null};
   const refreshXp=async(studentId:string,appKey:string)=>{
-   if(appKey!==app&&appKey!==mul&&appKey!==sub)return null;
+   if(!xpAppAllowed(appKey))return null;
    const result=await db.rpc('connect_xp_sync_v2',{p_student:studentId,p_app:appKey,p_force:false});
    if(result.error){console.error('xp_credit_error',result.error.code);throw Error('xp_sync_failed')}
    return result.data;
@@ -199,7 +204,7 @@ Deno.serve(async req=>{
   }
   // Parcours de révision : opération réservée au professeur, jamais au JWT élève.
   if(b.action==='teacher-parcours-restart'){
-   if(!await managed()||![app,mul,sub].includes(b.appKey)||typeof b.repeatXp!=='boolean'
+   if(!await managed()||(![app,mul,sub].includes(b.appKey)&&!(ADD_MULTI_SERVER_READY&&b.appKey===addMulti))||typeof b.repeatXp!=='boolean'
       ||!['student','class'].includes(b.scope))return deny('forbidden',403);
    if(b.scope==='student'&&!valid(b.studentId))return deny('invalid_student');
    const name=b.scope==='class'?'connect_parcours_restart_class':'connect_parcours_restart_one';
@@ -210,7 +215,7 @@ Deno.serve(async req=>{
    return answer({ok:true,...result.data});
   }
   if(b.action==='teacher-parcours-history'){
-   if(!await managed()||![app,mul,sub].includes(b.appKey)||!valid(b.studentId))return deny('forbidden',403);
+   if(!await managed()||(![app,mul,sub].includes(b.appKey)&&!(ADD_MULTI_SERVER_READY&&b.appKey===addMulti))||!valid(b.studentId))return deny('forbidden',403);
    const member=await read(db.from('connect_enrollments').select('student_id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));
    if(!member)return deny('forbidden',403);
    const [current,history]=await Promise.all([
@@ -222,7 +227,7 @@ Deno.serve(async req=>{
   }
   // Restauration de secours : fusion des acquis, sans nouvelles tables ni RPC.
   if(b.action==='teacher-restore-preview'||b.action==='teacher-restore-apply'){
-    if(!await managed()||!valid(b.studentId)||![app,mul,sub].includes(b.appKey))return deny('forbidden',403);
+    if(!await managed()||!valid(b.studentId)||(![app,mul,sub].includes(b.appKey)&&!(ADD_MULTI_SERVER_READY&&b.appKey===addMulti)))return deny('forbidden',403);
     if(!['mathas-connect-class-backup-v1','mathas-connect-class-backup-v2','mathas-connect-class-backup-v3','mathas-connect-class-backup-v4'].includes(b.backupFormat))return deny('invalid_backup_format');
     if(b.backupProjectRef!=null&&b.backupProjectRef!=='awmhpfofacaglewammxt')return deny('wrong_project',403);
     if(!int(b.backupRevision,0,1000000000)||!int(b.backupResetEpoch,0,1000000000))return deny('invalid_backup');
@@ -352,14 +357,20 @@ Deno.serve(async req=>{
    return answer({ok:true,studentId:b.studentId,name:name?.display_name||'Élève',state:state?.state_data||null,revision:state?.revision??0});
   }
   if(b.action==='student-xp'){
-   if(b.appKey!==app&&b.appKey!==mul&&b.appKey!==sub)return deny('forbidden',403);
+   if(!xpAppAllowed(b.appKey))return deny('forbidden',403);
    const studentId=await identity();if(!studentId)return deny('forbidden',403);
    const {data:summary,error:xpError}=await db.rpc('connect_xp_read_v2',{p_student:studentId,p_app:b.appKey,p_include_milestones:true});
    if(xpError||!summary)return deny('xp_unavailable',503);
    return answer({ok:true,appXp:summary.appXp,total:summary.total,level:summary.level,next:summary.next,milestones:summary.milestones,currentMilestones:summary.currentMilestones,parcours:summary.parcours,repeatXp:summary.repeatXp,max:summary.max});
   }
   if(b.action==='student-load'||b.action==='student-save'||b.action==='lab-record'||b.action==='game-record'||b.action==='game-reset'){
-   if(!selected||(b.action==='lab-record'&&selected!==lab)||(b.action==='game-record'&&selected!==app&&selected!==mul&&selected!==sub))return deny('forbidden',403);
+   if(!selected||(b.action==='lab-record'&&selected!==lab)||(b.action==='game-record'&&selected!==app&&selected!==mul&&selected!==sub&&selected!==addMulti))return deny('forbidden',403);
+   // L'application reste interdite tant que le catalogue ne l'active pas explicitement.
+   if(selected===addMulti){
+    if(!ADD_MULTI_SERVER_READY)return deny('integration_not_ready',403);
+    const row=await read(db.from('connect_apps').select('enabled').eq('app_key',addMulti));
+    if(!row?.enabled)return deny('app_disabled',403);
+   }
    const studentId=await identity();if(!studentId)return deny('forbidden',403);
    const current=await read(db.from('connect_states').select('revision,state_data,reset_epoch').eq('student_id',studentId).eq('app_key',selected));
    if(b.action==='student-load'){
@@ -374,10 +385,41 @@ Deno.serve(async req=>{
    // Les jeux réels restent en lecture seule. Écriture exclusivement pour le laboratoire.
    if(b.action==='game-reset')return deny('teacher_only',403);
    if(b.action==='student-save')return deny('write_not_enabled',403);
+   if(selected===addMulti&&b.points!==0)return deny('invalid_points');
    if(!valid(b.eventId)||!int(b.expectedRevision,0,1000000000)||!int(b.expectedResetEpoch,0,1000000000)||!['classic','sudden','hard','hard-challenge'].includes(b.mode)
      ||!int(b.level,1,3)||!int(b.score,0,100000)||!int(b.points,0,10000000)
      ||(b.mode==='classic'?(![4,10,20].includes(b.total)||b.score>b.total):b.mode==='hard-challenge'?(b.total!==5||b.score>5||b.points!==0):b.total!=null))
       return deny('invalid_result');
+   if(selected===addMulti&&b.action==='game-record'){
+     // Never write state separately from XP. A single PostgreSQL RPC performs
+     // event CAS, native-record update, XP credit and idempotent acknowledgement.
+     // Still unreachable while ADD_MULTI_SERVER_READY=false.
+     if(!valid(b.eventId)||!int(b.expectedRevision,0,1000000000)
+       ||!int(b.expectedResetEpoch,0,1000000000)||b.points!==0
+       ||!['classic','sudden','hard','hard-challenge'].includes(b.mode)
+       ||!int(b.level,1,3)||!int(b.score,0,100000)
+       ||(b.mode==='classic'?(![4,10,20].includes(b.total)||b.score>b.total)
+         :b.mode==='hard-challenge'?(b.total!==5||b.score>5):b.total!=null))
+       return deny('invalid_result');
+     // Reuse the V3 reward schema of all other apps, but save inside the
+     // same SQL transaction as the result and official XP (never separate).
+     let rewards=null;
+     try{rewards=normalizeRewards(b.rewards)}catch{return deny('invalid_rewards')}
+     const {data:atomic,error:atomicError}=await db.rpc('connect_addition_multiple_record_v1',{
+       p_student:studentId,p_event:b.eventId,p_expected_revision:b.expectedRevision,
+       p_reset_epoch:b.expectedResetEpoch,p_mode:b.mode,p_level:b.level,
+       p_score:b.score,p_total:b.total??null,p_rewards:rewards
+     });
+     if(atomicError){
+       if(['revision_conflict','stale_reset_epoch'].includes(atomicError.message))
+         return deny(atomicError.message,409);
+       if(['invalid_result','invalid_rewards'].includes(atomicError.message))return deny(atomicError.message);
+       console.error('addition_multiple_atomic_failed',atomicError.code);
+       return deny('atomic_save_unavailable',503);
+     }
+     if(!atomic||atomic.ok!==true)return deny('invalid_atomic_ack',503);
+     return answer(atomic);
+   }
    const rev=current?.revision??0;
    if((current?.reset_epoch??0)!==b.expectedResetEpoch)return deny('stale_reset_epoch',409);
    const prior=validate(current?.state_data||{});

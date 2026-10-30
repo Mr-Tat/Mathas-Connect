@@ -1,0 +1,32 @@
+name: Addition multiple Chromium smoke
+on:
+  pull_request:
+    paths:
+      - 'apps/addition-plusieurs/**'
+      - 'tests/addition-plusieurs-browser-smoke.mjs'
+      - 'tests/addition-plusieurs-connected-browser.e2e.mjs'
+      - 'tests/addition-plusieurs-real-play.e2e.mjs'
+      - 'tests/addition-plusieurs-teacher-browser.e2e.mjs'
+      - '.github/workflows/addition-plusieurs-chromium.yml'
+  workflow_dispatch:
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Chromium and Playwright driver
+        run: |
+          npm install --no-save --package-lock=false playwright@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Start static lab server
+        run: python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/addmulti-http.log 2>&1 &
+      - name: Verify original game loads in Chromium
+        run: node tests/addition-plusieurs-browser-smoke.mjs
+      - name: Play four actual written additions with keyboard and verify 22 XP
+        run: node tests/addition-plusieurs-real-play.e2e.mjs
+      - name: Validate professor overview, results and scoped reset controls with fake pupils
+        run: node tests/addition-plusieurs-teacher-browser.e2e.mjs
+      - name: Verify authenticated Connected flow with mocked isolated Edge
+        run: node tests/addition-plusieurs-connected-browser.e2e.mjs
