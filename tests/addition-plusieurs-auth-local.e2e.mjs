@@ -110,9 +110,9 @@ try{
  // accidentally receive our anonymous pupil's local request.
  await pupilContext.route('**/apps/addition-plusieurs/connect-pilot.mjs',async route=>{
   const res=await route.fetch(),original=await res.text();
-  assert.equal(original.split('CONNECT_WRITE_READY=false').length,2);
+  assert.equal(original.split('CONNECT_WRITE_READY=true').length,2);
   await route.fulfill({response:res,contentType:'text/javascript',
-   body:original.replace('CONNECT_WRITE_READY=false','CONNECT_WRITE_READY=true')});
+   body:original});
  });
  await pupilContext.route('**/apps/addition-plusieurs/edge-transport.mjs',async route=>{
   const res=await route.fetch(),original=await res.text();
@@ -277,9 +277,9 @@ try{
   const res=await route.fetch(),original=await res.text();
   const config="const url='https://awmhpfofacaglewammxt.supabase.co', key='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';";
   assert.ok(original.includes(config));
-  assert.ok(original.includes('const ADD_MULTI_TEACHER_READY=false;'));
+  assert.ok(original.includes('const ADD_MULTI_TEACHER_READY=true;'));
   const testVersion=original.replace(config,'const url='+JSON.stringify(url)+', key='+JSON.stringify(anon)+';')
-   .replace('const ADD_MULTI_TEACHER_READY=false;','const ADD_MULTI_TEACHER_READY=true;');
+   .replace('const ADD_MULTI_TEACHER_READY=true;','const ADD_MULTI_TEACHER_READY=true;');
   await route.fulfill({response:res,contentType:'text/javascript',body:testVersion});
  });
  const professor=await teacherContext.newPage();
