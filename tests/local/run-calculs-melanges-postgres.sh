@@ -43,7 +43,7 @@ rm -f "$LOG.installed.checked"
 psql_local < "$ROOT/tests/postgres/calculs-melanges-assertions.sql"
 # One-time candidate must reject an already-installed/divergent namespace before any mutation.
 if psql_local < "$ROOT/supabase/release-candidates/calculs_melanges_locked_v1.sql" > "$LOG" 2>&1; then echo 'ERROR candidate unexpectedly reapplied';exit 1; fi
-rg -q mixed_already_exists_review_required "$LOG"
+grep -Fq mixed_already_exists_review_required "$LOG"
 # Two distinct events race against revision 0: exactly one commit, one CAS failure.
 psql_local <<'SQL' >/dev/null
 INSERT INTO connect_students(id,display_name) VALUES('00000000-0000-4000-8000-000000000099','Fictif concurrence');
@@ -55,7 +55,7 @@ RC_A=0; RC_B=0
 wait "$PID_A" || RC_A=$?
 wait "$PID_B" || RC_B=$?
 if ! { { test "$RC_A" -eq 0 && test "$RC_B" -ne 0; } || { test "$RC_B" -eq 0 && test "$RC_A" -ne 0; }; }; then echo 'ERROR concurrency outcome';exit 1;fi
-rg -q revision_conflict "$LOG.a" "$LOG.b"
+grep -Fq revision_conflict "$LOG.a" "$LOG.b"
 psql_local <<'SQL'
 DO $$ BEGIN
  IF (SELECT revision FROM connect_states WHERE student_id='00000000-0000-4000-8000-000000000099')<>1
@@ -66,15 +66,15 @@ SQL
 # Rejected pilot activation must roll back without enabling an app with drifted XP.
 psql_local -c "UPDATE connect_xp_award_rules SET points=29 WHERE app_key='melange-calculs-ecrits' AND award_key='classic:4:perfect'" >/dev/null
 if psql_local < "$ROOT/supabase/release-candidates/calculs_melanges_enable_hidden.sql" > "$LOG" 2>&1; then echo 'ERROR drifted XP accepted';exit 1;fi
-rg -q mixed_xp_rules_drift "$LOG"
+grep -Fq mixed_xp_rules_drift "$LOG"
 psql_local -c "UPDATE connect_xp_award_rules SET points=28 WHERE app_key='melange-calculs-ecrits' AND award_key='classic:4:perfect'" >/dev/null
 psql_local -c "GRANT EXECUTE ON FUNCTION connect_mixed_xp_sync_v1(uuid,text,boolean) TO authenticated" >/dev/null
 if psql_local < "$ROOT/supabase/release-candidates/calculs_melanges_enable_hidden.sql" > "$LOG" 2>&1; then echo 'ERROR unsafe RPC accepted';exit 1;fi
-rg -q mixed_unsafe_rpc "$LOG"
+grep -Fq mixed_unsafe_rpc "$LOG"
 psql_local -c "REVOKE EXECUTE ON FUNCTION connect_mixed_xp_sync_v1(uuid,text,boolean) FROM authenticated" >/dev/null
 psql_local -c "UPDATE connect_hub_preset_entries SET visible=true WHERE app_key='melange-calculs-ecrits' AND preset_slug='phase1'" >/dev/null
 if psql_local < "$ROOT/supabase/release-candidates/calculs_melanges_enable_hidden.sql" > "$LOG" 2>&1; then echo 'ERROR visible HUB accepted';exit 1;fi
-rg -q mixed_hub_must_be_hidden "$LOG"
+grep -Fq mixed_hub_must_be_hidden "$LOG"
 psql_local -c "UPDATE connect_hub_preset_entries SET visible=false WHERE app_key='melange-calculs-ecrits' AND preset_slug='phase1'" >/dev/null
 psql_local <<'SQL' >/dev/null
 DO $$ BEGIN

@@ -173,3 +173,9 @@ La course de démarrage a été reproduite ici avec un conteneur PostgreSQL jeta
 Le job backup/XP dispose de 8 minutes pour inclure checkout et installation de Node sur runner froid, mais son étape d’assertions reste bornée à 2 minutes. Les assertions existantes sont conservées et les trois tests de sauvegarde chiffrée Mélange sont inclus : **11 tests locaux réussis, 0 échec**. Les recettes PostgreSQL et Auth/Edge/PostgreSQL/Chromium sont toutes deux réussies après la correction TCP.
 
 Le push des correctifs relance les contrôles de la même PR draft. Leur verdict doit être lu pour le nouveau head ; les six succès initiaux ne sont pas présentés comme validation du commit corrigé. Source à suivre : [Checks de la PR](https://github.com/Mr-Tat/Mathas-Connect/pull/34/checks). Aucune fusion, publication, activation ni opération Supabase hébergée n’est effectuée.
+
+### Portabilité du runner SQL après le correctif TCP
+
+Sur le head `11bfe64`, le contrôle Mélange `41105761238` signale ensuite une sortie 127, indiquant une commande indisponible. Le runner utilisait `rg` pour cinq vérifications de messages, alors que le workflow ne déclare pas cette dépendance. Le défaut de portabilité a été reproduit sur une version figée du script dans un PATH limité aux utilitaires standard : `rg: command not found`, sortie 127. La version corrigée emploie `grep -Fq`, garde les cinq mêmes assertions et termine toute la recette SQL avec succès dans ce même environnement dépourvu de ripgrep. Aucun paquet supplémentaire n’est ajouté au job.
+
+Les nouveaux contrôles doivent à nouveau être évalués pour le commit qui contient ce correctif ; la sortie 127 du head précédent ne décrit pas cette nouvelle exécution.
