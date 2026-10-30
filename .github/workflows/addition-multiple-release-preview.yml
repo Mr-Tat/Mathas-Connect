@@ -88,6 +88,27 @@ jobs:
           psql -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM public.connect_apps WHERE app_key='addition-ecrite-multiple'" | grep -qx 0
           psql -v ON_ERROR_STOP=1 -At -c "SELECT to_regprocedure('public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer,jsonb)') IS NULL" | grep -qx t
           psql -v ON_ERROR_STOP=1 -c "ALTER FUNCTION public.connect_xp_read_v2_modified(uuid,text,boolean) RENAME TO connect_xp_read_v2"
+      - name: Refuse a same-signature function drift and preserve transaction state
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A changed search_path changes the installed function definition
+          # without changing its name or signature. No hosted database used.
+          psql -v ON_ERROR_STOP=1 -c "ALTER FUNCTION public.connect_xp_read_v2(uuid,text,boolean) SET search_path TO 'public'"
+          if psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/addition_multiple_locked_v1.sql > /tmp/addmulti-changed-body-rejected.log 2>&1; then
+            echo 'Failed: changed function config not refused'; exit 1
+          fi
+          grep -q 'addition_multiple_stale_production_rpc' /tmp/addmulti-changed-body-rejected.log
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM public.connect_apps WHERE app_key='addition-ecrite-multiple'" | grep -qx 0
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT to_regprocedure('public.connect_addition_multiple_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer,jsonb)') IS NULL" | grep -qx t
+          psql -v ON_ERROR_STOP=1 -c "ALTER FUNCTION public.connect_xp_read_v2(uuid,text,boolean) SET search_path TO 'public', 'pg_temp'"
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT md5(pg_get_functiondef(to_regprocedure('public.connect_xp_read_v2(uuid,text,boolean)')))" | grep -qx c5b879034329e6e03b7547e9661f642e
+      - name: Simulate Supabase direct default EXECUTE grants on new functions
+        run: |
+          # Some existing Supabase projects automatically grant execution on
+          # freshly created public functions to anon and authenticated.
+          # The release SQL must explicitly revoke those grants before COMMIT.
+          psql -v ON_ERROR_STOP=1 -c "ALTER DEFAULT PRIVILEGES FOR ROLE testing IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon, authenticated"
       - name: Apply ONE-TIME candidate only to fictitious local database
         run: psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/addition_multiple_locked_v1.sql
       - name: Assert 4 HUBs hidden, exact XP rules and privileged RPCs
