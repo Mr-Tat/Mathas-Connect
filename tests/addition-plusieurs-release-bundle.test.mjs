@@ -39,10 +39,10 @@ test('release and emergency stop never delete pupil results or XP',()=>{
  }
  // The ONLY direct student-state UPDATE belongs to the atomic game RPC
  // and is scoped simultaneously by the authenticated pupil and new app.
- assert.equal((bundle.match(/\\bUPDATE public\\.connect_states\\b/g)||[]).length,1);
+ assert.equal((bundle.match(/\bUPDATE public\.connect_states\b/g)||[]).length,1);
  assert.match(bundle,/v_app constant text:='addition-ecrite-multiple'/);
  assert.match(bundle,/WHERE student_id=p_student AND app_key=v_app/);
- assert.doesNotMatch(disable,/\\bUPDATE public\\.connect_states\\b/i);
+ assert.doesNotMatch(disable,/\bUPDATE public\.connect_states\b/i);
  assert.match(disable,/UPDATE public\\.connect_apps/);
  assert.match(disable,/UPDATE public\.connect_hub_preset_entries/);
  assert.match(disable,/WHERE app_key='addition-ecrite-multiple'/g);
