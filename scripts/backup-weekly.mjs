@@ -10,7 +10,7 @@ const secret=Buffer.from(need('BACKUP_ENCRYPTION_KEY_BASE64'),'base64');
 if(secret.length!==32)throw Error('Clé AES-256 incorrecte');
 const tables=['connect_school_years','connect_teachers','connect_classes','connect_class_permissions','connect_students','connect_enrollments','connect_apps','connect_activities','connect_states','connect_hub_presets','connect_hub_preset_entries','connect_attempts','connect_devices','connect_join_requests','connect_pairings','connect_launches','connect_projections','connect_teacher_players','connect_xp_credits','connect_level_profiles','connect_xp_milestones','connect_xp_award_rules','connect_parcours_current','connect_parcours_history','connect_parcours_xp_bonus'];
 const snapshot={format:'mathas-connect-emergency-snapshot-v1',createdAt:new Date().toISOString(),projectRef:new URL(base).hostname.split('.')[0],tables:{}};
-for(const table of tables){
+async function readTable(table){
  const rows=[];
  for(let start=0;start<50000;start+=500){
   const authHeaders={apikey:serviceKey,Range:start+'-'+(start+499)};
@@ -24,7 +24,17 @@ for(const table of tables){
   if(start+part.length>=50000)throw Error('Sauvegarde refusée : limite 50 000 lignes atteinte pour '+table);
   if(part.length<500)break;
  }
- snapshot.tables[table]=rows;
+ return rows;
+}
+for(const table of tables)snapshot.tables[table]=await readTable(table);
+// Mélange is additive: old installations keep their 25-table backup unchanged.
+// Once its catalogue row exists, neither missing private tables nor failed reads
+// may silently produce an incomplete emergency snapshot.
+if(snapshot.tables.connect_apps.some(row=>row.app_key==='melange-calculs-ecrits')){
+ for(const table of ['connect_mixed_receipts','connect_mixed_multiplier_locks']){
+  snapshot.tables[table]=await readTable(table);
+  tables.push(table);
+ }
 }
 const iv=crypto.getRandomValues(new Uint8Array(12));
 const key=await crypto.subtle.importKey('raw',secret,{name:'AES-GCM'},false,['encrypt']);

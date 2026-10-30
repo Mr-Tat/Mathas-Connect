@@ -1,4 +1,4 @@
-name: Calculs melanges - isolated draft validation
+name: Calculs melanges - local integration and release checks
 on:
   pull_request:
     paths:
@@ -9,6 +9,8 @@ on:
       - 'tests/postgres/calculs-melanges-*'
       - 'supabase/release-candidates/calculs_melanges*'
       - 'supabase/functions/connect-results/index.ts'
+      - 'scripts/calculs-melanges-release.mjs'
+      - 'scripts/backup-weekly.mjs'
       - 'app.js'
       - 'hub.js'
       - '.github/workflows/calculs-melanges-local.yml'

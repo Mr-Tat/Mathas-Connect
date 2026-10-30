@@ -6,7 +6,8 @@ const url=process.env.API_URL,anon=process.env.ANON_KEY,service=process.env.SERV
 assert.match(url||'',/^http:\/\/127\.0\.0\.1:\d+$/);assert.ok(anon&&service);
 const client=key=>createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}}),admin=client(service),pupil=client(anon),outsider=client(anon),teacher=client(anon);
 const check=(r,msg)=>{if(r.error)throw Error(msg+': '+r.error.message);return r.data};
-const classId=randomUUID(),studentId=randomUUID(),teacherStudent=randomUUID();
+const classId=process.env.MATHAS_MIXED_PILOT_CLASS_ID,studentId=randomUUID(),teacherStudent=randomUUID();
+assert.match(classId||'',/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
 const student=check(await pupil.auth.signInAnonymously(),'pupil auth').session;
 const other=check(await outsider.auth.signInAnonymously(),'outsider auth').session;
 const teacherEmail='local-'+randomUUID()+'@example.test',teacherPassword='LocalOnly!'+randomUUID();
@@ -30,7 +31,8 @@ assert.equal((await post(null,{action:'student-load'})).status,401);
 assert.equal((await post(student,{action:'student-load'})).body.error,'app_disabled');
 check(await admin.from('connect_apps').update({enabled:true}).eq('app_key','melange-calculs-ecrits'),'LOCAL enable only');
 assert.equal((await post(other,{action:'student-load'})).status,403);
-assert.equal((await post(student,{action:'student-load',classId:randomUUID()})).status,403);
+const outsidePilot=await post(student,{action:'student-load',classId:randomUUID()});
+assert.equal(outsidePilot.status,403);assert.equal(outsidePilot.body.error,'integration_not_open_for_class');
 assert.equal(ok(await post(student,{action:'student-me'},'connect-api')).status,'approved');
 assert.equal(ok(await post(prof,{action:'teacher-player'},'connect-api')).status,'approved');
 const event={action:'game-record',schemaVersion:1,eventId:randomUUID(),mode:'classic',level:1,score:4,total:4,points:0,expectedRevision:0,expectedResetEpoch:0,
@@ -46,7 +48,7 @@ assert.equal((await post(student,event)).body.error,'stale_reset_epoch');
 const replay=ok(await post(student,{...event,eventId:randomUUID(),expectedRevision:2,expectedResetEpoch:1}));assert.equal(replay.xp.delta,0);assert.equal(replay.xp.total,50);
 const forbidden=await pupil.rpc('connect_mixed_xp_sync_v1',{p_student:studentId,p_app:'melange-calculs-ecrits',p_force:false});assert.ok(forbidden.error,'no authenticated direct RPC');
 const old=check(await admin.from('connect_xp_credits').select('xp_credited').eq('student_id',studentId).eq('app_key','addition-ecrite-simple').single(),'old XP retained');assert.equal(old.xp_credited,22);
-console.log('PASS real local Auth+Edge+SQL: 401/403, approved pupil, teacher player, 28 XP ACK, duplicate0, professor results, reset epoch, no recollection, other game intact');
+console.log('PASS real local Auth+Edge+SQL: isolated pilot class, 401/403, approved pupil, teacher player, 28 XP ACK, duplicate0, professor results, reset epoch, no recollection, other game intact');
 if(process.env.SDK_BROWSER_PATH){
  const {readFileSync}=await import('node:fs'),{chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
  const {playMixedClassic}=await import('./calculs-melanges-real-play-helper.mjs');

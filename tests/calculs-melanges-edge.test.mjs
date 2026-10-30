@@ -6,7 +6,7 @@ import {stripTypeScriptTypes} from 'node:module';
 import {randomUUID} from 'node:crypto';
 const source=fs.readFileSync(new URL('../supabase/functions/connect-results/index.ts',import.meta.url),'utf8').replace(/^import .*;\n/,'');
 const classId=randomUUID(),studentId=randomUUID(),authId=randomUUID();
-function harness({enabled=true,approved=true,enrolled=true,anonymous=true,managed=true,player=true,locked=false}={}){
+function harness({enabled=true,approved=true,enrolled=true,anonymous=true,managed=true,player=true,locked=false,access='open'}={}){
  let handler,calls=[];
  const db={from(table){const q={order(){return q},select(){return q},eq(){return q},is(){return q},in(){return q},limit(){return q},async maybeSingle(){
   const rows={connect_apps:enabled?{enabled:true}:null,connect_devices:approved?{student_id:studentId}:null,connect_enrollments:enrolled?{student_id:studentId}:null,
@@ -16,7 +16,7 @@ function harness({enabled=true,approved=true,enrolled=true,anonymous=true,manage
  async rpc(name,args){calls.push({name,args});return {data:{ok:true,revision:1,resetEpoch:0,xp:{appXp:28,total:28,delta:28}},error:null}}};
  const code=locked?source:source.replace('const MIXED_SERVER_READY=false;','const MIXED_SERVER_READY=true;');
  const context={createClient:(_u,key)=>key==='private'?db:{auth:{getUser:async()=>({data:{user:{id:authId,is_anonymous:anonymous}},error:null})}},
- Deno:{env:{get:k=>k==='SUPABASE_SERVICE_ROLE_KEY'?'private':'public'},serve:h=>handler=h},Response,Headers,Date,Intl,Number,Object,Array,Map,Set,JSON,Error,RegExp,structuredClone,console};
+ Deno:{env:{get:k=>k==='CONNECT_MIXED_ACCESS'?access:k==='SUPABASE_SERVICE_ROLE_KEY'?'private':'public'},serve:h=>handler=h},Response,Headers,Date,Intl,Number,Object,Array,Map,Set,JSON,Error,RegExp,structuredClone,console};
  vm.runInNewContext(stripTypeScriptTypes(code,{mode:'strip'}),context);
  async function call(body={},token='FICTION'){
   const r=await handler(new Request('http://fiction.local',{method:'POST',headers:token?{authorization:'Bearer '+token}:{},body:JSON.stringify({classId,appKey:'melange-calculs-ecrits',action:'game-record',expectedStudentId:studentId,schemaVersion:1,eventId:randomUUID(),mode:'classic',level:1,score:4,total:4,points:0,expectedRevision:0,expectedResetEpoch:0,aidUsed:false,masterMode:false,operationsSelectedAtStart:['add','sub','mul'],operationsCompleted:['add','sub','add','sub'],firstTry:[true,true,true,true],...body})}));
@@ -26,6 +26,13 @@ function harness({enabled=true,approved=true,enrolled=true,anonymous=true,manage
 }
 test('compiled production lock rejects every mixed operation, even if catalogue enabled',async()=>{
  const h=harness({locked:true});for(const action of ['game-record','student-load','student-xp','teacher-detail','teacher-parcours-restart','teacher-multipliers-set'])assert.equal((await h.call({action})).status,403);assert.equal(h.calls.length,0);
+});
+test('masked release defaults closed; only explicitly configured pilot classes can use the mixed RPCs',async()=>{
+ for(const access of [undefined,'','closed','pilot:','pilot:'+randomUUID(),'pilot:'+classId+',invalid','opne']){
+  const h=harness({access:access??null}),r=await h.call();assert.equal(r.status,403);assert.equal(r.body.error,'integration_not_open_for_class');assert.equal(h.calls.length,0);
+ }
+ assert.equal((await harness({access:'pilot:'+classId.toUpperCase()}).call()).status,200);
+ assert.equal((await harness({access:'pilot:'+randomUUID()+', '+classId}).call()).status,200);
 });
 test('missing JWT, unapproved device, foreign class and disabled catalogue never call atomic RPC',async()=>{
  assert.equal((await harness().call({},null)).status,401);

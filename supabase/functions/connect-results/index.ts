@@ -12,6 +12,12 @@ const ADD_MULTI_SERVER_READY=true;
 // Candidate only. Remains closed even if a catalogue row is accidentally enabled.
 const MIXED_SERVER_READY=false;
 const mixed='melange-calculs-ecrits';
+// A hidden HUB card does not restrict a direct URL. Hosted pilot sessions must
+// stay inside explicitly chosen fictitious classes until the teacher opens it.
+// Edge setting: closed (default), pilot:<uuid>[,<uuid>...], or open.
+const mixedAccess=(Deno.env.get('CONNECT_MIXED_ACCESS')||'closed').trim();
+const mixedPilotIds=mixedAccess.startsWith('pilot:')?mixedAccess.slice(6).split(',').map(s=>s.trim().toLowerCase()):[];
+const mixedClassAllowed=(classId:string)=>mixedAccess==='open'||(mixedPilotIds.length>0&&mixedPilotIds.every(valid)&&mixedPilotIds.includes(classId.toLowerCase()));
 // All XP/teacher operations share the same audited enablement boundary.
 const xpAppAllowed=(k:any)=>k===app||k===mul||k===sub||(ADD_MULTI_SERVER_READY&&k===addMulti);
 const appAllowed=(k:any)=>k===app||k===mul||k===sub||k===lab||k===addMulti||(MIXED_SERVER_READY&&k===mixed);
@@ -108,6 +114,7 @@ Deno.serve(async req=>{
  let b:any;try{b=JSON.parse(raw)}catch{return deny('json')};
  if(!valid(b?.classId))return deny('class');
  if(b.appKey===mixed&&!MIXED_SERVER_READY)return deny('integration_not_ready',403);
+ if(b.appKey===mixed&&!mixedClassAllowed(b.classId))return deny('integration_not_open_for_class',403);
  const selected=appAllowed(b.appKey)?b.appKey:null;
  try{
   const managed=async()=>!user.is_anonymous&&!!await read(db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('class_id',b.classId).eq('can_manage',true));
