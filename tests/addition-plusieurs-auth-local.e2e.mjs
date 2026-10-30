@@ -202,8 +202,31 @@ try{
  }),'browser historical XP');
  const frame=await openGame();
  await pupilPage.waitForFunction(()=>document.querySelector('#xp-total')?.textContent==='22 XP',null,{timeout:15000});
+ // Real Chromium offline mode, not a fake Edge response. Four actual
+ // written calculations must persist as ONE unsent local queue entry.
+ await pupilContext.setOffline(true);
+ assert.equal(await pupilPage.evaluate(()=>navigator.onLine),false,'Chromium is truly offline');
  await playFourAdditions({frame,page:pupilPage});
+ await pupilPage.waitForFunction(()=>document.querySelector('#result')?.textContent?.includes('résultat en attente (offline)'),null,{timeout:15000});
+ const durableQueueKey='mathas.addition-plusieurs.connect.'+classId+'.'+signed.id+'.v1';
+ const queuedBefore=await pupilPage.evaluate(key=>JSON.parse(localStorage.getItem(key)||'[]'),durableQueueKey);
+ assert.equal(queuedBefore.length,1,'one real completed 4/4 must survive as queued local event');
+ assert.equal(queuedBefore[0].mode,'classic');
+ assert.equal(queuedBefore[0].score,4);
+ assert.equal(queuedBefore[0].points,0,'offline events cannot author their XP');
+ const beforeRecovery=checked(await admin.from('connect_states')
+  .select('student_id').eq('student_id',browserStudentId).eq('app_key',appKey),
+  'offline database unchanged');
+ assert.equal(beforeRecovery.length,0,'no result credited before reconnect');
+ assert.equal(await pupilPage.locator('#xp-total').innerText(),'22 XP',
+  'XP must not be granted optimistically when offline');
+ // Restore Wi-Fi without reloading. The genuine online event must cause
+ // exactly one retry; no polling, no second completion and no pupil action.
+ await pupilContext.setOffline(false);
+ assert.equal(await pupilPage.evaluate(()=>navigator.onLine),true,'Chromium is back online');
  await pupilPage.waitForFunction(()=>document.querySelector('#xp-total')?.textContent==='44 XP',null,{timeout:30000});
+ const queuedAfter=await pupilPage.evaluate(key=>JSON.parse(localStorage.getItem(key)||'[]'),durableQueueKey);
+ assert.equal(queuedAfter.length,0,'server acknowledgment must clear the durable queue');
  const stored=checked(await admin.from('connect_states')
   .select('revision,reset_epoch,state_data').eq('student_id',browserStudentId)
   .eq('app_key',appKey).single(),'browser actual PostgreSQL save');
