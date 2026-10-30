@@ -25,8 +25,9 @@ function success(res,where){
 }
 const student=checked(await studentAuth.auth.signInAnonymously(),'student signup').session;
 const outsider=checked(await outsiderAuth.auth.signInAnonymously(),'outsider signup').session;
+const teacherEmail='local-'+randomUUID()+'@example.test',teacherPassword='LocalTest!SecurePass123';
 const teacher=checked(await teacherAuth.auth.signUp({
- email:'local-'+randomUUID()+'@example.test',password:'LocalTest!SecurePass123'
+ email:teacherEmail,password:teacherPassword
 }),'teacher signup').session;
 assert.ok(student?.user?.is_anonymous&&outsider?.access_token&&teacher?.access_token&&!teacher.user.is_anonymous);
 checked(await admin.from('connect_students').insert({id:studentId,display_name:'Élève fictif'}),'student');
@@ -72,26 +73,14 @@ console.log('PASS genuine LOCAL Supabase Auth+Edge+PostgreSQL: 4/4, 22 XP, troph
 
 // Joined end-to-end recipe: real rendered V6 arithmetic + real local Auth,
 // real Edge HTTP and PostgreSQL, and the real professor screen. The browser
-// receives a REAL GoTrue JWT via a test-only getSession adapter. We do not
-// fake, intercept or replace ANY request/response to the Edge functions.
+// signs in through the real Supabase browser SDK and stores its own session.
+// We do not fake, intercept or replace ANY request/response to Edge/Auth.
 const {chromium}=await import('playwright');
+const {readFileSync}=await import('node:fs');
 const {playFourAdditions}=await import('./addition-plusieurs-real-play-helper.mjs');
 const browserStudentId=randomUUID();
-const browserAuth=client(anon);
-const browserSession=checked(await browserAuth.auth.signInAnonymously(),'browser anonymous GoTrue').session;
-assert.ok(browserSession?.user?.is_anonymous&&browserSession?.access_token);
-checked(await admin.from('connect_students').insert({
- id:browserStudentId,display_name:'Élève Chromium'
-}),'browser pupil');
-checked(await admin.from('connect_enrollments').insert({
- id:randomUUID(),class_id:classId,student_id:browserStudentId
-}),'browser pupil enrollment');
-checked(await admin.from('connect_devices').insert({
- id:randomUUID(),student_id:browserStudentId,auth_user_id:browserSession.user.id,state:'approved'
-}),'browser approved device');
-checked(await admin.from('connect_xp_credits').insert({
- student_id:browserStudentId,app_key:oldApp,xp_credited:22
-}),'browser historical XP');
+// The learner account MUST originate inside Chromium's real supabase-js SDK.
+// Do not pre-create a browser JWT from Node or inject an auth session.
 checked(await admin.from('connect_classes').insert({
  id:classId,name:'Classe fictive addition',year_id:null
 }),'browser professor class');
@@ -99,22 +88,23 @@ const site='http://127.0.0.1:8765';
 const browser=await chromium.launch({headless:true});
 const errors=[];
 const SDK_URL='https://esm.sh/@supabase/supabase-js@2.95.0';
-function localSessionSdk(signedIn){
- return 'export function createClient(){return {auth:{getSession:async()=>({data:{session:'
-  +JSON.stringify(signedIn)+'}}),signOut:async()=>({error:null})}}}';
-}
-async function provideSdk(context,signedIn){
+// This is the actual bundled @supabase/supabase-js@2.95.0 browser module.
+// Only the CDN URL is redirected to LOCAL compiled package bytes, not mocked.
+const realSdk=readFileSync(new URL('./sdk-browser.mjs',import.meta.url),'utf8');
+assert.ok(realSdk.length>10000 && realSdk.includes('createClient'),
+ 'Real Supabase browser build is missing');
+async function provideRealSdk(context){
  await context.route(SDK_URL,route=>route.fulfill({
   status:200,contentType:'text/javascript',
   headers:{'access-control-allow-origin':'*'},
-  body:localSessionSdk(signedIn)
+  body:realSdk
  }));
 }
 try{
  const pupilContext=await browser.newContext();
  const pupilPage=await pupilContext.newPage();
  pupilPage.on('pageerror',e=>errors.push('pupil: '+e.message));
- await provideSdk(pupilContext,browserSession);
+ await provideRealSdk(pupilContext);
  // All three changes below are Playwright response overrides, NOT files
  // in the repository or Edge deployments. A future production URL cannot
  // accidentally receive our anonymous pupil's local request.
@@ -172,6 +162,36 @@ try{
   }
   return pupilPage.frameLocator('iframe#game');
  };
+ // On a brand-new browser profile, Connect must refuse to start without
+ // session. This also loads the real SDK, with empty browser storage.
+ await pupilPage.goto(site+'/apps/addition-plusieurs/?class='+classId);
+ await pupilPage.waitForFunction(()=>document.querySelector('#mode-note')?.textContent?.includes('Connexion indisponible'),null,{timeout:20000});
+ assert.equal(await pupilPage.locator('iframe#game').evaluate(el=>Boolean(el.srcdoc)),false);
+ const signed=await pupilPage.evaluate(async({endpoint,key,sdkUrl})=>{
+   const {createClient}=await import(sdkUrl);
+   const sb=createClient(endpoint,key,{auth:{
+     persistSession:true,autoRefreshToken:true,detectSessionInUrl:false
+   }});
+   const {data,error}=await sb.auth.signInAnonymously();
+   if(error)throw Error('native_anonymous_signin_failed:'+error.message);
+   const session=(await sb.auth.getSession()).data.session;
+   if(!session?.user?.is_anonymous||!session?.access_token)
+     throw Error('native_session_missing');
+   return {id:session.user.id,stored:Object.keys(localStorage).some(k=>k.includes('auth-token'))};
+ },{endpoint:url,key:anon,sdkUrl:SDK_URL});
+ assert.equal(signed.stored,true,'native browser SDK must persist the session');
+ checked(await admin.from('connect_students').insert({
+  id:browserStudentId,display_name:'Élève Chromium'
+ }),'browser pupil');
+ checked(await admin.from('connect_enrollments').insert({
+  id:randomUUID(),class_id:classId,student_id:browserStudentId
+ }),'browser pupil enrollment');
+ checked(await admin.from('connect_devices').insert({
+  id:randomUUID(),student_id:browserStudentId,auth_user_id:signed.id,state:'approved'
+ }),'browser approved device');
+ checked(await admin.from('connect_xp_credits').insert({
+  student_id:browserStudentId,app_key:oldApp,xp_credited:22
+ }),'browser historical XP');
  const frame=await openGame();
  await pupilPage.waitForFunction(()=>document.querySelector('#xp-total')?.textContent==='22 XP',null,{timeout:15000});
  await playFourAdditions({frame,page:pupilPage});
@@ -185,6 +205,20 @@ try{
  const browserXp=checked(await admin.from('connect_xp_credits').select('xp_credited')
   .eq('student_id',browserStudentId).eq('app_key',appKey).single(),'browser real XP');
  assert.equal(browserXp.xp_credited,22);
+ // The real SDK must refresh a token in-browser, persist it and then rehydrate
+ // it after a full page reload without a shim or auth-specific test injection.
+ const refreshed=await pupilPage.evaluate(async({endpoint,key,sdkUrl})=>{
+  const {createClient}=await import(sdkUrl);
+  const sb=createClient(endpoint,key,{auth:{
+   persistSession:true,autoRefreshToken:true,detectSessionInUrl:false
+  }});
+  const {data,error}=await sb.auth.refreshSession();
+  if(error)throw Error('native_refresh_failed:'+error.message);
+  const current=(await sb.auth.getSession()).data.session;
+  return {id:current?.user?.id,hasRefreshToken:Boolean(data?.session?.refresh_token)};
+ },{endpoint:url,key:anon,sdkUrl:SDK_URL});
+ assert.equal(refreshed.id,signed.id,'browser refresh must preserve student identity');
+ assert.equal(refreshed.hasRefreshToken,true,'native refresh token expected');
  const reloaded=await openGame();
  await pupilPage.waitForFunction(()=>document.querySelector('#xp-total')?.textContent==='44 XP',null,{timeout:15000});
  const native=await reloaded.locator('body').evaluate(()=>({
@@ -197,7 +231,7 @@ try{
  // Real teacher portal, actual professor JWT, real Edge teacher-dashboard,
  // teacher-overview, history, and reset via visible confirmation controls.
  const teacherContext=await browser.newContext();
- await provideSdk(teacherContext,teacher);
+ await provideRealSdk(teacherContext);
  await teacherContext.route(urlToMatch=>urlToMatch.pathname==='/app.js',async route=>{
   const res=await route.fetch(),original=await res.text();
   const config="const url='https://awmhpfofacaglewammxt.supabase.co', key='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';";
@@ -210,6 +244,15 @@ try{
  const professor=await teacherContext.newPage();
  professor.on('pageerror',e=>errors.push('teacher: '+e.message));
  await professor.goto(site+'/?portail=prof&profClass='+classId,{waitUntil:'domcontentloaded'});
+ await professor.locator('#login-form:visible').waitFor({timeout:20000});
+ await professor.locator('#email').fill(teacherEmail);
+ await professor.locator('#password').fill(teacherPassword);
+ await professor.locator('#login-form button[type=submit]').click();
+ await professor.locator('.results-overview-table').waitFor({timeout:30000});
+ const savedTeacherAuth=await professor.evaluate(
+  ()=>Boolean(localStorage.getItem('mathas-connect-professor-auth-v1')));
+ assert.equal(savedTeacherAuth,true,'professor native SDK must persist separate session');
+ await professor.reload({waitUntil:'domcontentloaded'});
  await professor.locator('.results-overview-table').waitFor({timeout:30000});
  const open=professor.getByRole('button',{
   name:'Voir les résultats de Élève Chromium dans Addition de plusieurs nombres'
@@ -242,7 +285,7 @@ try{
  assert.deepEqual(errors,[],'Browser JavaScript errors');
  await teacherContext.close();
  await pupilContext.close();
- console.log('PASS UNITED Chromium 4 actual additions -> local GoTrue JWT -> real Edge -> atomic PostgreSQL +22 XP/trophy -> real professor DOM + reset -> XP kept');
+ console.log('PASS NATIVE browser supabase-js: anonymous sign-in + persistent localStorage + refresh + reload + 4 real additions -> Edge PostgreSQL +22 XP/trophy -> actual professor password login + persisted session + reset -> XP kept');
 }finally{
  await browser.close();
 }
