@@ -17,7 +17,7 @@ test('strict contract: identities, score proof, modes, journal and immutable sta
  for(const change of [{schemaVersion:2},{appKey:'addition-ecrite-multiple'},{eventId:'x'},{score:3},{total:5},{firstTry:[true]},{operationsCompleted:['add']},{operationsSelectedAtStart:['add','add']},{masterMode:undefined},{mode:'training'},{mode:'hard-challenge'},{expectedResetEpoch:-1}])assert.equal(normalizeCompletion(event(4,change)),null,JSON.stringify(change));
  assert.equal(eligible(event(4,{operationsSelectedAtStart:['add']})),false);
  assert.equal(eligible(event(4,{operationsSelectedAtStart:['add','sub'],operationsCompleted:['add','sub','add','sub']})),false);
- assert.equal(eligible(event(4,{operationsCompleted:['add','add','add','add']})),false);
+ assert.equal(eligible(event(4,{operationsCompleted:['add','add','add','add']})),true,'three selected at start remains full rate despite a lucky draw');
  assert.equal(eligible(event(4,{masterMode:true})),false);
  assert.equal(eligible(event(4,{aidUsed:true})),true,'aids follow existing policy, metadata retained');
 });
@@ -40,13 +40,57 @@ test('exact deltas, all 27 milestones, 594 cap; no bonus global',()=>{
  }
  assert.equal(MAX_XP,594);assert.equal(milestones(s).xp,594);assert.equal(milestones(s).keys.length,27);
 });
-test('ineligible high record cannot erase smaller eligible proof; threshold variety checked at threshold',()=>{
+test('half-rate high record preserves full-rate proof; all-three lucky sudden draw receives both full thresholds',()=>{
  let s=applyCompletion(empty(),event(10,{score:8,firstTry:[true,true,true,true,true,true,true,true,false,false]}));
  s=applyCompletion(s,event(10,{operationsSelectedAtStart:['add'],operationsCompleted:Array(10).fill('add')}));
- assert.equal(s.classic[0][10],10);assert.equal(s.eligible.classic[0][10],8);assert.equal(milestones(s).xp,38);
+ assert.equal(s.classic[0][10],10);assert.equal(s.eligible.classic[0][10],8);assert.equal(s.halfEligible.classic[0][10],10);assert.equal(milestones(s).xp,42,'full pass 38 plus new half bonus 4');
  s=applyCompletion(empty(),event(10,{mode:'sudden',total:null,operationsCompleted:[...Array(5).fill('add'),'sub','mul','sub','mul','add']}));
- assert.deepEqual(milestones(s).keys,['sudden:1:10']);
+ assert.deepEqual(milestones(s).keys,['sudden:1:10','sudden:1:5']);assert.equal(milestones(s).xp,24);
  s=applyCompletion(empty(),event(4,{masterMode:true}));assert.equal(milestones(s).xp,0);
+});
+test('one or two start operations earn half; later all-three earns only the missing complement once',()=>{
+ for(const ops of [['add'],['add','sub']]){
+  const half=normalizeCompletion(event(4,{operationsSelectedAtStart:ops,operationsCompleted:['add','add','add','add']}));
+  assert.ok(half);let s=applyCompletion(empty(),half);assert.equal(milestones(s).xp,14);
+  s=applyCompletion(s,half);assert.equal(milestones(s).xp,14);
+  const full=normalizeCompletion(event(4,{operationsCompleted:['add','add','add','add']}));
+  s=applyCompletion(s,full);assert.equal(milestones(s).xp,28);
+  s=applyCompletion(s,full);s=applyCompletion(s,half);assert.equal(milestones(s).xp,28);
+ }
+ assert.equal(normalizeCompletion(event(4,{operationsCompleted:[],firstTry:[],score:0})),null,'checkboxes without completed calculations never constitute a result');
+});
+test('half classic deltas are integer XP and perfect-series totals remain exactly half',()=>{
+ for(const order of [[4,10,20],[20,10,4]]){
+  let s=empty();for(const n of order)s=applyCompletion(s,event(n,{operationsSelectedAtStart:['add'],operationsCompleted:Array(n).fill('add')}));
+  assert.equal(milestones(s).xp,75);assert.equal(milestones(s).points['classic:1:20:pass'],32);assert.equal(milestones(s).points['classic:1:20:bonus'],6);
+  for(const n of order)s=applyCompletion(s,event(n));assert.equal(milestones(s).xp,150);
+ }
+ let s=empty(),before=0;
+ for(const [total,score,delta] of [[4,4,14],[10,8,19],[10,10,4],[20,16,32],[20,20,6]]){
+  s=applyCompletion(s,event(total,{score,operationsSelectedAtStart:['add'],operationsCompleted:Array(total).fill('add'),firstTry:Array.from({length:total},(_,i)=>i<score)}));
+  assert.equal(milestones(s).xp-before,delta);before=milestones(s).xp;
+ }
+});
+test('half sudden thresholds upgrade independently and never downgrade full rights',()=>{
+ let s=applyCompletion(empty(),event(10,{mode:'sudden',total:null,operationsSelectedAtStart:['add'],operationsCompleted:Array(10).fill('add')}));
+ assert.equal(milestones(s).xp,12);
+ s=applyCompletion(s,event(5,{mode:'sudden',total:null,operationsCompleted:Array(5).fill('add')}));assert.equal(milestones(s).xp,18);
+ s=applyCompletion(s,event(10,{mode:'sudden',total:null,operationsCompleted:Array(10).fill('add')}));assert.equal(milestones(s).xp,24);
+});
+test('restricted normal modes then native all-three HARD remain upgradeable to the full 594 cap',()=>{
+ let s=empty();
+ for(let level=1;level<=3;level++){
+  for(const total of [4,10,20])s=applyCompletion(s,event(total,{level,operationsSelectedAtStart:['add'],operationsCompleted:Array(total).fill('add')}));
+  s=applyCompletion(s,event(10,{level,mode:'sudden',total:null,operationsSelectedAtStart:['add'],operationsCompleted:Array(10).fill('add')}));
+  s=applyCompletion(s,event(7,{level,mode:'hard',total:null}));
+ }
+ assert.equal(milestones(s).xp,333,'HARD natively selects all three and is full rate; no invented restricted HARD mode');
+ for(let level=1;level<=3;level++){
+  for(const total of [4,10,20])s=applyCompletion(s,event(total,{level}));
+  s=applyCompletion(s,event(10,{level,mode:'sudden',total:null}));
+ }
+ assert.equal(milestones(s).xp,594);assert.equal(milestones(s).keys.length,27);
+ assert.equal(normalizeCompletion(event(7,{mode:'hard',total:null,operationsSelectedAtStart:['add'],operationsCompleted:Array(7).fill('add')})),null);
 });
 test('native hydration chooses one display record while retaining ALL series outside native cache',()=>{
  const storage=memory(),scope='connect.'+randomUUID()+'.'+randomUUID()+'.'+randomUUID();let state=empty();for(const n of [20,10,4])state=applyCompletion(state,event(n));
@@ -74,8 +118,9 @@ test('malformed HTTP-success ACK retains queue; reset quarantines old events',as
 test('native bridge counts actual locks and emits exactly once after finalization; no training',()=>{
  const messages=[];const context={document:{addEventListener(){},dispatchEvent(){}},Event,localStorage:{getItem:()=>null},crypto:{randomUUID},WeakMap,Object,Number,Array,JSON,location:{origin:'http://local'},parent:{location:{origin:'http://local'},postMessage:e=>messages.push(e)},window:{frameElement:{getAttribute:()=>null}}};
  vm.runInNewContext(readFileSync(new URL('../apps/calculs-melanges/native-bridge.js',import.meta.url),'utf8'),context);
- const b=context.window.MathasMixedBridge,s={mode:'classic',total:4,level:1,score:4,ops:['add','sub','mul']};b.begin(s,false);assert.equal(messages.length,0);
+ const b=context.window.MathasMixedBridge,s={mode:'classic',total:4,level:1,score:4,ops:['add','sub','mul']};b.begin(s,false);assert.equal(messages.length,0);s.ops=['add'];
  for(const op of ['add','sub','add','mul'])b.solved(s,{op,firstTry:true});b.finish(s);b.finish(s);assert.equal(messages.length,1);assert.ok(normalizeCompletion(JSON.parse(JSON.stringify(messages[0].event))));
+ assert.deepEqual(JSON.parse(JSON.stringify(messages[0].event.operationsSelectedAtStart)),['add','sub','mul'],'later settings cannot change the rate of an already started game');
  const t={...s,mode:'training'};b.begin(t,false);b.finish(t);assert.equal(messages.length,1);
 });
 
@@ -121,6 +166,6 @@ test('matching numeric revisions alone cannot acknowledge another event/pupil/ap
  }
 });
 
-test('corrected-but-completed operations count for variety; firstTry still determines score',()=>{
+test('completed corrections stay in the journal while firstTry determines the score',()=>{
  const e=normalizeCompletion(event(10,{score:8,operationsCompleted:[...Array(8).fill('add'),'sub','mul'],firstTry:[...Array(8).fill(true),false,false]}));assert.ok(e);assert.equal(eligible(e),true);assert.equal(milestones(applyCompletion(empty(),e)).xp,38);
 });

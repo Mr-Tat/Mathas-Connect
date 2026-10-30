@@ -19,8 +19,7 @@ export function normalizeCompletion(e){
   operationsSelectedAtStart:[...selected],operationsCompleted:[...completed],firstTry:[...first],aidUsed:e.aidUsed,masterMode:e.masterMode,
   expectedRevision:e.expectedRevision,expectedResetEpoch:e.expectedResetEpoch,...(normalizeRewards(e.rewards)?{rewards:normalizeRewards(e.rewards)}:{})});
 }
-export function eligible(e,threshold=null){
- if(e.masterMode||e.operationsSelectedAtStart.length!==3)return false;
- const completed=threshold===null?e.operationsCompleted:e.operationsCompleted.slice(0,threshold);
- return new Set(completed).size>=2;
-}
+// Teacher-approved policy: the immutable START selection determines the rate.
+// A lucky single-operation draw with all three selected still receives 100%.
+// normalizeCompletion and SQL still require the actual completed score journal.
+export function eligible(e){return !e.masterMode&&e.operationsSelectedAtStart.length===3}

@@ -47,6 +47,6 @@ SELECT jsonb_build_object(
  'catalogue',jsonb_build_object(
   'apps',(SELECT coalesce(jsonb_agg(jsonb_build_object('appKey',app_key,'enabled',enabled,'featured',featured,'launchUrl',launch_url,'imageUrl',image_url)),'[]'::jsonb) FROM public.connect_apps WHERE app_key='melange-calculs-ecrits'),
   'presets',(SELECT coalesce(jsonb_agg(jsonb_build_object('slug',preset_slug,'visible',visible,'featured',featured) ORDER BY preset_slug),'[]'::jsonb) FROM public.connect_hub_preset_entries WHERE app_key='melange-calculs-ecrits'),
-  'rules',(SELECT coalesce(jsonb_agg(jsonb_build_object('key',award_key,'points',points) ORDER BY award_key),'[]'::jsonb) FROM public.connect_xp_award_rules WHERE app_key='melange-calculs-ecrits')
+  'rules',(SELECT coalesce(jsonb_agg(jsonb_build_object('key',award_key,'points',points,'rulesetVersion',ruleset_version) ORDER BY award_key),'[]'::jsonb) FROM public.connect_xp_award_rules WHERE app_key='melange-calculs-ecrits')
  )
 ) audit;

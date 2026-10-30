@@ -24,7 +24,7 @@ Deux constats natifs supplémentaires ont été vérifiés : le bouton guidé no
 
 L’indication d’aide du meilleur résultat est conservée séparément pour sa restauration ; à score égal, une réussite sans aide conserve la priorité native.
 
-Les meilleurs scores Connect sont indépendants pour chaque `(niveau, longueur 4/10/20)`. La vue native garde son unique meilleur record par niveau, sans être utilisée comme preuve XP. L'état possède une branche `eligible` distincte : une meilleure partie non éligible n'efface pas les preuves admissibles. Les deux paliers de mort subite sont mémorisés séparément : la variété acquise après le cinquième calcul ne crédite pas rétroactivement le seuil 5.
+Les meilleurs scores Connect sont indépendants pour chaque `(niveau, longueur 4/10/20)`. La vue native garde son unique meilleur record par niveau, sans être utilisée comme preuve XP. L’état possède deux branches distinctes : `eligible` pour le taux complet et `halfEligible` pour le taux réduit. Un meilleur score réduit n’efface pas une preuve complète. Chaque seuil de mort subite reste indépendant ; le taux dépend de la sélection au départ, pas des types tirés.
 
 La file persistante est bornée à 100 événements, isolée par classe/sujet JWT/élève serveur/app ; ACK strict avant suppression, une seule requête en vol, aucun polling, reprise sur `online`. Un conflit d'époque bloque le rejeu ; au prochain chargement de l'époque actuelle, les anciens événements sont archivés localement sous le même profil. Aucun XP optimiste. Les doublons ACK affichent toujours delta 0.
 
@@ -34,7 +34,7 @@ Les tables minimales sont indépendantes de Multiplication simple (`connect_mixe
 
 ## XP 594 validés et remise à zéro
 
-Barème de base 594 XP validé pédagogiquement par le professeur. Règle d’éligibilité encore proposée `mixed_v1` : trois opérations sélectionnées au départ, au moins deux types effectivement terminés ; pour la mort subite, vérification au seuil récompensé. Les aides suivent la convention actuelle (métadonnée, pas d'exclusion supplémentaire), Master donne 0 XP. Pas de crédit à partir du seul réglage ou cache natif.
+Barème de base 594 XP et règle de sélection validés explicitement par le professeur : trois opérations cochées au départ donnent 100 %, même lors d’un tirage chanceux ; une ou deux donnent 50 %. Une réussite complète ultérieure verse seulement le complément manquant une fois. La politique XP est versionnée 2. Les aides gardent la convention actuelle, Master et entraînement donnent 0. Un journal de calculs réellement terminés reste indispensable : les seules cases cochées ne rapportent rien. Voir la [règle complète et ses arrondis](CALCULS_MELANGES_XP_SELECTION_20261030.md).
 
 | Jalon par niveau | XP |
 | --- | ---: |
@@ -46,13 +46,13 @@ Barème de base 594 XP validé pédagogiquement par le professeur. Règle d’é
 | Mort subite 5 puis 10 | 12 + 12 |
 | HARD mort subite 3 puis 7 | 12 + 12 |
 
-198 par niveau, 27 droits, 594 sans rejeu explicitement autorisé. Aucun multiplicateur global, aucun changement des autres crédits. Un nouveau jalon pendant un parcours rejouable n'est pas doublé : la preuve mémorise son premier parcours. La répétition ne concerne que les droits acquis dans un parcours antérieur, une seule fois par parcours autorisé.
+198 par niveau, 27 droits, 594 sans rejeu explicitement autorisé. Les demi-valeurs classiques sont 14, 19 puis +4, 32 puis +6 ; le parfait /20 donne ainsi exactement 38. Les compléments sont plafonnés au montant complet. Aucun multiplicateur global ni changement des autres jeux. `xpPoints`, `firstParcours` et `fullParcours` empêchent de doubler un nouveau complément pendant un parcours rejouable ; seules les tranches déjà acquises avant ce parcours peuvent être répétées.
 
 Le reset élève/classe archive uniquement Mélange, augmente revision/reset_epoch et préserve les crédits. `repeatXp=false` interdit la recollection ; `true` est une permission explicite du professeur. Pour Mélange, la case de rejeu est décochée par défaut. Les événements de l'ancienne époque sont refusés, y compris ceux dont l'UUID est déjà connu.
 
 ## SQL / Edge et verrouillage
 
-Le candidat `supabase/release-candidates/calculs_melanges_locked_v1.sql` est une transaction à usage unique. Il refuse un app_key ou namespace RPC déjà présent, puis crée une app désactivée, quatre presets invisibles/non featured, neuf règles totalisant 198, cinq RPC **nouvelles**, les reçus permanents d'idempotence et les minimums de tables. Il ne remplace aucune fonction partagée existante : pas de définition historique de RPC à réinjecter. Le schéma doit néanmoins être comparé à la cible avant une éventuelle installation autorisée.
+Le candidat `supabase/release-candidates/calculs_melanges_locked_v1.sql` est une transaction à usage unique. Il refuse un app_key ou namespace RPC déjà présent, puis crée une app désactivée, quatre presets invisibles/non featured, neuf règles totalisant 198, cinq RPC **nouvelles**, les reçus permanents d'idempotence et les minimums de tables. Il ne remplace aucune fonction partagée existante : pas de définition historique de RPC à réinjecter. Le schéma reçu de la cible a été comparé et testé localement avec 26 tables, 137 contraintes et les watchers exacts ; reconfirmer l’absence de dérive avant une installation autorisée.
 
 `connect_mixed_record_v1` revalide le journal, verrouille l'élève/état, vérifie epoch/CAS et effectue résultat + trophées + droits XP + crédit + reçu dans une transaction. Des reçus durables couvrent les doublons au-delà des 50 identifiants d'affichage. Les nouvelles RPC sont SECURITY DEFINER, search_path fixé, REVOKE explicite PUBLIC/anon/authenticated et GRANT service_role uniquement. Les deux tables privées ont RLS activé.
 
@@ -86,11 +86,11 @@ Le workflow `.github/workflows/calculs-melanges-local.yml` reproduit ces vérifi
 
 ## Limites et accords avant activation
 
-- Le plafond 594 est validé ; confirmer séparément la règle d’éligibilité proposée. L’alternative XP de base pour 1/2 opérations n’est pas implémentée.
-- Confirmer la politique des aides, la portée indépendante/globale des tables et la miniature officielle. Ne pas rétablir le challenge HARD caché sans décision.
+- Le plafond 594 et la règle 100 % / 50 % avec complément unique sont validés et implémentés. Le HARD natif sélectionne toujours les trois opérations : aucun mode HARD réduit n’est inventé.
+- Les aides suivent les conventions existantes. Les tables du hub sont propres à Mélange, comme demandé, sans écraser Multiplication simple. La miniature native reste à approuver ou remplacer avant visibilité de la carte. Le challenge HARD caché reste inactif.
 - Le journal réseau est borné à 1 000 calculs pour rester sous la taille JSON admise. Les parties natives plus longues restent locales ; une compression auditable serait nécessaire avant de prendre en charge ces marathons en Connect.
 - Les preuves sont des observations du navigateur, pas une attestation cryptographique des réponses. Le serveur contrôle identité, cohérence, seuils, unicité et transaction.
-- Cette session n’a pas introspecté le schéma hébergé ni testé de session scolaire réelle. Les confirmations externes rapportées par le professeur sont consignées séparément ; aucune publication n’est réalisée.
+- Cette session a analysé les JSON bruts fournis par le professeur après lecture seule via sa connexion. Elle a testé le candidat dans une base jetable et n’a ni interrogé Supabase hébergé directement ni testé de session scolaire réelle. Aucune publication n’est réalisée.
 
 La consigne finale confirme la mission **PR draft complète, testée et non publiée**. Les opérations de publication préparées restent hors périmètre : aucune fusion, installation SQL/Edge, activation ou ouverture des HUB. Le barème 594 validé n’autorise pas leur exécution. Le mode pilote et les candidats d’arrêt sont seulement des artefacts de revue et de laboratoire. Voir la [préparation de publication](PUBLICATION_CALCULS_MELANGES_20261030.md).
 
@@ -108,7 +108,7 @@ La revue a renforcé trois frontières, sans ouvrir de verrou :
 - **Saturation** : à 100 résultats en attente, les contrôles natifs Connect deviennent inertes et un message demande la reconnexion. Un bouton de synchronisation manuelle reste accessible. La recette injecte explicitement 100 journaux synthétiques, vérifie le blocage réel du bouton de départ, leur conservation puis le déblocage après ACK. Aucun test ne présente ces journaux injectés comme 100 parties jouées.
 - **ACK et requêtes lentes** : les réponses sont corrélées par événement, application et élève, en plus de CAS/époque. Une réponse numérique plausible pour un autre événement ne supprime rien. Les requêtes HTTP sont bornées à dix secondes ; les lots supplémentaires arrivant à la frontière des 100 ACK sont repris sans polling ni boucle sur un échec.
 
-Les corrections du report latéral et de l’emprunt à deux chiffres restent limitées à la copie. Le helper clavier ignore les marqueurs d’emprunt cachés, respecte les transitions automatiques et ne saisit pas de report dans la colonne finale qui contient déjà la retenue. La première tentative détermine le score, mais une opération corrigée puis réellement terminée compte pour la variété : aucune exclusion pédagogique supplémentaire n’est introduite. Les limites pédagogiques et le plafond de journal 1 000 restent explicitement ouverts avant activation.
+Les corrections du report latéral et de l’emprunt à deux chiffres restent limitées à la copie. Le helper clavier ignore les marqueurs d’emprunt cachés, respecte les transitions automatiques et ne saisit pas de report dans la colonne finale qui contient déjà la retenue. La première tentative détermine le score ; toutes les opérations terminées restent dans le journal. La nouvelle décision du professeur supprime la condition de variété : la sélection de départ détermine le taux. Les limites pédagogiques et le plafond de journal 1 000 restent explicitement ouverts avant activation.
 
 La revue du contexte professeur a également corrigé l’accès à la matrice GLOBAL lorsque le sélecteur de résultats contient Mélange. Le détail affiche les XP propres à ce jeu, lus côté serveur (28 dans la recette, contre 50 XP globaux), y compris via le tableau récapitulatif. Ces lectures sont déclenchées à l’ouverture du détail, sans polling et sans changement d’affichage des autres jeux.
 
@@ -179,3 +179,14 @@ Le push des correctifs relance les contrôles de la même PR draft. Leur verdict
 Sur le head `11bfe64`, le contrôle Mélange `41105761238` signale ensuite une sortie 127, indiquant une commande indisponible. Le runner utilisait `rg` pour cinq vérifications de messages, alors que le workflow ne déclare pas cette dépendance. Le défaut de portabilité a été reproduit sur une version figée du script dans un PATH limité aux utilitaires standard : `rg: command not found`, sortie 127. La version corrigée emploie `grep -Fq`, garde les cinq mêmes assertions et termine toute la recette SQL avec succès dans ce même environnement dépourvu de ripgrep. Aucun paquet supplémentaire n’est ajouté au job.
 
 Les nouveaux contrôles doivent à nouveau être évalués pour le commit qui contient ce correctif ; la sortie 127 du head précédent ne décrit pas cette nouvelle exécution.
+
+
+## Actualisation : taux réduit, compléments et contrôles du hub
+
+La [règle XP de sélection](CALCULS_MELANGES_XP_SELECTION_20261030.md) remplace les propositions historiques du kit. Les deux JSON complets fournis clôturent la comparaison de schéma : PostgreSQL 17.11, 26 tables, 137 contraintes, aucun namespace Mélange, quatre presets parents existants et deux watchers dont les définitions ne font que NOTIFY. Leurs empreintes correspondent au premier audit. Le laboratoire a rejoué le candidat actualisé sous ces watchers exacts, sans données de production.
+
+La régression Node de cette actualisation compte 221 tests : 220 réussis, 0 échec, 1 historique Soustraction/pg ignoré. Le laboratoire SQL vérifie désormais 14 puis 14 puis 0, les compléments après reset sans recollection, les tranches d’un parcours rejouable, l’arrondi /20 et une vraie course entre taux réduit et complet. Le contrôle d’activation masquée refuse aussi une version XP divergente. Les chiffres 217/216 cités dans les bilans précédents sont ceux de la revue initiale, avant cette actualisation.
+
+La recette Auth/Edge/PostgreSQL/Chromium du nouveau changement et la recette complète du moteur natif sont réussies, uniquement avec des services locaux et des identités fictives. Les tests ajoutés couvrent les commandes réelles du hub (classe, élève, retrait et héritage), leur application dans les sélecteurs natifs, et la conservation des réglages de Multiplication simple. Ils couvrent aussi une partie réduite réelle, le complément complet hors ligne sans XP anticipés et une répétition sans crédit supplémentaire.
+
+Le corps de PR actualisé est dans `docs/PR_CALCULS_MELANGES_DRAFT.md`. Une modification de ce fichier ne synchronise pas à elle seule la description GitHub si son API est inaccessible. La PR reste Draft ; aucun changement de `main`, déploiement ou activation n’est autorisé.

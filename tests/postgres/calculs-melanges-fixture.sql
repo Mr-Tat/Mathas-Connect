@@ -2,7 +2,7 @@
 CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
 CREATE TABLE public.connect_apps(app_key text PRIMARY KEY,title text,launch_url text,image_url text,enabled boolean,hub_section text,featured boolean,display_order integer);
 CREATE TABLE public.connect_hub_preset_entries(preset_slug text,app_key text,section text,display_order integer,visible boolean,featured boolean,PRIMARY KEY(preset_slug,app_key));
-CREATE TABLE public.connect_xp_award_rules(app_key text,award_key text,points integer,PRIMARY KEY(app_key,award_key));
+CREATE TABLE public.connect_xp_award_rules(app_key text,award_key text,points integer,ruleset_version integer NOT NULL DEFAULT 2,PRIMARY KEY(app_key,award_key));
 -- Disposable test-only tables derived from production column/constraint metadata.
 -- The real candidate RPCs are already installed by the PostgreSQL CI workflow.
 -- No production or real students are connected.

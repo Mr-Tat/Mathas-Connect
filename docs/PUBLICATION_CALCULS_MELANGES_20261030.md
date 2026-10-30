@@ -1,52 +1,51 @@
-# Préparation de publication — hors périmètre de la PR draft
+# Calculs mélangés — préparation du pilote, sans publication
 
-30 octobre 2026. **La mission courante est une PR draft complète, testée et non publiée.** Aucune fusion, publication Pages, installation SQL hébergée, livraison Edge, activation ni consultation de données élèves réelles n’est autorisée dans cette étape. Ce document prépare une éventuelle suite ; il ne l’autorise pas.
+30 octobre 2026. La consigne actuelle maintient l’interdiction de fusion, installation SQL hébergée, déploiement et activation sans autorisation distincte. Ce document prépare un lot reviewable ; il ne l’autorise pas. Aucun accès ni changement de données élèves réelles.
 
-## Livrables préparés
+## État technique
 
-- `melange-calculs-ecrits` dans `apps/calculs-melanges/`, copie indépendante du moteur source `e11c88b4e449e8cdb17b0fee78c7daa6ea5bf279`.
-- Pont terminal unique, preuves 4/10/20 séparées, cache par classe/sujet JWT/élève/app, file offline bornée, ACK corrélé, reçus permanents et XP atomiques côté serveur.
-- Session élève approuvée, Monsieur T séparé, résultats/XP propres au jeu/reset professeur et minimums de tables indépendants.
-- **594 XP de base validés pédagogiquement**, 198 par niveau, sans modification des autres jeux. L’éligibilité proposée reste trois opérations sélectionnées et au moins deux types réellement terminés ; elle se distingue de la validation du montant maximal.
-- Trois constantes compilées conservées à `false` : `CONNECT_WRITE_READY`, `MIXED_SERVER_READY`, `MIXED_TEACHER_READY`. App désactivée, quatre presets invisibles et catalogue statique inchangé.
-- Portée Edge supplémentaire `CONNECT_MIXED_ACCESS=closed` par défaut ; `pilot:<uuid-classe-fictive>` et `open` sont préparés pour une phase ultérieure. Cette portée ne remplace jamais l’authentification ni l’approbation.
-- Candidat SQL additif avec cinq nouvelles RPC privées ; aucune des quatre RPC historiques n’est remplacée. Patch d’ouverture des constantes et arrêt non destructif préparés, non appliqués.
-- Sauvegarde chiffrée : les deux tables privées Mélange sont incluses après installation du catalogue ; leur lecture manquante empêche une sauvegarde incomplète. Le backup de production n’est pas exécuté pour tester ce code.
+`melange-calculs-ecrits` est une application indépendante dans `apps/calculs-melanges/`, issue du moteur `e11c88b4e449e8cdb17b0fee78c7daa6ea5bf279`. Le pont terminal, les preuves 4/10/20, l’isolation classe/JWT/élève/app, la file offline, l’ACK, les reçus durables et l’atomicité état/XP sont préparés. Les sessions élève approuvé et Monsieur T, résultats/reset professeur et tables obligatoires par classe ou élève sont testés localement.
 
-## Développement et PR sans accès Supabase hébergé
+Les trois constantes restent `false` : `CONNECT_WRITE_READY`, `MIXED_SERVER_READY`, `MIXED_TEACHER_READY`. `CONNECT_MIXED_ACCESS` vaut `closed` par défaut ; les valeurs pilote et `open` n’ajoutent aucun droit d’identité. Le catalogue statique ne contient aucune carte Mélange et les quatre presets du candidat sont invisibles.
 
-Aucun jeton personnel Supabase n’est nécessaire. Les recettes utilisent les migrations, contrats et fixtures du dépôt, PostgreSQL et les services officiels GoTrue/PostgREST/Edge Runtime/Kong locaux, avec des identités fictives. Les SDK sont installés dans l’outillage externe au dépôt. Les constantes Connect ne sont ouvertes que dans des copies jetables connectées au laboratoire loopback.
+Le [barème validé](CALCULS_MELANGES_XP_SELECTION_20261030.md) conserve 594 XP : trois opérations cochées au départ donnent 100 %, une ou deux donnent 50 %, puis une réussite complète peut verser seulement le complément. Le tirage chanceux ne réduit pas le taux. Les aides suivent la convention existante ; les tables sont propres à Mélange, sans modifier Multiplication simple. La miniature native demeure provisoire et doit être approuvée ou remplacée avant visibilité publique de sa carte. Le pilote masqué n’en dépend pas.
 
-Les outils de préparation sont entièrement hors ligne :
+Le candidat ajoute cinq RPC privées et deux tables RLS. Il ne remplace aucune fonction historique ni ne rééquilibre les autres jeux. La sauvegarde chiffrée inclut les deux nouvelles tables dès que l’app est installée ; une lecture manquante refuse un backup incomplet. Aucun backup de production n’est exécuté pour les tests.
 
-```sh
-node scripts/calculs-melanges-release.mjs plan
-node scripts/calculs-melanges-release.mjs schema-query --output /tmp/mathas-mixed-schema-readonly.sql
-node scripts/calculs-melanges-release.mjs check-report /tmp/mathas-mixed-schema.json --stage before-install
-```
+## Compatibilité déjà vérifiée
 
-`plan` trace le commit, les constantes et les empreintes des fichiers. `schema-query` exporte une transaction READ ONLY, sans l’exécuter. `check-report` analyse un JSON fourni et indique explicitement que sa provenance n’a pas été vérifiée par une requête hébergée dans cette session. L’ancien appel direct à l’API Supabase est retiré. Une absence de jeton ne bloque aucune de ces commandes.
+Les deux JSON complets transmis par le professeur après READ ONLY/ROLLBACK ont permis de clôturer les contrôles : PostgreSQL 17.11, 26 tables, 137 contraintes, namespace Mélange libre et quatre presets parents existants. Les deux watchers exacts ont été relus, leurs empreintes concordent et le candidat actualisé a été testé sous leurs définitions dans une base locale jetable. Ils ne font que notifier PostgREST, sans modifier données ou droits. La [fiche de provenance](CALCULS_MELANGES_CONTROLES_LECTURE_SEULE.md) conserve les empreintes et limites.
 
-Le professeur rapporte avoir confirmé le projet actif `awmhpfofacaglewammxt`, ses migrations/tables/Edge et les quatre RPC historiques depuis une autre conversation disposant des connexions autorisées. Cette information est distinguée des tests locaux effectivement exécutés ici. Elle n’impose aucune nouvelle lecture de production pour terminer la PR.
+Le rapport externe confirme une correspondance exacte des sources Edge avec main : `connect-results` v39, `verify_jwt=true` ; `connect-catalog` v2, `verify_jwt=false`. Le catalogue est inchangé dans la PR et ne nécessite pas de déploiement. Pages a publié `91bcca7aba97d9fb00460a7e4ff56a0675f1459b` depuis main à la racine, selon les logs transmis. Main est rapportée non protégée : une fusion doit être traitée comme une publication Pages, sans compter sur un blocage automatique.
 
-## Contrôles de publication à faire plus tard
+Cette session a analysé les fichiers et exécuté les recettes locales. Elle n’a pas effectué ces lectures Supabase hébergées ni une recette publiée. Aucune nouvelle demande de métadonnées ou de jeton personnel n’est nécessaire pour poursuivre la préparation sur ces références.
 
-La [fiche de lecture seule](CALCULS_MELANGES_CONTROLES_LECTURE_SEULE.md) donne les métadonnées exactes à demander via la connexion déjà autorisée du professeur. Aucun résultat, identité, appareil ou crédit élève n’est demandé.
+## À finaliser avant une autorisation de publication
 
-Avant toute nouvelle autorisation de publication : comparer le schéma cible (types, index, valeurs par défaut, contraintes et triggers), le namespace Mélange, les droits des fonctions et tables, puis la version/source actuellement déployée de `connect-results` et son réglage `verify_jwt`. Ces vérifications préviennent l’écrasement d’une évolution hébergée ; elles ne sont pas des prérequis de compilation ou de tests locaux.
+1. Préparer la livraison d’activation : revoir le patch des trois constantes, adapter les attentes de tests actuellement fixées à l’état fermé et les textes de laboratoire, puis obtenir les résultats Node/PostgreSQL/Auth/Chromium et CI au nouveau SHA. Le patch de constantes seul n’est pas une version finale déjà validée.
+2. Reconfirmer HEAD/SHA, versions Edge et absence de dérive depuis les fichiers fournis. Toute différence pertinente doit être revue avant remplacement.
+3. Présenter le lot exact à autoriser : fichiers SQL et empreintes, commit à publier, source/configuration JWT Edge, classe fictive pilote, recette et arrêt non destructif. La validation pédagogique ne remplace pas cette autorisation.
 
-Les choix restant à fixer concernent l’éligibilité par variété d’opérations, les aides, la portée indépendante/globale des tables et la miniature officielle. Le plafond 594 est déjà validé. La miniature native provisoire est tracée ; le journal est borné à 1 000 calculs et avertit au-delà en conservant le score natif localement. Le guidé normal et le challenge HARD cachés ne sont pas réactivés artificiellement.
+## Ordre du lot de publication, après autorisation distincte
 
-## Opérations futures nécessitant une instruction explicite distincte
+1. Installer uniquement `supabase/release-candidates/calculs_melanges_locked_v1.sql` dans une nouvelle migration contrôlée et enregistrée. App désactivée, quatre presets cachés. Ne pas utiliser `db push`, rejouer l’historique ou importer une fixture. Vérifier la gestion BEGIN/COMMIT et de l’historique propre à l’outil retenu avant exécution.
+2. Contrôler le résultat en lecture seule avec `check-report --stage installed-hidden` : signatures et droits privés, RLS, neuf règles version 2 totalisant 198 par niveau, quatre presets invisibles, app désactivée. Vérifier les objets existants conservés.
+3. Préparer des identités et une classe fictives dédiées via Auth/Connect. Ne pas réaffecter de vrai élève ou appareil. Configurer la portée hébergée `CONNECT_MIXED_ACCESS=pilot:<uuid-réel-de-la-classe-fictive>` ; ce n’est pas une variable du seul environnement cloud.
+4. Comparer puis déployer uniquement la version revue de `connect-results`, en conservant `verify_jwt=true` et les routes des autres jeux, sans `--prune`. Ne pas remplacer `connect-catalog`.
+5. Fusionner/publier le commit d’activation revu avec sa CI réussie, selon Pages/main/racine. Vérifier le SHA effectivement livré, pas seulement celui de la PR.
+6. Après contrôle du schéma, de la portée, de l’Edge et du site, activer le pilote via `calculs_melanges_enable_hidden.sql`. Le fichier refuse la dérive de règles/version XP, signatures/droits et visibilité. Les cartes restent masquées et les classes hors pilote sont refusées, y compris par URL directe.
+7. Réaliser la recette hébergée ci-dessous. Ensuite seulement, selon l’ouverture choisie par l’enseignant, élargir la portée aux classes retenues et rendre visibles les espaces voulus depuis la matrice GLOBAL. Vérifier les quatre catalogues après leur cache de 60 secondes.
 
-1. Installer le seul `supabase/release-candidates/calculs_melanges_locked_v1.sql` dans une migration contrôlée et enregistrée, après comparaison de l’historique réel. App désactivée et quatre presets invisibles à la sortie. Ne pas employer `supabase db push` ni rejouer l’historique.
-2. Préparer une classe et des identités fictives de recette, puis configurer la portée Edge `pilot:<uuid>` sur cette seule classe. Aucune réaffectation d’élève réel.
-3. Revoir le patch `calculs_melanges_connect_enable.patch`, qui ouvre uniquement les trois constantes ; vérifier sa compatibilité par `git apply --check`. Adapter les attentes des tests à cette nouvelle phase. Comparer puis déployer uniquement `connect-results`, en préservant sa configuration JWT et les routes des autres jeux ; ne pas utiliser `--prune`.
-4. Fusionner la PR revue et publier les fichiers statiques selon la configuration Pages effectivement constatée. Un push de branche et une PR draft ne constituent pas cette publication.
-5. Activer le pilote avec `calculs_melanges_enable_hidden.sql` après contrôles. Le fichier refuse les règles XP divergentes, les signatures RPC manquantes, les droits publics et tout preset déjà visible. L’Edge refuse les classes hors pilote, même par URL directe.
-6. Effectuer la recette hébergée : approbation, vraie saisie, ACK +28 sans doublon, refresh/reload, second appareil fictif, offline/reconnexion, deux ordres 4/10/20, résultats/reset/XP professeur, Monsieur T et tables minimales. Tous les catalogues doivent rester masqués.
-7. Seulement sur ouverture choisie par le professeur : portée Edge `open` ou liste des classes retenues, puis visibilité individuelle dans la matrice GLOBAL pour Observation, Phase 1, Phase 2 et 2 ECO. Vérifier chaque catalogue après son cache de 60 secondes.
+## Recette du pilote avant les vrais élèves
 
-## Retour arrière préparé
+Sur identités fictives : approbation native et appartenance à la classe ; refus des autres classes ; vraie saisie à taux réduit → ACK 14, rechargement, vraie réussite complète hors ligne sans XP anticipé → ACK du complément 14, puis répétition sans crédit nouveau. Vérifier aussi un tirage chanceux à sélection complète, le second appareil, les deux ordres 4/10/20, les résultats/XP professeur, reset sans recollection, Monsieur T et tables obligatoires classe/élève. Les quatre cartes restent cachées et les quatre autres jeux doivent continuer à fonctionner.
 
-Après une éventuelle publication future : fermer la portée Edge (`closed`), puis appliquer `calculs_melanges_disable_only.sql` pour désactiver l’app et masquer ses presets sans effacer résultats, XP, reçus, réglages ni archives. Refermer les constantes dans une livraison revue si nécessaire. Les acquis et files restent conservés ; les reçus empêchent les doubles crédits lors d’une reprise. Ce retour arrière a été testé en base jetable, pas exécuté sur le projet hébergé.
+Le journal reste borné à 1 000 calculs ; au-delà, le moteur conserve le résultat natif localement et avertit. Les preuves sont des observations du navigateur, pas une attestation cryptographique des réponses. Le serveur contrôle identité, cohérence, seuils, taux, unicité et transaction.
+
+## Retour arrière non destructif
+
+Fermer la portée Edge (`closed`), puis appliquer le seul `calculs_melanges_disable_only.sql` autorisé pour désactiver l’app et masquer ses presets. Conserver états, crédits, reçus, réglages et archives. Ne pas supprimer les tables/RPC, réinitialiser les résultats ou restaurer globalement une ancienne base. Refermer les constantes dans une livraison revue si nécessaire, puis vérifier le refus des sessions connectées et le SHA publié.
+
+## Outillage hors ligne
+
+`node scripts/calculs-melanges-release.mjs plan` trace les empreintes, la politique XP version 2, les constantes et le commit. `schema-query` exporte seulement une transaction READ ONLY. `check-report FILE --stage before-install|installed-hidden|enabled-hidden` analyse le JSON fourni et précise sa provenance externe. Aucun de ces outils ne requiert de jeton Supabase ni n’effectue de déploiement.

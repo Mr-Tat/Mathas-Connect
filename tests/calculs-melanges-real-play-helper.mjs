@@ -51,7 +51,11 @@ export async function solveMixed({frame,page,hard=false,wrong=false}){
  }
  await page.waitForTimeout(220);
 }
-export async function playMixedClassic({frame,page,total}){
+export async function playMixedClassic({frame,page,total,operations=null}){
+ if(operations)for(const op of ['add','sub','mul']){
+  const button=frame.locator('.op-toggle[data-op="'+op+'"]');
+  if(await button.evaluate(e=>e.classList.contains('active'))!==operations.includes(op))await button.click();
+ }
  await frame.locator('.countBtn[data-count="'+total+'"]').click();
  for(let pair=0;pair<total/2;pair++){
   await frame.waitForFunction(expected=>document.querySelector('#pair .calc-label')?.textContent==='Calcul '+expected,pair*2+1,{timeout:15000});

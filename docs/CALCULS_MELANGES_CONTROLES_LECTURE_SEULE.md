@@ -6,7 +6,7 @@
 
 Le professeur a fait confirmer via une autre conversation ChatGPT connectée à GitHub et Supabase : projet `awmhpfofacaglewammxt` actif, accès en lecture seule aux migrations/tables/Edge et présence de `connect_xp_sync_v2`, `connect_xp_read_v2`, `connect_parcours_restart_one`, `connect_parcours_restart_class`.
 
-Provenance : compte rendu du professeur, pas exécution par cette session. Les définitions JSON complètes n’ont pas été transmises ici. Le candidat Mélange crée ses propres cinq RPC et ne remplace aucune de ces quatre fonctions ; leur nouvelle interrogation ne bloque donc pas son implémentation.
+Provenance : compte rendu du professeur, pas exécution par cette session. Les JSON complets de schéma et des watchers ont depuis été transmis ; voir le bilan reçu ci-dessous. Le candidat Mélange crée ses propres cinq RPC et ne remplace aucune de ces quatre fonctions ; leur nouvelle interrogation ne bloque donc pas son implémentation.
 
 ## Requête précise de schéma et catalogue
 
@@ -54,3 +54,12 @@ Les étapes `installed-hidden` et `enabled-hidden` sont destinées à une évent
 - Configuration GitHub Pages et CI : branche/dossier ou workflow de publication, SHA livré et état des workflows de la PR.
 
 Aucune de ces vérifications n’autorise l’application d’un candidat SQL, l’ouverture d’un verrou, une activation ou une modification de résultats. Aucune donnée d’élève ou valeur de secret n’est nécessaire au rapport.
+
+
+## Bilan reçu : comparaison terminée
+
+Le professeur a fourni `schema-audit.json` (SHA-256 `70361df37e259ed8773adaacc9b002ca4749bae99f43bdffd5b27f73ce27ab0c`) puis `complement-publication.json` (`1a5b9cf0671d32ea815bd4feb0ec5e2c6521119150c5fb32caeffe83ac735e3c`). Le complément a été collecté le 30 octobre 2026 à 21:10:27 UTC, soit 22:10 à Bruxelles, en READ ONLY puis ROLLBACK selon le professeur.
+
+La comparaison hors ligne réussit. La recette locale PostgreSQL 17.11 reconstitue 26 tables et 137 contraintes avec les deux watchers exacts activés. Leur source ne contient que des lectures système et NOTIFY ; leurs empreintes `afaad7193dcf8f81e728d2bedb85e43e` et `4357772baf5cfcd5c6d7049585b3a537` concordent avec l’audit. Les quatre slugs parents existent. Aucun complément de métadonnées n’est encore demandé pour ce périmètre, sauf dérive constatée avant une publication ultérieure.
+
+Les sources Edge exactes ont été comparées à main dans la conversation connectée, selon le rapport transmis : `connect-results` v39/JWT actif et `connect-catalog` v2/JWT inactif. Pages publie main à la racine ; main est rapportée non protégée. Cette provenance reste distincte des tests locaux et d’une recette hébergée, qui n’a pas eu lieu. La validation des règles XP n’autorise aucune opération de publication.

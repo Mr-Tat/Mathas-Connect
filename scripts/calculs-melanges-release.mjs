@@ -13,7 +13,7 @@ const sqlFile='supabase/release-candidates/calculs_melanges_schema_readonly.sql'
 export const requiredSchema={
  connect_apps:'app_key:text title:text launch_url:text image_url:text enabled:boolean hub_section:text featured:boolean display_order:integer',
  connect_hub_preset_entries:'preset_slug:text app_key:text section:text display_order:integer visible:boolean featured:boolean',
- connect_xp_award_rules:'app_key:text award_key:text points:integer',
+ connect_xp_award_rules:'app_key:text award_key:text points:integer ruleset_version:integer',
  connect_students:'id:uuid archived_at:timestamp with time zone',
  connect_class_permissions:'class_id:uuid teacher_id:uuid can_manage:boolean',
  connect_enrollments:'student_id:uuid class_id:uuid left_at:timestamp with time zone',
@@ -91,7 +91,7 @@ export function validateAudit(audit,stage='before-install'){
   const app=catalogue.apps?.[0];
   if(catalogue.apps?.length!==1||app?.enabled!==(stage==='enabled-hidden')||app?.featured!==false||app?.launchUrl!=='https://mr-tat.github.io/Mathas-Connect/apps/calculs-melanges/'||app?.imageUrl!=='https://mr-tat.github.io/Mathas-Connect/assets/miniatures/melange-calculs-ecrits.webp')issues.push('unexpected_app_catalogue');
   if(!sameSet(catalogue.presets?.map(p=>p.slug),['observation','phase1','phase2','2eco'])||catalogue.presets?.some(p=>p.visible!==false||p.featured!==false))issues.push('hub_not_hidden');
-  if(catalogue.rules?.length!==9||Object.entries(rules).some(([key,points])=>catalogue.rules?.find(r=>r.key===key)?.points!==points))issues.push('xp_rules_drift');
+  if(catalogue.rules?.length!==9||Object.entries(rules).some(([key,points])=>{const r=catalogue.rules?.find(r=>r.key===key);return r?.points!==points||r?.rulesetVersion!==2}))issues.push('xp_rules_drift');
  }
  return {ok:issues.length===0,stage,issues,scope:'schema_and_catalogue_only',requiresReview:['constraints_and_triggers','deployed_edge_source','hosted_auth_and_browser']};
 }
@@ -117,7 +117,8 @@ export function releasePlan(){
   sourceCommit:JSON.parse(read('apps/calculs-melanges/source-manifest.json')).commit,gates,
   staticCatalogueContainsMixed:read('hub-catalog.json').includes(appKey),
   files:Object.fromEntries(files.map(file=>[file,createHash('sha256').update(readFileSync(path.join(root,file))).digest('hex')])),
-  xpMax:594,hostedStatus:'not-verified-in-this-session',hostedCredentialsRequired:false,commandPerformsProductionWrites:false};
+  xpMax:594,xpPolicyVersion:2,fullRateSelectedOperations:3,restrictedRate:0.5,missingPointsCanBeCompleted:true,
+  hostedStatus:'not-verified-in-this-session',hostedCredentialsRequired:false,commandPerformsProductionWrites:false};
 }
 async function main(args){
  const command=args.shift()||'plan';let stage='before-install',output=null,file=null;

@@ -15,6 +15,7 @@ const prof=check(await teacher.auth.signUp({email:teacherEmail,password:teacherP
 assert.ok(student.user.is_anonymous&&!prof.user.is_anonymous);
 check(await admin.from('connect_students').insert([{id:studentId,display_name:'Fictif Mélange'},{id:teacherStudent,display_name:'Monsieur T'}]),'profiles');
 check(await admin.from('connect_classes').insert({id:classId,name:'Classe fictive Mélange'}),'class');
+check(await admin.from('connect_multiplier_locks').insert({class_id:classId,scope_key:'class',multipliers:[4,9]}),'existing multiplication-only lock');
 check(await admin.from('connect_enrollments').insert({id:randomUUID(),class_id:classId,student_id:studentId}),'membership');
 check(await admin.from('connect_devices').insert({id:randomUUID(),auth_user_id:student.user.id,student_id:studentId,state:'approved'}),'approval');
 check(await admin.from('connect_teachers').insert({auth_user_id:prof.user.id}),'teacher');
@@ -48,6 +49,19 @@ assert.equal((await post(student,event)).body.error,'stale_reset_epoch');
 const replay=ok(await post(student,{...event,eventId:randomUUID(),expectedRevision:2,expectedResetEpoch:1}));assert.equal(replay.xp.delta,0);assert.equal(replay.xp.total,50);
 const forbidden=await pupil.rpc('connect_mixed_xp_sync_v1',{p_student:studentId,p_app:'melange-calculs-ecrits',p_force:false});assert.ok(forbidden.error,'no authenticated direct RPC');
 const old=check(await admin.from('connect_xp_credits').select('xp_credited').eq('student_id',studentId).eq('app_key','addition-ecrite-simple').single(),'old XP retained');assert.equal(old.xp_credited,22);
+// Same authenticated pipeline, new fictitious pupil: browser-supplied rate hints
+// cannot turn a one-operation journal into full credit.
+const rateStudent=randomUUID();
+check(await admin.from('connect_students').insert({id:rateStudent,display_name:'Fictif taux XP'}),'rate profile');
+check(await admin.from('connect_enrollments').insert({id:randomUUID(),class_id:classId,student_id:rateStudent}),'rate membership');
+check(await admin.from('connect_devices').insert({id:randomUUID(),auth_user_id:other.user.id,student_id:rateStudent,state:'approved'}),'rate approval');
+const halfEvent={...event,eventId:randomUUID(),expectedStudentId:rateStudent,operationsSelectedAtStart:['add'],operationsCompleted:Array(4).fill('add'),xpRate:1,xpPoints:594};
+const halfAck=ok(await post(other,halfEvent));assert.equal(halfAck.xp.delta,14);assert.equal(halfAck.xp.appXp,14);assert.equal(halfAck.xp.rulesetVersion,2);
+const topupEvent={...halfEvent,eventId:randomUUID(),expectedRevision:1,operationsSelectedAtStart:['add','sub','mul']};
+const topupAck=ok(await post(other,topupEvent));assert.equal(topupAck.xp.delta,14);assert.equal(topupAck.xp.appXp,28);
+assert.equal(ok(await post(other,topupEvent)).xp.delta,0);
+assert.equal(ok(await post(other,{...topupEvent,eventId:randomUUID(),expectedRevision:2})).xp.delta,0);
+console.log('PASS real Auth+Edge+SQL: one selected → 14 XP, all-three lucky draw → only 14 top-up, repeated proof/game → 0; client rate hints ignored');
 console.log('PASS real local Auth+Edge+SQL: isolated pilot class, 401/403, approved pupil, teacher player, 28 XP ACK, duplicate0, professor results, reset epoch, no recollection, other game intact');
 if(process.env.SDK_BROWSER_PATH){
  const {readFileSync}=await import('node:fs'),{chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
@@ -127,6 +141,37 @@ if(process.env.SDK_BROWSER_PATH){
   await professor.getByRole('button',{name:'Voir les résultats de Élève Chromium Mélange dans Calculs écrits mélangés'}).click();
   const rows=await professor.locator('#results-student-content .result-table tr').allTextContents();assert.match(rows.join('|'),/4\/4/);assert.doesNotMatch(rows[0],/HARD 5/);
   await professor.waitForFunction(()=>document.querySelector('#results-student-content .mixed-xp')?.textContent?.includes('28 XP'));
+  // Real HUB professor controls: class minimums, pupil override, inheritance,
+  // native enforcement after reload, and isolation from multiplication-simple.
+  const tablePanel=professor.locator('#results-student-content details.management');
+  await tablePanel.locator('summary').click();
+  await tablePanel.getByRole('status').filter({hasText:'héritées de la classe'}).waitFor();
+  const tableScope=tablePanel.getByRole('combobox',{name:'Portée du verrouillage'});
+  async function saveMinimums(scope,values){
+   await tableScope.selectOption(scope);
+   for(let n=2;n<=9;n++)await tablePanel.locator('input[type="checkbox"][value="'+n+'"]').setChecked(values.includes(n));
+   await tablePanel.getByRole('button',{name:'Verrouiller les tables choisies',exact:true}).click();
+   await tablePanel.getByRole('status').filter({hasText:'Tables obligatoires enregistrées'}).waitFor();
+  }
+  async function assertMinimums(values){
+   frame=await openGame();
+   assert.deepEqual(await frame.evaluate(()=>window.__mathasMixedMultiplierLock),values);
+   for(const n of values){await frame.locator('.mult-chip[data-mult="'+n+'"]').click();assert.ok(await frame.locator('.mult-chip[data-mult="'+n+'"]').evaluate(e=>e.classList.contains('active')))}
+  }
+  await saveMinimums('class',[3,8]);
+  const classMinimum=check(await admin.from('connect_mixed_multiplier_locks').select('multipliers').eq('class_id',classId).eq('scope_key','class').single(),'class minimum from actual professor UI');
+  assert.deepEqual(classMinimum.multipliers,[3,8]);await assertMinimums([3,8]);
+  await saveMinimums('student',[2,9]);
+  const pupilMinimum=check(await admin.from('connect_mixed_multiplier_locks').select('multipliers').eq('class_id',classId).eq('scope_key',browserStudent).single(),'pupil override from actual professor UI');
+  assert.deepEqual(pupilMinimum.multipliers,[2,9]);await assertMinimums([2,9]);
+  await tablePanel.getByRole('button',{name:'Retirer le verrouillage',exact:true}).click();
+  await tablePanel.getByRole('status').filter({hasText:'Verrouillage retiré'}).waitFor();
+  assert.equal(check(await admin.from('connect_mixed_multiplier_locks').select('scope_key').eq('class_id',classId).eq('scope_key',browserStudent),'pupil override removed').length,0);
+  await assertMinimums([3,8]);
+  const existingMinimum=check(await admin.from('connect_multiplier_locks').select('multipliers').eq('class_id',classId).eq('scope_key','class').single(),'published multiplication preferences untouched');
+  assert.deepEqual(existingMinimum.multipliers,[4,9]);
+  await saveMinimums('class',[2,7]);
+  console.log('PASS actual HUB controls → mixed-only class/pupil minimums → native enforced digits after reload → inheritance restored; multiplication-simple locks unchanged');
   await professor.locator('#results-student-content .results-restart-button').click();const dialog=professor.locator('dialog.parcours-dialog');await dialog.waitFor();await dialog.locator('input[type=checkbox]').uncheck();await dialog.locator('input[required]').fill('Élève Chromium Mélange');await dialog.getByRole('button',{name:'Confirmer le nouveau parcours'}).click();await dialog.waitFor({state:'detached'});
   frame=await openGame();await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='50 XP');assert.deepEqual(await frame.evaluate(()=>JSON.parse(localStorage.getItem('mixcalc_classic_v1'))),{});
   const after=check(await admin.from('connect_states').select('reset_epoch,state_data').eq('student_id',browserStudent).eq('app_key','melange-calculs-ecrits').single(),'UI reset');assert.equal(after.reset_epoch,1);assert.deepEqual(after.state_data,{});
@@ -166,6 +211,35 @@ if(process.env.SDK_BROWSER_PATH){
   await page.locator('#retry').click();await page.waitForFunction(k=>JSON.parse(localStorage.getItem(k)||'[]').length===0,newQueueKey,{timeout:30000});
   assert.equal(await frame.evaluate(()=>document.body.inert),false);
   console.log('PASS queue100: real controls blocked, proofs preserved, explicit retry drains ACKs and unlocks game');
+  // Real native games for the half tier and its one-time complement, including
+  // an offline full-rate run that must keep displaying the acknowledged 14 XP.
+  const halfContext=await browser.newContext();await setup(halfContext);await configureGame(halfContext);
+  const halfPage=await halfContext.newPage();halfPage.on('pageerror',e=>errors.push('half-rate pupil: '+e.message));
+  await halfPage.goto(site+'/tests/.mixed-auth-only.html');
+  const halfSubject=await halfPage.evaluate(async({url,anon,SDK_URL})=>{const {createClient}=await import(SDK_URL);const sb=createClient(url,anon,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});const r=await sb.auth.signInAnonymously();if(r.error)throw r.error;return r.data.user.id},{url,anon,SDK_URL});
+  const halfPupil=randomUUID();
+  check(await admin.from('connect_students').insert({id:halfPupil,display_name:'Élève Chromium demi-XP'}),'half browser pupil');
+  check(await admin.from('connect_enrollments').insert({id:randomUUID(),class_id:classId,student_id:halfPupil}),'half browser class');
+  check(await admin.from('connect_devices').insert({id:randomUUID(),auth_user_id:halfSubject,student_id:halfPupil,state:'approved'}),'half browser approval');
+  async function openHalfGame(){await halfPage.goto(site+'/apps/calculs-melanges/?class='+classId);await halfPage.waitForFunction(()=>document.getElementById('game')?.contentWindow?.__mathasGameStorageScope?.startsWith('connect.'),null,{timeout:15000});await halfPage.waitForTimeout(250);return halfPage.frames().find(f=>f.parentFrame())}
+  let halfFrame=await openHalfGame();
+  await playMixedClassic({frame:halfFrame,page:halfPage,total:4,operations:['add']});
+  await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='14 XP',null,{timeout:20000});
+  halfFrame=await openHalfGame();await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='14 XP');
+  await halfContext.setOffline(true);
+  await playMixedClassic({frame:halfFrame,page:halfPage,total:4,operations:['add','sub','mul']});
+  await halfPage.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('en attente (offline)'));
+  assert.equal(await halfPage.locator('#xp-total').innerText(),'14 XP');
+  await halfContext.setOffline(false);
+  await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='28 XP',null,{timeout:20000});
+  halfFrame=await openHalfGame();await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='28 XP');
+  await playMixedClassic({frame:halfFrame,page:halfPage,total:4,operations:['add','sub','mul']});
+  await halfPage.waitForFunction(()=>document.getElementById('game')?.getAttribute('data-revision')==='3',null,{timeout:20000});
+  assert.equal(await halfPage.locator('#xp-total').innerText(),'28 XP');
+  const halfFinal=check(await admin.from('connect_xp_credits').select('xp_credited,ruleset_version').eq('student_id',halfPupil).eq('app_key','melange-calculs-ecrits').single(),'half browser final credit');
+  assert.equal(halfFinal.xp_credited,28);assert.equal(halfFinal.ruleset_version,2);
+  await halfContext.close();
+  console.log('PASS real native single-operation game → ACK14 → reload → all-three game offline stays14 → ACK top-up14 → repeated game stays28');
   assert.deepEqual(errors,[]);console.log('PASS real Chromium + native anonymous SDK + 4 mixed calculations offline → one real Edge/SQL ACK +28 XP and trophy → reload → actual professor login/results/reset → XP retained');
  }finally{await browser.close()}
 }

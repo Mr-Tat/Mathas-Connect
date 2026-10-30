@@ -23,16 +23,16 @@ VALUES('melange-calculs-ecrits','Calculs écrits mélangés',
 'https://mr-tat.github.io/Mathas-Connect/assets/miniatures/melange-calculs-ecrits.webp',false,'calculs_ecrits',false,60);
 INSERT INTO public.connect_hub_preset_entries(preset_slug,app_key,section,display_order,visible,featured)
 SELECT s,'melange-calculs-ecrits','calculs_ecrits',60,false,false FROM unnest(ARRAY['observation','phase1','phase2','2eco']) s;
-INSERT INTO public.connect_xp_award_rules(app_key,award_key,points) VALUES
-('melange-calculs-ecrits','classic:4:perfect',28),
-('melange-calculs-ecrits','classic:10:pass',38),
-('melange-calculs-ecrits','classic:10:bonus',8),
-('melange-calculs-ecrits','classic:20:pass',63),
-('melange-calculs-ecrits','classic:20:bonus',13),
-('melange-calculs-ecrits','sudden:5',12),
-('melange-calculs-ecrits','sudden:10',12),
-('melange-calculs-ecrits','hard:3',12),
-('melange-calculs-ecrits','hard:7',12);
+INSERT INTO public.connect_xp_award_rules(app_key,award_key,points,ruleset_version) VALUES
+('melange-calculs-ecrits','classic:4:perfect',28,2),
+('melange-calculs-ecrits','classic:10:pass',38,2),
+('melange-calculs-ecrits','classic:10:bonus',8,2),
+('melange-calculs-ecrits','classic:20:pass',63,2),
+('melange-calculs-ecrits','classic:20:bonus',13,2),
+('melange-calculs-ecrits','sudden:5',12,2),
+('melange-calculs-ecrits','sudden:10',12,2),
+('melange-calculs-ecrits','hard:3',12,2),
+('melange-calculs-ecrits','hard:7',12,2);
 -- Deliberately independent from multiplication-simple's class/student locks.
 CREATE TABLE public.connect_mixed_multiplier_locks(
  class_id uuid NOT NULL,scope_key text NOT NULL,multipliers integer[] NOT NULL,
@@ -132,7 +132,7 @@ BEGIN
  SELECT coalesce(jsonb_agg(milestone_key ORDER BY milestone_key),'[]'::jsonb) INTO replay_earned FROM public.connect_parcours_xp_bonus WHERE student_id=p_student AND app_key=p_app AND parcours_number=parcours;
  END IF;
  RETURN jsonb_build_object('active',true,'total',total_points,'appXp',points,'level',lvl,
- 'next',CASE WHEN lvl<7 THEN lvl*50 ELSE 300+(lvl-6)*100 END,'apps',apps,'milestones',earned,'currentMilestones',replay_earned,'parcours',parcours,'repeatXp',can_repeat,'max',594);
+ 'next',CASE WHEN lvl<7 THEN lvl*50 ELSE 300+(lvl-6)*100 END,'apps',apps,'milestones',earned,'currentMilestones',replay_earned,'parcours',parcours,'repeatXp',can_repeat,'max',594,'rulesetVersion',2);
 END $function$
 ;
 CREATE FUNCTION public.connect_mixed_xp_sync_v1(p_student uuid, p_app text, p_force boolean DEFAULT false)
@@ -141,71 +141,74 @@ CREATE FUNCTION public.connect_mixed_xp_sync_v1(p_student uuid, p_app text, p_fo
  SECURITY DEFINER
  SET search_path TO 'public', 'pg_temp'
 AS $function$
-declare s jsonb; i int; n int; score int; best int; k text; added int:=0; beforexp int:=0; afterxp int:=0; totalxp int:=0; levelnow int; priorlevel int:=1; rulesversion int:=1; replay int:=1; repeated boolean:=false; rec record; earned boolean; bonusxp int:=0;
+declare s jsonb; h jsonb; i int; n int; score int; half_score int; k text;
+ beforexp int:=0; afterxp int:=0; totalxp int:=0; levelnow int; priorlevel int:=1;
+ rulesversion int:=2; replay int:=1; repeated boolean:=false; rec record;
+ full_hit boolean; half_hit boolean; new_points int; bonus_points int; proof jsonb;
+ first_parcours_num int; full_parcours_num int; bonusxp int:=0; award_mode text; achievement_kind text;
 begin
  if p_app NOT IN ('melange-calculs-ecrits') then raise exception 'not_integrated';end if;
  perform 1 from public.connect_students where id=p_student and archived_at is null for update;
  if not found then raise exception 'inactive_student';end if;
  select coalesce(state_data->'eligible','{}'::jsonb) into s from public.connect_states where student_id=p_student and app_key=p_app;
  s:=coalesce(s,'{}'::jsonb);
+ select coalesce(state_data->'halfEligible','{}'::jsonb) into h from public.connect_states where student_id=p_student and app_key=p_app;
+ h:=coalesce(h,'{}'::jsonb);
  select coalesce(xp_credited,0) into beforexp from public.connect_xp_credits where student_id=p_student and app_key=p_app;
  beforexp:=coalesce(beforexp,0);
  select parcours_number,repeat_xp into replay,repeated from public.connect_parcours_current where student_id=p_student and app_key=p_app;
  replay:=coalesce(replay,1);repeated:=coalesce(repeated,false);
- for i in 0..2 loop
-  for n in select unnest(array[4,10,20]) loop
-   score=coalesce((s#>>array['classic',i::text,n::text])::int,-1);
-   if n=4 and score=4 then
-    k='classic:'||(i+1)||':4:perfect';
-    insert into public.connect_xp_milestones(student_id,app_key,milestone_key,evidence) values(p_student,p_app,k,jsonb_build_object('source','record','score',score,'firstParcours',replay)) on conflict do nothing;
-   elsif n in (10,20) then
-    if score*5>=n*4 then
-     k='classic:'||(i+1)||':'||n||':pass';
-     insert into public.connect_xp_milestones(student_id,app_key,milestone_key,evidence) values(p_student,p_app,k,jsonb_build_object('source','record','score',score,'firstParcours',replay)) on conflict do nothing;
-    end if;
-    if score=n then
-     k='classic:'||(i+1)||':'||n||':bonus';
-     insert into public.connect_xp_milestones(student_id,app_key,milestone_key,evidence) values(p_student,p_app,k,jsonb_build_object('source','record','score',score,'firstParcours',replay)) on conflict do nothing;
-    end if;
+ -- Nine rights per level. Rate is derived from completed proof trees, never
+ -- from browser points. Full rights remain capped at 594 across all levels.
+ for rec in
+  select levels.lvl,r.award_key,r.points,
+   case r.award_key when 'classic:20:pass' then 32 when 'classic:20:bonus' then 6 else r.points/2 end half_points
+  from generate_series(1,3) levels(lvl) cross join public.connect_xp_award_rules r
+  where r.app_key=p_app order by levels.lvl,r.award_key
+ loop
+  i:=rec.lvl-1;award_mode:=split_part(rec.award_key,':',1);
+  n:=split_part(rec.award_key,':',2)::int;achievement_kind:=split_part(rec.award_key,':',3);
+  k:=concat_ws(':',award_mode,rec.lvl,n,nullif(achievement_kind,''));
+  full_hit:=false;half_hit:=false;
+  if award_mode='classic' then
+   score:=coalesce((s#>>array['classic',i::text,n::text])::int,-1);
+   half_score:=coalesce((h#>>array['classic',i::text,n::text])::int,-1);
+   if achievement_kind='pass' then full_hit:=score*5>=n*4;half_hit:=half_score*5>=n*4;
+   else full_hit:=score=n;half_hit:=half_score=n;end if;
+  else
+   full_hit:=(s#>>array['thresholds',award_mode,i::text,n::text])::boolean IS TRUE;
+   half_hit:=(h#>>array['thresholds',award_mode,i::text,n::text])::boolean IS TRUE;
+  end if;
+  if not full_hit and not half_hit then continue;end if;
+  new_points:=case when full_hit then rec.points else rec.half_points end;
+  insert into public.connect_xp_milestones as m(student_id,app_key,milestone_key,evidence)
+  values(p_student,p_app,k,jsonb_build_object('source','record','xpPoints',new_points,
+    'firstParcours',replay,'fullParcours',case when full_hit then replay else null end,'xpPolicy','mixed_selected_v2'))
+  on conflict(student_id,app_key,milestone_key) do update
+   set evidence=m.evidence||jsonb_build_object('xpPoints',new_points,'fullParcours',replay,'xpPolicy','mixed_selected_v2')
+   where coalesce((m.evidence->>'xpPoints')::int,rec.points)<new_points;
+  -- A later all-three run upgrades only the missing points. Preserve when each
+  -- tranche was first earned so an authorized replay cannot double a NEW top-up.
+  if repeated and replay>=2 then
+   select evidence into proof from public.connect_xp_milestones where student_id=p_student and app_key=p_app and milestone_key=k;
+   first_parcours_num:=coalesce((proof->>'firstParcours')::int,1);
+   full_parcours_num:=case when coalesce((proof->>'xpPoints')::int,rec.points)>=rec.points
+    then coalesce((proof->>'fullParcours')::int,first_parcours_num) else null end;
+   bonus_points:=case when first_parcours_num<replay then rec.half_points else 0 end;
+   if full_hit and full_parcours_num<replay then bonus_points:=bonus_points+rec.points-rec.half_points;end if;
+   if bonus_points>0 then
+    insert into public.connect_parcours_xp_bonus as b(student_id,app_key,parcours_number,milestone_key,points)
+    values(p_student,p_app,replay,k,bonus_points)
+    on conflict(student_id,app_key,parcours_number,milestone_key) do update set points=excluded.points where excluded.points>b.points;
    end if;
-  end loop;
-  score=coalesce((s#>>array['sudden',i::text])::int,0);
-  for n in select unnest(array[5,10]) loop
-   if (s#>>array['thresholds','sudden',i::text,n::text])::boolean IS TRUE then
-    k='sudden:'||(i+1)||':'||n;
-    insert into public.connect_xp_milestones(student_id,app_key,milestone_key,evidence) values(p_student,p_app,k,jsonb_build_object('source','record','score',score,'firstParcours',replay)) on conflict do nothing;
-   end if;
-  end loop;
-  score=coalesce((s#>>array['hard',i::text])::int,0);
-  for n in select unnest(array[3,7]) loop
-   if (s#>>array['thresholds','hard',i::text,n::text])::boolean IS TRUE then
-    k='hard:'||(i+1)||':'||n;
-    insert into public.connect_xp_milestones(student_id,app_key,milestone_key,evidence) values(p_student,p_app,k,jsonb_build_object('source','record','score',score,'firstParcours',replay)) on conflict do nothing;
-   end if;
-  end loop;
+  end if;
  end loop;
- select coalesce(sum(r.points),0) into afterxp
+ select coalesce(sum(least(r.points,coalesce((m.evidence->>'xpPoints')::int,r.points))),0) into afterxp
  from public.connect_xp_milestones m join public.connect_xp_award_rules r on r.app_key=m.app_key and (
  r.award_key = concat_ws(':',split_part(m.milestone_key,':',1),split_part(m.milestone_key,':',3),nullif(split_part(m.milestone_key,':',4),''))
  )
  where m.student_id=p_student and m.app_key=p_app;
  if afterxp>594 then raise exception 'xp_cap';end if;
- if repeated and replay>=2 then
-  for rec in select m.milestone_key,r.points from public.connect_xp_milestones m join public.connect_xp_award_rules r
-    on r.app_key=m.app_key and r.award_key=concat_ws(':',split_part(m.milestone_key,':',1),split_part(m.milestone_key,':',3),nullif(split_part(m.milestone_key,':',4),''))
-   where m.student_id=p_student and m.app_key=p_app
-     and coalesce((m.evidence->>'firstParcours')::int,1)<replay loop
-    earned:=false;i:=split_part(rec.milestone_key,':',2)::int-1;n:=split_part(rec.milestone_key,':',3)::int;
-    if split_part(rec.milestone_key,':',1)='classic' then
-      score:=coalesce((s#>>array['classic',i::text,n::text])::int,-1);
-      if n=4 then earned:=score=4;
-      elsif n in(10,20) then earned:=case when split_part(rec.milestone_key,':',4)='bonus' then score=n else score*5>=n*4 end;end if;
-    elsif split_part(rec.milestone_key,':',1)='sudden' then earned:=(s#>>array['thresholds','sudden',i::text,n::text])::boolean IS TRUE;
-    elsif split_part(rec.milestone_key,':',1)='hard' then earned:=(s#>>array['thresholds','hard',i::text,n::text])::boolean IS TRUE;end if;
-    if earned then insert into public.connect_parcours_xp_bonus(student_id,app_key,parcours_number,milestone_key,points)
-    values(p_student,p_app,replay,rec.milestone_key,rec.points) on conflict do nothing;end if;
-  end loop;
- end if;
  select coalesce(sum(points),0) into bonusxp from public.connect_parcours_xp_bonus where student_id=p_student and app_key=p_app;
  afterxp:=afterxp+bonusxp;
  insert into public.connect_xp_credits(student_id,app_key,xp_credited,evidence,ruleset_version,updated_at)
@@ -218,7 +221,7 @@ begin
  insert into public.connect_level_profiles(student_id,highest_level_reached,level_ruleset_version,updated_at)
  values(p_student,levelnow,2,now())
  on conflict(student_id) do update set highest_level_reached=excluded.highest_level_reached,level_ruleset_version=2,updated_at=now();
- return jsonb_build_object('appXp',afterxp,'delta',afterxp-beforexp,'total',totalxp,'level',levelnow,'previousLevel',priorlevel,'next',case when levelnow<7 then levelnow*50 else 300+(levelnow-6)*100 end,'active',true,'rulesetVersion',1);
+ return jsonb_build_object('appXp',afterxp,'delta',afterxp-beforexp,'total',totalxp,'level',levelnow,'previousLevel',priorlevel,'next',case when levelnow<7 then levelnow*50 else 300+(levelnow-6)*100 end,'active',true,'rulesetVersion',rulesversion);
 end $function$
 ;
 
@@ -236,7 +239,7 @@ DECLARE
  v_state public.connect_states%ROWTYPE;
  v_next jsonb;v_ids jsonb;v_recent jsonb;v_event jsonb;
  v_old integer;v_xp jsonb;v_when timestamptz:=now();v_i integer;
- v_aids jsonb; v_aid_path text[]; v_proof jsonb; v_eligible jsonb; v_distinct integer; v_threshold integer;
+ v_aids jsonb; v_aid_path text[]; v_proof jsonb; v_eligible jsonb; v_threshold integer; v_evidence_key text;
  v_rewards jsonb;v_key text;v_path text[];v_old_flag boolean;v_new_flag boolean;
 BEGIN
  IF p_student IS NULL OR p_event IS NULL OR p_expected_revision IS NULL OR p_expected_revision<0
@@ -317,19 +320,18 @@ BEGIN
   v_aids:=jsonb_set(v_aids,v_aid_path,to_jsonb(p_aid),true);
  END IF;
  v_next:=jsonb_set(v_next,'{recordAid}',v_aids,true);
- -- Independent XP record tree: a higher ineligible score cannot erase eligible evidence.
- v_eligible:=coalesce(v_next->'eligible','{"classic":[{},{},{}],"sudden":[0,0,0],"hard":[0,0,0],"thresholds":{"sudden":[{},{},{}],"hard":[{},{},{}]}}'::jsonb);
- IF NOT p_master AND jsonb_array_length(p_selected)=3 THEN
+ -- Teacher-approved START selection controls the rate. A lucky draw with all
+ -- three selected is full rate; completed journals remain mandatory evidence.
+ -- Independent trees prevent a higher half-rate score erasing full-rate proof.
+ v_evidence_key:=CASE WHEN jsonb_array_length(p_selected)=3 THEN 'eligible' ELSE 'halfEligible' END;
+ v_eligible:=coalesce(v_next->v_evidence_key,'{"classic":[{},{},{}],"sudden":[0,0,0],"hard":[0,0,0],"thresholds":{"sudden":[{},{},{}],"hard":[{},{},{}]}}'::jsonb);
+ IF NOT p_master THEN
   IF p_mode='classic' THEN
-   SELECT count(DISTINCT a.op) INTO v_distinct FROM jsonb_array_elements_text(p_completed) WITH ORDINALITY a(op,n);
-   IF v_distinct>=2 THEN
     v_old:=coalesce((v_eligible#>>ARRAY['classic',(p_level-1)::text,p_total::text])::int,0);
     v_eligible:=jsonb_set(v_eligible,ARRAY['classic',(p_level-1)::text,p_total::text],to_jsonb(greatest(v_old,p_score)),true);
-   END IF;
   ELSE
    FOR v_threshold IN SELECT unnest(CASE WHEN p_mode='hard' THEN ARRAY[3,7] ELSE ARRAY[5,10] END) LOOP
-    SELECT count(DISTINCT a.op) INTO v_distinct FROM jsonb_array_elements_text(p_completed) WITH ORDINALITY a(op,n) WHERE a.n<=v_threshold;
-    IF p_score>=v_threshold AND v_distinct>=2 THEN
+    IF p_score>=v_threshold THEN
      v_old:=coalesce((v_eligible#>>ARRAY[p_mode,(p_level-1)::text])::int,0);
      v_eligible:=jsonb_set(v_eligible,ARRAY[p_mode,(p_level-1)::text],to_jsonb(greatest(v_old,v_threshold)),true);
      v_eligible:=jsonb_set(v_eligible,ARRAY['thresholds',p_mode,(p_level-1)::text,v_threshold::text],'true'::jsonb,true);
@@ -337,7 +339,7 @@ BEGIN
    END LOOP;
   END IF;
  END IF;
- v_next:=jsonb_set(v_next,'{eligible}',v_eligible,true);
+ v_next:=jsonb_set(v_next,ARRAY[v_evidence_key],v_eligible,true);
  v_proof:=jsonb_build_object('operationsSelectedAtStart',p_selected,'operationsCompleted',p_completed,'firstTry',p_first,'aidUsed',p_aid,'masterMode',p_master);
  -- Preserve native V3 trophies in this SAME result+XP transaction.
  -- Only validated boolean awards are admitted; server merges monotonically.
