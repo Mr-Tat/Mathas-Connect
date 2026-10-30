@@ -884,12 +884,12 @@ async function loadTeacherAppPreview(){
    const tr=document.createElement('tr');tr.className='teacher-matrix-row';tr.dataset.order=String(commonOrder(app));tr.dataset.title=app.title;
    const identity=document.createElement('td'),link=document.createElement('a');identity.className='teacher-app-identity';link.className='teacher-matrix-app-link';link.target='_blank';link.rel='noopener noreferrer';
    const href=app.launch_url||app.url;if(href)link.href=href;else link.classList.add('no-link');
-   // Soustraction n'est pas encore visible dans les HUB. Pour la recette finale,
-   // le professeur utilise SON profil Monsieur T, jamais une fiche d'élève.
-   if(app.app_key==='soustraction-ecrite-simple'&&href){
-    link.title='Tester Soustraction avec le profil Monsieur T (compte professeur)';
+   // Le lien du tableau Applications doit transmettre la classe et le profil
+   // Monsieur T pour les jeux Connect, indépendamment de leur visibilité dans les HUB.
+   if((app.app_key==='soustraction-ecrite-simple'||app.app_key==='addition-ecrite-multiple')&&href){
+    link.title='Tester '+app.title+' avec le profil Monsieur T (compte professeur)';
     link.onclick=event=>{
-     if(!teacherPlayerActive){event.preventDefault();info('Clique d’abord sur « Jouer avec Monsieur T » pour tester Soustraction.',true);return}
+     if(!teacherPlayerActive){event.preventDefault();info('Clique d’abord sur « Jouer avec Monsieur T » pour tester '+app.title+'.',true);return}
      const currentClass=$('class-selector')?.value;
      if(!currentClass){event.preventDefault();info('Sélectionne d’abord une classe pour tester Soustraction.',true);return}
      const target=new URL(href,location.href);

@@ -65,7 +65,7 @@ test('tableau professeur Addition : aucune colonne technique Soustraction ajout�
 });
 
 test('GLOBAL : lien de test Soustraction réservé au profil Monsieur T et à la classe choisie',()=>{
- const start=app.indexOf("   if(app.app_key==='soustraction-ecrite-simple'&&href){");
+ const start=app.indexOf("   if((app.app_key==='soustraction-ecrite-simple'||app.app_key==='addition-ecrite-multiple')&&href){");
  const end=app.indexOf("   const img=document.createElement('img');",start);
  assert.ok(start>=0&&end>start,'bloc du lien professeur présent dans GLOBAL');
  const context=vm.createContext({URL,location:{href:'https://mr-tat.github.io/Mathas-Connect/index.html'},teacherPlayerActive:false,
@@ -85,6 +85,11 @@ test('GLOBAL : lien de test Soustraction réservé au profil Monsieur T et à la
  const target=new URL(link.href);
  assert.equal(target.searchParams.get('class'),'22222222-2222-4222-8222-222222222222');
  assert.equal(target.searchParams.get('joueur'),'prof');
+ const addition={href:'https://mr-tat.github.io/Mathas-Connect/apps/addition-plusieurs/'};
+ factory({app_key:'addition-ecrite-multiple',title:'Addition de plusieurs nombres'},addition.href,addition,info);
+ const multiUrl=new URL((addition.onclick({preventDefault(){throw Error('already authorized')}}),addition.href));
+ assert.equal(multiUrl.searchParams.get('class'),'22222222-2222-4222-8222-222222222222');
+ assert.equal(multiUrl.searchParams.get('joueur'),'prof');
  const other={href:'https://example.org/multiplication/'};
  factory({app_key:'multiplication-ecrite-simple'},other.href,other,info);
  assert.equal(other.onclick,undefined,'Multiplication inchangée');
