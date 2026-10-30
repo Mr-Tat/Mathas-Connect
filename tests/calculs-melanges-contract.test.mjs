@@ -42,17 +42,17 @@ test('exact deltas, all 27 milestones, 594 cap; no bonus global',()=>{
 });
 test('half-rate high record preserves full-rate proof; all-three lucky sudden draw receives both full thresholds',()=>{
  let s=applyCompletion(empty(),event(10,{score:8,firstTry:[true,true,true,true,true,true,true,true,false,false]}));
- s=applyCompletion(s,event(10,{operationsSelectedAtStart:['add'],operationsCompleted:Array(10).fill('add')}));
+ s=applyCompletion(s,event(10,{operationsSelectedAtStart:['add','sub'],operationsCompleted:Array(10).fill('add')}));
  assert.equal(s.classic[0][10],10);assert.equal(s.eligible.classic[0][10],8);assert.equal(s.halfEligible.classic[0][10],10);assert.equal(milestones(s).xp,42,'full pass 38 plus new half bonus 4');
  s=applyCompletion(empty(),event(10,{mode:'sudden',total:null,operationsCompleted:[...Array(5).fill('add'),'sub','mul','sub','mul','add']}));
  assert.deepEqual(milestones(s).keys,['sudden:1:10','sudden:1:5']);assert.equal(milestones(s).xp,24);
  s=applyCompletion(empty(),event(4,{masterMode:true}));assert.equal(milestones(s).xp,0);
 });
-test('one or two start operations earn half; later all-three earns only the missing complement once',()=>{
- for(const ops of [['add'],['add','sub']]){
+test('reduced start selections receive their tier, then only the full complement once',()=>{
+ for(const [ops,expected] of [[['add'],7],[['add','sub'],14]]){
   const half=normalizeCompletion(event(4,{operationsSelectedAtStart:ops,operationsCompleted:['add','add','add','add']}));
-  assert.ok(half);let s=applyCompletion(empty(),half);assert.equal(milestones(s).xp,14);
-  s=applyCompletion(s,half);assert.equal(milestones(s).xp,14);
+  assert.ok(half);let s=applyCompletion(empty(),half);assert.equal(milestones(s).xp,expected);
+  s=applyCompletion(s,half);assert.equal(milestones(s).xp,expected);
   const full=normalizeCompletion(event(4,{operationsCompleted:['add','add','add','add']}));
   s=applyCompletion(s,full);assert.equal(milestones(s).xp,28);
   s=applyCompletion(s,full);s=applyCompletion(s,half);assert.equal(milestones(s).xp,28);
@@ -61,18 +61,18 @@ test('one or two start operations earn half; later all-three earns only the miss
 });
 test('half classic deltas are integer XP and perfect-series totals remain exactly half',()=>{
  for(const order of [[4,10,20],[20,10,4]]){
-  let s=empty();for(const n of order)s=applyCompletion(s,event(n,{operationsSelectedAtStart:['add'],operationsCompleted:Array(n).fill('add')}));
+  let s=empty();for(const n of order)s=applyCompletion(s,event(n,{operationsSelectedAtStart:['add','sub'],operationsCompleted:Array(n).fill('add')}));
   assert.equal(milestones(s).xp,75);assert.equal(milestones(s).points['classic:1:20:pass'],32);assert.equal(milestones(s).points['classic:1:20:bonus'],6);
   for(const n of order)s=applyCompletion(s,event(n));assert.equal(milestones(s).xp,150);
  }
  let s=empty(),before=0;
  for(const [total,score,delta] of [[4,4,14],[10,8,19],[10,10,4],[20,16,32],[20,20,6]]){
-  s=applyCompletion(s,event(total,{score,operationsSelectedAtStart:['add'],operationsCompleted:Array(total).fill('add'),firstTry:Array.from({length:total},(_,i)=>i<score)}));
+  s=applyCompletion(s,event(total,{score,operationsSelectedAtStart:['add','sub'],operationsCompleted:Array(total).fill('add'),firstTry:Array.from({length:total},(_,i)=>i<score)}));
   assert.equal(milestones(s).xp-before,delta);before=milestones(s).xp;
  }
 });
 test('half sudden thresholds upgrade independently and never downgrade full rights',()=>{
- let s=applyCompletion(empty(),event(10,{mode:'sudden',total:null,operationsSelectedAtStart:['add'],operationsCompleted:Array(10).fill('add')}));
+ let s=applyCompletion(empty(),event(10,{mode:'sudden',total:null,operationsSelectedAtStart:['add','sub'],operationsCompleted:Array(10).fill('add')}));
  assert.equal(milestones(s).xp,12);
  s=applyCompletion(s,event(5,{mode:'sudden',total:null,operationsCompleted:Array(5).fill('add')}));assert.equal(milestones(s).xp,18);
  s=applyCompletion(s,event(10,{mode:'sudden',total:null,operationsCompleted:Array(10).fill('add')}));assert.equal(milestones(s).xp,24);
@@ -80,8 +80,8 @@ test('half sudden thresholds upgrade independently and never downgrade full righ
 test('restricted normal modes then native all-three HARD remain upgradeable to the full 594 cap',()=>{
  let s=empty();
  for(let level=1;level<=3;level++){
-  for(const total of [4,10,20])s=applyCompletion(s,event(total,{level,operationsSelectedAtStart:['add'],operationsCompleted:Array(total).fill('add')}));
-  s=applyCompletion(s,event(10,{level,mode:'sudden',total:null,operationsSelectedAtStart:['add'],operationsCompleted:Array(10).fill('add')}));
+  for(const total of [4,10,20])s=applyCompletion(s,event(total,{level,operationsSelectedAtStart:['add','sub'],operationsCompleted:Array(total).fill('add')}));
+  s=applyCompletion(s,event(10,{level,mode:'sudden',total:null,operationsSelectedAtStart:['add','sub'],operationsCompleted:Array(10).fill('add')}));
   s=applyCompletion(s,event(7,{level,mode:'hard',total:null}));
  }
  assert.equal(milestones(s).xp,333,'HARD natively selects all three and is full rate; no invented restricted HARD mode');
@@ -100,6 +100,43 @@ test('native hydration chooses one display record while retaining ALL series out
  assert.deepEqual(JSON.parse(storage.getItem(prefix+'mixcalc_classic_v1'))['1'],{score:20,total:20,aideVisuelle:false});
  assert.deepEqual(JSON.parse(storage.getItem(prefix+'mixcalc_connect_proofs_v1')).classic[0],{4:4,10:10,20:20});
  assert.equal(storage.getItem('mixcalc_classic_v1'),null);
+});
+test('25/50/100 tiers pay only their missing complement in every order',()=>{
+ for(const order of [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]){
+  let s=empty(),highest=0;
+  for(const count of [...order,...order]){
+   const ops=['add','sub','mul'].slice(0,count);
+   s=applyCompletion(s,normalizeCompletion(event(4,{operationsSelectedAtStart:ops,operationsCompleted:Array(4).fill('add')})));
+   highest=Math.max(highest,count);assert.equal(milestones(s).xp,[0,7,14,28][highest]);
+  }
+  assert.equal(milestones(s).keys.length,1);
+ }
+});
+test('quarter-rate classic rounding and independent 4/10/20 records upgrade cumulatively',()=>{
+ for(const order of [[4,10,20],[20,10,4]]){
+  let s=empty();
+  for(const total of order)s=applyCompletion(s,event(total,{operationsSelectedAtStart:['add'],operationsCompleted:Array(total).fill('add')}));
+  assert.equal(milestones(s).xp,38);assert.deepEqual(s.quarterEligible.classic[0],{4:4,10:10,20:20});
+  assert.equal(milestones(s).points['classic:1:10:pass'],10);assert.equal(milestones(s).points['classic:1:10:bonus'],2);
+  assert.equal(milestones(s).points['classic:1:20:pass'],16);assert.equal(milestones(s).points['classic:1:20:bonus'],3);
+  for(const total of order)s=applyCompletion(s,event(total,{operationsSelectedAtStart:['add','sub'],operationsCompleted:Array(total).fill('add')}));
+  assert.equal(milestones(s).xp,75);
+  for(const total of order)s=applyCompletion(s,event(total));assert.equal(milestones(s).xp,150);
+ }
+});
+test('all normal quarter proofs then half then full preserve the 594 cap; Master never adds a tier',()=>{
+ let s=empty();
+ for(const count of [1,2,3]){
+  for(let level=1;level<=3;level++){
+   const changes={level,operationsSelectedAtStart:['add','sub','mul'].slice(0,count)};
+   for(const total of [4,10,20])s=applyCompletion(s,event(total,{...changes,operationsCompleted:Array(total).fill('add')}));
+   s=applyCompletion(s,event(10,{...changes,mode:'sudden',total:null,operationsCompleted:Array(10).fill('add')}));
+   s=applyCompletion(s,event(7,{level,mode:'hard',total:null}));
+  }
+  assert.equal(milestones(s).xp,[0,204,333,594][count]);
+ }
+ assert.equal(milestones(s).keys.length,27);
+ for(const count of [1,2,3])assert.equal(milestones(applyCompletion(empty(),event(4,{masterMode:true,operationsSelectedAtStart:['add','sub','mul'].slice(0,count),operationsCompleted:Array(4).fill('add')}))).xp,0);
 });
 test('queue persists until ACK, retries same event, suppresses duplicate animations and isolates pupils',async()=>{
  const storage=memory(),classId=randomUUID(),studentId=randomUUID();let online=false,calls=[],statuses=[];

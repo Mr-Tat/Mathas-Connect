@@ -55,13 +55,15 @@ const rateStudent=randomUUID();
 check(await admin.from('connect_students').insert({id:rateStudent,display_name:'Fictif taux XP'}),'rate profile');
 check(await admin.from('connect_enrollments').insert({id:randomUUID(),class_id:classId,student_id:rateStudent}),'rate membership');
 check(await admin.from('connect_devices').insert({id:randomUUID(),auth_user_id:other.user.id,student_id:rateStudent,state:'approved'}),'rate approval');
-const halfEvent={...event,eventId:randomUUID(),expectedStudentId:rateStudent,operationsSelectedAtStart:['add'],operationsCompleted:Array(4).fill('add'),xpRate:1,xpPoints:594};
-const halfAck=ok(await post(other,halfEvent));assert.equal(halfAck.xp.delta,14);assert.equal(halfAck.xp.appXp,14);assert.equal(halfAck.xp.rulesetVersion,2);
-const topupEvent={...halfEvent,eventId:randomUUID(),expectedRevision:1,operationsSelectedAtStart:['add','sub','mul']};
+const quarterEvent={...event,eventId:randomUUID(),expectedStudentId:rateStudent,operationsSelectedAtStart:['add'],operationsCompleted:Array(4).fill('add'),xpRate:1,xpPoints:594};
+const quarterAck=ok(await post(other,quarterEvent));assert.equal(quarterAck.xp.delta,7);assert.equal(quarterAck.xp.appXp,7);assert.equal(quarterAck.xp.rulesetVersion,3);
+const halfEvent={...quarterEvent,eventId:randomUUID(),expectedRevision:1,operationsSelectedAtStart:['add','sub']};
+const halfAck=ok(await post(other,halfEvent));assert.equal(halfAck.xp.delta,7);assert.equal(halfAck.xp.appXp,14);
+const topupEvent={...halfEvent,eventId:randomUUID(),expectedRevision:2,operationsSelectedAtStart:['add','sub','mul']};
 const topupAck=ok(await post(other,topupEvent));assert.equal(topupAck.xp.delta,14);assert.equal(topupAck.xp.appXp,28);
 assert.equal(ok(await post(other,topupEvent)).xp.delta,0);
-assert.equal(ok(await post(other,{...topupEvent,eventId:randomUUID(),expectedRevision:2})).xp.delta,0);
-console.log('PASS real Auth+Edge+SQL: one selected → 14 XP, all-three lucky draw → only 14 top-up, repeated proof/game → 0; client rate hints ignored');
+assert.equal(ok(await post(other,{...topupEvent,eventId:randomUUID(),expectedRevision:3})).xp.delta,0);
+console.log('PASS real Auth+Edge+SQL: one selected → 7 XP, two → only 7, three → only 14, repeated proof/game → 0; client rate hints ignored');
 console.log('PASS real local Auth+Edge+SQL: isolated pilot class, 401/403, approved pupil, teacher player, 28 XP ACK, duplicate0, professor results, reset epoch, no recollection, other game intact');
 if(process.env.SDK_BROWSER_PATH){
  const {readFileSync}=await import('node:fs'),{chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
@@ -224,6 +226,13 @@ if(process.env.SDK_BROWSER_PATH){
   async function openHalfGame(){await halfPage.goto(site+'/apps/calculs-melanges/?class='+classId);await halfPage.waitForFunction(()=>document.getElementById('game')?.contentWindow?.__mathasGameStorageScope?.startsWith('connect.'),null,{timeout:15000});await halfPage.waitForTimeout(250);return halfPage.frames().find(f=>f.parentFrame())}
   let halfFrame=await openHalfGame();
   await playMixedClassic({frame:halfFrame,page:halfPage,total:4,operations:['add']});
+  await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='7 XP',null,{timeout:20000});
+  halfFrame=await openHalfGame();await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='7 XP');
+  await halfContext.setOffline(true);
+  await playMixedClassic({frame:halfFrame,page:halfPage,total:4,operations:['add','sub']});
+  await halfPage.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('en attente (offline)'));
+  assert.equal(await halfPage.locator('#xp-total').innerText(),'7 XP');
+  await halfContext.setOffline(false);
   await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='14 XP',null,{timeout:20000});
   halfFrame=await openHalfGame();await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='14 XP');
   await halfContext.setOffline(true);
@@ -234,12 +243,12 @@ if(process.env.SDK_BROWSER_PATH){
   await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='28 XP',null,{timeout:20000});
   halfFrame=await openHalfGame();await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='28 XP');
   await playMixedClassic({frame:halfFrame,page:halfPage,total:4,operations:['add','sub','mul']});
-  await halfPage.waitForFunction(()=>document.getElementById('game')?.getAttribute('data-revision')==='3',null,{timeout:20000});
+  await halfPage.waitForFunction(()=>document.getElementById('game')?.getAttribute('data-revision')==='4',null,{timeout:20000});
   assert.equal(await halfPage.locator('#xp-total').innerText(),'28 XP');
   const halfFinal=check(await admin.from('connect_xp_credits').select('xp_credited,ruleset_version').eq('student_id',halfPupil).eq('app_key','melange-calculs-ecrits').single(),'half browser final credit');
-  assert.equal(halfFinal.xp_credited,28);assert.equal(halfFinal.ruleset_version,2);
+  assert.equal(halfFinal.xp_credited,28);assert.equal(halfFinal.ruleset_version,3);
   await halfContext.close();
-  console.log('PASS real native single-operation game → ACK14 → reload → all-three game offline stays14 → ACK top-up14 → repeated game stays28');
+  console.log('PASS real native games: 1 operation ACK7 → 2 operations offline stays7 then ACK14 → 3 operations offline stays14 then ACK28 → repeat stays28');
   assert.deepEqual(errors,[]);console.log('PASS real Chromium + native anonymous SDK + 4 mixed calculations offline → one real Edge/SQL ACK +28 XP and trophy → reload → actual professor login/results/reset → XP retained');
  }finally{await browser.close()}
 }

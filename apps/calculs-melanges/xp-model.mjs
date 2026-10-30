@@ -1,12 +1,14 @@
 // Mélange : barème de base 594 XP validé par l'enseignant, 9 jalons par niveau.
 // Trois opérations sélectionnées au départ = 100%, même en cas de tirage chanceux.
-// Une ou deux = 50%, avec complément ultérieur plafonné au droit complet.
+// Une = 25%, deux = 50%, avec compléments plafonnés au droit complet.
 // Simulation locale uniquement. Attribution réelle exclusivement côté PostgreSQL.
 export const RULES=Object.freeze({perfect4:28,pass10:38,bonus10:8,pass20:63,bonus20:13,sudden5:12,sudden10:12,hard3:12,hard7:12});
 // Keep integer XP: 16/20 gives 32, then 20/20 adds 6 (38 = half of 76).
 // HARD natively selects all three operations; its half tier is not launchable.
 export const HALF_RULES=Object.freeze({perfect4:14,pass10:19,bonus10:4,pass20:32,bonus20:6,sudden5:6,sudden10:6,hard3:6,hard7:6});
-export const XP_POLICY_VERSION=2;
+// Cumulative rounding: /10 perfect totals 12, /20 perfect totals 19.
+export const QUARTER_RULES=Object.freeze({perfect4:7,pass10:10,bonus10:2,pass20:16,bonus20:3,sudden5:3,sudden10:3,hard3:3,hard7:3});
+export const XP_POLICY_VERSION=3;
 export const MAX_XP=3*Object.values(RULES).reduce((a,b)=>a+b,0);
 export function milestones(records){
  const found=new Map();
@@ -25,6 +27,6 @@ export function milestones(records){
   if(state?.thresholds?.hard?.[i]?.[7]===true)add(`hard:${level}:7`,rules.hard7);
  }
  }
- collect(records?.halfEligible,HALF_RULES);collect(records?.eligible,RULES);
+ collect(records?.quarterEligible,QUARTER_RULES);collect(records?.halfEligible,HALF_RULES);collect(records?.eligible,RULES);
  return {keys:[...found.keys()].sort(),xp:[...found.values()].reduce((a,b)=>a+b,0),points:Object.fromEntries([...found].sort())};
 }

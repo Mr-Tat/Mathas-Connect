@@ -17,7 +17,7 @@ BEGIN
  FROM public.connect_xp_award_rules WHERE app_key='melange-calculs-ecrits';
  IF keys IS DISTINCT FROM ARRAY['classic:10:bonus','classic:10:pass','classic:20:bonus','classic:20:pass','classic:4:perfect','hard:3','hard:7','sudden:10','sudden:5']::text[]
  OR amounts IS DISTINCT FROM ARRAY[8,38,13,63,28,12,12,12,12]
- OR EXISTS(SELECT 1 FROM public.connect_xp_award_rules WHERE app_key='melange-calculs-ecrits' AND ruleset_version<>2)
+ OR EXISTS(SELECT 1 FROM public.connect_xp_award_rules WHERE app_key='melange-calculs-ecrits' AND ruleset_version<>3)
  THEN RAISE EXCEPTION 'mixed_xp_rules_drift';END IF;
  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname LIKE 'connect_mixed_%')<>5
  THEN RAISE EXCEPTION 'mixed_rpc_not_installed';END IF;

@@ -8,7 +8,7 @@
 
 Les trois constantes restent `false` : `CONNECT_WRITE_READY`, `MIXED_SERVER_READY`, `MIXED_TEACHER_READY`. `CONNECT_MIXED_ACCESS` vaut `closed` par défaut ; les valeurs pilote et `open` n’ajoutent aucun droit d’identité. Le catalogue statique ne contient aucune carte Mélange et les quatre presets du candidat sont invisibles.
 
-Le [barème validé](CALCULS_MELANGES_XP_SELECTION_20261030.md) conserve 594 XP : trois opérations cochées au départ donnent 100 %, une ou deux donnent 50 %, puis une réussite complète peut verser seulement le complément. Le tirage chanceux ne réduit pas le taux. Les aides suivent la convention existante ; les tables sont propres à Mélange, sans modifier Multiplication simple. La miniature native demeure provisoire et doit être approuvée ou remplacée avant visibilité publique de sa carte. Le pilote masqué n’en dépend pas.
+Le [barème validé](CALCULS_MELANGES_XP_SELECTION_20261030.md) conserve 594 XP : trois opérations cochées au départ donnent 100 %, deux donnent 50 % et une seule 25 %, puis une nouvelle réussite avec davantage d’opérations peut verser seulement le complément. Le tirage chanceux ne réduit pas le taux. Les aides suivent la convention existante ; les tables sont propres à Mélange, sans modifier Multiplication simple. La miniature native demeure provisoire et doit être approuvée ou remplacée avant visibilité publique de sa carte. Le pilote masqué n’en dépend pas.
 
 Le candidat ajoute cinq RPC privées et deux tables RLS. Il ne remplace aucune fonction historique ni ne rééquilibre les autres jeux. La sauvegarde chiffrée inclut les deux nouvelles tables dès que l’app est installée ; une lecture manquante refuse un backup incomplet. Aucun backup de production n’est exécuté pour les tests.
 
@@ -29,7 +29,7 @@ Cette session a analysé les fichiers et exécuté les recettes locales. Elle n�
 ## Ordre du lot de publication, après autorisation distincte
 
 1. Installer uniquement `supabase/release-candidates/calculs_melanges_locked_v1.sql` dans une nouvelle migration contrôlée et enregistrée. App désactivée, quatre presets cachés. Ne pas utiliser `db push`, rejouer l’historique ou importer une fixture. Vérifier la gestion BEGIN/COMMIT et de l’historique propre à l’outil retenu avant exécution.
-2. Contrôler le résultat en lecture seule avec `check-report --stage installed-hidden` : signatures et droits privés, RLS, neuf règles version 2 totalisant 198 par niveau, quatre presets invisibles, app désactivée. Vérifier les objets existants conservés.
+2. Contrôler le résultat en lecture seule avec `check-report --stage installed-hidden` : signatures et droits privés, RLS, neuf règles version 3 totalisant 198 par niveau, quatre presets invisibles, app désactivée. Vérifier les objets existants conservés.
 3. Préparer des identités et une classe fictives dédiées via Auth/Connect. Ne pas réaffecter de vrai élève ou appareil. Configurer la portée hébergée `CONNECT_MIXED_ACCESS=pilot:<uuid-réel-de-la-classe-fictive>` ; ce n’est pas une variable du seul environnement cloud.
 4. Comparer puis déployer uniquement la version revue de `connect-results`, en conservant `verify_jwt=true` et les routes des autres jeux, sans `--prune`. Ne pas remplacer `connect-catalog`.
 5. Fusionner/publier le commit d’activation revu avec sa CI réussie, selon Pages/main/racine. Vérifier le SHA effectivement livré, pas seulement celui de la PR.
@@ -38,7 +38,7 @@ Cette session a analysé les fichiers et exécuté les recettes locales. Elle n�
 
 ## Recette du pilote avant les vrais élèves
 
-Sur identités fictives : approbation native et appartenance à la classe ; refus des autres classes ; vraie saisie à taux réduit → ACK 14, rechargement, vraie réussite complète hors ligne sans XP anticipé → ACK du complément 14, puis répétition sans crédit nouveau. Vérifier aussi un tirage chanceux à sélection complète, le second appareil, les deux ordres 4/10/20, les résultats/XP professeur, reset sans recollection, Monsieur T et tables obligatoires classe/élève. Les quatre cartes restent cachées et les quatre autres jeux doivent continuer à fonctionner.
+Sur identités fictives : approbation native et appartenance à la classe ; refus des autres classes ; vraie saisie à une opération → ACK 7, puis réussite à deux hors ligne sans XP anticipé → ACK +7, puis à trois → ACK +14, puis répétition sans crédit nouveau. Vérifier aussi un tirage chanceux à sélection complète, le second appareil, les deux ordres 4/10/20, les résultats/XP professeur, reset sans recollection, Monsieur T et tables obligatoires classe/élève. Les quatre cartes restent cachées et les quatre autres jeux doivent continuer à fonctionner.
 
 Le journal reste borné à 1 000 calculs ; au-delà, le moteur conserve le résultat natif localement et avertit. Les preuves sont des observations du navigateur, pas une attestation cryptographique des réponses. Le serveur contrôle identité, cohérence, seuils, taux, unicité et transaction.
 
@@ -48,4 +48,4 @@ Fermer la portée Edge (`closed`), puis appliquer le seul `calculs_melanges_disa
 
 ## Outillage hors ligne
 
-`node scripts/calculs-melanges-release.mjs plan` trace les empreintes, la politique XP version 2, les constantes et le commit. `schema-query` exporte seulement une transaction READ ONLY. `check-report FILE --stage before-install|installed-hidden|enabled-hidden` analyse le JSON fourni et précise sa provenance externe. Aucun de ces outils ne requiert de jeton Supabase ni n’effectue de déploiement.
+`node scripts/calculs-melanges-release.mjs plan` trace les empreintes, la politique XP version 3, les constantes et le commit. `schema-query` exporte seulement une transaction READ ONLY. `check-report FILE --stage before-install|installed-hidden|enabled-hidden` analyse le JSON fourni et précise sa provenance externe. Aucun de ces outils ne requiert de jeton Supabase ni n’effectue de déploiement.

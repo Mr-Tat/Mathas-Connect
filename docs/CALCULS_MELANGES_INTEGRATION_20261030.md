@@ -24,7 +24,7 @@ Deux constats natifs supplémentaires ont été vérifiés : le bouton guidé no
 
 L’indication d’aide du meilleur résultat est conservée séparément pour sa restauration ; à score égal, une réussite sans aide conserve la priorité native.
 
-Les meilleurs scores Connect sont indépendants pour chaque `(niveau, longueur 4/10/20)`. La vue native garde son unique meilleur record par niveau, sans être utilisée comme preuve XP. L’état possède deux branches distinctes : `eligible` pour le taux complet et `halfEligible` pour le taux réduit. Un meilleur score réduit n’efface pas une preuve complète. Chaque seuil de mort subite reste indépendant ; le taux dépend de la sélection au départ, pas des types tirés.
+Les meilleurs scores Connect sont indépendants pour chaque `(niveau, longueur 4/10/20)`. La vue native garde son unique meilleur record par niveau, sans être utilisée comme preuve XP. L’état possède trois branches distinctes : `eligible`, `halfEligible` et `quarterEligible`, pour les taux 100 %, 50 % et 25 %. Un meilleur score réduit n’efface pas une preuve complète. Chaque seuil de mort subite reste indépendant ; le taux dépend de la sélection au départ, pas des types tirés.
 
 La file persistante est bornée à 100 événements, isolée par classe/sujet JWT/élève serveur/app ; ACK strict avant suppression, une seule requête en vol, aucun polling, reprise sur `online`. Un conflit d'époque bloque le rejeu ; au prochain chargement de l'époque actuelle, les anciens événements sont archivés localement sous le même profil. Aucun XP optimiste. Les doublons ACK affichent toujours delta 0.
 
@@ -34,7 +34,7 @@ Les tables minimales sont indépendantes de Multiplication simple (`connect_mixe
 
 ## XP 594 validés et remise à zéro
 
-Barème de base 594 XP et règle de sélection validés explicitement par le professeur : trois opérations cochées au départ donnent 100 %, même lors d’un tirage chanceux ; une ou deux donnent 50 %. Une réussite complète ultérieure verse seulement le complément manquant une fois. La politique XP est versionnée 2. Les aides gardent la convention actuelle, Master et entraînement donnent 0. Un journal de calculs réellement terminés reste indispensable : les seules cases cochées ne rapportent rien. Voir la [règle complète et ses arrondis](CALCULS_MELANGES_XP_SELECTION_20261030.md).
+Barème de base 594 XP et règle de sélection validés explicitement par le professeur : trois opérations cochées au départ donnent 100 %, même lors d’un tirage chanceux ; deux donnent 50 % et une seule 25 %. Une réussite complète ultérieure verse seulement le complément manquant une fois. La politique XP est versionnée 3. Les aides gardent la convention actuelle, Master et entraînement donnent 0. Un journal de calculs réellement terminés reste indispensable : les seules cases cochées ne rapportent rien. Voir la [règle complète et ses arrondis](CALCULS_MELANGES_XP_SELECTION_20261030.md).
 
 | Jalon par niveau | XP |
 | --- | ---: |
@@ -46,7 +46,7 @@ Barème de base 594 XP et règle de sélection validés explicitement par le pro
 | Mort subite 5 puis 10 | 12 + 12 |
 | HARD mort subite 3 puis 7 | 12 + 12 |
 
-198 par niveau, 27 droits, 594 sans rejeu explicitement autorisé. Les demi-valeurs classiques sont 14, 19 puis +4, 32 puis +6 ; le parfait /20 donne ainsi exactement 38. Les compléments sont plafonnés au montant complet. Aucun multiplicateur global ni changement des autres jeux. `xpPoints`, `firstParcours` et `fullParcours` empêchent de doubler un nouveau complément pendant un parcours rejouable ; seules les tranches déjà acquises avant ce parcours peuvent être répétées.
+198 par niveau, 27 droits, 594 sans rejeu explicitement autorisé. Les demi-valeurs classiques sont 14, 19 puis +4, 32 puis +6 ; le parfait /20 donne ainsi exactement 38. Les compléments sont plafonnés au montant complet. Aucun multiplicateur global ni changement des autres jeux. `xpPoints`, `firstParcours`, `halfParcours` et `fullParcours` empêchent de doubler un nouveau complément pendant un parcours rejouable ; seules les tranches déjà acquises avant ce parcours peuvent être répétées.
 
 Le reset élève/classe archive uniquement Mélange, augmente revision/reset_epoch et préserve les crédits. `repeatXp=false` interdit la recollection ; `true` est une permission explicite du professeur. Pour Mélange, la case de rejeu est décochée par défaut. Les événements de l'ancienne époque sont refusés, y compris ceux dont l'UUID est déjà connu.
 
@@ -86,7 +86,7 @@ Le workflow `.github/workflows/calculs-melanges-local.yml` reproduit ces vérifi
 
 ## Limites et accords avant activation
 
-- Le plafond 594 et la règle 100 % / 50 % avec complément unique sont validés et implémentés. Le HARD natif sélectionne toujours les trois opérations : aucun mode HARD réduit n’est inventé.
+- Le plafond 594 et la règle 25 % / 50 % / 100 % avec complément unique sont validés et implémentés. Le HARD natif sélectionne toujours les trois opérations : aucun mode HARD réduit n’est inventé.
 - Les aides suivent les conventions existantes. Les tables du hub sont propres à Mélange, comme demandé, sans écraser Multiplication simple. La miniature native reste à approuver ou remplacer avant visibilité de la carte. Le challenge HARD caché reste inactif.
 - Le journal réseau est borné à 1 000 calculs pour rester sous la taille JSON admise. Les parties natives plus longues restent locales ; une compression auditable serait nécessaire avant de prendre en charge ces marathons en Connect.
 - Les preuves sont des observations du navigateur, pas une attestation cryptographique des réponses. Le serveur contrôle identité, cohérence, seuils, unicité et transaction.
@@ -185,8 +185,8 @@ Les nouveaux contrôles doivent à nouveau être évalués pour le commit qui co
 
 La [règle XP de sélection](CALCULS_MELANGES_XP_SELECTION_20261030.md) remplace les propositions historiques du kit. Les deux JSON complets fournis clôturent la comparaison de schéma : PostgreSQL 17.11, 26 tables, 137 contraintes, aucun namespace Mélange, quatre presets parents existants et deux watchers dont les définitions ne font que NOTIFY. Leurs empreintes correspondent au premier audit. Le laboratoire a rejoué le candidat actualisé sous ces watchers exacts, sans données de production.
 
-La régression Node de cette actualisation compte 221 tests : 220 réussis, 0 échec, 1 historique Soustraction/pg ignoré. Le laboratoire SQL vérifie désormais 14 puis 14 puis 0, les compléments après reset sans recollection, les tranches d’un parcours rejouable, l’arrondi /20 et une vraie course entre taux réduit et complet. Le contrôle d’activation masquée refuse aussi une version XP divergente. Les chiffres 217/216 cités dans les bilans précédents sont ceux de la revue initiale, avant cette actualisation.
+La régression Node de cette actualisation compte 224 tests : 223 réussis, 0 échec, 1 historique Soustraction/pg ignoré. Le laboratoire SQL vérifie désormais 7 puis 7 puis 14 puis 0, les compléments après reset sans recollection, les tranches d’un parcours rejouable, l’arrondi /20 et une vraie course entre taux réduit et complet. Le contrôle d’activation masquée refuse aussi une version XP divergente. Les chiffres 217/216 cités dans les bilans précédents sont ceux de la revue initiale, avant cette actualisation.
 
-La recette Auth/Edge/PostgreSQL/Chromium du nouveau changement et la recette complète du moteur natif sont réussies, uniquement avec des services locaux et des identités fictives. Les tests ajoutés couvrent les commandes réelles du hub (classe, élève, retrait et héritage), leur application dans les sélecteurs natifs, et la conservation des réglages de Multiplication simple. Ils couvrent aussi une partie réduite réelle, le complément complet hors ligne sans XP anticipés et une répétition sans crédit supplémentaire.
+La recette Auth/Edge/PostgreSQL/Chromium du nouveau changement et la recette complète du moteur natif sont réussies, uniquement avec des services locaux et des identités fictives. Les tests ajoutés couvrent les commandes réelles du hub (classe, élève, retrait et héritage), leur application dans les sélecteurs natifs, et la conservation des réglages de Multiplication simple. Ils couvrent aussi des parties réelles aux trois taux, les compléments hors ligne sans XP anticipés et une répétition sans crédit supplémentaire.
 
 Le corps de PR actualisé est dans `docs/PR_CALCULS_MELANGES_DRAFT.md`. Une modification de ce fichier ne synchronise pas à elle seule la description GitHub si son API est inaccessible. La PR reste Draft ; aucun changement de `main`, déploiement ou activation n’est autorisé.
