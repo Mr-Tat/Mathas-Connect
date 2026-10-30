@@ -48,11 +48,11 @@ jobs:
           from pathlib import Path
           import sys
           source=Path(sys.argv[1]).read_text()
-          marker='const ADD_MULTI_SERVER_READY=false;'
+          marker='const ADD_MULTI_SERVER_READY=true;'
           assert source.count(marker)==1
-          # Only the disposable Edge copy is unlocked, NEVER the PR source.
-          Path('supabase/functions/connect-results/index.ts').write_text(
-              source.replace(marker,'const ADD_MULTI_SERVER_READY=true;'))
+          # Direct-link pilot source already has server allowlist enabled.
+          # The disposable local Edge uses the exact reviewed source.
+          Path('supabase/functions/connect-results/index.ts').write_text(source)
           PY
           cp "$ROOT/supabase/functions/connect-api/index.ts" supabase/functions/connect-api/index.ts
           supabase start -x studio,realtime,storage-api,imgproxy,postgres-meta,mailpit,logflare,vector,supavisor
