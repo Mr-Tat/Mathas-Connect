@@ -572,7 +572,7 @@ function makeOverviewCell(state){
 const ADD_MULTI_TEACHER_READY=true;
 const additionMultipleAllowed=appKey=>ADD_MULTI_TEACHER_READY&&appKey==='addition-ecrite-multiple';
 const multiTeacherMeta={app_key:'addition-ecrite-multiple',title:'Addition de plusieurs nombres',
- display_order:40,image_url:'./assets/miniatures/addition-ecrite-multiple.webp'};
+ display_order:40,image_url:'./assets/miniatures/addition-ecrite-multiple.webp?v=20261030-officiel'};
 async function showOverview(){
  const [catalogRes,exported]=await Promise.all([fetch('./hub-catalog.json'),resultCall('teacher-overview')]);
  if(!catalogRes.ok)throw Error('Catalogue indisponible');
