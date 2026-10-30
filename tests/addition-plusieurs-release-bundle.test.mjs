@@ -35,9 +35,15 @@ test('release bundle contains exactly the audited staging, four RPC and atomic d
 test('release and emergency stop never delete pupil results or XP',()=>{
  for(const [id,sql] of [['release bundle',bundle],['disable-only',disable]]){
   assert.doesNotMatch(sql,/\b(?:DROP|TRUNCATE|DELETE)\s+(?:TABLE|FROM|public\.)/i,id);
-  assert.doesNotMatch(sql,/\bUPDATE\s+public\.connect_(?:states|xp_credits|xp_milestones|parcours_current|parcours_history|students|enrollments)\b/i,id);
+  assert.doesNotMatch(sql,/\bUPDATE\s+public\.connect_(?:xp_credits|xp_milestones|parcours_current|parcours_history|students|enrollments)\b/i,id);
  }
- assert.match(disable,/UPDATE public\.connect_apps/);
+ // The ONLY direct student-state UPDATE belongs to the atomic game RPC
+ // and is scoped simultaneously by the authenticated pupil and new app.
+ assert.equal((bundle.match(/\\bUPDATE public\\.connect_states\\b/g)||[]).length,1);
+ assert.match(bundle,/v_app constant text:='addition-ecrite-multiple'/);
+ assert.match(bundle,/WHERE student_id=p_student AND app_key=v_app/);
+ assert.doesNotMatch(disable,/\\bUPDATE public\\.connect_states\\b/i);
+ assert.match(disable,/UPDATE public\\.connect_apps/);
  assert.match(disable,/UPDATE public\.connect_hub_preset_entries/);
  assert.match(disable,/WHERE app_key='addition-ecrite-multiple'/g);
  assert.doesNotMatch(disable,/DROP FUNCTION|DELETE FROM/i);
