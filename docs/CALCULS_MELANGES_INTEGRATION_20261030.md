@@ -90,7 +90,7 @@ Le workflow `.github/workflows/calculs-melanges-local.yml` reproduit ces vérifi
 - Confirmer la politique des aides, la portée indépendante/globale des tables et la miniature officielle. Ne pas rétablir le challenge HARD caché sans décision.
 - Le journal réseau est borné à 1 000 calculs pour rester sous la taille JSON admise. Les parties natives plus longues restent locales ; une compression auditable serait nécessaire avant de prendre en charge ces marathons en Connect.
 - Les preuves sont des observations du navigateur, pas une attestation cryptographique des réponses. Le serveur contrôle identité, cohérence, seuils, unicité et transaction.
-- Aucun schéma hébergé n'a été introspecté, aucune vraie session scolaire testée et aucune publication réalisée.
+- Cette session n’a pas introspecté le schéma hébergé ni testé de session scolaire réelle. Les confirmations externes rapportées par le professeur sont consignées séparément ; aucune publication n’est réalisée.
 
 La consigne finale confirme la mission **PR draft complète, testée et non publiée**. Les opérations de publication préparées restent hors périmètre : aucune fusion, installation SQL/Edge, activation ou ouverture des HUB. Le barème 594 validé n’autorise pas leur exécution. Le mode pilote et les candidats d’arrêt sont seulement des artefacts de revue et de laboratoire. Voir la [préparation de publication](PUBLICATION_CALCULS_MELANGES_20261030.md).
 
@@ -148,3 +148,11 @@ Aucune vérification Supabase hébergée n’est indispensable pour compléter c
 | Compatibilité hébergée complète / recette publiée | Différées à une éventuelle préparation de publication ; aucune modification réelle autorisée dans cette mission |
 
 Aucun accès d’administration Supabase ne manque à l’implémentation livrée. Les métadonnées de publication sont préparées pour un échange en lecture seule ; elles ne conditionnent pas la complétude de la PR draft.
+
+## Création de la PR draft
+
+La branche testée a été poussée. L’appel `gh pr create --draft` depuis cet environnement échoue sur `https://api.github.com/graphql` avec `Forbidden` ; il n’a créé aucune PR. Ce blocage concerne l’API GitHub, pas Supabase ni l’implémentation. Aucune nouvelle autorisation Supabase n’est nécessaire.
+
+Demande prête à transmettre à la conversation disposant déjà de la connexion GitHub :
+
+> Dans `Mr-Tat/Mathas-Connect`, vérifie s’il existe une PR depuis `integration/calculs-melanges-connect-20261030` vers `main`. Si elle n’existe pas, crée-la en **draft**, avec le titre « Calculs écrits mélangés : intégration Connect, XP 594 validés et verrous fermés » et le corps intégral du fichier `docs/PR_CALCULS_MELANGES_DRAFT.md` lu sur cette branche. Retourne son URL et le statut des contrôles connus, en distinguant les contrôles en attente. Aucune fusion, publication, activation ni opération Supabase.
