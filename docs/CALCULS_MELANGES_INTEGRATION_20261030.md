@@ -32,9 +32,9 @@ Le menu natif annonce « 0 et 1 sont toujours activés », mais le générateur 
 
 Les tables minimales sont indépendantes de Multiplication simple (`connect_mixed_multiplier_locks`), avec priorité élève puis classe. L'élève conserve les tables obligatoires et peut en ajouter. Le HARD natif utilise toutes les tables, et inclut donc ces minimums. Aucune portée globale entre applications n'est imposée silencieusement.
 
-## XP candidat et remise à zéro
+## XP 594 validés et remise à zéro
 
-Règle provisoire `mixed_v1` : trois opérations sélectionnées au départ, au moins deux types effectivement terminés ; pour la mort subite, vérification au seuil récompensé. Les aides suivent la convention actuelle (métadonnée, pas d'exclusion supplémentaire), Master donne 0 XP. Pas de crédit à partir du seul réglage ou cache natif.
+Barème de base 594 XP validé pédagogiquement par le professeur. Règle d’éligibilité encore proposée `mixed_v1` : trois opérations sélectionnées au départ, au moins deux types effectivement terminés ; pour la mort subite, vérification au seuil récompensé. Les aides suivent la convention actuelle (métadonnée, pas d'exclusion supplémentaire), Master donne 0 XP. Pas de crédit à partir du seul réglage ou cache natif.
 
 | Jalon par niveau | XP |
 | --- | ---: |
@@ -86,19 +86,19 @@ Le workflow `.github/workflows/calculs-melanges-local.yml` reproduit ces vérifi
 
 ## Limites et accords avant activation
 
-- Confirmer la règle d'éligibilité proposée et le barème 594 ; l'alternative XP de base pour 1/2 opérations n'est pas implémentée.
+- Le plafond 594 est validé ; confirmer séparément la règle d’éligibilité proposée. L’alternative XP de base pour 1/2 opérations n’est pas implémentée.
 - Confirmer la politique des aides, la portée indépendante/globale des tables et la miniature officielle. Ne pas rétablir le challenge HARD caché sans décision.
 - Le journal réseau est borné à 1 000 calculs pour rester sous la taille JSON admise. Les parties natives plus longues restent locales ; une compression auditable serait nécessaire avant de prendre en charge ces marathons en Connect.
 - Les preuves sont des observations du navigateur, pas une attestation cryptographique des réponses. Le serveur contrôle identité, cohérence, seuils, unicité et transaction.
 - Aucun schéma hébergé n'a été introspecté, aucune vraie session scolaire testée et aucune publication réalisée.
 
-La demande ultérieure du professeur étend la mission vers la mise en service complète. La suite préparée est : audit schéma et catalogue actuels sans données élèves ; installation du seul candidat masqué ; déploiement Edge puis Pages et ouverture contrôlée des trois verrous dans une modification revue ; recette professeur/élève d’une classe fictive autorisée par le mode pilote ; ouverture et visibilité des HUB décidées individuellement par le professeur. La portée Edge de classe protège la phase pilote indépendamment de l’URL Pages publique. Retour arrière : fermeture Edge, disable-only, puis fermeture des constantes si nécessaire, sans effacer les résultats. Voir la [procédure concrète](PUBLICATION_CALCULS_MELANGES_20261030.md).
+La consigne finale confirme la mission **PR draft complète, testée et non publiée**. Les opérations de publication préparées restent hors périmètre : aucune fusion, installation SQL/Edge, activation ou ouverture des HUB. Le barème 594 validé n’autorise pas leur exécution. Le mode pilote et les candidats d’arrêt sont seulement des artefacts de revue et de laboratoire. Voir la [préparation de publication](PUBLICATION_CALCULS_MELANGES_20261030.md).
 
 ## Configuration cloud et PR
 
-Le brouillon cloud enregistre `install_script`, `start_skill` et les ajouts réseau `api.github.com`, `api.supabase.com`, `awmhpfofacaglewammxt.supabase.co`, `mr-tat.github.io`, `esm.sh` (les presets existants sont préservés). Un emplacement sécurisé `SUPABASE_ACCESS_TOKEN`, limité à l’API de gestion Supabase, est déclaré pour la suite demandée ; aucune valeur n’a été reçue. Le site n'est pas publié par cette opération. L’application des paramètres et la publication de **l'environnement cloud** sont des opérations distinctes de Pages.
+Les instructions cloud sauvegardées demandent maintenant exclusivement une PR draft et des tests locaux. Aucun accès Supabase de production ni jeton personnel n’est requis. L’ancien champ non renseigné `SUPABASE_ACCESS_TOKEN`, ajouté à tort, est inutilisé ; l’outil de configuration ne permet sa suppression que depuis l’éditeur de revue. Sa déclaration retient automatiquement `api.supabase.com` dans le brouillon réseau, mais aucun secret n’est associé et aucun appel Supabase hébergé n’est nécessaire ou effectué pour cette livraison. Les autres destinations de publication devenues inutiles ont été retirées du brouillon. Ce brouillon sauvegardé n’est pas une configuration appliquée.
 
-GitHub HTTPS Git est opérationnel avec l'authentification injectée. L'appel API requis pour une PR draft a rencontré un refus réseau. Si ce refus persiste, appliquer l'ajout enregistré dans les paramètres cloud puis reprendre la création de PR ; ne pas fournir de token dans le chat. La branche et un corps de PR sont préparés indépendamment de ce prérequis. La présence d'un fichier de corps ou d'un lien de comparaison ne prouve pas qu'une PR existe.
+GitHub HTTPS Git permet lecture et push. La création de PR draft utilise une API distincte ; si elle reste inaccessible ici, le dossier est prêt pour la connexion GitHub déjà autorisée du professeur, sans ajouter de jeton Supabase. Dépôt : `Mr-Tat/Mathas-Connect` ; base : `main` ; head : `integration/calculs-melanges-connect-20261030` ; draft : `true` ; titre : **Calculs écrits mélangés : intégration Connect, XP 594 validés et verrous fermés** ; corps complet : `docs/PR_CALCULS_MELANGES_DRAFT.md`. Vérifier une éventuelle PR existante de cette branche avant d’en créer une autre. Une branche poussée ou un lien de comparaison ne prouve pas qu’une PR existe.
 
 ## Seconde revue critique demandée
 
@@ -112,20 +112,39 @@ Les corrections du report latéral et de l’emprunt à deux chiffres restent li
 
 La revue du contexte professeur a également corrigé l’accès à la matrice GLOBAL lorsque le sélecteur de résultats contient Mélange. Le détail affiche les XP propres à ce jeu, lus côté serveur (28 dans la recette, contre 50 XP globaux), y compris via le tableau récapitulatif. Ces lectures sont déclenchées à l’ouverture du détail, sans polling et sans changement d’affichage des autres jeux.
 
-Contrôle des accès demandé en fin de tâche : le Git HTTPS authentifié permet lecture et push. Le jeton GitHub est injecté, mais les API REST/GraphQL échouent au tunnel proxy (`CONNECT 403`), avant vérification des permissions API. Aucun outil Supabase n'est exposé ; le CLI ne trouve pas de jeton existant et les endpoints publics de gestion/santé échouent également au tunnel réseau. Aucune requête sur les résultats élèves n'a été faite pour ce contrôle. Aucun secret Supabase n'est nécessaire pour la validation locale ; l’accès de gestion manquant est désormais déclaré pour préparer la publication demandée.
+Le professeur rapporte depuis une autre conversation connectée que le projet Supabase `awmhpfofacaglewammxt` est actif, ses migrations/tables/Edge lisibles et les quatre RPC `connect_xp_sync_v2`, `connect_xp_read_v2`, `connect_parcours_restart_one`, `connect_parcours_restart_class` présentes. Provenance : déclaration du professeur, pas introspection par cette session. Le candidat ne remplace aucune de ces fonctions. Leur lecture supplémentaire ne bloque pas l’implémentation.
 
-Après application du seul ajout réseau GitHub enregistré dans les paramètres cloud, la création demandée se reprend avec :
+Création de PR via une API GitHub disponible, sans aucun accès Supabase :
 
 ```sh
-gh pr create --draft --repo Mr-Tat/Mathas-Connect --base main --head integration/calculs-melanges-connect-20261030 --title "Calculs écrits mélangés : intégration isolée, XP candidat 594 et verrous fermés" --body-file docs/PR_CALCULS_MELANGES_DRAFT.md
+gh pr create --draft --repo Mr-Tat/Mathas-Connect --base main --head integration/calculs-melanges-connect-20261030 --title "Calculs écrits mélangés : intégration Connect, XP 594 validés et verrous fermés" --body-file docs/PR_CALCULS_MELANGES_DRAFT.md
 ```
 
 ## Suite vers la mise en service
 
-La suite ajoute `scripts/calculs-melanges-release.mjs` (`plan`, `audit`, `check-report`) et le SQL d’audit du schéma en lecture seule, sans consultation des tables élèves. Le plan trace le commit, les trois constantes et les empreintes des fichiers de publication. L’audit n’utilise jamais le endpoint SQL modifiable et refuse les écarts de types, clés, valeurs par défaut indispensables, droits privés, barème ou catalogue. Les contraintes/triggers et la source Edge déployée restent à relire sur la cible ; le rapport ne prétend pas certifier une production qu’il n’a pas testée.
+La suite ajoute `scripts/calculs-melanges-release.mjs` (`plan`, `schema-query`, `check-report`) et le SQL d’audit du schéma en lecture seule, sans consultation des tables élèves. Le plan trace le commit, les trois constantes et les empreintes des fichiers de publication. L’export fournit une transaction READ ONLY sans l’exécuter. Le vérificateur hors ligne refuse les écarts de types, clés, valeurs par défaut indispensables, droits privés, barème ou catalogue. Aucun appel HTTP ni mécanisme d’authentification Supabase n’est présent dans cet outil ; le rapport JSON fourni est signalé comme non collecté par cette session. Les contraintes/triggers et la source Edge déployée restent à relire sur la cible ; le rapport ne prétend pas certifier une production qu’il n’a pas testée.
 
 `calculs_melanges_enable_hidden.sql` est la transaction contrôlée d’activation du pilote : neuf règles exactes, cinq signatures RPC, droits privés et quatre presets invisibles obligatoires. Les refus pour XP modifiés, droit RPC public et preset visible sont vérifiés dans PostgreSQL jetable, puis l’activation et le retrait non destructif sont réellement exécutés dans ce laboratoire. Les fonctions partagées conservent les mêmes empreintes avant et après.
 
 La nouvelle portée Edge `CONNECT_MIXED_ACCESS` est fermée par défaut. `pilot:<uuid>` limite les essais à une classe fictive ; une liste malformée refuse tout accès ; `open` est réservé à l’ouverture ultérieure choisie. Elle ne remplace aucune vérification d’identité. La sauvegarde hebdomadaire chiffrée ajoute obligatoirement les deux tables privées Mélange dès que son catalogue est installé, et échoue si leur lecture manque. Les tests déchiffrent réellement le résultat pour vérifier leur présence ; aucun backup de production n’est exécuté.
 
-Dernière régression Node : **216 tests, 215 réussis, aucun échec, 1 historique ignoré**. Le laboratoire PostgreSQL de publication est réussi. La recette GoTrue/Edge/PostgreSQL/Chromium a été rejouée avec une classe pilote réellement filtrée : refus des autres classes, saisie offline puis ACK +28, professeur/reset, Monsieur T, réaffectation du JWT et saturation/reprise à 100 résultats sont réussis. Le patch des trois constantes est généré et `git apply --check` le valide sans l’appliquer. La validation hébergée et la CI distante restent non exécutées faute d’accès effectifs ; les nouvelles exigences cloud sont enregistrées sans être appliquées à la machine courante.
+Dernière régression Node sans identifiants Supabase : **217 tests, 216 réussis, aucun échec, 1 historique ignoré**. Le laboratoire PostgreSQL est réussi : la requête de métadonnées exportée est réellement exécutée en READ ONLY, puis les installations/rejets/retraits sont testés uniquement dans la base jetable. Les recettes GoTrue/Edge/PostgreSQL/Chromium et de saisie native sont réussies sur cette version, sans identifiants Supabase de production : classe pilote filtrée, vraie saisie, ACK +28, professeur/reset/Monsieur T, réaffectation du JWT et saturation/reprise à 100 résultats. Les deux ordres 4→10→20 et 20→10→4 et les niveaux HARD 1/2/3 sont réussis ; aucun trafic hébergé. Le patch des trois constantes est préparé et vérifié sans être appliqué. La CI distante et la recette hébergée restent des contrôles distincts.
+
+## Métadonnées différées et périmètre final
+
+Aucune vérification Supabase hébergée n’est indispensable pour compléter cette implémentation ou sa PR. La [fiche de lecture seule](CALCULS_MELANGES_CONTROLES_LECTURE_SEULE.md) fournit la requête exacte et les métadonnées Edge/migrations/Pages à transférer via la connexion autorisée du professeur au moment de préparer une publication. Elle exclut les lignes élèves et les secrets et distingue son origine des tests exécutés ici. Les droits de publication ne sont pas demandés pendant cette étape.
+
+## Bilan des vérifications au périmètre draft
+
+| Vérification | Résultat et provenance |
+| --- | --- |
+| Régression Node | Exécutée ici : 217 tests, 216 réussis, 0 échec, 1 historique Soustraction/pg ignoré faute de module pg dans la suite générale |
+| PostgreSQL jetable | Exécuté ici : SQL, 27 droits/594 XP, deux ordres de séries, reçus permanents, CAS concurrent, reset/rejeu, rollback et droits privés ; export READ ONLY avec triggers et event triggers sentinelles |
+| Auth/Edge/SQL/Chromium | Exécuté ici : services officiels locaux, SDK natif, élève approuvé, pilote, ACK, offline/reload, page professeur/reset, Monsieur T, même JWT réaffecté et file 100 |
+| Chromium moteur réel | Exécuté ici : calculs réellement saisis, méthodes natives, 4/10/20 dans les deux ordres, mort subite, HARD 1/2/3 et entraînement sans XP ; contrôles 320/768/1366 |
+| HEAD main et moteur | Lus via Git ici : respectivement `91bcca7aba97d9fb00460a7e4ff56a0675f1459b` et `e11c88b4e449e8cdb17b0fee78c7daa6ea5bf279`, inchangés |
+| Projet hébergé / quatre RPC historiques | Présence et projet actif rapportés par le professeur depuis sa connexion autorisée ; pas de nouvelles requêtes Supabase ici |
+| CI distante de la PR | À vérifier une fois la PR créée ; aucune réussite distante déduite des tests locaux |
+| Compatibilité hébergée complète / recette publiée | Différées à une éventuelle préparation de publication ; aucune modification réelle autorisée dans cette mission |
+
+Aucun accès d’administration Supabase ne manque à l’implémentation livrée. Les métadonnées de publication sont préparées pour un échange en lecture seule ; elles ne conditionnent pas la complétude de la PR draft.

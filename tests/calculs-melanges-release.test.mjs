@@ -1,29 +1,43 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
-import {readHostedAudit,normalizeAudit,validateAudit} from '../scripts/calculs-melanges-release.mjs';
+import {readFileSync,mkdtempSync,writeFileSync,rmSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {schemaQuery,normalizeAudit,validateAudit} from '../scripts/calculs-melanges-release.mjs';
 
+const script=fileURLToPath(new URL('../scripts/calculs-melanges-release.mjs',import.meta.url));
 const fixture={format:'mathas-mixed-schema-v1',tables:{},functions:[],roles:[],catalogue:{apps:[],rules:[],presets:[]}};
-test('hosted audit uses only the official read-only endpoint and keeps token out of process arguments',()=>{
- let captured;
- const audit=readHostedAudit({token:'FICTION_TOKEN',run:(cmd,args,options)=>{
-  captured={cmd,args,options};return {status:0,stdout:JSON.stringify([{audit:fixture}])+'\n200'};
- }});
- assert.equal(audit.format,fixture.format);assert.equal(captured.cmd,'curl');assert.deepEqual(captured.args,['--config','-']);
- assert.equal(captured.args.join(' ').includes('FICTION_TOKEN'),false);
- assert.match(captured.options.input,/api\.supabase\.com\/v1\/projects\/awmhpfofacaglewammxt\/database\/query\/read-only/);
- assert.doesNotMatch(captured.options.input,/location|insecure|verbose|trace\s*=/);
- assert.ok(captured.options.timeout<=30000);
- const sql=readFileSync(new URL('../supabase/release-candidates/calculs_melanges_schema_readonly.sql',import.meta.url),'utf8');
- assert.doesNotMatch(sql,/\b(?:FROM|JOIN)\s+(?:public\.)?connect_(?:students|devices|states|xp_credits|xp_milestones|enrollments|parcours_history)\b/i);
+const localEnv={...process.env};
+for(const key of Object.keys(localEnv))if(key.startsWith('SUPABASE_'))delete localEnv[key];
+const run=args=>spawnSync(process.execPath,[script,...args],{encoding:'utf8',env:localEnv});
+test('offline schema export runs without Supabase credentials and exports a READ ONLY transaction',()=>{
+ const r=run(['schema-query']);assert.equal(r.status,0,r.stderr);assert.equal(r.stdout,schemaQuery());
+ assert.match(r.stdout,/^BEGIN READ ONLY;\n/);assert.match(r.stdout,/\nROLLBACK;\n$/);
+ assert.doesNotMatch(r.stdout,/\b(?:FROM|JOIN)\s+(?:public\.)?connect_(?:students|devices|states|xp_credits|xp_milestones|enrollments|parcours_history)\b/i);
+ assert.match(r.stdout,/pg_trigger/);assert.match(r.stdout,/pg_event_trigger/);
 });
-test('audit never downgrades to writable SQL, echoes remote error bodies, or turns denied access into success',()=>{
- let calls=0;
- const run=()=>{calls++;return {status:0,stdout:'SECRET_OR_UNTRUSTED_ERROR\n401'}};
- assert.throws(()=>readHostedAudit({token:'FICTION',run}),/^Error: schema_http_401 : accès de gestion non validé\.$/);assert.equal(calls,1);
- assert.throws(()=>readHostedAudit({token:'FICTION',run:()=>({status:56,stderr:'SECRET'})}),/schema_network_error \(curl 56\)/);
- assert.throws(()=>readHostedAudit({token:'',run}),/SUPABASE_ACCESS_TOKEN manquant/);assert.equal(calls,1);
- assert.throws(()=>readHostedAudit({token:'FICTION',run:()=>({status:0,stdout:'not json\n200'})}),/unexpected_schema_response/);
+test('connector report formats are accepted without claiming a hosted request ran here',()=>{
+ for(const value of [fixture,{audit:fixture},[{audit:fixture}]])assert.deepEqual(normalizeAudit(value),fixture);
+ const dir=mkdtempSync(path.join(tmpdir(),'mixed-report-test-'));
+ try{
+  const input=path.join(dir,'connector.json');writeFileSync(input,JSON.stringify([{audit:fixture}]));
+  const r=run(['check-report',input]);assert.equal(r.status,1);
+  const report=JSON.parse(r.stdout);assert.equal(report.hostedRequests,0);
+  assert.equal(report.metadataProvenance,'supplied-json-not-independently-fetched');
+  assert.ok(report.validation.issues.includes('missing_table:connect_states'));
+ }finally{rmSync(dir,{recursive:true,force:true})}
+});
+test('offline export never overwrites a supplied report or demands a production secret',()=>{
+ const dir=mkdtempSync(path.join(tmpdir(),'mixed-export-test-'));
+ try{
+  const output=path.join(dir,'query.sql'),first=run(['schema-query','--output',output]);assert.equal(first.status,0,first.stderr);
+  assert.equal(JSON.parse(first.stdout).executed,false);assert.equal(readFileSync(output,'utf8'),schemaQuery());
+  const second=run(['schema-query','--output',output]);assert.equal(second.status,1);assert.equal(readFileSync(output,'utf8'),schemaQuery());
+  const remote=run(['audit']);assert.equal(remote.status,1);assert.match(remote.stderr,/remote_audit_not_part_of_draft/);
+  assert.doesNotMatch(remote.stderr,/SUPABASE_ACCESS_TOKEN|login|create.*token/i);
+ }finally{rmSync(dir,{recursive:true,force:true})}
 });
 test('schema verifier rejects missing dependencies, invented report formats and namespace collisions',()=>{
  assert.equal(validateAudit(fixture).ok,false);assert.ok(validateAudit(fixture).issues.includes('missing_table:connect_states'));

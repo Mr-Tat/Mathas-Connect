@@ -1,4 +1,5 @@
-// Mélange (proposition non activée): 9 jalons par niveau, mêmes événements vérifiés que le moteur simple.
+// Mélange : barème de base 594 XP validé par l'enseignant, 9 jalons par niveau.
+// L'éligibilité par variété d'opérations reste une règle proposée, non activée.
 // Simulation locale uniquement. Attribution réelle exclusivement côté PostgreSQL.
 export const RULES=Object.freeze({perfect4:28,pass10:38,bonus10:8,pass20:63,bonus20:13,sudden5:12,sudden10:12,hard3:12,hard7:12});
 export const MAX_XP=3*Object.values(RULES).reduce((a,b)=>a+b,0);

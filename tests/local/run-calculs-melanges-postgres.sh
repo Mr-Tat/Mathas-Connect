@@ -4,14 +4,23 @@ ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 RUN_NAME=mathas-mixed-sql-$$
 LOG=$(mktemp /tmp/mathas-mixed-sql.XXXXXX)
 docker_local(){ env -u DOCKER_HOST -u DOCKER_CONTEXT -u DOCKER_TLS -u DOCKER_TLS_VERIFY -u DOCKER_CERT_PATH docker --host=unix:///var/run/docker.sock "$@"; }
-cleanup(){ docker_local rm -fv "$RUN_NAME" >/dev/null 2>&1 || true; rm -f "$LOG" "$LOG.a" "$LOG.b" "$LOG.before" "$LOG.installed" "$LOG.enabled" "$LOG.before.checked" "$LOG.installed.checked"; }
+cleanup(){ docker_local rm -fv "$RUN_NAME" >/dev/null 2>&1 || true; rm -f "$LOG" "$LOG.a" "$LOG.b" "$LOG.before" "$LOG.installed" "$LOG.enabled" "$LOG.before.checked" "$LOG.installed.checked" "$LOG.query"; }
 trap cleanup EXIT
 docker_local run -d --name "$RUN_NAME" --network none -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17-alpine >/dev/null
 psql_local(){ docker_local exec -i "$RUN_NAME" psql -U postgres -v ON_ERROR_STOP=1 "$@"; }
 for attempt in $(seq 1 30); do if docker_local exec "$RUN_NAME" pg_isready -U postgres >/dev/null 2>&1; then break; fi; sleep 1; done
 psql_local < "$ROOT/tests/postgres/calculs-melanges-fixture.sql" >/dev/null
 psql_local < "$ROOT/tests/postgres/calculs-melanges-auth-fixture.sql" >/dev/null
-schema_report(){ psql_local -X -q -t -A -c 'BEGIN READ ONLY' -f - -c 'ROLLBACK' < "$ROOT/supabase/release-candidates/calculs_melanges_schema_readonly.sql"; }
+psql_local <<'SQL' >/dev/null
+-- Fictitious metadata sentinels, not production schema changes. Their bodies
+-- deliberately do nothing when the candidate later writes or creates objects.
+CREATE FUNCTION public.test_mixed_metadata_row() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW;END $$;
+CREATE TRIGGER test_mixed_metadata_row BEFORE UPDATE ON public.connect_states FOR EACH ROW EXECUTE FUNCTION public.test_mixed_metadata_row();
+CREATE FUNCTION public.test_mixed_metadata_ddl() RETURNS event_trigger LANGUAGE plpgsql AS $$ BEGIN RETURN;END $$;
+CREATE EVENT TRIGGER test_mixed_metadata_ddl ON ddl_command_end EXECUTE FUNCTION public.test_mixed_metadata_ddl();
+SQL
+node "$ROOT/scripts/calculs-melanges-release.mjs" schema-query --output "$LOG.query" >/dev/null
+schema_report(){ psql_local -X -q -t -A -f - < "$LOG.query"; }
 schema_report > "$LOG.before"
 node "$ROOT/scripts/calculs-melanges-release.mjs" check-report "$LOG.before" --stage before-install --output "$LOG.before.checked" >/dev/null
 rm -f "$LOG.before.checked"
@@ -69,6 +78,9 @@ import {pathToFileURL} from 'node:url';
 const [root,...files]=process.argv.slice(2);
 const {validateAudit}=await import(pathToFileURL(root+'/scripts/calculs-melanges-release.mjs'));
 const [before,installed,enabled]=files.map(file=>JSON.parse(readFileSync(file,'utf8')));
+assert.ok(before.triggers.some(t=>t.table==='connect_states'&&t.name==='test_mixed_metadata_row'&&/^[0-9a-f]{32}$/.test(t.functionDefinitionMd5)));
+assert.ok(before.eventTriggers.some(t=>t.name==='test_mixed_metadata_ddl'&&/^[0-9a-f]{32}$/.test(t.functionDefinitionMd5)));
+assert.deepEqual(before.triggers,installed.triggers);assert.deepEqual(before.eventTriggers,installed.eventTriggers);
 assert.equal(validateAudit(enabled,'enabled-hidden').ok,true);
 const shared=a=>(a.functions||[]).filter(f=>!f.name.startsWith('connect_mixed_'));
 assert.deepEqual(shared(before),shared(installed));assert.deepEqual(shared(before),shared(enabled));
@@ -82,7 +94,7 @@ for(const mutate of [
  a=>a.catalogue.presets[0].visible=true,
  a=>a.catalogue.rules[0].points++,
 ]){const a=structuredClone(installed);mutate(a);assert.equal(validateAudit(a,'installed-hidden').ok,false);}
-console.log('PASS read-only schema audit, drift detection, private grants, enabled app/four hidden HUBs and unchanged shared functions');
+console.log('PASS read-only schema/trigger audit, drift detection, private grants, enabled app/four hidden HUBs and unchanged shared functions');
 JS
 psql_local < "$ROOT/supabase/release-candidates/calculs_melanges_disable_only.sql" >/dev/null
 psql_local <<'SQL'

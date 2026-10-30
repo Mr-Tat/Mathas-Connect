@@ -1,6 +1,6 @@
-// Release checks only. No SQL writes, deployments, login or pupil queries.
+// Offline draft/release checks. No network, hosted credentials or deployment.
 import {readFileSync,writeFileSync} from 'node:fs';
-import {spawnSync,execFileSync} from 'node:child_process';
+import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
@@ -100,23 +100,10 @@ export function normalizeAudit(raw){
  if(value?.format!=='mathas-mixed-schema-v1')throw Error('unexpected_schema_response');
  return value;
 }
-export function readHostedAudit({token=process.env.SUPABASE_ACCESS_TOKEN,run=spawnSync}={}){
- if(!token)throw Error('SUPABASE_ACCESS_TOKEN manquant : renseigner le secret dans les paramètres cloud, jamais dans le chat.');
- if(/[\r\n\0]/.test(token))throw Error('invalid_token_format');
- // curl inherits the session HTTPS proxy and CA trust. The token is sent through
- // stdin, never shell expansion, process arguments, saved files or diagnostics.
- const config=[
-  'url = '+JSON.stringify('https://api.supabase.com/v1/projects/'+projectRef+'/database/query/read-only'),
-  'request = "POST"','header = "Content-Type: application/json"',
-  'header = '+JSON.stringify('Authorization: Bearer '+token),
-  'data-binary = '+JSON.stringify(JSON.stringify({query:read(sqlFile)})),
-  'silent','max-time = 25','max-filesize = 5242880','write-out = "\\n%{http_code}"',
- ].join('\n')+'\n';
- const r=run('curl',['--config','-'],{input:config,encoding:'utf8',timeout:30000,maxBuffer:6*1024*1024});
- if(r.error||r.status!==0)throw Error('schema_network_error (curl '+(r.status??'unavailable')+')');
- const output=String(r.stdout||''),split=output.lastIndexOf('\n'),status=output.slice(split+1).trim();
- if(status!=='200')throw Error('schema_http_'+status+' : accès de gestion non validé.');
- try{return normalizeAudit(JSON.parse(output.slice(0,split)))}catch{throw Error('unexpected_schema_response')}
+export function schemaQuery(){
+ // Can be run by the separately authorized connector. Exporting never executes
+ // SQL. The same READ ONLY transaction is exercised in disposable PostgreSQL.
+ return 'BEGIN READ ONLY;\n'+read(sqlFile).trim()+'\nROLLBACK;\n';
 }
 export function releasePlan(){
  const files=['app.js','apps/calculs-melanges/connect-pilot.mjs','supabase/functions/connect-results/index.ts',
@@ -130,20 +117,27 @@ export function releasePlan(){
   sourceCommit:JSON.parse(read('apps/calculs-melanges/source-manifest.json')).commit,gates,
   staticCatalogueContainsMixed:read('hub-catalog.json').includes(appKey),
   files:Object.fromEntries(files.map(file=>[file,createHash('sha256').update(readFileSync(path.join(root,file))).digest('hex')])),
-  hostedStatus:'unverified',commandPerformsProductionWrites:false};
+  xpMax:594,hostedStatus:'not-verified-in-this-session',hostedCredentialsRequired:false,commandPerformsProductionWrites:false};
 }
 async function main(args){
  const command=args.shift()||'plan';let stage='before-install',output=null,file=null;
  while(args.length){const a=args.shift();if(a==='--stage')stage=args.shift();else if(a==='--output')output=args.shift();else if(!file)file=a;else throw Error('unexpected_argument');}
  if(!['before-install','installed-hidden','enabled-hidden'].includes(stage))throw Error('invalid_stage');
  let result;
+ if(command==='schema-query'){
+  if(file)throw Error('unexpected_argument');
+  if(output){writeFileSync(output,schemaQuery(),{flag:'wx',mode:0o600});console.log(JSON.stringify({output,executed:false}));}
+  else process.stdout.write(schemaQuery());
+  return;
+ }
  if(command==='plan')result=releasePlan();
- else if(command==='audit'||command==='check-report'){
-  if(command==='check-report'&&!file)throw Error('schema_report_path_required');
-  const audit=command==='audit'?readHostedAudit():normalizeAudit(JSON.parse(readFileSync(file,'utf8')));
-  result={checkedAt:new Date().toISOString(),projectRef,validation:validateAudit(audit,stage),audit};
+ else if(command==='check-report'){
+  if(!file)throw Error('schema_report_path_required');
+  const audit=normalizeAudit(JSON.parse(readFileSync(file,'utf8')));
+  result={checkedAt:new Date().toISOString(),projectRef,metadataProvenance:'supplied-json-not-independently-fetched',hostedRequests:0,validation:validateAudit(audit,stage),audit};
   if(!result.validation.ok)process.exitCode=1;
- }else throw Error('usage: plan | audit [--stage before-install|installed-hidden|enabled-hidden] [--output /tmp/report.json] | check-report FILE [--stage STAGE]');
+ }else if(command==='audit')throw Error('remote_audit_not_part_of_draft: export schema-query and use check-report FILE; no hosted credentials are required.');
+ else throw Error('usage: plan | schema-query [--output /tmp/query.sql] | check-report FILE [--stage before-install|installed-hidden|enabled-hidden] [--output /tmp/report.json]');
  const json=JSON.stringify(result,null,2)+'\n';
  if(output){writeFileSync(output,json,{flag:'wx',mode:0o600});console.log(JSON.stringify({output,validation:result.validation??null}));}
  else console.log(json);

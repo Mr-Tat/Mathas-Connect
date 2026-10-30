@@ -39,6 +39,11 @@ SELECT jsonb_build_object(
  'roles',(SELECT jsonb_agg(rolname ORDER BY rolname) FROM pg_roles WHERE rolname IN ('anon','authenticated','service_role')),
  'tables',coalesce((SELECT jsonb_object_agg(relname,details) FROM tables),'{}'::jsonb),
  'functions',coalesce((SELECT jsonb_agg(details ORDER BY proname,details->>'arguments') FROM functions),'[]'::jsonb),
+ 'triggers',coalesce((SELECT jsonb_agg(jsonb_build_object('table',r.relname,'name',t.tgname,'enabled',t.tgenabled,
+   'definition',pg_get_triggerdef(t.oid),'functionDefinitionMd5',md5(pg_get_functiondef(t.tgfoid))) ORDER BY r.relname,t.tgname)
+  FROM pg_trigger t JOIN relations r ON r.oid=t.tgrelid WHERE NOT t.tgisinternal),'[]'::jsonb),
+ 'eventTriggers',coalesce((SELECT jsonb_agg(jsonb_build_object('name',e.evtname,'event',e.evtevent,'enabled',e.evtenabled,
+   'tags',e.evttags,'functionDefinitionMd5',md5(pg_get_functiondef(e.evtfoid))) ORDER BY e.evtname) FROM pg_event_trigger e),'[]'::jsonb),
  'catalogue',jsonb_build_object(
   'apps',(SELECT coalesce(jsonb_agg(jsonb_build_object('appKey',app_key,'enabled',enabled,'featured',featured,'launchUrl',launch_url,'imageUrl',image_url)),'[]'::jsonb) FROM public.connect_apps WHERE app_key='melange-calculs-ecrits'),
   'presets',(SELECT coalesce(jsonb_agg(jsonb_build_object('slug',preset_slug,'visible',visible,'featured',featured) ORDER BY preset_slug),'[]'::jsonb) FROM public.connect_hub_preset_entries WHERE app_key='melange-calculs-ecrits'),
