@@ -88,4 +88,9 @@ BEGIN
  r:=connect_mixed_record_v1(student,gen_random_uuid(),rev+1,epoch,'classic',1,4,4,NULL,'["add","sub","mul"]','["add","sub","add","sub"]','[true,true,true,true]',false,false);
  IF (r#>>'{xp,delta}')::int<>0 THEN RAISE EXCEPTION 'new milestone replayed within same parcours';END IF;
 END $$;
+INSERT INTO connect_students(id,display_name) VALUES('00000000-0000-4000-8000-000000000003','Fictif opérations corrigées');
+DO $$ DECLARE r jsonb; BEGIN
+ r:=connect_mixed_record_v1('00000000-0000-4000-8000-000000000003',gen_random_uuid(),0,0,'classic',1,8,10,NULL,'["add","sub","mul"]','["add","add","add","add","add","add","add","add","sub","mul"]','[true,true,true,true,true,true,true,true,false,false]',false,false);
+ IF (r#>>'{xp,delta}')::int<>38 THEN RAISE EXCEPTION 'completed variety wrongly requires firstTry';END IF;
+END $$;
 SELECT 'PASS mixed SQL: 594 cap, 27 awards, deltas, two series orders, durable dedup, invalid proof rollback, CAS, epochs, reset/replay, grants, isolation, hidden catalogue';

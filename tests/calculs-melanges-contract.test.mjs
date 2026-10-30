@@ -120,3 +120,7 @@ test('matching numeric revisions alone cannot acknowledge another event/pupil/ap
   const storage=memory(),p=createPilot({storage,classId:randomUUID(),studentId:randomUUID(),post:async e=>({ok:true,eventId:e.eventId,appKey:e.appKey,storageSubject:e.expectedStudentId,revision:1,resetEpoch:0,[corrupt]:'wrong'})});p.initialize(0,0);p.completed(event());await p.retry();assert.equal(p.pending(),1,corrupt);
  }
 });
+
+test('corrected-but-completed operations count for variety; firstTry still determines score',()=>{
+ const e=normalizeCompletion(event(10,{score:8,operationsCompleted:[...Array(8).fill('add'),'sub','mul'],firstTry:[...Array(8).fill(true),false,false]}));assert.ok(e);assert.equal(eligible(e),true);assert.equal(milestones(applyCompletion(empty(),e)).xp,38);
+});

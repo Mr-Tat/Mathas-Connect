@@ -8,7 +8,7 @@ const source=fs.readFileSync(new URL('../supabase/functions/connect-results/inde
 const classId=randomUUID(),studentId=randomUUID(),authId=randomUUID();
 function harness({enabled=true,approved=true,enrolled=true,anonymous=true,managed=true,player=true,locked=false}={}){
  let handler,calls=[];
- const db={from(table){const q={select(){return q},eq(){return q},is(){return q},in(){return q},limit(){return q},async maybeSingle(){
+ const db={from(table){const q={order(){return q},select(){return q},eq(){return q},is(){return q},in(){return q},limit(){return q},async maybeSingle(){
   const rows={connect_apps:enabled?{enabled:true}:null,connect_devices:approved?{student_id:studentId}:null,connect_enrollments:enrolled?{student_id:studentId}:null,
    connect_students:{id:studentId},connect_class_permissions:managed?{class_id:classId}:null,connect_teacher_players:player?{student_id:studentId}:null,connect_states:{revision:0,reset_epoch:0,state_data:{}}};
   return {data:rows[table]??null,error:null};
@@ -45,3 +45,5 @@ test('teacher reset denies pupils and wrong class, calls mixed-only RPC for mana
 });
 
 test('same JWT reassigned to another pupil rejects old queued proofs before RPC',async()=>{const h=harness();const r=await h.call({expectedStudentId:randomUUID()});assert.equal(r.status,409);assert.equal(r.body.error,'identity_binding_conflict');assert.equal(h.calls.length,0)});
+
+test('mixed result selection does not block the authorized GLOBAL application matrix',async()=>{const h=harness({anonymous:false});assert.equal((await h.call({action:'teacher-app-matrix-get'})).status,200);assert.equal((await harness().call({action:'teacher-app-matrix-get'})).status,403)});

@@ -34,7 +34,7 @@ Les tables minimales sont indépendantes de Multiplication simple (`connect_mixe
 
 ## XP candidat et remise à zéro
 
-Règle provisoire `mixed_v1` : trois opérations sélectionnées au départ, au moins deux types effectivement réussis en première tentative ; pour la mort subite, vérification au seuil récompensé. Les aides suivent la convention actuelle (métadonnée, pas d'exclusion supplémentaire), Master donne 0 XP. Pas de crédit à partir du seul réglage ou cache natif.
+Règle provisoire `mixed_v1` : trois opérations sélectionnées au départ, au moins deux types effectivement terminés ; pour la mort subite, vérification au seuil récompensé. Les aides suivent la convention actuelle (métadonnée, pas d'exclusion supplémentaire), Master donne 0 XP. Pas de crédit à partir du seul réglage ou cache natif.
 
 | Jalon par niveau | XP |
 | --- | ---: |
@@ -108,4 +108,14 @@ La revue a renforcé trois frontières, sans ouvrir de verrou :
 - **Saturation** : à 100 résultats en attente, les contrôles natifs Connect deviennent inertes et un message demande la reconnexion. Un bouton de synchronisation manuelle reste accessible. La recette injecte explicitement 100 journaux synthétiques, vérifie le blocage réel du bouton de départ, leur conservation puis le déblocage après ACK. Aucun test ne présente ces journaux injectés comme 100 parties jouées.
 - **ACK et requêtes lentes** : les réponses sont corrélées par événement, application et élève, en plus de CAS/époque. Une réponse numérique plausible pour un autre événement ne supprime rien. Les requêtes HTTP sont bornées à dix secondes ; les lots supplémentaires arrivant à la frontière des 100 ACK sont repris sans polling ni boucle sur un échec.
 
-Les corrections du report latéral et de l’emprunt à deux chiffres restent limitées à la copie. Le helper clavier ignore les marqueurs d’emprunt cachés, respecte les transitions automatiques et ne saisit pas de report dans la colonne finale qui contient déjà la retenue. Les limites pédagogiques et le plafond de journal 1 000 restent explicitement ouverts avant activation.
+Les corrections du report latéral et de l’emprunt à deux chiffres restent limitées à la copie. Le helper clavier ignore les marqueurs d’emprunt cachés, respecte les transitions automatiques et ne saisit pas de report dans la colonne finale qui contient déjà la retenue. La première tentative détermine le score, mais une opération corrigée puis réellement terminée compte pour la variété : aucune exclusion pédagogique supplémentaire n’est introduite. Les limites pédagogiques et le plafond de journal 1 000 restent explicitement ouverts avant activation.
+
+La revue du contexte professeur a également corrigé l’accès à la matrice GLOBAL lorsque le sélecteur de résultats contient Mélange. Le détail affiche les XP propres à ce jeu, lus côté serveur (28 dans la recette, contre 50 XP globaux), y compris via le tableau récapitulatif. Ces lectures sont déclenchées à l’ouverture du détail, sans polling et sans changement d’affichage des autres jeux.
+
+Contrôle des accès demandé en fin de tâche : le Git HTTPS authentifié permet lecture et push. Le jeton GitHub est injecté, mais les API REST/GraphQL échouent au tunnel proxy (`CONNECT 403`), avant vérification des permissions API. Aucun outil Supabase n'est exposé ; le CLI ne trouve pas de jeton existant et les endpoints publics de gestion/santé échouent également au tunnel réseau. Aucune requête sur les résultats élèves n'a été faite pour ce contrôle. Aucun nouveau secret Supabase n'est nécessaire pour la validation locale livrée.
+
+Après application du seul ajout réseau GitHub enregistré dans les paramètres cloud, la création demandée se reprend avec :
+
+```sh
+gh pr create --draft --repo Mr-Tat/Mathas-Connect --base main --head integration/calculs-melanges-connect-20261030 --title "Calculs écrits mélangés : intégration isolée, XP candidat 594 et verrous fermés" --body-file docs/PR_CALCULS_MELANGES_DRAFT.md
+```

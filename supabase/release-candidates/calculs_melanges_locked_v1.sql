@@ -321,8 +321,7 @@ BEGIN
  v_eligible:=coalesce(v_next->'eligible','{"classic":[{},{},{}],"sudden":[0,0,0],"hard":[0,0,0],"thresholds":{"sudden":[{},{},{}],"hard":[{},{},{}]}}'::jsonb);
  IF NOT p_master AND jsonb_array_length(p_selected)=3 THEN
   IF p_mode='classic' THEN
-   SELECT count(DISTINCT a.op) INTO v_distinct FROM jsonb_array_elements_text(p_completed) WITH ORDINALITY a(op,n)
-    WHERE p_first->(a.n::int-1)='true'::jsonb;
+   SELECT count(DISTINCT a.op) INTO v_distinct FROM jsonb_array_elements_text(p_completed) WITH ORDINALITY a(op,n);
    IF v_distinct>=2 THEN
     v_old:=coalesce((v_eligible#>>ARRAY['classic',(p_level-1)::text,p_total::text])::int,0);
     v_eligible:=jsonb_set(v_eligible,ARRAY['classic',(p_level-1)::text,p_total::text],to_jsonb(greatest(v_old,p_score)),true);

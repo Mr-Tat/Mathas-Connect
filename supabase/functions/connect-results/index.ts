@@ -189,7 +189,7 @@ Deno.serve(async req=>{
     if(current.error||history.error)return deny('db_error',500);
     return answer({ok:true,current:current.data??{parcours_number:1,repeat_xp:false},history:history.data??[]});
    }
-   if(!['teacher-summary','teacher-detail'].includes(b.action))return deny('forbidden',403);
+   if(!['teacher-summary','teacher-detail','teacher-overview','teacher-export','teacher-app-matrix-get','teacher-app-matrix-save','teacher-catalog-global-get','teacher-catalog-global-save'].includes(b.action))return deny('forbidden',403);
   }
   const refreshXp=async(studentId:string,appKey:string)=>{
    if(!xpAppAllowed(appKey))return null;
@@ -429,7 +429,9 @@ Deno.serve(async req=>{
    if(!selected||!await managed()||!valid(b.studentId))return deny('forbidden',403);
    const enrolled=await read(db.from('connect_enrollments').select('id').eq('student_id',b.studentId).eq('class_id',b.classId).is('left_at',null));if(!enrolled||!await read(db.from('connect_students').select('id').eq('id',b.studentId).is('archived_at',null)))return deny('forbidden',403);
    const [name,state]=await Promise.all([read(db.from('connect_students').select('display_name').eq('id',b.studentId)),read(db.from('connect_states').select('revision,state_data').eq('student_id',b.studentId).eq('app_key',selected))]);
-   return answer({ok:true,studentId:b.studentId,name:name?.display_name||'Élève',state:state?.state_data||null,revision:state?.revision??0});
+   let mixedXp=null;
+   if(selected===mixed){const r=await db.rpc('connect_mixed_xp_read_v1',{p_student:b.studentId,p_app:mixed,p_include_milestones:false});if(r.error||!r.data)return deny('xp_unavailable',503);mixedXp=r.data;}
+   return answer({ok:true,studentId:b.studentId,name:name?.display_name||'Élève',state:state?.state_data||null,revision:state?.revision??0,...(mixedXp?{xp:mixedXp}:{})});
   }
   if(b.action==='student-xp'){
    if(!xpAppAllowed(b.appKey))return deny('forbidden',403);

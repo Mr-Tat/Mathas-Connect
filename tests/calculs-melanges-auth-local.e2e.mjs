@@ -38,7 +38,8 @@ const event={action:'game-record',schemaVersion:1,eventId:randomUUID(),mode:'cla
 const result=ok(await post(student,event));assert.equal(result.xp.delta,28);assert.equal(result.xp.total,50);
 const duplicate=ok(await post(student,event));assert.equal(duplicate.duplicate,true);assert.equal(duplicate.xp.delta,0);
 const loaded=ok(await post(student,{action:'student-load'}));assert.equal(loaded.state.classic[0][4],4);assert.equal(loaded.state.eligible.classic[0][4],4);
-const detail=ok(await post(prof,{action:'teacher-detail',studentId}));assert.equal(detail.state.classic[0][4],4);
+const matrix=ok(await post(prof,{action:'teacher-app-matrix-get'}));assert.equal(matrix.entries.filter(x=>x.app_key==='melange-calculs-ecrits').length,4);assert.ok(matrix.entries.filter(x=>x.app_key==='melange-calculs-ecrits').every(x=>!x.visible));
+const detail=ok(await post(prof,{action:'teacher-detail',studentId}));assert.equal(detail.state.classic[0][4],4);assert.equal(detail.xp.appXp,28);
 assert.equal((await post(student,{action:'teacher-parcours-restart',scope:'class',repeatXp:false})).status,403);
 const reset=ok(await post(prof,{action:'teacher-parcours-restart',scope:'student',studentId,repeatXp:false}));assert.equal(reset.parcours,2);
 assert.equal((await post(student,event)).body.error,'stale_reset_epoch');
@@ -123,6 +124,7 @@ if(process.env.SDK_BROWSER_PATH){
   await professor.reload();await professor.locator('.results-overview-table').waitFor({timeout:30000});
   await professor.getByRole('button',{name:'Voir les résultats de Élève Chromium Mélange dans Calculs écrits mélangés'}).click();
   const rows=await professor.locator('#results-student-content .result-table tr').allTextContents();assert.match(rows.join('|'),/4\/4/);assert.doesNotMatch(rows[0],/HARD 5/);
+  await professor.waitForFunction(()=>document.querySelector('#results-student-content .mixed-xp')?.textContent?.includes('28 XP'));
   await professor.locator('#results-student-content .results-restart-button').click();const dialog=professor.locator('dialog.parcours-dialog');await dialog.waitFor();await dialog.locator('input[type=checkbox]').uncheck();await dialog.locator('input[required]').fill('Élève Chromium Mélange');await dialog.getByRole('button',{name:'Confirmer le nouveau parcours'}).click();await dialog.waitFor({state:'detached'});
   frame=await openGame();await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='50 XP');assert.deepEqual(await frame.evaluate(()=>JSON.parse(localStorage.getItem('mixcalc_classic_v1'))),{});
   const after=check(await admin.from('connect_states').select('reset_epoch,state_data').eq('student_id',browserStudent).eq('app_key','melange-calculs-ecrits').single(),'UI reset');assert.equal(after.reset_epoch,1);assert.deepEqual(after.state_data,{});
@@ -143,6 +145,7 @@ if(process.env.SDK_BROWSER_PATH){
   check(await admin.from('connect_states').insert({student_id:rebound,app_key:'melange-calculs-ecrits',schema_version:1,revision:oldVersion.revision,reset_epoch:oldVersion.reset_epoch,state_data:{}}),'matching version fixture');
   check(await admin.from('connect_devices').update({student_id:rebound}).eq('auth_user_id',signed),'same JWT reassignment');
   await context.setOffline(false);await page.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('en attente (conflict)'));
+  assert.equal(await frame.evaluate(()=>document.body.inert),true,'conflicting profile cannot continue playing');
   const reboundState=check(await admin.from('connect_states').select('revision,state_data').eq('student_id',rebound).eq('app_key','melange-calculs-ecrits').single(),'rebound untouched');assert.equal(reboundState.revision,oldVersion.revision);assert.deepEqual(reboundState.state_data,{});
   frame=await openGame();assert.equal(await frame.evaluate(()=>JSON.parse(localStorage.getItem('mixcalc_classic_v1'))[1]??null),null);
   assert.equal(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)||'[]').length,queueKey),1,'old pupil proof remains under old binding');

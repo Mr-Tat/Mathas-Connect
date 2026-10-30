@@ -22,6 +22,5 @@ export function normalizeCompletion(e){
 export function eligible(e,threshold=null){
  if(e.masterMode||e.operationsSelectedAtStart.length!==3)return false;
  const completed=threshold===null?e.operationsCompleted:e.operationsCompleted.slice(0,threshold);
- const first=threshold===null?e.firstTry:e.firstTry.slice(0,threshold);
- return new Set(completed.filter((_,i)=>first[i])).size>=2;
+ return new Set(completed).size>=2;
 }
