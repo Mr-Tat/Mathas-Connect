@@ -104,3 +104,18 @@ jobs:
           fi
           grep -Eq 'addition_multiple_stale_production_rpc|addition_multiple_atomic_rpc_already_exists' /tmp/addmulti-repeat-rejected.log
           psql -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM public.connect_apps WHERE app_key='addition-ecrite-multiple' AND enabled=false" | grep -qx 1
+
+
+      - name: Exercise non-destructive emergency disable without removing earned XP
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Simulate only a hypothetical accidentally enabled version of THIS app.
+          psql -v ON_ERROR_STOP=1 -c "UPDATE public.connect_apps SET enabled=true WHERE app_key='addition-ecrite-multiple'"
+          psql -v ON_ERROR_STOP=1 -c "UPDATE public.connect_hub_preset_entries SET visible=true WHERE app_key='addition-ecrite-multiple' AND preset_slug='phase1'"
+          psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/addition_multiple_disable_only.sql
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM public.connect_apps WHERE app_key='addition-ecrite-multiple' AND enabled=false" | grep -qx 1
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM public.connect_hub_preset_entries WHERE app_key='addition-ecrite-multiple' AND visible=false AND featured=false" | grep -qx 4
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT xp_credited FROM public.connect_xp_credits WHERE student_id='66666666-6666-4666-8666-666666666666' AND app_key='addition-ecrite-multiple'" | grep -qx 52
+          psql -v ON_ERROR_STOP=1 -At -c "SELECT xp_credited FROM public.connect_xp_credits WHERE student_id='66666666-6666-4666-8666-666666666666' AND app_key='addition-ecrite-simple'" | grep -qx 22
+          psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/addition_multiple_disable_only.sql
