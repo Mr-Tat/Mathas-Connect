@@ -9,3 +9,5 @@ ALTER TABLE public.connect_lab_hub_visibility ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.connect_lab_hub_visibility FROM PUBLIC, anon, authenticated;
 COMMENT ON TABLE public.connect_lab_hub_visibility IS
   'Affichage facultatif pour Classe démo - TEST uniquement, jamais les presets observation/phase1/phase2/2eco';
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.connect_lab_hub_visibility TO service_role;
