@@ -42,7 +42,7 @@ function progressText(appKey){
   if(!p)return 'Progression momentanément indisponible';
   const valid=n=>Number.isSafeInteger(n)&&n>=0;
   if(![p.xpEarned,p.xpMax,p.trophiesEarned,p.trophiesMax].every(valid))return 'Progression momentanément indisponible';
-  return '⭐ '+p.xpEarned+' / '+p.xpMax+' XP du parcours · 🏆 '+p.trophiesEarned+' / '+p.trophiesMax+' trophées';
+  return '⭐ '+p.xpEarned+' / '+p.xpMax+' XP du parcours\n🏆 '+p.trophiesEarned+' / '+p.trophiesMax+' trophées';
 }
 function refreshCardProgress(){
   for(const node of document.querySelectorAll('.app-card[data-app-key]')){
@@ -267,8 +267,11 @@ $('mode-toggle').onclick = async () => {
   }catch(e){alert(e.message||'Déconnexion impossible.');}
   finally{button.disabled=false;}
 };
-async function showIdentity() {
-  drawIdentity(null);
+let lastIdentityRequestAt=0,refreshingIdentity=false;
+async function showIdentity(refresh=false) {
+  if(refresh&&(refreshingIdentity||Date.now()-lastIdentityRequestAt<2000))return;
+  refreshingIdentity=true;lastIdentityRequestAt=Date.now();
+  if(!refresh)drawIdentity(null);
   if (!classId || (!playingAsTeacher&&inFreeMode())) return;
   try {
     const sb=await getSupabase();
@@ -282,12 +285,15 @@ async function showIdentity() {
     if (!response.ok) return;
     const profile = await response.json();
     if (profile.ok && profile.status === 'approved' && (profile.classId === classId)) {
-      // Une seule requête authentifiée pour identité + XP ; plus d'aller-retour supplémentaire.
+      // Une seule requête authentifiée pour identité + XP + progressions.
       drawIdentity(profile);
-    }
+    }else if(refresh)drawIdentity(null);
     // Aucun accès reconnu au seul motif de connaître le lien de classe.
   } catch { /* Toujours laisser le HUB et les jeux accessibles en mode libre. */ }
+  finally{refreshingIdentity=false;}
 }
 
+// Retour d'un onglet de jeu : un seul résumé à la demande, jamais de polling.
+window.addEventListener('focus',()=>{if(activeProfile)void showIdentity(true)});
 showCatalog();
 showIdentity();
