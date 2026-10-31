@@ -17,12 +17,13 @@
     "synchronous native trophy watch via mathas-mixed-finalized before terminal snapshot; no new polling",
     "side report focus follows nextTarget rather than resetting to column1 (native input bug on long multiplication)",
     "direct-borrow adjusted digit accepts two keystrokes when native expected value is 10..18 (native input bug); algorithm unchanged",
-    "four inherited whitespace-only lines normalized; no semantic effect"
+    "four inherited whitespace-only lines normalized; no semantic effect",
+    "summary HARD row follows the native perfect1/2/3 unlock; hydrated counters or retained records alone do not activate it"
   ],
   "thumbnail": {
     "status": "temporary_native_illustration_not_teacher_approved",
     "officialRepositoryHead": "67b0c86e84b587f48bdbb4d57189e21d2610a005",
     "searchResult": "no mixed thumbnail in Miniatures-Mathas at this HEAD"
   },
-  "integratedIndexSha256": "90fd0efb0397ec7270732f1e136f8cfc758505f08b6743f08aafc67d04a5cf63"
+  "integratedIndexSha256": "03aac9a0f7cb686f7cc5d9b14e0d363d6184fa61f3ed5a4eaa98af7dc131487b"
 }

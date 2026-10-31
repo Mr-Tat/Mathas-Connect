@@ -9,6 +9,13 @@ try{
  await context.addInitScript(()=>{let seed=5168789;Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296}});
  async function open(){await page.goto(site+'/apps/calculs-melanges/?simulation=1');await page.locator('#game').waitFor();await page.waitForFunction(()=>document.querySelector('#game')?.contentDocument?.querySelector('.countBtn'));await page.waitForTimeout(350);return page.frames().find(f=>f.parentFrame())}
  let frame=await open();
+ // Connect hydrates unplayed HARD counters as zeros. They are records, not unlocks.
+ await page.evaluate(()=>localStorage.setItem('mathas.calculs-melanges.game.simulation.v1:mixcalc_hard_v1',JSON.stringify({1:0,2:0,3:0})));
+ frame=await open();
+ assert.equal(await frame.locator('#levelMenu .level-option.hard').isDisabled(),true);
+ assert.equal(await frame.locator('.mathas-v535-hard-row').count(),0,'locked HARD must stay out of the summary even with hydrated zero records');
+ assert.deepEqual(await frame.locator('.mathas-v535-table tbody tr > td:first-child').allTextContents(),['Niv. 1']);
+ console.log('PASS fresh pupil summary: only unlocked level1; hydrated HARD zeros do not show a locked mode');
  if(!process.env.MATHAS_SKIP_LONG_BROWSER)for(const order of [[4,10,20],[20,10,4]]){
   await page.evaluate(()=>{for(const k of Object.keys(localStorage))if(k.startsWith('mathas.calculs-melanges.'))localStorage.removeItem(k)});frame=await open();
   for(const total of order){
@@ -54,7 +61,11 @@ try{
   assert.match(await frame.locator('#feedback').innerText(),/Score : 10/);
   console.log('PASS real normal sudden10 + wrong terminal, exactly one completion');
  }
- frame=await open();await frame.locator('#levelBtn').click();await frame.locator('#levelMenu .level-option.hard').click();
+ frame=await open();
+ assert.equal(await frame.locator('#levelMenu .level-option.hard').isDisabled(),false);
+ assert.equal(await frame.locator('.mathas-v535-hard-row').count(),1,'genuinely unlocked HARD must remain visible');
+ assert.deepEqual(await frame.locator('.mathas-v535-table tbody tr > td:first-child').allTextContents(),['Niv. 1','Niv. 2','Niv. 3','HARD']);
+ await frame.locator('#levelBtn').click();await frame.locator('#levelMenu .level-option.hard').click();
  await frame.locator('.hard-train').first().click();await solveMixed({frame,page,hard:true});assert.equal(await page.locator('#audit').innerText(),'Événements : 0');
  console.log('PASS real HARD training=0; normal guided remains hidden exactly as upstream');
  // Terminal HARD sudden path, seven correct problems and a genuine wrong answer.

@@ -7632,7 +7632,8 @@ makeUI();render();syncUnlockGold();setInterval(watch,650);document.addEventListe
    const progress=read(store.progression)||{};
    // Seuls les déblocages obtenus par l'élève comptent (jamais le Master temporaire).
    const visibleLevels=[true,!!(progress.level2||progress.level3),!!progress.level3];
-   const hardUnlocked=!!(progress.hard||(progress.perfect1&&progress.perfect2&&progress.perfect3)||hardRows.length);
+   // Même déblocage que le menu : des compteurs HARD restaurés (même à zéro) ne l'activent pas.
+   const hardUnlocked=!!(progress.perfect1&&progress.perfect2&&progress.perfect3);
    return {classics,suddens,hardRows,visibleLevels,hardUnlocked};
  }
  const esc=v=>String(v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
