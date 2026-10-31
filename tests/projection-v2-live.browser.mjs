@@ -30,7 +30,7 @@ function fakeStudent(i){
   scores:[{appKey:'addition-ecrite-simple',bestScore:220-i*10},
   {appKey:'multiplication-ecrite-simple',bestScore:90-i*3}]};
 }
-test('V2 — 14 élèves visibles, rang 8 normal, séparateur, paramètres Score/% interclasses, reset et déconnexion (Chromium)',{timeout:125000},async()=>{
+test('V2 — 14 seuls puis 20 élèves interclasses, rotation 30s, Score/% isolés et reset (Chromium)',{timeout:125000},async()=>{
  const {server,url}=await serve();
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  const errors=[],unknown=[];let storedOptions=null,resetCalls=0,loads=0;
@@ -53,7 +53,7 @@ test('V2 — 14 élèves visibles, rang 8 normal, séparateur, paramètres Score
      loads++;
      const classes=[{classId:A,name:'Phase 2 A',enrolled:14,options:storedOptions,students:Array.from({length:14},(_,i)=>fakeStudent(i)),
        scorePeriods:[],totals:[{appKey:'addition-ecrite-simple',bestSum:1800}],percentages:null}];
-     if(input.comparisons?.includes(B))classes.push({classId:B,name:'Phase 2 B',enrolled:11,students:[],
+     if(input.comparisons?.includes(B))classes.push({classId:B,name:'Phase 2 B',enrolled:11,students:Array.from({length:11},(_,i)=>fakeStudent(i+14)),
        options:null,scorePeriods:[],totals:[{appKey:'addition-ecrite-simple',bestSum:1234}],percentages:null});
      return route.fulfill({status:200,contentType:'application/json',
       headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:true,classes})});
@@ -94,6 +94,7 @@ test('V2 — 14 élèves visibles, rang 8 normal, séparateur, paramètres Score
   assert.match(await page.locator('.ranking-col').nth(1).evaluate(el=>getComputedStyle(el).borderLeftWidth),/5px/);
   assert.equal(await page.locator('#classes .classstat').count(),6,'Global + cinq applications');
   assert.match(await page.locator('#classes .global-success').textContent(),/Global.*— %/);
+  assert.match(await page.locator('#time-left').textContent(),/30 s/);
   assert.equal(await page.locator('#comparison-results .compare-row').count(),0);
   assert.equal(await page.locator('#settings-left').count(),1);
   assert.equal(await page.locator('#open-settings').count(),0);
@@ -101,8 +102,12 @@ test('V2 — 14 élèves visibles, rang 8 normal, séparateur, paramètres Score
   await page.locator('#settings').waitFor({state:'visible'});
   assert.equal(await page.locator('#show-teacher').isChecked(),false,'Monsieur T décoché');
   await page.getByRole('checkbox',{name:'Phase 2 B · Comparer le score'}).check();
-  await page.waitForFunction(()=>document.querySelector('#comparison-results')?.textContent?.includes('1234 pts'));
-  assert.equal(await page.locator('#comparison-results .compare-row').count(),1);
+  await page.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===20);
+  assert.equal(await page.locator('.ranking-col').nth(0).locator('.entry').count(),10);
+  assert.equal(await page.locator('.ranking-col').nth(1).locator('.entry').count(),10);
+  assert.ok((await page.locator('.class-mark').allTextContents()).includes('Phase 2 B'));
+  assert.equal(await page.locator('#comparison-results .compare-row').count(),0,
+    'Score des autres classes au centre, jamais à gauche');
   assert.doesNotMatch(await page.locator('#comparison-results').textContent(),/Réussite globale/,'score seul sans pourcentage');
   assert.deepEqual(storedOptions.comparisonDisplay,[{classId:B,score:true,percentage:false}]);
   await page.getByRole('checkbox',{name:'Phase 2 B · Comparer le pourcentage'}).check();
