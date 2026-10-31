@@ -77,7 +77,8 @@ test('V2 — 14 élèves visibles, rang 8 normal, séparateur, paramètres Score
   });
   page.on('dialog',d=>d.accept());
   await page.goto(url+'/projection-v2.html?space=phase2',{waitUntil:'domcontentloaded'});
-  await page.locator('#load-real').waitFor({state:'enabled'});
+  await page.locator('#load-real').waitFor({state:'visible'});
+  await page.waitForFunction(()=>!document.querySelector('#load-real').disabled);
   assert.equal(await page.locator('#ranking-list .entry').count(),0,'aucun élève lu sans clic');
   await page.locator('#load-real').click();
   await page.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===14);
