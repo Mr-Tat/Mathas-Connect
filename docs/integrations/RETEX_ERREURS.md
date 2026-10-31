@@ -7,7 +7,7 @@
 | **P0** score sauvé, XP absents | Code Edge, RPC et barème/allowlist non synchronisés ; écriture état puis XP séparés | Un seul appel RPC atomique, test d'échec XP avec rollback état+reçu et matrice app_key lecture/écriture/professeur/XP |
 | **P0** double crédit à la reconnexion | Événement refabriqué, ACK partiel ou déduplication courte | UUID durable, reçu serveur unique, ACK corrélé, doublon 0 même après reload |
 | **P0** événements du mauvais élève | Même JWT/appareil réaffecté à une nouvelle fiche | Namespace `app + classe + sujet Auth + élève résolu`, garde `expectedStudentId` et test de réaffectation |
-| **P0** ancien trophée ressuscité | Cache natif réhydraté après reset professeur | `resetEpoch` autoritaire et quarantaine de file ancienne, nettoyer caches dérivés de **cette seule app** |
+| **P0** ancien parcours rejoué comme nouvel acquis | Cache/événement de score réhydraté après reset professeur | `resetEpoch` autoritaire et quarantaine de file ancienne ; **préserver les vrais trophées acquis une seule fois**, sans restaurer les records ni redéclencher l'attribution. Voir [contrat permanent](CONTRAT_COMMUN_SCORES_XP_TROPHEES.md) |
 | **P0** fausse publication « complète » | Tests simulés confondus avec navigateur Pages authentifié ; Pages ≠ Edge/SQL | Journal de preuves par couche, vraie session fictive approuvée, SHA/versions exactes |
 | **P1** lanceur non connecté | Dépendance supposée à `window.MathasConnectHost` qui n'existait pas dans ce HUB | Réutiliser `connect-host.mjs` adapté ; tester Auth native et lancement réel |
 | **P1** fin ou trophée manquant | Hook `lastWork` supposé identique, trophées mis à jour **après** la fin | Étudier la source et les chemins de fin ; hook minimal, snapshot **après** finalisation |
