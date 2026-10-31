@@ -39,7 +39,7 @@ test('Soustraction figure dans le secours statique, sans filtre HOLD ni cache an
  assert.match(hub,/apps=fallbackApps;/);
  assert.doesNotMatch(hub,/fallbackApps\.filter\(a=>a\.app_key!=='soustraction-ecrite-simple'\)/);
  assert.match(hub,/mathas\.connect\.global-catalog\.v2/);
- assert.match(read('../hub.html'),/hub\.js\?v=20261031-compteurs-courts-v1/);
+ assert.match(read('../hub.html'),/hub\.js\?v=20261031-cinq-classes-v1/);
 });
 
 test('trophées permanents du profil et XP du parcours par application',()=>{
