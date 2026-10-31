@@ -12,6 +12,7 @@ test('Projection : Score coché => classe jointe au défi, 20 meilleurs seulemen
  assert.equal(p.length,20);assert.ok(p.some(x=>x.classId==='B'));
  assert.ok(p.some(x=>x.classId==='A'));assert.equal(p[0].classId,'B');
  assert.deepEqual(splitProjectedRanking(p,true).map(x=>x.length),[10,10]);
+ assert.deepEqual(splitProjectedRanking(p.slice(0,10),true).map(x=>x.length),[10]);
  assert.deepEqual(p.map(x=>x.position),Array.from({length:20},(_,i)=>i+1));
 });
 test('Projection : % coché seul ne doit jamais ajouter les scores des autres classes',()=>{
