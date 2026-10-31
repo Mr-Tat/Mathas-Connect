@@ -24,7 +24,12 @@ test('projection V2 demo : 14 élèves répartis en une ou deux colonnes',()=>{
  assert.match(doc,/\.projection-stage\{height:100vh;height:100dvh/);
  assert.doesNotMatch(doc,/class="ranking-footer"/);
  assert.doesNotMatch(doc,/<h2>↔ Autres classes<\/h2>/);
- assert.match(doc,/\.compare-row \.classstat\.global-success \.headline strong\{font-size:16px\}/);
+ assert.match(doc,/\.compare-row \.classstat\.global-success\{[^}]*padding:4px 7px/);
+ assert.match(doc,/\.compare-row \.classstat\.global-success \.headline strong\{font-size:15px/);
+ assert.match(doc,/\.compare-row > strong\{[^}]*text-align:center;font-size:14px;font-weight:900/);
+ assert.match(doc,/\.compare-panel\{background:#344a60/);
+ assert.match(doc,/\.compare-line\{[^}]*font-size:11px/);
+ assert.match(doc,/\.compare-row \.classstat\.global-success \.track\{display:none\}/);
  assert.match(doc,/if\(!compact\)row\.append\(track\)/);
  assert.match(doc,/<footer>[\s\S]*id="rotation-label"[\s\S]*id="time-left"[\s\S]*id="next-app"/);
  assert.match(doc,/for\(const field of \["score","percentage"\]\)/);
