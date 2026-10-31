@@ -4,6 +4,8 @@
 .connect-nav{width:min(1180px,calc(100% - var(--layout-gutter-total)));margin:-20px auto 8px;padding:0!important;display:flex;justify-content:flex-end}
 #identity-box{display:flex;align-items:center;gap:16px;color:#e9f3ff}
 #identity-box .identity-main{display:grid;gap:6px;justify-items:end}
+/* Le mode classique conserve le flux de grille historique. */
+.identity-achievements{display:contents}
 #identity-class{display:none!important}
 #identity-box.identity-classic{opacity:.76;font-size:13px}
 #identity-box.identity-classic #identity-title{font-size:14px}
@@ -61,7 +63,8 @@
 #identity-box.identity-connected .identity-avatar{position:absolute;left:20px;top:19px;width:60px;height:60px;font-size:36px;border-radius:16px}
 #identity-box.identity-connected .identity-main{display:grid;grid-template-columns:max-content minmax(0,1fr);column-gap:17px;row-gap:12px;align-items:center;justify-items:stretch;min-width:0}
 #identity-box.identity-connected #identity-title{grid-column:1/-1;margin-left:74px;display:flex;align-items:center;min-height:60px;font-size:clamp(19px,2vw,28px);overflow-wrap:anywhere}
-#identity-box.identity-connected #identity-level{grid-column:1;grid-row:2;margin:0}
+#identity-box.identity-connected .identity-achievements{grid-column:1;grid-row:2;display:flex;flex-direction:column;align-items:center;justify-self:start;align-self:start;gap:5px;min-width:0;max-width:100%}
+#identity-box.identity-connected #identity-level{margin:0}
 #identity-box.identity-connected .student-level-number{font-size:clamp(34px,3.2vw,47px);min-width:48px}
 #identity-box.identity-connected #identity-progress{grid-column:2;grid-row:2;display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0;border-left:1px solid #526f8e;padding-left:14px}
 #identity-box.identity-connected #identity-xp{order:0;font-size:clamp(12px,1.2vw,16px);line-height:1.2}
@@ -95,11 +98,12 @@
  #identity-box.identity-connected .student-level-number{font-size:29px;min-width:35px;padding:4px 6px 5px}
 }
 
-/* Niveau légèrement relevé, trophées permanents juste en dessous. */
-#identity-box.identity-connected #identity-level{align-self:end;transform:translateY(-5px)}
-#identity-box.identity-connected #identity-trophies{grid-column:1;grid-row:3;display:inline-flex;align-items:center;white-space:nowrap;align-self:start;margin-top:-10px;font-weight:800;font-size:clamp(12px,1.1vw,15px);color:#f7d76d}
+/* Niveau et trophées dans un seul bloc à gauche, placés en haut de la rangée.
+   Le compteur est centré sur la largeur réelle de l'ovale Niveau. */
+#identity-box.identity-connected #identity-level{align-self:center;transform:none}
+#identity-box.identity-connected #identity-trophies{display:inline-flex;align-items:center;justify-content:center;align-self:center;text-align:center;white-space:nowrap;margin:0;font-weight:800;font-size:clamp(12px,1.1vw,15px);color:#f7d76d}
 #identity-box.identity-connected #identity-trophies[hidden]{display:none!important}
-@media(max-width:520px){#identity-box.identity-connected #identity-trophies{font-size:12px;margin-top:-8px}}
+@media(max-width:520px){#identity-box.identity-connected .identity-achievements{gap:4px}#identity-box.identity-connected #identity-trophies{font-size:12px}}
 
 /* Les deux statistiques de chaque application restent lisibles sur petits écrans. */
 .app-card .app-scores{white-space:pre-line}
