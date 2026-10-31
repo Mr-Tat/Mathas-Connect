@@ -6,6 +6,15 @@ const doc=readFileSync(new URL('../projection-v2-demo.html',import.meta.url),'ut
 test('projection V2 demo : 14 élèves répartis en une ou deux colonnes',()=>{
  assert.match(doc,/const names=\[.*"Nathan"\]/);
  assert.match(doc,/const split=rows\.length>7/);
+ assert.match(doc,/rank-"\+position/);
+ assert.match(doc,/\.ranking-col \+ \.ranking-col\{border-left:5px/);
+ assert.match(doc,/\.entry\.rank-1 \.place/);
+ assert.doesNotMatch(doc,/\.entry:first-child \.place/);
+ assert.match(doc,/Réussite de la classe/);
+ assert.match(doc,/for\(const field of \["score","percentage"\]\)/);
+ assert.match(doc,/makeExploit\("trophy"/);
+ assert.match(doc,/makeExploit\("perfect"/);
+ assert.match(doc,/makeExploit\("top"/);
  assert.match(doc,/Math\.ceil\(rows\.length\/2\)/);
  assert.match(doc,/Niveau.*person\.level/);
  assert.match(doc,/person\.trophies/);
