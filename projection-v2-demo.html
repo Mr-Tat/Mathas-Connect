@@ -53,11 +53,19 @@ main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) mi
 .ranking-head .over{font-size:11px;font-weight:900;letter-spacing:.12em;color:#d5e5fc}
 .ranking-head h1{font-size:clamp(24px,3.1vw,38px);line-height:1.06;margin:3px 0 0}
 .ranking-head small{font-size:11px;color:#c4dbf7}
+.ranking-head{position:relative;min-height:105px;padding-right:210px;padding-left:12px}
+.ranking-context{position:absolute;top:50%;right:12px;transform:translateY(-50%);max-width:190px;text-align:right;display:block;font-weight:800}
+.ranking-guide{justify-content:flex-end}.ranking-footer{justify-content:flex-end}
+.class-mark{display:inline-flex;margin-left:8px;padding:1px 6px;background:#4a6886;border-radius:5px;color:white;font-size:10px;font-weight:850}
+@media(max-width:850px){.ranking-head{padding-right:12px}.ranking-context{position:static;transform:none;text-align:center;max-width:100%;margin-top:5px}}
 .ranking-wrap{padding:10px 12px}
 .ranking-guide{display:flex;justify-content:space-between;font-size:12px;color:#b9d7f4;margin-bottom:10px}
 .ranking-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
 .ranking-list.single{grid-template-columns:minmax(0,1fr);max-width:550px;margin:auto}
-.ranking-col{display:grid;gap:7px;align-content:start;min-width:0}
+.ranking-col{display:grid;gap:5px;align-content:start;min-width:0}
+.ranking-list.multi .entry{padding:5px 7px;min-height:45px}
+.ranking-list.multi .minor{margin-top:1px}
+.ranking-list.multi .primary strong,.ranking-list.multi .points{font-size:clamp(13px,1.2vw,18px)}
 .ranking-col + .ranking-col{border-left:5px solid #e6c877;padding-left:12px;box-shadow:-4px 0 0 #102941}
 .entry{display:grid;grid-template-columns:26px minmax(0,1fr);align-items:center;gap:8px;padding:7px 8px;background:hsl(calc(193 + var(--rank-progress,0)*35) 43% calc(32% - var(--rank-progress,0)*13%));border:1px solid hsl(calc(188 + var(--rank-progress,0)*43) 40% calc(57% - var(--rank-progress,0)*18%));border-radius:10px;min-width:0}
 .place{background:#375d83;border-radius:7px;text-align:center;font-size:13px;font-weight:900;padding:6px 0}
@@ -110,9 +118,9 @@ label.setting{justify-content:space-between;max-width:380px}
     <button id="settings-left" class="settings-under" type="button">⚙ Applications</button>
   </aside>
   <section class="ranking" aria-label="Classement par application">
-    <div class="ranking-head"><div class="over">🏆 MEILLEURS SCORES · DEPUIS LA DERNIÈRE REMISE À ZÉRO</div><h1 id="app-name"></h1><small id="ranking-note"></small></div>
-    <div class="ranking-wrap"><div class="ranking-guide"><span id="count-label"></span><span id="rotation-label"></span></div><div id="ranking-list" class="ranking-list"></div></div>
-    <div class="ranking-footer"><span>Score propre à l'application · Trophées permanents</span><span id="time-left"></span></div>
+    <div class="ranking-head"><div class="over">🏆 MEILLEURS SCORES · DEPUIS LA DERNIÈRE REMISE À ZÉRO</div><h1 id="app-name"></h1><small id="ranking-note" class="ranking-context"></small></div>
+    <div class="ranking-wrap"><div class="ranking-guide"><span id="rotation-label"></span></div><div id="ranking-list" class="ranking-list"></div></div>
+    <div class="ranking-footer"><span id="time-left"></span></div>
   </section>
   <aside class="right">
     <section class="panel"><h2>✨ Nouveaux exploits</h2><div id="exploits"></div></section>
@@ -144,43 +152,50 @@ const apps=[
 const names=["Lina","Adam","Zoé","Hugo","Emma","Noé","Léa","Lucas","Jade","Louis","Mila","Tom","Inès","Nathan"];
 const base=names.map((name,i)=>({id:i,name,level:Math.max(1,7-Math.floor(i/2)),trophies:Math.max(0,10-Math.floor(i*.65))}));
 const others=[{name:"Observation",pct:72,score:true,percentage:true},{name:"Phase 1",pct:79,score:false,percentage:false},{name:"Phase 2 B",pct:75,score:false,percentage:false},{name:"2 ECO",pct:81,score:false,percentage:false}];
-let selected="addition",seconds=90,paused=false,wasPaused=false;
+let selected="addition",seconds=30,paused=false,wasPaused=false;
 function selectedApps(){return apps.filter(a=>a.score)}
 function ensureSelected(){if(!selectedApps().some(a=>a.key===selected))selected=selectedApps()[0]?.key||null}
 function entries(){
  const ix=apps.findIndex(a=>a.key===selected);
- return base.map((p,i)=>({...p,score:(i+ix*3)%14===13?null:Math.max(4,168-((i*7+ix*4)%14)*10)}))
-  .sort((a,b)=>(b.score??-1)-(a.score??-1)||a.name.localeCompare(b.name,"fr"));
+ const main=base.map((p,i)=>({...p,className:"Phase 2 A",score:(i+ix*3)%14===13?null:Math.max(4,168-((i*7+ix*4)%14)*10)}));
+ const challengers=others.filter(o=>o.score).flatMap((c,j)=>Array.from({length:11},(_,i)=>({
+  id:c.name+"-"+i,name:["Rayan","Camille","Sarah","Maya","Elliot","Amine","Chloé","Sacha","Yanis","Rose","Robin"][i],
+  className:c.name,level:2+(i%5),trophies:i%7,score:Math.max(4,175-i*11-j*4-ix*2)
+ })));
+ return [...main,...challengers].sort((a,b)=>(b.score??-1)-(a.score??-1)||a.name.localeCompare(b.name,"fr")).slice(0,20);
 }
 function render(){
  ensureSelected();
  const current=apps.find(a=>a.key===selected);
  $("app-name").textContent=current?.title||"Aucune application sélectionnée";
- $("ranking-note").textContent="Phase 2 A · 14 élèves · noms et scores mis en évidence";
+ $("ranking-note").textContent="Phase 2 A · "+entries().length+" élèves"+(others.some(c=>c.score)?" · Défi interclasses":"");
  const list=$("ranking-list");list.replaceChildren();
  const rows=current?entries():[];
- const split=rows.length>7;list.classList.toggle("single",!split);
- const cols=split?[rows.slice(0,Math.ceil(rows.length/2)),rows.slice(Math.ceil(rows.length/2))]:[rows];
+ const multi=others.some(c=>c.score),split=rows.length>7;
+ list.classList.toggle("single",!split);list.classList.toggle("multi",multi);
+ const cut=multi?Math.min(10,rows.length):Math.ceil(rows.length/2);
+ const cols=split?[rows.slice(0,cut),rows.slice(cut)]:[rows];
+ let positionIndex=0;
  cols.forEach((group,ci)=>{
   const column=document.createElement("div");column.className="ranking-col";
   group.forEach((person,index)=>{
-   const position=index+ci*Math.ceil(rows.length/2)+1;
+   const position=++positionIndex;
    const el=document.createElement("div");el.className="entry rank-"+position+(person.score===null?" unplayed":"");
-   el.style.setProperty("--rank-progress",String((position-1)/13));
+   el.style.setProperty("--rank-progress",String((position-1)/19));
    const rank=document.createElement("span");rank.className="place";rank.textContent=position<=3?["🥇","🥈","🥉"][position-1]:position;
    const detail=document.createElement("div");
    const primary=document.createElement("div");primary.className="primary";
    const name=document.createElement("strong");name.textContent=person.name;
    const points=document.createElement("span");points.className="points";points.textContent=person.score===null?"—":String(person.score)+" pts";
    const minor=document.createElement("div");minor.className="minor";minor.textContent="Niveau "+person.level+"   🏆 "+person.trophies;
+   if(multi){const mark=document.createElement("span");mark.className="class-mark";mark.textContent=person.className;minor.append(mark);}
    primary.append(name,points);detail.append(primary,minor);el.append(rank,detail);column.append(el);
   });list.append(column);
  });
- $("count-label").textContent=rows.length+" élèves · "+(split?"2 colonnes":"1 colonne");
  const buttons=$("app-tabs");buttons.replaceChildren();
  selectedApps().forEach(app=>{
   const btn=document.createElement("button");btn.textContent=app.title;btn.classList.toggle("selected",app.key===selected);
-  btn.onclick=()=>{selected=app.key;seconds=90;render()};buttons.append(btn)
+  btn.onclick=()=>{selected=app.key;seconds=30;render()};buttons.append(btn)
  });
  $("exploits").replaceChildren();
  $("exploits").append(makeExploit("trophy","Lina obtient un nouveau trophée !"),makeExploit("perfect","Zoé réussit une série parfaite !"),makeExploit("top","Adam prend la 4e place !"));
@@ -216,16 +231,10 @@ function drawClasses(){
   apps.filter(a=>a.pct).forEach((app,i)=>addPct(root,app.title,Math.max(30,84-((i*7)%22))));
  }
  let count=0;
- others.filter(o=>o.score||o.percentage).forEach((c,i)=>{
+ others.filter(o=>o.percentage).forEach((c,i)=>{
   count++;
   const card=document.createElement("div");card.className="compare-row";
   const name=document.createElement("strong");name.textContent=c.name;card.append(name);
-  if(c.score){
-   const line=document.createElement("div");line.className="compare-line";
-   const caption=document.createElement("span");caption.textContent="Score · "+apps.find(a=>a.key===selected)?.title;
-   const value=document.createElement("span");value.textContent=(125-(i*13)+apps.findIndex(a=>a.key===selected)*8)+" pts";
-   line.append(caption,value);card.append(line);
-  }
   if(c.percentage){
    const global=document.createElement("div");global.className="compare-line";
    const caption=document.createElement("span");caption.textContent="Réussite globale";
@@ -251,7 +260,7 @@ function updateTime(){
  $("time-left").textContent=paused?"En pause":active.length>1?"Suivante dans "+seconds+" s":"Affichage fixe";
  $("pause").textContent=paused?"▶ Reprendre":"⏸ Pause";
 }
-function go(direction){const a=selectedApps();if(!a.length)return;const n=a.findIndex(x=>x.key===selected);selected=a[(n+direction+a.length)%a.length].key;seconds=90;render()}
+function go(direction){const a=selectedApps();if(!a.length)return;const n=a.findIndex(x=>x.key===selected);selected=a[(n+direction+a.length)%a.length].key;seconds=30;render()}
 $("prev-app").onclick=()=>go(-1);$("next-app").onclick=()=>go(1);
 $("pause").onclick=()=>{paused=!paused;updateTime()};
 setInterval(()=>{if(!paused&&selectedApps().length>1){if(--seconds<=0)go(1);else updateTime()}},1000);
@@ -287,7 +296,7 @@ function buildOptions(){
    const cell=document.createElement("td"),cb=document.createElement("input");
    cb.type="checkbox";cb.checked=other[field];
    cb.setAttribute("aria-label",other.name+" · Comparer "+(field==="score"?"Score":"%"));
-   cb.onchange=()=>{other[field]=cb.checked;drawClasses()};
+   cb.onchange=()=>{other[field]=cb.checked;render()};
    cell.append(cb);tr.append(cell);
   }
   comparisons.append(tr);
