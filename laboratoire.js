@@ -28,23 +28,23 @@ async function run(fn){try{await fn()}catch(e){display('Laboratoire : '+(e.messa
 function linkFor(app,prof=false){const href=app.launch_url||app.url;if(!href)return null;let url;try{url=new URL(href,location.href)}catch{return null}if(url.protocol!=='https:'&&url.protocol!=='http:')return null;if(url.origin===location.origin){url.searchParams.set('class',TEST_CLASS);if(prof&&appKeys.includes(app.app_key))url.searchParams.set('joueur','prof')}return url.href}
 function copy(text){return navigator.clipboard.writeText(text).then(()=>display('Lien copié dans le presse-papiers.'))}
 async function loadTeacher(){
- const global=await api('teacher-dashboard');
- const match=(global.classes||[]).find(c=>c.id===TEST_CLASS);
+ const scoped=await api('teacher-dashboard',{classId:TEST_CLASS});
+ const match=(scoped.classes||[]).find(c=>c.id===TEST_CLASS);
  if(!match)throw Error('La classe de démonstration ne figure pas parmi les classes de ce professeur. Accès refusé.');
  verified=true;
  $('class-meta').textContent=(match.name||TEST_LABEL)+' · classe Connect dédiée aux tests';
  $('hub-link').href=new URL(HUB,location.href).href;
  $('lab').hidden=false;
- await loadClass(global);
+ await loadClass(scoped);
  await loadApps();
  display('Laboratoire chargé. Les élèves et jeux utilisent les vrais contrôles Connect.');
 }
-async function loadClass(global=null){
+async function loadClass(scoped=null){
  if(!verified)return;
- const data=await api('teacher-dashboard',{classId:TEST_CLASS});
+ // Requêtes strictement limitées à la classe fictive : aucune demande d'élève réel chargée.
+ const data=scoped||await api('teacher-dashboard',{classId:TEST_CLASS});
  people=data.students||[];
- const all=global||await api('teacher-dashboard');
- requested=(all.requests||[]).filter(r=>r.class_id===TEST_CLASS);
+ requested=data.requests||[];
  renderPeople(data.devices||[]);
  renderRequests();
  if(consent())await loadSummary();
