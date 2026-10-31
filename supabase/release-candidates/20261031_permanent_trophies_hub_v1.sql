@@ -92,6 +92,8 @@ BEGIN
   IF p_app NOT IN ('addition-ecrite-simple','multiplication-ecrite-simple',
     'soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits')
   THEN RAISE EXCEPTION 'unsupported_app'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.connect_trophy_achievements
+    WHERE student_id=p_student AND app_key=p_app) THEN RETURN NULL; END IF;
   FOR item IN SELECT trophy_key FROM public.connect_trophy_achievements
     WHERE student_id=p_student AND app_key=p_app
   LOOP
