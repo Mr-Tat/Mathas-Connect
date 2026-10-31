@@ -25,6 +25,12 @@ async function handle(req:Request){
  const manage=async(id:string)=>!!await one(db.from('connect_class_permissions').select('class_id').eq('class_id',id).eq('teacher_id',user.id).eq('can_manage',true));
  // Optionnelle, uniquement après validation des droits ; une réponse XP indisponible
  // ne doit pas masquer un profil pourtant autorisé.
+ const optionalProgress=async(studentId:string)=>{
+   try{
+     const {data,error}=await db.rpc('connect_profile_progress_v1',{p_student:studentId});
+     return error||!data?null:data;
+   }catch{return null;}
+ };
  const optionalXp=async(studentId:string)=>{
    try{
      const {data,error}=await db.rpc('connect_xp_read_v2',{p_student:studentId,p_app:'addition-ecrite-simple',p_include_milestones:false});
@@ -45,7 +51,8 @@ async function handle(req:Request){
    const student=await one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color,archived_at').eq('id',player.student_id));
    if(!student||student.archived_at)return ok({status:'revoked'});
    const xp=b.includeXp===true?await optionalXp(player.student_id):undefined;
-   return ok({status:'approved',displayName:student.display_name,avatar:{kind:student.avatar_kind||'letter',value:student.avatar_value||'T',color:student.avatar_color||'ocean'},classId:b.classId,...(b.includeXp===true?{xp}:{})});
+   const progress=b.includeXp===true?await optionalProgress(player.student_id):undefined;
+   return ok({status:'approved',displayName:student.display_name,avatar:{kind:student.avatar_kind||'letter',value:student.avatar_value||'T',color:student.avatar_color||'ocean'},classId:b.classId,...(b.includeXp===true?{xp,progress}:{})});
  }
  case 'player-xp':{
    let id:string|null=null;
@@ -60,7 +67,8 @@ async function handle(req:Request){
    if(!id||!await one(db.from('connect_students').select('id').eq('id',id).is('archived_at',null)))return fail('forbidden',403);
    const {data:summary,error:xpError}=await db.rpc('connect_xp_read_v2',{p_student:id,p_app:'addition-ecrite-simple',p_include_milestones:false});
    if(xpError||!summary)return fail('xp_unavailable',503);
-   return ok({xp:{total:summary.total,level:summary.level,next:summary.next,apps:summary.apps,active:true}});
+   const progress=await optionalProgress(id);
+   return ok({xp:{total:summary.total,level:summary.level,next:summary.next,apps:summary.apps,active:true},progress});
  }
  case 'student-avatar':{
    const kind=b.kind,value=b.value,color=b.color;
@@ -112,7 +120,8 @@ async function handle(req:Request){
      const student=await one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color,archived_at').eq('id',d.student_id));
      if(!student||student.archived_at)return ok({status:'revoked'});
      const xp=b.includeXp===true?await optionalXp(d.student_id):undefined;
-     return ok({status:'approved',displayName:student?.display_name??'Élève',avatar:{kind:student?.avatar_kind||'letter',value:student?.avatar_value||String(student?.display_name||'E').slice(0,1).toUpperCase(),color:student?.avatar_color||'ocean'},level:{number:1,xp:0,next:90,active:false},classId:b.classId,...(b.includeXp===true?{xp}:{})});
+     const progress=b.includeXp===true?await optionalProgress(d.student_id):undefined;
+     return ok({status:'approved',displayName:student?.display_name??'Élève',avatar:{kind:student?.avatar_kind||'letter',value:student?.avatar_value||String(student?.display_name||'E').slice(0,1).toUpperCase(),color:student?.avatar_color||'ocean'},level:{number:1,xp:0,next:90,active:false},classId:b.classId,...(b.includeXp===true?{xp,progress}:{})});
    }
    const revoked=await one(db.from('connect_devices').select('id').eq('auth_user_id',user.id).eq('state','revoked').limit(1));
    return ok({status:revoked?'revoked':'unregistered'});
