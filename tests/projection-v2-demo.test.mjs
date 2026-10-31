@@ -5,11 +5,12 @@ import {spawnSync} from 'node:child_process';
 const doc=readFileSync(new URL('../projection-v2-demo.html',import.meta.url),'utf8');
 test('projection V2 demo : 14 élèves répartis en une ou deux colonnes',()=>{
  assert.match(doc,/const names=\[.*"Nathan"\]/);
- assert.match(doc,/slice\(0,20\)/);
+ assert.match(doc,/slice\(0,16\)/);
  assert.match(doc,/seconds=30/);
  assert.match(doc,/split=rows\.length>7/);
  assert.match(doc,/rank-"\+position/);
  assert.match(doc,/\.ranking-col \+ \.ranking-col\{border-left:5px/);
+ assert.match(doc,/column\.style\.setProperty\("--row-count"/);
  assert.match(doc,/\.entry\.rank-1 \.place/);
  assert.doesNotMatch(doc,/\.entry:first-child \.place/);
  assert.match(doc,/Réussite de la classe/);
@@ -17,7 +18,7 @@ test('projection V2 demo : 14 élèves répartis en une ou deux colonnes',()=>{
  assert.match(doc,/makeExploit\("trophy"/);
  assert.match(doc,/makeExploit\("perfect"/);
  assert.match(doc,/makeExploit\("top"/);
- assert.match(doc,/const cut=multi\?Math\.min\(10,rows\.length\):Math\.ceil\(rows\.length\/2\)/);
+ assert.match(doc,/const cut=Math\.ceil\(rows\.length\/2\)/);
  assert.match(doc,/Niveau.*person\.level/);
  assert.match(doc,/person\.trophies/);
  assert.match(doc,/primary\.append\(name,points\)/);
