@@ -47,6 +47,10 @@ test('trophées permanents du profil et XP du parcours par application',()=>{
  const results=read('../supabase/functions/connect-results/index.ts');
  assert.match(page,/id="identity-trophies"/);
  assert.match(css,/#identity-trophies/);
+ assert.match(page,/id="identity-achievements" class="identity-achievements"/);
+ assert.match(css,/#identity-box\.identity-connected \.identity-achievements\{[^}]*flex-direction:column;align-items:center/);
+ assert.match(css,/#identity-box\.identity-connected #identity-trophies\{[^}]*justify-content:center/);
+ assert.match(page,/hub-profile\.css\?v=20261031-trophees-centres-v2/);
  assert.match(hub,/progressFor\(appKey\)/);
  assert.match(hub,/p\.xpMax\+' XP\\n🏆 '/);
  assert.doesNotMatch(hub,/XP du parcours\\n🏆|trophiesMax\+' trophées'/);
