@@ -10,7 +10,7 @@ const fallbackApps=[
  {app_key:'addition-ecrite-simple',title:'Addition écrite',launch_url:'https://mr-tat.github.io/CE-Addition-simple/'},
  {app_key:'multiplication-ecrite-simple',title:'Multiplication écrite simple',launch_url:'./apps/multiplication-simple/'},
  {app_key:'soustraction-ecrite-simple',title:'Soustraction écrite',launch_url:'./apps/soustraction-simple/'},
- {app_key:'addition-ecrite-multiple',title:'Addition de plusieurs nombres',launch_url:'./apps/addition-multiple/'},
+ {app_key:'addition-ecrite-multiple',title:'Addition de plusieurs nombres',launch_url:'./apps/addition-plusieurs/'},
  {app_key:'melange-calculs-ecrits',title:'Calculs écrits mélangés',launch_url:'./apps/calculs-melanges/'}
 ];
 const sb=createClient(BASE,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:'mathas-connect-professor-auth-v1'}});
