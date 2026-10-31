@@ -11,7 +11,12 @@ test('le laboratoire reste réservé au professeur et à la classe TEST connue',
  assert.match(html,/id="fictive-confirm"/);
  assert.match(script,/api\('teacher-dashboard',\{classId:TEST_CLASS\}\)/);
  assert.doesNotMatch(script,/api\('teacher-dashboard'\)/);
- assert.match(home,/laboratoire\.html/);
+ assert.match(home,/<div class="teacher-section" id="teacher-management"/);
+ const management=home.split('id="teacher-management"')[1]||'';
+ const landing=home.split('id="teacher-management"')[0]||'';
+ assert.match(management,/class="teacher-lab-management-link" href="\.\/laboratoire\.html"/);
+ assert.doesNotMatch(landing,/laboratoire\.html/);
+ assert.equal((home.match(/href="\.\/laboratoire\.html"/g)||[]).length,1);
  assert.doesNotMatch(script,/service_role|SUPABASE_SERVICE_ROLE/);
 });
 test('le laboratoire n’autorise jamais la remise à zéro d’une classe entière',()=>{

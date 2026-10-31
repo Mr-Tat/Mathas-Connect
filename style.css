@@ -534,5 +534,9 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
   }
 }
 
-/* Entrée du laboratoire : rangée avec les raccourcis professeur, sans toucher aux HUB. */
-.teacher-shortcuts .teacher-laboratory-link{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 13px;border-radius:10px;background:#dceef4;color:#143d58;font-size:14px;font-weight:750;text-decoration:none;border:1px solid #bddce4}.teacher-shortcuts .teacher-laboratory-link:focus-visible{outline:3px solid #70add1;outline-offset:2px}
+/* Laboratoire : accessible depuis Gestion, hors de l’accueil professeur et des HUB. */
+.teacher-management-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-left:auto}
+.teacher-lab-management-link{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:10px 17px;border-radius:11px;background:#dceef4;color:#143d58!important;font-size:15px;font-weight:800;text-decoration:none;border:1px solid #bddce4}
+.teacher-lab-management-link:hover{background:#bee0eb}
+.teacher-lab-management-link:focus-visible{outline:3px solid #70add1;outline-offset:2px}
+@media(max-width:620px){.teacher-management-heading{align-items:flex-start}.teacher-management-actions{width:100%;margin-left:0;justify-content:flex-start}.teacher-lab-management-link{flex:1;min-width:190px}}
