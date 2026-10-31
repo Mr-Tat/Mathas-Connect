@@ -25,11 +25,6 @@ try{
    const x=await r.json().catch(()=>({}));
    if(r.ok&&x.ok){
     mode='connected';revision=x.revision;resetEpoch=x.resetEpoch??0;initial=x.state;multiplierLock=Array.isArray(x.multiplierLock)?x.multiplierLock:null;cloud=sb;
-     consent=createProjectionConsent({classId,appKey:APP,studentKey:session.user.id,getToken:async()=>{
-      const current=(await cloud.auth.getSession()).data.session;
-      if(current?.user?.id!==session.user.id||!current?.access_token)throw Error('connect_session_changed');
-      return current.access_token;
-     }});
     try{
       const profile=await profilePromise;
       if(profile?.ok&&profile.status==='approved'&&profile.classId===classId&&typeof profile.displayName==='string')
@@ -360,6 +355,13 @@ if(mode==='connected'){
  toolbar.append(globalInfo,appInfo);
 }else toolbar.append(hubLink);
 document.body.replaceChildren(toolbar,iframe);
+ if(mode==='connected'&&cloud&&session) {
+   consent=createProjectionConsent({classId,appKey:APP,studentKey:session.user.id,getToken:async()=>{
+     const current=(await cloud.auth.getSession()).data.session;
+     if(current?.user?.id!==session.user.id||!current?.access_token)throw Error('connect_session_changed');
+     return current.access_token;
+   }});
+ }
 document.body.style.cssText='margin:0;padding:0;background:#071e2a;overflow:hidden';
 
 showSync();if(mode==='connected'){loadXp().catch(()=>{xpEarned.textContent='XP acquis : indisponible'});drain();}
