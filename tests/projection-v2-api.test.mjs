@@ -13,6 +13,7 @@ test('projection V2 API : JWT Supabase + vraie permission du professeur pour cha
 });
 test('projection V2 API : remise à zéro seulement (classe,jeu), mot de passe Auth revalidé',()=>{
  assert.match(src,/b\.action==='teacher-reset-score'/);
+ assert.match(src,/o\.rotationSeconds>=30/);
  assert.match(src,/ephemeral\.auth\.signInWithPassword\(\{email,password\}\)/);
  assert.match(src,/data\.user\?\.id===teacherId/);
  assert.match(src,/if\(!await checkPassword\(user\.email,b\.password,user\.id\)\)/);
@@ -22,10 +23,13 @@ test('projection V2 API : remise à zéro seulement (classe,jeu), mot de passe A
  assert.match(src,/Never log request payload/);
 });
 test('projection V2 API : confidentialité des noms et pourcentages non inventés',()=>{
- assert.match(src,/projection_opt_in===true\|\|\(showTeacher&&id===teacherId\)/);
+ assert.match(src,/p\.projection_opt_in===true\|\|approvedScore/);
  assert.match(src,/showTeacher=b\.showTeacher===true/);
  assert.match(src,/percentages:null,percentageStatus:'exercise_telemetry_not_yet_available'/);
  assert.match(src,/cache-control':'no-store/);
+ assert.match(src,/b\.action==='student-share-score'/);
+ assert.match(src,/connect_projection_score_consents/);
+ assert.match(src,/eq\('state','approved'\)/);
 });
 test('projection V2 API : réglages isolés à la classe et validés',()=>{
  assert.match(src,/b\.action==='teacher-save-options'/);
