@@ -7,7 +7,7 @@ test('le laboratoire reste réservé au professeur et à la classe TEST connue',
  assert.match(script,/mathas-connect-professor-auth-v1/);
  assert.match(script,/4bf3400d-a315-4ea4-a2f3-afaca24dc9b9/);
  assert.match(script,/teacher-dashboard/);
- assert.match(script,/r\.classes\|\|\[\]/);
+ assert.match(script,/global\.classes\|\|\[\]/);
  assert.match(html,/id="fictive-confirm"/);
  assert.match(home,/laboratoire\.html/);
  assert.doesNotMatch(script,/service_role|SUPABASE_SERVICE_ROLE/);
