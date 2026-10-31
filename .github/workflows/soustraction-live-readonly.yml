@@ -1,9 +1,11 @@
 name: Soustraction production smoke (read-only)
 on:
   push:
-    branches: [main]
+    branches: [main, fix/soustraction-live-smoke-20261031]
     paths:
       - 'tests/soustraction-live-readonly.mjs'
+      - 'tests/soustraction-live-contract.mjs'
+      - 'tests/soustraction-live-readonly.test.mjs'
       - '.github/workflows/soustraction-live-readonly.yml'
       - 'app.js'
       - 'apps/soustraction-simple/**'
@@ -20,5 +22,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Vérifier le contrat du contrôle sans réseau
+        run: node --test tests/soustraction-live-readonly.test.mjs tests/soustraction-teacher-runtime.test.mjs
       - name: Vérifier les URLs réelles sans utilisateur ni écriture
         run: node tests/soustraction-live-readonly.mjs

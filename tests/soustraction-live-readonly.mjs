@@ -1,9 +1,11 @@
 // Smoke en LECTURE SEULE du site réellement déployé : aucun compte, aucune écriture.
 import assert from 'node:assert/strict';
+import {assertTeacherLaunchSource,inspectSubtractionCatalogue} from './soustraction-live-contract.mjs';
 
 const SITE='https://mr-tat.github.io/Mathas-Connect/';
 const API='https://awmhpfofacaglewammxt.supabase.co/functions/v1/';
 const SUB='soustraction-ecrite-simple';
+const catalogues=[],jwtStatuses=[];
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
 async function retry(url,check,label){
@@ -40,18 +42,18 @@ await retry(SITE+'assets/miniatures/soustraction-ecrite-simple.webp',async r=>{
 
 await retry(SITE+'app.js',async r=>{
  const code=await r.text();
- assert.match(code,/Tester Soustraction avec le profil Monsieur T/);
- assert.match(code,/target\.searchParams\.set\('joueur','prof'\)/);
+ assertTeacherLaunchSource(code);
 },'lien test Monsieur T publié dans GLOBAL');
 
 for(const space of ['observation','phase1','phase2','2eco']){
  const response=await fetch(API+'connect-catalog?space='+space,{headers:{'cache-control':'no-cache'}});
  assert.equal(response.status,200,'catalogue '+space);
  const data=await response.json();
- assert.equal(data.ok,true,'catalogue '+space);
- assert.ok(Array.isArray(data.apps),'catalogue '+space);
- assert.ok(!data.apps.some(app=>app.app_key===SUB),'Soustraction devrait rester MASQUÉE dans '+space);
- console.log('OK HUB '+space+' : Soustraction masquée');
+ const {visible}=inspectSubtractionCatalogue(data,space,SITE);
+ catalogues.push({space,subtractionVisible:visible,mixedVisible:data.apps.some(app=>app.app_key==='melange-calculs-ecrits')});
+ // Visibility is the teacher's current GLOBAL setting, not a permanent
+ // pre-release condition. Public catalogue and JWT checks stay read-only.
+ console.log('OK HUB '+space+' : Soustraction '+(visible?'visible, destination valide':'masquée par le catalogue'));
 }
 for(const token of ['', 'Bearer completely_invalid_test_token']){
  const headers={'content-type':'application/json'};
@@ -60,6 +62,9 @@ for(const token of ['', 'Bearer completely_invalid_test_token']){
   body:JSON.stringify({action:'student-load',appKey:SUB,classId:'11111111-1111-4111-8111-111111111111'})});
  assert.ok([401,403].includes(response.status),
   'la fonction doit rejeter la requête sans vrai JWT (HTTP '+response.status+')');
+ jwtStatuses.push(response.status);
  console.log('OK JWT absent/invalide refusé : '+response.status);
 }
 console.log('SITE_PUBLIE_ET_ACCES_NON_AUTORISES_VERIFIES');
+// Only public catalogue flags and anonymous HTTP codes: no pupil or session data.
+console.log('::notice title=Public read-only smoke::'+JSON.stringify({catalogues,jwtStatuses}));
