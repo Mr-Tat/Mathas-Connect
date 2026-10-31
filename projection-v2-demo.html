@@ -192,7 +192,6 @@ function render(){
  ensureSelected();
  const current=apps.find(a=>a.key===selected);
  $("app-name").textContent=current?.title||"Aucune application sélectionnée";
- $("ranking-note").textContent="Phase 2 A · "+entries().length+" élèves"+(others.some(c=>c.score)?" · Défi interclasses":"");
  const list=$("ranking-list");list.replaceChildren();
  const rows=current?entries():[];
  const multi=others.some(c=>c.score),split=rows.length>7;
@@ -261,10 +260,7 @@ function drawClasses(){
   const card=document.createElement("div");card.className="compare-row";
   const name=document.createElement("strong");name.textContent=c.name;card.append(name);
   if(c.percentage){
-   const global=document.createElement("div");global.className="compare-line";
-   const caption=document.createElement("span");caption.textContent="Réussite globale";
-   const value=document.createElement("span");value.textContent=c.pct+" %";
-   global.append(caption,value);card.append(global);
+   addPct(card,"Global",c.pct,true);
    apps.filter(a=>a.pct).forEach((app,j)=>{
     const line=document.createElement("div");line.className="compare-line";
     const label=document.createElement("span");label.textContent=app.title;
