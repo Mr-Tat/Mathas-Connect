@@ -83,7 +83,7 @@ function renderRequests(){
   card.append(el('p','Code de contrôle : '+(req.verify_code||'—'),'request-code'));
   // Le dashboard limité à une classe renvoie ses profils séparément, sans matches.
   // Rattacher un ancien élève fictif plutôt que créer un homonyme en double.
-  const normalized=v=>String(v||'').normalize('NFC').toLocaleLowerCase('fr').replace(/[.\\s]+/g,'');
+  const normalized=v=>String(v||'').normalize('NFC').toLocaleLowerCase('fr').replace(/[.\s]+/g,'');
   const matches=Array.isArray(req.matches)?req.matches:people.filter(p=>normalized(p.display_name)===normalized((req.first_name||'')+'.'+(req.last_initial||'')));
   const select=document.createElement('select');
   if(matches.length){
