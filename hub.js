@@ -47,7 +47,13 @@ function card(app) {
       : 'Jeu actuel · scores locaux';
   if (app.image_url && !app.image_url.includes('jftzuslpelgzbdrftszw')) {
     const img = document.createElement('img');
-    img.src = app.image_url; img.alt = ''; img.loading = 'lazy';
+    // Un numéro de version uniquement pour les deux miniatures approuvées évite
+    // le cache de l'ancien visuel sans changer les URLs du catalogue Supabase.
+    const thumbUrl = new URL(app.image_url, location.href);
+    if (['soustraction-ecrite-simple','melange-calculs-ecrits'].includes(app.app_key)) {
+      thumbUrl.searchParams.set('v','20261031-miniatures-prof');
+    }
+    img.src = thumbUrl.href; img.alt = ''; img.loading = 'lazy';
     node.querySelector('.app-thumb').replaceChildren(img);
   }
   return node;
