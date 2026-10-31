@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#10253e">
+<title>Laboratoire de test — Math’as Connect</title>
+<link rel="icon" type="image/png" href="./assets/brand/favicon.png">
+<link rel="stylesheet" href="./laboratoire.css?v=20261031lab1">
+<script type="module" src="./laboratoire.js?v=20261031lab1"></script>
+</head>
+<body>
+<main class="shell">
+  <header class="masthead">
+    <div><p class="eyebrow">Math’as Connect · Espace professeur</p><h1>🧪 Laboratoire de test</h1><p>Une vraie classe Connect pour essayer les applications avant leur ouverture aux élèves.</p></div>
+    <a class="back-link" href="./index.html?portail=prof">← Espace professeur</a>
+  </header>
+  <p id="status" class="status" role="status" aria-live="polite">Vérification de la session professeur…</p>
+  <section id="lab" hidden>
+    <section class="card" aria-labelledby="class-title">
+      <div class="heading"><div><p class="eyebrow">Environnement isolé</p><h2 id="class-title">Classe démo - TEST</h2><p id="class-meta" class="muted">TEST 2026-2027 · aucune donnée de classe réelle</p></div><span class="pill">TEST</span></div>
+      <div class="actions">
+        <a id="hub-link" class="action" href="#" target="_blank" rel="noopener noreferrer">Ouvrir le HUB test</a>
+        <button id="copy-hub" type="button" class="secondary">Copier le lien élève</button>
+        <button id="refresh" type="button" class="secondary">Actualiser</button>
+      </div>
+      <p class="muted tiny">Le HUB et le jeu utilisent les autorisations Connect habituelles. Un lien de classe ne connecte pas automatiquement un élève.</p>
+      <label class="confirm"><input id="fictive-confirm" type="checkbox"><span>J’ai vérifié que les profils utilisés dans cette classe sont bien fictifs et exclusivement destinés aux tests. Autoriser leur gestion et la consultation de leurs résultats ici.</span></label>
+    </section>
+    <div class="layout">
+      <section class="card" aria-labelledby="profiles-title">
+        <div class="heading"><h2 id="profiles-title">Élèves fictifs et appareils</h2><span id="student-count" class="count">—</span></div>
+        <div id="students" class="stack"><p class="muted">Chargement…</p></div>
+        <p class="muted tiny">Pour demander un accès, ouvrir le HUB test avec un navigateur élève distinct. Le professeur valide ensuite le code de demande dans cette page.</p>
+      </section>
+      <section class="card" aria-labelledby="requests-title">
+        <div class="heading"><h2 id="requests-title">Demandes d’accès</h2><span id="request-count" class="count">—</span></div>
+        <div id="requests" class="stack"><p class="muted">Chargement…</p></div>
+      </section>
+    </div>
+    <section class="card" aria-labelledby="apps-title">
+      <div class="heading"><div><h2 id="apps-title">Tester les applications</h2><p class="muted">Y compris celles encore masquées dans les quatre HUB.</p></div></div>
+      <div class="actions"><button id="teacher-mode" type="button" class="secondary">🎮 Activer Monsieur T pour les tests</button><span id="teacher-status" class="muted tiny">Session Monsieur T non vérifiée.</span></div>
+      <div id="apps" class="game-grid"><p class="muted">Chargement du catalogue professeur…</p></div>
+    </section>
+    <section class="card" aria-labelledby="results-title">
+      <div class="heading"><div><h2 id="results-title">Résultats et parcours de test</h2><p class="muted">Uniquement cette classe, une application à la fois.</p></div></div>
+      <label for="results-app">Application Connect</label><select id="results-app"></select>
+      <div class="actions"><button id="results-refresh" type="button" disabled>Afficher les résultats du laboratoire</button></div>
+      <p id="results-note" class="muted tiny">Confirme d’abord le caractère fictif des profils.</p>
+      <div id="results" class="stack"></div>
+      <section id="detail" class="subpanel" hidden>
+        <h3 id="detail-title"></h3><p id="detail-xp" class="muted"></p>
+        <div id="detail-records"></div>
+        <div class="actions"><button id="reset-student" type="button" class="danger" disabled>↻ Recommencer le parcours fictif</button></div>
+        <p class="muted tiny">Seul ce profil et cette application seront concernés. Les XP déjà acquis resteront protégés : pas de recollection.</p>
+      </section>
+      <section id="locks-panel" class="subpanel" hidden>
+        <h3>🔒 Tables obligatoires</h3>
+        <label for="lock-scope">Verrouillage</label><select id="lock-scope"><option value="class">Pour la classe de test</option></select>
+        <div id="lock-tables" class="table-choices"></div>
+        <p id="locks-feedback" class="muted tiny">Choisis une portée et ouvre les réglages.</p>
+        <div class="actions"><button id="locks-save" type="button" disabled>Enregistrer les tables</button><button id="locks-clear" type="button" class="secondary" disabled>Retirer le verrouillage</button></div>
+      </section>
+    </section>
+  </section>
+  <footer>Laboratoire réservé au professeur · Pas d’ouverture automatique des cartes élèves</footer>
+</main>
+</body>
+</html>
