@@ -6,6 +6,8 @@ on:
       - 'tests/soustraction-live-readonly.mjs'
       - '.github/workflows/soustraction-live-readonly.yml'
       - 'app.js'
+      - 'hub.js'
+      - 'hub.html'
       - 'apps/soustraction-simple/**'
       - 'assets/miniatures/soustraction-ecrite-simple.webp'
   workflow_dispatch:

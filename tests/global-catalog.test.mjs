@@ -30,3 +30,14 @@ test('hub uses session cache and static fallback without SDK',()=>{
 test('teacher browser JavaScript module parses',()=>{execFileSync(process.execPath,['--check','--input-type=module'],{input:teacher})});
 
 test('four class columns and separate scoped caches',()=>{for(const name of ['Observation','Phase 1','Phase 2','2 ECO','Partout','Position'])assert.ok(html.includes(name));assert.match(hub,/classPresets\[classId\]/);assert.match(result,/teacher-app-matrix-save/)});
+
+test('Soustraction figure dans le secours statique, sans filtre HOLD ni cache ancien',()=>{
+ const local=JSON.parse(read('../hub-catalog.json'));
+ const apps=local.apps.filter(a=>a.app_key==='soustraction-ecrite-simple');
+ assert.equal(apps.length,1);
+ assert.equal(apps[0].hub_section,'calculs_ecrits');
+ assert.match(hub,/apps=fallbackApps;/);
+ assert.doesNotMatch(hub,/fallbackApps\.filter\(a=>a\.app_key!=='soustraction-ecrite-simple'\)/);
+ assert.match(hub,/mathas\.connect\.global-catalog\.v2/);
+ assert.match(read('../hub.html'),/hub\.js\?v=20261031-soustraction-visible/);
+});
