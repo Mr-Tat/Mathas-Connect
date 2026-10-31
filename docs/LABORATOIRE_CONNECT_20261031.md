@@ -23,3 +23,16 @@ Rubrique `🧪 Laboratoire` sur l’accueil du professeur, distincte des quatre 
 
 ## Validation automatisée
 `node --test tests/laboratoire-static.test.mjs` + CI existante. Vérifier manuellement le portail à la première publication ; la branche ne change pas les jeux, les données ni les règles XP.
+
+## Connexion rapide à un profil fictif (31/10/2026)
+Chaque carte « Élèves fictifs et appareils » présente « Se connecter avec ce profil ».
+Ce lien ouvre le **formulaire élève natif** en onglet séparé, avec prénom et
+initiale présélectionnés si la fiche est en forme `Prénom.X` / `Prénom X`.
+La session professeur utilise une clé de stockage distincte :
+- session élève déjà approuvée pour le même profil : continuer normalement ;
+- session élève approuvée pour un *autre* profil : continuer sous la mauvaise
+  identité est bloqué ; « Utiliser un autre compte » est proposé (révocation
+  de l’appareil courant, pas des XP), puis demande et approbation natives ;
+- aucune session : envoyer la demande du profil et vérifier le code dans le labo.
+Cette présélection n'est **ni** un contournement de l'authentification
+**ni** une connexion automatique à partir d'un nom ou UUID.
