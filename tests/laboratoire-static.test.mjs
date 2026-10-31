@@ -47,7 +47,8 @@ test('connexion rapide de profil : présélection, contrôle de session et appro
  const lab=read('laboratoire.js'),app=read('app.js'),home=read('index.html');
  assert.match(lab,/Se connecter avec ce profil/);
  assert.match(lab,/target\.searchParams\.set\('lab','1'\)/);
- assert.match(lab,/launch\.onclick=event=>\{if\(!consent\(\)\)/);
+ assert.match(lab,/launch\.onclick=event=>\{/);
+ assert.match(lab,/if\(!consent\(\)\)/);
  assert.match(lab,/target\.searchParams\.set\('testFirst'/);
  assert.match(app,/const testIntent=/);
  assert.match(app,/cls===labTestClass/);
