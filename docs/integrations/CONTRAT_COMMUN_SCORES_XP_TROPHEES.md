@@ -1,6 +1,6 @@
 # Contrat commun — scores, XP et trophées Connect
 
-**Statut : décision pédagogique confirmée pour les trophées le 31/10/2026 ; implémentation de persistance et d'affichage non encore effectuée.** Ce contrat complète le [guide](README.md) et ne constitue **pas** une preuve que la production applique déjà cette politique.
+**Statut : contrat implémenté et déployé le 31/10/2026.** Voir la [fiche de livraison et les limites de preuve](DEPLOIEMENT_TROPHEES_20261031.md). Vérifier les versions LIVE à chaque nouvelle mission.
 
 ## Trois notions distinctes
 
@@ -25,7 +25,7 @@
 
 ## Invariant essentiel de persistance
 
-**Fait vérifié dans le code du 31/10/2026 :** `connect_parcours_restart_one` et `connect_mixed_restart_one_v1` écrasent actuellement `connect_states.state_data` avec `{}`. Les `rewards` stockés dans cet état ne satisfont donc **pas encore** l'exigence de permanence. Ne pas déployer uniquement un compteur qui ferait croire le contraire.
+**Implémenté :** les fonctions de remise à zéro continuent à remettre `connect_states.state_data` à `{}` pour les scores et progrès. Cela n'efface **plus** les trophées : le registre `connect_trophy_achievements` conserve chaque `(élève, jeu, trophée)` ; `connect_trophy_rewards_v1` les restitue lors de `student-load`. Les archives et états antérieurs ont été réconciliés sans toucher aux crédits XP.
 
 **Implémentation recommandée à valider par les tests avant publication :**
 
@@ -51,4 +51,4 @@
 - Reset de l'app A : l'app B et ses trophées/XP/scores ne sont pas modifiés. Monsieur T est isolé des vrais élèves.
 - Tests SQL jetables : rollback d'écriture tardive, accès non autorisé, concurrentiel, anciennes archives, versions de contrat, non-régression des resets. **Aucune opération sur les résultats réels pour la recette.**
 
-**État au 31/10/2026 :** contrat enregistré ; aucun SQL, code Edge, moteur, animation ni interface de production modifié par cette décision documentaire.
+**État au 31/10/2026 :** SQL, Edge et HUB publiés. Les tests PostgreSQL jetables, Auth/Edge/navigateur locaux et CI sont verts ; **la recette sur Pages avec authentification réelle n'a pas été effectuée**. Aucun moteur original ni barème XP modifié.
