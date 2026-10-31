@@ -32,7 +32,7 @@ function clearBoard(message){
  $('count-label').textContent='';
  $('time-left').textContent='';
  $('reset-password').value='';
- for(const id of ['open-settings','settings-left','open-all'])$(id).disabled=true;
+ for(const id of ['settings-left'])$(id).disabled=true;
  note(message);
 }
 async function call(functionName,action,body={}){
@@ -94,7 +94,7 @@ async function refresh(){
   if(firstDisplay)paused=false;
   if(!enabled().some(a=>a.key===currentApp))currentApp=enabled()[0]?.key??null;
   secondsRemaining=options.rotationSeconds;
-  for(const id of ['open-settings','settings-left','open-all'])$(id).disabled=false;
+  for(const id of ['settings-left'])$(id).disabled=false;
   render();
   note('Tableau de '+classLabel+' · données autorisées · '+new Intl.DateTimeFormat('fr-BE',{hour:'2-digit',minute:'2-digit'}).format(new Date()));
  }catch(error){
@@ -263,7 +263,7 @@ function closeSettings(){
  dialog.close();paused=wasPaused;$('reset-password').value='';
  $('reset-confirm').hidden=true;pendingReset=null;updateTime();
 }
-for(const id of ['open-settings','settings-left','open-all'])$(id).onclick=showSettings;
+for(const id of ['settings-left'])$(id).onclick=showSettings;
 $('close-settings').onclick=closeSettings;
 dialog.addEventListener('cancel',event=>{event.preventDefault();closeSettings()});
 async function commitOptions(){
