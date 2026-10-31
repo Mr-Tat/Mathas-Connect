@@ -31,3 +31,9 @@ test('les cartes des quatre HUB ne sont pas modifiées par le laboratoire',()=>{
  const lab=read('laboratoire.js');
  assert.doesNotMatch(lab,/teacher-app-matrix-save|connect_mixed_.*open|open_hubs/);
 });
+
+test('aucun lancement de jeu depuis le laboratoire avant confirmation fictive',()=>{
+ const script=read('laboratoire.js');
+ assert.match(script,/student\.onclick=event=>\{if\(!consent\(\)\)/);
+ assert.match(script,/teacher\.onclick=\(\)=>run\(async\(\)=>\{guard\(\);/);
+});

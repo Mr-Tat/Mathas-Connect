@@ -122,10 +122,12 @@ async function loadApps(){
   const card=el('article','','game'),name=el('h3',app.title||app.app_key);
   card.append(name,el('p',appKeys.includes(app.app_key)?'Connect · session approuvée requise':'Vérifier le mode disponible'));
   const buttons=el('div','','actions');
-  const student=el('a','Tester côté élève','action');student.href=linkFor(app);student.target='_blank';student.rel='noopener noreferrer';buttons.append(student);
+  const student=el('a','Tester côté élève','action');student.href=linkFor(app);student.target='_blank';student.rel='noopener noreferrer';
+  student.onclick=event=>{if(!consent()){event.preventDefault();display('Confirme d’abord que les profils utilisés sont fictifs avant de lancer le jeu.',true)}};
+  buttons.append(student);
   if(appKeys.includes(app.app_key)&&new URL(linkFor(app)).origin===location.origin){
     const teacher=el('button','Monsieur T','secondary');teacher.disabled=!teacherReady;
-    teacher.onclick=()=>run(async()=>{if(!teacherReady)throw Error('Active d’abord Monsieur T.');const href=linkFor(app,true);window.open(href,'_blank','noopener,noreferrer')});
+    teacher.onclick=()=>run(async()=>{guard();if(!teacherReady)throw Error('Active d’abord Monsieur T.');const href=linkFor(app,true);window.open(href,'_blank','noopener,noreferrer')});
     teacher.classList.add('teacher-game');buttons.append(teacher);
   }
   card.append(buttons);$('apps').append(card);
