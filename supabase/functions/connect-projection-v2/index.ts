@@ -23,7 +23,7 @@ const classOptions=(o:any)=>o&&typeof o==='object'&&!Array.isArray(o)&&
  (o.comparisonDisplay===undefined||(Array.isArray(o.comparisonDisplay)&&o.comparisonDisplay.length<=4&&
    o.comparisonDisplay.every((v:any)=>v&&uuid(v.classId)&&typeof v.score==='boolean'&&
      typeof v.percentage==='boolean'&&(v.score||v.percentage))))&&
- Number.isInteger(o.rotationSeconds)&&o.rotationSeconds>=45&&o.rotationSeconds<=180;
+ Number.isInteger(o.rotationSeconds)&&o.rotationSeconds>=30&&o.rotationSeconds<=180;
 
 async function records(query:any){
  const {data,error}=await query;
