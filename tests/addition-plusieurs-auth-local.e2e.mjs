@@ -322,7 +322,7 @@ try{
   trophy:JSON.parse(localStorage.getItem('mathas_trophies_v3_addition-plusieurs')||'null')
  }));
  assert.deepEqual(cleared.classic,{levels:{}});
- assert.ok(cleared.trophy==null||!cleared.trophy.mastery?.['4']?.some(Boolean));
+ assert.equal(cleared.trophy?.mastery?.['4']?.[0],true,'le moteur doit restaurer le trophée acquis après reset');
  const savedAfterReset=checked(await admin.from('connect_states').select('reset_epoch,state_data')
   .eq('student_id',browserStudentId).eq('app_key',appKey).single(),'browser reset on DB');
  assert.equal(savedAfterReset.reset_epoch,1);
