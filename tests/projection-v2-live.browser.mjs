@@ -105,6 +105,9 @@ test('V2 — 14 seuls puis 20 élèves interclasses, rotation 30s, Score/% isol�
   await page.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===20);
   assert.equal(await page.locator('.ranking-col').nth(0).locator('.entry').count(),10);
   assert.equal(await page.locator('.ranking-col').nth(1).locator('.entry').count(),10);
+  const last=await page.locator('#ranking-list .entry').last().boundingBox();
+  assert.ok(last&&last.y+last.height<=768,
+   'Les vingt places doivent être visibles sur un écran 1366×768 sans défiler');
   assert.ok((await page.locator('.class-mark').allTextContents()).includes('Phase 2 B'));
   assert.equal(await page.locator('#comparison-results .compare-row').count(),0,
     'Score des autres classes au centre, jamais à gauche');
