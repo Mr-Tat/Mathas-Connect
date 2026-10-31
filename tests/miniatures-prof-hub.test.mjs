@@ -21,7 +21,7 @@ test('cache des deux miniatures seulement, sans modification des catalogues',()=
  const catalog=JSON.parse(readFileSync(path('hub-catalog.json'),'utf8'));
  assert.match(hub,/\['soustraction-ecrite-simple','melange-calculs-ecrits'\]\.includes\(app\.app_key\)/);
  assert.match(hub,/thumbUrl\.searchParams\.set\('v','20261031-miniatures-prof'\)/);
- assert.match(html,/hub\.js\?v=20261031-soustraction-visible/);
+ assert.match(html,/hub\.js\?v=20261031-trophees-profil-v1/);
  assert.equal(catalog.apps.find(a=>a.app_key==='soustraction-ecrite-simple')?.image_url,
    './assets/miniatures/soustraction-ecrite-simple.webp');
 });
