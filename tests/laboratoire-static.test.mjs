@@ -57,3 +57,11 @@ test('connexion rapide de profil : présélection, contrôle de session et appro
  assert.match(home,/id="test-profile-switch-notice"/);
  assert.doesNotMatch(lab,/signInAnonymously|signOut|auth\.admin|service_role/);
 });
+
+test('les homonymes ne peuvent pas être sélectionnés sur leur nom seul',()=>{
+ const lab=read('laboratoire.js');
+ assert.match(lab,/const homonyms=people\.filter/);
+ assert.match(lab,/launch\.removeAttribute\('href'\)/);
+ assert.match(lab,/launch\.setAttribute\('aria-disabled','true'\)/);
+ assert.match(lab,/Deux profils portent le même nom/);
+});
