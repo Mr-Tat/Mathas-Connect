@@ -1,8 +1,9 @@
 <!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Math’as · Soustraction écrite</title><style>body{font-family:system-ui;background:#0c2235;color:white;margin:0;padding:25px}#loading{max-width:620px;margin:12vh auto;padding:25px;border:1px solid #628ba7;border-radius:16px}a{color:#8ce7fc}</style></head><body><main id="loading"><h1>Math’as · Soustraction écrite</h1><p id="message">Chargement du jeu…</p><p><a href="https://mr-tat.github.io/Mathas-Connect/">Retour aux jeux</a></p></main><script type="module">
+import {createProjectionConsent} from '../../projection-consent.mjs';
 const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM',APP='soustraction-ecrite-simple';
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
-const free=!teacherPlayer&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,studentName='',connectionCheckRequired=false;
+const free=!teacherPlayer&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,studentName='',connectionCheckRequired=false,consent=null;
 const status=s=>document.getElementById('message').textContent=s;
 const originalPromise=fetch('./game-original.html').then(r=>{if(!r.ok)throw Error('Copie du jeu non disponible');return r.text()});
 // Un visiteur sans profil approuvé ouvre directement le jeu classique.
@@ -24,6 +25,11 @@ try{
    const x=await r.json().catch(()=>({}));
    if(r.ok&&x.ok){
     mode='connected';revision=x.revision;resetEpoch=x.resetEpoch??0;initial=x.state;cloud=sb;
+     consent=createProjectionConsent({classId,appKey:APP,studentKey:session.user.id,getToken:async()=>{
+      const current=(await cloud.auth.getSession()).data.session;
+      if(current?.user?.id!==session.user.id||!current?.access_token)throw Error('connect_session_changed');
+      return current.access_token;
+     }});
     try{
       const profile=await profilePromise;
       if(profile?.ok&&profile.status==='approved'&&profile.classId===classId&&typeof profile.displayName==='string')
@@ -379,7 +385,7 @@ window.MathasPilotBridge={mode,openTeacherParcours:()=>{
  const points=hardChallenge?0:Math.max(0,Math.round(window.MathasPilotBridge.points(item)));
  const eventId=crypto.randomUUID();
  const body={action:'game-record',classId,appKey:APP,eventId,expectedRevision:revision,expectedResetEpoch:resetEpoch,mode:modeKey,level,score,total:hardChallenge?5:sudden?null:total,points,...(sudden&&!hard?{method:item.method==='takeTop'?'takeTop':'addBottom'}:{})};
- try{const pending=readQueue();pending.push(body);saveQueue(pending);syncWarning='';showSync();if(!options.defer){const awards=currentRewards();if(awards?.version===3){body.rewards=awards;saveQueue(pending)}void drain()}return eventId}
+ try{const pending=readQueue();pending.push(body);saveQueue(pending);syncWarning='';showSync();consent?.offer(eventId);if(!options.defer){const awards=currentRewards();if(awards?.version===3){body.rewards=awards;saveQueue(pending)}void drain()}return eventId}
  catch(error){syncWarning='ATTENTION : sauvegarde locale impossible. Préviens ton professeur.';showSync();console.error('Résultat non mis en attente',error);return null}
 },finalize:eventId=>{
  const pending=readQueue(),event=pending.find(x=>x.eventId===eventId);
