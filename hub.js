@@ -30,6 +30,26 @@ const levels = [
   ['jeux', 'Jeux', 'Pour jouer']
 ];
 
+const connectedGameKeys=new Set(['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits']);
+function progressFor(appKey){
+  const p=activeProfile?.progress;
+  return p&&Array.isArray(p.apps)?p.apps.find(a=>a.appKey===appKey):null;
+}
+function progressText(appKey){
+  if(!connectedGameKeys.has(appKey))return 'Jeu actuel · scores locaux';
+  if(!activeProfile)return 'Classique : local · Connecté : compte élève';
+  const p=progressFor(appKey);
+  if(!p)return 'Progression momentanément indisponible';
+  const valid=n=>Number.isSafeInteger(n)&&n>=0;
+  if(![p.xpEarned,p.xpMax,p.trophiesEarned,p.trophiesMax].every(valid))return 'Progression momentanément indisponible';
+  return '⭐ '+p.xpEarned+' / '+p.xpMax+' XP du parcours\n🏆 '+p.trophiesEarned+' / '+p.trophiesMax+' trophées';
+}
+function refreshCardProgress(){
+  for(const node of document.querySelectorAll('.app-card[data-app-key]')){
+    const label=node.querySelector('.app-scores');
+    if(label)label.textContent=progressText(node.dataset.appKey);
+  }
+}
 function card(app) {
   const node = $('appTemplate').content.firstElementChild.cloneNode(true);
   const target = new URL(app.launch_url, location.href);
@@ -37,14 +57,12 @@ function card(app) {
   if (classId && target.origin === location.origin) target.searchParams.set('class', classId);
    if (playingAsTeacher && ['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
   node.href = target.href;
+  node.dataset.appKey=app.app_key;
   node.target = '_blank';
   node.rel = 'noopener noreferrer';
   node.querySelector('.app-name').textContent = app.title;
   node.querySelector('.app-initial').textContent = app.title.charAt(0).toUpperCase();
-  node.querySelector('.app-scores').textContent =
-    ['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)
-      ? 'Classique : local · Connecté : compte élève'
-      : 'Jeu actuel · scores locaux';
+  node.querySelector('.app-scores').textContent = progressText(app.app_key);
   if (app.image_url && !app.image_url.includes('jftzuslpelgzbdrftszw')) {
     const img = document.createElement('img');
     // Un numéro de version uniquement pour les deux miniatures approuvées évite
@@ -184,6 +202,7 @@ main.append(progressGroup);
 function drawIdentity(profile) {
   const authorized = profile?.status === 'approved' && profile?.classId === classId;
   activeProfile=authorized?profile:null;
+  refreshCardProgress();
   if(authorized && classId && profile.classId===classId){
     rememberRecentProfile(classId,profile.displayName);
     rememberRecentAvatar(classId,profile.displayName,profile.avatar);
@@ -204,6 +223,8 @@ function drawIdentity(profile) {
   $('identity-class').hidden=true;
   $('identity-level').hidden=!authorized;
   $('identity-xp').hidden=!authorized;
+  $('identity-trophies').hidden=!authorized;
+  $('identity-trophies').textContent=authorized?'🏆 '+(Number.isSafeInteger(profile.progress?.totalTrophies)?profile.progress.totalTrophies:'—')+' trophées':'';
   if(authorized){
     $('identity-level-number').textContent=String(profile.xp?.active?profile.xp.level:'—');
     $('identity-xp').textContent=profile.xp?.active?profile.xp.total+' XP Connect':'XP Connect : …';
@@ -246,9 +267,12 @@ $('mode-toggle').onclick = async () => {
   }catch(e){alert(e.message||'Déconnexion impossible.');}
   finally{button.disabled=false;}
 };
-async function showIdentity() {
-  drawIdentity(null);
+let lastIdentityRequestAt=0,refreshingIdentity=false;
+async function showIdentity(refresh=false) {
+  if(refresh&&(refreshingIdentity||Date.now()-lastIdentityRequestAt<2000))return;
+  if(!refresh)drawIdentity(null);
   if (!classId || (!playingAsTeacher&&inFreeMode())) return;
+  refreshingIdentity=true;lastIdentityRequestAt=Date.now();
   try {
     const sb=await getSupabase();
     const { data: { session } } = await sb.auth.getSession();
@@ -261,12 +285,15 @@ async function showIdentity() {
     if (!response.ok) return;
     const profile = await response.json();
     if (profile.ok && profile.status === 'approved' && (profile.classId === classId)) {
-      // Une seule requête authentifiée pour identité + XP ; plus d'aller-retour supplémentaire.
+      // Une seule requête authentifiée pour identité + XP + progressions.
       drawIdentity(profile);
-    }
+    }else if(refresh)drawIdentity(null);
     // Aucun accès reconnu au seul motif de connaître le lien de classe.
   } catch { /* Toujours laisser le HUB et les jeux accessibles en mode libre. */ }
+  finally{refreshingIdentity=false;}
 }
 
+// Retour d'un onglet de jeu : un seul résumé à la demande, jamais de polling.
+window.addEventListener('focus',()=>{if(activeProfile)void showIdentity(true)});
 showCatalog();
 showIdentity();

@@ -48,6 +48,7 @@ function harness(){
   return q;
  };
  const db={from:query,async rpc(name,{p_app}){
+  if(name==='connect_trophy_rewards_v1')return {data:null,error:null};
   if(name!=='connect_xp_sync_v2')throw Error(name);
   xpSyncs++;return {data:{appXp:22,total:22,level:1,delta:22,app:p_app},error:null};
  }};

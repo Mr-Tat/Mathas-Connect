@@ -62,7 +62,14 @@ const restart=success(await post(teacher,'connect-results',{
 }),'professor restart');
 assert.equal(restart.parcours,2);
 const reset=success(await post(student,'connect-results',{action:'student-load',appKey}),'after reset');
-assert.equal(reset.resetEpoch,1);assert.deepEqual(reset.state,{});
+assert.equal(reset.resetEpoch,1);
+assert.deepEqual(reset.state.rewards,rewards,'acquis permanents conservés au redémarrage');
+assert.equal(reset.state.classic,undefined,'les scores repartent effectivement de zéro');
+const profileAfterReset=success(await post(student,'connect-api',{action:'student-me',includeXp:true}),'profil avec trophées');
+assert.equal(profileAfterReset.progress.totalTrophies,1,'le trophée reste unique');
+const appProgress=profileAfterReset.progress.apps.find(a=>a.appKey===appKey);
+assert.equal(appProgress.xpEarned,0,'XP de ce parcours remis à zéro');
+assert.equal(appProgress.trophiesEarned,1,'trophée conservé dans cette app');
 const xp=success(await post(student,'connect-results',{action:'student-xp',appKey}),'XP after reset');
 assert.equal(xp.appXp,22);assert.equal(xp.total,44);
 const previous=checked(await admin.from('connect_xp_credits').select('xp_credited')
@@ -315,7 +322,7 @@ try{
   trophy:JSON.parse(localStorage.getItem('mathas_trophies_v3_addition-plusieurs')||'null')
  }));
  assert.deepEqual(cleared.classic,{levels:{}});
- assert.ok(cleared.trophy==null||!cleared.trophy.mastery?.['4']?.some(Boolean));
+ assert.equal(cleared.trophy?.mastery?.['4']?.[0],true,'le moteur doit restaurer le trophée acquis après reset');
  const savedAfterReset=checked(await admin.from('connect_states').select('reset_epoch,state_data')
   .eq('student_id',browserStudentId).eq('app_key',appKey).single(),'browser reset on DB');
  assert.equal(savedAfterReset.reset_epoch,1);

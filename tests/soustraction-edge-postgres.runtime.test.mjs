@@ -80,9 +80,10 @@ function makeEdge(){
  const pgService={
   from:adapter,
   async rpc(name,values){
-   if(!/^(connect_xp_sync_v2|connect_xp_read_v2|connect_parcours_restart_one|connect_parcours_restart_class)$/.test(name))throw Error('unexpected_rpc '+name);
+   if(!/^(connect_xp_sync_v2|connect_xp_read_v2|connect_parcours_restart_one|connect_parcours_restart_class|connect_trophy_rewards_v1)$/.test(name))throw Error('unexpected_rpc '+name);
    const columns={
     connect_xp_sync_v2:['p_student','p_app','p_force'],
+    connect_trophy_rewards_v1:['p_student','p_app'],
     connect_xp_read_v2:['p_student','p_app','p_include_milestones'],
     connect_parcours_restart_one:['p_teacher','p_class','p_student','p_app','p_repeat_xp'],
     connect_parcours_restart_class:['p_teacher','p_class','p_app','p_repeat_xp']

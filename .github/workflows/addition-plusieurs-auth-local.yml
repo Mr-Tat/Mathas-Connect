@@ -68,6 +68,7 @@ jobs:
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/supabase/migrations/20261029_addition_multiple_catalog_stage.sql" >/dev/null
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/tests/postgres/addition-multiple-real-rpc-fixture.sql" >/dev/null
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/tests/postgres/addition-multiple-atomic-rpc-candidate.sql" >/dev/null
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/supabase/release-candidates/20261031_permanent_trophies_hub_v1.sql" >/dev/null
           psql "$DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
           UPDATE public.connect_apps SET enabled=true WHERE app_key='addition-ecrite-multiple';
           -- The production connect-api also reads avatar columns.

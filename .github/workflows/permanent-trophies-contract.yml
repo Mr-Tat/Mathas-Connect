@@ -1,0 +1,41 @@
+name: Trophées permanents — contrat PostgreSQL jetable
+on:
+  pull_request:
+    paths:
+      - 'supabase/release-candidates/20261031_permanent_trophies_hub_v1.sql'
+      - 'tests/postgres/permanent-trophies-contract.sql'
+      - '.github/workflows/permanent-trophies-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  postgresql-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: trophy_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d trophy_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: postgres
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGDATABASE: trophy_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fixtures PostgreSQL jetables, contrat du candidat et assertions
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -f tests/postgres/permanent-trophies-contract.sql
+          echo 'OK: aucun système distant ni élève réel interrogé'
