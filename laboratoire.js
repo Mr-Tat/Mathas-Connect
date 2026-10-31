@@ -215,15 +215,15 @@ async function loadApps(){
      card.append(el('p','Visibilité indépendante des quatre HUB réels.','muted tiny'));
    }
    const buttons=el('div','','actions');
-   if(app.enabled){
-     const student=el('a','Tester côté élève','action');student.href=linkFor(app);student.target='_blank';student.rel='noopener noreferrer';
-     student.onclick=event=>{if(!consent()){event.preventDefault();display('Confirme d’abord que les profils utilisés sont fictifs avant de lancer le jeu.',true)}};
-     buttons.append(student);
-     if(appKeys.includes(app.app_key)&&new URL(linkFor(app)).origin===location.origin){
-       const teacher=el('button','Monsieur T','secondary');teacher.disabled=!teacherReady;
-       teacher.onclick=()=>run(async()=>{guard();if(!teacherReady)throw Error('Active d’abord Monsieur T.');const href=linkFor(app,true);window.open(href,'_blank','noopener,noreferrer')});
-       teacher.classList.add('teacher-game');buttons.append(teacher);
-     }
+   // Garder les boutons de test existants ; seule la case Afficher dépend
+   // de l'activation globale. Le serveur reste maître de l'accès réel au jeu.
+   const student=el('a','Tester côté élève','action');student.href=linkFor(app);student.target='_blank';student.rel='noopener noreferrer';
+   student.onclick=event=>{if(!consent()){event.preventDefault();display('Confirme d’abord que les profils utilisés sont fictifs avant de lancer le jeu.',true)}};
+   buttons.append(student);
+   if(appKeys.includes(app.app_key)&&new URL(linkFor(app)).origin===location.origin){
+     const teacher=el('button','Monsieur T','secondary');teacher.disabled=!teacherReady;
+     teacher.onclick=()=>run(async()=>{guard();if(!teacherReady)throw Error('Active d’abord Monsieur T.');const href=linkFor(app,true);window.open(href,'_blank','noopener,noreferrer')});
+     teacher.classList.add('teacher-game');buttons.append(teacher);
    }
    card.append(buttons);container.append(card);
  }
