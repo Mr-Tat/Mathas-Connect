@@ -13,7 +13,7 @@ test('Consentement : question à chaque résultat, refus sans écriture et confi
  assert.match(s,/yes.onclick=\(\)=>/);
  assert.match(s,/student-share-score/);
  assert.match(s,/pending:\(\)=>read\(\).length/);
- const result=spawnSync(process.execPath,['--check'],{input:s,encoding:'utf8'});
+ const result=spawnSync(process.execPath,['--check','--input-type=module'],{input:s,encoding:'utf8'});
  assert.equal(result.status,0,result.stderr);
 });
 test('Consentement : les cinq jeux connectés déclenchent la question sur eventId lié à la sauvegarde',()=>{
