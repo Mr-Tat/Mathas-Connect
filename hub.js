@@ -5,6 +5,7 @@ import {rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v
 const url = 'https://awmhpfofacaglewammxt.supabase.co';
 const key = 'sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const playingAsTeacher=new URLSearchParams(location.search).get('joueur')==='prof';
+const LAB_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 // Le catalogue et le mode libre ne chargent pas le SDK Supabase.
 let supabasePromise;
 function getSupabase(){
@@ -71,13 +72,22 @@ function section(kind, title, description, apps) {
 
 async function showCatalog() {
   try {
+    let apps=[];
+    if(classId===LAB_CLASS){
+      // Le HUB de test ne se replie JAMAIS sur Observation en cas de panne.
+      const response=await fetch(url+'/functions/v1/connect-lab-catalog?class='+encodeURIComponent(LAB_CLASS),{cache:'no-store'});
+      if(!response.ok)throw Error('test_catalog_unavailable');
+      const data=await response.json();
+      if(!data.ok||!Array.isArray(data.apps))throw Error('test_catalog_unavailable');
+      apps=data.apps;
+    } else {
     // Petit fichier statique sur GitHub Pages : zéro appel Supabase pour jouer librement.
     const response = await fetch('./hub-catalog.json', { cache: 'no-cache' });
     if (!response.ok) throw Error('catalog');
     const { apps: fallbackApps } = await response.json();
     if (!Array.isArray(fallbackApps)) throw Error('catalog');
     // Jeu nouvellement intégré : jamais visible via le secours statique avant activation du preset serveur.
-    let apps=fallbackApps.filter(a=>a.app_key!=='soustraction-ecrite-simple');
+    apps=fallbackApps.filter(a=>a.app_key!=='soustraction-ecrite-simple');
     // Une lecture globale courte, mise en cache côté navigateur. Le catalogue statique reste le secours.
     try{
       const cacheKey='mathas.connect.global-catalog.v1';
@@ -99,6 +109,7 @@ async function showCatalog() {
         }finally{clearTimeout(timeout)}
       }
     }catch{ /* Le HUB reste utilisable avec le catalogue statique. */ }
+    }
     apps=apps.filter(a=>a.enabled!==false).sort((a,b)=>(a.display_order||0)-(b.display_order||0));
     const featured = apps.filter(a => a.featured);
     $('dailyCount').textContent = featured.length + ' app' + (featured.length === 1 ? '' : 's');
@@ -110,7 +121,7 @@ async function showCatalog() {
       section(id, title, desc, apps.filter(a => a.hub_section === id))
     ));
   } catch {
-    $('dailyApps').textContent = 'Le catalogue est momentanément indisponible.';
+    $('dailyApps').textContent = classId===LAB_CLASS?'Catalogue du laboratoire indisponible. Aucune application affichée.':'Le catalogue est momentanément indisponible.';
   }
 }
 
