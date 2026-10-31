@@ -1,5 +1,9 @@
 # Math’as Connect — état de référence (29 octobre 2026)
 
+> **Nouvelle référence permanente pour toutes les prochaines intégrations :** [Guide d’intégration Math’as Connect](docs/integrations/README.md) · [Instructions pour agents ChatGPT/Codex](AGENTS.md). Une nouvelle conversation commence par ces liens, pas par les audits historiques.
+>
+> **Attention aux dates :** les tableaux d’état ci-dessous sont un instantané rédigé le 29 octobre ; les statuts et déploiements peuvent avoir changé. Vérifier systématiquement les sources GitHub, Supabase et Pages actuelles avant toute intervention. Le guide permanent décrit la méthode, pas une confirmation automatique de production.
+
 Plateforme Math’as Connect : HUB élèves, espace professeur, résultats autonomes par application, XP globaux et tableau de projection. Site statique léger sur GitHub Pages ; Supabase **Connect** (`awmhpfofacaglewammxt`) conserve les identités, les états Connect et les XP.
 
 ## Accès utiles
