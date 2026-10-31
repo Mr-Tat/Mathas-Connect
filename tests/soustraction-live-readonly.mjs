@@ -50,8 +50,11 @@ for(const space of ['observation','phase1','phase2','2eco']){
  const data=await response.json();
  assert.equal(data.ok,true,'catalogue '+space);
  assert.ok(Array.isArray(data.apps),'catalogue '+space);
- assert.ok(!data.apps.some(app=>app.app_key===SUB),'Soustraction devrait rester MASQUÉE dans '+space);
- console.log('OK HUB '+space+' : Soustraction masquée');
+ const cards=data.apps.filter(app=>app.app_key===SUB);
+ assert.equal(cards.length,1,'Soustraction doit apparaître une seule fois dans '+space);
+ assert.equal(cards[0].enabled,true,'Soustraction doit être activée dans '+space);
+ assert.equal(cards[0].launch_url,SITE+'apps/soustraction-simple/','lien Soustraction incorrect');
+ console.log('OK HUB '+space+' : Soustraction visible et activée');
 }
 for(const token of ['', 'Bearer completely_invalid_test_token']){
  const headers={'content-type':'application/json'};
