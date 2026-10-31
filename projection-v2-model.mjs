@@ -100,7 +100,7 @@ export function rankMultiClass({
 }
 export function splitProjectedRanking(rows=[],multiClass=false){
  const data=(Array.isArray(rows)?rows:[]).slice(0,20);
- if(data.length<=7)return [data];
- const cut=multiClass?Math.min(data.length,10):Math.ceil(data.length/2);
+ if(data.length<=(multiClass?10:7))return [data];
+ const cut=multiClass?10:Math.ceil(data.length/2);
  return [data.slice(0,cut),data.slice(cut)];
 }
