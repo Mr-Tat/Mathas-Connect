@@ -1,0 +1,41 @@
+name: Projection V2 — score PostgreSQL isolé
+on:
+  pull_request:
+    paths:
+      - 'supabase/release-candidates/20261031_projection_v2_score_journal.sql'
+      - 'tests/postgres/projection-score-ledger-contract.sql'
+      - '.github/workflows/projection-score-ledger.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  projection-score-ledger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: projection_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d projection_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: postgres
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGDATABASE: projection_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Créer le schéma jetable, installer le journal et vérifier l'isolation
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -f tests/postgres/projection-score-ledger-contract.sql
+          echo 'OK : aucun résultat ni élève réel interrogé'
