@@ -39,7 +39,7 @@ test('Soustraction figure dans le secours statique, sans filtre HOLD ni cache an
  assert.match(hub,/apps=fallbackApps;/);
  assert.doesNotMatch(hub,/fallbackApps\.filter\(a=>a\.app_key!=='soustraction-ecrite-simple'\)/);
  assert.match(hub,/mathas\.connect\.global-catalog\.v2/);
- assert.match(read('../hub.html'),/hub\.js\?v=20261031-trophees-profil-v1/);
+ assert.match(read('../hub.html'),/hub\.js\?v=20261031-compteurs-courts-v1/);
 });
 
 test('trophées permanents du profil et XP du parcours par application',()=>{
@@ -48,7 +48,8 @@ test('trophées permanents du profil et XP du parcours par application',()=>{
  assert.match(page,/id="identity-trophies"/);
  assert.match(css,/#identity-trophies/);
  assert.match(hub,/progressFor\(appKey\)/);
- assert.match(hub,/XP du parcours/);
+ assert.match(hub,/p\.xpMax\+' XP\\n🏆 '/);
+ assert.doesNotMatch(hub,/XP du parcours\\n🏆|trophiesMax\+' trophées'/);
  assert.match(hub,/trophiesEarned/);
  assert.match(hub,/refreshCardProgress\(\)/);
  assert.match(edge,/connect_profile_progress_v1/);

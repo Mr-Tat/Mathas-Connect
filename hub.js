@@ -42,7 +42,7 @@ function progressText(appKey){
   if(!p)return 'Progression momentanément indisponible';
   const valid=n=>Number.isSafeInteger(n)&&n>=0;
   if(![p.xpEarned,p.xpMax,p.trophiesEarned,p.trophiesMax].every(valid))return 'Progression momentanément indisponible';
-  return '⭐ '+p.xpEarned+' / '+p.xpMax+' XP du parcours\n🏆 '+p.trophiesEarned+' / '+p.trophiesMax+' trophées';
+  return '⭐ '+p.xpEarned+' / '+p.xpMax+' XP\n🏆 '+p.trophiesEarned+' / '+p.trophiesMax;
 }
 function refreshCardProgress(){
   for(const node of document.querySelectorAll('.app-card[data-app-key]')){
