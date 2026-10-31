@@ -34,12 +34,13 @@ main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) mi
 .left .classstat .headline{font-size:12px;align-items:center}
 .left .classstat .headline strong{white-space:nowrap;font-size:15px}
 .left .classstat.global-success .headline strong,.compare-row .classstat.global-success .headline strong{font-size:23px;color:#c8efe4}
-.compare-row .classstat.global-success{display:grid;gap:7px}
-.compare-row .classstat.global-success .headline{font-size:14px;font-weight:850;align-items:center}
-.compare-row .classstat.global-success .track{height:9px}
-.compare-panel{background:#2e4963;max-height:min(42vh,340px);overflow-y:auto}
+.compare-row .classstat.global-success{display:grid;gap:2px;margin:5px 0 7px;padding:7px 9px;border-radius:8px}
+.compare-row .classstat.global-success .headline{font-size:13px;font-weight:850;align-items:center}
+.compare-row .classstat.global-success .headline strong{font-size:16px}
+.compare-row .classstat.global-success .track{display:none}
+.compare-panel{background:#2e4963;max-height:min(42vh,340px);overflow-y:auto;padding-top:8px}
 .compare-panel h2{font-size:15px;margin-bottom:7px}
-.compare-row{padding:8px 0;border-bottom:1px solid #577089}
+.compare-row{padding:5px 0 7px;border-bottom:1px solid #577089}
 .compare-row:last-child{border:0}
 .compare-row strong{font-size:12px}
 .compare-line{display:flex;justify-content:space-between;gap:6px;font-size:12px;padding-top:4px}
@@ -59,11 +60,11 @@ main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) mi
 .ranking-head small{font-size:11px;color:#c4dbf7}
 .ranking-head{min-height:69px;padding:6px 12px 7px}
 .ranking-head h1{text-align:center;margin:3px 0 0}
-.ranking-guide{justify-content:flex-end}.ranking-footer{justify-content:flex-end}
+
 .class-mark{display:inline-flex;margin-left:8px;padding:1px 6px;background:#4a6886;border-radius:5px;color:white;font-size:10px;font-weight:850}
 @media(max-width:850px){header{flex-wrap:wrap}.header-class{position:static;transform:none;order:3;width:100%;text-align:center}.ranking-head{padding-inline:10px}}
 .ranking-wrap{padding:3px 12px 6px}
-.ranking-guide{display:flex;justify-content:space-between;font-size:12px;color:#b9d7f4;margin-bottom:10px}
+
 .ranking-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
 .ranking-list.single{grid-template-columns:minmax(0,1fr);max-width:550px;margin:auto}
 .ranking-col{display:grid;gap:5px;align-content:start;min-width:0}
@@ -81,8 +82,8 @@ main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) mi
 .points{font-size:clamp(15px,1.3vw,19px);font-weight:950;color:#ffe0a1;white-space:nowrap;font-variant-numeric:tabular-nums}
 .minor{color:#bdd2ed;font-size:11px;display:flex;gap:9px;margin-top:4px}
 .entry.unplayed{opacity:.62}
-.ranking-footer{padding:6px 15px;border-top:1px solid #4d76a6;background:#16395d;display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:11px}
-#rotation-label{color:#b9d7f4}
+
+.rotation-status{color:#b9d7f4;font-size:11px;font-weight:750;white-space:nowrap;font-variant-numeric:tabular-nums;padding:0 3px}
 .right{display:grid;gap:12px;grid-template-rows:1fr 1fr;min-width:0}
 .right .panel{background:#24517e}
 .right .panel+ .panel{background:#3b536b}
@@ -91,7 +92,7 @@ main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) mi
 footer{padding:3px 14px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 footer .apps{display:flex;gap:7px;flex-wrap:wrap}
 footer button{font-size:12px}footer button.selected{background:#285988;border-color:#8ed1ff}
-.controls{display:flex;gap:7px;flex-wrap:wrap}
+.controls{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
 dialog{width:min(750px,calc(100vw - 22px));max-height:92vh;overflow:auto;background:#132e49;color:#f7fbff;border:2px solid #75a6d0;border-radius:18px;padding:20px;box-shadow:0 25px 95px #000b}
 dialog::backdrop{background:#020c19cf}
 dialog h2{margin:0 0 9px;font-size:24px}
@@ -106,23 +107,24 @@ dialog .options{padding:12px;border:1px solid #426887;background:#163955;border-
 dialog label{display:flex;gap:9px;align-items:center;font-size:14px}
 dialog .note{color:#bed4ea;font-size:12px;line-height:1.5}
 label.setting{justify-content:space-between;max-width:380px}
-/* Grand écran de projection : 8 lignes par colonne (16 élèves),
-   distribuées sur TOUTE la hauteur utile, sans pagination ni défilement. */
+/* La bande supérieure peut disparaître par un petit défilement naturel.
+   Le plateau (classement + commandes) occupe alors exactement un écran,
+   et 8 rangs par colonne prennent toute sa hauteur disponible. */
 @media (min-width:1101px) and (min-height:640px){
-  html{height:100%}
-  body{height:100vh;height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden}
-  header,footer{flex:0 0 auto}
+  html{height:auto;scroll-behavior:auto}
+  body{height:auto;min-height:0;display:block;overflow-y:auto}
+  header{position:relative}
+  .projection-stage{height:100vh;height:100dvh;min-height:0;display:flex;flex-direction:column}
   main{flex:1;min-height:0;overflow:hidden;width:100%}
+  footer{flex:0 0 auto}
   .left-col{min-height:0;max-height:100%;overflow-y:auto;scrollbar-width:thin}
   .right{min-height:0}
   .ranking{height:100%;min-height:0;display:flex;flex-direction:column}
   .ranking-head{flex:0 0 auto}
   .ranking-wrap{flex:1;min-height:0;display:flex;flex-direction:column;padding:5px 12px 6px}
-  .ranking-guide{flex:0 0 auto;margin:0 0 5px}
   .ranking-list{flex:1;min-height:0;align-items:stretch}
   .ranking-col{min-height:0;height:100%;grid-template-rows:repeat(var(--row-count,8),minmax(0,1fr));align-content:stretch;gap:6px}
   .ranking-col .entry{min-height:0;height:100%;overflow:hidden;align-content:center}
-  .ranking-footer{flex:0 0 auto;padding:6px 15px}
 }
 @media(max-width:1100px){main{grid-template-columns:minmax(165px,1fr) minmax(400px,2.7fr);}.right{grid-column:1/-1;grid-template-columns:1fr 1fr;grid-template-rows:auto;}.entry .primary{flex-wrap:wrap;gap:3px}}
 @media(max-width:690px){main{display:flex;flex-direction:column}.right{display:grid}.ranking-list{grid-template-columns:1fr}.ranking-list .ranking-col + .ranking-col{border-left:0;border-top:5px solid #e6c877;padding-left:0;padding-top:10px;margin-top:8px;box-shadow:none}.ranking-head h1{font-size:27px}.primary strong{font-size:18px}.points{font-size:18px}}
@@ -135,16 +137,17 @@ label.setting{justify-content:space-between;max-width:380px}
   <div id="header-class" class="header-class" aria-label="Classe projetée">Phase 2 A</div>
   <div class="tools"><span class="demo">● MAQUETTE · RÉSULTATS FICTIFS</span></div>
 </header>
+<div class="projection-stage">
 <main>
   <aside class="left-col" aria-label="Réussite et comparaisons">
     <section class="panel left"><h2>🎯 Réussite de la classe</h2><div id="classes"></div></section>
-    <section class="panel compare-panel"><h2>↔ Autres classes</h2><div id="comparison-results"></div></section>
+    <section class="panel compare-panel" aria-label="Pourcentages des autres classes"><div id="comparison-results"></div></section>
     <button id="settings-left" class="settings-under" type="button">⚙ Applications</button>
   </aside>
   <section class="ranking" aria-label="Classement par application">
     <div class="ranking-head"><div class="over">🏆 MEILLEURS SCORES · DEPUIS LA DERNIÈRE REMISE À ZÉRO</div><h1 id="app-name"></h1></div>
     <div class="ranking-wrap"><div id="ranking-list" class="ranking-list"></div></div>
-    <div class="ranking-footer"><span id="rotation-label"></span><span id="time-left"></span></div>
+    
   </section>
   <aside class="right">
     <section class="panel"><h2>✨ Nouveaux exploits</h2><div id="exploits"></div></section>
@@ -153,8 +156,9 @@ label.setting{justify-content:space-between;max-width:380px}
 </main>
 <footer>
   <div id="app-tabs" class="apps"></div>
-  <div class="controls"><button id="prev-app" type="button">◀ Appli</button><button id="next-app" type="button">Appli ▶</button><button id="pause" type="button">⏸ Pause</button></div>
+  <div class="controls"><button id="prev-app" type="button">◀ Appli</button><span id="rotation-label" class="rotation-status"></span><span id="time-left" class="rotation-status"></span><button id="next-app" type="button">Appli ▶</button><button id="pause" type="button">⏸ Pause</button></div>
 </footer>
+</div>
 <dialog id="settings" aria-label="Paramètres de projection">
   <button id="close-settings" type="button" class="close">✕ Fermer</button><h2>⚙ Applications à afficher</h2>
   <p class="note">Réglages de démonstration uniquement, pas encore connectés aux comptes ou à Supabase. Chaque appli a son propre classement.</p>
