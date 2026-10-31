@@ -30,7 +30,6 @@ function clearBoard(message){
  $('exploits').replaceChildren();$('rises').replaceChildren();$('app-tabs').replaceChildren();
  $('app-name').textContent='Projection masquée';
  $('ranking-note').textContent='Aucune donnée d’élève visible';
- $('count-label').textContent='';
  $('time-left').textContent='';
  $('reset-password').value='';
  for(const id of ['settings-left'])$(id).disabled=true;
@@ -124,6 +123,7 @@ function render(){
  const multiple=compared.length>0;
  const columns=splitProjectedRanking(people,multiple);
  $('ranking-list').classList.toggle('single',columns.length===1);
+ $('ranking-list').classList.toggle('multi',multiple);
  let position=0;
  columns.forEach(group=>{
   const column=document.createElement('div');column.className='ranking-col';
