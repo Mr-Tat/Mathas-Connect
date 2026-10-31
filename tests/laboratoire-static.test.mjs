@@ -42,3 +42,18 @@ test('aucun lancement de jeu depuis le laboratoire avant confirmation fictive',(
  assert.match(script,/student\.onclick=event=>\{if\(!consent\(\)\)/);
  assert.match(script,/teacher\.onclick=\(\)=>run\(async\(\)=>\{guard\(\);/);
 });
+
+test('connexion rapide de profil : présélection, contrôle de session et approbation native',()=>{
+ const lab=read('laboratoire.js'),app=read('app.js'),home=read('index.html');
+ assert.match(lab,/Se connecter avec ce profil/);
+ assert.match(lab,/target\.searchParams\.set\('lab','1'\)/);
+ assert.match(lab,/launch\.onclick=event=>\{if\(!consent\(\)\)/);
+ assert.match(lab,/target\.searchParams\.set\('testFirst'/);
+ assert.match(app,/const testIntent=/);
+ assert.match(app,/cls===labTestClass/);
+ assert.match(app,/wrapper\.hidden=true;\$\('join-form'\)\.hidden=false/);
+ assert.match(app,/const wrongProfile=!!testIntent/);
+ assert.match(app,/\$\('continue-profile'\)\.hidden=wrongProfile/);
+ assert.match(home,/id="test-profile-switch-notice"/);
+ assert.doesNotMatch(lab,/signInAnonymously|signOut|auth\.admin|service_role/);
+});
