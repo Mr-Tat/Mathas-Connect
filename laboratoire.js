@@ -56,6 +56,19 @@ function renderPeople(devices){
  for(const person of people){
   const card=el('article','','profile');
   card.append(el('strong',person.display_name));
+  // Le lien ne connecte personne : le serveur validera le JWT et l'appareil.
+  const split=String(person.display_name||'').trim().match(/^([\p{L}][\p{L} '-]{0,39})[.\s]+([\p{L}])$/u);
+  const target=new URL('./index.html',location.href);
+  target.searchParams.set('class',TEST_CLASS);
+  target.searchParams.set('name',TEST_LABEL);
+  target.searchParams.set('lab','1');
+  if(split){target.searchParams.set('testFirst',split[1].trim());target.searchParams.set('testInitial',split[2].toUpperCase())}
+  const launch=el('a','Se connecter avec ce profil','action');
+  launch.href=target.href;launch.target='_blank';launch.rel='noopener noreferrer';
+  launch.title='Ouvrir la connexion élève native. L’appareil doit être approuvé pour ce profil.';
+  launch.onclick=event=>{if(!consent()){event.preventDefault();display('Confirme que ce profil est fictif avant de lancer sa connexion.',true)}};
+  const actions=el('div','','actions');actions.append(launch);card.append(actions);
+  if(!split)card.append(el('p','Nom non standard : complète le prénom et l’initiale dans le formulaire Connect.','muted tiny'));
   const own=devices.filter(d=>d.student_id===person.id);
   if(!own.length)card.append(el('p','Aucun appareil associé.','muted tiny'));
   for(const device of own){
