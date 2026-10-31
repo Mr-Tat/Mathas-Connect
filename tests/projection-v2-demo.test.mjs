@@ -14,6 +14,12 @@ test('projection V2 demo : 14 élèves répartis en une ou deux colonnes',()=>{
  assert.match(doc,/\.entry\.rank-1 \.place/);
  assert.doesNotMatch(doc,/\.entry:first-child \.place/);
  assert.match(doc,/Réussite de la classe/);
+ assert.match(doc,/id="header-class" class="header-class"/);
+ assert.match(doc,/Phase 2 A<\/div>/);
+ assert.doesNotMatch(doc,/id="ranking-note"/);
+ assert.doesNotMatch(doc,/class="ranking-guide"/);
+ assert.match(doc,/\.ranking-head\{min-height:69px;padding:6px 12px 7px\}/);
+ assert.match(doc,/addPct\(card,"Global",c\.pct,true\)/);
  assert.match(doc,/for\(const field of \["score","percentage"\]\)/);
  assert.match(doc,/makeExploit\("trophy"/);
  assert.match(doc,/makeExploit\("perfect"/);
