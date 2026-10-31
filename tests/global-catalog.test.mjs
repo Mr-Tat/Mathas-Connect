@@ -29,7 +29,7 @@ test('hub uses session cache and static fallback without SDK',()=>{
 });
 test('teacher browser JavaScript module parses',()=>{execFileSync(process.execPath,['--check','--input-type=module'],{input:teacher})});
 
-test('four class columns and separate scoped caches',()=>{for(const name of ['Observation','Phase 1','Phase 2','2 ECO','Partout','Position'])assert.ok(html.includes(name));assert.match(hub,/classPresets\[classId\]/);assert.match(result,/teacher-app-matrix-save/)});
+test('five class columns, distinct Phase 2 scopes and separate caches',()=>{for(const name of ['Observation','Phase 1','Phase 2 A','Phase 2 B','2 ECO','Partout','Position'])assert.ok(html.includes(name));assert.match(hub,/classPresets\[classId\]/);assert.match(result,/teacher-app-matrix-save/);assert.match(result,/const slugs=\['observation','phase1','phase2','phase2b','2eco'\]/);assert.match(catalog,/phase2b/);assert.match(read('../connect-context.js'),/phase2b:/);});
 
 test('Soustraction figure dans le secours statique, sans filtre HOLD ni cache ancien',()=>{
  const local=JSON.parse(read('../hub-catalog.json'));
