@@ -1,0 +1,64 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
+const html=readFileSync(new URL('../projection-v2.html',import.meta.url),'utf8');
+const js=readFileSync(new URL('../projection-v2-live.js',import.meta.url),'utf8');
+
+test('Projection V2 live : chargement professeur volontaire, lecture protégée et classe fixe',()=>{
+ assert.match(html,/id="load-real"/);
+ assert.match(js,/storageKey:'mathas-connect-professor-auth-v1'/);
+ assert.match(js,/import \{classId,classLabel\} from '.\/connect-context\.js'/);
+ assert.match(js,/teacher-dashboard/);
+ assert.match(js,/connect-projection-v2','teacher-load'/);
+ assert.match(js,/if\(!hasLoaded\)return note\('Clique d’abord sur Afficher/);
+ assert.doesNotMatch(js,/signInAnonymously|localStorage\.setItem/);
+});
+test('Projection V2 live : 14 élèves maximum, classement propre aux jeux, score près du nom',()=>{
+ assert.match(js,/\.slice\(0,14\)/);
+ assert.match(js,/const split=people\.length>7/);
+ assert.match(js,/Math\.ceil\(people\.length\/2\)/);
+ assert.match(js,/primary\.append\(name,points\)/);
+ assert.match(js,/Niveau /);
+ assert.match(js,/p\.trophies/);
+ assert.match(js,/secondsRemaining=options\.rotationSeconds/);
+ assert.match(js,/const a=enabled\(\)/);
+ assert.match(js,/a\.key===currentApp/);
+});
+test('Projection V2 live : panneaux score et % isolés et refus de faux pourcentage',()=>{
+ assert.match(js,/for\(const field of \['scoreApps','percentageApps'\]\)/);
+ assert.match(js,/classId,\.\.\.body/);
+ assert.match(js,/options\.comparisons/);
+ assert.match(js,/return n===null\?'— %'/);
+ assert.match(js,/root\.append\(makeSuccessRow\('Global'/);
+ assert.match(js,/for\(const app of apps\.filter\(a=>options\.percentageApps\.includes\(a\.key\)\)\)/);
+ assert.match(js,/for\(const field of \['score','percentage'\]\)/);
+ assert.match(js,/comparisonDisplay/);
+ assert.match(html,/Réussite de la classe/);
+ assert.match(html,/id="comparison-results"/);
+ assert.match(html,/id="settings-left" class="settings-under"/);
+ assert.match(html,/\.ranking-col \+ \.ranking-col\{border-left:5px/);
+ assert.match(html,/\.entry\.rank-1 \.place/);
+ assert.doesNotMatch(html,/\.entry:first-child \.place/);
+ assert.match(js,/row\.style\.setProperty\('--rank-progress'/);
+ assert.match(js,/kinds=\{trophy:\['🏆'/);
+ assert.match(js,/Mesure des exercices réellement entamés|exercices réellement entamés/);
+ assert.doesNotMatch(js,/pct:83|Lina|Adam|NOM_CONFIDENTIEL/);
+});
+test('Projection V2 live : reset de la seule application via mot de passe masqué',()=>{
+ assert.match(html,/id="reset-password" type="password"/);
+ assert.match(js,/teacher-reset-score'/);
+ assert.match(js,/appKey:pendingReset,password/);
+ assert.match(js,/reset\.disabled=!options\.scoreApps\.includes\(app\.key\)/);
+ assert.match(js,/classLabel/);
+ assert.match(js,/reset-password/);
+ assert.match(js,/window\.confirm/);
+ assert.doesNotMatch(js,/connect_parcours_restart|teacher-parcours-restart|reset_epoch/);
+});
+test('Projection V2 live : déconnexion masque les résultats et module JS valide',()=>{
+ assert.match(js,/SIGNED_OUT/);
+ assert.match(js,/clearBoard\('Session professeur terminée/);
+ assert.match(js,/window\.addEventListener\('pagehide'/);
+ const c=spawnSync(process.execPath,['--check','--input-type=module'],{input:js,encoding:'utf8'});
+ assert.equal(c.status,0,c.stderr);
+});

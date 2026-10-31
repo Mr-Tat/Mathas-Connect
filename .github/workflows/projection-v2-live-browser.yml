@@ -1,0 +1,26 @@
+name: Projection V2 — Chromium professeur simulé
+on:
+  pull_request:
+    paths:
+      - 'projection-v2.html'
+      - 'projection-v2-live.js'
+      - 'tests/projection-v2-live.browser.mjs'
+      - '.github/workflows/projection-v2-live-browser.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  projection-v2-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Playwright et Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.57.0
+          npx playwright install chromium --with-deps
+      - name: Test de projection isolée, aucune donnée réelle
+        run: node --test tests/projection-v2-live.browser.mjs

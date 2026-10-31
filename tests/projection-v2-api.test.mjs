@@ -31,7 +31,12 @@ test('projection V2 API : réglages isolés à la classe et validés',()=>{
  assert.match(src,/b\.action==='teacher-save-options'/);
  assert.match(src,/scoreApps/);
  assert.match(src,/percentageApps/);
- assert.match(src,/opts\.comparisons\.length&&!await ownClasses/);
+ assert.match(src,/selectedClasses\.length&&!await ownClasses/);
+ assert.match(src,/comparisonDisplay/);
+ assert.match(src,/typeof v\.score==='boolean'/);
+ assert.match(src,/typeof v\.percentage==='boolean'/);
+ assert.match(src,/JSON\.stringify\(\[\.\.\.selectedClasses\]\.sort\(\)\)/);
+ assert.match(src,/selectedClasses\.length&&!await ownClasses/);
  assert.match(src,/class_id:b\.classId,options/);
  assert.match(src,/onConflict:'class_id'/);
  assert.doesNotMatch(src,/service_role.*respond|password.*console\./);

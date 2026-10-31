@@ -20,6 +20,9 @@ const classOptions=(o:any)=>o&&typeof o==='object'&&!Array.isArray(o)&&
  Array.isArray(o.scoreApps)&&o.scoreApps.length<=keys.length&&o.scoreApps.every(allowKey)&&
  Array.isArray(o.percentageApps)&&o.percentageApps.length<=keys.length&&o.percentageApps.every(allowKey)&&
  Array.isArray(o.comparisons)&&o.comparisons.length<=4&&o.comparisons.every(uuid)&&
+ (o.comparisonDisplay===undefined||(Array.isArray(o.comparisonDisplay)&&o.comparisonDisplay.length<=4&&
+   o.comparisonDisplay.every((v:any)=>v&&uuid(v.classId)&&typeof v.score==='boolean'&&
+     typeof v.percentage==='boolean'&&(v.score||v.percentage))))&&
  Number.isInteger(o.rotationSeconds)&&o.rotationSeconds>=45&&o.rotationSeconds<=180;
 
 async function records(query:any){
@@ -120,9 +123,17 @@ Deno.serve(async(req:Request)=>{
       ||new Set(opts.percentageApps).size!==opts.percentageApps.length
       ||new Set(opts.comparisons).size!==opts.comparisons.length
       ||opts.comparisons.includes(b.classId))return deny('duplicate_options',400);
-   if(opts.comparisons.length&&!await ownClasses(user.id,opts.comparisons))return deny('forbidden',403);
+   const comparisonDisplay=(Array.isArray(opts.comparisonDisplay)?opts.comparisonDisplay:
+     opts.comparisons.map((id:string)=>({classId:id,score:true,percentage:true})))
+     .map((v:any)=>({classId:v.classId,score:v.score,percentage:v.percentage}));
+   const selectedClasses=comparisonDisplay.map((v:any)=>v.classId);
+   if(new Set(selectedClasses).size!==selectedClasses.length
+      ||selectedClasses.some((id:string)=>id===b.classId)
+      ||JSON.stringify([...selectedClasses].sort())!==JSON.stringify([...opts.comparisons].sort()))
+       return deny('invalid_comparison_options',400);
+   if(selectedClasses.length&&!await ownClasses(user.id,selectedClasses))return deny('forbidden',403);
    const options={scoreApps:opts.scoreApps,percentageApps:opts.percentageApps,
-    comparisons:opts.comparisons,rotationSeconds:opts.rotationSeconds};
+    comparisons:selectedClasses,comparisonDisplay,rotationSeconds:opts.rotationSeconds};
    const {error}=await db.from('connect_projection_settings').upsert({
     class_id:b.classId,options,updated_at:new Date().toISOString(),updated_by:user.id
    },{onConflict:'class_id'});
