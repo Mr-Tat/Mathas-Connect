@@ -6,7 +6,7 @@
 
 ## Interface commune souhaitée
 
-Renommer la grande carte « Mort subite » en **🏆 Défis de score**. La partager en deux boutons :
+Renommer la grande carte « Mort subite » en **🏆 Défis de score** et afficher exactement le sous-titre pédagogique **« Deux façons de marquer un gros score. »**. La partager en deux grands boutons de largeur égale, turquoise à gauche et rouge à droite :
 - À **gauche**, **❤️ 3 vies** : trois erreurs permises, 50 % du droit XP comparable, pas de trophée.
 - À **droite**, **💀 Mort subite** : une seule erreur, 100 % du droit XP comparable, trophées natifs habituels, et badge positif **+20 % de points**.
 
@@ -46,7 +46,7 @@ Les séries normales **4 / 10 / 20 calculs restent totalement inchangées**, y c
 **[PROTOTYPE isolé — 01/11/2026]**
 
 - Essai : https://mr-tat.github.io/CE-Addition-simple/essai-mode-score-3-vies.html
-- PR source : https://github.com/Mr-Tat/CE-Addition-simple/pull/6
+- PR source : https://github.com/Mr-Tat/CE-Addition-simple/pull/6 ; reprise visuelle fidèle au montage professeur : https://github.com/Mr-Tat/CE-Addition-simple/pull/7
 - Cette **page distincte** charge le vrai moteur HTML Addition simple dans un iframe. Les transformations du mode 3 vies s'appliquent dans l'iframe ; **le jeu habituel et sa copie native sont inchangés**.
 - Le localStorage et le sessionStorage de l'iframe sont remplacés par une mémoire volatile, et ses requêtes fetch sont bloquées. Aucun XP, trophée, record, consentement ni résultat Connect ne doit être publié par cet essai.
 - Les mentions « 50 % XP » et « +20 % » sont **informatives uniquement** dans ce prototype : leurs calculs réels restent un chantier séparé. Les restrictions de déblocage de Mort subite sont levées seulement dans le prototype, pour permettre le test.
