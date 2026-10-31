@@ -18,6 +18,45 @@ const $=id=>document.getElementById(id);
 const el=(tag,text,cls='')=>{const n=document.createElement(tag);n.textContent=text;if(cls)n.className=cls;return n};
 const consent=()=>$('fictive-confirm').checked;
 let verified=false,teacherReady=false,people=[],requested=[],apps=[],selectedStudent=null,locks=[];
+let connectedStudentName=null;
+// Deux stockages Supabase séparés : professeur et élève.
+// La présence d'un appareil approuvé en base ne prouve pas une connexion.
+const studentSb=createClient(BASE,KEY,{auth:{persistSession:true,autoRefreshToken:false,detectSessionInUrl:false}});
+const normalizedStudentName=value=>String(value||'').normalize('NFC').toLocaleLowerCase('fr').replace(/[.\s]+/g,'');
+async function readConnectedTestStudent(){
+ try{
+  const {data:{session:studentSession}}=await studentSb.auth.getSession();
+  if(!studentSession?.access_token||!studentSession.user?.is_anonymous)return null;
+  const r=await fetch(BASE+'/functions/v1/connect-api',{
+    method:'POST',headers:{apikey:KEY,authorization:'Bearer '+studentSession.access_token,'content-type':'application/json'},
+    body:JSON.stringify({action:'student-me',classId:TEST_CLASS})
+  });
+  if(!r.ok)return null;
+  const data=await r.json();
+  return data.ok&&data.status==='approved'&&data.classId===TEST_CLASS&&typeof data.displayName==='string'?data.displayName:null;
+ }catch{return null}
+}
+async function refreshConnectedTestStudent(){
+ connectedStudentName=await readConnectedTestStudent();
+ renderConnectedBadges();
+}
+function renderConnectedBadges(){
+ const matches=people.filter(p=>connectedStudentName&&normalizedStudentName(p.display_name)===normalizedStudentName(connectedStudentName));
+ document.querySelectorAll('[data-test-student-id]').forEach(card=>{
+   const badge=card.querySelector('.lab-connected-badge');
+   if(badge)badge.hidden=!(matches.length===1&&card.dataset.testStudentId===matches[0].id);
+ });
+}
+async function labCatalog(action,data={}){
+ const s=await session();
+ const r=await fetch(BASE+'/functions/v1/connect-lab-catalog',{
+   method:'POST',headers:{apikey:KEY,authorization:'Bearer '+s.access_token,'content-type':'application/json'},
+   body:JSON.stringify({action,classId:TEST_CLASS,...data})
+ });
+ const result=await r.json().catch(()=>({}));
+ if(!r.ok||!result.ok)throw Error(result.error||'Réglages du HUB test indisponibles');
+ return result;
+}
 const display=(message,error=false)=>{$('status').textContent=message;$('status').className='status '+(error?'error':'ok')};
 const guard=()=>{if(!verified)throw Error('Classe de test non vérifiée par le serveur professeur.');if(!consent())throw Error('Confirme d’abord que les profils de cette classe sont fictifs.')};
 async function session(){const {data:{session},error}=await sb.auth.getSession();if(error||!session?.access_token||session.user?.is_anonymous)throw Error('Connecte-toi d’abord à l’espace professeur.');return session}
@@ -37,6 +76,7 @@ async function loadTeacher(){
  $('lab').hidden=false;
  await loadClass(scoped);
  await loadApps();
+ await refreshConnectedTestStudent();
  display('Laboratoire chargé. Les élèves et jeux utilisent les vrais contrôles Connect.');
 }
 async function loadClass(scoped=null){
@@ -55,7 +95,12 @@ function renderPeople(devices){
  if(!people.length){container.append(el('p','Aucun élève inscrit.','muted'));return}
  for(const person of people){
   const card=el('article','','profile');
-  card.append(el('strong',person.display_name));
+  card.dataset.testStudentId=person.id;
+  const identity=el('div','','lab-profile-heading');
+  identity.append(el('strong',person.display_name));
+  const connected=el('span','Connecté','lab-connected-badge');
+  connected.hidden=true;
+  identity.append(connected);card.append(identity);
   // Le lien ne connecte personne : le serveur validera le JWT et l'appareil.
   const split=String(person.display_name||'').trim().match(/^([\p{L}][\p{L} '-]{0,39})[.\s]+([\p{L}])$/u);
   const target=new URL('./index.html',location.href);
@@ -92,6 +137,7 @@ function renderPeople(devices){
   }
   container.append(card);
  }
+ renderConnectedBadges();
 }
 function renderRequests(){
  $('request-count').textContent=String(requested.length);
@@ -134,27 +180,57 @@ function renderRequests(){
  }
 }
 async function loadApps(){
- let list=fallbackApps;
- try{const r=await resultsNoConsent('teacher-app-matrix-get');if(Array.isArray(r.apps)&&r.apps.length)list=r.apps.filter(x=>x.app_key!=='connect-lab')}catch{/* catalogue de secours local */}
- apps=list.filter(a=>linkFor(a));
- $('apps').replaceChildren();
- for(const app of apps){
-  const card=el('article','','game'),name=el('h3',app.title||app.app_key);
-  card.append(name,el('p',appKeys.includes(app.app_key)?'Connect · session approuvée requise':'Vérifier le mode disponible'));
-  const buttons=el('div','','actions');
-  const student=el('a','Tester côté élève','action');student.href=linkFor(app);student.target='_blank';student.rel='noopener noreferrer';
-  student.onclick=event=>{if(!consent()){event.preventDefault();display('Confirme d’abord que les profils utilisés sont fictifs avant de lancer le jeu.',true)}};
-  buttons.append(student);
-  if(appKeys.includes(app.app_key)&&new URL(linkFor(app)).origin===location.origin){
-    const teacher=el('button','Monsieur T','secondary');teacher.disabled=!teacherReady;
-    teacher.onclick=()=>run(async()=>{guard();if(!teacherReady)throw Error('Active d’abord Monsieur T.');const href=linkFor(app,true);window.open(href,'_blank','noopener,noreferrer')});
-    teacher.classList.add('teacher-game');buttons.append(teacher);
-  }
-  card.append(buttons);$('apps').append(card);
+ const container=$('apps');container.replaceChildren();
+ let list;
+ try{
+   const r=await labCatalog('list');
+   if(!Array.isArray(r.apps))throw Error('Réponse de catalogue invalide');
+   list=r.apps.filter(app=>app.app_key!=='connect-lab');
+ }catch(e){
+   container.append(el('p','Impossible de charger les cases « Afficher ». Aucune modification du HUB possible.','muted warning'));
+   throw e;
  }
+ apps=list.filter(a=>linkFor(a));
+ for(const app of apps){
+   const card=el('article','','game'),name=el('h3',app.title||app.app_key);
+   card.append(name);
+   const label=el('label','','lab-visibility-toggle');
+   const checkbox=document.createElement('input');
+   checkbox.type='checkbox';checkbox.checked=app.visible===true;checkbox.disabled=!app.enabled;
+   checkbox.setAttribute('aria-label','Afficher '+(app.title||app.app_key)+' dans le HUB test');
+   label.append(checkbox,document.createTextNode(' Afficher'));card.append(label);
+   if(!app.enabled){
+     card.append(el('p','Application désactivée côté serveur : affichage indisponible.','muted warning'));
+   }else{
+     checkbox.onchange=()=>run(async()=>{
+       const wanted=checkbox.checked;checkbox.disabled=true;
+       try{
+         guard();
+         const saved=await labCatalog('set',{appKey:app.app_key,visible:wanted});
+         app.visible=saved.visible===true;checkbox.checked=app.visible;
+         display((app.visible?'Application affichée':'Application masquée')+' dans le HUB test uniquement : '+app.title);
+       }catch(error){checkbox.checked=app.visible===true;throw error}
+       finally{checkbox.disabled=false}
+     });
+     card.append(el('p','Visibilité indépendante des quatre HUB réels.','muted tiny'));
+   }
+   const buttons=el('div','','actions');
+   if(app.enabled){
+     const student=el('a','Tester côté élève','action');student.href=linkFor(app);student.target='_blank';student.rel='noopener noreferrer';
+     student.onclick=event=>{if(!consent()){event.preventDefault();display('Confirme d’abord que les profils utilisés sont fictifs avant de lancer le jeu.',true)}};
+     buttons.append(student);
+     if(appKeys.includes(app.app_key)&&new URL(linkFor(app)).origin===location.origin){
+       const teacher=el('button','Monsieur T','secondary');teacher.disabled=!teacherReady;
+       teacher.onclick=()=>run(async()=>{guard();if(!teacherReady)throw Error('Active d’abord Monsieur T.');const href=linkFor(app,true);window.open(href,'_blank','noopener,noreferrer')});
+       teacher.classList.add('teacher-game');buttons.append(teacher);
+     }
+   }
+   card.append(buttons);container.append(card);
+ }
+ if(!apps.length)container.append(el('p','Aucune application disponible.','muted'));
  $('results-app').replaceChildren(...apps.filter(a=>appKeys.includes(a.app_key)).map(a=>new Option(a.title||a.app_key,a.app_key)));
  if(!$('results-app').options.length)for(const a of fallbackApps)$('results-app').add(new Option(a.title,a.app_key));
- $('results-app').value='melange-calculs-ecrits';
+ if([...$('results-app').options].some(o=>o.value==='melange-calculs-ecrits'))$('results-app').value='melange-calculs-ecrits';
  refreshLockUI();
 }
 async function resultsNoConsent(action,data={}){if(!verified)throw Error('Classe non vérifiée');return rpc('connect-results',action,{classId:TEST_CLASS,...data})}
@@ -256,3 +332,6 @@ $('reset-student').onclick=()=>run(async()=>{
  await loadSummary();display('Parcours fictif réinitialisé sans recollection des XP historiques.');
 });
 run(async()=>{await session();await loadTeacher()});
+
+window.addEventListener('focus',()=>{if(verified)void refreshConnectedTestStudent()});
+document.addEventListener('visibilitychange',()=>{if(verified&&!document.hidden)void refreshConnectedTestStudent()});
