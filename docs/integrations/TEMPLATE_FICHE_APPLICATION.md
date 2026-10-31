@@ -41,7 +41,7 @@
 - **Schéma événement version :** […] ; **schéma état version :** […] ; **barème version :** […].
 - **Fin admissible :** […] ; **preuve bornée :** […] ; **modes sans droit :** […].
 - **Identité :** `app_key` / classe / sujet Auth / fiche résolue / `expectedStudentId` ; **époque :** `resetEpoch`.
-- **Records / trophées / déblocages / hydratation :** […].
+- **Records / trophées / déblocages / hydratation :** […] ; **trophées permanents malgré reset** : registre/clé unique […], maximum réellement atteignable […], source du total HUB […], traitement des archives et animations de trophées déjà acquis […].
 - **Offline :** démarrage disponible ? fin hors ligne ? file max […] / ACK […] / gestion 409/quarantaine […].
 - **Sans XP ou XP validés (décision explicite) :** […].
 - **Table des exemples chiffrés :** première réussite […], amélioration […], répétition 0 […], sélection plus exigeante […], reset sans recollection […], éventuel rejeu autorisé […] ; **plafond théorique vérifié :** […].
