@@ -61,7 +61,7 @@ test('projection : aucune écriture serveur, rafraîchissement automatique ou id
  assert.match(ui,/classId as requestedClassId/);
  assert.match(ui,/classes.some\(c=>c.id===requestedClassId\)/);
  const professor=read('../index.html');
- for(const space of ['observation','phase1','phase2','2eco'])
+ for(const space of ['observation','phase1','phase2','phase2b','2eco'])
   assert.ok(professor.includes('./projection.html?space='+space));
 
  assert.match(ui,/session\.user\?\.is_anonymous/);
