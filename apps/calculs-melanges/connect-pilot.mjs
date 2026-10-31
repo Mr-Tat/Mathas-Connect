@@ -18,7 +18,7 @@ export function createPilot({storage,classId,studentId,pupilId=studentId,post,on
   initialize(rev,epoch){if(!Number.isSafeInteger(rev)||rev<0||!Number.isSafeInteger(epoch)||epoch<0)throw Error('invalid_revision');revision=rev;resetEpoch=epoch;const count=queue.quarantineEpoch(epoch);if(count)onStatus('quarantined',{count});return true},
   completed(raw){const e=normalizeCompletion(raw);if(!e||revision===null)return false;if(e.expectedResetEpoch!==resetEpoch){onStatus('conflict');return false}
    if(queue.count()>=100){onStatus('queue-full');return false}
-   if(!queue.enqueue({...e,action:'game-record',points:0,classId,expectedStudentId:pupilId}))return false;onStatus('pending');void sync.flush();return true},
+   if(!queue.enqueue({...e,action:'game-record',points:0,classId,expectedStudentId:pupilId}))return false;onStatus('pending',{eventId:e.eventId});void sync.flush();return true},
   retry:()=>sync.flush(),pending:()=>queue.count(),quarantined:()=>queue.archivedCount(),
   version:()=>({revision,resetEpoch})
  });
