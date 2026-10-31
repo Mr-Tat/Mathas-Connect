@@ -27,7 +27,7 @@ export function buildConnectPilot({storage,classId,studentId,post,onStatus=()=>{
    if(stale)onStatus('quarantined',{error:'queued_epoch_mismatch',count:stale});
    const record={...event,action:'game-record',eventId:crypto.randomUUID(),expectedRevision:revision,expectedResetEpoch:resetEpoch,points:0,classId};
    if(!queue.enqueue(record))return false;
-   onStatus('pending');void sync.flush();return true;
+   onStatus('pending',{eventId:record.eventId});void sync.flush();return true;
   },
   retry(){return sync.flush()},
   pending(){return queue.count()},
