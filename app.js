@@ -889,7 +889,7 @@ const APP_SPACES=[['observation','Observation'],['phase1','Phase 1'],['phase2','
 async function loadTeacherAppPreview(){
  const body=$('teacher-app-tbody');if(!body)return;
  body.replaceChildren();
- const loading=document.createElement('tr'),loadingCell=document.createElement('td');loadingCell.colSpan=8;loadingCell.textContent='Chargement du tableau GLOBAL…';loading.append(loadingCell);body.append(loading);
+ const loading=document.createElement('tr'),loadingCell=document.createElement('td');loadingCell.colSpan=9;loadingCell.textContent='Chargement du tableau GLOBAL…';loading.append(loadingCell);body.append(loading);
  try{
   const data=await resultCall('teacher-app-matrix-get');
   const entries=new Map((data.entries||[]).map(e=>[e.preset_slug+'|'+e.app_key,e]));
