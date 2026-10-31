@@ -1,0 +1,21 @@
+name: Mélange - quatre catalogues publics (lecture seule)
+on:
+  pull_request:
+    paths:
+      - 'tests/melange-public-catalogs-live.test.mjs'
+      - '.github/workflows/melange-public-catalogs.yml'
+permissions:
+  contents: read
+jobs:
+  public-catalogs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Attendre la fin de validité du cache Edge (60 secondes)
+        run: sleep 65
+      - name: Vérifier les quatre catalogues sans authentification
+        run: node --test tests/melange-public-catalogs-live.test.mjs
