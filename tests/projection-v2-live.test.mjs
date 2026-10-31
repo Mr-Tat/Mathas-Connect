@@ -23,7 +23,7 @@ test('Projection V2 live : 14 élèves maximum, classement propre aux jeux, scor
  assert.match(js,/p\.trophies/);
  assert.match(js,/secondsRemaining=options\.rotationSeconds/);
  assert.match(js,/const a=enabled\(\)/);
- assert.match(js,/app\.key===currentApp/);
+ assert.match(js,/a\.key===currentApp/);
 });
 test('Projection V2 live : panneaux score et % isolés et refus de faux pourcentage',()=>{
  assert.match(js,/for\(const field of \['scoreApps','percentageApps'\]\)/);
