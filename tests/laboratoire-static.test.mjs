@@ -87,6 +87,7 @@ test('les cases Afficher ne publient jamais les quatre vrais HUB',()=>{
  assert.doesNotMatch(edge,/connect_hub_preset_entries|update\(\{.*enabled/);
  assert.match(edge,/connect_lab_hub_visibility/);
  assert.match(edge,/user\.is_anonymous/);
+ assert.match(edge,/\.from\('connect_teachers'\)/);
  assert.match(edge,/\.eq\('class_id',TEST_CLASS\)\.eq\('teacher_id',user\.id\)\.eq\('can_manage',true\)/);
  assert.match(edge,/app\.data\.enabled!==true/);
 });
