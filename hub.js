@@ -270,9 +270,9 @@ $('mode-toggle').onclick = async () => {
 let lastIdentityRequestAt=0,refreshingIdentity=false;
 async function showIdentity(refresh=false) {
   if(refresh&&(refreshingIdentity||Date.now()-lastIdentityRequestAt<2000))return;
-  refreshingIdentity=true;lastIdentityRequestAt=Date.now();
   if(!refresh)drawIdentity(null);
   if (!classId || (!playingAsTeacher&&inFreeMode())) return;
+  refreshingIdentity=true;lastIdentityRequestAt=Date.now();
   try {
     const sb=await getSupabase();
     const { data: { session } } = await sb.auth.getSession();
