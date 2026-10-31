@@ -68,3 +68,39 @@ export function resetScorePeriod(periods=[],classId,appKey,when){
  else copy[index]={...copy[index],since:when};
  return copy;
 }
+
+
+// Combine only the class selected for projection and classes explicitly
+// checked in the Score column. % comparison choices have no effect here.
+export function rankMultiClass({
+ classes=[],primaryClassId,scoreClassIds=[],appKey,limit=20,includeTeacher=false
+}={}){
+ if(!validClass(primaryClassId)||!validApp(appKey))return [];
+ const allowed=new Set([primaryClassId,...(Array.isArray(scoreClassIds)?scoreClassIds:[])]);
+ const eligible=[];
+ for(const group of Array.isArray(classes)?classes:[]){
+  if(!group||!allowed.has(group.classId))continue;
+  for(const p of Array.isArray(group.students)?group.students:[]){
+   if(!p||p.visible===false||p.isTeacher&&!includeTeacher)continue;
+   const row=Array.isArray(p.scores)?p.scores.find(x=>x.appKey===appKey):undefined;
+   const score=numeric(row?.bestScore)?row.bestScore:null;
+   // A player opting out of score publication has no public record.
+   // Keep only unplayed players from the primary class as placeholders.
+   if(group.classId!==primaryClassId&&score===null)continue;
+   eligible.push({id:p.id,classId:group.classId,className:group.name,
+    name:String(p.name||'Élève').slice(0,80),level:numeric(p.level)?p.level:null,
+    trophies:numeric(p.trophies)?p.trophies:null,score});
+  }
+ }
+ return eligible.sort((a,b)=>(b.score??-1)-(a.score??-1)
+  ||a.name.localeCompare(b.name,'fr')||a.className.localeCompare(b.className,'fr')
+  ||String(a.id).localeCompare(String(b.id)))
+  .slice(0,Math.min(Math.max(0,Number(limit)||20),20))
+  .map((p,i)=>({...p,position:i+1}));
+}
+export function splitProjectedRanking(rows=[],multiClass=false){
+ const data=(Array.isArray(rows)?rows:[]).slice(0,20);
+ if(data.length<=7)return [data];
+ const cut=multiClass?Math.min(data.length,10):Math.ceil(data.length/2);
+ return [data.slice(0,cut),data.slice(cut)];
+}
