@@ -33,6 +33,7 @@ Le moteur libre et ses variantes pédagogiques fonctionnent ; le nouveau jeu et 
 
 - [Référence technique : architecture, XP, états, sécurité, professeur, performances](REFERENCE_TECHNIQUE.md)
 - [Contrat commun scores, XP et trophées permanents](CONTRAT_COMMUN_SCORES_XP_TROPHEES.md)
+- [Projet « Défis de score » : 3 vies, Mort subite et prototype Addition simple (01/11/2026)](PROJET_DEFIS_SCORE_3_VIES_20261101.md)
 - [Déploiement des compteurs trophées / XP du parcours (31/10/2026)](DEPLOIEMENT_TROPHEES_20261031.md)
 - [Erreurs connues, causes et contre-mesures](RETEX_ERREURS.md)
 - [Tests, preuves, publication et retour arrière](RECETTE_ET_PUBLICATION.md)
