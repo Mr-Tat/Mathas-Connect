@@ -1,0 +1,25 @@
+name: Laboratoire Connect - controles statiques
+on:
+  push:
+    branches: [feature/laboratoire-connect-test-20261031]
+  pull_request:
+    paths:
+      - 'laboratoire.*'
+      - 'index.html'
+      - 'style.css'
+      - 'tests/laboratoire-static.test.mjs'
+      - '.github/workflows/laboratoire.yml'
+permissions:
+  contents: read
+jobs:
+  laboratory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verifier la syntaxe du module
+        run: node --check laboratoire.js
+      - name: Verifier les invariants du laboratoire
+        run: node --test tests/laboratoire-static.test.mjs
