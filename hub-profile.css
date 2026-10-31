@@ -100,3 +100,6 @@
 #identity-box.identity-connected #identity-trophies{grid-column:1;grid-row:3;display:inline-flex;align-items:center;white-space:nowrap;align-self:start;margin-top:-10px;font-weight:800;font-size:clamp(12px,1.1vw,15px);color:#f7d76d}
 #identity-box.identity-connected #identity-trophies[hidden]{display:none!important}
 @media(max-width:520px){#identity-box.identity-connected #identity-trophies{font-size:12px;margin-top:-8px}}
+
+/* Les deux statistiques de chaque application restent lisibles sur petits écrans. */
+.app-card .app-scores{white-space:pre-line}
