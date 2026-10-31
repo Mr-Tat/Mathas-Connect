@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
+import {runInNewContext} from 'node:vm';
 const doc=readFileSync(new URL('../projection-v2-demo.html',import.meta.url),'utf8');
 test('projection V2 demo : 14 élèves répartis en une ou deux colonnes',()=>{
  assert.match(doc,/const names=\[.*"Nathan"\]/);
@@ -49,6 +50,19 @@ test('projection V2 demo : rotation 30 s, score et % indépendants, Monsieur T i
  assert.match(doc,/Aucune donnée n.est modifiée ici/);
  assert.doesNotMatch(doc,/supabase\.co|service_role|teacher-overview|student_id/);
  assert.match(doc,/MAQUETTE · RÉSULTATS FICTIFS/);
+});
+test('projection V2 demo : exploit Mort subite uniquement au-delà de 10 réponses',()=>{
+ assert.match(doc,/makeSuddenExploit\("Inès",11\)/);
+ assert.match(doc,/sudden:\["🔥","sudden"\]/);
+ assert.match(doc,/\.event\.sudden \.event-icon/);
+ const source=doc.match(/function makeSuddenExploit\(name,correct\)\{[\s\S]*?\n\}/)?.[0];
+ assert.ok(source);
+ const fn=runInNewContext(source+'; makeSuddenExploit',{makeExploit:(type,message)=>({type,message})});
+ for(const count of [0,9,10,10.5,-1,NaN])assert.equal(fn('Inès',count),null);
+ const result=fn('Inès',11);
+ assert.equal(result.type,'sudden');
+ assert.match(result.message,/Inès dépasse 10 bonnes réponses en Mort subite : 11/);
+ assert.match(fn('Inès',12).message,/12/);
 });
 test('projection V2 demo : script inline valide en Node',()=>{
  const js=doc.match(/<script>([\s\S]*?)<\/script>/)?.[1];
