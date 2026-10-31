@@ -25,7 +25,31 @@ main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) mi
 .track{height:9px;border-radius:999px;background:#233d54;overflow:hidden}
 .track i{display:block;height:100%;background:#9cc8d5;border-radius:inherit}
 .classstat small{font-size:11px;color:#d2dfed}
-.side button{margin-top:16px;width:100%}
+.left-col{display:flex;flex-direction:column;align-items:stretch;gap:10px;align-self:start;min-width:0}
+.left-col .panel{align-self:stretch}
+.left .classstat{margin:8px 0;gap:5px}
+.left .classstat.global-success{margin:6px 0 13px;padding:12px 9px;border:1px solid #a7dacf;border-radius:11px;background:#284f65}
+.global-success .headline{font-size:16px}
+.left .classstat .headline{font-size:12px;align-items:center}
+.left .classstat .headline strong{white-space:nowrap;font-size:15px}
+.left .classstat.global-success .headline strong{font-size:23px;color:#c8efe4}
+#percentage-note{display:block;margin-top:9px;line-height:1.35}
+.compare-panel{background:#2e4963}
+.compare-panel h2{font-size:15px;margin-bottom:7px}
+.compare-row{padding:8px 0;border-bottom:1px solid #577089}
+.compare-row:last-child{border:0}
+.compare-row strong{font-size:12px}
+.compare-line{display:flex;justify-content:space-between;gap:6px;font-size:12px;padding-top:4px}
+.compare-line span:last-child{font-weight:850;white-space:nowrap}
+.compare-line .not-ready{color:#c7d7e7}
+.settings-under{align-self:flex-start;background:#304c66;border:1px solid #59748d;min-height:32px;padding:5px 10px;font-size:12px;opacity:.84}
+.settings-under:hover{opacity:1}
+.event{display:flex;align-items:flex-start;gap:10px}
+.event-icon{display:grid;place-items:center;min-width:30px;height:30px;border-radius:8px;background:#335c7c;font-size:22px}
+.event-text{line-height:1.45;min-width:0}
+.event.rank-up .event-icon{background:#554b77}
+.event.perfect .event-icon{background:#386d65}
+.event.trophy .event-icon{background:#725a36}
 .ranking{background:linear-gradient(170deg,#193d65,#0a2446);border:2px solid #b4d5f7;border-radius:18px;box-shadow:0 0 26px #3a98e744;overflow:hidden;min-width:0}
 .ranking-head{text-align:center;background:#244b78;padding:8px 12px;border-bottom:1px solid #577ba5}
 .ranking-head .over{font-size:11px;font-weight:900;letter-spacing:.12em;color:#d5e5fc}
@@ -36,9 +60,12 @@ main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) mi
 .ranking-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
 .ranking-list.single{grid-template-columns:minmax(0,1fr);max-width:550px;margin:auto}
 .ranking-col{display:grid;gap:7px;align-content:start;min-width:0}
-.entry{display:grid;grid-template-columns:26px minmax(0,1fr);align-items:center;gap:8px;padding:7px 8px;background:#254970;border:1px solid #4b729b;border-radius:10px;min-width:0}
+.ranking-col + .ranking-col{border-left:5px solid #e6c877;padding-left:12px;box-shadow:-4px 0 0 #102941}
+.entry{display:grid;grid-template-columns:26px minmax(0,1fr);align-items:center;gap:8px;padding:7px 8px;background:hsl(calc(193 + var(--rank-progress,0)*35) 43% calc(32% - var(--rank-progress,0)*13%));border:1px solid hsl(calc(188 + var(--rank-progress,0)*43) 40% calc(57% - var(--rank-progress,0)*18%));border-radius:10px;min-width:0}
 .place{background:#375d83;border-radius:7px;text-align:center;font-size:13px;font-weight:900;padding:6px 0}
-.entry:first-child .place{background:#eec566;color:#263854}
+.entry.rank-1 .place{background:#ffe099;color:#253b53}
+.entry.rank-2 .place{background:#bacbdb;color:#21364c}
+.entry.rank-3 .place{background:#dcb58e;color:#2c3b4b}
 .primary{display:flex;gap:8px;align-items:baseline;min-width:0}
 .primary strong{font-size:clamp(14px,1.35vw,20px);line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .points{font-size:clamp(15px,1.3vw,19px);font-weight:950;color:#ffe0a1;white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -69,7 +96,7 @@ dialog label{display:flex;gap:9px;align-items:center;font-size:14px}
 dialog .note{color:#bed4ea;font-size:12px;line-height:1.5}
 label.setting{justify-content:space-between;max-width:380px}
 @media(max-width:1100px){main{grid-template-columns:minmax(165px,1fr) minmax(400px,2.7fr);}.right{grid-column:1/-1;grid-template-columns:1fr 1fr;grid-template-rows:auto;}.entry .primary{flex-wrap:wrap;gap:3px}}
-@media(max-width:690px){main{display:flex;flex-direction:column}.right{display:grid}.ranking-list{grid-template-columns:1fr}.ranking-head h1{font-size:27px}.primary strong{font-size:18px}.points{font-size:18px}}
+@media(max-width:690px){main{display:flex;flex-direction:column}.right{display:grid}.ranking-list{grid-template-columns:1fr}.ranking-list .ranking-col + .ranking-col{border-left:0;border-top:5px solid #e6c877;padding-left:0;padding-top:10px;margin-top:8px;box-shadow:none}.ranking-head h1{font-size:27px}.primary strong{font-size:18px}.points{font-size:18px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 #live-status{font-size:12px;font-weight:750;color:#d4ebff;max-width:260px}#settings [hidden]{display:none!important}#reset-confirm input[type=password]{border:1px solid #7794b1;border-radius:7px;background:#0d263e;color:#fff;padding:9px;min-width:210px}#percentage-note{font-size:11px;color:#d5e7fa}#ranking-list:empty::after{content:"Aucun élève autorisé à afficher pour cette application.";color:#d0e6fd;font-size:14px;padding:25px;text-align:center;display:block}.event.empty{color:#cce0f3}
 </style>
@@ -80,7 +107,11 @@ label.setting{justify-content:space-between;max-width:380px}
   <div class="tools"><span class="demo">● PROJECTION CONNECTÉE · ACCÈS PROFESSEUR</span><span id="live-status" role="status">Connexion professeur requise</span><button id="load-real" type="button">Afficher / Actualiser</button><button id="open-settings" type="button">⚙ Applications</button></div>
 </header>
 <main>
-  <aside class="side left panel"><h2>🏫 Réussite des classes</h2><small id="percentage-note">Pourcentages : mesure des exercices entamés en cours d’intégration</small><div id="classes"></div><button id="settings-left" type="button">⚙ Applications</button></aside>
+  <aside class="left-col" aria-label="Réussite et comparaisons">
+    <section class="panel left"><h2>🎯 Réussite de la classe</h2><div id="classes" aria-live="polite"></div><small id="percentage-note">Calcul des exercices entamés en préparation</small></section>
+    <section class="panel compare-panel"><h2>↔ Autres classes</h2><div id="comparison-results"></div></section>
+    <button id="settings-left" class="settings-under" type="button">⚙ Applications</button>
+  </aside>
   <section class="ranking" aria-label="Classement par application">
     <div class="ranking-head"><div class="over">🏆 MEILLEURS SCORES · PÉRIODE DE PROJECTION</div><h1 id="app-name"></h1><small id="ranking-note"></small></div>
     <div class="ranking-wrap"><div class="ranking-guide"><span id="count-label"></span><span id="rotation-label"></span></div><div id="ranking-list" class="ranking-list"></div></div>
@@ -99,9 +130,9 @@ label.setting{justify-content:space-between;max-width:380px}
   <button id="close-settings" type="button" class="close">✕ Fermer</button><h2>⚙ Applications à afficher</h2>
   <p class="note">Réglages propres à cette classe. Seuls les noms autorisés à la projection peuvent apparaître.</p>
   <table><thead><tr><th>Application</th><th>Score</th><th>%</th><th>Réinitialiser le score</th></tr></thead><tbody id="app-options"></tbody></table>
-  <section class="options"><strong>Autres classes à comparer</strong><div id="comparison-options"></div><label><input id="show-teacher" type="checkbox"> Afficher Monsieur T (décoché au lancement)</label></section>
+  <section class="options"><strong>Comparaison avec les autres classes</strong><p class="note">Pour chaque classe, affiche le score de l’application en cours, le pourcentage de réussite, ou les deux.</p><table class="comparison-table"><thead><tr><th>Classe</th><th>Score</th><th>%</th></tr></thead><tbody id="comparison-options"></tbody></table><label><input id="show-teacher" type="checkbox"> Afficher Monsieur T (décoché au lancement)</label></section>
   <div id="reset-confirm" class="options" hidden><strong id="reset-heading">Réinitialiser le score projeté</strong><label>Mot de passe professeur <input id="reset-password" type="password" autocomplete="current-password" maxlength="160" placeholder="Mot de passe"/></label><div class="controls"><button id="reset-apply" type="button">Confirmer uniquement ce score</button><button id="reset-cancel" type="button">Annuler</button></div></div><p class="note">Une réinitialisation n’affecte qu’une application et une classe. Jamais les %, les résultats réels, les XP, les trophées ou les parcours des élèves.</p>
 </dialog>
-<script type="module" src="./projection-v2-live.js?v=20261031-projection-v2-live-v1"></script>
+<script type="module" src="./projection-v2-live.js?v=20261031-projection-v2-categories-v2"></script>
 </body>
 </html>
