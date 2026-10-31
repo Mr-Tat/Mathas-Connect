@@ -6,14 +6,14 @@ const mk=(classId,name,n,start=0)=>({classId,name,students:Array.from({length:n}
  scores:[{appKey:'addition-ecrite-simple',bestScore:start+(n-i)*10}]
 }))});
 const A=mk('A','Phase 2 A',14,0),B=mk('B','Phase 2 B',14,100);
-test('Projection : Score coché => classe jointe au défi, 20 meilleurs seulement, 10 + 10',()=>{
+test('Projection : Score coché => classe jointe au défi, 16 meilleurs seulement, 8 + 8',()=>{
  const p=rankMultiClass({classes:[A,B],primaryClassId:'A',scoreClassIds:['B'],
-  appKey:'addition-ecrite-simple',limit:20});
- assert.equal(p.length,20);assert.ok(p.some(x=>x.classId==='B'));
+  appKey:'addition-ecrite-simple',limit:16});
+ assert.equal(p.length,16);assert.ok(p.some(x=>x.classId==='B'));
  assert.ok(p.some(x=>x.classId==='A'));assert.equal(p[0].classId,'B');
- assert.deepEqual(splitProjectedRanking(p,true).map(x=>x.length),[10,10]);
- assert.deepEqual(splitProjectedRanking(p.slice(0,10),true).map(x=>x.length),[10]);
- assert.deepEqual(p.map(x=>x.position),Array.from({length:20},(_,i)=>i+1));
+ assert.deepEqual(splitProjectedRanking(p,true).map(x=>x.length),[8,8]);
+ assert.deepEqual(splitProjectedRanking(p.slice(0,10),true).map(x=>x.length),[5,5]);
+ assert.deepEqual(p.map(x=>x.position),Array.from({length:16},(_,i)=>i+1));
 });
 test('Projection : % coché seul ne doit jamais ajouter les scores des autres classes',()=>{
  const p=rankMultiClass({classes:[A,B],primaryClassId:'A',scoreClassIds:[],
