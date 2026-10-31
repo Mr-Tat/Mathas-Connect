@@ -1,0 +1,41 @@
+name: Projection V2 — reset sécurisé PostgreSQL jetable
+on:
+  pull_request:
+    paths:
+      - 'supabase/release-candidates/20261031_projection_v2_protected_reset.sql'
+      - 'tests/postgres/projection-protected-reset-contract.sql'
+      - '.github/workflows/projection-protected-reset.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  projection-reset-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: projection_reset_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d projection_reset_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: postgres
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGDATABASE: projection_reset_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Banc PostgreSQL 16 fictif, reset isolé + audit
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -f tests/postgres/projection-protected-reset-contract.sql
+          echo 'OK : aucune requête vers la production'
