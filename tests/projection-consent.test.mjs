@@ -1,0 +1,44 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
+const root=new URL('../',import.meta.url);
+const get=path=>readFileSync(new URL(path,root),'utf8');
+test('Consentement : question à chaque résultat, refus sans écriture et confirmation explicite',()=>{
+ const s=get('projection-consent.mjs');
+ assert.match(s,/Veux-tu envoyer ce score au tableau de projection/);
+ assert.match(s,/Non, merci/);
+ assert.match(s,/Oui, envoyer/);
+ assert.match(s,/no.onclick=\(\)=>dismiss\(\)/);
+ assert.match(s,/yes.onclick=\(\)=>/);
+ assert.match(s,/student-share-score/);
+ assert.match(s,/pending:\(\)=>read\(\).length/);
+ const result=spawnSync(process.execPath,['--check'],{input:s,encoding:'utf8'});
+ assert.equal(result.status,0,result.stderr);
+});
+test('Consentement : les cinq jeux connectés déclenchent la question sur eventId lié à la sauvegarde',()=>{
+ const add=get('apps/addition-plusieurs/index.html'),mixed=get('apps/calculs-melanges/index.html');
+ const multi=get('apps/multiplication-simple/index.html'),sub=get('apps/soustraction-simple/index.html');
+ const addPilot=get('apps/addition-plusieurs/connect-pilot.mjs');
+ const mixedPilot=get('apps/calculs-melanges/connect-pilot.mjs');
+ assert.match(add,/consent\?\.offer\(reply\.eventId\)/);
+ assert.match(mixed,/consent\?\.offer\(reply\.eventId\)/);
+ assert.match(multi,/consent\?\.offer\(eventId\)/);
+ assert.match(sub,/consent\?\.offer\(eventId\)/);
+ assert.match(addPilot,/onStatus\('pending',\{eventId:record\.eventId\}\)/);
+ assert.match(mixedPilot,/onStatus\('pending',\{eventId:e\.eventId\}\)/);
+ assert.doesNotMatch(add,/consent\?\.offer\(.*free/);
+});
+test('Consentement : API vérifie le joueur, la classe et ne lit que les preuves approuvées',()=>{
+ const s=get('supabase/functions/connect-projection-v2/index.ts');
+ const sql=get('supabase/release-candidates/20261031_projection_v2_explicit_score_consent.sql');
+ assert.match(s,/b\.action==='student-share-score'/);
+ assert.match(s,/connect_devices/);
+ assert.match(s,/connect_enrollments/);
+ assert.match(s,/player_not_approved/);
+ assert.match(s,/connect_projection_score_consents/);
+ assert.match(sql,/JOIN public\.connect_projection_score_consents c/);
+ assert.match(sql,/c\.event_id=e\.event_id/);
+ assert.match(sql,/ENABLE ROW LEVEL SECURITY/);
+ assert.doesNotMatch(sql,/TRUNCATE|DELETE FROM public\.connect_states/);
+});
