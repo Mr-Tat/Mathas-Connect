@@ -101,6 +101,24 @@ dialog .options{padding:12px;border:1px solid #426887;background:#163955;border-
 dialog label{display:flex;gap:9px;align-items:center;font-size:14px}
 dialog .note{color:#bed4ea;font-size:12px;line-height:1.5}
 label.setting{justify-content:space-between;max-width:380px}
+/* Grand écran de projection : 8 lignes par colonne (16 élèves),
+   distribuées sur TOUTE la hauteur utile, sans pagination ni défilement. */
+@media (min-width:1101px) and (min-height:640px){
+  html{height:100%}
+  body{height:100vh;height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  header,footer{flex:0 0 auto}
+  main{flex:1;min-height:0;overflow:hidden;width:100%}
+  .left-col{min-height:0;max-height:100%;overflow-y:auto;scrollbar-width:thin}
+  .right{min-height:0}
+  .ranking{height:100%;min-height:0;display:flex;flex-direction:column}
+  .ranking-head{flex:0 0 auto}
+  .ranking-wrap{flex:1;min-height:0;display:flex;flex-direction:column;padding:5px 12px 6px}
+  .ranking-guide{flex:0 0 auto;margin:0 0 5px}
+  .ranking-list{flex:1;min-height:0;align-items:stretch}
+  .ranking-col{min-height:0;height:100%;grid-template-rows:repeat(var(--row-count,8),minmax(0,1fr));align-content:stretch;gap:6px}
+  .ranking-col .entry{min-height:0;height:100%;overflow:hidden;align-content:center}
+  .ranking-footer{flex:0 0 auto;padding:6px 15px}
+}
 @media(max-width:1100px){main{grid-template-columns:minmax(165px,1fr) minmax(400px,2.7fr);}.right{grid-column:1/-1;grid-template-columns:1fr 1fr;grid-template-rows:auto;}.entry .primary{flex-wrap:wrap;gap:3px}}
 @media(max-width:690px){main{display:flex;flex-direction:column}.right{display:grid}.ranking-list{grid-template-columns:1fr}.ranking-list .ranking-col + .ranking-col{border-left:0;border-top:5px solid #e6c877;padding-left:0;padding-top:10px;margin-top:8px;box-shadow:none}.ranking-head h1{font-size:27px}.primary strong{font-size:18px}.points{font-size:18px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
@@ -162,7 +180,7 @@ function entries(){
   id:c.name+"-"+i,name:["Rayan","Camille","Sarah","Maya","Elliot","Amine","Chloé","Sacha","Yanis","Rose","Robin"][i],
   className:c.name,level:2+(i%5),trophies:i%7,score:Math.max(4,175-i*11-j*4-ix*2)
  })));
- return [...main,...challengers].sort((a,b)=>(b.score??-1)-(a.score??-1)||a.name.localeCompare(b.name,"fr")).slice(0,20);
+ return [...main,...challengers].sort((a,b)=>(b.score??-1)-(a.score??-1)||a.name.localeCompare(b.name,"fr")).slice(0,16);
 }
 function render(){
  ensureSelected();
@@ -173,15 +191,16 @@ function render(){
  const rows=current?entries():[];
  const multi=others.some(c=>c.score),split=rows.length>7;
  list.classList.toggle("single",!split);list.classList.toggle("multi",multi);
- const cut=multi?Math.min(10,rows.length):Math.ceil(rows.length/2);
+ const cut=Math.ceil(rows.length/2);
  const cols=split?[rows.slice(0,cut),rows.slice(cut)]:[rows];
  let positionIndex=0;
  cols.forEach((group,ci)=>{
   const column=document.createElement("div");column.className="ranking-col";
+  column.style.setProperty("--row-count",String(group.length));
   group.forEach((person,index)=>{
    const position=++positionIndex;
    const el=document.createElement("div");el.className="entry rank-"+position+(person.score===null?" unplayed":"");
-   el.style.setProperty("--rank-progress",String((position-1)/19));
+   el.style.setProperty("--rank-progress",String((position-1)/15));
    const rank=document.createElement("span");rank.className="place";rank.textContent=position<=3?["🥇","🥈","🥉"][position-1]:position;
    const detail=document.createElement("div");
    const primary=document.createElement("div");primary.className="primary";

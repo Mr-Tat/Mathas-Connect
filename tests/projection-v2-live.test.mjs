@@ -15,7 +15,7 @@ test('Projection V2 live : chargement professeur volontaire, lecture protégée 
  assert.doesNotMatch(js,/signInAnonymously|localStorage\.setItem/);
 });
 test('Projection V2 live : 14 élèves maximum, classement propre aux jeux, score près du nom',()=>{
- assert.match(js,/limit:20/);
+ assert.match(js,/limit:16/);
  assert.match(js,/rankMultiClass/);
  assert.match(js,/splitProjectedRanking/);
  assert.match(js,/const multiple=compared\.length>0/);
@@ -40,12 +40,14 @@ test('Projection V2 live : panneaux score et % isolés et refus de faux pourcent
  assert.match(html,/id="comparison-results"/);
  assert.doesNotMatch(html,/id="count-label"/);
  assert.match(html,/class="ranking-context"/);
+ assert.match(html,/grid-template-rows:repeat\(var\(--row-count,8\),minmax\(0,1fr\)\)/);
  assert.doesNotMatch(html,/Score propre à l'application · Trophées permanents/);
  assert.match(html,/id="settings-left" class="settings-under"/);
  assert.match(html,/\.ranking-col \+ \.ranking-col\{border-left:5px/);
  assert.match(html,/\.entry\.rank-1 \.place/);
  assert.doesNotMatch(html,/\.entry:first-child \.place/);
  assert.match(js,/row\.style\.setProperty\('--rank-progress'/);
+ assert.match(js,/column\.style\.setProperty\('--row-count'/);
  assert.match(js,/kinds=\{trophy:\['🏆'/);
  assert.match(js,/Mesure des exercices réellement entamés|exercices réellement entamés/);
  assert.doesNotMatch(js,/pct:83|Lina|Adam|NOM_CONFIDENTIEL/);

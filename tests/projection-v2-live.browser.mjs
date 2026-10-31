@@ -30,7 +30,7 @@ function fakeStudent(i){
   scores:[{appKey:'addition-ecrite-simple',bestScore:220-i*10},
   {appKey:'multiplication-ecrite-simple',bestScore:90-i*3}]};
 }
-test('V2 — 14 seuls puis 20 élèves interclasses, rotation 30s, Score/% isolés et reset (Chromium)',{timeout:125000},async()=>{
+test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isolés et reset (Chromium)',{timeout:125000},async()=>{
  const {server,url}=await serve();
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  const errors=[],unknown=[];let storedOptions=null,resetCalls=0,loads=0;
@@ -102,12 +102,19 @@ test('V2 — 14 seuls puis 20 élèves interclasses, rotation 30s, Score/% isol�
   await page.locator('#settings').waitFor({state:'visible'});
   assert.equal(await page.locator('#show-teacher').isChecked(),false,'Monsieur T décoché');
   await page.getByRole('checkbox',{name:'Phase 2 B · Comparer le score'}).check();
-  await page.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===20);
-  assert.equal(await page.locator('.ranking-col').nth(0).locator('.entry').count(),10);
-  assert.equal(await page.locator('.ranking-col').nth(1).locator('.entry').count(),10);
+  await page.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===16);
+  assert.equal(await page.locator('.ranking-col').nth(0).locator('.entry').count(),8);
+  assert.equal(await page.locator('.ranking-col').nth(1).locator('.entry').count(),8);
+  const first=await page.locator('.ranking-col').first().locator('.entry').first().boundingBox();
+  const eighth=await page.locator('.ranking-col').first().locator('.entry').last().boundingBox();
   const last=await page.locator('#ranking-list .entry').last().boundingBox();
-  assert.ok(last&&last.y+last.height<=768,
-   'Les vingt places doivent être visibles sur un écran 1366×768 sans défiler');
+  const board=await page.locator('.ranking').boundingBox();
+  assert.ok(first&&eighth&&last&&board);
+  assert.ok(last.y+last.height<=768,
+   'Les seize places doivent être visibles sur un écran 1366×768 sans défiler');
+  assert.ok(eighth.y+eighth.height>board.y+board.height-110,
+   'Les 8 rangs doivent occuper la hauteur utile du panneau, pas se tasser en haut');
+  assert.ok(eighth.y-first.y>360,'Huit lignes uniformément étalées, taille lisible');
   assert.ok((await page.locator('.class-mark').allTextContents()).includes('Phase 2 B'));
   assert.equal(await page.locator('#comparison-results .compare-row').count(),0,
     'Score des autres classes au centre, jamais à gauche');

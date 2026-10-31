@@ -118,7 +118,7 @@ function render(){
  const compared=options.comparisonDisplay.filter(c=>c.score).map(c=>c.classId);
  const people=rankMultiClass({
   classes:data.classes,primaryClassId:classId,scoreClassIds:compared,
-  appKey:currentApp,limit:20,includeTeacher:$('show-teacher').checked
+  appKey:currentApp,limit:16,includeTeacher:$('show-teacher').checked
  });
  const multiple=compared.length>0;
  const columns=splitProjectedRanking(people,multiple);
@@ -127,10 +127,11 @@ function render(){
  let position=0;
  columns.forEach(group=>{
   const column=document.createElement('div');column.className='ranking-col';
+  column.style.setProperty('--row-count',String(group.length));
   group.forEach(p=>{
    const place=++position;
    const row=document.createElement('div');row.className='entry rank-'+place+(p.score===null?' unplayed':'');
-   row.style.setProperty('--rank-progress',String((place-1)/19));
+   row.style.setProperty('--rank-progress',String((place-1)/15));
    const rank=document.createElement('span');rank.className='place';
    rank.textContent=place<=3?['🥇','🥈','🥉'][place-1]:String(place);
    const detail=document.createElement('div');
