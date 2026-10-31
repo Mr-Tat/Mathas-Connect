@@ -47,6 +47,8 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261028_soustraction_connect_v1.sql
       - name: Execute real XP, trophy milestones, teacher restart and ACL assertions
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/soustraction-pg-scenarios.sql
+      - name: Apply permanent-trophies candidate in disposable PostgreSQL
+        run: psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/20261031_permanent_trophies_hub_v1.sql
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
