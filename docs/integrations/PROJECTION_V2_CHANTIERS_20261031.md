@@ -33,3 +33,17 @@ Cinq espaces distincts : Observation, Phase 1, Phase 2 A, Phase 2 B, 2 ECO. Le c
 
 ## Interdictions
 Pas de modification ou de réinitialisation des élèves réels lors des tests. Jamais considérer la démo isolée comme projection de données réelles. Ne jamais lancer de récupération de mot de passe vers une Edge Function non authentifiée.
+
+
+## Évolution du 31 octobre — défi interclasses, consentement explicite
+
+- Classement central de l'application en cours : classe principale + classes **explicitement cochées en Score**, jamais les classes uniquement cochées en %. Plafond 20 meilleurs, répartition 10+10 si comparaison de classes ; classe seule 14 joueurs au maximum, 7+7 ; les autres scores sont hors écran, pas effacés. Badge de classe près de chaque joueur pour le défi.
+- Suppression de « 14 élèves · 2 colonnes », « noms et scores mis en évidence », du score agrégé des autres classes à gauche et de la note du pied de classement. L'identité de la classe est déplacée en haut à droite.
+- Rotation automatique : **30 secondes** ; le rafraîchissement réseau ne remet pas le chrono à zéro. Une seule application cochée ne tourne pas.
+- Un score de partie n'apparaît pas simplement parce qu'il a été sauvegardé : après chaque fin de jeu Connect, l'élève dispose de **Oui, envoyer / Non, merci**. La réponse Non ne provoque aucun envoi de consentement et n'affecte pas les résultats, XP ou trophées. La réponse Oui produit un consentement lié à l'identifiant unique de partie, authentifié par le serveur ; conservation du consentement en file locale si hors ligne.
+- Le service lit **uniquement les événements de score validés par l'enregistrement natif et dotés d'un consentement explicite**. L'autorisation est propre à l'élève, à la classe, à l'application et à la partie. Pour une comparaison, il vérifie les permissions professeur sur chaque classe.
+- Une autorisation est un *choix d'exposition*, pas une écriture de points. L'envoi de points n'est jamais accepté par la fonction d'autorisation. La requête comporte seulement `eventId`, `classId`, `appKey`.
+- Migration privée `20261031_projection_v2_explicit_score_consent.sql` : table RLS + jointure obligatoire sur les événements réels. Test PostgreSQL jetable `projection-consent-contract.sql`.
+- Le calcul exhaustif des exercices **entamés** (hors Mort subite), ainsi que les notifications d'exploits réels, restent des chantiers séparés. Jusqu'à preuve, le % reste `—`. Le tableau historique `projection.html` demeure inchangé pendant la validation de V2.
+
+**Recette avant substitution à la projection historique** : contrôle réseau réel avec une session élève approuvée et une session professeur autorisée, partie effectivement terminée et envoyée, refus → absence du résultat, accord → apparition du record, compte non consenti → aucune donnée nominative, vérification de deux classes croisées, pas de régression XP / trophées.
