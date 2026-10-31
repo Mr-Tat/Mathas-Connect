@@ -28,7 +28,8 @@ if(!teacherPortal){document.getElementById('teacher-entry').hidden=true;}
 const CLASS_SPACES={
  observation:{id:'8fe170fa-9e8f-4e80-885a-b0ba68026f64',name:'Observation'},
  phase1:{id:'71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e',name:'Phase 1'},
- phase2:{id:'1b021ed9-4846-4203-9c7b-4b5fa8d7adab',name:'Phase 2'},
+ phase2:{id:'1b021ed9-4846-4203-9c7b-4b5fa8d7adab',name:'Phase 2 A'},
+ phase2b:{id:'0d8ba828-59cc-468b-a4b8-7b2a1af10b88',name:'Phase 2 B'},
  '2eco':{id:'a9195199-0a28-4e86-99ce-47b36dd6e646',name:'2 ECO'}
 };
 let currentTeacherSpace=null;
@@ -883,7 +884,7 @@ document.querySelectorAll('.teacher-space .teacher-space-small[href]').forEach(a
  if(space){const u=new URL(a.href);u.searchParams.set('class',space.id);u.searchParams.set('name',space.name);a.href=u.href}
 });
 const APP_SECTIONS=[['objectif','Objectif'],['calculs_ecrits','Calculs écrits'],['depassement','Dépassement'],['revision','Révision'],['outil','Outils'],['jeux','Jeux']];
-const APP_SPACES=[['observation','Observation'],['phase1','Phase 1'],['phase2','Phase 2'],['2eco','2 ECO']];
+const APP_SPACES=[['observation','Observation'],['phase1','Phase 1'],['phase2','Phase 2 A'],['phase2b','Phase 2 B'],['2eco','2 ECO']];
 
 async function loadTeacherAppPreview(){
  const body=$('teacher-app-tbody');if(!body)return;
