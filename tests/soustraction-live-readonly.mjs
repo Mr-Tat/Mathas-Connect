@@ -40,7 +40,8 @@ await retry(SITE+'assets/miniatures/soustraction-ecrite-simple.webp',async r=>{
 
 await retry(SITE+'app.js',async r=>{
  const code=await r.text();
- assert.match(code,/Tester Soustraction avec le profil Monsieur T/);
+ assert.match(code,/app\.app_key==='soustraction-ecrite-simple'/);
+ assert.match(code,/link\.title='Tester '\+app\.title\+' avec le profil Monsieur T/);
  assert.match(code,/target\.searchParams\.set\('joueur','prof'\)/);
 },'lien test Monsieur T publié dans GLOBAL');
 
