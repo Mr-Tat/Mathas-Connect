@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Math’as Connect — Projection V2 — Maquette</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;--back:#203952;--panel:#3b536b;--center:#0c2748;--line:#7189a2;--gold:#ffdc81}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:linear-gradient(140deg,#2d4b67,#162e49);color:#f2f7ff}
+button,input{font:inherit}button{cursor:pointer;min-height:36px}
+button:focus-visible,input:focus-visible{outline:3px solid #ffe08a;outline-offset:2px}
+header{display:flex;justify-content:space-between;align-items:center;padding:9px 18px;border-bottom:1px solid #57708a;background:#263f5b}
+header strong{font-size:25px;font-weight:950;letter-spacing:-.05em}header strong span{font-size:12px;color:#82f1d4;letter-spacing:.13em}
+header .tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.demo{font-size:11px;font-weight:900;letter-spacing:.09em;color:#ffd67c}
+button{border:1px solid #7794b1;border-radius:9px;color:#f6fbff;background:#3c5771;padding:7px 11px;font-weight:700}
+button:hover{background:#4f779d}
+main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) minmax(210px,1.12fr);gap:12px;padding:11px 14px;max-width:1600px;margin:auto;align-items:stretch}
+.panel{background:#3d5570;border:1px solid #718ba2;border-radius:15px;padding:12px;min-width:0}
+.panel h2{margin:2px 0 13px;font-size:clamp(15px,1.2vw,18px)}
+.left .classstat{margin:15px 0;display:grid;gap:4px}
+.classstat .headline{display:flex;justify-content:space-between;gap:4px;font-size:14px;font-weight:850}
+.track{height:9px;border-radius:999px;background:#233d54;overflow:hidden}
+.track i{display:block;height:100%;background:#9cc8d5;border-radius:inherit}
+.classstat small{font-size:11px;color:#d2dfed}
+.side button{margin-top:16px;width:100%}
+.ranking{background:linear-gradient(170deg,#193d65,#0a2446);border:2px solid #b4d5f7;border-radius:18px;box-shadow:0 0 26px #3a98e744;overflow:hidden;min-width:0}
+.ranking-head{text-align:center;background:#244b78;padding:8px 12px;border-bottom:1px solid #577ba5}
+.ranking-head .over{font-size:11px;font-weight:900;letter-spacing:.12em;color:#d5e5fc}
+.ranking-head h1{font-size:clamp(24px,3.1vw,38px);line-height:1.06;margin:3px 0 0}
+.ranking-head small{font-size:11px;color:#c4dbf7}
+.ranking-wrap{padding:10px 12px}
+.ranking-guide{display:flex;justify-content:space-between;font-size:12px;color:#b9d7f4;margin-bottom:10px}
+.ranking-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
+.ranking-list.single{grid-template-columns:minmax(0,1fr);max-width:550px;margin:auto}
+.ranking-col{display:grid;gap:7px;align-content:start;min-width:0}
+.entry{display:grid;grid-template-columns:26px minmax(0,1fr);align-items:center;gap:8px;padding:7px 8px;background:#254970;border:1px solid #4b729b;border-radius:10px;min-width:0}
+.place{background:#375d83;border-radius:7px;text-align:center;font-size:13px;font-weight:900;padding:6px 0}
+.entry:first-child .place{background:#eec566;color:#263854}
+.primary{display:flex;gap:8px;align-items:baseline;min-width:0}
+.primary strong{font-size:clamp(14px,1.35vw,20px);line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.points{font-size:clamp(15px,1.3vw,19px);font-weight:950;color:#ffe0a1;white-space:nowrap;font-variant-numeric:tabular-nums}
+.minor{color:#bdd2ed;font-size:11px;display:flex;gap:9px;margin-top:4px}
+.entry.unplayed{opacity:.62}
+.ranking-footer{padding:9px 15px;border-top:1px solid #4d76a6;background:#16395d;display:flex;justify-content:space-between;align-items:center;font-size:11px}
+.right{display:grid;gap:12px;grid-template-rows:1fr 1fr;min-width:0}
+.right .panel{background:#24517e}
+.right .panel+ .panel{background:#3b536b}
+.event{padding:9px;border-left:4px solid #e3c265;background:#193b61;border-radius:8px;margin-top:9px;font-size:12px}
+.event b,.event small{display:block}.event small{color:#bed2e9;margin-top:5px}
+footer{padding:3px 14px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+footer .apps{display:flex;gap:7px;flex-wrap:wrap}
+footer button{font-size:12px}footer button.selected{background:#285988;border-color:#8ed1ff}
+.controls{display:flex;gap:7px;flex-wrap:wrap}
+dialog{width:min(750px,calc(100vw - 22px));max-height:92vh;overflow:auto;background:#132e49;color:#f7fbff;border:2px solid #75a6d0;border-radius:18px;padding:20px;box-shadow:0 25px 95px #000b}
+dialog::backdrop{background:#020c19cf}
+dialog h2{margin:0 0 9px;font-size:24px}
+dialog .close{float:right}
+dialog table{width:100%;border-collapse:collapse;margin:13px 0}
+dialog th,dialog td{border-bottom:1px solid #35526e;padding:10px 7px}
+dialog th:first-child,dialog td:first-child{text-align:left}
+dialog td:not(:first-child),dialog th:not(:first-child){text-align:center}
+dialog input{width:19px;height:19px;accent-color:#f5d179}
+dialog .reset{padding:6px 10px;white-space:nowrap;background:#56465a;border-color:#b497a6}
+dialog .options{padding:12px;border:1px solid #426887;background:#163955;border-radius:12px;display:grid;gap:8px}
+dialog label{display:flex;gap:9px;align-items:center;font-size:14px}
+dialog .note{color:#bed4ea;font-size:12px;line-height:1.5}
+label.setting{justify-content:space-between;max-width:380px}
+@media(max-width:1100px){main{grid-template-columns:minmax(165px,1fr) minmax(400px,2.7fr);}.right{grid-column:1/-1;grid-template-columns:1fr 1fr;grid-template-rows:auto;}.entry .primary{flex-wrap:wrap;gap:3px}}
+@media(max-width:690px){main{display:flex;flex-direction:column}.right{display:grid}.ranking-list{grid-template-columns:1fr}.ranking-head h1{font-size:27px}.primary strong{font-size:18px}.points{font-size:18px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <strong>Math’as <span>LIVE · PROJECTION V2</span></strong>
+  <div class="tools"><span class="demo">● MAQUETTE · RÉSULTATS FICTIFS</span><button id="open-settings" type="button">⚙ Applications</button></div>
+</header>
+<main>
+  <aside class="side left panel"><h2>🏫 Réussite des classes</h2><div id="classes"></div><button id="settings-left" type="button">⚙ Applications</button></aside>
+  <section class="ranking" aria-label="Classement par application">
+    <div class="ranking-head"><div class="over">🏆 MEILLEURS SCORES · DEPUIS LA DERNIÈRE REMISE À ZÉRO</div><h1 id="app-name"></h1><small id="ranking-note"></small></div>
+    <div class="ranking-wrap"><div class="ranking-guide"><span id="count-label"></span><span id="rotation-label"></span></div><div id="ranking-list" class="ranking-list"></div></div>
+    <div class="ranking-footer"><span>Score propre à l'application · Trophées permanents</span><span id="time-left"></span></div>
+  </section>
+  <aside class="right">
+    <section class="panel"><h2>✨ Nouveaux exploits</h2><div id="exploits"></div></section>
+    <section class="panel"><h2>📈 Meilleures remontées</h2><div id="rises"></div></section>
+  </aside>
+</main>
+<footer>
+  <div id="app-tabs" class="apps"></div>
+  <div class="controls"><button id="prev-app" type="button">◀ Appli</button><button id="next-app" type="button">Appli ▶</button><button id="pause" type="button">⏸ Pause</button><button id="open-all" type="button">⚙ Applications</button></div>
+</footer>
+<dialog id="settings" aria-label="Paramètres de projection">
+  <button id="close-settings" type="button" class="close">✕ Fermer</button><h2>⚙ Applications à afficher</h2>
+  <p class="note">Réglages de démonstration uniquement, pas encore connectés aux comptes ou à Supabase. Chaque appli a son propre classement.</p>
+  <table><thead><tr><th>Application</th><th>Score</th><th>%</th><th>Réinitialiser le score</th></tr></thead><tbody id="app-options"></tbody></table>
+  <section class="options"><strong>Autres classes à comparer</strong><div id="comparison-options"></div><label><input id="show-teacher" type="checkbox"> Afficher Monsieur T (décoché au lancement)</label></section>
+  <p class="note">Le vrai bouton Réinitialiser demandera le mot de passe professeur côté serveur. Il affectera uniquement l'application et la classe courantes, jamais les %, les XP, les trophées ou les résultats élèves. Cette maquette ne réinitialise aucune donnée réelle.</p>
+</dialog>
+<script>
+"use strict";
+// Démonstration isolée : aucune requête réseau, aucun accès à des fiches d'élèves.
+const $=id=>document.getElementById(id);
+const apps=[
+ {key:"addition",title:"Additions",score:true,pct:true},
+ {key:"multiplication",title:"Multiplications",score:true,pct:true},
+ {key:"soustraction",title:"Soustractions",score:true,pct:true},
+ {key:"additionmulti",title:"Addition multiple",score:true,pct:true},
+ {key:"melange",title:"Mélange de calculs",score:true,pct:true}
+];
+const names=["Lina","Adam","Zoé","Hugo","Emma","Noé","Léa","Lucas","Jade","Louis","Mila","Tom","Inès","Nathan"];
+const base=names.map((name,i)=>({id:i,name,level:Math.max(1,7-Math.floor(i/2)),trophies:Math.max(0,10-Math.floor(i*.65))}));
+const others=[{name:"Observation",pct:72,show:true},{name:"Phase 1",pct:79,show:false},{name:"Phase 2 B",pct:75,show:false},{name:"2 ECO",pct:81,show:false}];
+let selected="addition",seconds=90,paused=false,wasPaused=false;
+function selectedApps(){return apps.filter(a=>a.score)}
+function ensureSelected(){if(!selectedApps().some(a=>a.key===selected))selected=selectedApps()[0]?.key||null}
+function entries(){
+ const ix=apps.findIndex(a=>a.key===selected);
+ return base.map((p,i)=>({...p,score:(i+ix*3)%14===13?null:Math.max(4,168-((i*7+ix*4)%14)*10)}))
+  .sort((a,b)=>(b.score??-1)-(a.score??-1)||a.name.localeCompare(b.name,"fr"));
+}
+function render(){
+ ensureSelected();
+ const current=apps.find(a=>a.key===selected);
+ $("app-name").textContent=current?.title||"Aucune application sélectionnée";
+ $("ranking-note").textContent="Phase 2 A · 14 élèves · noms et scores mis en évidence";
+ const list=$("ranking-list");list.replaceChildren();
+ const rows=current?entries():[];
+ const split=rows.length>7;list.classList.toggle("single",!split);
+ const cols=split?[rows.slice(0,Math.ceil(rows.length/2)),rows.slice(Math.ceil(rows.length/2))]:[rows];
+ cols.forEach((group,ci)=>{
+  const column=document.createElement("div");column.className="ranking-col";
+  group.forEach((person,index)=>{
+   const position=index+ci*Math.ceil(rows.length/2)+1;
+   const el=document.createElement("div");el.className="entry"+(person.score===null?" unplayed":"");
+   const rank=document.createElement("span");rank.className="place";rank.textContent=position<=3?["🥇","🥈","🥉"][position-1]:position;
+   const detail=document.createElement("div");
+   const primary=document.createElement("div");primary.className="primary";
+   const name=document.createElement("strong");name.textContent=person.name;
+   const points=document.createElement("span");points.className="points";points.textContent=person.score===null?"—":String(person.score)+" pts";
+   const minor=document.createElement("div");minor.className="minor";minor.textContent="Niveau "+person.level+"   🏆 "+person.trophies;
+   primary.append(name,points);detail.append(primary,minor);el.append(rank,detail);column.append(el);
+  });list.append(column);
+ });
+ $("count-label").textContent=rows.length+" élèves · "+(split?"2 colonnes":"1 colonne");
+ const buttons=$("app-tabs");buttons.replaceChildren();
+ selectedApps().forEach(app=>{
+  const btn=document.createElement("button");btn.textContent=app.title;btn.classList.toggle("selected",app.key===selected);
+  btn.onclick=()=>{selected=app.key;seconds=90;render()};buttons.append(btn)
+ });
+ $("exploits").replaceChildren();
+ ["Lina · Nouveau trophée","Zoé · Série parfaite"].forEach(v=>{let box=document.createElement("div");box.className="event";box.textContent=v;$("exploits").append(box)});
+ $("rises").replaceChildren();
+ ["Adam · +3 places","Inès · +2 places"].forEach(v=>{let box=document.createElement("div");box.className="event";box.textContent=v;$("rises").append(box)});
+ drawClasses();updateTime();
+}
+function drawClasses(){
+ const root=$("classes");root.replaceChildren();
+ const list=[{name:"Phase 2 A",pct:83,show:true},...others.filter(o=>o.show)];
+ if(!apps.some(a=>a.pct)){root.textContent="Aucune application sélectionnée en %.";return}
+ list.forEach(c=>{
+  const row=document.createElement("div");row.className="classstat";
+  const headline=document.createElement("div");headline.className="headline";
+  const title=document.createElement("span");title.textContent=c.name;
+  const value=document.createElement("strong");value.textContent=c.pct+" %";
+  headline.append(title,value);
+  const track=document.createElement("div");track.className="track";
+  const fill=document.createElement("i");fill.style.width=c.pct+"%";track.append(fill);
+  const caption=document.createElement("small");caption.textContent="Pourcentages fictifs · dates de période indépendantes";
+  row.append(headline,track,caption);root.append(row);
+ });
+}
+function updateTime(){
+ const active=selectedApps();
+ $("rotation-label").textContent=active.length>1?"Appli "+(active.findIndex(a=>a.key===selected)+1)+"/"+active.length:"";
+ $("time-left").textContent=paused?"En pause":active.length>1?"Suivante dans "+seconds+" s":"Affichage fixe";
+ $("pause").textContent=paused?"▶ Reprendre":"⏸ Pause";
+}
+function go(direction){const a=selectedApps();if(!a.length)return;const n=a.findIndex(x=>x.key===selected);selected=a[(n+direction+a.length)%a.length].key;seconds=90;render()}
+$("prev-app").onclick=()=>go(-1);$("next-app").onclick=()=>go(1);
+$("pause").onclick=()=>{paused=!paused;updateTime()};
+setInterval(()=>{if(!paused&&selectedApps().length>1){if(--seconds<=0)go(1);else updateTime()}},1000);
+const modal=$("settings");
+function open(){wasPaused=paused;paused=true;buildOptions();modal.showModal();updateTime()}
+function close(){modal.close();paused=wasPaused;updateTime()}
+["open-settings","settings-left","open-all"].forEach(id=>$(id).onclick=open);
+$("close-settings").onclick=close;
+modal.addEventListener("cancel",event=>{event.preventDefault();close()});
+function buildOptions(){
+ const root=$("app-options");root.replaceChildren();
+ apps.forEach(app=>{
+  const tr=document.createElement("tr");
+  const td=document.createElement("td");td.textContent=app.title;tr.append(td);
+  for(const field of ["score","pct"]){
+   const cell=document.createElement("td");const input=document.createElement("input");input.type="checkbox";input.checked=app[field];
+   input.setAttribute("aria-label",app.title+" · "+(field==="score"?"Afficher score":"Afficher pourcentage"));
+   input.onchange=()=>{app[field]=input.checked;render()};
+   cell.append(input);tr.append(cell);
+  }
+  const action=document.createElement("td");const btn=document.createElement("button");
+  btn.className="reset";btn.type="button";btn.textContent="↻";
+  btn.title="Réinitialiser le score de "+app.title+" pour Phase 2 A";
+  btn.setAttribute("aria-label",btn.title);
+  btn.onclick=()=>alert("DÉMONSTRATION : la vraie réinitialisation de "+app.title+" demandera le mot de passe professeur et ne modifiera que les scores projetés de Phase 2 A. Aucune donnée n'est modifiée ici.");
+  action.append(btn);tr.append(action);root.append(tr);
+ });
+ const comparisons=$("comparison-options");comparisons.replaceChildren();
+ others.forEach(other=>{
+  const label=document.createElement("label");const cb=document.createElement("input");cb.type="checkbox";cb.checked=other.show;
+  cb.onchange=()=>{other.show=cb.checked;drawClasses()};
+  label.append(cb,document.createTextNode(other.name));comparisons.append(label);
+ });
+ $("show-teacher").checked=false;
+}
+render();
+</script>
+</body>
+</html>
