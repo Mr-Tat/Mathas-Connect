@@ -18,7 +18,9 @@ const allKeys=apps.map(a=>a.key);
 let client=null,classesAvailable=[],data=null,wasPaused=false,paused=false;
 let hasLoaded=false,connected=false,optionsLoaded=false,pendingReset=null;
 let currentApp=allKeys[0],secondsRemaining=90,fetching=false,refreshTicket=0;
-let options={scoreApps:[...allKeys],percentageApps:[...allKeys],comparisons:[],rotationSeconds:90};
+let options={scoreApps:[...allKeys],percentageApps:[...allKeys],comparisons:[],comparisonDisplay:[],rotationSeconds:90};
+const comparedIds=()=>options.comparisonDisplay.filter(v=>v.score||v.percentage).map(v=>v.classId);
+const currentComparison=id=>options.comparisonDisplay.find(v=>v.classId===id)||{classId:id,score:false,percentage:false};
 const note=message=>{$('live-status').textContent=message};
 const enabled=()=>apps.filter(a=>options.scoreApps.includes(a.key));
 function clearBoard(message){
@@ -61,7 +63,7 @@ async function refresh(){
  note('Chargement protégé des classements…');
  try{
   let result=await call('connect-projection-v2','teacher-load',{
-   comparisons:options.comparisons,showTeacher:$('show-teacher').checked
+   comparisons:comparedIds(),showTeacher:$('show-teacher').checked
   });
   if(ticket!==refreshTicket)return;
   const principal=result.classes.find(c=>c.classId===classId);
@@ -74,10 +76,13 @@ async function refresh(){
     options={scoreApps:remote.scoreApps.filter(k=>allKeys.includes(k)),
      percentageApps:remote.percentageApps.filter(k=>allKeys.includes(k)),
      comparisons:remote.comparisons.filter(id=>classesAvailable.some(c=>c.id===id&&id!==classId)),
+     comparisonDisplay:(Array.isArray(remote.comparisonDisplay)?remote.comparisonDisplay:remote.comparisons.map(id=>({classId:id,score:true,percentage:true})))
+       .filter(v=>v&&classesAvailable.some(c=>c.id===v.classId&&v.classId!==classId))
+       .map(v=>({classId:v.classId,score:v.score===true,percentage:v.percentage===true})),
      rotationSeconds:remote.rotationSeconds};
-    if(options.comparisons.length){
+    if(comparedIds().length){
      result=await call('connect-projection-v2','teacher-load',{
-      comparisons:options.comparisons,showTeacher:$('show-teacher').checked
+      comparisons:comparedIds(),showTeacher:$('show-teacher').checked
      });
      if(ticket!==refreshTicket)return;
     }
@@ -121,7 +126,8 @@ function render(){
   const column=document.createElement('div');column.className='ranking-col';
   group.forEach((p,i)=>{
    const place=i+ci*midpoint+1;
-   const row=document.createElement('div');row.className='entry'+(p.value===null?' unplayed':'');
+   const row=document.createElement('div');row.className='entry rank-'+place+(p.value===null?' unplayed':'');
+   row.style.setProperty('--rank-progress',String((place-1)/13));
    const rank=document.createElement('span');rank.className='place';
    rank.textContent=place<=3?['🥇','🥈','🥉'][place-1]:String(place);
    const detail=document.createElement('div');
@@ -147,34 +153,87 @@ function render(){
   tabs.append(btn);
  });
  const event=$('exploits');event.replaceChildren();
- const trophy=document.createElement('div');trophy.className='event empty';
- trophy.textContent='Les nouveaux hauts faits confirmés seront affichés ici lorsque leur historique sera connecté.';
- event.append(trophy);
+ event.append(exploit('pending','Pas encore de nouvel exploit confirmé pour cette application.'));
  const rises=$('rises');rises.replaceChildren();
- const rise=document.createElement('div');rise.className='event empty';
- rise.textContent='Les remontées apparaîtront lors des changements de records suivis par application.';
- rises.append(rise);
+ rises.append(exploit('rise','Les remontées seront affichées après une progression de rang confirmée.'));
  renderClasses();updateTime();
 }
-function renderClasses(){
- const root=$('classes');root.replaceChildren();
- if(!data)return;
- const appKey=currentApp;
- for(const c of data.classes){
-  const item=document.createElement('div');item.className='classstat';
-  const headline=document.createElement('div');headline.className='headline';
-  const name=document.createElement('span');name.textContent=c.name;
-  const value=document.createElement('strong');value.className='unavailable';value.textContent='— %';
-  headline.append(name,value);
+// Les notifications n'affirment aucun exploit sans événement serveur confirmé.
+// Types prévus : trophée, série parfaite, entrée Top 5 et remontée.
+function exploit(type,message){
+ const kinds={trophy:['🏆','trophy'],perfect:['✨','perfect'],top:['🏅','rank-up'],
+  rise:['📈','rank-up'],pending:['◌','empty']};
+ const [symbol,style]=kinds[type]||kinds.pending;
+ const el=document.createElement('div');el.className='event '+style;
+ const icon=document.createElement('span');icon.className='event-icon';icon.textContent=symbol;icon.setAttribute('aria-hidden','true');
+ const text=document.createElement('span');text.className='event-text';text.textContent=message;
+ el.append(icon,text);return el;
+}
+function numericPercent(value){return typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<=100?value:null}
+function percentText(value){const n=numericPercent(value);return n===null?'— %':(Math.round(n*10)/10).toLocaleString('fr-BE')+' %'}
+function makeSuccessRow(label,pct,global=false){
+ const row=document.createElement('div');row.className='classstat'+(global?' global-success':'');
+ const headline=document.createElement('div');headline.className='headline';
+ const name=document.createElement('span');name.textContent=label;
+ const value=document.createElement('strong');value.textContent=percentText(pct);
+ if(numericPercent(pct)===null)value.className='unavailable';
+ headline.append(name,value);row.append(headline);
+ if(numericPercent(pct)!==null){
   const track=document.createElement('div');track.className='track';
-  const caption=document.createElement('small');
-  const total=c.totals?.find(x=>x.appKey===appKey)?.bestSum;
-  caption.textContent='Score de '+(apps.find(a=>a.key===appKey)?.title||'l’application')+' : '+(total??'—')+' pts';
-  item.append(headline,track,caption);root.append(item);
+  const fill=document.createElement('i');fill.style.width=numericPercent(pct)+'%';track.append(fill);row.append(track);
+ }
+ return row;
+}
+function renderClasses(){
+ const root=$('classes'),comparisons=$('comparison-results');
+ root.replaceChildren();comparisons.replaceChildren();
+ if(!data)return;
+ const principal=mainData();
+ if(!principal)return;
+ const percentages=principal.percentages;
+ root.append(makeSuccessRow('Global',percentages?.global,true));
+ for(const app of apps.filter(a=>options.percentageApps.includes(a.key))){
+  root.append(makeSuccessRow(app.title,percentages?.apps?.[app.key]));
  }
  $('percentage-note').textContent=options.percentageApps.length
-  ?'Réussite : relevé des exercices réellement entamés en préparation (—). Mort subite exclue.'
-  :'Affichage des pourcentages désactivé dans les réglages.';
+  ?'Global = exercices commencés des applications cochées ; Mort subite exclue. « — » = mesure non disponible.'
+  :'Aucune application cochée en « % ».';
+ let shown=0;
+ for(const display of options.comparisonDisplay.filter(v=>v.score||v.percentage)){
+  const c=data.classes.find(v=>v.classId===display.classId);
+  if(!c)continue;
+  shown++;
+  const panel=document.createElement('div');panel.className='compare-row';
+  const name=document.createElement('strong');name.textContent=c.name;panel.append(name);
+  if(display.score){
+   const line=document.createElement('div');line.className='compare-line';
+   const label=document.createElement('span');
+   label.textContent='Score · '+(apps.find(a=>a.key===currentApp)?.title||'application');
+   const value=document.createElement('span');
+   const n=c.totals?.find(v=>v.appKey===currentApp)?.bestSum;
+   value.textContent=Number.isFinite(n)?n+' pts':'— pts';
+   line.append(label,value);panel.append(line);
+  }
+  if(display.percentage){
+   const global=document.createElement('div');global.className='compare-line';
+   const label=document.createElement('span');label.textContent='Réussite globale';
+   const value=document.createElement('span');value.className='not-ready';
+   value.textContent=percentText(c.percentages?.global);
+   global.append(label,value);panel.append(global);
+   for(const app of apps.filter(a=>options.percentageApps.includes(a.key))){
+    const line=document.createElement('div');line.className='compare-line';
+    const l=document.createElement('span');l.textContent=app.title;
+    const v=document.createElement('span');v.className='not-ready';
+    v.textContent=percentText(c.percentages?.apps?.[app.key]);
+    line.append(l,v);panel.append(line);
+   }
+  }
+  comparisons.append(panel);
+ }
+ if(!shown){
+  const hint=document.createElement('small');hint.textContent='Aucune classe comparée. Choisis Score et/ou % dans « Applications ».';
+  comparisons.append(hint);
+ }
 }
 function updateTime(){
  const active=enabled(),ix=active.findIndex(a=>a.key===currentApp);
@@ -246,15 +305,26 @@ function buildSettings(){
  }
  const compare=$('comparison-options');compare.replaceChildren();
  for(const c of classesAvailable.filter(c=>c.id!==classId&&!c.name.includes('TEST'))){
-  const label=document.createElement('label'),cb=document.createElement('input');
-  cb.type='checkbox';cb.checked=options.comparisons.includes(c.id);
-  cb.onchange=async()=>{
-   const before=[...options.comparisons];
-   options.comparisons=cb.checked?[...options.comparisons,c.id]:options.comparisons.filter(id=>id!==c.id);
-   if(!await commitOptions()){options.comparisons=before;cb.checked=!cb.checked;return}
-   await refresh();
-  };
-  label.append(cb,document.createTextNode(c.name));compare.append(label);
+  const tr=document.createElement('tr'),name=document.createElement('td');
+  name.textContent=c.name;tr.append(name);
+  for(const field of ['score','percentage']){
+   const cell=document.createElement('td'),cb=document.createElement('input');
+   cb.type='checkbox';cb.checked=currentComparison(c.id)[field];
+   cb.setAttribute('aria-label',c.name+' · Comparer '+(field==='score'?'le score':'le pourcentage'));
+   cb.onchange=async()=>{
+    const before=options.comparisonDisplay.map(v=>({...v}));
+    const next={...currentComparison(c.id),[field]:cb.checked};
+    options.comparisonDisplay=[...before.filter(v=>v.classId!==c.id),next]
+      .filter(v=>v.score||v.percentage);
+    options.comparisons=comparedIds();
+    if(!await commitOptions()){
+     options.comparisonDisplay=before;options.comparisons=comparedIds();cb.checked=!cb.checked;return;
+    }
+    await refresh();
+   };
+   cell.append(cb);tr.append(cell);
+  }
+  compare.append(tr);
  }
  $('show-teacher').onchange=async()=>{await refresh()};
 }
