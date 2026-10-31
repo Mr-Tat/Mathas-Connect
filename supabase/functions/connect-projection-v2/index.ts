@@ -23,7 +23,7 @@ const classOptions=(o:any)=>o&&typeof o==='object'&&!Array.isArray(o)&&
  (o.comparisonDisplay===undefined||(Array.isArray(o.comparisonDisplay)&&o.comparisonDisplay.length<=4&&
    o.comparisonDisplay.every((v:any)=>v&&uuid(v.classId)&&typeof v.score==='boolean'&&
      typeof v.percentage==='boolean'&&(v.score||v.percentage))))&&
- Number.isInteger(o.rotationSeconds)&&o.rotationSeconds>=45&&o.rotationSeconds<=180;
+ Number.isInteger(o.rotationSeconds)&&o.rotationSeconds>=30&&o.rotationSeconds<=180;
 
 async function records(query:any){
  const {data,error}=await query;
@@ -50,12 +50,43 @@ Deno.serve(async(req:Request)=>{
  if(!token)return deny('auth',401);
  const client=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}});
  const {data:{user},error}=await client.auth.getUser(token);
- if(error||!user||user.is_anonymous)return deny('auth',401);
+ if(error||!user)return deny('auth',401);
  const raw=await req.text();
  if(raw.length>15000)return deny('too_large',413);
  let b:any;try{b=JSON.parse(raw)}catch{return deny('json',400)}
  if(!b||typeof b!=='object'||Array.isArray(b)||!uuid(b.classId))return deny('class',400);
  try{
+  // Pupil score publication is a separate, explicit opt-in. A stored
+  // game result or general projection enrollment never implies submission.
+  if(b.action==='student-share-score'){
+   if(!uuid(b.eventId)||!allowKey(b.appKey))return deny('invalid_score_event',400);
+   let studentId:string|null=null;
+   if(user.is_anonymous){
+    const approved=await records(db.from('connect_devices').select('student_id')
+      .eq('auth_user_id',user.id).eq('state','approved').limit(1));
+    studentId=approved[0]?.student_id??null;
+   }else{
+    const player=await records(db.from('connect_teacher_players').select('student_id')
+      .eq('teacher_id',user.id).limit(1));
+    studentId=player[0]?.student_id??null;
+    if(!await ownClasses(user.id,[b.classId]))studentId=null;
+   }
+   if(!studentId)return deny('player_not_approved',403);
+   const active=await records(db.from('connect_students').select('id')
+      .eq('id',studentId).is('archived_at',null).limit(1));
+   if(!active.length)return deny('player_not_active',403);
+   if(user.is_anonymous){
+    const member=await records(db.from('connect_enrollments').select('id')
+      .eq('student_id',studentId).eq('class_id',b.classId).is('left_at',null).limit(1));
+    if(!member.length)return deny('wrong_class',403);
+   }
+   const {error:insertError}=await db.from('connect_projection_score_consents')
+     .upsert({student_id:studentId,class_id:b.classId,app_key:b.appKey,event_id:b.eventId},
+       {onConflict:'student_id,app_key,event_id',ignoreDuplicates:true});
+   if(insertError)throw Error('consent_write');
+   return respond({ok:true,consentRecorded:true});
+  }
+  if(user.is_anonymous)return deny('teacher_only',403);
   const [teacher,principal]=await Promise.all([
    records(db.from('connect_teachers').select('auth_user_id').eq('auth_user_id',user.id).limit(1)),
    ownClasses(user.id,[b.classId])
@@ -101,7 +132,10 @@ Deno.serve(async(req:Request)=>{
       .reduce((sum:number,x:any)=>sum+Math.max(0,Number(x.best_score)||0),0)}));
     const students=members.map((id:string)=>{
      const p:any=profileMap.get(id);
-     if(!p||!(p.projection_opt_in===true||(showTeacher&&id===teacherId)))return null;
+     if(!p)return null;
+     const approvedScore=best.some((x:any)=>x.student_id===id);
+     if(!(p.projection_opt_in===true||approvedScore||(showTeacher&&id===teacherId)))return null;
+     if(id===teacherId&&!showTeacher)return null;
      const bd:any=badgeMap.get(id);
      // Only approved public display aliases, never private last names of non-opted students.
      const name=String(p.public_alias||p.display_name||'Élève').slice(0,80);

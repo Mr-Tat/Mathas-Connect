@@ -1,8 +1,9 @@
 <!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Math’as · Multiplication écrite simple</title><style>body{font-family:system-ui;background:#0c2235;color:white;margin:0;padding:25px}#loading{max-width:620px;margin:12vh auto;padding:25px;border:1px solid #628ba7;border-radius:16px}a{color:#8ce7fc}</style></head><body><main id="loading"><h1>Math’as · Multiplication écrite simple</h1><p id="message">Chargement du jeu…</p><p><a href="https://mr-tat.github.io/Mathas-Connect/">Retour aux jeux</a></p></main><script type="module">
+import {createProjectionConsent} from '../../projection-consent.mjs';
 const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM',APP='multiplication-ecrite-simple';
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
-const free=!teacherPlayer&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,multiplierLock=null,studentName='',connectionCheckRequired=false;
+const free=!teacherPlayer&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,multiplierLock=null,studentName='',connectionCheckRequired=false,consent=null;
 const status=s=>document.getElementById('message').textContent=s;
 const originalPromise=fetch('./game-original.html').then(r=>{if(!r.ok)throw Error('Copie du jeu non disponible');return r.text()});
 // Un visiteur sans profil approuvé ouvre directement le jeu classique.
@@ -316,7 +317,7 @@ window.MathasPilotBridge={mode,openTeacherParcours:()=>{
  const eventId=crypto.randomUUID();
  const body={action:'game-record',classId,appKey:APP,eventId,expectedRevision:revision,expectedResetEpoch:resetEpoch,mode:modeKey,level,score,total:hardChallenge?5:sudden?null:total,points};
  const awards=currentRewards();if(awards?.version===3)body.rewards=awards;
- try{const pending=readQueue();pending.push(body);saveQueue(pending);syncWarning='';showSync();await drain()}catch(error){syncWarning='ATTENTION : sauvegarde locale impossible. Préviens ton professeur.';showSync();console.error('Résultat non mis en attente',error)}
+ try{const pending=readQueue();pending.push(body);saveQueue(pending);syncWarning='';showSync();consent?.offer(eventId);await drain()}catch(error){syncWarning='ATTENTION : sauvegarde locale impossible. Préviens ton professeur.';showSync();console.error('Résultat non mis en attente',error)}
 },points:item=>{const m=String(item.score||'').match(/^(\d+)(?:\s*[/]\s*(\d+))?$/);if(!m)return 0;const hard=/HARD/i.test(item.label),sudden=/Mort subite/i.test(item.label),n=Number(m[1]),total=m[2]?Number(m[2]):0;const level=Number((String(item.label).match(/(?:Niveau|NIV|Hard)\s*([123])/i)||[])[1]||1);const ml=[1,1.2,1.4,1.6,1.8,2][hard?level+2:level-1],mf=sudden?1.6:total===20?1.6:total===10?1.3:1;let weighted=n;if(sudden){weighted=0;for(let i=0;i<n;i++)weighted+=Math.min(4,Math.pow(1.035,i))}return 5*ml*mf*weighted*(item.allTables?1.15:1)}};
 iframe.srcdoc=html;
 const toolbar=document.createElement('header');toolbar.id='ce-toolbar';
@@ -354,6 +355,13 @@ if(mode==='connected'){
  toolbar.append(globalInfo,appInfo);
 }else toolbar.append(hubLink);
 document.body.replaceChildren(toolbar,iframe);
+ if(mode==='connected'&&cloud&&session) {
+   consent=createProjectionConsent({classId,appKey:APP,studentKey:session.user.id,getToken:async()=>{
+     const current=(await cloud.auth.getSession()).data.session;
+     if(current?.user?.id!==session.user.id||!current?.access_token)throw Error('connect_session_changed');
+     return current.access_token;
+   }});
+ }
 document.body.style.cssText='margin:0;padding:0;background:#071e2a;overflow:hidden';
 
 showSync();if(mode==='connected'){loadXp().catch(()=>{xpEarned.textContent='XP acquis : indisponible'});drain();}

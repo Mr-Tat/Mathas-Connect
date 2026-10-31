@@ -1,4 +1,5 @@
 import {classId,classLabel} from './connect-context.js';
+import {rankMultiClass,splitProjectedRanking} from './projection-v2-model.mjs';
 
 // Projection V2: écran séparé de la projection collective historique.
 // Les scores proviennent uniquement de l'Edge Function professeur sécurisée.
@@ -17,8 +18,8 @@ const apps=[
 const allKeys=apps.map(a=>a.key);
 let client=null,classesAvailable=[],data=null,wasPaused=false,paused=false;
 let hasLoaded=false,connected=false,optionsLoaded=false,pendingReset=null;
-let currentApp=allKeys[0],secondsRemaining=90,fetching=false,refreshTicket=0;
-let options={scoreApps:[...allKeys],percentageApps:[...allKeys],comparisons:[],comparisonDisplay:[],rotationSeconds:90};
+let currentApp=allKeys[0],secondsRemaining=30,fetching=false,refreshTicket=0;
+let options={scoreApps:[...allKeys],percentageApps:[...allKeys],comparisons:[],comparisonDisplay:[],rotationSeconds:30};
 const comparedIds=()=>options.comparisonDisplay.filter(v=>v.score||v.percentage).map(v=>v.classId);
 const currentComparison=id=>options.comparisonDisplay.find(v=>v.classId===id)||{classId:id,score:false,percentage:false};
 const note=message=>{$('live-status').textContent=message};
@@ -29,7 +30,6 @@ function clearBoard(message){
  $('exploits').replaceChildren();$('rises').replaceChildren();$('app-tabs').replaceChildren();
  $('app-name').textContent='Projection masquée';
  $('ranking-note').textContent='Aucune donnée d’élève visible';
- $('count-label').textContent='';
  $('time-left').textContent='';
  $('reset-password').value='';
  for(const id of ['settings-left'])$(id).disabled=true;
@@ -79,7 +79,7 @@ async function refresh(){
      comparisonDisplay:(Array.isArray(remote.comparisonDisplay)?remote.comparisonDisplay:remote.comparisons.map(id=>({classId:id,score:true,percentage:true})))
        .filter(v=>v&&classesAvailable.some(c=>c.id===v.classId&&v.classId!==classId))
        .map(v=>({classId:v.classId,score:v.score===true,percentage:v.percentage===true})),
-     rotationSeconds:remote.rotationSeconds};
+     rotationSeconds:30};
     if(comparedIds().length){
      result=await call('connect-projection-v2','teacher-load',{
       comparisons:comparedIds(),showTeacher:$('show-teacher').checked
@@ -93,7 +93,7 @@ async function refresh(){
   hasLoaded=true;
   if(firstDisplay)paused=false;
   if(!enabled().some(a=>a.key===currentApp))currentApp=enabled()[0]?.key??null;
-  secondsRemaining=options.rotationSeconds;
+  if(firstDisplay)secondsRemaining=options.rotationSeconds;
   for(const id of ['settings-left'])$(id).disabled=false;
   render();
   note('Tableau de '+classLabel+' · données autorisées · '+new Intl.DateTimeFormat('fr-BE',{hour:'2-digit',minute:'2-digit'}).format(new Date()));
@@ -115,36 +115,44 @@ function render(){
  $('app-name').textContent=app?.title||'Aucune application sélectionnée';
  $('ranking-list').replaceChildren();
  if(!principal)return;
- const people=[...(principal.students||[])].map(p=>({...p,value:score(p,currentApp)}))
-  .sort((a,b)=>(b.value??-1)-(a.value??-1)||a.name.localeCompare(b.name,'fr'))
-  .slice(0,14);
- const split=people.length>7;
- $('ranking-list').classList.toggle('single',!split);
- const midpoint=Math.ceil(people.length/2);
- const groups=split?[people.slice(0,midpoint),people.slice(midpoint)]:[people];
- groups.forEach((group,ci)=>{
+ const compared=options.comparisonDisplay.filter(c=>c.score).map(c=>c.classId);
+ const people=rankMultiClass({
+  classes:data.classes,primaryClassId:classId,scoreClassIds:compared,
+  appKey:currentApp,limit:20,includeTeacher:$('show-teacher').checked
+ });
+ const multiple=compared.length>0;
+ const columns=splitProjectedRanking(people,multiple);
+ $('ranking-list').classList.toggle('single',columns.length===1);
+ $('ranking-list').classList.toggle('multi',multiple);
+ let position=0;
+ columns.forEach(group=>{
   const column=document.createElement('div');column.className='ranking-col';
-  group.forEach((p,i)=>{
-   const place=i+ci*midpoint+1;
-   const row=document.createElement('div');row.className='entry rank-'+place+(p.value===null?' unplayed':'');
-   row.style.setProperty('--rank-progress',String((place-1)/13));
+  group.forEach(p=>{
+   const place=++position;
+   const row=document.createElement('div');row.className='entry rank-'+place+(p.score===null?' unplayed':'');
+   row.style.setProperty('--rank-progress',String((place-1)/19));
    const rank=document.createElement('span');rank.className='place';
    rank.textContent=place<=3?['🥇','🥈','🥉'][place-1]:String(place);
    const detail=document.createElement('div');
    const primary=document.createElement('div');primary.className='primary';
    const name=document.createElement('strong');name.textContent=p.name;
    const points=document.createElement('span');points.className='points';
-   points.textContent=p.value===null?'—':p.value+' pts';
+   points.textContent=p.score===null?'—':p.score+' pts';
    const minor=document.createElement('div');minor.className='minor';
-   minor.textContent='Niveau '+(p.level??'—')+'   🏆 '+(p.trophies??0);
-   primary.append(name,points);detail.append(primary,minor);row.append(rank,detail);column.append(row);
+   const classMark=document.createElement('span');classMark.className='class-mark';
+   classMark.textContent=p.className;
+   minor.append(document.createTextNode('Niveau '+(p.level??'—')+'   🏆 '+(p.trophies??0)));
+   if(multiple)minor.append(classMark);
+   primary.append(name,points);detail.append(primary,minor);
+   row.append(rank,detail);column.append(row);
   });
   $('ranking-list').append(column);
  });
- $('count-label').textContent=people.length+' élève(s) affiché(s) sur '+principal.enrolled
-  +(split?' · 2 colonnes':' · 1 colonne');
  const period=principal.scorePeriods?.find(p=>p.appKey===currentApp);
- $('ranking-note').textContent='Classe '+classLabel+(period?' · depuis le '+new Intl.DateTimeFormat('fr-BE',{day:'2-digit',month:'2-digit'}).format(new Date(period.since)):' · scores du journal disponible');
+ const total=people.length;
+ $('ranking-note').textContent=classLabel+' · '+total+' élève'+(total>1?'s':'')+
+  (multiple?' · défi interclasses':'')+(period?' · depuis le '+
+    new Intl.DateTimeFormat('fr-BE',{day:'2-digit',month:'2-digit'}).format(new Date(period.since)):'');
  const tabs=$('app-tabs');tabs.replaceChildren();
  enabled().forEach(a=>{
   const btn=document.createElement('button');btn.type='button';
@@ -199,21 +207,13 @@ function renderClasses(){
   ?'Global = exercices commencés des applications cochées ; Mort subite exclue. « — » = mesure non disponible.'
   :'Aucune application cochée en « % ».';
  let shown=0;
- for(const display of options.comparisonDisplay.filter(v=>v.score||v.percentage)){
+ for(const display of options.comparisonDisplay.filter(v=>v.percentage)){
   const c=data.classes.find(v=>v.classId===display.classId);
   if(!c)continue;
   shown++;
   const panel=document.createElement('div');panel.className='compare-row';
   const name=document.createElement('strong');name.textContent=c.name;panel.append(name);
-  if(display.score){
-   const line=document.createElement('div');line.className='compare-line';
-   const label=document.createElement('span');
-   label.textContent='Score · '+(apps.find(a=>a.key===currentApp)?.title||'application');
-   const value=document.createElement('span');
-   const n=c.totals?.find(v=>v.appKey===currentApp)?.bestSum;
-   value.textContent=Number.isFinite(n)?n+' pts':'— pts';
-   line.append(label,value);panel.append(line);
-  }
+  // Les scores des autres classes s'affichent uniquement dans le classement central.
   if(display.percentage){
    const global=document.createElement('div');global.className='compare-line';
    const label=document.createElement('span');label.textContent='Réussite globale';
@@ -231,7 +231,7 @@ function renderClasses(){
   comparisons.append(panel);
  }
  if(!shown){
-  const hint=document.createElement('small');hint.textContent='Aucune classe comparée. Choisis Score et/ou % dans « Applications ».';
+  const hint=document.createElement('small');hint.textContent='Pour comparer les %, coche une autre classe dans « Applications ».';
   comparisons.append(hint);
  }
 }

@@ -9,7 +9,7 @@ import {chromium} from 'playwright';
 const root=resolve(fileURLToPath(new URL('..',import.meta.url)));
 const klass='22222222-2222-4222-8222-222222222222';
 const student='33333333-3333-4333-8333-333333333333';
-const types={'.html':'text/html; charset=utf-8','.webp':'image/webp','.png':'image/png','.css':'text/css'};
+const types={'.html':'text/html; charset=utf-8','.webp':'image/webp','.png':'image/png','.css':'text/css','.mjs':'text/javascript; charset=utf-8','.js':'text/javascript; charset=utf-8'};
 const session={user:{id:student,is_anonymous:true},access_token:'TEST_ONLY_ACCESS_TOKEN'};
 const browserStub='export function createClient(){return {auth:{getSession:async()=>({data:{session:'+JSON.stringify(session)+'}})}}}';
 async function serve(){
