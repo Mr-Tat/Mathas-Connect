@@ -239,7 +239,7 @@ function makeExploit(type,message){
  const label=document.createElement("span");label.className="event-text";label.textContent=message;
  el.append(icon,label);return el;
 }
-function addPct(target,title,pct,global=false){
+function addPct(target,title,pct,global=false,compact=false){
  const row=document.createElement("div");row.className="classstat"+(global?" global-success":"");
  const headline=document.createElement("div");headline.className="headline";
  const label=document.createElement("span");label.textContent=title;
@@ -247,7 +247,7 @@ function addPct(target,title,pct,global=false){
  headline.append(label,number);
  const track=document.createElement("div");track.className="track";
  const fill=document.createElement("i");fill.style.width=pct+"%";track.append(fill);
- row.append(headline,track);target.append(row);
+ row.append(headline);if(!compact)row.append(track);target.append(row);
 }
 function drawClasses(){
  const root=$("classes");root.replaceChildren();
@@ -264,7 +264,7 @@ function drawClasses(){
   const card=document.createElement("div");card.className="compare-row";
   const name=document.createElement("strong");name.textContent=c.name;card.append(name);
   if(c.percentage){
-   addPct(card,"Global",c.pct,true);
+   addPct(card,"Global",c.pct,true,true);
    apps.filter(a=>a.pct).forEach((app,j)=>{
     const line=document.createElement("div");line.className="compare-line";
     const label=document.createElement("span");label.textContent=app.title;
