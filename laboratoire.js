@@ -66,7 +66,7 @@ function renderPeople(devices){
   const launch=el('a','Se connecter avec ce profil','action');
   launch.href=target.href;launch.target='_blank';launch.rel='noopener noreferrer';
   launch.title='Ouvrir la connexion élève native. L’appareil doit être approuvé pour ce profil.';
-  const normalize=name=>String(name||'').normalize('NFC').toLocaleLowerCase('fr').replace(/[.\\s]+/g,'');
+  const normalize=name=>String(name||'').normalize('NFC').toLocaleLowerCase('fr').replace(/[.\s]+/g,'');
   const homonyms=people.filter(p=>normalize(p.display_name)===normalize(person.display_name)).length>1;
   if(homonyms){launch.removeAttribute('href');launch.setAttribute('aria-disabled','true');launch.classList.add('unavailable');}
   launch.onclick=event=>{
