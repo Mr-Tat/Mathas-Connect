@@ -47,3 +47,11 @@ Pas de modification ou de réinitialisation des élèves réels lors des tests. 
 - Le calcul exhaustif des exercices **entamés** (hors Mort subite), ainsi que les notifications d'exploits réels, restent des chantiers séparés. Jusqu'à preuve, le % reste `—`. Le tableau historique `projection.html` demeure inchangé pendant la validation de V2.
 
 **Recette avant substitution à la projection historique** : contrôle réseau réel avec une session élève approuvée et une session professeur autorisée, partie effectivement terminée et envoyée, refus → absence du résultat, accord → apparition du record, compte non consenti → aucune donnée nominative, vérification de deux classes croisées, pas de régression XP / trophées.
+
+## Ajustement projection plein écran après défilement
+
+- Le bandeau supérieur qui indique la classe reste **hors du plateau**. Il défile naturellement : après un petit défilement manuel du professeur, **le plateau central + les flèches et commandes en bas occupent exactement 100dvh**, la hauteur de l'écran du projecteur. Pas de masquage forcé de la classe ni de mode plein écran du navigateur imposé.
+- Classement limité à **16 scores, huit par colonne** ; les cases se répartissent sur toute la hauteur résiduelle du plateau, et deviennent plus hautes. La classe seule à 14 élèves reste en **7+7**.
+- « Autres classes » disparaît comme titre dans la petite carte de comparaisons, **les noms de classes restent visibles**. Le « Global » de chaque comparaison est compact (fond et cadre distinctifs, chiffre plus petit, **sans barre de progression**), les applications suivent en dessous. Le Global principal garde sa grande barre.
+- « Application X / Y » et « Suivante dans Ns » sont déplacés **dans la bande inférieure, près des flèches de navigation**. L'ancienne bande intérieure sous les scores est supprimée, sa hauteur profite aux élèves.
+- Les versions maquette fictive et tableau connecté doivent rester synchronisées ; test Chromium à 1366×768 après défilement, vérifiant la hauteur des rangs, l'absence de défilement interne du classement, les commandes, et l'absence de barre du Global comparatif.
