@@ -34,7 +34,7 @@ main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) mi
 .left .classstat .headline strong{white-space:nowrap;font-size:15px}
 .left .classstat.global-success .headline strong{font-size:23px;color:#c8efe4}
 #percentage-note{display:block;margin-top:9px;line-height:1.35}
-.compare-panel{background:#2e4963}
+.compare-panel{background:#2e4963;max-height:240px;overflow-y:auto}
 .compare-panel h2{font-size:15px;margin-bottom:7px}
 .compare-row{padding:8px 0;border-bottom:1px solid #577089}
 .compare-row:last-child{border:0}
@@ -104,7 +104,7 @@ label.setting{justify-content:space-between;max-width:380px}
 <body>
 <header>
   <strong>Math’as <span>LIVE · PROJECTION V2</span></strong>
-  <div class="tools"><span class="demo">● PROJECTION CONNECTÉE · ACCÈS PROFESSEUR</span><span id="live-status" role="status">Connexion professeur requise</span><button id="load-real" type="button">Afficher / Actualiser</button><button id="open-settings" type="button">⚙ Applications</button></div>
+  <div class="tools"><span class="demo">● PROJECTION CONNECTÉE · ACCÈS PROFESSEUR</span><span id="live-status" role="status">Connexion professeur requise</span><button id="load-real" type="button">Afficher / Actualiser</button></div>
 </header>
 <main>
   <aside class="left-col" aria-label="Réussite et comparaisons">
@@ -124,7 +124,7 @@ label.setting{justify-content:space-between;max-width:380px}
 </main>
 <footer>
   <div id="app-tabs" class="apps"></div>
-  <div class="controls"><button id="prev-app" type="button">◀ Appli</button><button id="next-app" type="button">Appli ▶</button><button id="pause" type="button">⏸ Pause</button><button id="open-all" type="button">⚙ Applications</button></div>
+  <div class="controls"><button id="prev-app" type="button">◀ Appli</button><button id="next-app" type="button">Appli ▶</button><button id="pause" type="button">⏸ Pause</button></div>
 </footer>
 <dialog id="settings" aria-label="Paramètres de projection">
   <button id="close-settings" type="button" class="close">✕ Fermer</button><h2>⚙ Applications à afficher</h2>
