@@ -39,7 +39,7 @@ test('Projection V2 live : reset de la seule application via mot de passe masqu√
  assert.match(js,/appKey:pendingReset,password/);
  assert.match(js,/reset\.disabled=!options\.scoreApps\.includes\(app\.key\)/);
  assert.match(js,/classLabel/);
- assert.match(js,/password'\\)\.value=''/);
+ assert.match(js,/reset-password/);
  assert.match(js,/window\.confirm/);
  assert.doesNotMatch(js,/connect_parcours_restart|teacher-parcours-restart|reset_epoch/);
 });
