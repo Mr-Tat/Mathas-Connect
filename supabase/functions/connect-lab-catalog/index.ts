@@ -53,6 +53,9 @@ Deno.serve(async(req:Request)=>{
    if(!token)return fail('authentication_required',401);
    const {data:{user},error}=await auth.auth.getUser(token);
    if(error||!user||user.is_anonymous)return fail('professor_required',403);
+   const teacher=await db.from('connect_teachers').select('auth_user_id')
+     .eq('auth_user_id',user.id).maybeSingle();
+   if(teacher.error||!teacher.data)return fail('professor_required',403);
    const p=await db.from('connect_class_permissions').select('class_id')
      .eq('class_id',TEST_CLASS).eq('teacher_id',user.id).eq('can_manage',true).maybeSingle();
    if(p.error||!p.data)return fail('class_permission_required',403);
