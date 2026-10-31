@@ -1,0 +1,26 @@
+name: Projection V2 — API professeur Deno
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/connect-projection-v2/**'
+      - 'tests/projection-v2-api.test.mjs'
+      - '.github/workflows/projection-v2-api.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  projection-v2-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Contrat d'authentification et d'isolation
+        run: node --test tests/projection-v2-api.test.mjs
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck de la fonction Edge isolée
+        run: deno check supabase/functions/connect-projection-v2/index.ts
