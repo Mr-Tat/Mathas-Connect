@@ -1,0 +1,20 @@
+name: Laboratoire - Edge publique en lecture seule
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/connect-lab-catalog/**'
+      - 'tests/laboratoire-live-readonly.test.mjs'
+      - '.github/workflows/laboratoire-live.yml'
+permissions:
+  contents: read
+jobs:
+  live-readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier le GET public et le refus du POST anonyme
+        run: node --test tests/laboratoire-live-readonly.test.mjs

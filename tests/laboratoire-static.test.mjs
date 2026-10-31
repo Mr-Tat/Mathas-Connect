@@ -66,3 +66,28 @@ test('les homonymes ne peuvent pas être sélectionnés sur leur nom seul',()=>{
  assert.match(lab,/launch\.setAttribute\('aria-disabled','true'\)/);
  assert.match(lab,/Deux profils portent le même nom/);
 });
+
+test('les badges Connecté dépendent de la session élève, et non des appareils approuvés',()=>{
+ const script=read('laboratoire.js');
+ assert.match(script,/const studentSb=createClient/);
+ assert.match(script,/studentSession\.user\?\.is_anonymous/);
+ assert.match(script,/action:'student-me',classId:TEST_CLASS/);
+ assert.match(script,/data\.status==='approved'&&data\.classId===TEST_CLASS/);
+ assert.match(script,/matching|const matches=people\.filter/);
+ assert.match(script,/lab-connected-badge/);
+});
+test('les cases Afficher ne publient jamais les quatre vrais HUB',()=>{
+ const lab=read('laboratoire.js'),hub=read('hub.js'),edge=read('supabase/functions/connect-lab-catalog/index.ts');
+ assert.match(lab,/labCatalog\('set',\{appKey:app\.app_key,visible:wanted\}\)/);
+ assert.match(lab,/checkbox\.checked=app\.visible===true/);
+ assert.match(lab,/guard\(\)/);
+ assert.match(hub,/if\(classId===LAB_CLASS\)/);
+ assert.match(hub,/connect-lab-catalog/);
+ assert.match(hub,/test_catalog_unavailable/);
+ assert.doesNotMatch(edge,/connect_hub_preset_entries|update\(\{.*enabled/);
+ assert.match(edge,/connect_lab_hub_visibility/);
+ assert.match(edge,/user\.is_anonymous/);
+ assert.match(edge,/\.from\('connect_teachers'\)/);
+ assert.match(edge,/\.eq\('class_id',TEST_CLASS\)\.eq\('teacher_id',user\.id\)\.eq\('can_manage',true\)/);
+ assert.match(edge,/app\.data\.enabled!==true/);
+});
