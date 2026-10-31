@@ -210,7 +210,7 @@ Deno.serve(async req=>{
   // Tableau GLOBAL historique : une seule interface pour quatre espaces indépendants.
   if(b.action==='teacher-app-matrix-get'||b.action==='teacher-app-matrix-save'){
    if(!await managed())return deny('forbidden',403);
-   const slugs=['observation','phase1','phase2','2eco'];
+   const slugs=['observation','phase1','phase2','phase2b','2eco'];
    if(b.action==='teacher-app-matrix-get'){
     const [apps,entries]=await Promise.all([
      db.from('connect_apps').select('app_key,title,launch_url,image_url,enabled,display_order').order('display_order'),

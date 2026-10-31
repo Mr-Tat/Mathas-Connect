@@ -116,7 +116,7 @@ async function showCatalog() {
     // Une lecture globale courte, mise en cache côté navigateur. Le catalogue statique reste le secours.
     try{
       const cacheKey='mathas.connect.global-catalog.v2';
-      const classPresets={'8fe170fa-9e8f-4e80-885a-b0ba68026f64':'observation','71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'phase1','1b021ed9-4846-4203-9c7b-4b5fa8d7adab':'phase2','a9195199-0a28-4e86-99ce-47b36dd6e646':'2eco'};
+      const classPresets={'8fe170fa-9e8f-4e80-885a-b0ba68026f64':'observation','71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'phase1','1b021ed9-4846-4203-9c7b-4b5fa8d7adab':'phase2','0d8ba828-59cc-468b-a4b8-7b2a1af10b88':'phase2b','a9195199-0a28-4e86-99ce-47b36dd6e646':'2eco'};
       const selectedSpace=classPresets[classId]||new URLSearchParams(location.search).get('space')||'observation';
       const scopedKey=cacheKey+':'+selectedSpace;
       const cached=JSON.parse(sessionStorage.getItem(scopedKey)||'null');

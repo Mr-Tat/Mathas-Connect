@@ -30,10 +30,11 @@ body:has(.teacher-panel:not([hidden]))>.shell>.topbar{display:none}
 .teacher-classbar select{width:min(250px,90vw);margin:0;background:#18314a;color:white;border-color:#5a7b98}
 .teacher-classbar button{min-height:38px;padding:8px 12px}
 .teacher-context{color:#afc3d8;font-size:13px;line-height:1.5;margin:9px 0 18px}
-.teacher-spaces{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:25px 0}
+.teacher-spaces{display:grid;grid-template-columns:2fr 2fr 1.5fr 1.5fr 2fr;gap:12px;margin:25px 0}
 .teacher-space{display:grid;gap:8px;min-width:0;--space-a:#174e63;--space-b:#087b9e;--space-border:#3ac1db}
 .space-phase1{--space-a:#302c61;--space-b:#6857b6;--space-border:#9d91f3}
-.space-phase2{--space-a:#16473e;--space-b:#208765;--space-border:#6bd9a9}
+.space-phase2,.space-phase2b{--space-a:#16473e;--space-b:#208765;--space-border:#6bd9a9}
+.space-phase2b{--space-b:#147e70;--space-border:#79ddcf}
 .space-2eco{--space-a:#50382e;--space-b:#a76949;--space-border:#edb189}
 .teacher-space-main,.teacher-space-small{font:inherit;display:grid;place-items:center;width:100%;text-align:center;color:#fff!important;text-decoration:none;border:1px solid var(--space-border);background:linear-gradient(135deg,var(--space-b),var(--space-a));box-shadow:0 12px 28px #0005;border-radius:16px;font-weight:900}
 .teacher-space-main{min-height:112px;font-size:clamp(17px,2.15vw,27px);padding:15px 6px}
@@ -68,6 +69,7 @@ body:has(.teacher-panel:not([hidden]))>.shell>.topbar{display:none}
 .teacher-app-table img{width:50px;height:50px;object-fit:cover;border-radius:8px}
 .teacher-app-table small{display:block;color:#b9cddd}
 .teacher-classbar button:focus-visible,.teacher-shortcuts a:focus-visible,.teacher-shortcuts button:focus-visible,.teacher-space a:focus-visible,.teacher-space button:focus-visible{outline:3px solid #92e5f6;outline-offset:2px}
+@media(max-width:1060px){.teacher-spaces{grid-template-columns:repeat(3,minmax(0,1fr))}.teacher-space.space-phase2,.teacher-space.space-phase2b{min-width:0}}
 @media(max-width:800px){.teacher-spaces{grid-template-columns:repeat(2,minmax(0,1fr))}.teacher-space-main{min-height:82px}.teacher-space-small{font-size:13px}.teacher-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:500px){.teacher-header{align-items:flex-start}.teacher-logout{font-size:12px}.teacher-classbar{align-items:stretch}.teacher-classbar label{width:100%}.teacher-classbar select{width:100%}}
 
