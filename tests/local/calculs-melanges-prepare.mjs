@@ -19,5 +19,5 @@ for(const name of ['results','api']){
  // Test the actual compiled release path. Only the SDK is bundled for the
  // network-isolated lab; no integration constant is changed here.
  writeFileSync(path.join(dir,'index.ts'),original.replace("from 'npm:@supabase/supabase-js@2.95.0'","from './sdk.mjs'"));
- env(name+'/edge.env',`SUPABASE_URL=http://mathas-mixed-kong:8000\nSUPABASE_ANON_KEY=${anon}\nSUPABASE_SERVICE_ROLE_KEY=${service}\nCONNECT_MIXED_ACCESS=pilot:${pilotClass}\nNO_PROXY=mathas-mixed-kong,localhost,127.0.0.1\n`);
+ env(name+'/edge.env',`SUPABASE_URL=http://mathas-mixed-kong:8000\nSUPABASE_ANON_KEY=${anon}\nSUPABASE_SERVICE_ROLE_KEY=${service}\nNO_PROXY=mathas-mixed-kong,localhost,127.0.0.1\n`);
 }

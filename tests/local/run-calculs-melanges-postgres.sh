@@ -4,7 +4,7 @@ ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 RUN_NAME=mathas-mixed-sql-$$
 LOG=$(mktemp /tmp/mathas-mixed-sql.XXXXXX)
 docker_local(){ env -u DOCKER_HOST -u DOCKER_CONTEXT -u DOCKER_TLS -u DOCKER_TLS_VERIFY -u DOCKER_CERT_PATH docker --host=unix:///var/run/docker.sock "$@"; }
-cleanup(){ docker_local rm -fv "$RUN_NAME" >/dev/null 2>&1 || true; rm -f "$LOG" "$LOG.a" "$LOG.b" "$LOG.policy-a" "$LOG.policy-b" "$LOG.before" "$LOG.installed" "$LOG.enabled" "$LOG.before.checked" "$LOG.installed.checked" "$LOG.query"; }
+cleanup(){ docker_local rm -fv "$RUN_NAME" >/dev/null 2>&1 || true; rm -f "$LOG" "$LOG.a" "$LOG.b" "$LOG.policy-a" "$LOG.policy-b" "$LOG.before" "$LOG.installed" "$LOG.enabled" "$LOG.visible" "$LOG.before.checked" "$LOG.installed.checked" "$LOG.query" "$LOG.atomic-fail.sql" "$LOG.atomic-audit"; }
 trap cleanup EXIT
 docker_local run -d --name "$RUN_NAME" --network none -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17-alpine >/dev/null
 psql_local(){ docker_local exec -i "$RUN_NAME" psql -U postgres -v ON_ERROR_STOP=1 "$@"; }
@@ -117,21 +117,33 @@ DO $$ BEGIN
  IF (SELECT enabled FROM connect_apps WHERE app_key='melange-calculs-ecrits') THEN RAISE EXCEPTION 'failed_activation_enabled_app';END IF;
 END $$;
 SQL
+if psql_local < "$ROOT/supabase/release-candidates/calculs_melanges_open_hubs.sql" > "$LOG" 2>&1; then echo 'ERROR HUBs opened before server enablement';exit 1;fi
+grep -Fq mixed_app_must_be_enabled_before_visibility "$LOG"
 psql_local < "$ROOT/supabase/release-candidates/calculs_melanges_enable_hidden.sql" >/dev/null
 schema_report > "$LOG.enabled"
-node --input-type=module - "$ROOT" "$LOG.before" "$LOG.installed" "$LOG.enabled" <<'JS'
+psql_local -c "UPDATE connect_xp_award_rules SET ruleset_version=2 WHERE app_key='melange-calculs-ecrits'" >/dev/null
+if psql_local < "$ROOT/supabase/release-candidates/calculs_melanges_open_hubs.sql" > "$LOG" 2>&1; then echo 'ERROR HUBs opened with drifted XP rules';exit 1;fi
+grep -Fq mixed_xp_rules_drift "$LOG"
+psql_local -c "UPDATE connect_xp_award_rules SET ruleset_version=3 WHERE app_key='melange-calculs-ecrits'" >/dev/null
+psql_local < "$ROOT/supabase/release-candidates/calculs_melanges_open_hubs.sql" >/dev/null
+psql_local < "$ROOT/supabase/release-candidates/calculs_melanges_open_hubs.sql" >/dev/null
+schema_report > "$LOG.visible"
+node --input-type=module - "$ROOT" "$LOG.before" "$LOG.installed" "$LOG.enabled" "$LOG.visible" <<'JS'
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 const [root,...files]=process.argv.slice(2);
 const {validateAudit}=await import(pathToFileURL(root+'/scripts/calculs-melanges-release.mjs'));
-const [before,installed,enabled]=files.map(file=>JSON.parse(readFileSync(file,'utf8')));
+const [before,installed,enabled,visible]=files.map(file=>JSON.parse(readFileSync(file,'utf8')));
 assert.ok(before.triggers.some(t=>t.table==='connect_states'&&t.name==='test_mixed_metadata_row'&&/^[0-9a-f]{32}$/.test(t.functionDefinitionMd5)));
 assert.ok(before.eventTriggers.some(t=>t.name==='test_mixed_metadata_ddl'&&/^[0-9a-f]{32}$/.test(t.functionDefinitionMd5)));
 assert.deepEqual(before.triggers,installed.triggers);assert.deepEqual(before.eventTriggers,installed.eventTriggers);
 assert.equal(validateAudit(enabled,'enabled-hidden').ok,true);
+assert.equal(validateAudit(visible,'enabled-visible').ok,true);
+assert.equal(validateAudit(visible,'enabled-hidden').ok,false);
+assert.equal(validateAudit(enabled,'enabled-visible').ok,false);
 const shared=a=>(a.functions||[]).filter(f=>!f.name.startsWith('connect_mixed_'));
-assert.deepEqual(shared(before),shared(installed));assert.deepEqual(shared(before),shared(enabled));
+assert.deepEqual(shared(before),shared(installed));assert.deepEqual(shared(before),shared(enabled));assert.deepEqual(shared(before),shared(visible));
 for(const mutate of [
  a=>a.tables.connect_states.columns.find(c=>c.name==='revision').type='integer',
  a=>a.tables.connect_states.uniqueKeys=[],
@@ -143,7 +155,7 @@ for(const mutate of [
  a=>a.catalogue.rules[0].points++,
  a=>a.catalogue.rules[0].rulesetVersion=1,
 ]){const a=structuredClone(installed);mutate(a);assert.equal(validateAudit(a,'installed-hidden').ok,false);}
-console.log('PASS read-only schema/trigger audit, drift detection, private grants, enabled app/four hidden HUBs and unchanged shared functions');
+console.log('PASS read-only audit, guarded hidden activation then four visible HUBs, distinct stage validation and unchanged shared functions');
 JS
 psql_local < "$ROOT/supabase/release-candidates/calculs_melanges_disable_only.sql" >/dev/null
 psql_local <<'SQL'
@@ -155,3 +167,58 @@ DO $$ BEGIN
 END $$;
 SQL
 printf 'PASS one-time preflight, concurrent CAS, guarded hidden activation, shared RPC/Phase1 preserved, non-destructive disable-only\n'
+
+# Execute the exact production installation artefact on the reviewed managed
+# history shape. All 25 historical rows below are synthetic and remain intact.
+psql_local -c 'CREATE DATABASE mixed_atomic_install' >/dev/null
+tail -n +3 "$ROOT/tests/postgres/calculs-melanges-fixture.sql" | psql_local -d mixed_atomic_install >/dev/null
+psql_local -d mixed_atomic_install < "$ROOT/tests/postgres/calculs-melanges-auth-fixture.sql" >/dev/null
+psql_local -d mixed_atomic_install <<'SQL' >/dev/null
+CREATE SCHEMA supabase_migrations;
+CREATE TABLE supabase_migrations.schema_migrations(
+ version text PRIMARY KEY,statements text[],name text,created_by text,idempotency_key text UNIQUE,rollback text[]);
+INSERT INTO supabase_migrations.schema_migrations(version,name,statements)
+SELECT CASE WHEN n=25 THEN '20261030090200' ELSE to_char(timestamp '2026-10-29'+n*interval '1 second','YYYYMMDDHH24MISS') END,
+ 'fictitious_'||n,ARRAY['SELECT 1;'] FROM generate_series(1,25) n;
+SQL
+psql_local -c 'CREATE DATABASE mixed_atomic_failure TEMPLATE mixed_atomic_install' >/dev/null
+MIXED_HISTORY_BEFORE=$(psql_local -d mixed_atomic_install -Atq -c "SELECT md5(string_agg(row_to_json(m)::text,E'\n' ORDER BY version)) FROM supabase_migrations.schema_migrations m WHERE name LIKE 'fictitious_%'")
+node --input-type=module - "$ROOT" "$LOG.atomic-fail.sql" <<'JS'
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+const [root,output]=process.argv.slice(2);
+const meta=JSON.parse(readFileSync(root+'/supabase/release-candidates/calculs_melanges_installation_manifest.json','utf8'));
+const wrapper=readFileSync(root+'/'+meta.installationFile,'utf8'),body=readFileSync(root+'/'+meta.migrationFile,'utf8');
+assert.equal(createHash('sha256').update(wrapper).digest('hex'),meta.envelopeSha256);
+assert.equal(createHash('sha256').update(body).digest('hex'),meta.sourceBodySha256);
+assert.equal(meta.historyProfile,'managed6');
+const at=wrapper.lastIndexOf('COMMIT;');assert.ok(at>0);
+writeFileSync(output,wrapper.slice(0,at)+'SELECT 1/0;\n'+wrapper.slice(at));
+JS
+if psql_local -d mixed_atomic_failure < "$LOG.atomic-fail.sql" > "$LOG" 2>&1; then echo 'ERROR atomic history failure unexpectedly committed';exit 1;fi
+grep -Fq 'division by zero' "$LOG"
+psql_local -d mixed_atomic_failure <<'SQL' >/dev/null
+DO $$ BEGIN
+ IF EXISTS(SELECT 1 FROM connect_apps WHERE app_key='melange-calculs-ecrits')
+ OR to_regclass('public.connect_mixed_receipts') IS NOT NULL
+ OR (SELECT count(*) FROM supabase_migrations.schema_migrations)<>25
+ THEN RAISE EXCEPTION 'game_and_history_not_atomic';END IF;
+END $$;
+SQL
+psql_local -d mixed_atomic_install < "$ROOT/supabase/release-candidates/calculs_melanges_install_atomic.sql" >/dev/null
+MIXED_HISTORY_AFTER=$(psql_local -d mixed_atomic_install -Atq -c "SELECT md5(string_agg(row_to_json(m)::text,E'\n' ORDER BY version)) FROM supabase_migrations.schema_migrations m WHERE name LIKE 'fictitious_%'")
+test "$MIXED_HISTORY_BEFORE" = "$MIXED_HISTORY_AFTER"
+psql_local -d mixed_atomic_install <<'SQL' >/dev/null
+DO $$ BEGIN
+ IF (SELECT count(*) FROM supabase_migrations.schema_migrations)<>26
+ OR (SELECT count(*) FROM supabase_migrations.schema_migrations WHERE name='connect_calculs_melanges_locked_v1'
+     AND idempotency_key IS NOT NULL AND created_by IS NULL AND rollback IS NULL)<>1
+ THEN RAISE EXCEPTION 'wrong_managed_history_registration';END IF;
+END $$;
+SQL
+psql_local -d mixed_atomic_install -XqtAf - < "$LOG.query" > "$LOG.atomic-audit"
+node "$ROOT/scripts/calculs-melanges-release.mjs" check-report "$LOG.atomic-audit" --stage installed-hidden >/dev/null
+if psql_local -d mixed_atomic_install < "$ROOT/supabase/release-candidates/calculs_melanges_install_atomic.sql" > "$LOG" 2>&1; then echo 'ERROR atomic installer accepted a replay';exit 1;fi
+grep -Fq mixed_migration_already_recorded_review_required "$LOG"
+printf 'PASS exact managed6 installation artefact: 25 histories preserved, one new row, hidden app/cards, rollback on late error, replay refused\n'

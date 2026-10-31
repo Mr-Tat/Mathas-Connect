@@ -57,7 +57,7 @@ const signatures={
 const rules={'classic:4:perfect':28,'classic:10:pass':38,'classic:10:bonus':8,'classic:20:pass':63,'classic:20:bonus':13,'sudden:5':12,'sudden:10':12,'hard:3':12,'hard:7':12};
 const sameSet=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&[...a].sort().every((x,i)=>x===[...b].sort()[i]);
 export function validateAudit(audit,stage='before-install'){
- if(!['before-install','installed-hidden','enabled-hidden'].includes(stage))throw Error('invalid_stage');
+ if(!['before-install','installed-hidden','enabled-hidden','enabled-visible'].includes(stage))throw Error('invalid_stage');
  const issues=[];
  if(audit?.format!=='mathas-mixed-schema-v1')return {ok:false,stage,issues:['invalid_audit_format']};
  const tables=audit.tables||{};
@@ -89,8 +89,8 @@ export function validateAudit(audit,stage='before-install'){
    const t=tables[name];if(!t||t.rls!==true||t.anonAccess!==false||t.authenticatedAccess!==false||t.publicAccess!==false||t.serviceWrite!==true)issues.push('unsafe_private_table:'+name);
   }
   const app=catalogue.apps?.[0];
-  if(catalogue.apps?.length!==1||app?.enabled!==(stage==='enabled-hidden')||app?.featured!==false||app?.launchUrl!=='https://mr-tat.github.io/Mathas-Connect/apps/calculs-melanges/'||app?.imageUrl!=='https://mr-tat.github.io/Mathas-Connect/assets/miniatures/melange-calculs-ecrits.webp')issues.push('unexpected_app_catalogue');
-  if(!sameSet(catalogue.presets?.map(p=>p.slug),['observation','phase1','phase2','2eco'])||catalogue.presets?.some(p=>p.visible!==false||p.featured!==false))issues.push('hub_not_hidden');
+  if(catalogue.apps?.length!==1||app?.enabled!==stage.startsWith('enabled-')||app?.featured!==false||app?.launchUrl!=='https://mr-tat.github.io/Mathas-Connect/apps/calculs-melanges/'||app?.imageUrl!=='https://mr-tat.github.io/Mathas-Connect/assets/miniatures/melange-calculs-ecrits.webp')issues.push('unexpected_app_catalogue');
+  if(!sameSet(catalogue.presets?.map(p=>p.slug),['observation','phase1','phase2','2eco'])||catalogue.presets?.some(p=>p.visible!==(stage==='enabled-visible')||p.featured!==false))issues.push(stage==='enabled-visible'?'hub_not_visible':'hub_not_hidden');
   if(catalogue.rules?.length!==9||Object.entries(rules).some(([key,points])=>{const r=catalogue.rules?.find(r=>r.key===key);return r?.points!==points||r?.rulesetVersion!==3}))issues.push('xp_rules_drift');
  }
  return {ok:issues.length===0,stage,issues,scope:'schema_and_catalogue_only',requiresReview:['constraints_and_triggers','deployed_edge_source','hosted_auth_and_browser']};
@@ -106,10 +106,12 @@ export function schemaQuery(){
  return 'BEGIN READ ONLY;\n'+read(sqlFile).trim()+'\nROLLBACK;\n';
 }
 export function releasePlan(){
+ const installation=JSON.parse(read('supabase/release-candidates/calculs_melanges_installation_manifest.json'));
  const files=['app.js','apps/calculs-melanges/connect-pilot.mjs','supabase/functions/connect-results/index.ts',
   'apps/calculs-melanges/source-manifest.json',sqlFile,'supabase/release-candidates/calculs_melanges_locked_v1.sql',
   'docs/PUBLICATION_CALCULS_MELANGES_20261030.md',
-  'supabase/release-candidates/calculs_melanges_enable_hidden.sql','supabase/release-candidates/calculs_melanges_disable_only.sql'];
+  'supabase/release-candidates/calculs_melanges_enable_hidden.sql','supabase/release-candidates/calculs_melanges_open_hubs.sql','supabase/release-candidates/calculs_melanges_disable_only.sql',
+  'supabase/release-candidates/calculs_melanges_installation_manifest.json',installation.installationFile,installation.migrationFile];
  const flags=[['app.js','MIXED_TEACHER_READY'],['apps/calculs-melanges/connect-pilot.mjs','CONNECT_WRITE_READY'],['supabase/functions/connect-results/index.ts','MIXED_SERVER_READY']];
  const gates=Object.fromEntries(flags.map(([file,name])=>{const value=read(file).match(new RegExp('\\bconst '+name+'=(true|false);'))?.[1];if(!value)throw Error('missing_gate:'+name);return [name,value==='true'];}));
  const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8'}).trim();
@@ -118,12 +120,13 @@ export function releasePlan(){
   staticCatalogueContainsMixed:read('hub-catalog.json').includes(appKey),
   files:Object.fromEntries(files.map(file=>[file,createHash('sha256').update(readFileSync(path.join(root,file))).digest('hex')])),
   xpMax:594,xpPolicyVersion:3,fullRateSelectedOperations:3,selectionRates:{1:0.25,2:0.5,3:1},missingPointsCanBeCompleted:true,
+  defaultMixedAccess:'approved-sessions',installation,
   hostedStatus:'not-verified-in-this-session',hostedCredentialsRequired:false,commandPerformsProductionWrites:false};
 }
 async function main(args){
  const command=args.shift()||'plan';let stage='before-install',output=null,file=null;
  while(args.length){const a=args.shift();if(a==='--stage')stage=args.shift();else if(a==='--output')output=args.shift();else if(!file)file=a;else throw Error('unexpected_argument');}
- if(!['before-install','installed-hidden','enabled-hidden'].includes(stage))throw Error('invalid_stage');
+ if(!['before-install','installed-hidden','enabled-hidden','enabled-visible'].includes(stage))throw Error('invalid_stage');
  let result;
  if(command==='schema-query'){
   if(file)throw Error('unexpected_argument');
@@ -138,7 +141,7 @@ async function main(args){
   result={checkedAt:new Date().toISOString(),projectRef,metadataProvenance:'supplied-json-not-independently-fetched',hostedRequests:0,validation:validateAudit(audit,stage),audit};
   if(!result.validation.ok)process.exitCode=1;
  }else if(command==='audit')throw Error('remote_audit_not_part_of_draft: export schema-query and use check-report FILE; no hosted credentials are required.');
- else throw Error('usage: plan | schema-query [--output /tmp/query.sql] | check-report FILE [--stage before-install|installed-hidden|enabled-hidden] [--output /tmp/report.json]');
+ else throw Error('usage: plan | schema-query [--output /tmp/query.sql] | check-report FILE [--stage before-install|installed-hidden|enabled-hidden|enabled-visible] [--output /tmp/report.json]');
  const json=JSON.stringify(result,null,2)+'\n';
  if(output){writeFileSync(output,json,{flag:'wx',mode:0o600});console.log(JSON.stringify({output,validation:result.validation??null}));}
  else console.log(json);

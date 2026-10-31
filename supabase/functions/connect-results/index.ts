@@ -9,14 +9,13 @@ const app='addition-ecrite-simple',mul='multiplication-ecrite-simple',sub='soust
 // Audit 2026-10-29: keep the new game blocked EVEN IF the catalog is accidentally enabled.
 // Lift only after atomic real XP/RPC, scoped storage and Chromium connected E2E validation.
 const ADD_MULTI_SERVER_READY=true;
-// Release candidate only: CONNECT_MIXED_ACCESS defaults closed, independently
-// of the catalogue. Publication and the hosted pilot need separate approval.
+// Student release authorized 2026-10-31. The catalogue still controls activation;
+// every pupil needs its approved device, class membership and bound identity.
 const MIXED_SERVER_READY=true;
 const mixed='melange-calculs-ecrits';
-// A hidden HUB card does not restrict a direct URL. Hosted pilot sessions must
-// stay inside explicitly chosen fictitious classes until the teacher opens it.
-// Edge setting: closed (default), pilot:<uuid>[,<uuid>...], or open.
-const mixedAccess=(Deno.env.get('CONNECT_MIXED_ACCESS')||'closed').trim();
+// Normal release needs no extra secret. Optional emergency/pilot overrides:
+// closed, pilot:<uuid>[,<uuid>...], open. Empty/invalid overrides stay closed.
+const mixedAccess=(Deno.env.get('CONNECT_MIXED_ACCESS')??'open').trim();
 const mixedPilotIds=mixedAccess.startsWith('pilot:')?mixedAccess.slice(6).split(',').map(s=>s.trim().toLowerCase()):[];
 const mixedClassAllowed=(classId:string)=>mixedAccess==='open'||(mixedPilotIds.length>0&&mixedPilotIds.every(valid)&&mixedPilotIds.includes(classId.toLowerCase()));
 // All XP/teacher operations share the same audited enablement boundary.

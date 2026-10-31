@@ -6,7 +6,7 @@ import {stripTypeScriptTypes} from 'node:module';
 import {randomUUID} from 'node:crypto';
 const source=fs.readFileSync(new URL('../supabase/functions/connect-results/index.ts',import.meta.url),'utf8').replace(/^import .*;\n/,'');
 const classId=randomUUID(),studentId=randomUUID(),authId=randomUUID();
-function harness({enabled=true,approved=true,enrolled=true,anonymous=true,managed=true,player=true,locked=false,access='open'}={}){
+function harness({enabled=true,approved=true,enrolled=true,anonymous=true,managed=true,player=true,locked=false,access}={}){
  let handler,calls=[];
  const db={from(table){const q={order(){return q},select(){return q},eq(){return q},is(){return q},in(){return q},limit(){return q},async maybeSingle(){
   const rows={connect_apps:enabled?{enabled:true}:null,connect_devices:approved?{student_id:studentId}:null,connect_enrollments:enrolled?{student_id:studentId}:null,
@@ -30,9 +30,9 @@ function harness({enabled=true,approved=true,enrolled=true,anonymous=true,manage
 test('compiled production lock rejects every mixed operation, even if catalogue enabled',async()=>{
  const h=harness({locked:true});for(const action of ['game-record','student-load','student-xp','teacher-detail','teacher-parcours-restart','teacher-multipliers-set'])assert.equal((await h.call({action})).status,403);assert.equal(h.calls.length,0);
 });
-test('masked release defaults closed; only explicitly configured pilot classes can use the mixed RPCs',async()=>{
- for(const access of [undefined,'','closed','pilot:','pilot:'+randomUUID(),'pilot:'+classId+',invalid','opne']){
-  const h=harness({access:access??null});
+test('closed, empty, invalid and foreign-pilot overrides reject every mixed RPC',async()=>{
+ for(const access of ['','closed','pilot:','pilot:'+randomUUID(),'pilot:'+classId+',invalid','opne']){
+  const h=harness({access});
   for(const action of ['game-record','student-load','student-xp','teacher-detail','teacher-parcours-restart','teacher-multipliers-set']){
    const r=await h.call({action});assert.equal(r.status,403);assert.equal(r.body.error,'integration_not_open_for_class');
   }
@@ -40,6 +40,13 @@ test('masked release defaults closed; only explicitly configured pilot classes c
  }
  assert.equal((await harness({access:'pilot:'+classId.toUpperCase()}).call()).status,200);
  assert.equal((await harness({access:'pilot:'+randomUUID()+', '+classId}).call()).status,200);
+});
+test('student release works without a new secret and retains catalogue and identity checks',async()=>{
+ assert.equal((await harness({access:undefined}).call()).status,200);
+ assert.equal((await harness({access:null}).call()).status,200);
+ for(const cfg of [{enabled:false},{approved:false},{enrolled:false}]){
+  const h=harness({...cfg,access:null});assert.equal((await h.call()).status,403);assert.equal(h.calls.length,0);
+ }
 });
 test('missing JWT, unapproved device, foreign class and disabled catalogue never call atomic RPC',async()=>{
  assert.equal((await harness().call({},null)).status,401);

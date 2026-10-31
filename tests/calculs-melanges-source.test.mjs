@@ -14,7 +14,7 @@ test('original immutable source is traced, images copied identically; native V6 
  assert.match(game,/if\(mode==='challenge'\)return/);
  for(const script of game.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))new vm.Script(script[1]);
 });
-test('release candidate uses real compiled paths while hosted access and catalogues stay closed',()=>{
+test('compiled student release retains server activation and hidden catalogues',()=>{
  const bridge=read('apps/calculs-melanges/native-bridge.js'),host=read('apps/calculs-melanges/index.html'),scope=read('apps/calculs-melanges/storage-scope.js');
  assert.equal((game.match(/MathasMixedBridge\?\.finish/g)||[]).length,3);assert.equal((game.match(/MathasMixedBridge\?\.begin/g)||[]).length,2);
  assert.doesNotMatch(bridge,/setInterval|Storage\.prototype|fetch\(/);
@@ -22,7 +22,7 @@ test('release candidate uses real compiled paths while hosted access and catalog
  assert.match(host,/e.source!==frame.contentWindow\|\|e.origin!==location.origin/);
  assert.match(read('apps/calculs-melanges/connect-pilot.mjs'),/CONNECT_WRITE_READY=true/);
  assert.match(read('supabase/functions/connect-results/index.ts'),/MIXED_SERVER_READY=true/);
- assert.match(read('supabase/functions/connect-results/index.ts'),/CONNECT_MIXED_ACCESS'\)\|\|'closed'/);
+ assert.ok(read('supabase/functions/connect-results/index.ts').includes("Deno.env.get('CONNECT_MIXED_ACCESS')??'open'"));
  assert.match(read('app.js'),/MIXED_TEACHER_READY=true/);
  assert.doesNotMatch(read('hub-catalog.json'),/melange-calculs-ecrits/);
 });

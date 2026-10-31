@@ -1,5 +1,7 @@
 # Calculs écrits mélangés — intégration isolée, 30 octobre 2026
 
+**État courant au 31 octobre :** publication complète et ouverture aux élèves autorisées par le professeur. Le mode normal conserve les autorisations Connect et ne nécessite plus de secret de pilote. L’app et les quatre cartes restent fermées lors de l’installation ; la visibilité suit la recette publiée sur profil fictif. Les interdictions de publication et besoins d’accord supplémentaire cités dans les bilans anciens ci-dessous sont historiques. Voir le guide de publication actualisé.
+
 Cette branche prépare `melange-calculs-ecrits` dans `apps/calculs-melanges/`. Elle ne constitue aucune autorisation de publication. Aucun accès à un élève réel, SQL hébergé, déploiement Edge, publication Pages ou fusion de main n'a été effectué.
 
 ## Sources et périmètre

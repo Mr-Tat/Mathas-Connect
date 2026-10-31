@@ -32,8 +32,8 @@ assert.equal((await post(null,{action:'student-load'})).status,401);
 assert.equal((await post(student,{action:'student-load'})).body.error,'app_disabled');
 check(await admin.from('connect_apps').update({enabled:true}).eq('app_key','melange-calculs-ecrits'),'LOCAL enable only');
 assert.equal((await post(other,{action:'student-load'})).status,403);
-const outsidePilot=await post(student,{action:'student-load',classId:randomUUID()});
-assert.equal(outsidePilot.status,403);assert.equal(outsidePilot.body.error,'integration_not_open_for_class');
+const outsideClass=await post(student,{action:'student-load',classId:randomUUID()});
+assert.equal(outsideClass.status,403);assert.equal(outsideClass.body.error,'forbidden');
 assert.equal(ok(await post(student,{action:'student-me'},'connect-api')).status,'approved');
 assert.equal(ok(await post(prof,{action:'teacher-player'},'connect-api')).status,'approved');
 const event={action:'game-record',schemaVersion:1,eventId:randomUUID(),mode:'classic',level:1,score:4,total:4,points:0,expectedRevision:0,expectedResetEpoch:0,
@@ -64,7 +64,7 @@ const topupAck=ok(await post(other,topupEvent));assert.equal(topupAck.xp.delta,1
 assert.equal(ok(await post(other,topupEvent)).xp.delta,0);
 assert.equal(ok(await post(other,{...topupEvent,eventId:randomUUID(),expectedRevision:3})).xp.delta,0);
 console.log('PASS real Auth+Edge+SQL: one selected → 7 XP, two → only 7, three → only 14, repeated proof/game → 0; client rate hints ignored');
-console.log('PASS real local Auth+Edge+SQL: isolated pilot class, 401/403, approved pupil, teacher player, 28 XP ACK, duplicate0, professor results, reset epoch, no recollection, other game intact');
+console.log('PASS real local Auth+Edge+SQL without release secret: foreign-class 403, approved pupil, teacher player, 28 XP ACK, duplicate0, professor results, reset epoch, no recollection, other game intact');
 if(process.env.SDK_BROWSER_PATH){
  const {readFileSync}=await import('node:fs'),{chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
  const {playMixedClassic}=await import('./calculs-melanges-real-play-helper.mjs');

@@ -1,0 +1,20 @@
+{
+  "sourceBodySha256": "d06c13e4c3e60a523a1410dac3298e5424b7afa5e1a744f2a7ed700780088638",
+  "sourceSqlSha256": "eddcb1b4dae66b2e54543bb1dbce18988c3286987e341331ed39126b7531d6dd",
+  "envelopeSha256": "8d5d1ce4b82cc5d51b39a40c9c8823e4d8742f97b67d63e4a6a91ca6d02e2066",
+  "migrationVersion": "20261031073637",
+  "migrationName": "connect_calculs_melanges_locked_v1",
+  "historyProfile": "managed6",
+  "idempotencyKey": "mathas-mixed-594-v3-d06c13e4c3e60a52",
+  "applicationStatementsUnchanged": true,
+  "historyAndSchemaSameTransaction": true,
+  "transport": "single_raw_sql_batch",
+  "notForApplyMigration": true,
+  "sqlSourceCommit": "5fb66240d3d853a915e5f7af4baed2de1525a71a",
+  "migrationFile": "supabase/migrations/20261031073637_connect_calculs_melanges_locked_v1.sql",
+  "installationFile": "supabase/release-candidates/calculs_melanges_install_atomic.sql",
+  "auditFileSha256": "8bc957a038624ef261bd1bb45c627af1f3f4a0e04530cab18304fae1b3608a0b",
+  "beforeInstallValidated": true,
+  "expectedHistoryCountBefore": 25,
+  "expectedHistoryCountAfter": 26
+}
