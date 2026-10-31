@@ -84,7 +84,9 @@ async function refresh(){
    }
   }
   data=result;
-  hasLoaded=true;paused=false;
+  const firstDisplay=!hasLoaded;
+  hasLoaded=true;
+  if(firstDisplay)paused=false;
   if(!enabled().some(a=>a.key===currentApp))currentApp=enabled()[0]?.key??null;
   secondsRemaining=options.rotationSeconds;
   for(const id of ['open-settings','settings-left','open-all'])$(id).disabled=false;
@@ -92,7 +94,9 @@ async function refresh(){
   note('Tableau de '+classLabel+' · données autorisées · '+new Intl.DateTimeFormat('fr-BE',{hour:'2-digit',minute:'2-digit'}).format(new Date()));
  }catch(error){
   if(ticket!==refreshTicket)return;
-  note('Erreur : '+(error?.message||'Données indisponibles'));
+  const message=error?.message||'Données indisponibles';
+  if(/connexion professeur|auth_required|auth$|401/i.test(message))clearBoard('Session professeur expirée : reconnecte-toi.');
+  else note('Erreur : '+message);
  }finally{fetching=false;$('load-real').disabled=false}
 }
 function mainData(){return data?.classes?.find(c=>c.classId===classId)}
