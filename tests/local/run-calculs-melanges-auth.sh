@@ -54,6 +54,8 @@ SQL
 tail -n +3 "$ROOT/tests/postgres/calculs-melanges-fixture.sql" | docker_local exec -i "$RUN_NAME-db" psql -U postgres -v ON_ERROR_STOP=1 >/dev/null
 docker_local exec -i "$RUN_NAME-db" psql -U postgres -v ON_ERROR_STOP=1 < "$ROOT/supabase/release-candidates/calculs_melanges_locked_v1.sql" >/dev/null
 docker_local exec -i "$RUN_NAME-db" psql -U postgres -v ON_ERROR_STOP=1 < "$ROOT/tests/postgres/calculs-melanges-auth-fixture.sql" >/dev/null
+# Durable trophy RPCs and profile summaries in this disposable lab only.
+docker_local exec -i "$RUN_NAME-db" psql -U postgres -v ON_ERROR_STOP=1 < "$ROOT/supabase/release-candidates/20261031_permanent_trophies_hub_v1.sql" >/dev/null
 docker_local run -d --name "$RUN_NAME-auth" --network "$RUN_NAME" --network-alias mathas-mixed-auth --env-file "$LAB/auth.env" supabase/gotrue:v2.186.0 >/dev/null
 docker_local run -d --name "$RUN_NAME-rest" --network "$RUN_NAME" --network-alias mathas-mixed-rest --env-file "$LAB/rest.env" postgrest/postgrest:v14.3 >/dev/null
 for name in results api; do docker_local run -d --name "$RUN_NAME-$name" --network "$RUN_NAME" --network-alias "mathas-mixed-$name" --env-file "$LAB/$name/edge.env" -e NO_PROXY=mathas-mixed-kong,localhost,127.0.0.1 -e no_proxy=mathas-mixed-kong,localhost,127.0.0.1 --mount "type=bind,src=$LAB/$name,dst=/lab,readonly" supabase/edge-runtime:v1.70.0 start --main-service /lab >/dev/null; done
