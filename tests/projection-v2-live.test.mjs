@@ -15,9 +15,11 @@ test('Projection V2 live : chargement professeur volontaire, lecture protégée 
  assert.doesNotMatch(js,/signInAnonymously|localStorage\.setItem/);
 });
 test('Projection V2 live : 14 élèves maximum, classement propre aux jeux, score près du nom',()=>{
- assert.match(js,/\.slice\(0,14\)/);
- assert.match(js,/const split=people\.length>7/);
- assert.match(js,/Math\.ceil\(people\.length\/2\)/);
+ assert.match(js,/limit:20/);
+ assert.match(js,/rankMultiClass/);
+ assert.match(js,/splitProjectedRanking/);
+ assert.match(js,/const multiple=compared\.length>0/);
+ assert.match(js,/classes:data\.classes,primaryClassId:classId,scoreClassIds:compared/);
  assert.match(js,/primary\.append\(name,points\)/);
  assert.match(js,/Niveau /);
  assert.match(js,/p\.trophies/);
@@ -36,6 +38,9 @@ test('Projection V2 live : panneaux score et % isolés et refus de faux pourcent
  assert.match(js,/comparisonDisplay/);
  assert.match(html,/Réussite de la classe/);
  assert.match(html,/id="comparison-results"/);
+ assert.doesNotMatch(html,/id="count-label"/);
+ assert.match(html,/class="ranking-context"/);
+ assert.doesNotMatch(html,/Score propre à l'application · Trophées permanents/);
  assert.match(html,/id="settings-left" class="settings-under"/);
  assert.match(html,/\.ranking-col \+ \.ranking-col\{border-left:5px/);
  assert.match(html,/\.entry\.rank-1 \.place/);
@@ -49,6 +54,8 @@ test('Projection V2 live : reset de la seule application via mot de passe masqu�
  assert.match(html,/id="reset-password" type="password"/);
  assert.match(js,/teacher-reset-score'/);
  assert.match(js,/appKey:pendingReset,password/);
+ assert.match(js,/rotationSeconds:30/);
+ assert.match(js,/if\(firstDisplay\)secondsRemaining=options\.rotationSeconds/);
  assert.match(js,/reset\.disabled=!options\.scoreApps\.includes\(app\.key\)/);
  assert.match(js,/classLabel/);
  assert.match(js,/reset-password/);
