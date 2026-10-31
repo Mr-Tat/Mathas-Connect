@@ -533,3 +533,6 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
     content: "Voir le détail ›";
   }
 }
+
+/* Entrée du laboratoire : rangée avec les raccourcis professeur, sans toucher aux HUB. */
+.teacher-shortcuts .teacher-laboratory-link{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 13px;border-radius:10px;background:#dceef4;color:#143d58;font-size:14px;font-weight:750;text-decoration:none;border:1px solid #bddce4}.teacher-shortcuts .teacher-laboratory-link:focus-visible{outline:3px solid #70add1;outline-offset:2px}
