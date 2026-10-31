@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="./style.css?v=20261031-lab-gestion">
   <link rel="preconnect" href="https://esm.sh" crossorigin>
   <link rel="preconnect" href="https://awmhpfofacaglewammxt.supabase.co" crossorigin>
-  <script type="module" src="./app.js?v=20261031-melange"></script>
+  <script type="module" src="./app.js?v=20261031-lab-profils"></script>
 <link rel="stylesheet" href="./join-avatar.css?v=20261026avatar3">
 <link rel="stylesheet" href="./student-entry-dark.css?v=20261026go2">
 <script type="module" src="./join-avatar.js?v=20261027avatars2"></script>
@@ -170,6 +170,7 @@
         <button id="other-profile" class="soft" type="button">Autre élève</button>
       </div>
       <div id="legacy-professor-session" hidden><p class="hint">Ancienne session professeur sur cet appareil.</p><button type="button" id="free-student-session">Activer la connexion élève</button></div>
+      <p id="lab-test-profile-hint" class="hint" hidden></p>
       <form id="join-form">
         <label for="first-name">Prénom</label>
         <input id="first-name" type="text" maxlength="40" autocomplete="given-name" placeholder="Lucas" required>
@@ -200,7 +201,7 @@
       <p class="hint" id="waiting-expiry">Ce code expire après 15 minutes.</p>
     </section>
 
-    <section class="panel" data-view="account-choice" hidden><h1>Qui veut jouer ?</h1><p class="centered">Un profil est déjà autorisé sur cet appareil.</p><div class="account-existing"><div class="join-avatar-preview" id="account-avatar">🦊</div><strong id="account-name">Élève</strong></div><div class="button-row"><button id="continue-profile" type="button">Continuer avec ce profil</button><button id="switch-profile" class="soft" type="button">Utiliser un autre compte</button></div><p class="hint">Changer de profil ne supprime aucun score ni XP. Il faudra faire autoriser de nouveau cet appareil pour revenir à ce profil.</p></section>
+    <section class="panel" data-view="account-choice" hidden><h1>Qui veut jouer ?</h1><p class="centered">Un profil est déjà autorisé sur cet appareil.</p><div class="account-existing"><div class="join-avatar-preview" id="account-avatar">🦊</div><strong id="account-name">Élève</strong></div><p id="test-profile-switch-notice" class="hint" hidden></p><div class="button-row"><button id="continue-profile" type="button">Continuer avec ce profil</button><button id="switch-profile" class="soft" type="button">Utiliser un autre compte</button></div><p class="hint">Changer de profil ne supprime aucun score ni XP. Il faudra faire autoriser de nouveau cet appareil pour revenir à ce profil.</p></section>
     <section class="panel" data-view="approved" hidden>
       <div class="big-check" aria-hidden="true">✓</div>
       <h1 id="result-title">Appareil autorisé</h1>
