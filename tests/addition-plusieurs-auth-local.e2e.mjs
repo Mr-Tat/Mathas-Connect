@@ -62,7 +62,14 @@ const restart=success(await post(teacher,'connect-results',{
 }),'professor restart');
 assert.equal(restart.parcours,2);
 const reset=success(await post(student,'connect-results',{action:'student-load',appKey}),'after reset');
-assert.equal(reset.resetEpoch,1);assert.deepEqual(reset.state,{});
+assert.equal(reset.resetEpoch,1);
+assert.deepEqual(reset.state.rewards,rewards,'acquis permanents conservés au redémarrage');
+assert.equal(reset.state.classic,undefined,'les scores repartent effectivement de zéro');
+const profileAfterReset=success(await post(student,'connect-api',{action:'student-me',includeXp:true}),'profil avec trophées');
+assert.equal(profileAfterReset.progress.totalTrophies,1,'le trophée reste unique');
+const appProgress=profileAfterReset.progress.apps.find(a=>a.appKey===appKey);
+assert.equal(appProgress.xpEarned,0,'XP de ce parcours remis à zéro');
+assert.equal(appProgress.trophiesEarned,1,'trophée conservé dans cette app');
 const xp=success(await post(student,'connect-results',{action:'student-xp',appKey}),'XP after reset');
 assert.equal(xp.appXp,22);assert.equal(xp.total,44);
 const previous=checked(await admin.from('connect_xp_credits').select('xp_credited')
