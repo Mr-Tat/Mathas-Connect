@@ -7,6 +7,13 @@ const url='https://awmhpfofacaglewammxt.supabase.co', key='sb_publishable_oI2Pyl
 const params=new URLSearchParams(location.search);
 const cls=params.get('class');
 const teacherPortal=params.get('portail')==='prof'&&!cls;
+// Prénom présélectionné depuis le laboratoire, pas un jeton ni une autorisation.
+const labTestClass='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
+const testFirst=(params.get('testFirst')||'').trim();
+const testInitial=(params.get('testInitial')||'').trim().toUpperCase();
+const testIntent=!teacherPortal&&cls===labTestClass&&params.get('lab')==='1'&&/^[\p{L}][\p{L} '-]{0,39}$/u.test(testFirst)&&/^[\p{L}]$/u.test(testInitial)
+ ? {first:testFirst,initial:testInitial,display:testFirst+'.'+testInitial}:null;
+const normalizedProfileName=value=>String(value||'').normalize('NFC').toLocaleLowerCase('fr').replace(/[.\s]+/g,'');
 // Administrateur : stockage séparé ; joueur : stockage historique préservé.
 const sb=createClient(url,key,{auth:{
  persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
@@ -234,6 +241,15 @@ function renderRecentProfiles() {
     });
     list.append(button);
   }
+  // L’élève contrôle et envoie lui-même sa demande de connexion habituelle.
+  if(testIntent){
+    wrapper.hidden=true;$('join-form').hidden=false;
+    $('first-name').value=testIntent.first;
+    $('last-initial').value=testIntent.initial;
+    const info=$('lab-test-profile-hint');
+    info.textContent='Profil de test sélectionné : '+testIntent.display+'. Si cet appareil n’est pas autorisé, envoie la demande puis approuve-la dans le laboratoire.';
+    info.hidden=false;
+  }
 }
 $('other-profile').onclick = () => {
   $('recent-profiles').hidden = true; $('join-form').hidden = false;
@@ -296,6 +312,11 @@ async function status(silent=false){
   $('account-name').textContent=(r.displayName||'Élève').replace(/\.\s*(?=[\p{L}]$)/u,' ');
   $('account-avatar').textContent=avatarGlyph(r.avatar);
   $('account-avatar').style.background=avatarColor(r.avatar?.color);
+  const wrongProfile=!!testIntent&&normalizedProfileName(r.displayName)!==normalizedProfileName(testIntent.display);
+  $('continue-profile').hidden=wrongProfile;
+  const notice=$('test-profile-switch-notice');
+  notice.hidden=!wrongProfile;
+  if(wrongProfile)notice.textContent='Ce navigateur est déjà connecté à un autre profil. Pour tester '+testIntent.display+', choisis « Utiliser un autre compte », puis demande l’autorisation du professeur. Les acquis existants ne sont pas supprimés.';
   show('account-choice');return
  }
  if(r.state==='approved'){
