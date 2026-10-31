@@ -7,7 +7,7 @@ test('projection V2 demo : 14 élèves répartis en une ou deux colonnes',()=>{
  assert.match(doc,/const names=\[.*"Nathan"\]/);
  assert.match(doc,/slice\(0,20\)/);
  assert.match(doc,/seconds=30/);
- assert.match(doc,/const split=rows\.length>7/);
+ assert.match(doc,/split=rows\.length>7/);
  assert.match(doc,/rank-"\+position/);
  assert.match(doc,/\.ranking-col \+ \.ranking-col\{border-left:5px/);
  assert.match(doc,/\.entry\.rank-1 \.place/);
@@ -22,8 +22,8 @@ test('projection V2 demo : 14 élèves répartis en une ou deux colonnes',()=>{
  assert.match(doc,/person\.trophies/);
  assert.match(doc,/primary\.append\(name,points\)/);
 });
-test('projection V2 demo : rotation 90 s, score et % indépendants, Monsieur T initialement masqué',()=>{
- assert.match(doc,/let selected="addition",seconds=90/);
+test('projection V2 demo : rotation 30 s, score et % indépendants, Monsieur T initialement masqué',()=>{
+ assert.match(doc,/let selected="addition",seconds=30/);
  assert.match(doc,/if\(--seconds<=0\)go\(1\)/);
  assert.match(doc,/for\(const field of \["score","pct"\]\)/);
  assert.match(doc,/\$\("show-teacher"\)\.checked=false/);
