@@ -73,7 +73,7 @@ export function resetScorePeriod(periods=[],classId,appKey,when){
 // Combine only the class selected for projection and classes explicitly
 // checked in the Score column. % comparison choices have no effect here.
 export function rankMultiClass({
- classes=[],primaryClassId,scoreClassIds=[],appKey,limit=20,includeTeacher=false
+ classes=[],primaryClassId,scoreClassIds=[],appKey,limit=16,includeTeacher=false
 }={}){
  if(!validClass(primaryClassId)||!validApp(appKey))return [];
  const allowed=new Set([primaryClassId,...(Array.isArray(scoreClassIds)?scoreClassIds:[])]);
@@ -95,12 +95,13 @@ export function rankMultiClass({
  return eligible.sort((a,b)=>(b.score??-1)-(a.score??-1)
   ||a.name.localeCompare(b.name,'fr')||a.className.localeCompare(b.className,'fr')
   ||String(a.id).localeCompare(String(b.id)))
-  .slice(0,Math.min(Math.max(0,Number(limit)||20),20))
+  .slice(0,Math.min(Math.max(0,Number(limit)||16),16))
   .map((p,i)=>({...p,position:i+1}));
 }
 export function splitProjectedRanking(rows=[],multiClass=false){
- const data=(Array.isArray(rows)?rows:[]).slice(0,20);
- if(data.length<=(multiClass?10:7))return [data];
- const cut=multiClass?10:Math.ceil(data.length/2);
+ const data=(Array.isArray(rows)?rows:[]).slice(0,16);
+ if(data.length<=7)return [data];
+ // Deux colonnes équilibrées, jusqu'à 8 rangs chacune.
+ const cut=Math.ceil(data.length/2);
  return [data.slice(0,cut),data.slice(cut)];
 }
