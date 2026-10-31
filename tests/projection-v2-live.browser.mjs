@@ -95,6 +95,17 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   assert.equal(await page.locator('#classes .classstat').count(),6,'Global + cinq applications');
   assert.match(await page.locator('#classes .global-success').textContent(),/Global.*— %/);
   assert.match(await page.locator('#time-left').textContent(),/30 s/);
+  const headerClass=page.locator('#header-class');
+  assert.equal(await headerClass.textContent(),'Phase 2 A');
+  const classBounds=await headerClass.boundingBox();
+  const rankBounds=await page.locator('.ranking-head').boundingBox();
+  const titleBounds=await page.locator('#app-name').boundingBox();
+  assert.ok(classBounds&&Math.abs(classBounds.x+classBounds.width/2-683)<8,'Classe centrée dans le bandeau supérieur');
+  assert.ok(rankBounds&&rankBounds.height<90,'En-tête central compact');
+  assert.ok(titleBounds&&Math.abs(titleBounds.x+titleBounds.width/2-(rankBounds.x+rankBounds.width/2))<8,
+   'Titre du jeu centré sans cartouche latéral');
+  assert.equal(await page.locator('#ranking-note').count(),0,'Ancien cartouche supprimé');
+  assert.equal(await page.locator('.ranking-guide').count(),0,'Zone vide sous le titre supprimée');
   assert.equal(await page.locator('#comparison-results .compare-row').count(),0);
   assert.equal(await page.locator('#settings-left').count(),1);
   assert.equal(await page.locator('#open-settings').count(),0);
@@ -121,9 +132,16 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   assert.doesNotMatch(await page.locator('#comparison-results').textContent(),/Réussite globale/,'score seul sans pourcentage');
   assert.deepEqual(storedOptions.comparisonDisplay,[{classId:B,score:true,percentage:false}]);
   await page.getByRole('checkbox',{name:'Phase 2 B · Comparer le pourcentage'}).check();
-  await page.waitForFunction(()=>document.querySelector('#comparison-results')?.textContent?.includes('Réussite globale'));
+  await page.waitForFunction(()=>document.querySelector('#comparison-results .compare-row .global-success')?.textContent?.includes('Global'));
   assert.deepEqual(storedOptions.comparisonDisplay,[{classId:B,score:true,percentage:true}]);
   assert.match(await page.locator('#comparison-results').textContent(),/— %/,'aucun % fictif');
+  const global=page.locator('#comparison-results .compare-row .global-success');
+  assert.equal(await global.count(),1,'Global comparatif mis en évidence');
+  assert.match(await global.textContent(),/Global.*— %/);
+  assert.equal(
+   await global.evaluate(el=>getComputedStyle(el).backgroundColor),
+   await page.locator('#classes .global-success').evaluate(el=>getComputedStyle(el).backgroundColor),
+   'Le Global comparatif reprend le même fond que le Global principal');
   await page.getByRole('button',{name:'Réinitialiser uniquement le score de Addition écrite pour Phase 2 A'}).click();
   await page.locator('#reset-password').fill('MOT-DE-PASSE-FICTIF');
   await page.locator('#reset-apply').click();

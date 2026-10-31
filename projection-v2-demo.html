@@ -11,7 +11,8 @@
 body{margin:0;min-height:100vh;background:linear-gradient(140deg,#2d4b67,#162e49);color:#f2f7ff}
 button,input{font:inherit}button{cursor:pointer;min-height:36px}
 button:focus-visible,input:focus-visible{outline:3px solid #ffe08a;outline-offset:2px}
-header{display:flex;justify-content:space-between;align-items:center;padding:9px 18px;border-bottom:1px solid #57708a;background:#263f5b}
+header{display:flex;position:relative;justify-content:space-between;align-items:center;padding:9px 18px;border-bottom:1px solid #57708a;background:#263f5b}
+.header-class{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:35%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;color:#f6fbff;font-size:clamp(17px,1.45vw,24px);font-weight:900;letter-spacing:.02em}
 header strong{font-size:25px;font-weight:950;letter-spacing:-.05em}header strong span{font-size:12px;color:#82f1d4;letter-spacing:.13em}
 header .tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .demo{font-size:11px;font-weight:900;letter-spacing:.09em;color:#ffd67c}
@@ -28,12 +29,15 @@ main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) mi
 .left-col{display:flex;flex-direction:column;align-items:stretch;gap:10px;align-self:start;min-width:0}
 .left-col .panel{align-self:stretch}
 .left .classstat{margin:8px 0;gap:5px}
-.left .classstat.global-success{margin:6px 0 13px;padding:12px 9px;border:1px solid #a7dacf;border-radius:11px;background:#284f65}
+.left .classstat.global-success,.compare-row .classstat.global-success{margin:6px 0 13px;padding:12px 9px;border:1px solid #a7dacf;border-radius:11px;background:#284f65}
 .global-success .headline{font-size:16px}
 .left .classstat .headline{font-size:12px;align-items:center}
 .left .classstat .headline strong{white-space:nowrap;font-size:15px}
-.left .classstat.global-success .headline strong{font-size:23px;color:#c8efe4}
-.compare-panel{background:#2e4963;max-height:240px;overflow-y:auto}
+.left .classstat.global-success .headline strong,.compare-row .classstat.global-success .headline strong{font-size:23px;color:#c8efe4}
+.compare-row .classstat.global-success{display:grid;gap:7px}
+.compare-row .classstat.global-success .headline{font-size:14px;font-weight:850;align-items:center}
+.compare-row .classstat.global-success .track{height:9px}
+.compare-panel{background:#2e4963;max-height:min(42vh,340px);overflow-y:auto}
 .compare-panel h2{font-size:15px;margin-bottom:7px}
 .compare-row{padding:8px 0;border-bottom:1px solid #577089}
 .compare-row:last-child{border:0}
@@ -49,16 +53,16 @@ main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) mi
 .event.perfect .event-icon{background:#386d65}
 .event.trophy .event-icon{background:#725a36}
 .ranking{background:linear-gradient(170deg,#193d65,#0a2446);border:2px solid #b4d5f7;border-radius:18px;box-shadow:0 0 26px #3a98e744;overflow:hidden;min-width:0}
-.ranking-head{text-align:center;background:#244b78;padding:8px 12px;border-bottom:1px solid #577ba5}
+.ranking-head{text-align:center;background:#244b78;border-bottom:1px solid #577ba5}
 .ranking-head .over{font-size:11px;font-weight:900;letter-spacing:.12em;color:#d5e5fc}
 .ranking-head h1{font-size:clamp(24px,3.1vw,38px);line-height:1.06;margin:3px 0 0}
 .ranking-head small{font-size:11px;color:#c4dbf7}
-.ranking-head{position:relative;min-height:105px;padding-right:210px;padding-left:12px}
-.ranking-context{position:absolute;top:50%;right:12px;transform:translateY(-50%);max-width:190px;text-align:right;display:block;font-weight:800}
+.ranking-head{min-height:69px;padding:6px 12px 7px}
+.ranking-head h1{text-align:center;margin:3px 0 0}
 .ranking-guide{justify-content:flex-end}.ranking-footer{justify-content:flex-end}
 .class-mark{display:inline-flex;margin-left:8px;padding:1px 6px;background:#4a6886;border-radius:5px;color:white;font-size:10px;font-weight:850}
-@media(max-width:850px){.ranking-head{padding-right:12px}.ranking-context{position:static;transform:none;text-align:center;max-width:100%;margin-top:5px}}
-.ranking-wrap{padding:10px 12px}
+@media(max-width:850px){header{flex-wrap:wrap}.header-class{position:static;transform:none;order:3;width:100%;text-align:center}.ranking-head{padding-inline:10px}}
+.ranking-wrap{padding:3px 12px 6px}
 .ranking-guide{display:flex;justify-content:space-between;font-size:12px;color:#b9d7f4;margin-bottom:10px}
 .ranking-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
 .ranking-list.single{grid-template-columns:minmax(0,1fr);max-width:550px;margin:auto}
@@ -77,7 +81,8 @@ main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) mi
 .points{font-size:clamp(15px,1.3vw,19px);font-weight:950;color:#ffe0a1;white-space:nowrap;font-variant-numeric:tabular-nums}
 .minor{color:#bdd2ed;font-size:11px;display:flex;gap:9px;margin-top:4px}
 .entry.unplayed{opacity:.62}
-.ranking-footer{padding:9px 15px;border-top:1px solid #4d76a6;background:#16395d;display:flex;justify-content:space-between;align-items:center;font-size:11px}
+.ranking-footer{padding:6px 15px;border-top:1px solid #4d76a6;background:#16395d;display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:11px}
+#rotation-label{color:#b9d7f4}
 .right{display:grid;gap:12px;grid-template-rows:1fr 1fr;min-width:0}
 .right .panel{background:#24517e}
 .right .panel+ .panel{background:#3b536b}
@@ -127,6 +132,7 @@ label.setting{justify-content:space-between;max-width:380px}
 <body>
 <header>
   <strong>Math’as <span>LIVE · PROJECTION V2</span></strong>
+  <div id="header-class" class="header-class" aria-label="Classe projetée">Phase 2 A</div>
   <div class="tools"><span class="demo">● MAQUETTE · RÉSULTATS FICTIFS</span></div>
 </header>
 <main>
@@ -136,9 +142,9 @@ label.setting{justify-content:space-between;max-width:380px}
     <button id="settings-left" class="settings-under" type="button">⚙ Applications</button>
   </aside>
   <section class="ranking" aria-label="Classement par application">
-    <div class="ranking-head"><div class="over">🏆 MEILLEURS SCORES · DEPUIS LA DERNIÈRE REMISE À ZÉRO</div><h1 id="app-name"></h1><small id="ranking-note" class="ranking-context"></small></div>
-    <div class="ranking-wrap"><div class="ranking-guide"><span id="rotation-label"></span></div><div id="ranking-list" class="ranking-list"></div></div>
-    <div class="ranking-footer"><span id="time-left"></span></div>
+    <div class="ranking-head"><div class="over">🏆 MEILLEURS SCORES · DEPUIS LA DERNIÈRE REMISE À ZÉRO</div><h1 id="app-name"></h1></div>
+    <div class="ranking-wrap"><div id="ranking-list" class="ranking-list"></div></div>
+    <div class="ranking-footer"><span id="rotation-label"></span><span id="time-left"></span></div>
   </section>
   <aside class="right">
     <section class="panel"><h2>✨ Nouveaux exploits</h2><div id="exploits"></div></section>
@@ -186,7 +192,6 @@ function render(){
  ensureSelected();
  const current=apps.find(a=>a.key===selected);
  $("app-name").textContent=current?.title||"Aucune application sélectionnée";
- $("ranking-note").textContent="Phase 2 A · "+entries().length+" élèves"+(others.some(c=>c.score)?" · Défi interclasses":"");
  const list=$("ranking-list");list.replaceChildren();
  const rows=current?entries():[];
  const multi=others.some(c=>c.score),split=rows.length>7;
@@ -255,10 +260,7 @@ function drawClasses(){
   const card=document.createElement("div");card.className="compare-row";
   const name=document.createElement("strong");name.textContent=c.name;card.append(name);
   if(c.percentage){
-   const global=document.createElement("div");global.className="compare-line";
-   const caption=document.createElement("span");caption.textContent="Réussite globale";
-   const value=document.createElement("span");value.textContent=c.pct+" %";
-   global.append(caption,value);card.append(global);
+   addPct(card,"Global",c.pct,true);
    apps.filter(a=>a.pct).forEach((app,j)=>{
     const line=document.createElement("div");line.className="compare-line";
     const label=document.createElement("span");label.textContent=app.title;

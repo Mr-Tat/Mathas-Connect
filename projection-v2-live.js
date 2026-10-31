@@ -29,7 +29,6 @@ function clearBoard(message){
  $('ranking-list').replaceChildren();$('classes').replaceChildren();
  $('exploits').replaceChildren();$('rises').replaceChildren();$('app-tabs').replaceChildren();
  $('app-name').textContent='Projection masquée';
- $('ranking-note').textContent='Aucune donnée d’élève visible';
  $('time-left').textContent='';
  $('reset-password').value='';
  for(const id of ['settings-left'])$(id).disabled=true;
@@ -149,11 +148,6 @@ function render(){
   });
   $('ranking-list').append(column);
  });
- const period=principal.scorePeriods?.find(p=>p.appKey===currentApp);
- const total=people.length;
- $('ranking-note').textContent=classLabel+' · '+total+' élève'+(total>1?'s':'')+
-  (multiple?' · défi interclasses':'')+(period?' · depuis le '+
-    new Intl.DateTimeFormat('fr-BE',{day:'2-digit',month:'2-digit'}).format(new Date(period.since)):'');
  const tabs=$('app-tabs');tabs.replaceChildren();
  enabled().forEach(a=>{
   const btn=document.createElement('button');btn.type='button';
@@ -216,11 +210,7 @@ function renderClasses(){
   const name=document.createElement('strong');name.textContent=c.name;panel.append(name);
   // Les scores des autres classes s'affichent uniquement dans le classement central.
   if(display.percentage){
-   const global=document.createElement('div');global.className='compare-line';
-   const label=document.createElement('span');label.textContent='Réussite globale';
-   const value=document.createElement('span');value.className='not-ready';
-   value.textContent=percentText(c.percentages?.global);
-   global.append(label,value);panel.append(global);
+   panel.append(makeSuccessRow('Global',c.percentages?.global,true));
    for(const app of apps.filter(a=>options.percentageApps.includes(a.key))){
     const line=document.createElement('div');line.className='compare-line';
     const l=document.createElement('span');l.textContent=app.title;
@@ -349,6 +339,7 @@ $('reset-apply').onclick=async()=>{
 $('load-real').onclick=refresh;
 window.addEventListener('pagehide',()=>clearBoard('Projection masquée en quittant la page.'));
 async function initialize(){
+ $('header-class').textContent=classLabel||'Classe';
  clearBoard('Vérification de la session professeur…');
  if(!classId)return note('Ouvre cette page depuis une classe de l’accueil professeur.');
  try{

@@ -39,7 +39,11 @@ test('Projection V2 live : panneaux score et % isolés et refus de faux pourcent
  assert.match(html,/Réussite de la classe/);
  assert.match(html,/id="comparison-results"/);
  assert.doesNotMatch(html,/id="count-label"/);
- assert.match(html,/class="ranking-context"/);
+ assert.match(html,/id="header-class" class="header-class"/);
+ assert.doesNotMatch(html,/id="ranking-note"/);
+ assert.doesNotMatch(html,/class="ranking-guide"/);
+ assert.match(html,/\.ranking-head\{min-height:69px;padding:6px 12px 7px\}/);
+ assert.match(js,/panel\.append\(makeSuccessRow\('Global',c\.percentages\?\.global,true\)\)/);
  assert.match(html,/grid-template-rows:repeat\(var\(--row-count,8\),minmax\(0,1fr\)\)/);
  assert.doesNotMatch(html,/Score propre à l'application · Trophées permanents/);
  assert.match(html,/id="settings-left" class="settings-under"/);
