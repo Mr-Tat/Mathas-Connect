@@ -174,14 +174,14 @@ function exploit(type,message){
 }
 function numericPercent(value){return typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<=100?value:null}
 function percentText(value){const n=numericPercent(value);return n===null?'— %':(Math.round(n*10)/10).toLocaleString('fr-BE')+' %'}
-function makeSuccessRow(label,pct,global=false){
+function makeSuccessRow(label,pct,global=false,compact=false){
  const row=document.createElement('div');row.className='classstat'+(global?' global-success':'');
  const headline=document.createElement('div');headline.className='headline';
  const name=document.createElement('span');name.textContent=label;
  const value=document.createElement('strong');value.textContent=percentText(pct);
  if(numericPercent(pct)===null)value.className='unavailable';
  headline.append(name,value);row.append(headline);
- if(numericPercent(pct)!==null){
+ if(numericPercent(pct)!==null&&!compact){
   const track=document.createElement('div');track.className='track';
   const fill=document.createElement('i');fill.style.width=numericPercent(pct)+'%';track.append(fill);row.append(track);
  }
@@ -210,7 +210,7 @@ function renderClasses(){
   const name=document.createElement('strong');name.textContent=c.name;panel.append(name);
   // Les scores des autres classes s'affichent uniquement dans le classement central.
   if(display.percentage){
-   panel.append(makeSuccessRow('Global',c.percentages?.global,true));
+   panel.append(makeSuccessRow('Global',c.percentages?.global,true,true));
    for(const app of apps.filter(a=>options.percentageApps.includes(a.key))){
     const line=document.createElement('div');line.className='compare-line';
     const l=document.createElement('span');l.textContent=app.title;

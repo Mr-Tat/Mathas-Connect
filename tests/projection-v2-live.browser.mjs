@@ -116,6 +116,20 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   await page.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===16);
   assert.equal(await page.locator('.ranking-col').nth(0).locator('.entry').count(),8);
   assert.equal(await page.locator('.ranking-col').nth(1).locator('.entry').count(),8);
+  // Header scrolls away; the entire remaining projector screen is the stage.
+  const stageSize=await page.locator('.projection-stage').boundingBox();
+  assert.ok(stageSize&&Math.abs(stageSize.height-768)<=2,'Le plateau occupe une hauteur complète de 768 px');
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight>window.innerHeight+30),
+    'La bande de classe se masque par défilement naturel');
+  await page.evaluate(()=>window.scrollTo(0,document.querySelector('header').offsetHeight));
+  await page.waitForFunction(()=>window.scrollY>=document.querySelector('header').offsetHeight-2);
+  const stageVisible=await page.locator('.projection-stage').boundingBox();
+  assert.ok(stageVisible&&Math.abs(stageVisible.y)<3,'Le plateau commence en haut après défilement');
+  const footer=await page.locator('footer').boundingBox();
+  assert.ok(footer&&footer.y+footer.height<=769&&footer.y>675,'Les commandes restent visibles en bas');
+  assert.equal(await page.locator('.ranking-footer').count(),0,'Ancienne bande du compte à rebours supprimée');
+  assert.equal(await page.locator('footer #rotation-label').count(),1);
+  assert.equal(await page.locator('footer #time-left').count(),1);
   const first=await page.locator('.ranking-col').first().locator('.entry').first().boundingBox();
   const eighth=await page.locator('.ranking-col').first().locator('.entry').last().boundingBox();
   const last=await page.locator('#ranking-list .entry').last().boundingBox();
@@ -125,7 +139,8 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
    'Les seize places doivent être visibles sur un écran 1366×768 sans défiler');
   assert.ok(eighth.y+eighth.height>board.y+board.height-110,
    'Les 8 rangs doivent occuper la hauteur utile du panneau, pas se tasser en haut');
-  assert.ok(eighth.y-first.y>360,'Huit lignes uniformément étalées, taille lisible');
+  assert.ok(eighth.y-first.y>400,'Les huit lignes utilisent la hauteur supplémentaire libérée');
+  assert.ok(first.height>57,'Cases élèves agrandies verticalement');
   assert.ok((await page.locator('.class-mark').allTextContents()).includes('Phase 2 B'));
   assert.equal(await page.locator('#comparison-results .compare-row').count(),0,
     'Score des autres classes au centre, jamais à gauche');
@@ -137,6 +152,11 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   assert.match(await page.locator('#comparison-results').textContent(),/— %/,'aucun % fictif');
   const global=page.locator('#comparison-results .compare-row .global-success');
   assert.equal(await global.count(),1,'Global comparatif mis en évidence');
+  assert.equal(await global.locator('.track').count(),0,'Aucune barre de progression comparative');
+  assert.equal(await page.locator('.compare-panel h2').count(),0,'Titre Autres classes supprimé');
+  const cmpFont=await global.locator('.headline strong').evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+  const mainFont=await page.locator('#classes .global-success .headline strong').evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+  assert.ok(cmpFont<mainFont,'Pourcentage comparatif plus petit que le pourcentage principal');
   assert.match(await global.textContent(),/Global.*— %/);
   assert.equal(
    await global.evaluate(el=>getComputedStyle(el).backgroundColor),
@@ -147,6 +167,25 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   await page.locator('#reset-apply').click();
   await page.waitForFunction(()=>!document.querySelector('#settings').open);
   assert.equal(resetCalls,1);
+  // La maquette fictive affiche la même disposition sans aucun compte élève.
+  const demo=await browser.newPage({viewport:{width:1366,height:768}});
+  const demoErrors=[];demo.on('pageerror',err=>demoErrors.push(err.message));
+  await demo.goto(url+'/projection-v2-demo.html',{waitUntil:'domcontentloaded'});
+  await demo.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===16);
+  await demo.evaluate(()=>window.scrollTo(0,document.querySelector('header').offsetHeight));
+  await demo.waitForFunction(()=>window.scrollY>0);
+  const demoStage=await demo.locator('.projection-stage').boundingBox();
+  const demoFooter=await demo.locator('footer').boundingBox();
+  assert.ok(demoStage&&Math.abs(demoStage.y)<3&&Math.abs(demoStage.height-768)<3);
+  assert.ok(demoFooter&&demoFooter.y+demoFooter.height<=769);
+  assert.equal(await demo.locator('.ranking-footer').count(),0);
+  assert.equal(await demo.locator('.compare-panel h2').count(),0);
+  assert.equal(await demo.locator('.compare-panel .global-success').count(),1);
+  assert.equal(await demo.locator('.compare-panel .global-success .track').count(),0);
+  assert.equal(await demo.locator('footer #rotation-label').count(),1);
+  assert.equal(await demo.locator('footer #time-left').count(),1);
+  assert.deepEqual(demoErrors,[]);
+  await demo.close();
   await page.evaluate(()=>window.__signOut());
   assert.equal(await page.locator('#ranking-list .entry').count(),0,'déconnexion masque les résultats');
   assert.deepEqual(errors,[]);

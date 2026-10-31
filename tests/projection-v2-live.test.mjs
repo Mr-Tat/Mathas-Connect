@@ -43,7 +43,14 @@ test('Projection V2 live : panneaux score et % isolés et refus de faux pourcent
  assert.doesNotMatch(html,/id="ranking-note"/);
  assert.doesNotMatch(html,/class="ranking-guide"/);
  assert.match(html,/\.ranking-head\{min-height:69px;padding:6px 12px 7px\}/);
- assert.match(js,/panel\.append\(makeSuccessRow\('Global',c\.percentages\?\.global,true\)\)/);
+ assert.match(js,/panel\.append\(makeSuccessRow\('Global',c\.percentages\?\.global,true,true\)\)/);
+ assert.match(js,/if\(numericPercent\(pct\)!==null&&!compact\)/);
+ assert.match(html,/class="projection-stage"/);
+ assert.match(html,/\.projection-stage\{height:100vh;height:100dvh/);
+ assert.doesNotMatch(html,/class="ranking-footer"/);
+ assert.doesNotMatch(html,/<h2>↔ Autres classes<\/h2>/);
+ assert.match(html,/\.compare-row \.classstat\.global-success \.headline strong\{font-size:16px\}/);
+ assert.match(html,/<footer>[\s\S]*id="rotation-label"[\s\S]*id="time-left"[\s\S]*id="next-app"/);
  assert.match(html,/grid-template-rows:repeat\(var\(--row-count,8\),minmax\(0,1fr\)\)/);
  assert.doesNotMatch(html,/Score propre à l'application · Trophées permanents/);
  assert.match(html,/id="settings-left" class="settings-under"/);
