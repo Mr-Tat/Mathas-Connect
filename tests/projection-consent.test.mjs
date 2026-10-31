@@ -42,3 +42,47 @@ test('Consentement : API vérifie le joueur, la classe et ne lit que les preuves
  assert.match(sql,/ENABLE ROW LEVEL SECURITY/);
  assert.doesNotMatch(sql,/TRUNCATE|DELETE FROM public\.connect_states/);
 });
+
+test('Consentement : refuser ne transmet rien ; accepter transmet exactement son eventId',async()=>{
+ const {createProjectionConsent}=await import('../projection-consent.mjs');
+ const elements=[];
+ const documentRef={
+  head:{append(){}},body:{append(){}},
+  createElement(tag){
+   const el={tag,children:[],hidden:false,textContent:'',onclick:null,
+    append(...children){this.children.push(...children)},
+    setAttribute(name,value){this[name]=value},focus(){}};
+   elements.push(el);return el;
+  }
+ };
+ const events=[],store=new Map(),storage={
+  getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)
+ };
+ const windowRef={addEventListener(){}};
+ const tool=createProjectionConsent({
+  classId:'11111111-1111-4111-8111-111111111111',
+  appKey:'addition-ecrite-simple',
+  studentKey:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  getToken:async()=> 'FAKE_JWT_TEST_ONLY',
+  documentRef,windowRef,storage,
+  fetchImpl:async(url,params)=>{
+   events.push(JSON.parse(params.body));
+   return {ok:true,json:async()=>({ok:true,consentRecorded:true})}
+  }
+ });
+ const no=elements.find(e=>e.textContent==='Non, merci');
+ const yes=elements.find(e=>e.textContent==='Oui, envoyer');
+ const rejected='aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa';
+ const accepted='aaaaaaaa-2222-4222-8222-aaaaaaaaaaaa';
+ assert.equal(tool.offer(rejected),true);
+ no.onclick();
+ assert.equal(events.length,0);
+ assert.equal(tool.offer(accepted),true);
+ assert.equal(events.length,0,'no publication before YES click');
+ yes.onclick();
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(events.length,1);
+ assert.equal(events[0].eventId,accepted);
+ assert.equal(events[0].classId,'11111111-1111-4111-8111-111111111111');
+ assert.equal(tool.pending(),0);
+});
