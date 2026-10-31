@@ -53,6 +53,7 @@ main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) mi
 .event.rank-up .event-icon{background:#554b77}
 .event.perfect .event-icon{background:#386d65}
 .event.trophy .event-icon{background:#725a36}
+.event.sudden .event-icon{background:#76503b}
 .ranking{background:linear-gradient(170deg,#193d65,#0a2446);border:2px solid #b4d5f7;border-radius:18px;box-shadow:0 0 26px #3a98e744;overflow:hidden;min-width:0}
 .ranking-head{text-align:center;background:#244b78;border-bottom:1px solid #577ba5}
 .ranking-head .over{font-size:11px;font-weight:900;letter-spacing:.12em;color:#d5e5fc}
@@ -225,18 +226,25 @@ function render(){
   btn.onclick=()=>{selected=app.key;seconds=30;render()};buttons.append(btn)
  });
  $("exploits").replaceChildren();
+ const sudden=makeSuddenExploit("Inès",11); // Donnée fictive : 11 > 10.
  $("exploits").append(makeExploit("trophy","Lina obtient un nouveau trophée !"),makeExploit("perfect","Zoé réussit une série parfaite !"),makeExploit("top","Adam prend la 4e place !"));
+ if(sudden)$("exploits").append(sudden);
  $("rises").replaceChildren();
  $("rises").append(makeExploit("rise","Adam remonte de 3 places."),makeExploit("rise","Inès remonte de 2 places."));
  drawClasses();updateTime();
 }
 function makeExploit(type,message){
- const markers={trophy:["🏆","trophy"],perfect:["✨","perfect"],top:["🏅","rank-up"],rise:["📈","rank-up"]};
+ const markers={trophy:["🏆","trophy"],perfect:["✨","perfect"],top:["🏅","rank-up"],sudden:["🔥","sudden"],rise:["📈","rank-up"]};
  const [sign,style]=markers[type];
  const el=document.createElement("div");el.className="event "+style;
  const icon=document.createElement("span");icon.className="event-icon";icon.textContent=sign;icon.setAttribute("aria-hidden","true");
  const label=document.createElement("span");label.className="event-text";label.textContent=message;
  el.append(icon,label);return el;
+}
+// Seuil strict : une partie Mort subite doit dépasser 10 bonnes réponses.
+function makeSuddenExploit(name,correct){
+ if(!Number.isInteger(correct)||correct<=10)return null;
+ return makeExploit("sudden",name+" dépasse 10 bonnes réponses en Mort subite : "+correct+" !");
 }
 function addPct(target,title,pct,global=false,compact=false){
  const row=document.createElement("div");row.className="classstat"+(global?" global-success":"");
