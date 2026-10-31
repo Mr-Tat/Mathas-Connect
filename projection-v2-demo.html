@@ -180,7 +180,7 @@ function entries(){
   id:c.name+"-"+i,name:["Rayan","Camille","Sarah","Maya","Elliot","Amine","Chloé","Sacha","Yanis","Rose","Robin"][i],
   className:c.name,level:2+(i%5),trophies:i%7,score:Math.max(4,175-i*11-j*4-ix*2)
  })));
- return [...main,...challengers].sort((a,b)=>(b.score??-1)-(a.score??-1)||a.name.localeCompare(b.name,"fr")).slice(0,20);
+ return [...main,...challengers].sort((a,b)=>(b.score??-1)-(a.score??-1)||a.name.localeCompare(b.name,"fr")).slice(0,16);
 }
 function render(){
  ensureSelected();
@@ -191,15 +191,16 @@ function render(){
  const rows=current?entries():[];
  const multi=others.some(c=>c.score),split=rows.length>7;
  list.classList.toggle("single",!split);list.classList.toggle("multi",multi);
- const cut=multi?Math.min(10,rows.length):Math.ceil(rows.length/2);
+ const cut=Math.ceil(rows.length/2);
  const cols=split?[rows.slice(0,cut),rows.slice(cut)]:[rows];
  let positionIndex=0;
  cols.forEach((group,ci)=>{
   const column=document.createElement("div");column.className="ranking-col";
+  column.style.setProperty("--row-count",String(group.length));
   group.forEach((person,index)=>{
    const position=++positionIndex;
    const el=document.createElement("div");el.className="entry rank-"+position+(person.score===null?" unplayed":"");
-   el.style.setProperty("--rank-progress",String((position-1)/19));
+   el.style.setProperty("--rank-progress",String((position-1)/15));
    const rank=document.createElement("span");rank.className="place";rank.textContent=position<=3?["🥇","🥈","🥉"][position-1]:position;
    const detail=document.createElement("div");
    const primary=document.createElement("div");primary.className="primary";
