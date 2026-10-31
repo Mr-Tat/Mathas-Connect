@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Math’as Connect — Projection V2</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;--back:#203952;--panel:#3b536b;--center:#0c2748;--line:#7189a2;--gold:#ffdc81}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:linear-gradient(140deg,#2d4b67,#162e49);color:#f2f7ff}
+button,input{font:inherit}button{cursor:pointer;min-height:36px}
+button:focus-visible,input:focus-visible{outline:3px solid #ffe08a;outline-offset:2px}
+header{display:flex;justify-content:space-between;align-items:center;padding:9px 18px;border-bottom:1px solid #57708a;background:#263f5b}
+header strong{font-size:25px;font-weight:950;letter-spacing:-.05em}header strong span{font-size:12px;color:#82f1d4;letter-spacing:.13em}
+header .tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.demo{font-size:11px;font-weight:900;letter-spacing:.09em;color:#ffd67c}
+button{border:1px solid #7794b1;border-radius:9px;color:#f6fbff;background:#3c5771;padding:7px 11px;font-weight:700}
+button:hover{background:#4f779d}
+main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) minmax(210px,1.12fr);gap:12px;padding:11px 14px;max-width:1600px;margin:auto;align-items:stretch}
+.panel{background:#3d5570;border:1px solid #718ba2;border-radius:15px;padding:12px;min-width:0}
+.panel h2{margin:2px 0 13px;font-size:clamp(15px,1.2vw,18px)}
+.left .classstat{margin:15px 0;display:grid;gap:4px}
+.classstat .headline{display:flex;justify-content:space-between;gap:4px;font-size:14px;font-weight:850}
+.track{height:9px;border-radius:999px;background:#233d54;overflow:hidden}
+.track i{display:block;height:100%;background:#9cc8d5;border-radius:inherit}
+.classstat small{font-size:11px;color:#d2dfed}
+.side button{margin-top:16px;width:100%}
+.ranking{background:linear-gradient(170deg,#193d65,#0a2446);border:2px solid #b4d5f7;border-radius:18px;box-shadow:0 0 26px #3a98e744;overflow:hidden;min-width:0}
+.ranking-head{text-align:center;background:#244b78;padding:8px 12px;border-bottom:1px solid #577ba5}
+.ranking-head .over{font-size:11px;font-weight:900;letter-spacing:.12em;color:#d5e5fc}
+.ranking-head h1{font-size:clamp(24px,3.1vw,38px);line-height:1.06;margin:3px 0 0}
+.ranking-head small{font-size:11px;color:#c4dbf7}
+.ranking-wrap{padding:10px 12px}
+.ranking-guide{display:flex;justify-content:space-between;font-size:12px;color:#b9d7f4;margin-bottom:10px}
+.ranking-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
+.ranking-list.single{grid-template-columns:minmax(0,1fr);max-width:550px;margin:auto}
+.ranking-col{display:grid;gap:7px;align-content:start;min-width:0}
+.entry{display:grid;grid-template-columns:26px minmax(0,1fr);align-items:center;gap:8px;padding:7px 8px;background:#254970;border:1px solid #4b729b;border-radius:10px;min-width:0}
+.place{background:#375d83;border-radius:7px;text-align:center;font-size:13px;font-weight:900;padding:6px 0}
+.entry:first-child .place{background:#eec566;color:#263854}
+.primary{display:flex;gap:8px;align-items:baseline;min-width:0}
+.primary strong{font-size:clamp(14px,1.35vw,20px);line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.points{font-size:clamp(15px,1.3vw,19px);font-weight:950;color:#ffe0a1;white-space:nowrap;font-variant-numeric:tabular-nums}
+.minor{color:#bdd2ed;font-size:11px;display:flex;gap:9px;margin-top:4px}
+.entry.unplayed{opacity:.62}
+.ranking-footer{padding:9px 15px;border-top:1px solid #4d76a6;background:#16395d;display:flex;justify-content:space-between;align-items:center;font-size:11px}
+.right{display:grid;gap:12px;grid-template-rows:1fr 1fr;min-width:0}
+.right .panel{background:#24517e}
+.right .panel+ .panel{background:#3b536b}
+.event{padding:9px;border-left:4px solid #e3c265;background:#193b61;border-radius:8px;margin-top:9px;font-size:12px}
+.event b,.event small{display:block}.event small{color:#bed2e9;margin-top:5px}
+footer{padding:3px 14px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+footer .apps{display:flex;gap:7px;flex-wrap:wrap}
+footer button{font-size:12px}footer button.selected{background:#285988;border-color:#8ed1ff}
+.controls{display:flex;gap:7px;flex-wrap:wrap}
+dialog{width:min(750px,calc(100vw - 22px));max-height:92vh;overflow:auto;background:#132e49;color:#f7fbff;border:2px solid #75a6d0;border-radius:18px;padding:20px;box-shadow:0 25px 95px #000b}
+dialog::backdrop{background:#020c19cf}
+dialog h2{margin:0 0 9px;font-size:24px}
+dialog .close{float:right}
+dialog table{width:100%;border-collapse:collapse;margin:13px 0}
+dialog th,dialog td{border-bottom:1px solid #35526e;padding:10px 7px}
+dialog th:first-child,dialog td:first-child{text-align:left}
+dialog td:not(:first-child),dialog th:not(:first-child){text-align:center}
+dialog input{width:19px;height:19px;accent-color:#f5d179}
+dialog .reset{padding:6px 10px;white-space:nowrap;background:#56465a;border-color:#b497a6}
+dialog .options{padding:12px;border:1px solid #426887;background:#163955;border-radius:12px;display:grid;gap:8px}
+dialog label{display:flex;gap:9px;align-items:center;font-size:14px}
+dialog .note{color:#bed4ea;font-size:12px;line-height:1.5}
+label.setting{justify-content:space-between;max-width:380px}
+@media(max-width:1100px){main{grid-template-columns:minmax(165px,1fr) minmax(400px,2.7fr);}.right{grid-column:1/-1;grid-template-columns:1fr 1fr;grid-template-rows:auto;}.entry .primary{flex-wrap:wrap;gap:3px}}
+@media(max-width:690px){main{display:flex;flex-direction:column}.right{display:grid}.ranking-list{grid-template-columns:1fr}.ranking-head h1{font-size:27px}.primary strong{font-size:18px}.points{font-size:18px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+#live-status{font-size:12px;font-weight:750;color:#d4ebff;max-width:260px}#settings [hidden]{display:none!important}#reset-confirm input[type=password]{border:1px solid #7794b1;border-radius:7px;background:#0d263e;color:#fff;padding:9px;min-width:210px}#percentage-note{font-size:11px;color:#d5e7fa}#ranking-list:empty::after{content:"Aucun élève autorisé à afficher pour cette application.";color:#d0e6fd;font-size:14px;padding:25px;text-align:center;display:block}.event.empty{color:#cce0f3}
+</style>
+</head>
+<body>
+<header>
+  <strong>Math’as <span>LIVE · PROJECTION V2</span></strong>
+  <div class="tools"><span class="demo">● PROJECTION CONNECTÉE · ACCÈS PROFESSEUR</span><span id="live-status" role="status">Connexion professeur requise</span><button id="load-real" type="button">Afficher / Actualiser</button><button id="open-settings" type="button">⚙ Applications</button></div>
+</header>
+<main>
+  <aside class="side left panel"><h2>🏫 Réussite des classes</h2><small id="percentage-note">Pourcentages : mesure des exercices entamés en cours d’intégration</small><div id="classes"></div><button id="settings-left" type="button">⚙ Applications</button></aside>
+  <section class="ranking" aria-label="Classement par application">
+    <div class="ranking-head"><div class="over">🏆 MEILLEURS SCORES · PÉRIODE DE PROJECTION</div><h1 id="app-name"></h1><small id="ranking-note"></small></div>
+    <div class="ranking-wrap"><div class="ranking-guide"><span id="count-label"></span><span id="rotation-label"></span></div><div id="ranking-list" class="ranking-list"></div></div>
+    <div class="ranking-footer"><span>Score propre à l'application · Trophées permanents</span><span id="time-left"></span></div>
+  </section>
+  <aside class="right">
+    <section class="panel"><h2>✨ Nouveaux exploits</h2><div id="exploits"></div></section>
+    <section class="panel"><h2>📈 Meilleures remontées</h2><div id="rises"></div></section>
+  </aside>
+</main>
+<footer>
+  <div id="app-tabs" class="apps"></div>
+  <div class="controls"><button id="prev-app" type="button">◀ Appli</button><button id="next-app" type="button">Appli ▶</button><button id="pause" type="button">⏸ Pause</button><button id="open-all" type="button">⚙ Applications</button></div>
+</footer>
+<dialog id="settings" aria-label="Paramètres de projection">
+  <button id="close-settings" type="button" class="close">✕ Fermer</button><h2>⚙ Applications à afficher</h2>
+  <p class="note">Réglages propres à cette classe. Seuls les noms autorisés à la projection peuvent apparaître.</p>
+  <table><thead><tr><th>Application</th><th>Score</th><th>%</th><th>Réinitialiser le score</th></tr></thead><tbody id="app-options"></tbody></table>
+  <section class="options"><strong>Autres classes à comparer</strong><div id="comparison-options"></div><label><input id="show-teacher" type="checkbox"> Afficher Monsieur T (décoché au lancement)</label></section>
+  <div id="reset-confirm" class="options" hidden><strong id="reset-heading">Réinitialiser le score projeté</strong><label>Mot de passe professeur <input id="reset-password" type="password" autocomplete="current-password" maxlength="160" placeholder="Mot de passe"/></label><div class="controls"><button id="reset-apply" type="button">Confirmer uniquement ce score</button><button id="reset-cancel" type="button">Annuler</button></div></div><p class="note">Une réinitialisation n’affecte qu’une application et une classe. Jamais les %, les résultats réels, les XP, les trophées ou les parcours des élèves.</p>
+</dialog>
+<script type="module" src="./projection-v2-live.js?v=20261031-projection-v2-live-v1"></script>
+</body>
+</html>
