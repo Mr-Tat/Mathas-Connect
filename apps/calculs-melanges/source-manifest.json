@@ -1,0 +1,28 @@
+{
+  "repository": "Mr-Tat/Melange-calculs-ecrits-1",
+  "commit": "e11c88b4e449e8cdb17b0fee78c7daa6ea5bf279",
+  "indexBlob": "3d2ad6c8de9cdc67cd4464f4b43da2513d17c489",
+  "files": {
+    "index.html": "a84382cd4b7deabb54f04f2c2a27ff114bdff6645429a3f1ff88cc2313040803",
+    "illustration.webp": "209c0394fc4bc94fe92cb123b5de1f0654174430784905ac1dbd96359a3fa42e",
+    "logo-m.png": "00e06c59b09af58793cf2237117998a0025f63755c5c7c3cb1001f5819575eba",
+    "logo-mot.webp": "b51b5fe357cb1135588e806ae16632c352c9f2676b28fa89866a4b4788048bd6"
+  },
+  "adaptations": [
+    "begin after normal/HARD session creation",
+    "solved before native lock, preserving firstTry",
+    "finish after native final save in classic/sudden/HARD sudden",
+    "terminal reentry guards; no generation, teaching methods or native cache changes",
+    "independent minimum multiplier union in local copy only (normal selection; HARD retains all tables)",
+    "synchronous native trophy watch via mathas-mixed-finalized before terminal snapshot; no new polling",
+    "side report focus follows nextTarget rather than resetting to column1 (native input bug on long multiplication)",
+    "direct-borrow adjusted digit accepts two keystrokes when native expected value is 10..18 (native input bug); algorithm unchanged",
+    "four inherited whitespace-only lines normalized; no semantic effect"
+  ],
+  "thumbnail": {
+    "status": "temporary_native_illustration_not_teacher_approved",
+    "officialRepositoryHead": "67b0c86e84b587f48bdbb4d57189e21d2610a005",
+    "searchResult": "no mixed thumbnail in Miniatures-Mathas at this HEAD"
+  },
+  "integratedIndexSha256": "90fd0efb0397ec7270732f1e136f8cfc758505f08b6743f08aafc67d04a5cf63"
+}

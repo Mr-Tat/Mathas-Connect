@@ -28,7 +28,7 @@ test('teacher launches Addition multiple with its selected class and professor p
  assert.ok(teacher.includes("target.searchParams.set('class',currentClass)"));
  assert.ok(teacher.includes("target.searchParams.set('joueur','prof')"));
  // The HUB also preserves the teacher session after Jouer avec Monsieur T.
- assert.ok(hub.includes("'soustraction-ecrite-simple','addition-ecrite-multiple'].includes(app.app_key)) target.searchParams.set('joueur','prof')"));
+ assert.ok(hub.includes("'soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof')"));
  assert.ok(hub.includes("if (classId && target.origin === location.origin) target.searchParams.set('class', classId)"));
  // Neither file adds the game to static fallback: visibility stays per-space.
  assert.ok(hub.includes("data.apps.map(a=>({...a,image_url:"));
