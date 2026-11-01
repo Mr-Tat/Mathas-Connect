@@ -56,7 +56,8 @@ test('projection V2 : quatre DA distinctes et styles de projection sans ressourc
 test('projection V2 : pages authentifiées et maquette historique non modifiées par les variantes',()=>{
  const live=readFileSync(new URL('../projection-v2.html',import.meta.url),'utf8');
  assert.match(live,/src="\.\/projection-v2-live\.js\?v=/);
- assert.doesNotMatch(live,/projection-v2-da\.css/);
+ assert.match(live,/href="\.\/essais\/projection-v2-da\.css\?v=20261101-1"/);
+ assert.match(live,/id="projection-theme"/);
  assert.doesNotMatch(base,/projection-v2-da\.css/);
  assert.doesNotMatch(live,/Meilleures remontées/);
  assert.doesNotMatch(base,/Meilleures remontées/);
