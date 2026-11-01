@@ -1,5 +1,6 @@
 // Laboratoire de test : même backend Connect que les élèves, classe fixe, aucun contournement.
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
+import {objectiveRecordLabPreviews} from './objective-record-lab-previews.mjs';
 const BASE='https://awmhpfofacaglewammxt.supabase.co';
 const KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM'; // publishable, not secret
 const TEST_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
@@ -65,6 +66,24 @@ const api=(action,data={})=>rpc('connect-api',action,data);
 const results=(action,data={})=>{guard();return rpc('connect-results',action,{classId:TEST_CLASS,appKey:$('results-app').value,...data})};
 async function run(fn){try{await fn()}catch(e){display('Laboratoire : '+(e.message||e),true)}}
 function linkFor(app,prof=false){const href=app.launch_url||app.url;if(!href)return null;let url;try{url=new URL(href,location.href)}catch{return null}if(url.protocol!=='https:'&&url.protocol!=='http:')return null;if(url.origin===location.origin){url.searchParams.set('class',TEST_CLASS);if(prof&&appKeys.includes(app.app_key))url.searchParams.set('joueur','prof')}return url.href}
+function renderObjectiveRecordPreviews(){
+ const list=$('record-previews');list.replaceChildren();
+ for(const preview of objectiveRecordLabPreviews){
+   const card=el('article','','profile');
+   const heading=el('strong',preview.title);
+   const warning=el('p','🧪 Essai isolé · XP fictifs · aucun résultat Connect','muted tiny');
+   const actions=el('div','','actions');
+   const open=el('a','Tester la démo','action');
+   open.href=preview.url;open.target='_blank';open.rel='noopener noreferrer';
+   open.onclick=event=>{
+     if(!verified||!consent()){
+       event.preventDefault();
+       display('Confirme d’abord que les profils du laboratoire sont fictifs avant d’ouvrir cet essai.',true);
+     }
+   };
+   actions.append(open);card.append(heading,warning,actions);list.append(card);
+ }
+}
 function copy(text){return navigator.clipboard.writeText(text).then(()=>display('Lien copié dans le presse-papiers.'))}
 async function loadTeacher(){
  const scoped=await api('teacher-dashboard',{classId:TEST_CLASS});
@@ -74,6 +93,7 @@ async function loadTeacher(){
  $('class-meta').textContent=(match.name||TEST_LABEL)+' · classe Connect dédiée aux tests';
  $('hub-link').href=new URL(HUB,location.href).href;
  $('lab').hidden=false;
+ renderObjectiveRecordPreviews();
  await loadClass(scoped);
  await loadApps();
  await refreshConnectedTestStudent();
