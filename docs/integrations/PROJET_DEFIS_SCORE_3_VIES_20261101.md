@@ -6,7 +6,7 @@
 
 ## Interface commune souhaitée
 
-Renommer la grande carte « Mort subite » en **🏆 Défis de score** et afficher exactement le sous-titre pédagogique **« Deux façons de marquer un gros score. »**. La partager en deux grands boutons de largeur égale, turquoise à gauche et rouge à droite :
+Renommer la grande carte « Mort subite » en **🏆 Défis de score** et afficher exactement le sous-titre pédagogique **« Deux façons de marquer un gros score. »**. La partager en deux grands boutons de largeur égale : **rose-framboise légèrement mauve à gauche** pour 3 vies (dégradé indicatif `#ad607a` → `#88455f`), et **rouge plus intense à droite** pour Mort subite. Le contraste doit montrer que le premier est moins dangereux, sans utiliser de turquoise :
 - À **gauche**, **❤️ 3 vies** : trois erreurs permises, 50 % du droit XP comparable, pas de trophée.
 - À **droite**, **💀 Mort subite** : une seule erreur, 100 % du droit XP comparable, trophées natifs habituels, et badge positif **+20 % de points**.
 
