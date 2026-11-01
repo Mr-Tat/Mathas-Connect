@@ -12,7 +12,8 @@ test('Mélange: sept combinaisons exactes, 3 niveaux, et mises à jour de sélec
   const ctx={...base,level,operations:ops};
   const result={...reply,level,operations:ops};
   assert.equal(confirmedRemaining(result,ctx)['4'],28);
-  assert.equal(confirmedRemaining(result,{...ctx,operations:['add',...(ops.includes('sub')?['sub']:[])]})===null,ops.join(',')!==['add',...(ops.includes('sub')?['sub']:[]).join(','));
+  const filtered=['add',...(ops.includes('sub')?['sub']:[])];
+  assert.equal(confirmedRemaining(result,{...ctx,operations:filtered})===null,ops.join(',')!==filtered.join(','));
   assert.equal(confirmedRemaining({...result,operations:['add','mul']},ctx)===null,ops.join(',')!=='add,mul');
  }
 });
