@@ -46,7 +46,8 @@ export function verifyServerTranscript(session,payload){
    ||typeof q.id!=='string'||q.id.length<1||q.id.length>80
    ||seen.has(q.id)||!opSet.includes(q.op)
    ||!integer(q.a)||!integer(q.b)||q.a>100000000||q.b>100000000
-   ||(q.op==='sub'&&q.a<q.b))return null;
+   ||(q.op==='sub'&&q.a<q.b)
+   ||(q.op==='mul'&&!Number.isSafeInteger(q.a*q.b)))return null;
   seen.add(q.id);
  }
  let score=0,errors=0;
