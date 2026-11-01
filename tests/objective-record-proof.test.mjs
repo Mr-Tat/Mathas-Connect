@@ -78,6 +78,9 @@ test('refuse la falsification des questions, IDs, sélection, mode et réponses'
  assert.equal(verifyServerTranscript({...s,level:9},ok),null);
  assert.equal(verifyServerTranscript({...s,questions:[{...s.questions[0],op:'sub'},...s.questions.slice(1)]},ok),null);
  assert.equal(verifyServerTranscript({...s,questions:[{...s.questions[0],a:-1},...s.questions.slice(1)]},ok),null);
+ const overflow=fixture(['mul'],2,'three-lives',3);
+ overflow.questions[0]={...overflow.questions[0],a:100000000,b:100000000};
+ assert.equal(verifyServerTranscript(overflow,pack(overflow,[true,true,true])),null);
 });
 test('règles arithmétiques adaptées par application et session issue du serveur',()=>{
  const map=[
