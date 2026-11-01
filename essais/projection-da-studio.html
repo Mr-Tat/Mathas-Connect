@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr" data-skin="studio">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Projection Math’as · 04 · Studio sportif · aperçu DA</title>
+<link rel="icon" href="../assets/brand/favicon.png" type="image/png">
+<link rel="stylesheet" href="./projection-da.css">
+</head>
+<body>
+<header class="topbar">
+ <strong class="brand">Math’as Connect <span aria-hidden="true">·</span> Projection</strong>
+ <nav class="demo-nav" aria-label="Comparer les directions artistiques"><a href="./projection-da-electrique.html" >01 · Bleu électrique</a><a href="./projection-da-papier.html" >02 · Papier clair</a><a href="./projection-da-ardoise.html" >03 · Tableau ardoise</a><a href="./projection-da-studio.html" aria-current="page">04 · Studio sportif</a></nav>
+</header>
+<main>
+ <div class="eyebrow">Tableau collectif · Lecture seule <span class="mocktag">Maquette · Chiffres fictifs</span></div>
+ <h1>Notre progression</h1>
+ <p class="intro">Une vue pour la classe entière, sans prénom, résultat individuel ni classement. Les chiffres ne sont chargés que sur demande dans la vraie projection.</p>
+ <div id="controls" class="actions">
+  <label>Classe à projeter
+   <select id="class-choice" aria-label="Classe à projeter"><option value="classeA">Classe exemple · 5A</option><option value="classeB">Classe exemple · 6B</option></select>
+  </label>
+  <button id="load" type="button">Afficher / Actualiser</button>
+  <button id="hide" type="button" class="secondary">Masquer les chiffres</button>
+  <button id="fullscreen" type="button" class="secondary">Plein écran</button>
+ </div>
+ <p id="status" role="status" aria-live="polite"></p>
+ <div id="blank" hidden><p>Choisis une classe, puis clique sur « Afficher / Actualiser ».</p></div>
+ <div id="board">
+  <h2 id="class-name">Classe exemple · 5A</h2>
+  <p id="updated" class="subline"></p>
+  <div class="cards">
+   <div class="metric"><div id="total" class="number">26</div><div class="description">Élèves inscrits dans la classe</div></div>
+   <div class="metric"><div id="participants" class="number">19</div><div class="description">Élèves avec au moins une partie dans l’historique récent</div></div>
+   <div class="metric"><div id="today" class="number">11</div><div class="description">Élèves ayant joué aujourd’hui</div></div>
+  </div>
+  <section class="activity">
+   <h3>Participation par application</h3>
+   <div class="period-toggle" role="group" aria-label="Période de participation">
+    <button type="button" id="period-recent" aria-pressed="true">Historique récent</button>
+    <button type="button" id="period-today" aria-pressed="false">Aujourd’hui</button>
+   </div>
+   <div id="apps"></div>
+   <p id="period-help" class="help">Élèves ayant une partie dans les trois dernières parties fictives disponibles par application.</p>
+  </section>
+ </div>
+</main>
+<footer><strong>Studio sportif — compétition, impact, rythme</strong> · Aucun compte élève, aucune donnée réelle ni requête Supabase · Les boutons sont interactifs uniquement dans cette maquette. <a href="../projection.html">Projection actuelle</a>.</footer>
+<script src="./projection-da.js" defer></script>
+</body>
+</html>
