@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="fr" data-proj-da="studio">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Math’as · Projection V2 · 04 · Studio compétition</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;--back:#203952;--panel:#3b536b;--center:#0c2748;--line:#7189a2;--gold:#ffdc81}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:linear-gradient(140deg,#2d4b67,#162e49);color:#f2f7ff}
+button,input{font:inherit}button{cursor:pointer;min-height:36px}
+button:focus-visible,input:focus-visible{outline:3px solid #ffe08a;outline-offset:2px}
+header{display:flex;position:relative;justify-content:space-between;align-items:center;padding:9px 18px;border-bottom:1px solid #57708a;background:#263f5b}
+.header-class{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:35%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;color:#f6fbff;font-size:clamp(17px,1.45vw,24px);font-weight:900;letter-spacing:.02em}
+header strong{font-size:25px;font-weight:950;letter-spacing:-.05em}header strong span{font-size:12px;color:#82f1d4;letter-spacing:.13em}
+header .tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.demo{font-size:11px;font-weight:900;letter-spacing:.09em;color:#ffd67c}
+button{border:1px solid #7794b1;border-radius:9px;color:#f6fbff;background:#3c5771;padding:7px 11px;font-weight:700}
+button:hover{background:#4f779d}
+main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) minmax(210px,1.12fr);gap:12px;padding:11px 14px;max-width:1600px;margin:auto;align-items:stretch}
+.panel{background:#3d5570;border:1px solid #718ba2;border-radius:15px;padding:12px;min-width:0}
+.panel h2{margin:2px 0 13px;font-size:clamp(15px,1.2vw,18px)}
+.left .classstat{margin:15px 0;display:grid;gap:4px}
+.classstat .headline{display:flex;justify-content:space-between;gap:4px;font-size:14px;font-weight:850}
+.track{height:9px;border-radius:999px;background:#233d54;overflow:hidden}
+.track i{display:block;height:100%;background:#9cc8d5;border-radius:inherit}
+.classstat small{font-size:11px;color:#d2dfed}
+.left-col{display:flex;flex-direction:column;align-items:stretch;gap:10px;align-self:start;min-width:0}
+.left-col .panel{align-self:stretch}
+.left .classstat{margin:8px 0;gap:5px}
+.left .classstat.global-success,.compare-row .classstat.global-success{margin:6px 0 13px;padding:12px 9px;border:1px solid #a7dacf;border-radius:11px;background:#284f65}
+.global-success .headline{font-size:16px}
+.left .classstat .headline{font-size:12px;align-items:center}
+.left .classstat .headline strong{white-space:nowrap;font-size:15px}
+.left .classstat.global-success .headline strong,.compare-row .classstat.global-success .headline strong{font-size:23px;color:#c8efe4}
+.compare-row .classstat.global-success{display:grid;gap:1px;margin:3px 0 4px;padding:4px 7px;border:1px solid #86acaa;border-radius:7px;background:#304d60}
+.compare-row .classstat.global-success .headline{font-size:12px;font-weight:850;align-items:center}
+.compare-row .classstat.global-success .headline strong{font-size:15px;color:#c7e5df}
+.compare-row .classstat.global-success .track{display:none}
+.compare-panel{background:#344a60;border-color:#627c93;max-height:min(42vh,340px);overflow-y:auto;padding:7px 10px 9px}
+.compare-panel h2{font-size:14px;margin-bottom:6px}
+.compare-row{padding:6px 0 9px;border-bottom:1px solid #52677a}
+.compare-row:last-child{border:0}
+.compare-row > strong{display:block;margin:1px 0 7px;text-align:center;font-size:14px;font-weight:900;letter-spacing:.02em;color:#f4f9ff}
+.compare-line{display:flex;justify-content:space-between;gap:6px;font-size:11px;padding-top:3px;color:#d5e0ec}
+.compare-line span:last-child{font-weight:850;white-space:nowrap}
+.settings-under{align-self:flex-start;background:#304c66;border:1px solid #59748d;min-height:32px;padding:5px 10px;font-size:12px;opacity:.84}
+.settings-under:hover{opacity:1}
+.event{display:flex;align-items:flex-start;gap:10px}
+.event-icon{display:grid;place-items:center;min-width:30px;height:30px;border-radius:8px;background:#335c7c;font-size:22px}
+.event-text{line-height:1.45;min-width:0}
+.event.rank-up .event-icon{background:#554b77}
+.event.perfect .event-icon{background:#386d65}
+.event.trophy .event-icon{background:#725a36}
+.event.sudden .event-icon{background:#76503b}
+.ranking{background:linear-gradient(170deg,#193d65,#0a2446);border:2px solid #b4d5f7;border-radius:18px;box-shadow:0 0 26px #3a98e744;overflow:hidden;min-width:0}
+.ranking-head{text-align:center;background:#244b78;border-bottom:1px solid #577ba5}
+.ranking-head .over{font-size:11px;font-weight:900;letter-spacing:.12em;color:#d5e5fc}
+.ranking-head h1{font-size:clamp(24px,3.1vw,38px);line-height:1.06;margin:3px 0 0}
+.ranking-head small{font-size:11px;color:#c4dbf7}
+.ranking-head{min-height:69px;padding:6px 12px 7px}
+.ranking-head h1{text-align:center;margin:3px 0 0}
+
+.class-mark{display:inline-flex;margin-left:8px;padding:1px 6px;background:#4a6886;border-radius:5px;color:white;font-size:10px;font-weight:850}
+@media(max-width:850px){header{flex-wrap:wrap}.header-class{position:static;transform:none;order:3;width:100%;text-align:center}.ranking-head{padding-inline:10px}}
+.ranking-wrap{padding:3px 12px 6px}
+
+.ranking-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
+.ranking-list.single{grid-template-columns:minmax(0,1fr);max-width:550px;margin:auto}
+.ranking-col{display:grid;gap:5px;align-content:start;min-width:0}
+.ranking-list.multi .entry{padding:5px 7px;min-height:45px}
+.ranking-list.multi .minor{margin-top:1px}
+.ranking-list.multi .primary strong,.ranking-list.multi .points{font-size:clamp(13px,1.2vw,18px)}
+.ranking-col + .ranking-col{border-left:5px solid #e6c877;padding-left:12px;box-shadow:-4px 0 0 #102941}
+.entry{display:grid;grid-template-columns:26px minmax(0,1fr);align-items:center;gap:8px;padding:7px 8px;background:hsl(calc(193 + var(--rank-progress,0)*35) 43% calc(32% - var(--rank-progress,0)*13%));border:1px solid hsl(calc(188 + var(--rank-progress,0)*43) 40% calc(57% - var(--rank-progress,0)*18%));border-radius:10px;min-width:0}
+.place{background:#375d83;border-radius:7px;text-align:center;font-size:13px;font-weight:900;padding:6px 0}
+.entry.rank-1 .place{background:#ffe099;color:#253b53}
+.entry.rank-2 .place{background:#bacbdb;color:#21364c}
+.entry.rank-3 .place{background:#dcb58e;color:#2c3b4b}
+.primary{display:flex;gap:8px;align-items:baseline;min-width:0}
+.primary strong{font-size:clamp(14px,1.35vw,20px);line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.points{font-size:clamp(15px,1.3vw,19px);font-weight:950;color:#ffe0a1;white-space:nowrap;font-variant-numeric:tabular-nums}
+.minor{color:#bdd2ed;font-size:11px;display:flex;gap:9px;margin-top:4px}
+.entry.unplayed{opacity:.62}
+
+.rotation-status{color:#b9d7f4;font-size:11px;font-weight:750;white-space:nowrap;font-variant-numeric:tabular-nums;padding:0 3px}
+.right{display:grid;gap:12px;grid-template-rows:minmax(0,1fr);min-width:0}
+.right .panel{background:#24517e}
+.right .panel{min-height:0}
+.event{padding:9px;border-left:4px solid #e3c265;background:#193b61;border-radius:8px;margin-top:9px;font-size:12px}
+.event b,.event small{display:block}.event small{color:#bed2e9;margin-top:5px}
+footer{padding:3px 14px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+footer .apps{display:flex;gap:7px;flex-wrap:wrap}
+footer button{font-size:12px}footer button.selected{background:#285988;border-color:#8ed1ff}
+.controls{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+dialog{width:min(750px,calc(100vw - 22px));max-height:92vh;overflow:auto;background:#132e49;color:#f7fbff;border:2px solid #75a6d0;border-radius:18px;padding:20px;box-shadow:0 25px 95px #000b}
+dialog::backdrop{background:#020c19cf}
+dialog h2{margin:0 0 9px;font-size:24px}
+dialog .close{float:right}
+dialog table{width:100%;border-collapse:collapse;margin:13px 0}
+dialog th,dialog td{border-bottom:1px solid #35526e;padding:10px 7px}
+dialog th:first-child,dialog td:first-child{text-align:left}
+dialog td:not(:first-child),dialog th:not(:first-child){text-align:center}
+dialog input{width:19px;height:19px;accent-color:#f5d179}
+dialog .reset{padding:6px 10px;white-space:nowrap;background:#56465a;border-color:#b497a6}
+dialog .options{padding:12px;border:1px solid #426887;background:#163955;border-radius:12px;display:grid;gap:8px}
+dialog label{display:flex;gap:9px;align-items:center;font-size:14px}
+dialog .note{color:#bed4ea;font-size:12px;line-height:1.5}
+label.setting{justify-content:space-between;max-width:380px}
+/* La bande supérieure peut disparaître par un petit défilement naturel.
+   Le plateau (classement + commandes) occupe alors exactement un écran,
+   et 8 rangs par colonne prennent toute sa hauteur disponible. */
+@media (min-width:1101px) and (min-height:640px){
+  html{height:auto;scroll-behavior:auto}
+  body{height:auto;min-height:0;display:block;overflow-y:auto}
+  header{position:relative}
+  .projection-stage{height:100vh;height:100dvh;min-height:0;display:flex;flex-direction:column}
+  main{flex:1;min-height:0;overflow:hidden;width:100%}
+  footer{flex:0 0 auto}
+  .left-col{min-height:0;max-height:100%;overflow-y:auto;scrollbar-width:thin}
+  .right{min-height:0}
+  .ranking{height:100%;min-height:0;display:flex;flex-direction:column}
+  .ranking-head{flex:0 0 auto}
+  .ranking-wrap{flex:1;min-height:0;display:flex;flex-direction:column;padding:5px 12px 6px}
+  .ranking-list{flex:1;min-height:0;align-items:stretch}
+  .ranking-col{min-height:0;height:100%;grid-template-rows:repeat(var(--row-count,8),minmax(0,1fr));align-content:stretch;gap:6px}
+  .ranking-col .entry{min-height:0;height:100%;overflow:hidden;align-content:center}
+}
+@media(max-width:1100px){main{grid-template-columns:minmax(165px,1fr) minmax(400px,2.7fr);}.right{grid-column:1/-1;grid-template-columns:1fr;grid-template-rows:auto;}.entry .primary{flex-wrap:wrap;gap:3px}}
+@media(max-width:690px){main{display:flex;flex-direction:column}.right{display:grid}.ranking-list{grid-template-columns:1fr}.ranking-list .ranking-col + .ranking-col{border-left:0;border-top:5px solid #e6c877;padding-left:0;padding-top:10px;margin-top:8px;box-shadow:none}.ranking-head h1{font-size:27px}.primary strong{font-size:18px}.points{font-size:18px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+</style>
+<link rel="stylesheet" href="./projection-v2-da.css">
+</head>
+<body>
+<header>
+  <strong>Math’as <span>LIVE · PROJECTION V2</span></strong>
+  <div id="header-class" class="header-class" aria-label="Classe projetée">Phase 2 A</div>
+  <div class="tools"><span class="demo">● MAQUETTE · RÉSULTATS FICTIFS</span><details class="da-switch"><summary>🎨 04 · Studio compétition</summary><nav aria-label="Changer de direction artistique"><a href="./projection-v2-da-neon.html" >01 · Néon auditorium</a><a href="./projection-v2-da-papier.html" >02 · Papier clair</a><a href="./projection-v2-da-ardoise.html" >03 · Ardoise scolaire</a><a href="./projection-v2-da-studio.html" aria-current="page">04 · Studio compétition</a><a href="../projection-v2-demo.html">Original V2</a></nav></details></div>
+</header>
+<div class="projection-stage">
+<main>
+  <aside class="left-col" aria-label="Réussite et comparaisons">
+    <section class="panel left"><h2>🎯 Réussite de la classe</h2><div id="classes"></div></section>
+    <section class="panel compare-panel" aria-label="Pourcentages des autres classes"><div id="comparison-results"></div></section>
+    <button id="settings-left" class="settings-under" type="button">⚙ Applications</button>
+  </aside>
+  <section class="ranking" aria-label="Classement par application">
+    <div class="ranking-head"><div class="over">🏆 MEILLEURS SCORES · DEPUIS LA DERNIÈRE REMISE À ZÉRO</div><h1 id="app-name"></h1></div>
+    <div class="ranking-wrap"><div id="ranking-list" class="ranking-list"></div></div>
+  </section>
+  <aside class="right">
+    <section class="panel"><h2>✨ Nouveaux exploits</h2><div id="exploits"></div></section>
+  </aside>
+</main>
+<footer>
+  <div id="app-tabs" class="apps"></div>
+  <div class="controls"><button id="prev-app" type="button">◀ Appli</button><span id="rotation-label" class="rotation-status"></span><span id="time-left" class="rotation-status"></span><button id="next-app" type="button">Appli ▶</button><button id="pause" type="button">⏸ Pause</button></div>
+</footer>
+</div>
+<dialog id="settings" aria-label="Paramètres de projection">
+  <button id="close-settings" type="button" class="close">✕ Fermer</button><h2>⚙ Applications à afficher</h2>
+  <p class="note">Réglages de démonstration uniquement, pas encore connectés aux comptes ou à Supabase. Chaque appli a son propre classement.</p>
+  <table><thead><tr><th>Application</th><th>Score</th><th>%</th><th>Réinitialiser le score</th></tr></thead><tbody id="app-options"></tbody></table>
+  <section class="options"><strong>Comparaisons avec les autres classes</strong><p class="note">Les cases Score et % sont indépendantes pour chaque classe.</p><table class="comparison-table"><thead><tr><th>Classe</th><th>Score</th><th>%</th></tr></thead><tbody id="comparison-options"></tbody></table><label><input id="show-teacher" type="checkbox"> Afficher Monsieur T (décoché au lancement)</label></section>
+  <p class="note">Le vrai bouton Réinitialiser demandera le mot de passe professeur côté serveur. Il affectera uniquement l'application et la classe courantes, jamais les %, les XP, les trophées ou les résultats élèves. Cette maquette ne réinitialise aucune donnée réelle.</p>
+</dialog>
+<script>
+"use strict";
+// Démonstration isolée : aucune requête réseau, aucun accès à des fiches d'élèves.
+const $=id=>document.getElementById(id);
+const apps=[
+ {key:"addition",title:"Additions",score:true,pct:true},
+ {key:"multiplication",title:"Multiplications",score:true,pct:true},
+ {key:"soustraction",title:"Soustractions",score:true,pct:true},
+ {key:"additionmulti",title:"Addition multiple",score:true,pct:true},
+ {key:"melange",title:"Mélange de calculs",score:true,pct:true}
+];
+const names=["Lina","Adam","Zoé","Hugo","Emma","Noé","Léa","Lucas","Jade","Louis","Mila","Tom","Inès","Nathan"];
+const base=names.map((name,i)=>({id:i,name,level:Math.max(1,7-Math.floor(i/2)),trophies:Math.max(0,10-Math.floor(i*.65))}));
+const others=[{name:"Observation",pct:72,score:true,percentage:true},{name:"Phase 1",pct:79,score:false,percentage:false},{name:"Phase 2 B",pct:75,score:false,percentage:false},{name:"2 ECO",pct:81,score:false,percentage:false}];
+let selected="addition",seconds=30,paused=false,wasPaused=false;
+function selectedApps(){return apps.filter(a=>a.score)}
+function ensureSelected(){if(!selectedApps().some(a=>a.key===selected))selected=selectedApps()[0]?.key||null}
+function entries(){
+ const ix=apps.findIndex(a=>a.key===selected);
+ const main=base.map((p,i)=>({...p,className:"Phase 2 A",score:(i+ix*3)%14===13?null:Math.max(4,168-((i*7+ix*4)%14)*10)}));
+ const challengers=others.filter(o=>o.score).flatMap((c,j)=>Array.from({length:11},(_,i)=>({
+  id:c.name+"-"+i,name:["Rayan","Camille","Sarah","Maya","Elliot","Amine","Chloé","Sacha","Yanis","Rose","Robin"][i],
+  className:c.name,level:2+(i%5),trophies:i%7,score:Math.max(4,175-i*11-j*4-ix*2)
+ })));
+ return [...main,...challengers].sort((a,b)=>(b.score??-1)-(a.score??-1)||a.name.localeCompare(b.name,"fr")).slice(0,16);
+}
+function render(){
+ ensureSelected();
+ const current=apps.find(a=>a.key===selected);
+ $("app-name").textContent=current?.title||"Aucune application sélectionnée";
+ const list=$("ranking-list");list.replaceChildren();
+ const rows=current?entries():[];
+ const multi=others.some(c=>c.score),split=rows.length>7;
+ list.classList.toggle("single",!split);list.classList.toggle("multi",multi);
+ const cut=Math.ceil(rows.length/2);
+ const cols=split?[rows.slice(0,cut),rows.slice(cut)]:[rows];
+ let positionIndex=0;
+ cols.forEach((group,ci)=>{
+  const column=document.createElement("div");column.className="ranking-col";
+  column.style.setProperty("--row-count",String(group.length));
+  group.forEach((person,index)=>{
+   const position=++positionIndex;
+   const el=document.createElement("div");el.className="entry rank-"+position+(person.score===null?" unplayed":"");
+   el.style.setProperty("--rank-progress",String((position-1)/15));
+   const rank=document.createElement("span");rank.className="place";rank.textContent=position<=3?["🥇","🥈","🥉"][position-1]:position;
+   const detail=document.createElement("div");
+   const primary=document.createElement("div");primary.className="primary";
+   const name=document.createElement("strong");name.textContent=person.name;
+   const points=document.createElement("span");points.className="points";points.textContent=person.score===null?"—":String(person.score)+" pts";
+   const minor=document.createElement("div");minor.className="minor";minor.textContent="Niveau "+person.level+"   🏆 "+person.trophies;
+   if(multi){const mark=document.createElement("span");mark.className="class-mark";mark.textContent=person.className;minor.append(mark);}
+   primary.append(name,points);detail.append(primary,minor);el.append(rank,detail);column.append(el);
+  });list.append(column);
+ });
+ const buttons=$("app-tabs");buttons.replaceChildren();
+ selectedApps().forEach(app=>{
+  const btn=document.createElement("button");btn.textContent=app.title;btn.classList.toggle("selected",app.key===selected);
+  btn.onclick=()=>{selected=app.key;seconds=30;render()};buttons.append(btn)
+ });
+ $("exploits").replaceChildren();
+ const sudden=makeSuddenExploit("Inès",11); // Donnée fictive : 11 > 10.
+ $("exploits").append(makeExploit("trophy","Lina obtient un nouveau trophée !"),makeExploit("perfect","Zoé réussit une série parfaite !"),makeExploit("top","Adam prend la 4e place !"));
+ if(sudden)$("exploits").append(sudden);
+ // Les remontées spectaculaires sont des exploits ponctuels, pas un palmarès.
+ // Exemple fictif : mêmes application, période et participants ; record personnel amélioré.
+ const progress=makeSpectacularRise("Adam",7,4,92,116,true);
+ if(progress)$("exploits").append(progress);
+ drawClasses();updateTime();
+}
+function makeExploit(type,message){
+ const markers={trophy:["🏆","trophy"],perfect:["✨","perfect"],top:["🏅","rank-up"],sudden:["🔥","sudden"],rise:["📈","rank-up"]};
+ const [sign,style]=markers[type];
+ const el=document.createElement("div");el.className="event "+style;
+ const icon=document.createElement("span");icon.className="event-icon";icon.textContent=sign;icon.setAttribute("aria-hidden","true");
+ const label=document.createElement("span");label.className="event-text";label.textContent=message;
+ el.append(icon,label);return el;
+}
+// Une remontée n'est remarquable que si un nouveau record personnel fait gagner
+// au moins 3 rangs dans le même classement stable et après consentement.
+function makeSpectacularRise(name,previousRank,newRank,previousBest,newBest,sameContext){
+ if(typeof name!=="string"||!name.trim()||sameContext!==true)return null;
+ if(![previousRank,newRank,previousBest,newBest].every(Number.isFinite))return null;
+ if(![previousRank,newRank].every(Number.isInteger)||newRank<1||previousRank<1)return null;
+ if(previousRank-newRank<3||previousBest<0||newBest<=previousBest)return null;
+ return makeExploit("rise",name+" progresse de "+(previousRank-newRank)+" places grâce à un nouveau record !");
+}
+// Seuil strict : une partie Mort subite doit dépasser 10 bonnes réponses.
+function makeSuddenExploit(name,correct){
+ if(!Number.isInteger(correct)||correct<=10)return null;
+ return makeExploit("sudden",name+" dépasse 10 bonnes réponses en Mort subite : "+correct+" !");
+}
+function addPct(target,title,pct,global=false,compact=false){
+ const row=document.createElement("div");row.className="classstat"+(global?" global-success":"");
+ const headline=document.createElement("div");headline.className="headline";
+ const label=document.createElement("span");label.textContent=title;
+ const number=document.createElement("strong");number.textContent=pct+" %";
+ headline.append(label,number);
+ const track=document.createElement("div");track.className="track";
+ const fill=document.createElement("i");fill.style.width=pct+"%";track.append(fill);
+ row.append(headline);if(!compact)row.append(track);target.append(row);
+}
+function drawClasses(){
+ const root=$("classes");root.replaceChildren();
+ const compared=$("comparison-results");compared.replaceChildren();
+ if(!apps.some(a=>a.pct)){
+  root.textContent="Aucune application cochée en %.";
+ }else{
+  addPct(root,"Global",78,true);
+  apps.filter(a=>a.pct).forEach((app,i)=>addPct(root,app.title,Math.max(30,84-((i*7)%22))));
+ }
+ let count=0;
+ others.filter(o=>o.percentage).forEach((c,i)=>{
+  count++;
+  const card=document.createElement("div");card.className="compare-row";
+  const name=document.createElement("strong");name.textContent=c.name;card.append(name);
+  if(c.percentage){
+   addPct(card,"Global",c.pct,true,true);
+   apps.filter(a=>a.pct).forEach((app,j)=>{
+    const line=document.createElement("div");line.className="compare-line";
+    const label=document.createElement("span");label.textContent=app.title;
+    const number=document.createElement("span");number.textContent=(c.pct+(j%3)*3-3)+" %";
+    line.append(label,number);card.append(line);
+   });
+  }
+  compared.append(card);
+ });
+ if(!count){
+  const empty=document.createElement("small");empty.textContent="Choisis Score et/ou % dans Applications pour comparer une autre classe.";
+  compared.append(empty);
+ }
+}
+function updateTime(){
+ const active=selectedApps();
+ $("rotation-label").textContent=active.length>1?"Appli "+(active.findIndex(a=>a.key===selected)+1)+"/"+active.length:"";
+ $("time-left").textContent=paused?"En pause":active.length>1?"Suivante dans "+seconds+" s":"Affichage fixe";
+ $("pause").textContent=paused?"▶ Reprendre":"⏸ Pause";
+}
+function go(direction){const a=selectedApps();if(!a.length)return;const n=a.findIndex(x=>x.key===selected);selected=a[(n+direction+a.length)%a.length].key;seconds=30;render()}
+$("prev-app").onclick=()=>go(-1);$("next-app").onclick=()=>go(1);
+$("pause").onclick=()=>{paused=!paused;updateTime()};
+setInterval(()=>{if(!paused&&selectedApps().length>1){if(--seconds<=0)go(1);else updateTime()}},1000);
+const modal=$("settings");
+function open(){wasPaused=paused;paused=true;buildOptions();modal.showModal();updateTime()}
+function close(){modal.close();paused=wasPaused;updateTime()}
+["settings-left"].forEach(id=>$(id).onclick=open);
+$("close-settings").onclick=close;
+modal.addEventListener("cancel",event=>{event.preventDefault();close()});
+function buildOptions(){
+ const root=$("app-options");root.replaceChildren();
+ apps.forEach(app=>{
+  const tr=document.createElement("tr");
+  const td=document.createElement("td");td.textContent=app.title;tr.append(td);
+  for(const field of ["score","pct"]){
+   const cell=document.createElement("td");const input=document.createElement("input");input.type="checkbox";input.checked=app[field];
+   input.setAttribute("aria-label",app.title+" · "+(field==="score"?"Afficher score":"Afficher pourcentage"));
+   input.onchange=()=>{app[field]=input.checked;render()};
+   cell.append(input);tr.append(cell);
+  }
+  const action=document.createElement("td");const btn=document.createElement("button");
+  btn.className="reset";btn.type="button";btn.textContent="↻";
+  btn.title="Réinitialiser le score de "+app.title+" pour Phase 2 A";
+  btn.setAttribute("aria-label",btn.title);
+  btn.onclick=()=>alert("DÉMONSTRATION : la vraie réinitialisation de "+app.title+" demandera le mot de passe professeur et ne modifiera que les scores projetés de Phase 2 A. Aucune donnée n'est modifiée ici.");
+  action.append(btn);tr.append(action);root.append(tr);
+ });
+ const comparisons=$("comparison-options");comparisons.replaceChildren();
+ others.forEach(other=>{
+  const tr=document.createElement("tr"),label=document.createElement("td");
+  label.textContent=other.name;tr.append(label);
+  for(const field of ["score","percentage"]){
+   const cell=document.createElement("td"),cb=document.createElement("input");
+   cb.type="checkbox";cb.checked=other[field];
+   cb.setAttribute("aria-label",other.name+" · Comparer "+(field==="score"?"Score":"%"));
+   cb.onchange=()=>{other[field]=cb.checked;render()};
+   cell.append(cb);tr.append(cell);
+  }
+  comparisons.append(tr);
+ });
+ $("show-teacher").checked=false;
+}
+render();
+</script>
+</body>
+</html>
