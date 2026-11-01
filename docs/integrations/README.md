@@ -25,6 +25,12 @@ Ces étapes sont des **lots de travail**, pas huit demandes d'accord : mener tou
 - Pas de fusion précipitée Pages = Edge = SQL : leurs déploiements sont **distincts**. Une URL directe sur Pages demeure publiquement accessible, même sans carte HUB.
 - Ne jamais présenter un test Node, une fixture Auth, un GET catalogue ou un appareil approuvé en base comme une session élève **réellement** authentifiée dans un navigateur hébergé.
 
+## Décision réutilisable : Objectif record, 3 vies, XP restants
+
+Pour les futures applications qui disposent des capacités correspondantes, suivre le [patron commun Objectif record](PATRON_REUTILISABLE_OBJECTIF_RECORD_3_VIES_XP_20261101.md) : carte renommée, deux modes 3 vies et Mort subite, cœurs animés, petits cadres, badge +20 % de points, et « Reste N XP » en bas à droite des boutons exclusivement quand le serveur confirme une session Connect approuvée et les droits restants. Ne pas copier les XP du prototype fictif dans le jeu vivant. Les mécanismes de score et les crédits sont par application, sur preuves serveur.
+
+**Pour Mélange, la sélection exacte des opérations + / − / ×, le nombre de types sélectionnés, le nombre de calculs 4/10/20 et le niveau influencent potentiellement les XP restant accessibles.** Ne pas appliquer une simple multiplication ou division par le nombre de types ; vérifier les jalons du contrat Mélange. Voir le [prompt de mise en œuvre pour les cinq jeux](PROMPT_DEPLOIEMENT_OBJECTIF_RECORD_5_APPS_20261101.md). Le patron reste au stade de prototype isolé, sans mise en production des nouveaux XP.
+
 ## Contrat de sortie : quand une intégration est terminée
 
 Le moteur libre et ses variantes pédagogiques fonctionnent ; le nouveau jeu et les anciens sont isolés ; identité/révocation, scores, restauration, idempotence et XP réels sont testés ; GLOBAL/professeur, Monsieur T et laboratoire sont cohérents ; la recette publiée a un **journal de preuves** (réussi/échoué/non exécuté, URL, commit, Edge, migration, profil fictif) ; publication autorisée et rollback de ce jeu seul prêts ; le guide a reçu les nouveaux pièges. Sinon la livraison reste **candidate** ou **pilote**, jamais « définitive ».
@@ -33,7 +39,9 @@ Le moteur libre et ses variantes pédagogiques fonctionnent ; le nouveau jeu et 
 
 - [Référence technique : architecture, XP, états, sécurité, professeur, performances](REFERENCE_TECHNIQUE.md)
 - [Contrat commun scores, XP et trophées permanents](CONTRAT_COMMUN_SCORES_XP_TROPHEES.md)
-- [Projet « Défis de score » : 3 vies, Mort subite et prototype Addition simple (01/11/2026)](PROJET_DEFIS_SCORE_3_VIES_20261101.md)
+- [Projet « Objectif record » : prototype Addition simple (01/11/2026)](PROJET_DEFIS_SCORE_3_VIES_20261101.md)
+- [Patron réutilisable Objectif record : 3 vies, XP restants et Mélange](PATRON_REUTILISABLE_OBJECTIF_RECORD_3_VIES_XP_20261101.md)
+- [Prompt de travail : intégrer Objectif record aux cinq calculs écrits](PROMPT_DEPLOIEMENT_OBJECTIF_RECORD_5_APPS_20261101.md)
 - [Déploiement des compteurs trophées / XP du parcours (31/10/2026)](DEPLOIEMENT_TROPHEES_20261031.md)
 - [Erreurs connues, causes et contre-mesures](RETEX_ERREURS.md)
 - [Tests, preuves, publication et retour arrière](RECETTE_ET_PUBLICATION.md)
