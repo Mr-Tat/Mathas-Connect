@@ -99,7 +99,7 @@ CREATE FUNCTION objective_record_candidate.credit_verified_event(
  p_student uuid,p_app text,p_epoch bigint,p_level integer,p_operations text,
  p_ruleset integer,p_milestone text,p_mode text,p_event uuid,p_evidence jsonb
 ) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
-DECLARE a record; full_xp integer; old_credit integer:=0; target integer;
+DECLARE a record; v_full_xp integer; old_credit integer:=0; target integer;
  delta integer; sc bigint; h text; existing record;
 BEGIN
  IF p_student IS NULL OR p_app IS NULL OR p_event IS NULL
@@ -125,11 +125,11 @@ BEGIN
   IF existing.event_hash<>h THEN RAISE EXCEPTION 'event_collision';END IF;
   RETURN jsonb_build_object('ok',true,'duplicate',true,'xpDelta',0);
  END IF;
- SELECT full_xp INTO full_xp FROM objective_record_candidate.rules
+ SELECT rule.full_xp INTO v_full_xp FROM objective_record_candidate.rules AS rule
   WHERE app_key=p_app AND ruleset_version=p_ruleset AND level=p_level
    AND operations_key=p_operations AND milestone=p_milestone;
  IF NOT FOUND THEN RAISE EXCEPTION 'missing_rule';END IF;
- target:=CASE WHEN p_mode='three-lives' THEN full_xp/2 ELSE full_xp END;
+ target:=CASE WHEN p_mode='three-lives' THEN v_full_xp/2 ELSE v_full_xp END;
  SELECT credited INTO old_credit FROM objective_record_candidate.credits
  WHERE student_id=p_student AND app_key=p_app AND scope_epoch=sc
   AND ruleset_version=p_ruleset AND level=p_level AND operations_key=p_operations
