@@ -187,3 +187,116 @@ html[data-proj-da="studio"] .ranking-col + .ranking-col{box-shadow:-4px 0 0 #111
 @media(prefers-reduced-motion:reduce){
  html[data-proj-da] *,html[data-proj-da] *::before,html[data-proj-da] *::after{animation:none!important;transition:none!important}
 }
+
+/* Podium commun : lisible même quand la couleur du thème change.
+   Une couleur pour toute la carte, pas seulement pour le numéro. */
+html[data-proj-da] .entry.rank-1{
+ background:linear-gradient(110deg,#ffe4a0,#ebbb61 55%,#f7d893)!important;
+ border-color:#a47b2d!important;
+ box-shadow:inset 5px 0 0 #a7731b,0 1px 0 #ffffff75!important
+}
+html[data-proj-da] .entry.rank-2{
+ background:linear-gradient(110deg,#e8f0f5,#bbcbd8 55%,#dae5ee)!important;
+ border-color:#829aaa!important;
+ box-shadow:inset 5px 0 0 #748d9f,0 1px 0 #ffffff75!important
+}
+html[data-proj-da] .entry.rank-3{
+ background:linear-gradient(110deg,#f1d1b3,#c99576 55%,#e6b99b)!important;
+ border-color:#a36b4c!important;
+ box-shadow:inset 5px 0 0 #966143,0 1px 0 #ffffff65!important
+}
+html[data-proj-da] .entry:is(.rank-1,.rank-2,.rank-3) :is(.primary strong,.points,.minor,.class-mark){
+ color:#233342!important;
+ text-shadow:none!important
+}
+html[data-proj-da] .entry:is(.rank-1,.rank-2,.rank-3) .class-mark{
+ background:#ffffff76!important;border:1px solid #33485a3a!important
+}
+html[data-proj-da] .entry:is(.rank-1,.rank-2,.rank-3) .place{
+ color:#233342!important;border:1px solid #34425240!important;
+ box-shadow:inset 0 1px 0 #ffffff9a!important
+}
+html[data-proj-da] .entry.rank-1 .place{background:#e5b74c!important}
+html[data-proj-da] .entry.rank-2 .place{background:#bfceda!important}
+html[data-proj-da] .entry.rank-3 .place{background:#d4a080!important}
+/* Du 4e au 16e : 13 nuances régulières d'un même axe chromatique.
+   Variables indépendantes par DA pour ne pas nuire aux contrastes. */
+html[data-proj-da] .entry:is(.rank-4,.rank-5,.rank-6,.rank-7,.rank-8,.rank-9,.rank-10,.rank-11,.rank-12,.rank-13,.rank-14,.rank-15,.rank-16){
+ background:var(--rank-start)!important; /* repli navigateurs anciens */
+ background:color-mix(in srgb,var(--rank-start) calc(100% - var(--rank-fade)),var(--rank-end) var(--rank-fade))!important;
+ border-color:color-mix(in srgb,var(--rank-start-border) calc(100% - var(--rank-fade)),var(--rank-end-border) var(--rank-fade))!important
+}
+html[data-proj-da] .entry:is(.rank-4,.rank-5,.rank-6,.rank-7,.rank-8,.rank-9,.rank-10,.rank-11,.rank-12,.rank-13,.rank-14,.rank-15,.rank-16) .place{
+ background:color-mix(in srgb,var(--rank-start-tag) calc(100% - var(--rank-fade)),var(--rank-end-tag) var(--rank-fade))!important
+}
+html[data-proj-da] .entry.rank-4{--rank-fade:0%}
+html[data-proj-da] .entry.rank-5{--rank-fade:8%}
+html[data-proj-da] .entry.rank-6{--rank-fade:17%}
+html[data-proj-da] .entry.rank-7{--rank-fade:25%}
+html[data-proj-da] .entry.rank-8{--rank-fade:33%}
+html[data-proj-da] .entry.rank-9{--rank-fade:42%}
+html[data-proj-da] .entry.rank-10{--rank-fade:50%}
+html[data-proj-da] .entry.rank-11{--rank-fade:58%}
+html[data-proj-da] .entry.rank-12{--rank-fade:67%}
+html[data-proj-da] .entry.rank-13{--rank-fade:75%}
+html[data-proj-da] .entry.rank-14{--rank-fade:83%}
+html[data-proj-da] .entry.rank-15{--rank-fade:92%}
+html[data-proj-da] .entry.rank-16{--rank-fade:100%}
+
+/* 01. Néon : géométrie douce et modernité, sans police web à télécharger. */
+html[data-proj-da="neon"]{
+ --rank-start:#265f80;--rank-end:#122c49;
+ --rank-start-border:#73b2ce;--rank-end-border:#3d617d;
+ --rank-start-tag:#3387a4;--rank-end-tag:#21455f
+}
+html[data-proj-da="neon"] body{font-family:"Trebuchet MS","Segoe UI",Verdana,Arial,sans-serif}
+html[data-proj-da="neon"] :is(header strong,.ranking-head h1,.panel h2){
+ font-family:"Arial Rounded MT Bold","Trebuchet MS",Verdana,sans-serif;
+ letter-spacing:.015em
+}
+html[data-proj-da="neon"] :is(.primary strong,.points){
+ font-family:"Trebuchet MS",Verdana,"Segoe UI",sans-serif
+}
+/* 02. Papier : titres avec empattements, noms et scores sans empattement. */
+html[data-proj-da="papier"]{
+ --rank-start:#d8e8f5;--rank-end:#edf1f3;
+ --rank-start-border:#8daec7;--rank-end-border:#c9d6dd;
+ --rank-start-tag:#abcde2;--rank-end-tag:#d8e1e7
+}
+html[data-proj-da="papier"] body{font-family:Verdana,"DejaVu Sans",Arial,sans-serif}
+html[data-proj-da="papier"] :is(header strong,.ranking-head h1,.panel h2){
+ font-family:Georgia,"Times New Roman",serif;
+ font-style:normal;letter-spacing:-.025em
+}
+html[data-proj-da="papier"] :is(.primary strong,.points){
+ font-family:Verdana,"DejaVu Sans",Arial,sans-serif
+}
+/* 03. Ardoise : lettres rondes et lisibles, sans imiter une craie floue. */
+html[data-proj-da="ardoise"]{
+ --rank-start:#346b53;--rank-end:#193c33;
+ --rank-start-border:#8fc4a6;--rank-end-border:#5d907a;
+ --rank-start-tag:#53856a;--rank-end-tag:#245445
+}
+html[data-proj-da="ardoise"] body{font-family:Verdana,"DejaVu Sans",sans-serif}
+html[data-proj-da="ardoise"] :is(header strong,.ranking-head h1,.panel h2){
+ font-family:"Trebuchet MS","Gill Sans",Verdana,sans-serif;
+ letter-spacing:.02em
+}
+html[data-proj-da="ardoise"] :is(.primary strong,.points){
+ font-family:Verdana,"DejaVu Sans",sans-serif
+}
+/* 04. Studio : impact sur les titres, chiffres à chasse régulière. */
+html[data-proj-da="studio"]{
+ --rank-start:#364c65;--rank-end:#242d41;
+ --rank-start-border:#91a5bc;--rank-end-border:#5b6b85;
+ --rank-start-tag:#536b85;--rank-end-tag:#3d4c68
+}
+html[data-proj-da="studio"] body{font-family:Tahoma,"DejaVu Sans",Arial,sans-serif}
+html[data-proj-da="studio"] :is(header strong,.ranking-head h1,.panel h2){
+ font-family:Impact,"Arial Black","Liberation Sans",sans-serif;
+ font-stretch:condensed;letter-spacing:.025em;font-style:normal
+}
+html[data-proj-da="studio"] :is(.primary strong,.points){
+ font-family:Tahoma,"DejaVu Sans",Arial,sans-serif;
+ font-variant-numeric:tabular-nums;letter-spacing:-.015em
+}
