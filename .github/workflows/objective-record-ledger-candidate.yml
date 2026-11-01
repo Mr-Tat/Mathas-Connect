@@ -3,7 +3,9 @@ on:
   pull_request:
     paths:
       - 'supabase/release-candidates/objective_record_ledger_candidate.sql'
+      - 'supabase/release-candidates/objective_record_sessions_candidate.sql'
       - 'tests/objective-record-ledger-candidate.sql'
+      - 'tests/objective-record-sessions-candidate.sql'
       - '.github/workflows/objective-record-ledger-candidate.yml'
   workflow_dispatch:
 permissions:
@@ -40,8 +42,12 @@ jobs:
           SQL
       - name: Installer le registre candidat sans acces public
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/release-candidates/objective_record_ledger_candidate.sql
+      - name: Installer le magasin de sessions strictement prive
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/release-candidates/objective_record_sessions_candidate.sql
       - name: Tests SQL, droits, epoques, complements, idempotence et rollback
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/objective-record-ledger-candidate.sql
+      - name: Sessions privees, preuve mathematique, rejeu et expiration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/objective-record-sessions-candidate.sql
       - name: Concurrence reelle, seize requetes au meme jalon
         shell: bash
         run: |
