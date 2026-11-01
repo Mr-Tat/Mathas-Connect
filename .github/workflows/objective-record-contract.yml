@@ -1,0 +1,21 @@
+name: Objectif record — contrat candidat (aucun accès Supabase)
+on:
+  pull_request:
+    paths:
+      - 'apps/objective-record/**'
+      - 'tests/objective-record-contract.test.mjs'
+      - 'docs/integrations/OBJECTIF_RECORD_AUDIT_CONTRAT_CANDIDAT_20261101.md'
+      - '.github/workflows/objective-record-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pure-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests contrat fail-closed et compléments (aucune connexion)
+        run: node --test tests/objective-record-contract.test.mjs
