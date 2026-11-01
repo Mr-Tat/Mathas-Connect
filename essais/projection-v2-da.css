@@ -300,3 +300,36 @@ html[data-proj-da="studio"] :is(.primary strong,.points){
  font-family:Tahoma,"DejaVu Sans",Arial,sans-serif;
  font-variant-numeric:tabular-nums;letter-spacing:-.015em
 }
+
+/* Sélecteur officiel, affiché seulement dans la V2 connectée.
+   Le choix change l'habillage, jamais la hauteur ou l'ordre des rangs. */
+html[data-proj-da] .projection-theme-picker{
+ display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+ font-size:12px;font-weight:800;min-height:36px;color:var(--v-text)
+}
+html[data-proj-da] .projection-theme-picker select{
+ min-height:36px;max-width:190px;padding:6px 27px 6px 9px;
+ border:1px solid var(--v-button-line);border-radius:8px;
+ background:var(--v-button);color:var(--v-button-ink);
+ font:750 12px system-ui,-apple-system,"Segoe UI",sans-serif;
+ cursor:pointer
+}
+html[data-proj-da] .projection-theme-picker select:focus-visible{
+ outline:3px solid var(--v-accent);outline-offset:3px
+}
+@media(max-width:1480px){
+ html[data-proj-da] header:has(.projection-theme-picker){
+  flex-wrap:wrap;gap:7px
+ }
+ html[data-proj-da] header:has(.projection-theme-picker) .header-class{
+  position:static;transform:none;order:3;
+  width:100%;max-width:100%;flex:0 0 100%;
+  text-align:center
+ }
+ html[data-proj-da] header:has(.projection-theme-picker) .tools{
+  margin-left:auto;justify-content:flex-end
+ }
+}
+@media(max-width:690px){
+ html[data-proj-da] .projection-theme-picker select{max-width:155px}
+}
