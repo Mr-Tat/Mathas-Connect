@@ -20,6 +20,7 @@ Les séries normales **4 / 10 / 20 calculs restent totalement inchangées**, y c
 - Si deux calculs sont présents, chacun doit être évalué séparément. Deux calculs faux peuvent donc coûter deux vies.
 - La troisième erreur termine la partie et affiche le score de bonnes réponses.
 - Animation : le cœur concerné **grossit**, se **fissure puis se brise**, finit en **gris anthracite très foncé** avec cassure visible et reste ainsi. Prévoir une alternative sans mouvement.
+- **Placement en jeu confirmé par le professeur** : les **trois cœurs côte à côte dans un cadre discret** au milieu de la **barre supérieure de session**, entre « ← Menu » et les pastilles Niveau/progression/score, sans déplacer ces commandes. Les autres éléments doivent reprendre **exactement** la disposition de Mort subite. Aucun cœur ne s’affiche dans Mort subite ou dans les séries 4/10/20. Sur écran étroit et téléphone, les cœurs peuvent passer sur une petite ligne dédiée pour éviter les chevauchements.
 
 ## Scores et projection
 
@@ -46,7 +47,7 @@ Les séries normales **4 / 10 / 20 calculs restent totalement inchangées**, y c
 **[PROTOTYPE isolé — 01/11/2026]**
 
 - Essai : https://mr-tat.github.io/CE-Addition-simple/essai-mode-score-3-vies.html
-- PR source : https://github.com/Mr-Tat/CE-Addition-simple/pull/6 ; reprise visuelle fidèle au montage professeur : https://github.com/Mr-Tat/CE-Addition-simple/pull/7 ; correction des réécritures natives et des deux colonnes CSS : https://github.com/Mr-Tat/CE-Addition-simple/pull/9
+- PR source : https://github.com/Mr-Tat/CE-Addition-simple/pull/6 ; reprise visuelle fidèle au montage professeur : https://github.com/Mr-Tat/CE-Addition-simple/pull/7 ; correction des réécritures natives et des deux colonnes CSS : https://github.com/Mr-Tat/CE-Addition-simple/pull/9 ; cadre des cœurs dans le bandeau : https://github.com/Mr-Tat/CE-Addition-simple/pull/10
 - Cette **page distincte** charge le vrai moteur HTML Addition simple dans un iframe. Les transformations du mode 3 vies s'appliquent dans l'iframe ; **le jeu habituel et sa copie native sont inchangés**.
 - Le localStorage et le sessionStorage de l'iframe sont remplacés par une mémoire volatile, et ses requêtes fetch sont bloquées. Aucun XP, trophée, record, consentement ni résultat Connect ne doit être publié par cet essai.
 - **Piège moteur détecté et corrigé dans l’essai** : un script natif restaure « Continue jusqu’à la première erreur. » et « Lancer la mort subite » après le chargement ; une règle CSS impose un bouton pleine largeur. Le prototype doit préserver la phrase du professeur et les quatre lignes XP/bonus, protéger la réécriture et maintenir les boutons explicitement en colonne 1 / colonne 2. Aucun correctif de ce type ne doit être appliqué aveuglément aux autres applications.
