@@ -6,7 +6,7 @@ export const MODES=Object.freeze(['classic','three-lives','sudden']);
 export const COUNTS=Object.freeze([4,10,20]);
 const int=n=>Number.isSafeInteger(n)&&n>=0;
 export function canonicalOperations(operations, mixed=false){
-  if(!mixed)return operations==null?[]:null;
+  if(!mixed)return operations==null||(Array.isArray(operations)&&operations.length===0)?[]:null;
   if(!Array.isArray(operations)||operations.length<1||operations.length>3
      ||new Set(operations).size!==operations.length
      ||operations.some(op=>!OPERATIONS.includes(op)))return null;
