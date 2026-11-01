@@ -162,4 +162,96 @@ BEGIN
     AND scope_epoch=9 AND milestone='record:10')
  THEN RAISE EXCEPTION 'rollback_failed';END IF;
 END $$;
+
+-- One verified game can unlock two XP milestones. Both must commit atomically
+-- with ONE receipt, never as two separate Edge RPCs. Fictional third account.
+INSERT INTO objective_record_candidate.authorizations
+ (student_id,app_key,reset_epoch,ruleset_version,approved,repeat_xp)
+VALUES ('33333333-3333-4333-8333-333333333333','melange-calculs-ecrits',7,3,true,false);
+
+DO $test_batch$
+DECLARE r jsonb; remain jsonb; collision boolean:=false; stale boolean:=false;
+BEGIN
+ r:=objective_record_candidate.credit_verified_record(
+  '33333333-3333-4333-8333-333333333333','melange-calculs-ecrits',
+  7,2,'add,sub',3,'three-lives','40404040-4040-4040-8040-404040404040',
+  10,'{"source":"server-issued-challenge","score":10}'::jsonb);
+ IF (r->>'xpDelta')::integer<>10 OR jsonb_array_length(r->'milestones')<>2
+ THEN RAISE EXCEPTION 'batch_half_not_atomic: %',r;END IF;
+ IF (SELECT count(*) FROM objective_record_candidate.receipts
+  WHERE student_id='33333333-3333-4333-8333-333333333333')<>1
+ THEN RAISE EXCEPTION 'batch_receipt_not_unique';END IF;
+ r:=objective_record_candidate.credit_verified_record(
+  '33333333-3333-4333-8333-333333333333','melange-calculs-ecrits',
+  7,2,'add,sub',3,'three-lives','40404040-4040-4040-8040-404040404040',
+  10,'{"score":10,"source":"server-issued-challenge"}'::jsonb);
+ IF (r->>'xpDelta')::integer<>0 OR (r->>'duplicate')::boolean IS DISTINCT FROM true
+ THEN RAISE EXCEPTION 'batch_duplicate_minted_xp: %',r;END IF;
+ BEGIN
+  PERFORM objective_record_candidate.credit_verified_record(
+   '33333333-3333-4333-8333-333333333333','melange-calculs-ecrits',
+   7,2,'add,sub',3,'three-lives','40404040-4040-4040-8040-404040404040',
+   9,'{"source":"changed-payload"}'::jsonb);
+ EXCEPTION WHEN OTHERS THEN collision:=true;END;
+ IF NOT collision THEN RAISE EXCEPTION 'batch_collision_accepted';END IF;
+ r:=objective_record_candidate.credit_verified_record(
+  '33333333-3333-4333-8333-333333333333','melange-calculs-ecrits',
+  7,2,'add,sub',3,'sudden','50505050-5050-4050-8050-505050505050',
+  10,'{"source":"server-issued-challenge","score":10}'::jsonb);
+ IF (r->>'xpDelta')::integer<>11 OR jsonb_array_length(r->'milestones')<>2
+ THEN RAISE EXCEPTION 'batch_complement_incorrect: %',r;END IF;
+ remain:=objective_record_candidate.read_projection(
+  '33333333-3333-4333-8333-333333333333','melange-calculs-ecrits',7,2,'add,sub',3);
+ IF (remain->'remaining'->>'sudden')::integer<>0
+  OR (remain->'remaining'->>'three-lives')::integer<>0
+ THEN RAISE EXCEPTION 'batch_remaining_should_be_zero: %',remain;END IF;
+ -- A different exact operation selection has its own ledger.
+ r:=objective_record_candidate.credit_verified_record(
+  '33333333-3333-4333-8333-333333333333','melange-calculs-ecrits',
+  7,2,'add,mul',3,'three-lives','60606060-6060-4060-8060-606060606060',
+  6,'{"source":"server-issued-challenge","score":6}'::jsonb);
+ IF (r->>'xpDelta')::integer<>5 OR jsonb_array_length(r->'milestones')<>1
+ THEN RAISE EXCEPTION 'batch_single_half_incorrect: %',r;END IF;
+ remain:=objective_record_candidate.read_projection(
+  '33333333-3333-4333-8333-333333333333','melange-calculs-ecrits',7,2,'add,mul',3);
+ IF (remain->'remaining'->>'sudden')::integer<>16
+  OR (remain->'remaining'->>'three-lives')::integer<>5
+ THEN RAISE EXCEPTION 'batch_inherited_wrong_subset: %',remain;END IF;
+ -- A game ending before five successes has no record XP and still
+ -- needs a consumed game-event receipt (unless its server proof is refused).
+ r:=objective_record_candidate.credit_verified_record(
+  '33333333-3333-4333-8333-333333333333','melange-calculs-ecrits',
+  7,2,'sub,mul',3,'three-lives','70707070-7070-4070-8070-707070707070',
+  3,'{"source":"server-issued-challenge","score":3}'::jsonb);
+ IF (r->>'xpDelta')::integer<>0 OR jsonb_array_length(r->'milestones')<>0
+ THEN RAISE EXCEPTION 'unearned_batch_credited: %',r;END IF;
+ BEGIN
+  PERFORM objective_record_candidate.credit_verified_record(
+   '33333333-3333-4333-8333-333333333333','melange-calculs-ecrits',
+   6,2,'add,mul',3,'sudden','80808080-8080-4080-8080-808080808080',
+   10,'{"source":"stale-game"}'::jsonb);
+ EXCEPTION WHEN OTHERS THEN stale:=true;END;
+ IF NOT stale THEN RAISE EXCEPTION 'stale_batch_accepted';END IF;
+ IF EXISTS(SELECT 1 FROM objective_record_candidate.receipts
+    WHERE event_id='80808080-8080-4080-8080-808080808080')
+ THEN RAISE EXCEPTION 'stale_batch_left_receipt';END IF;
+END $test_batch$;
+
+-- A rollback of a two-milestone award cancels BOTH credits and the sole receipt.
+BEGIN;
+SELECT objective_record_candidate.credit_verified_record(
+ '33333333-3333-4333-8333-333333333333','melange-calculs-ecrits',
+ 7,2,'mul',3,'sudden','90909090-9090-4090-8090-909090909090',
+ 10,'{"source":"rollback-batch"}'::jsonb);
+ROLLBACK;
+DO $test_rollback_batch$
+BEGIN
+ IF EXISTS(SELECT 1 FROM objective_record_candidate.receipts
+   WHERE event_id='90909090-9090-4090-8090-909090909090')
+ OR EXISTS(SELECT 1 FROM objective_record_candidate.credits
+   WHERE student_id='33333333-3333-4333-8333-333333333333'
+    AND operations_key='mul')
+ THEN RAISE EXCEPTION 'batch_rollback_failed';END IF;
+END $test_rollback_batch$;
+
 SELECT 'record_candidate_tests_passed' AS result;
