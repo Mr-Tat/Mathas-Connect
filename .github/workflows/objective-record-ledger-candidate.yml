@@ -46,6 +46,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          pids=()
           for i in $(seq 1 16); do
             (
               id=$(printf '30000000-0000-4000-8000-%012d' "$i")
@@ -57,8 +58,9 @@ jobs:
                   '$id'::uuid,'{\"source\":\"parallel-fixture\"}'::jsonb);
               " > /dev/null
             ) &
+            pids+=("$!")
           done
-          wait
+          for pid in "${pids[@]}"; do wait "$pid"; done
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
           DO $$
           BEGIN
