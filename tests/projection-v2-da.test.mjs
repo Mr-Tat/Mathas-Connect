@@ -98,5 +98,5 @@ test('projection V2 : quatre signatures typographiques à contraste constant san
   assert.ok(style.includes(prefix+' :is(.primary strong,.points){'),'Police de noms et score absente : '+key);
   assert.ok(style.includes(font),'Font stack absent : '+key);
  }
- assert.doesNotMatch(style,/@font-face|fonts\\.googleapis|fonts\\.gstatic|@import|url\\(/i);
+ assert.doesNotMatch(style,/@font-face|fonts\.googleapis|fonts\.gstatic|@import|url\(/i);
 });
