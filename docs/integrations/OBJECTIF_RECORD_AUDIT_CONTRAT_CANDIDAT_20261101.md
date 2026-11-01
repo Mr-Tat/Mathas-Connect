@@ -32,3 +32,19 @@ La politique Mélange existante est `perfect4:28`, `pass10:38`, `bonus10:8`, `pa
 - SQL transactionnel et API connectés : **non implémentés**.
 - Navigateur authentifié, clavier, PC/GSM, droits professeur : **non testés**.
 - Publication : **interdite sans feu vert**.
+
+
+## Vérification directe des accès Supabase (lecture de métadonnées uniquement)
+
+**Vérifié le 01/11/2026 à partir de la connexion Supabase :**
+
+- Le compte a accès à trois projets : `Mathas-Test` (**INACTIVE**), `Math'as Connect` et `Math'as` (**ACTIVE_HEALTHY**). Ne pas relancer automatiquement le projet de test : confirmer frais éventuels et usage prévu.
+- Aucune branche Supabase existante dans les projets de test ou Connect. Les outils de création de branche, migration, exécution SQL et déploiement Edge sont disponibles **mais n'ont pas été utilisés** pour écrire dans la production.
+- Sur Connect, le catalogue de métadonnées expose 35 tables publiques, dont `connect_xp_award_rules`, `connect_xp_milestones`, `connect_xp_credits`, `connect_parcours_current` et `connect_states`. 32 migrations figurent dans l'historique, et `connect-results` est déployée en version 42 au moment de la lecture.
+- Les signatures PostgreSQL réellement déployées confirment `connect_mixed_record_v1(uuid,uuid,bigint,bigint,text,integer,integer,integer,jsonb,jsonb,jsonb,jsonb,boolean,boolean)`, `connect_mixed_xp_read_v1(uuid,text,boolean)` et `connect_mixed_xp_sync_v1(uuid,text,boolean)`, toutes `SECURITY DEFINER`.
+- **Risque de lecture avec effet de bord :** le code existant `connect_mixed_xp_read_v1` peut invoquer `connect_mixed_xp_sync_v1` quand l'état paraît plus récent. Pour l'audit, seules les métadonnées du catalogue et les définitions GitHub ont été lues ; aucune RPC individuelle d'XP n'a été invoquée.
+- **Point critique Mélange :** `connect_mixed_record_v1` agrège aujourd'hui les droits dans `eligible`, `halfEligible`, `quarterEligible` selon la **quantité** d'opérations sélectionnées ; les preuves `operationsSelectedAtStart` restent dans le journal récent mais ne constituent pas un registre pérenne de droits par combinaison exacte. L'affichage distinct `add+sub` / `add+mul` exige une persistance serveur nouvelle et une politique explicite, pas une déduction du nombre de cases cochées.
+- La RPC reçoit actuellement un journal déclaré par le navigateur (`operationsCompleted`, `firstTry`), en contrôle les bornes et la cohérence, mais la syntaxe de la preuve ne suffit pas à prouver côté SQL que chaque addition, soustraction ou multiplication est mathématiquement correcte. Prévoir validation déterministe des opérations/calculs ou une attestation de partie contrôlée, en plus du contrôle de structure.
+- **Aucune donnée individuelle d'élève n'a été interrogée.** Aucune transaction de récompense, écriture, migration ou déploiement Supabase n'a été lancée.
+
+Pour les tests serveur, privilégier une base PostgreSQL éphémère dans GitHub Actions, ou une branche Supabase de test facturée seulement après accord.
