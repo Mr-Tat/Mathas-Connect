@@ -148,6 +148,72 @@ BEGIN
  RETURN jsonb_build_object('ok',true,'duplicate',false,'xpDelta',delta,
   'creditedTotal',old_credit+delta,'cap',target);
 END $$;
+
+-- Atomic MULTI-MILESTONE record award. A verified 10-correct game must credit
+-- record:5 and record:10 as ONE transaction and produce ONE receipt.
+-- The service MUST derive score/mode from verifyServerTranscript and must
+-- consume the private issued-session record in the same future transaction.
+CREATE FUNCTION objective_record_candidate.credit_verified_record(
+ p_student uuid,p_app text,p_epoch bigint,p_level integer,p_operations text,
+ p_ruleset integer,p_mode text,p_event uuid,p_verified_score integer,p_evidence jsonb
+) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $
+DECLARE a record; rule record; sc bigint; old_credit integer; target integer;
+ delta integer; total_delta integer:=0; matched integer:=0; required integer:=0;
+ existing record; hash text; details jsonb:='[]'::jsonb;
+BEGIN
+ IF p_student IS NULL OR p_app IS NULL OR p_event IS NULL OR p_epoch IS NULL
+  OR p_ruleset IS NULL OR p_level IS NULL OR p_level NOT BETWEEN 1 AND 3
+  OR p_operations IS NULL OR p_mode NOT IN ('three-lives','sudden')
+  OR p_verified_score IS NULL OR p_verified_score NOT BETWEEN 0 AND 1000
+  OR p_evidence IS NULL OR jsonb_typeof(p_evidence)<>'object'
+ THEN RAISE EXCEPTION 'invalid_verified_result';END IF;
+ PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(p_student::text||':'||p_app,0));
+ SELECT * INTO a FROM objective_record_candidate.authorizations
+  WHERE student_id=p_student AND app_key=p_app FOR UPDATE;
+ IF NOT FOUND OR NOT a.approved OR a.reset_epoch<>p_epoch OR a.ruleset_version<>p_ruleset
+ THEN RAISE EXCEPTION 'unapproved_or_stale';END IF;
+ sc:=CASE WHEN a.repeat_xp THEN p_epoch ELSE 0 END;
+ hash:=pg_catalog.encode(pg_catalog.sha256(pg_catalog.convert_to(
+  jsonb_build_object('type','verified-record','app',p_app,'epoch',p_epoch,
+   'level',p_level,'operations',p_operations,'ruleset',p_ruleset,'mode',p_mode,
+   'score',p_verified_score,'evidence',p_evidence)::text,'UTF8')),'hex');
+ SELECT * INTO existing FROM objective_record_candidate.receipts
+  WHERE student_id=p_student AND event_id=p_event FOR UPDATE;
+ IF FOUND THEN
+  IF existing.event_hash<>hash THEN RAISE EXCEPTION 'event_collision';END IF;
+  RETURN jsonb_build_object('ok',true,'duplicate',true,'xpDelta',0);
+ END IF;
+ required:=CASE WHEN p_verified_score>=10 THEN 2 WHEN p_verified_score>=5 THEN 1 ELSE 0 END;
+ FOR rule IN SELECT milestone,full_xp FROM objective_record_candidate.rules
+ WHERE app_key=p_app AND ruleset_version=p_ruleset AND level=p_level
+ AND operations_key=p_operations
+ AND ((milestone='record:5' AND p_verified_score>=5)
+  OR (milestone='record:10' AND p_verified_score>=10))
+ ORDER BY milestone
+ LOOP
+  matched:=matched+1;
+  target:=CASE WHEN p_mode='three-lives' THEN rule.full_xp/2 ELSE rule.full_xp END;
+  SELECT credited INTO old_credit FROM objective_record_candidate.credits
+   WHERE student_id=p_student AND app_key=p_app AND scope_epoch=sc
+    AND ruleset_version=p_ruleset AND level=p_level AND operations_key=p_operations
+    AND milestone=rule.milestone FOR UPDATE;
+  old_credit:=COALESCE(old_credit,0);
+  delta:=GREATEST(0,target-old_credit);
+  INSERT INTO objective_record_candidate.credits
+   (student_id,app_key,scope_epoch,ruleset_version,level,operations_key,milestone,credited)
+  VALUES(p_student,p_app,sc,p_ruleset,p_level,p_operations,rule.milestone,old_credit+delta)
+  ON CONFLICT(student_id,app_key,scope_epoch,ruleset_version,level,operations_key,milestone)
+  DO UPDATE SET credited=EXCLUDED.credited;
+  total_delta:=total_delta+delta;
+  details:=details||jsonb_build_array(jsonb_build_object('milestone',rule.milestone,'delta',delta));
+ END LOOP;
+ IF matched<>required THEN RAISE EXCEPTION 'missing_record_rule';END IF;
+ INSERT INTO objective_record_candidate.receipts(student_id,event_id,event_hash,xp_delta)
+ VALUES(p_student,p_event,hash,total_delta);
+ RETURN jsonb_build_object('ok',true,'duplicate',false,'xpDelta',total_delta,
+  'milestones',details);
+END $;
+
 REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA objective_record_candidate FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA objective_record_candidate TO service_role;
 COMMIT;
