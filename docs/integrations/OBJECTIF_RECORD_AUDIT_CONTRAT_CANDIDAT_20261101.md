@@ -67,3 +67,11 @@ Pour les tests serveur, privilégier une base PostgreSQL éphémère dans GitHub
 2. Définir le barème officiel par sous-ensemble Mélange et le budget d'XP global (risque de cumul entre sept sélections), et les règles communes applicables aux autres moteurs ; définir la politique de points du classement +20 %.
 3. Relier de manière atomique les crédits validés à `connect_xp_credits`/`connect_xp_milestones` et aux trophées **existants**, sans modifier la logique de remise à zéro ni donner de trophée en mode 3 vies. Le schéma candidat est volontairement indépendant, sans effet sur le total réel du HUB.
 4. Tester Auth/Edge et navigateur de bout en bout sur identités fictives, jamais dans la production. Pas de migration ni de publication avant cette recette.
+
+
+## Contrôle arithmétique candidat hors Edge
+
+- `apps/objective-record/server-proof.mjs` + `tests/objective-record-proof.test.mjs` vérifient des **réponses numériques finales** contre des questions que le backend a préalablement émises et qu'il relit depuis son stockage de confiance. Le navigateur ne peut pas injecter son `score`, ses questions ou ses indicateurs `correct` / `firstTry` dans ce modèle.
+- La fonction rejette toute question non prévue, réponse incomplète, répétition d'ID, calcul après la troisième erreur (ou après la première en Mort subite), mélange d'opérations invalide et fin anticipée sans motif. Elle déduit score, erreurs, jalons candidats et éligibilité à un trophée **sans attribuer celui-ci**.
+- Les cinq familles de moteur et les sept combinaisons Mélange × trois niveaux sont couvertes par des tests JavaScript. **Limite majeure** : la vérification arithmétique terminale ne prouve pas encore les gestes de retenue/emprunt ni la première tentative par case du moteur natif. Avant branchement, les questions doivent être générées et persistées côté serveur, avec TTL/nonce, Auth + validation de classe, parcours/époque, nombre de questions, interdiction de réutiliser une session et concordance exacte des règles de chaque moteur. La consommation de session et le crédit doivent être atomiques.
+- Le +20 % du classement n'est toujours **pas activé** : il attend l'unité et l'arrondi communs. Le modèle arithmétique ne change jamais les montants XP.
