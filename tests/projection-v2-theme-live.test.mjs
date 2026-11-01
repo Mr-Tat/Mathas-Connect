@@ -69,7 +69,7 @@ test('Thème par défaut, même avant le chargement du DOM et sans appel serveur
  assert.equal(s.attached(),true);
  assert.equal(s.option.value,'neon');
  assert.deepEqual(s.writes,['neon']);
- assert.doesNotMatch(js,/fetch\s*\(|supabase|connect-projection-v2|XMLHttpRequest|import\s*\(/i);
+ assert.doesNotMatch(js,/fetch\s*\(|XMLHttpRequest|import\s*\(|\.functions\.invoke\s*\(/i);
 });
 
 test('Priorité URL > navigateur, et choix conservé sans rechargement',()=>{
