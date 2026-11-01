@@ -89,9 +89,9 @@ main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) mi
 .entry.unplayed{opacity:.62}
 
 .rotation-status{color:#b9d7f4;font-size:11px;font-weight:750;white-space:nowrap;font-variant-numeric:tabular-nums;padding:0 3px}
-.right{display:grid;gap:12px;grid-template-rows:1fr 1fr;min-width:0}
+.right{display:grid;gap:12px;grid-template-rows:minmax(0,1fr);min-width:0}
 .right .panel{background:#24517e}
-.right .panel+ .panel{background:#3b536b}
+.right .panel{min-height:0}
 .event{padding:9px;border-left:4px solid #e3c265;background:#193b61;border-radius:8px;margin-top:9px;font-size:12px}
 .event b,.event small{display:block}.event small{color:#bed2e9;margin-top:5px}
 footer{padding:3px 14px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
@@ -131,7 +131,7 @@ label.setting{justify-content:space-between;max-width:380px}
   .ranking-col{min-height:0;height:100%;grid-template-rows:repeat(var(--row-count,8),minmax(0,1fr));align-content:stretch;gap:6px}
   .ranking-col .entry{min-height:0;height:100%;overflow:hidden;align-content:center}
 }
-@media(max-width:1100px){main{grid-template-columns:minmax(165px,1fr) minmax(400px,2.7fr);}.right{grid-column:1/-1;grid-template-columns:1fr 1fr;grid-template-rows:auto;}.entry .primary{flex-wrap:wrap;gap:3px}}
+@media(max-width:1100px){main{grid-template-columns:minmax(165px,1fr) minmax(400px,2.7fr);}.right{grid-column:1/-1;grid-template-columns:1fr;grid-template-rows:auto;}.entry .primary{flex-wrap:wrap;gap:3px}}
 @media(max-width:690px){main{display:flex;flex-direction:column}.right{display:grid}.ranking-list{grid-template-columns:1fr}.ranking-list .ranking-col + .ranking-col{border-left:0;border-top:5px solid #e6c877;padding-left:0;padding-top:10px;margin-top:8px;box-shadow:none}.ranking-head h1{font-size:27px}.primary strong{font-size:18px}.points{font-size:18px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 #live-status{font-size:12px;font-weight:750;color:#d4ebff;max-width:260px}#settings [hidden]{display:none!important}#reset-confirm input[type=password]{border:1px solid #7794b1;border-radius:7px;background:#0d263e;color:#fff;padding:9px;min-width:210px}#percentage-note{font-size:11px;color:#d5e7fa}#ranking-list:empty::after{content:"Aucun élève autorisé à afficher pour cette application.";color:#d0e6fd;font-size:14px;padding:25px;text-align:center;display:block}.event.empty{color:#cce0f3}
@@ -156,7 +156,6 @@ label.setting{justify-content:space-between;max-width:380px}
   </section>
   <aside class="right">
     <section class="panel"><h2>✨ Nouveaux exploits</h2><div id="exploits"></div></section>
-    <section class="panel"><h2>📈 Meilleures remontées</h2><div id="rises"></div></section>
   </aside>
 </main>
 <footer>
