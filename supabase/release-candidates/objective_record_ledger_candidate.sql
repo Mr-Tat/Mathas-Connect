@@ -156,7 +156,7 @@ END $$;
 CREATE FUNCTION objective_record_candidate.credit_verified_record(
  p_student uuid,p_app text,p_epoch bigint,p_level integer,p_operations text,
  p_ruleset integer,p_mode text,p_event uuid,p_verified_score integer,p_evidence jsonb
-) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $
+) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $record$
 DECLARE a record; rule record; sc bigint; old_credit integer; target integer;
  delta integer; total_delta integer:=0; matched integer:=0; required integer:=0;
  existing record; hash text; details jsonb:='[]'::jsonb;
@@ -212,7 +212,7 @@ BEGIN
  VALUES(p_student,p_event,hash,total_delta);
  RETURN jsonb_build_object('ok',true,'duplicate',false,'xpDelta',total_delta,
   'milestones',details);
-END $;
+END $record$;
 
 REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA objective_record_candidate FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA objective_record_candidate TO service_role;
