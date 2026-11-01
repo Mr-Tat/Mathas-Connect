@@ -74,6 +74,46 @@ jobs:
             THEN RAISE EXCEPTION 'concurrent_receipt_loss'; END IF;
           END $$;
           SQL
+      - name: Concurrence batch 5 + 10 XP, seize parties simultanées
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO objective_record_candidate.authorizations
+          (student_id,app_key,reset_epoch,ruleset_version,approved,repeat_xp)
+          VALUES('44444444-4444-4444-8444-444444444444','melange-calculs-ecrits',7,3,true,false);
+          SQL
+          pids=()
+          for i in $(seq 1 16); do
+            (
+              id=$(printf '40000000-0000-4000-8000-%012d' "$i")
+              psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -qAtc "
+                SET ROLE service_role;
+                SELECT objective_record_candidate.credit_verified_record(
+                  '44444444-4444-4444-8444-444444444444','melange-calculs-ecrits',
+                  7,2,'add,sub',3,'sudden','$id'::uuid,10,
+                  '{\"source\":\"batch-parallel-fixture\"}'::jsonb);
+              " > /dev/null
+            ) &
+            pids+=("$!")
+          done
+          for pid in "${pids[@]}"; do wait "$pid"; done
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          DO $check_batch$
+          BEGIN
+            IF (SELECT count(*) FROM objective_record_candidate.credits
+                WHERE student_id='44444444-4444-4444-8444-444444444444'
+                AND operations_key='add,sub' AND credited IN (10,11)
+                AND milestone IN ('record:5','record:10')) <> 2
+            THEN RAISE EXCEPTION 'batch_concurrent_credit_missing';END IF;
+            IF (SELECT coalesce(sum(xp_delta),-1) FROM objective_record_candidate.receipts
+                WHERE student_id='44444444-4444-4444-8444-444444444444') <> 21
+            THEN RAISE EXCEPTION 'batch_concurrent_over_credit';END IF;
+            IF (SELECT count(*) FROM objective_record_candidate.receipts
+                WHERE student_id='44444444-4444-4444-8444-444444444444') <> 16
+            THEN RAISE EXCEPTION 'batch_concurrent_lost_receipt';END IF;
+          END $check_batch$;
+          SQL
       - name: Verify that web roles have no schema access
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT CASE WHEN has_schema_privilege('anon','objective_record_candidate','USAGE') OR has_schema_privilege('authenticated','objective_record_candidate','USAGE') THEN 1 ELSE 0 END" | grep -qx 0
