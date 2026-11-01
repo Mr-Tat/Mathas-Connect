@@ -120,6 +120,56 @@ jobs:
             THEN RAISE EXCEPTION 'batch_concurrent_lost_receipt';END IF;
           END $check_batch$;
           SQL
+      - name: Meme session envoyee simultanement 16 fois, un seul credit et un seul recu
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO objective_record_candidate.authorizations
+          (student_id,app_key,reset_epoch,ruleset_version,approved,repeat_xp)
+          VALUES('77777777-7777-4777-8777-777777777777','melange-calculs-ecrits',7,3,true,false);
+          INSERT INTO objective_record_candidate.issued_sessions
+          (session_id,student_id,app_key,reset_epoch,level,operations_key,ruleset_version,mode,questions,expires_at)
+          SELECT '77777777-7777-4777-8777-777777777778',
+          '77777777-7777-4777-8777-777777777777','melange-calculs-ecrits',
+          7,2,'add,sub',3,'sudden',
+          jsonb_agg(jsonb_build_object('id','q'||i,'op','add','a',i,'b',10) ORDER BY i),
+          now()+interval '1 hour' FROM generate_series(1,12) q(i);
+          SQL
+          answers=$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "
+            SELECT jsonb_agg(jsonb_build_object('questionId','q'||i,'value',i+10) ORDER BY i)::text
+            FROM generate_series(1,12) q(i)")
+          pids=()
+          for i in $(seq 1 16); do
+            (
+              psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -qAtc "
+                SET ROLE service_role;
+                SELECT objective_record_candidate.finish_issued_session(
+                 '77777777-7777-4777-8777-777777777777',
+                 '77777777-7777-4777-8777-777777777778','$answers'::jsonb);
+              " > /dev/null
+            ) &
+            pids+=("$!")
+          done
+          for pid in "${pids[@]}"; do wait "$pid"; done
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          DO $one_session_check$
+          BEGIN
+            IF (SELECT count(*) FROM objective_record_candidate.receipts
+                WHERE student_id='77777777-7777-4777-8777-777777777777') <> 1
+            THEN RAISE EXCEPTION 'same_session_created_multiple_receipts'; END IF;
+            IF (SELECT coalesce(sum(xp_delta),-1) FROM objective_record_candidate.receipts
+                WHERE student_id='77777777-7777-4777-8777-777777777777') <> 21
+            THEN RAISE EXCEPTION 'same_session_xp_not_exactly_21'; END IF;
+            IF (SELECT count(*) FROM objective_record_candidate.credits
+                WHERE student_id='77777777-7777-4777-8777-777777777777'
+                AND milestone IN ('record:5','record:10') AND credited IN (10,11)) <> 2
+            THEN RAISE EXCEPTION 'same_session_credit_rows_missing'; END IF;
+            IF (SELECT consumed_at FROM objective_record_candidate.issued_sessions
+                WHERE session_id='77777777-7777-4777-8777-777777777778') IS NULL
+            THEN RAISE EXCEPTION 'session_not_consumed';END IF;
+          END $one_session_check$;
+          SQL
       - name: Verify that web roles have no schema access
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT CASE WHEN has_schema_privilege('anon','objective_record_candidate','USAGE') OR has_schema_privilege('authenticated','objective_record_candidate','USAGE') THEN 1 ELSE 0 END" | grep -qx 0
