@@ -65,3 +65,18 @@ test('le guide explique l’essai sans XP, puis le pilote Connect authentifié',
   assert.match(guide,/les URL GitHub Pages|Les URL GitHub Pages/);
   assert.match(guide,/classe TEST/);
 });
+
+test('secours Edge limité au GET de la classe TEST, sans fausse activation Connect',()=>{
+  const edge=read('supabase/functions/connect-lab-catalog/index.ts');
+  const hub=read('hub.js');
+  assert.match(edge,/if\(query\.get\('class'\)!==TEST_CLASS\)return fail\('invalid_test_class',403\)/);
+  assert.match(edge,/apps:\[\.\.\.await catalogue\(false\),\.\.\.objectiveRecordDemoCards\]/);
+  assert.match(edge,/if\(body\.action==='list'\)return respond\(\{ok:true,apps:await catalogue\(true\)\}\)/);
+  assert.match(edge,/app_key:'lab-record-'\+id/);
+  assert.match(edge,/enabled:true,\s*visible:true,\s*featured:false/);
+  assert.match(edge,/Objectif record \(XP fictifs\)/);
+  for(const p of objectiveRecordLabPreviews)assert.ok(edge.includes(p.url),p.id);
+  assert.match(hub,/apps=data\.apps\.filter\(app=>!labDemoKeys\.has\(app\.app_key\)\)/);
+  assert.doesNotMatch(edge,/connect_hub_preset_entries/);
+  assert.doesNotMatch(edge,/\.from\('connect_xp_credits'\)/);
+});

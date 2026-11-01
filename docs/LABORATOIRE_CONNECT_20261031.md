@@ -46,3 +46,9 @@ Deux parcours coexistent :
 - **Pilote Connect authentifié** : utiliser le mécanisme déjà en place `connect-lab-catalog`, la case « Afficher » et les profils fictifs approuvés. Exiger validation serveur des preuves, tests de non-double crédit et vrai navigateur authentifié avant d'ouvrir les quatre HUB scolaires. Les essais statiques ne remplissent pas ces conditions.
 
 Règle complète dans [le guide permanent](integrations/README.md#-déployer-dabord-dans-le-hub-du-laboratoire-pour-tester). Pour retirer les cinq raccourcis d'essai, revenir sur le changement `hub.js`, `laboratoire.js`, `laboratoire.html` et `objective-record-lab-previews.mjs` ; aucune migration ni aucune modification de données n'est nécessaire.
+
+### Secours de publication GitHub Pages du 01/11/2026
+
+Un déploiement Pages du HUB a été refusé car GitHub considérait encore le déploiement antérieur `93d14749...` « in progress », malgré une action verte. Pour ne pas empêcher le professeur de tester les démos **déjà publiées** dans chacun de leurs cinq dépôts, la fonction `connect-lab-catalog` peut retourner en **GET de la seule classe TEST** cinq cartes temporaires `lab-record-*`, explicitement « XP fictifs ». Ce ne sont ni des lignes `connect_apps` ni des applications Connect, et le POST professeur ne permet pas de les activer, de les désactiver ou de leur attribuer des points.
+
+Le nouveau HUB, dès sa publication Pages réussie, **filtre ces cartes temporaires** et montre à leur place sa rubrique native « 🏆 Objectif record — essais », sans doublons. Retirer le secours Edge exige de redéployer la fonction depuis la version source précédente, **sans toucher à la base**, après que Pages a été réellement vérifié. Les tests du navigateur hébergé et la vérification HTTP de la fonction sont des preuves distinctes.
