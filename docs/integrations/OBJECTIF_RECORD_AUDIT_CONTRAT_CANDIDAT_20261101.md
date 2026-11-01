@@ -48,3 +48,22 @@ La politique Mélange existante est `perfect4:28`, `pass10:38`, `bonus10:8`, `pa
 - **Aucune donnée individuelle d'élève n'a été interrogée.** Aucune transaction de récompense, écriture, migration ou déploiement Supabase n'a été lancée.
 
 Pour les tests serveur, privilégier une base PostgreSQL éphémère dans GitHub Actions, ou une branche Supabase de test facturée seulement après accord.
+
+
+## Prototype serveur transactionnel ajouté dans la PR (non installé)
+
+- Fichier de recherche `supabase/release-candidates/objective_record_ledger_candidate.sql` (**pas** sous `migrations/`). Une CI séparée le charge **uniquement** dans PostgreSQL 16 jetable, sur de faux UUID : `.github/workflows/objective-record-ledger-candidate.yml` et `tests/objective-record-ledger-candidate.sql`.
+- Schéma privé `objective_record_candidate`, sans accès `anon`/`authenticated`, avec fonctions `SECURITY INVOKER` exécutables seulement par `service_role`. Il ne touche aucune table Connect et n'invente aucun trophée.
+- Contrat de la couche **serveur de confiance** : vérifier Auth, approbation active, droits professeur/élève et époque, ainsi que chaque opération et chaque réponse mathématique avant de transformer la preuve en événement normalisé. Les paramètres `p_evidence` ne sont **pas** une preuve à eux seuls ; le SQL ne garantit pas cette validation.
+- Cinq lignes de règles obligatoires par `app + version + niveau + sélection exacte` : `classic:4`, `classic:10`, `classic:20`, `record:5`, `record:10`. Aucun montant n'est initialisé dans une vraie base. Les fixtures des tests sont fictives.
+- Les modes 3 vies et Mort subite partagent chaque jalon `record:5` / `record:10`. Crédit plafonné à `floor(plein/2)` puis complément jusqu'au plein ; journal de reçus unique par `(student,event_id)`, hachage SHA-256 des champs normalisés, verrou transactionnel par élève/app. Un événement réémis ne recrédite rien ; un ID réutilisé avec autre charge est refusé.
+- L'absence de droits de rejeu conserve les crédits sur `scope_epoch=0` malgré la remise à zéro ; seule une autorisation serveur `repeat_xp=true` pour une nouvelle époque crée un droit séparé. La lecture renvoie `NULL` si contexte, version, combinaison ou règles ne concordent pas.
+- Les sept sous-ensembles Mélange ont des clés persistantes distinctes, pas un multiplicateur déduit du nombre d'opérations. **Cette granularité est une proposition de contrat nouvelle**, et doit être validée pédagogiquement pour éviter de distribuer plus d'XP que les plafonds du système actuel.
+- La CI tente aussi 16 crédits simultanés sur un même jalon et vérifie plafond/reçus, ainsi que les tests de retrait de privilèges, rejouabilité et ROLLBACK. Le statut de réussite doit être relu sur GitHub Actions.
+
+### Bloquants conservés
+
+1. Raccorder sans privilège excessif l'Edge `connect-results` à une vérification arithmétique réelle, sans faire confiance à un booléen ou une preuve déclarée par le navigateur.
+2. Définir le barème officiel par sous-ensemble Mélange et le budget d'XP global (risque de cumul entre sept sélections), et les règles communes applicables aux autres moteurs ; définir la politique de points du classement +20 %.
+3. Relier de manière atomique les crédits validés à `connect_xp_credits`/`connect_xp_milestones` et aux trophées **existants**, sans modifier la logique de remise à zéro ni donner de trophée en mode 3 vies. Le schéma candidat est volontairement indépendant, sans effet sur le total réel du HUB.
+4. Tester Auth/Edge et navigateur de bout en bout sur identités fictives, jamais dans la production. Pas de migration ni de publication avant cette recette.
