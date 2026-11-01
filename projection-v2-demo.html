@@ -230,7 +230,7 @@ function render(){
  if(sudden)$("exploits").append(sudden);
  // Les remontées spectaculaires sont des exploits ponctuels, pas un palmarès.
  // Exemple fictif : mêmes application, période et participants ; record personnel amélioré.
- const progress=makeSpectacularRise("Adam",7,4,92,116);
+ const progress=makeSpectacularRise("Adam",7,4,92,116,true);
  if(progress)$("exploits").append(progress);
  drawClasses();updateTime();
 }
@@ -244,8 +244,8 @@ function makeExploit(type,message){
 }
 // Une remontée n'est remarquable que si un nouveau record personnel fait gagner
 // au moins 3 rangs dans le même classement stable et après consentement.
-function makeSpectacularRise(name,previousRank,newRank,previousBest,newBest){
- if(typeof name!=="string"||!name.trim())return null;
+function makeSpectacularRise(name,previousRank,newRank,previousBest,newBest,sameContext){
+ if(typeof name!=="string"||!name.trim()||sameContext!==true)return null;
  if(![previousRank,newRank,previousBest,newBest].every(Number.isFinite))return null;
  if(![previousRank,newRank].every(Number.isInteger)||newRank<1||previousRank<1)return null;
  if(previousRank-newRank<3||previousBest<0||newBest<=previousBest)return null;
