@@ -122,7 +122,11 @@ async function showCatalog() {
       if(!response.ok)throw Error('test_catalog_unavailable');
       const data=await response.json();
       if(!data.ok||!Array.isArray(data.apps))throw Error('test_catalog_unavailable');
-      apps=data.apps;
+      // Les anciennes versions du HUB voient les cinq raccourcis renvoyés par
+      // l'Edge TEST. La nouvelle version utilise sa rubrique statique dédiée,
+      // donc retire les doublons sans toucher aux applications officielles.
+      const labDemoKeys=new Set(objectiveRecordLabPreviews.map(p=>'lab-record-'+p.id));
+      apps=data.apps.filter(app=>!labDemoKeys.has(app.app_key));
     } else {
     // Petit fichier statique sur GitHub Pages : zéro appel Supabase pour jouer librement.
     const response = await fetch('./hub-catalog.json', { cache: 'no-cache' });
