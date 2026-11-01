@@ -4,7 +4,7 @@
 -- device/enrolment/teacher policy, per-app settings and expiry are verified.
 BEGIN;
 CREATE TABLE objective_record_candidate.issued_sessions(
- session_id uuid NOT NULL,
+ session_id uuid PRIMARY KEY,
  student_id uuid NOT NULL,
  app_key text NOT NULL,
  reset_epoch bigint NOT NULL CHECK(reset_epoch>=0),
@@ -18,7 +18,6 @@ CREATE TABLE objective_record_candidate.issued_sessions(
  expires_at timestamptz NOT NULL CHECK(expires_at>issued_at),
  consumed_at timestamptz,
  answers_sha256 text,
- PRIMARY KEY(session_id,student_id),
  CONSTRAINT session_authorization FOREIGN KEY(student_id,app_key)
   REFERENCES objective_record_candidate.authorizations(student_id,app_key),
  CHECK((consumed_at IS NULL AND answers_sha256 IS NULL)
