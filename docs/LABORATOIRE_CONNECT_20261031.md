@@ -36,3 +36,13 @@ La session professeur utilise une clé de stockage distincte :
 - aucune session : envoyer la demande du profil et vérifier le code dans le labo.
 Cette présélection n'est **ni** un contournement de l'authentification
 **ni** une connexion automatique à partir d'un nom ou UUID.
+
+## Mise à jour du 01/11/2026 — tester les versions avant ouverture officielle
+
+Le HUB de la classe fictive « Classe démo - TEST » est l'**environnement de prépublication des jeux Math’as Connect**. Les quatre catalogues scolaires restent intacts : on commence par le Laboratoire, puis on ouvre officiellement seulement après la recette et la décision pédagogique.
+
+Deux parcours coexistent :
+- **Essais de moteur / présentation, sans connexion Connect** : cinq démonstrations « 🏆 Objectif record » sont publiées sur Pages et répertoriées dans `objective-record-lab-previews.mjs`. Dans le HUB TEST : rubrique dédiée « 🏆 Objectif record — essais », distincte des applications Connect et **sans `app_key`** ; sur la page `laboratoire.html` : cinq boutons d'essai après contrôle de la session professeur et confirmation du caractère fictif des profils. **XP et « Reste N XP » fictifs ; aucune sauvegarde ou trophée Connect.** Les URL Pages directes restent publiques, même si leur carte est absente ailleurs.
+- **Pilote Connect authentifié** : utiliser le mécanisme déjà en place `connect-lab-catalog`, la case « Afficher » et les profils fictifs approuvés. Exiger validation serveur des preuves, tests de non-double crédit et vrai navigateur authentifié avant d'ouvrir les quatre HUB scolaires. Les essais statiques ne remplissent pas ces conditions.
+
+Règle complète dans [le guide permanent](integrations/README.md#-déployer-dabord-dans-le-hub-du-laboratoire-pour-tester). Pour retirer les cinq raccourcis d'essai, revenir sur le changement `hub.js`, `laboratoire.js`, `laboratoire.html` et `objective-record-lab-previews.mjs` ; aucune migration ni aucune modification de données n'est nécessaire.

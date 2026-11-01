@@ -1,6 +1,7 @@
 import {avatarCategories,avatarGlyph,avatarColors,avatarColor} from './avatar-catalog.js';
 import { classId, classLabel, loginUrl } from './connect-context.js';
 import {rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
+import {objectiveRecordLabPreviews} from './objective-record-lab-previews.mjs';
 
 const url = 'https://awmhpfofacaglewammxt.supabase.co';
 const key = 'sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
@@ -77,14 +78,32 @@ function card(app) {
   return node;
 }
 
-function section(kind, title, description, apps) {
+// Les démos ne reçoivent pas d'app_key Connect : pas de progression ni d'XP simulé dans le HUB.
+function previewCard(preview) {
+  const node = $('appTemplate').content.firstElementChild.cloneNode(true);
+  node.href = preview.url;
+  node.target = '_blank';
+  node.rel = 'noopener noreferrer';
+  node.dataset.labPreview = preview.id;
+  node.querySelector('.app-name').textContent = preview.title;
+  node.querySelector('.app-initial').textContent = '🏆';
+  node.querySelector('.app-scores').textContent = '🧪 Essai isolé · XP fictifs · aucun résultat Connect';
+  return node;
+}
+function labPreviewSection() {
+  return section('record_lab', '🏆 Objectif record — essais',
+    'Versions expérimentales des cinq jeux. Les XP affichés sont fictifs et les parties ne sont pas enregistrées sur Connect.',
+    objectiveRecordLabPreviews, previewCard);
+}
+
+function section(kind, title, description, apps, makeCard=card) {
   const node = $('levelTemplate').content.firstElementChild.cloneNode(true);
   node.querySelector('.level-title').textContent = title;
   node.querySelector('.level-description').textContent = description;
   node.querySelector('.level-count').textContent = apps.length + ' app' + (apps.length > 1 ? 's' : '');
-  node.querySelector('.level-apps').replaceChildren(...apps.map(card));
+  node.querySelector('.level-apps').replaceChildren(...apps.map(makeCard));
   const toggle = node.querySelector('.level-toggle');
-  if (['objectif', 'calculs_ecrits', 'outil'].includes(kind)) {
+  if (['objectif', 'calculs_ecrits', 'outil', 'record_lab'].includes(kind)) {
     node.classList.remove('collapsed'); toggle.setAttribute('aria-expanded', 'true');
   }
   toggle.onclick = () => {
@@ -142,11 +161,15 @@ async function showCatalog() {
       Object.assign(document.createElement('p'), { className: 'empty-state', textContent: 'Pas de sélection pour le moment.' })
     ]));
     $('dailyApps').classList.toggle('empty-grid', featured.length === 0);
-    $('levels').replaceChildren(...levels.map(([id, title, desc]) =>
+    const groups=levels.map(([id, title, desc]) =>
       section(id, title, desc, apps.filter(a => a.hub_section === id))
-    ));
+    );
+    if(classId===LAB_CLASS)groups.unshift(labPreviewSection());
+    $('levels').replaceChildren(...groups);
   } catch {
-    $('dailyApps').textContent = classId===LAB_CLASS?'Catalogue du laboratoire indisponible. Aucune application affichée.':'Le catalogue est momentanément indisponible.';
+    $('dailyApps').textContent = classId===LAB_CLASS?'Catalogue Connect du laboratoire indisponible. Aucun jeu Connect affiché.':'Le catalogue est momentanément indisponible.';
+    // Même si l'Edge du catalogue tombe, seuls les essais statiques sans compte restent disponibles.
+    if(classId===LAB_CLASS)$('levels').replaceChildren(labPreviewSection());
   }
 }
 

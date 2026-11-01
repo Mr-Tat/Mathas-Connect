@@ -17,6 +17,19 @@
 
 Ces étapes sont des **lots de travail**, pas huit demandes d'accord : mener tous les audits, tests et PR permis en autonomie. Solliciter le professeur **seulement** pour un barème ou un choix pédagogique non tranché, une session réelle qu'aucun outil ne peut ouvrir, une permission/secret indispensable, une opération de production non autorisée ou une anomalie bloquante.
 
+## 🧪 Déployer d'abord dans le HUB du Laboratoire pour tester
+
+**Règle permanente — 1er novembre 2026, validée par le professeur.** Le Laboratoire est précisément l'espace prévu pour **déployer et essayer une nouvelle version d'un jeu avant son ouverture officielle**, avec la classe fictive « Classe démo - TEST ». Il n'est **pas nécessaire** de rendre d'abord les nouveautés visibles dans Observation, Phase 1, Phase 2 ou 2 ECO. Un essai peut être publié dans la rubrique expérimentale du HUB test, puis retiré sans toucher aux quatre HUB normaux.
+
+**Deux niveaux de test, à distinguer dans chaque compte rendu :**
+
+1. **Démonstration visuelle ou de moteur, isolée.** Publier une page d'essai sur GitHub Pages, puis la référencer dans la rubrique d'essais **réservée à l'affichage du HUB de la classe TEST** et dans `laboratoire.html`. Garder la mention **« XP fictifs · aucun résultat Connect »**. Ne pas introduire son lien dans le catalogue des applications officielles, ne pas réutiliser l'`app_key` officielle pour créditer, et ne pas annoncer que le jeu est intégré à Connect. Les URL GitHub Pages demeurent accessibles directement par toute personne connaissant l'adresse : **le HUB de test n'est pas une protection d'accès à la page statique**.
+2. **Pilote authentifié Connect.** Après vérification des contrats, déployer le moteur intégré et, si nécessaire et autorisé, la partie serveur avec garde-fous ; rendre la carte visible **seulement** via le catalogue indépendant `connect-lab-catalog` / `connect_lab_hub_visibility`. Tester une vraie session fictive approuvée, les reçus/XP et les restrictions professeur avec un navigateur hébergé. **Une page d'essai sans backend ne remplace jamais cette recette.**
+
+**Chemin de test :** espace professeur → `laboratoire.html` → classe TEST vérifiée → confirmation que les profils sont fictifs → « 🏆 Objectif record — essais » ; ou « Ouvrir le HUB test » → rubrique « 🏆 Objectif record — essais ». Le HUB test reste séparé de ses applications Connect classiques, de leurs droits et du catalogue global. Les essais peuvent y être affichés sans déployer de SQL/Edge ou activer les nouveaux XP, tant qu'ils restent totalement isolés. Ne pas ajouter automatiquement les liens d'essai aux quatre espaces officiels.
+
+**Cas livré le 01/11/2026 :** les cinq pages d'essai « Objectif record » (Addition simple, Addition multiple, Soustraction, Multiplication simple, Mélange) sont référencées par `objective-record-lab-previews.mjs` et apparaissent **uniquement dans le HUB de la classe TEST** et sur la page professeur du Laboratoire. Leur publication n'implique aucune activation réelle des nouveaux modes dans les lanceurs Connect ni du registre XP candidat.
+
 ## Interdictions permanentes
 
 - Pas d'XP décidés par un navigateur ni obtenus sur rechargement ; aucune écriture cloud en mode libre.
