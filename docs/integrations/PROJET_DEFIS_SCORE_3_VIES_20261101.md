@@ -6,7 +6,7 @@
 
 ## Interface commune souhaitée
 
-Renommer la grande carte « Mort subite » en **🏆 Défis de score** et afficher exactement le sous-titre pédagogique **« Deux façons de marquer un gros score. »**. La partager en deux grands boutons de largeur égale : **rose-framboise légèrement mauve à gauche** pour 3 vies (dégradé indicatif `#ad607a` → `#88455f`), et **rouge plus intense à droite** pour Mort subite. Le contraste doit montrer que le premier est moins dangereux, sans utiliser de turquoise :
+Renommer la grande carte « Mort subite » en **🏆 Défis de score** et afficher exactement le sous-titre pédagogique **« Deux façons de marquer un gros score. »**. La partager en deux grands boutons de largeur égale : **mauve prune à gauche** pour 3 vies (dégradé validé `#9557a7` → `#6d3d88`, bordure `#d7a2ed`), et **rouge plus intense à droite** pour Mort subite. Le contraste doit montrer que le premier est moins dangereux, sans utiliser de turquoise :
 - À **gauche**, **❤️ 3 vies** : trois erreurs permises, 50 % du droit XP comparable, pas de trophée.
 - À **droite**, **💀 Mort subite** : une seule erreur, 100 % du droit XP comparable, trophées natifs habituels, et badge positif **+20 % de points**.
 
@@ -46,9 +46,10 @@ Les séries normales **4 / 10 / 20 calculs restent totalement inchangées**, y c
 **[PROTOTYPE isolé — 01/11/2026]**
 
 - Essai : https://mr-tat.github.io/CE-Addition-simple/essai-mode-score-3-vies.html
-- PR source : https://github.com/Mr-Tat/CE-Addition-simple/pull/6 ; reprise visuelle fidèle au montage professeur : https://github.com/Mr-Tat/CE-Addition-simple/pull/7
+- PR source : https://github.com/Mr-Tat/CE-Addition-simple/pull/6 ; reprise visuelle fidèle au montage professeur : https://github.com/Mr-Tat/CE-Addition-simple/pull/7 ; correction des réécritures natives et des deux colonnes CSS : https://github.com/Mr-Tat/CE-Addition-simple/pull/9
 - Cette **page distincte** charge le vrai moteur HTML Addition simple dans un iframe. Les transformations du mode 3 vies s'appliquent dans l'iframe ; **le jeu habituel et sa copie native sont inchangés**.
 - Le localStorage et le sessionStorage de l'iframe sont remplacés par une mémoire volatile, et ses requêtes fetch sont bloquées. Aucun XP, trophée, record, consentement ni résultat Connect ne doit être publié par cet essai.
+- **Piège moteur détecté et corrigé dans l’essai** : un script natif restaure « Continue jusqu’à la première erreur. » et « Lancer la mort subite » après le chargement ; une règle CSS impose un bouton pleine largeur. Le prototype doit préserver la phrase du professeur et les quatre lignes XP/bonus, protéger la réécriture et maintenir les boutons explicitement en colonne 1 / colonne 2. Aucun correctif de ce type ne doit être appliqué aveuglément aux autres applications.
 - Les mentions « 50 % XP » et « +20 % » sont **informatives uniquement** dans ce prototype : leurs calculs réels restent un chantier séparé. Les restrictions de déblocage de Mort subite sont levées seulement dans le prototype, pour permettre le test.
 - Des contrôles de correspondance du code source et de syntaxe des scripts transformés ont été exécutés. Un test réutilisable est joint dans le dépôt Addition simple. **La recette en navigateur sur Pages n'est pas encore attestée.**
 
