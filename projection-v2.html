@@ -136,12 +136,15 @@ label.setting{justify-content:space-between;max-width:380px}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 #live-status{font-size:12px;font-weight:750;color:#d4ebff;max-width:260px}#settings [hidden]{display:none!important}#reset-confirm input[type=password]{border:1px solid #7794b1;border-radius:7px;background:#0d263e;color:#fff;padding:9px;min-width:210px}#percentage-note{font-size:11px;color:#d5e7fa}#ranking-list:empty::after{content:"Aucun élève autorisé à afficher pour cette application.";color:#d0e6fd;font-size:14px;padding:25px;text-align:center;display:block}.event.empty{color:#cce0f3}
 </style>
+<!-- Styles existants de la Projection V2, complétés uniquement par les quatre thèmes testés. -->
+<script src="./projection-v2-theme.js?v=20261101-1"></script>
+<link rel="stylesheet" href="./essais/projection-v2-da.css?v=20261101-1">
 </head>
 <body>
 <header>
   <strong>Math’as <span>LIVE · PROJECTION V2</span></strong>
   <div id="header-class" class="header-class" aria-label="Classe projetée">Classe</div>
-  <div class="tools"><span class="demo">● PROJECTION CONNECTÉE · ACCÈS PROFESSEUR</span><span id="live-status" role="status">Connexion professeur requise</span><button id="load-real" type="button">Afficher / Actualiser</button></div>
+  <div class="tools"><span class="demo">● PROJECTION CONNECTÉE · ACCÈS PROFESSEUR</span><span id="live-status" role="status">Connexion professeur requise</span><button id="load-real" type="button">Afficher / Actualiser</button><label class="projection-theme-picker" for="projection-theme"><span aria-hidden="true">🎨</span> Thème <select id="projection-theme" aria-label="Choisir le thème de la projection"><option value="neon">Néon auditorium</option><option value="papier">Papier clair</option><option value="ardoise">Ardoise scolaire</option><option value="studio">Studio compétition</option></select></label></div>
 </header>
 <div class="projection-stage">
 <main>
