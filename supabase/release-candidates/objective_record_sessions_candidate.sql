@@ -4,7 +4,7 @@
 -- device/enrolment/teacher policy, per-app settings and expiry are verified.
 BEGIN;
 CREATE TABLE objective_record_candidate.issued_sessions(
- session_id uuid PRIMARY KEY,
+ session_id uuid NOT NULL,
  student_id uuid NOT NULL,
  app_key text NOT NULL,
  reset_epoch bigint NOT NULL CHECK(reset_epoch>=0),
@@ -60,6 +60,8 @@ BEGIN
  FOR i IN 0..number_answers-1 LOOP
   q:=sess.questions->i;a:=p_answers->i;
   IF jsonb_typeof(q)<>'object' OR jsonb_typeof(a)<>'object'
+   OR NOT(q ?& ARRAY['id','op','a','b'])
+   OR NOT(a ?& ARRAY['questionId','value'])
    OR (q - 'id' - 'op' - 'a' - 'b')<>'{}'::jsonb
    OR (a - 'questionId' - 'value')<>'{}'::jsonb
    OR jsonb_typeof(q->'id')<>'string'
