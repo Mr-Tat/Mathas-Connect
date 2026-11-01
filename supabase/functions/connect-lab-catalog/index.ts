@@ -20,6 +20,27 @@ const respond=(data:unknown,status=200)=>new Response(JSON.stringify(data),{stat
 const fail=(message:string,status=400)=>respond({ok:false,error:message},status);
 const validKey=(s:unknown):s is string=>typeof s==='string'&&/^[a-z0-9-]{1,80}$/.test(s);
 
+// Secours transitoire : le HUB TEST déjà en ligne peut afficher ces démos même si
+// GitHub Pages bloque la publication du nouveau hub.js. GET uniquement, classe TEST.
+// Aucune ligne connect_apps, aucun app_key officiel, aucun score ni XP serveur.
+const objectiveRecordDemoCards = [
+  ['addition-simple','Addition simple','https://mr-tat.github.io/CE-Addition-simple/essai-mode-score-3-vies.html'],
+  ['addition-multiple','Addition multiple','https://mr-tat.github.io/addition-ecrite-multiple/essai-objectif-record-3-vies.html'],
+  ['soustraction','Soustraction écrite','https://mr-tat.github.io/soustraction-ecrite/essai-objectif-record-3-vies.html'],
+  ['multiplication','Multiplication simple','https://mr-tat.github.io/Multiplication-simple/essai-objectif-record-3-vies.html'],
+  ['melange','Mélange de calculs écrits','https://mr-tat.github.io/Melange-calculs-ecrits-1/essai-objectif-record-3-vies.html'],
+].map(([id,title,launch_url],index)=>({
+  app_key:'lab-record-'+id,
+  title:'🧪 '+title+' — Objectif record (XP fictifs)',
+  launch_url,
+  image_url:null,
+  hub_section:'calculs_ecrits',
+  display_order:10000+index,
+  enabled:true,
+  visible:true,
+  featured:false,
+}));
+
 async function catalogue(includeHidden:boolean){
  const [all,chosen]=await Promise.all([
    db.from('connect_apps').select('app_key,title,launch_url,image_url,hub_section,display_order,enabled')
@@ -41,7 +62,7 @@ Deno.serve(async(req:Request)=>{
    if(req.method==='GET'){
      const query=new URL(req.url).searchParams;
      if(query.get('class')!==TEST_CLASS)return fail('invalid_test_class',403);
-     return respond({ok:true,apps:await catalogue(false)});
+     return respond({ok:true,apps:[...await catalogue(false),...objectiveRecordDemoCards]});
    }
    if(req.method!=='POST')return fail('method_not_allowed',405);
    const raw=await req.text();
