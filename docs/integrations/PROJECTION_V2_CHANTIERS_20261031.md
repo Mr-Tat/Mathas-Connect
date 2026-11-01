@@ -10,7 +10,7 @@ Cinq espaces distincts : Observation, Phase 1, Phase 2 A, Phase 2 B, 2 ECO. Le c
 - **Un classement par application**, jamais de cumul entre applications. Score = **meilleur résultat en points du jeu**, sur la période de projection courante, et non XP Connect ou somme hebdomadaire.
 - Afficher une seule application à la fois, rotation de **90 s** par défaut entre celles cochées *Score*. Flèches de navigation, pause pendant réglages. Ne pas confondre le passage entre deux jeux avec une remontée.
 - Au plus 14 élèves par classe : 1 colonne pour 1 à 7, 2 colonnes jusqu'à 14 (7+7). Nom et score voisins, gras, nettement dominants ; niveau Connect et nombre global de trophées en secondaire ; aucune donnée inventée pour un élève sans partie.
-- Les hauts faits et meilleures remontées sont contextualisés à l'application actuelle. Les trophées restent permanents malgré les reprises de parcours.
+- Les **nouveaux exploits** sont contextualisés à l'application actuelle ; **aucun palmarès permanent « Meilleures remontées »**. Les trophées restent permanents malgré les reprises de parcours. Une remontée remarquable peut être mentionnée **ponctuellement** parmi ces exploits, à condition de vérifier les règles strictes ci-dessous.
 
 ## Panneau Applications
 - Colonnes distinctes « Score » et « % » par application, indépendantes. Les choix doivent être persistants **par classe**.
@@ -55,3 +55,17 @@ Pas de modification ou de réinitialisation des élèves réels lors des tests. 
 - « Autres classes » disparaît comme titre dans la petite carte de comparaisons, **les noms de classes restent visibles**. Le « Global » de chaque comparaison est compact (fond et cadre distinctifs, chiffre plus petit, **sans barre de progression**), les applications suivent en dessous. Le Global principal garde sa grande barre.
 - « Application X / Y » et « Suivante dans Ns » sont déplacés **dans la bande inférieure, près des flèches de navigation**. L'ancienne bande intérieure sous les scores est supprimée, sa hauteur profite aux élèves.
 - Les versions maquette fictive et tableau connecté doivent rester synchronisées ; test Chromium à 1366×768 après défilement, vérifiant la hauteur des rangs, l'absence de défilement interne du classement, les commandes, et l'absence de barre du Global comparatif.
+
+## Ajustement pédagogique — éviter d'inciter aux défaites volontaires (01/11/2026)
+
+**Décision : supprimer la carte de droite « 📈 Meilleures remontées »** dans la maquette fictive et la Projection V2 connectée. La colonne droite ne conserve qu'une grande carte **« ✨ Nouveaux exploits »**. Les remontées spectaculaires **d'au moins trois places** (strictement plus de deux) peuvent y apparaître **ponctuellement**, sans palmarès, podium, compteur, récompense supplémentaire ni trophée.
+
+**Critères obligatoires avant affichage réel :**
+
+1. Le changement de rang est causé par **une progression confirmée du meilleur score personnel** d'une partie réellement validée et consentie pour la projection. Aucune remontée sur simple performance inférieure suivie d'une hausse sans amélioration du record, et aucune remontée calculée à partir de scores non autorisés.
+2. Comparer uniquement **la même application, la même période de classement (reset_epoch), le même ensemble de classes participantes et la même population éligible**, sur deux classements validés consécutifs. Un changement de participants, de choix interclasses, de rotation d'application, de consentement, de réinitialisation ou d'option de projection **invalide la comparaison**.
+3. **Seuil : avant − après ≥ 3 places** ; pas de notification sur une simple entrée au classement, sur une baisse volontaire ou sur un faux saut dû au retrait d'autres élèves. Calcul et déduplication côté serveur sur événements authentifiés, autorisés et horodatés ; la V2 connectée **n'a pas encore ces données** et ne doit pas simuler la récompense.
+4. Limiter la fréquence (par exemple **un seul exploit de progression par élève et par application sur une période pédagogique définie**, à fixer avant déploiement), éviter de répéter la même annonce ; aucune conséquence XP, points, trophée ou note scolaire.
+5. La **maquette** peut présenter un cas explicitement fictif de 7e → 4e place et un meilleur score en hausse. La V2 **connectée** doit garder le message neutre « Pas encore de nouvel exploit confirmé » en attendant un vrai contrat de preuve.
+
+**Autres biais à surveiller** : la compétition entre 16 meilleurs peut démotiver ceux qui restent hors écran ; la comparaison publique peut stigmatiser ; les scores peuvent favoriser le volume de jeu ou les aides/modes plus simples ; le pourcentage global peut devenir trompeur lorsque son dénominateur est faible ou incomplet ; les événements saillants monopolisent l'attention ; les élèves connectés plus souvent ou plus longtemps ont plus d'occasions d'apparaître. Prévoir consentement renouvelable, possibilité de masquer la projection, objectifs collectifs, encouragements non classants, transparence des règles et absence de chiffres inventés.

@@ -37,6 +37,9 @@ test('projection V2 demo : 14 élèves répartis en une ou deux colonnes',()=>{
  assert.match(doc,/makeExploit\("trophy"/);
  assert.match(doc,/makeExploit\("perfect"/);
  assert.match(doc,/makeExploit\("top"/);
+ assert.doesNotMatch(doc,/Meilleures remontées|id="rises"/);
+ assert.match(doc,/makeSpectacularRise\("Adam",7,4,92,116,true\)/);
+ assert.match(doc,/\.right\{display:grid;gap:12px;grid-template-rows:minmax\(0,1fr\);min-width:0\}/);
  assert.match(doc,/const cut=Math\.ceil\(rows\.length\/2\)/);
  assert.match(doc,/Niveau.*person\.level/);
  assert.match(doc,/person\.trophies/);
@@ -64,6 +67,24 @@ test('projection V2 demo : exploit Mort subite uniquement au-delà de 10 répons
  assert.match(result.message,/Inès dépasse 10 bonnes réponses en Mort subite : 11/);
  assert.match(fn('Inès',12).message,/12/);
 });
+
+test('projection V2 : remontée remarquable seulement avec +3 places et un record supérieur',()=>{
+ const source=doc.match(/function makeSpectacularRise\(name,previousRank,newRank,previousBest,newBest,sameContext\)\{[\s\S]*?\n\}/)?.[0];
+ assert.ok(source);
+ const fn=runInNewContext(source+'; makeSpectacularRise',{makeExploit:(type,message)=>({type,message})});
+ assert.match(fn('Adam',7,4,92,116,true).message,/3 places grâce à un nouveau record/);
+ for(const params of [
+  ['Adam',7,5,92,116,true], // 2 places ne suffisent pas.
+  ['Adam',7,4,92,92,true],  // pas de nouveau record.
+  ['Adam',7,4,92,80,true],  // le score a baissé.
+  ['Adam',2,0,92,116,true], // rang impossible.
+  ['Adam',7,4,NaN,116,true],
+  ['',7,4,92,116,true],
+  ['Adam',7,4,92,116,false], // contexte de classement différent.
+  ['Adam',7,4,92,116] // confirmation absente.
+ ])assert.equal(fn(...params),null,JSON.stringify(params));
+});
+
 test('projection V2 demo : script inline valide en Node',()=>{
  const js=doc.match(/<script>([\s\S]*?)<\/script>/)?.[1];
  assert.ok(js);

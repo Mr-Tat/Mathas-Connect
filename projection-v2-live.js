@@ -27,7 +27,7 @@ const enabled=()=>apps.filter(a=>options.scoreApps.includes(a.key));
 function clearBoard(message){
  refreshTicket++;data=null;connected=false;hasLoaded=false;pendingReset=null;paused=true;
  $('ranking-list').replaceChildren();$('classes').replaceChildren();
- $('exploits').replaceChildren();$('rises').replaceChildren();$('app-tabs').replaceChildren();
+ $('exploits').replaceChildren();$('app-tabs').replaceChildren();
  $('app-name').textContent='Projection masquée';
  $('time-left').textContent='';
  $('reset-password').value='';
@@ -157,12 +157,10 @@ function render(){
  });
  const event=$('exploits');event.replaceChildren();
  event.append(exploit('pending','Pas encore de nouvel exploit confirmé pour cette application.'));
- const rises=$('rises');rises.replaceChildren();
- rises.append(exploit('rise','Les remontées seront affichées après une progression de rang confirmée.'));
  renderClasses();updateTime();
 }
 // Les notifications n'affirment aucun exploit sans événement serveur confirmé.
-// Types prévus : trophée, série parfaite, entrée Top 5 et remontée.
+// Types prévus : trophée, série parfaite, entrée Top 5 et, seulement après preuve serveur, remontée d'au moins 3 places avec nouveau record personnel.
 function exploit(type,message){
  const kinds={trophy:['🏆','trophy'],perfect:['✨','perfect'],top:['🏅','rank-up'],
   rise:['📈','rank-up'],pending:['◌','empty']};
