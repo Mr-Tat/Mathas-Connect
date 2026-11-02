@@ -63,3 +63,55 @@ test('le client utilise la RPC scolaire actuelle, non le pilote, et la sauvegard
  assert.match(ledger,/mathas\.record-test-native\.v1/);
  assert.match(ledger,/appKey!==ATOMIC_TEST_APP/);
 });
+
+
+test('après reset professeur, une preuve non créditée est archivée sans bloquer le nouveau parcours',async()=>{
+ const data=new Map(),logs=[];let sends=0,record;
+ const storage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
+ record=createAtomicTestRecorder({classId:TEST,appKey:ATOMIC_TEST_APP,subject:'test-reset',storage,
+  send:async()=>{sends++;throw Error('stale_reset_epoch')},
+  reload:async()=>{record.initialize({revision:0,resetEpoch:1})},
+  notify:s=>logs.push(s),isCurrent:()=>true});
+ assert.ok(record.initialize({revision:3,resetEpoch:0}));
+ record.onSnapshot({...classic,phase:'playing'});record.onSnapshot(classic);
+ await new Promise(resolve=>setTimeout(resolve,40));
+ assert.equal(sends,1);
+ assert.equal(record.hasPending(),false);
+ const saved=[...data.entries()].filter(([k])=>k.includes('.archive.'));
+ assert.equal(saved.length,1);
+ const archive=JSON.parse(saved[0][1]);
+ assert.equal(archive.expectedResetEpoch,0);
+ assert.equal(archive.quarantineReason,'stale_reset_epoch');
+ assert.ok(logs.some(x=>x.includes('aucun XP transféré')));
+});
+test('échec de sauvegarde de quarantaine ne détruit jamais la partie en attente',async()=>{
+ const data=new Map();let r;
+ const storage={getItem:k=>data.get(k)??null,
+  setItem:(k,v)=>{if(k.includes('.archive.'))throw Error('storage-full');data.set(k,v)},
+  removeItem:k=>data.delete(k)};
+ r=createAtomicTestRecorder({classId:TEST,appKey:ATOMIC_TEST_APP,subject:'test-full',storage,
+  send:async()=>{throw Error('stale_reset_epoch')},
+  reload:async()=>{throw Error('should not reload')},notify:()=>{},isCurrent:()=>true});
+ assert.ok(r.initialize({revision:0,resetEpoch:0}));
+ r.onSnapshot({...classic,phase:'playing'});r.onSnapshot(classic);
+ await new Promise(resolve=>setTimeout(resolve,40));
+ assert.equal(r.hasPending(),true);
+ assert.equal([...data.entries()].filter(([k])=>k.includes('.archive.')).length,0);
+});
+test('concurrence : reprise de la révision du serveur sans récompenser deux fois',async()=>{
+ const data=new Map();let first=null,record;
+ const storage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
+ record=createAtomicTestRecorder({classId:TEST,appKey:ATOMIC_TEST_APP,subject:'test-concurrent',storage,
+  send:async p=>{first=p;throw Error('revision_conflict')},
+  reload:async()=>{record.initialize({revision:5,resetEpoch:0});return {loaded:{revision:5,resetEpoch:0}}},
+  notify:()=>{},isCurrent:()=>true});
+ assert.ok(record.initialize({revision:3,resetEpoch:0}));
+ record.onSnapshot({...classic,phase:'playing'});record.onSnapshot(classic);
+ await new Promise(resolve=>setTimeout(resolve,40));
+ assert.equal(record.hasPending(),true);
+ const newPending=JSON.parse([...data.values()][0]);
+ assert.equal(first.eventId,newPending.eventId);
+ assert.equal(first.expectedRevision,3);
+ assert.equal(newPending.expectedRevision,5);
+ assert.equal(newPending.expectedResetEpoch,0);
+});
