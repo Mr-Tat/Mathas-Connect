@@ -111,5 +111,5 @@ export function createAdditionProofUI({button,panel,frame,getContext,call,refres
   }finally{if(isCurrent(seq))button.disabled=false}
  }
  button.addEventListener('click',()=>{void start()});
- return Object.freeze({reset,bind,onGameEvent,retry:()=>run?.finished?finish():Promise.resolve()});
+ return Object.freeze({reset,bind,onGameEvent,hasPending:()=>!!run?.finished,retry:()=>run?.finished?finish():Promise.resolve()});
 }
