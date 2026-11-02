@@ -57,7 +57,7 @@ test('cinq moteurs publies, pont iframe et XP projetes depuis la reponse serveur
         const body=document.querySelector('#gameFrame')?.contentDocument;
         const inner=body?.getElementById('game')?.contentDocument;
         return inner?.querySelector('#menuScreen')&&
-          [...inner.querySelectorAll('#menuScreen .mathas-pilot-remaining')]
+          [...inner.querySelectorAll('#menuScreen .classic-xp-remaining')]
             .filter(n=>/Reste (22|36|60|10|20) XP/.test(n.textContent)).length>=3;
       },null,{timeout:20000});
     }catch(error){
@@ -65,7 +65,7 @@ test('cinq moteurs publies, pont iframe et XP projetes depuis la reponse serveur
         const outer=document.querySelector('#gameFrame');
         let first=null,second=null,labels=[];
         try{first=outer?.contentDocument;second=first?.getElementById('game')?.contentDocument;
-          labels=[...(second?.querySelectorAll('#menuScreen .mathas-pilot-remaining')||[])].map(x=>x.textContent)}
+          labels=[...(second?.querySelectorAll('#menuScreen .classic-xp-remaining')||[])].map(x=>x.textContent)}
         catch(e){return {crossOrigin:String(e)}}
         return {status:document.querySelector('#status')?.textContent,
           topSrc:outer?.getAttribute('src'),first:!!first,second:!!second,
@@ -76,27 +76,67 @@ test('cinq moteurs publies, pont iframe et XP projetes depuis la reponse serveur
     }
     const values=await page.evaluate(()=>{
       const doc=document.querySelector('#gameFrame').contentDocument.getElementById('game').contentDocument;
-      return [...doc.querySelectorAll('#menuScreen .mathas-pilot-remaining')].map(el=>el.textContent);
+      return [...doc.querySelectorAll('#menuScreen .classic-xp-remaining')].map(el=>el.textContent);
     });
     for(const xp of [22,36,60])assert.ok(values.includes('Reste '+xp+' XP'),app+': '+values.join(' | '));
+    // Régression du bug : chacun des cinq moteurs ne doit avoir qu'une seule
+    // annotation XP par bouton, jamais le double badge hérité du pont.
+    const audit=await page.evaluate(()=>{
+      const doc=document.querySelector('#gameFrame').contentDocument.getElementById('game').contentDocument;
+      const counts=[4,10,20].map(n=>{
+        const button=doc.querySelector('#menuScreen button[data-count="'+n+'"]');
+        return {n,labels:button?[...button.querySelectorAll('.classic-xp-remaining,.mathas-pilot-remaining')].map(x=>x.textContent):[]};
+      });
+      const modes=['startThreeLives',doc.getElementById('startSudden')?'startSudden':'suddenBtn'].map(id=>{
+        const button=doc.getElementById(id);
+        return {id,labels:button?[...button.querySelectorAll('.score-mode-detail,.mathas-pilot-remaining')].map(x=>x.textContent):[]};
+      });
+      return {counts,modes,legacy:doc.querySelectorAll('#menuScreen .mathas-pilot-remaining').length};
+    });
+    assert.equal(audit.legacy,0,app+': le deuxième badge XP doit avoir disparu');
+    for(const entry of audit.counts){
+      assert.deepEqual(entry.labels,['Reste '+({4:22,10:36,20:60}[entry.n])+' XP'],app+' - '+entry.n+': '+JSON.stringify(audit));
+    }
+    for(const entry of audit.modes){
+      assert.equal(entry.labels.length,1,app+' - '+entry.id+': un seul XP doit apparaître');
+    }
+
     assert.equal(await page.locator('#app').inputValue(),app);
     assert.equal(await page.evaluate(()=>window.MathasPilotState?.active),true);
     assert.ok(!exceptions.length,app+': '+exceptions.join(' | '));
   }
   // Simulation d'un message terminal : prouve la plomberie, pas les reponses de calcul.
+  // Le changement depuis Mélange recrée l'iframe : ne jamais prendre l'ancien
+  // document encore visible pendant le chargement de l'application suivante.
+  await page.evaluate(()=>{
+    window.__previousPilotGameDoc=document.querySelector('#gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+  });
   await page.locator('#app').selectOption('addition-simple');
   await page.waitForFunction(()=>{
     const doc=document.querySelector('#gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
-    return !!doc?.querySelector('#menuScreen .mathas-pilot-remaining') &&
-      typeof doc.defaultView.MathasLabV2Update==='function';
+    return doc&&doc!==window.__previousPilotGameDoc &&
+      window.MathasPilotState?.app==='addition-ecrite-simple' &&
+      !!doc.querySelector('#menuScreen .classic-xp-remaining') &&
+      typeof doc.defaultView.MathasLabV2Update==='function' &&
+      document.querySelector('#status')?.textContent?.includes('Moteur prêt');
   },null,{timeout:45000});
   await page.evaluate(()=>{
     const doc=document.querySelector('#gameFrame').contentDocument.getElementById('game').contentDocument;
     const g=doc.querySelector('#gameScreen'),m=doc.querySelector('#menuScreen');
     m?.classList.add('hidden');g?.classList.remove('hidden');
   });
-  await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('Partie de test en cours'),
-    null,{timeout:10000});
+  try{
+    await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('Partie de test en cours'),
+      null,{timeout:10000});
+  }catch(e){
+    const diag=await page.evaluate(()=>({
+      status:document.querySelector('#status')?.textContent,
+      gameClass:document.querySelector('#gameFrame')?.contentDocument?.getElementById('game')?.contentDocument?.getElementById('gameScreen')?.className,
+      menuClass:document.querySelector('#gameFrame')?.contentDocument?.getElementById('game')?.contentDocument?.getElementById('menuScreen')?.className,
+      activeApp:window.MathasPilotState?.app
+    }));
+    throw Error('Start-of-game observation failed '+JSON.stringify({diag,errors:exceptions}));
+  }
   await page.evaluate(()=>{
     const doc=document.querySelector('#gameFrame').contentDocument.getElementById('game').contentDocument;
     const button=doc.querySelector('#gameScreen #primaryBtn');

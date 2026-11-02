@@ -50,7 +50,12 @@ test('les cinq boutons affichent uniquement les XP restants confirmes par le ser
  assert.match(pilot,/rights\?\.threeLives\?\?null/);
  assert.match(pilot,/rights\?\.sudden\?\?null/);
  assert.match(pilot,/indicator\?\.remove\(\)/);
- assert.match(pilot,/pilotRights=null;renderRights\(doc\)/);
+ assert.match(pilot,/pilotRights=null;/);
+ assert.match(pilot,/renderRights\(doc\)/);
+ assert.match(pilot,/querySelectorAll\('#menuScreen \.mathas-pilot-remaining'\)/);
+ assert.match(pilot,/const matches=\[\.\.\.button\.querySelectorAll\(':scope > \.classic-xp-remaining'\)\]/);
+ assert.match(pilot,/const matches=\[\.\.\.meta\.querySelectorAll\('\.score-mode-detail'\)\]/);
+ assert.doesNotMatch(pilot,/line\.className='mathas-pilot-remaining'/);
  assert.doesNotMatch(pilot,/window\.MathasPilotState\.rights\|\|/);
 });
 test('les fins 3 vies livrent un motif de fin et le serveur refuse les parties interrompues',()=>{
