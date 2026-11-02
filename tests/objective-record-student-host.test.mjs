@@ -65,3 +65,13 @@ test('cinq vrais moteurs de démonstration accessibles sous une unique page él�
  assert.match(code,/clearInterval\(watching\)/);
  assert.match(code,/\$\('gameFrame'\)\.src=GAME_URLS\[slug\]\[1\]/);
 });
+
+test('les cinq cartes TEST proposent le nouveau lanceur sans remplacer le pilote',()=>{
+ const lab=read('laboratoire.js');
+ assert.match(lab,/Hôte élève · XP officiels \(lecture seule\)/);
+ assert.match(lab,/new URL\('\.\/apps\/objective-record\/eleve\.html',location\.href\)/);
+ assert.match(lab,/target\.searchParams\.set\('class',TEST_CLASS\)/);
+ assert.match(lab,/if\(!verified\|\|!consent\(\)\)/);
+ assert.match(lab,/const pilotSlug=recordPilotSlugByApp\[app\.app_key\]/);
+ assert.match(lab,/buttons\.append\(student\)/);
+});
