@@ -5133,6 +5133,21 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     return{incoming,outgoing,hasCarry:outgoing.some(Boolean)}
   }
   function generateAddition(maxDigits){
+    const certified=window.__mathasServerCertified;
+    if(certified&&session?.mode==='classic'){
+      const q=certified.questions?.[certified.index++];
+      if(!q||q.op!=='add'||!Number.isSafeInteger(q.a)||!Number.isSafeInteger(q.b)
+         ||q.a<100||q.a>999||q.b<100||q.b>999||maxDigits!==3)
+       throw Error('certified_question_missing_or_invalid');
+      const result=q.a+q.b,count=3,answerCount=String(result).length,p=carryPattern(q.a,q.b,count);
+      return{
+        a:q.a,b:q.b,result,count,answerCount,carryExpected:p.incoming,
+        outgoing:p.outgoing,answerValues:Array(answerCount).fill(''),
+        carryValues:Array(count).fill(''),wrongHistory:Array(answerCount).fill(''),
+        carryWrong:Array(count).fill(''),firstTry:true,solved:false,
+        proofId:q.id,proofCaptured:false
+      };
+    }
     const wantCarry=Math.random()<.80;
     for(let tries=0;tries<1600;tries++){
       const count=maxDigits;
@@ -5165,6 +5180,11 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
   function startSession(mode){
     setScoreRulerVisible(false);saveSettings();
     const maxDigits=mode==='classic'?+classicMaxDigits.value:mode==='sudden'?+suddenMaxDigits.value:+trainingMaxDigits.value;
+    const certified=window.__mathasServerCertified;
+    if(certified && (mode!=='classic'||maxDigits!==3||selectedClassicCount()!==4
+      ||!Array.isArray(certified.questions)||certified.questions.length!==4)){
+      setFeedback('Session certifiée : seulement 4 calculs, niveau 1.','bad');return;
+    }
     session={mode,maxDigits,level:normalLevelFromMax(maxDigits),totalCalculs:mode==='classic'?selectedClassicCount():null,score:0,completed:0,rulerUsed:false};
     menuScreen.classList.add('hidden');gameScreen.classList.remove('hidden');makePair()
   }
@@ -5480,6 +5500,19 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
       updateBar();return
     }
 
+    // Keep the FIRST submitted digits AND carries, before native correction
+    // may erase wrong entries. The server recomputes both; no score is trusted.
+    if(window.__mathasServerCertified){
+      for(const i of candidates){
+        const s=states[i];
+        if(s.proofId&&!s.proofCaptured){
+          s.proofCaptured=true;
+          window.MathasCertifiedAttempt?.({
+            id:s.proofId,digits:[...s.answerValues],carries:[...s.carryValues]
+          });
+        }
+      }
+    }
     // Calculs
     let hadError=false;
     for(const i of candidates){
