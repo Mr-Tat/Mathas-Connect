@@ -7,6 +7,7 @@ const TEST_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 const TEST_LABEL='Classe démo - TEST';
 const HUB='./hub.html?class='+encodeURIComponent(TEST_CLASS)+'&name='+encodeURIComponent(TEST_LABEL);
 const appKeys=['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'];
+const teacherGameKeys=[...appKeys,'abaque-longueurs'];
 const fallbackApps=[
  {app_key:'addition-ecrite-simple',title:'Addition écrite',launch_url:'https://mr-tat.github.io/CE-Addition-simple/'},
  {app_key:'multiplication-ecrite-simple',title:'Multiplication écrite simple',launch_url:'./apps/multiplication-simple/'},
@@ -65,7 +66,7 @@ async function rpc(edge,action,data={}){const s=await session();const response=a
 const api=(action,data={})=>rpc('connect-api',action,data);
 const results=(action,data={})=>{guard();return rpc('connect-results',action,{classId:TEST_CLASS,appKey:$('results-app').value,...data})};
 async function run(fn){try{await fn()}catch(e){display('Laboratoire : '+(e.message||e),true)}}
-function linkFor(app,prof=false){const href=app.launch_url||app.url;if(!href)return null;let url;try{url=new URL(href,location.href)}catch{return null}if(url.protocol!=='https:'&&url.protocol!=='http:')return null;if(url.origin===location.origin){url.searchParams.set('class',TEST_CLASS);if(prof&&appKeys.includes(app.app_key))url.searchParams.set('joueur','prof')}return url.href}
+function linkFor(app,prof=false){const href=app.launch_url||app.url;if(!href)return null;let url;try{url=new URL(href,location.href)}catch{return null}if(url.protocol!=='https:'&&url.protocol!=='http:')return null;if(url.origin===location.origin){url.searchParams.set('class',TEST_CLASS);if(prof&&teacherGameKeys.includes(app.app_key))url.searchParams.set('joueur','prof')}return url.href}
 function renderObjectiveRecordPreviews(){
  const list=$('record-previews');list.replaceChildren();
  for(const preview of objectiveRecordLabPreviews){
@@ -240,10 +241,14 @@ async function loadApps(){
    const student=el('a','Tester côté élève','action');student.href=linkFor(app);student.target='_blank';student.rel='noopener noreferrer';
    student.onclick=event=>{if(!consent()){event.preventDefault();display('Confirme d’abord que les profils utilisés sont fictifs avant de lancer le jeu.',true)}};
    buttons.append(student);
-   if(appKeys.includes(app.app_key)&&new URL(linkFor(app)).origin===location.origin){
+   if(teacherGameKeys.includes(app.app_key)&&new URL(linkFor(app)).origin===location.origin){
      const teacher=el('button','Monsieur T','secondary');teacher.disabled=!teacherReady;
      teacher.onclick=()=>run(async()=>{guard();if(!teacherReady)throw Error('Active d’abord Monsieur T.');const href=linkFor(app,true);window.open(href,'_blank','noopener,noreferrer')});
      teacher.classList.add('teacher-game');buttons.append(teacher);
+   }
+   if(app.app_key==='abaque-longueurs'){
+     const results=el('a','Résultats Abaque','action');results.href='./apps/abaque-longueurs/professeur.html?class='+TEST_CLASS;results.target='_blank';results.rel='noopener noreferrer';
+     results.onclick=event=>{if(!verified||!consent()){event.preventDefault();display('Confirme d’abord que les profils sont fictifs.',true)}};buttons.append(results);
    }
    card.append(buttons);container.append(card);
  }

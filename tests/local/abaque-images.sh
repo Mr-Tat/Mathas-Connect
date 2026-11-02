@@ -1,0 +1,6 @@
+# Verified official images used by the disposable database/Auth/Edge fixtures.
+ABAQUE_POSTGRES_IMAGE='postgres:17@sha256:3b0cda93be7c8dba2ed484d19393d93845dc3dafb88973e248ba8e6d99d784e1'
+ABAQUE_AUTH_IMAGE='supabase/gotrue:v2.186.0@sha256:f2112b9289422f205df4ea15b8b550d425ae42528ea54521faa32cc7b62490de'
+ABAQUE_REST_IMAGE='postgrest/postgrest:v14.3@sha256:7c5840727ad683b0fdbfb9810930665b34f8b44884a4dc740aa8844748a2b85e'
+ABAQUE_EDGE_IMAGE='supabase/edge-runtime:v1.70.0@sha256:d5b0545da7826404668c3a53809f217a9c7093526c7036c18e79ddc61e4cbe01'
+ABAQUE_GATEWAY_IMAGE='kong:2.8.1@sha256:1b53405d8680a09d6f44494b7990bf7da2ea43f84a258c59717d4539abf09f6d'

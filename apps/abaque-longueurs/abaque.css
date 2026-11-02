@@ -18,3 +18,14 @@
 #homeScreen .trophy-hint.earned .trophy-icon{filter:none;opacity:1}
 
 .heart-status{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+html[data-abaque-pending] .shell{visibility:hidden}
+.abaque-connect-panel{position:sticky;top:0;z-index:20;display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:9px 14px;background:#173c50;color:white;font:600 .8rem system-ui}
+.abaque-connect-panel a{color:#d5f3ff}.abaque-connect-panel .btn{min-height:32px;padding:4px 9px;font-size:.78rem}.abaque-account-xp{margin-left:auto;color:#ffe6a0}
+.abaque-xp-remaining{font-size:.65rem!important;font-weight:400!important;color:inherit!important;line-height:1.2;white-space:nowrap}
+#homeScreen .trophy-copy .abaque-xp-remaining{display:block;margin-top:3px}
+#homeScreen .homeModeBtn>.abaque-xp-remaining{position:absolute;right:8px;bottom:5px;display:block}
+#homeScreen #recordChoice .record-caption{position:relative}
+#homeScreen #recordChoice .record-caption .abaque-xp-remaining{display:block;text-align:right;margin-top:6px}
+html[data-abaque-connected] #homeScreen #launchBtn,html[data-abaque-connected] #homeScreen #moveLaunchBtn{padding-bottom:92px}
+html[data-abaque-connected] #homeScreen .homeModeBtn[data-mode="one"],html[data-abaque-connected] #homeScreen .homeModeBtn[data-mode="three"],html[data-abaque-connected] #homeScreen .homeModeBtn[data-mode="five"]{padding-bottom:24px}
+.abaque-xp-remaining[hidden]{display:none!important}

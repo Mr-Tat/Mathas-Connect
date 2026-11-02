@@ -1,39 +1,34 @@
-# Abaque des longueurs — fiche d’intégration
+# Abaque des longueurs — fiche d’intégration — 2 novembre 2026
 
-**[REPO vérifié, 02/11/2026] Démonstration isolée candidate, pas de pilote Connect.**
+**[LIVE vérifié, GitHub] Démo publiée. [REPO vérifié] Version Connect candidate fermée ; pilote hébergé non exécuté.**
 
-- Source : `Mr-Tat/abaque-m-1`, commit `7dc9dc00e87302d5aafa1c9d131e500a57419c1d`. Empreinte dans `apps/abaque-longueurs/source-manifest.json`, copie originale intacte `game-original.html`. Dépôt autonome inchangé.
-- Base Connect : `4b28cc56ec05b8e06998c53fdccb32571f3b1066`, branche `feat/abaque-longueurs-laboratoire`.
-- Chemin / future app_key : `apps/abaque-longueurs/` / `abaque-longueurs`.
-- URL prévue (publication non vérifiée) : https://mr-tat.github.io/Mathas-Connect/apps/abaque-longueurs/
-- Référencement : registre statique expérimental uniquement ; aucun changement des quatre HUB scolaires, du catalogue officiel, SQL ou Edge existants.
+- Démo : https://mr-tat.github.io/Mathas-Connect/apps/abaque-longueurs/ ; publiée sur `main` à `6ac032c6482f30d402e37ca44665521ce85ae92c`, après accord explicite du professeur pour le push direct sans PR.
+- [Déploiement Pages réussi](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41368284892), [CI Abaque réussie](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41367786603), [régression main réussie](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41368285430). Le GET direct Pages reste refusé par le proxy de cet environnement ; ce constat s’appuie sur le déploiement GitHub.
+- Source autonome `Mr-Tat/abaque-m-1` : `7dc9dc00e87302d5aafa1c9d131e500a57419c1d`, dépôt inchangé. Copie `game-original.html` et 25 assets identiques, empreinte source dans `source-manifest.json`.
+- Candidate : `feat/abaque-longueurs-connect`, depuis la démo publiée. Même `apps/abaque-longueurs/`, même `app_key` (`abaque-longueurs`), mode Connect optionnel. Voir [le lot de déploiement](ABAQUE_LONGUEURS_DEPLOIEMENT.md) et [le passage de relais](ABAQUE_LONGUEURS_PASSAGE_FLAMBEAU.md) pour preuves et statut.
 
-## Audit ciblé
+## Moteur et décisions pédagogiques
 
-Le moteur comporte construction (4 unités + 8 images, ≥10/12, deux réussites), déplacements (deux pages de quatre, ≥7/8, deux réussites), conversions (4, 12, 20, puis record). Les seuils se calculent au premier essai ; corrections classiques à 6 points. Déblocages conservés. Master ne compte ni progression ni points. Les callbacks de fin sont `recordStage`, `recordMode`, et `finishPage` pour les conversions. Attention : les deux cases natives de réussite ne conservent pas un nouveau sans-faute après deux réussites ; le futur registre Connect doit le conserver séparément.
+**[REPO vérifié]** Construction : 4 unités + 8 images, seuil ≥10/12, deux réussites. Déplacements : deux pages de quatre, seuil ≥7/8, deux réussites. Conversions classiques : 4, 12, 20, puis Objectif record. Seuls les premiers essais déterminent les seuils ; aides natives autorisées, correction classique à 6 points. Master reste entraînement pour toute la partie, même après sortie. Une perfection obtenue après les deux cases de déblocage reste reconnue.
 
-**[DÉCISION professeur, prompt final 02/11/2026]** Maximum 160 XP : construction 8+6+6 ; déplacements 8+6+6 ; conversions 20, 18+10, 28+12 ; record 12+20 partagés avec les demi-droits 6+10 de 3 vies. Exactement trois trophées permanents (12/12 ; 8/8 ; 4/4+12/12+20/20). Aucun crédit en libre/Master/abandon/restauration. Aucun de ces XP/trophées Connect n’est activé dans la démo.
+**[DÉCISION professeur, prompt final]** 160 XP : construction 8+6+6 ; déplacements 8+6+6 ; conversions 20, 18+10, 28+12 ; record 12+20 partagés avec les demi-droits 6+10 de 3 vies. Compléments uniques, répétitions à zéro ; aucun crédit pour Master, démo, abandon ou restauration. Trois trophées permanents : bronze 12/12, argent 8/8, or 4/4+12/12+20/20 à des moments éventuellement différents. Repères visuels en bas à droite des cartes ; aucun trophée en 3 vies, aucune médaille locale comptée comme trophée Connect.
 
-Points : classique 4×25=100 ; 4×(25+27+29)=324 ; 4×(25+27+29+31+33)=580. Mort subite conserve `30+5*floor(réussites/4)`, avec coefficients aides .8/.6 arrondis. En 3 vies, base normale `round((30+5*floor(réussites/4))/1.2)` avant les coefficients d’aide ; ni double bonus ni correction d’une erreur. Difficulté/aides suivent le nombre de conversions réussies. Records de points séparés par mode + global, record consécutif natif réservé à Mort subite. Médailles locales natives conservées, distinctes des trophées Connect.
+**[REPO vérifié]** Points classiques : 100/324/580 sans aide. Mort subite : `30+5*floor(réussites/4)`, coefficients aides .8/.6 arrondis ; pas de deuxième bonus de 20 %. En 3 vies, base `round((30+5*floor(réussites/4))/1.2)` avant coefficients. Incomplet : aucune vie perdue ; erreur complète : zéro point, pas de correction ; fin à la troisième erreur. Records par mode + global + série consécutive Mort subite. Preuves des dix premières réussites puis segments bornés pour conserver les records longs sans plafonner arbitrairement les parties.
 
-La démo a ses propres clés `mathas_connect_abaque_demo_progress_v1` / `mathas_connect_abaque_demo_master_v1` ; aucun import automatique des anciennes données, aucune identité ni requête externe. Le paramètre de classe n’active pas Connect. Pas de compteur « Reste N XP » sans réponse serveur approuvée.
+## Contrat Connect candidat
 
-## Preuves et portes
+**[REPO vérifié]** Le mode par défaut reste la démo sans requête externe. `?connect=1&class=<UUID>` charge un bridge qui exige une identité approuvée et une classe explicitement ouverte par le serveur. Edge `connect-abaque` fermée par défaut ; mode pilote limité à la classe TEST et à une liste explicite de profils fictifs. La future activation scolaire utilise les données de classe, sans deuxième application.
 
-- **[CI locale, 02/11/2026]** Node 22.22.0 ; régression hors HTTP de production : 283 tests réussis, 1 PostgreSQL ignoré faute de `pg`/serveur local ; aucune défaillance.
-- **[CI locale]** Projection + Soustraction Chromium : 9 tests réussis avec données fictives.
-- Chromium Abaque : vraies constructions, déplacements au clavier, scores 100/324/580, incomplet, doublon, erreurs 3 vies, Mort subite et écran 320 px ; 2 tests réussis (vrai clavier, données locales fictives), zéro appel externe ; styles Objectif record ajustés après inspection de la capture 320 px.
-- PostgreSQL/Auth/Edge Abaque : NON EXÉCUTÉS ; pilote hébergé authentifié : NON EXÉCUTÉ.
-- Git lecture + push dry-run : accessibles. API GitHub/Pages : refus de politique réseau, domaines ajoutés au brouillon de configuration. Aucun constat de production Supabase.
+Le serveur vérifie le JWT via Auth, l’appareil, l’inscription active ou les droits de Monsieur T, l’identité liée, le schéma de preuve, l’époque et la révision. Il recalcule réussite/points ; le client ne déclare ni XP ni trophée. Reçu durable, état, droits, XP et trophées sont atomiques ; les verrous empêchent les doubles crédits concurrents. Le résumé HUB conserve les anciennes applications.
 
-Retrait non destructif : supprimer uniquement l’entrée `abaque-longueurs` du registre expérimental ; conserver les fichiers et données locales. La carte statique n’est pas une activation serveur.
+Stockages démo `mathas_connect_abaque_demo_*`, Connect par classe/sujet Auth/élève/époque. File de 100 événements maximum et 100 archives de conflit, persistée avant envoi jusqu’à ACK exact. Après reset, anciens événements isolés ; après changement de session ou réaffectation, jeu bloqué. Les XP restants viennent uniquement d’une réponse approuvée en ligne ; les trophées Connect uniquement du serveur, sans import de la démo. Les résultats hors ligne attendent synchronisation.
 
-**[DÉCISION professeur + CI locale, 02/11/2026] Repères visuels :** bronze en bas à droite de la construction (12/12), argent dans les déplacements (8/8), or dans les conversions (trois séries parfaites). État « À gagner », puis « Obtenu · démo » après réussite locale. Registre local démo distinct, conservé lors d’un reset ; une performance parfaite après les deux réussites reste reconnue. Aucun trophée accordé par Master/3 vies. Les trophées Connect réels devront venir du serveur.
+Tableau professeur dédié, consentement avant lecture, permission de classe et actualisation manuelle. Reset limité à l’Abaque, archive du parcours et incrément d’époque ; droits consommés, XP historiques et trophées conservés. Le bouton de reset Master local n’efface aucune donnée serveur.
 
-## Audit complémentaire — 02/11/2026
+## Preuves et limites
 
-**[CI locale]** Les tests initiaux étaient trop permissifs : leur fixture de déblocage contenait déjà trois séries parfaites. Elle utilise désormais des réussites orange ; l’absence d’or après les deux premières séries est vérifiée explicitement. Master testé au départ et pendant les trois activités, même après sortie ; fuite de bronze reproduite avant correction. Les seuils 10/12 et 7/8, les perfections après deux réussites, les aides/corrections et les points progressifs 3 vies/Mort subite sont vérifiés par saisie réelle.
+**[CI locale, 02/11/2026]** 289 tests Node sans services ; 7 Chromium Abaque et 9 Chromium Projection/Soustraction ; 8 scénarios PostgreSQL réel et 3 scénarios Auth + Edge Deno + Chromium réels, exclusivement sur services jetables et profils fictifs. Tests d’installation fermée/historique, 160 XP, trois trophées, concurrence, échec tardif, révocation, identité réaffectée, reset, restauration sur second appareil, réponse perdue et hors ligne. Vérification des repères visuels en démo à 320/768/1024 px.
 
-Résultat réaudité : 284 Node réussis + 1 PostgreSQL ignoré, 7 Chromium Abaque + 6 tests d’isolation/Laboratoire réussis, 9 Chromium existants réussis. Références des preuves et limites de publication dans le passage de flambeau mis à jour. Les deux tests HTTP de production restent non exécutés localement faute d’accès aux services hébergés ; aucun test de backend Abaque n’existe encore.
+Les deux tests HTTP de production et l’ancien test Soustraction PostgreSQL avec son Chromium Playwright propre sont séparés : ce dernier a atteint ses contrôles serveur mais son navigateur reste bloqué par le téléchargement interdit du binaire. Les autres tests navigateur utilisent Chromium système. Aucun de ces tests ne prouve un pilote Supabase hébergé.
 
-**[LIVE vérifié]** Contrairement au constat initial trop général, les pages web GitHub sont accessibles et montrent la CI. Le run de `78cfbc2` est en échec navigateur, code 1. Le test écrivait sa capture dans `/workspace` : chemin non portable corrigé, et résumé public ajouté pour vérifier le nouveau run sans confondre validations locales et CI distante.
+**[PROPOSÉ]** Installation SQL masquée/désactivée, fonctions Edge, Pages puis pilote fictif : accord précis et accès Supabase nécessaires. Aucune ouverture des HUB scolaires. Arrêt non destructif prévu dans le lot de déploiement.

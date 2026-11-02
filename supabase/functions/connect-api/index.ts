@@ -27,7 +27,10 @@ async function handle(req:Request){
  // ne doit pas masquer un profil pourtant autorisé.
  const optionalProgress=async(studentId:string)=>{
    try{
-     const {data,error}=await db.rpc('connect_profile_progress_v1',{p_student:studentId});
+     const query=(Deno.env.get('CONNECT_ABAQUE_ACCESS')==='pilot'&&b.classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9')||(Deno.env.get('CONNECT_ABAQUE_ACCESS')==='open'&&U.test(b.classId||''))
+       ?db.rpc('connect_abaque_profile_progress_v1',{p_student:studentId})
+       :db.rpc('connect_profile_progress_v1',{p_student:studentId});
+     const {data,error}=await query;
      return error||!data?null:data;
    }catch{return null;}
  };

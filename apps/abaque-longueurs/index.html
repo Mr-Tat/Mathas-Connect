@@ -1437,18 +1437,19 @@ window.MATHAS_ITEMS = [
   }
 ];
 
-</script><script>
+</script><script src="./connect/native-bridge.js"></script><script>
 /* Progression uniquement locale et conservée sur cet appareil ; aucune requête réseau. */
 (()=>{'use strict';
- const STORAGE='mathas_connect_abaque_demo_progress_v1', SESSION='mathas_connect_abaque_demo_master_v1';
+ let STORAGE='mathas_connect_abaque_demo_progress_v1', SESSION='mathas_connect_abaque_demo_master_v1';
+ let connectBinding=null;
  const $=id=>document.getElementById(id);
  const blank=()=>({stage1:{passes:[],passScores:[],failed:false,failedScore:null},stage2:{passes:[],passScores:[],failed:false,failedScore:null},recordsByMode:{},modes:{one:null,three:null,five:null,sudden:null},modeScores:{one:null,three:null,five:null},suddenBest:0,scoreRecords:{dayDate:"",dayBest:0,dayMode:"",allBest:0,allMode:"",medals:[]}});
  const TROPHIES='mathas_connect_abaque_demo_trophies_v1';
  let earnedTrophies=[];
  try{const saved=JSON.parse(localStorage.getItem(TROPHIES));if(Array.isArray(saved))earnedTrophies=saved.filter(x=>['bronze','silver','gold'].includes(x));}catch{}
- function earnTrophy(key){if(!earnedTrophies.includes(key)){earnedTrophies.push(key);try{localStorage.setItem(TROPHIES,JSON.stringify(earnedTrophies))}catch{}}}
+ function earnTrophy(key){if(connectBinding)return;if(!earnedTrophies.includes(key)){earnedTrophies.push(key);try{localStorage.setItem(TROPHIES,JSON.stringify(earnedTrophies))}catch{}}}
  let data=blank(), master=false, runPractice=false;
- try{const saved=JSON.parse(localStorage.getItem(STORAGE));if(saved&&typeof saved==='object'){
+ function restoreNative(saved){data=blank();if(saved&&typeof saved==='object'){
    for(const key of ['stage1','stage2']) if(saved[key]){
      const old=saved[key];const raw=Array.isArray(old.passes)?old.passes.slice(0,2):[];
      data[key].passes=raw.filter(x=>x==='orange'||x==='green');
@@ -1467,7 +1468,7 @@ window.MATHAS_ITEMS = [
    for(const m of ['one','three','five','sudden','lives']){const v=saved.recordsByMode?.[m];if(Number.isSafeInteger(v)&&v>=0)data.recordsByMode[m]=v;}
    if(saved.scoreRecords && typeof saved.scoreRecords==='object'){
      const r=saved.scoreRecords;
-     const safeScore=v=>Number.isSafeInteger(v)&&v>=0?Math.min(v,1e9):0;
+     const safeScore=v=>Number.isSafeInteger(v)&&v>=0?v:0;
      const safeMode=v=>['one','three','five','sudden','lives'].includes(v)?v:'';
      data.scoreRecords.dayDate=typeof r.dayDate==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(r.dayDate)?r.dayDate:'';
      data.scoreRecords.dayBest=safeScore(r.dayBest);
@@ -1476,7 +1477,8 @@ window.MATHAS_ITEMS = [
      data.scoreRecords.allMode=safeMode(r.allMode);
      data.scoreRecords.medals=[100,300,500,800].filter(t=>Array.isArray(r.medals)&&r.medals.includes(t)&&data.scoreRecords.allBest>=t);
    }
- }}catch(e){}
+ }}
+ try{restoreNative(JSON.parse(localStorage.getItem(STORAGE)))}catch(e){}
  // Reconcile only this demo's existing local results; never import native or Connect storage.
  if(data.stage1.passes.includes('green')||data.stage1.passScores.includes(12))earnTrophy('bronze');
  if(data.stage2.passes.includes('green')||data.stage2.passScores.includes(8))earnTrophy('silver');
@@ -1547,9 +1549,9 @@ window.MATHAS_ITEMS = [
  function render(){dots('stage1');dots('stage2');$('recordChoice').classList.toggle('hidden',!unlocked('five'));
   for(const [id,key,name,condition] of [['launchBtn','bronze','Architecte de l’abaque','12/12 dans l’activité 1'],['moveLaunchBtn','silver','Maître des déplacements','8/8 dans l’activité 2'],['convertLaunchCard','gold','Expert des conversions','4/4, 12/12 et 20/20 en séries classiques']]){
     const badge=$('trophy-'+id),earned=earnedTrophies.includes(key);
-    badge.classList.toggle('earned',earned);badge.querySelector('b').textContent=earned?'Obtenu · démo':'À gagner';
-    badge.setAttribute('aria-label',name+' — '+(earned?'obtenu localement en démonstration':condition+' pour obtenir ce trophée')+'. Aucun trophée Connect crédité.');
-    badge.title=name+' : '+condition+' · démonstration locale uniquement';
+    badge.classList.toggle('earned',earned);badge.querySelector('b').textContent=earned?(connectBinding?'Obtenu':'Obtenu · démo'):'À gagner';
+    badge.setAttribute('aria-label',name+' — '+(earned?(connectBinding?'acquis sur ton compte':'obtenu localement en démonstration'):condition+' pour obtenir ce trophée')+(connectBinding?'':'. Aucun trophée Connect crédité.'));
+    badge.title=name+' : '+condition+(connectBinding?'':' · démonstration locale uniquement');
   }
 
   const r=normalizeDay();
@@ -1606,7 +1608,23 @@ window.MATHAS_ITEMS = [
  $('masterExit').addEventListener('click',()=>{master=false;try{sessionStorage.removeItem(SESSION)}catch(e){}render()});
  $('masterEraseScores').addEventListener('click',()=>{if(master&&confirm('Effacer les points, les records et les médailles sur cet appareil ? La progression et les modes débloqués seront conservés.'))eraseScores()});
  $('masterReset').addEventListener('click',()=>{if(master&&confirm('Tout remettre à zéro sur cet appareil : progression, déblocages, points, records et médailles ?'))reset()});
- window.MATHAS_PROGRESS={unlocked,beginRun,recordStage,recordMode,recordSudden,recordScore,render,grade:color,passes,reset,get master(){return master},get practice(){return master||runPractice}};
+ function applyServer(snapshot){
+  if(!connectBinding||snapshot.studentId!==connectBinding.studentId||snapshot.authSubject!==connectBinding.authSubject)throw Error('connect_identity_changed');
+  restoreNative(snapshot.state);
+  earnedTrophies=(snapshot.trophies||[]).filter(key=>['abaque:bronze','abaque:silver','abaque:gold'].includes(key)).map(key=>key.split(':')[1]);
+  save();render();
+ }
+ function bindConnect(binding,snapshot){
+  const valid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if(![binding.classId,binding.authSubject,binding.studentId].every(value=>valid.test(value))||!Number.isSafeInteger(snapshot.resetEpoch)||snapshot.resetEpoch<0)throw Error('invalid_connect_binding');
+  connectBinding=Object.freeze({...binding});
+  STORAGE='mathas.abaque.native.'+[binding.classId,binding.authSubject,binding.studentId,snapshot.resetEpoch].join('.')+'.v1';
+  SESSION=STORAGE+'.master';
+  try{master=sessionStorage.getItem(SESSION)==='1'}catch{master=false}
+  runPractice=master;
+  applyServer(snapshot);
+ }
+ window.MATHAS_PROGRESS={unlocked,beginRun,recordStage,recordMode,recordSudden,recordScore,render,grade:color,passes,reset,bindConnect,applyServer,get master(){return master},get practice(){return master||runPractice}};
  render();
 })();
 </script><script>
@@ -1618,7 +1636,7 @@ function drawRound(){// Toujours 8 images : le plus souvent 2 par unité, parfoi
  let selection=[];for(const u of TARGET){const candidates=shuffle(items.filter(a=>a.unit===u));const fresh=candidates.filter(a=>!history.includes(a.id)),old=candidates.filter(a=>history.includes(a.id));selection.push(...[...fresh,...old].slice(0,counts[u]));}history=[...new Set([...selection.map(x=>x.id),...history])].slice(0,14);return shuffle(selection);
 }
 function say(t,cl=''){$('feedback').textContent=t;$('feedback').className='feedback '+cl;}
-function start(){window.MATHAS_PROGRESS.beginRun();round=drawRound();unitPosition={};imgPosition={};stage=1;verified=false;chosen=null;showUnitErrors=false;unitFirstScore=0;unitScored=false;$('homeScreen').classList.add('hidden');$('moveScreen').classList.add('hidden');$('convertScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');$('homeBtn').classList.remove('hidden');$('helpBtn').classList.remove('hidden');$('help').classList.add('hidden');say('');render();}
+function start(){window.MATHAS_PROGRESS.beginRun();window.MATHAS_ABAQUE_PROOF.start('build');round=drawRound();unitPosition={};imgPosition={};stage=1;verified=false;chosen=null;showUnitErrors=false;unitFirstScore=0;unitScored=false;$('homeScreen').classList.add('hidden');$('moveScreen').classList.add('hidden');$('convertScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');$('homeBtn').classList.remove('hidden');$('helpBtn').classList.remove('hidden');$('help').classList.add('hidden');say('');render();}
 function home(){$('homeScreen').classList.remove('hidden');$('gameScreen').classList.add('hidden');$('convertScreen').classList.add('hidden');$('moveScreen').classList.add('hidden');$('homeBtn').classList.add('hidden');$('helpBtn').classList.add('hidden');stage=0;}
 function mapForStage(){return stage===1?unitPosition:imgPosition;}
 function itemFor(id){return items.find(a=>a.id===id);}
@@ -1646,7 +1664,7 @@ function check(){
  const map=mapForStage(),total=stage===1?4:round.length;
  if(verified||Object.keys(map).length!==total)return;
  const correct=stage===1?TARGET.filter(u=>map[u]===u).length:round.filter(a=>map[a.id]===a.unit).length;
- if(stage===1&&!unitScored){unitFirstScore=correct;unitScored=true}
+ if(stage===1&&!unitScored){window.MATHAS_ABAQUE_PROOF.units(unitPosition);unitFirstScore=correct;unitScored=true}
  if(stage===1){
   if(correct===4){window.MATHAS_CELEBRATE?.toast();verified=true;next();return;}
   showUnitErrors=true;
@@ -1655,6 +1673,7 @@ function check(){
  }
  verified=true;
  const score=unitFirstScore+correct, grade=window.MATHAS_PROGRESS.recordStage('stage1',score,12);
+ window.MATHAS_ABAQUE_PROOF.images(round,imgPosition);
  if(correct===total)say(`Bravo ! Les ${total} images sont bien classées.`,'good');
  else say(`${correct} bonne${correct>1?'s':''} réponse${correct>1?'s':''} sur ${total}. Corrections : ${round.filter(a=>map[a.id]!==a.unit).map(a=>a.label+' → '+a.unit).join(' · ')}`,'error');
  if(grade.grade==='red')say(`${score}/12 au premier essai. Il faut au moins 10/12 pour valider une réussite.`,'error');
@@ -1709,6 +1728,7 @@ function hideHelp(){
 function openMoves(){
  if(!window.MATHAS_PROGRESS.unlocked('stage2'))return;
  window.MATHAS_PROGRESS.beginRun();
+ window.MATHAS_ABAQUE_PROOF.start('moves');
  movePage=0;moveCorrect=0;pageChecked=false;
  $('homeScreen').classList.add('hidden');$('gameScreen').classList.add('hidden');$('convertScreen').classList.add('hidden');
  $('moveScreen').classList.remove('hidden');$('homeBtn').classList.remove('hidden');
@@ -1788,6 +1808,7 @@ function verifyAll(){
   const feedback=box.querySelector('.moveFeedback');feedback.className='moveFeedback '+(ok?'ok':'no');
   feedback.textContent=ok?'✓ Exact !':'À revoir';
  });
+ window.MATHAS_ABAQUE_PROOF.moves(tasks,states,movePage===1);
  moveCorrect+=correct;
  $('moveAllFeedback').textContent=`${correct}/4 réponses correctes.`;
  $('moveNew').classList.remove('hidden');$('verifyMoves').classList.add('hidden');
@@ -2057,6 +2078,7 @@ function startMode(mode,variant="sudden"){
  window.MATHAS_PROGRESS.beginRun();
  $('homeScreen').classList.add('hidden');$('moveScreen').classList.add('hidden');$('gameScreen').classList.add('hidden');
  $('convertScreen').classList.remove('hidden');$('homeBtn').classList.remove('hidden');$('helpBtn').classList.add('hidden');
+ window.MATHAS_ABAQUE_PROOF.start(mode==='sudden'?(variant==='lives'?'lives':'sudden'):mode);
  recordVariant=variant;lives=3;selectedMode=mode;totalPages={one:1,three:3,five:5,sudden:Infinity}[mode];pageNumber=0;runCorrect=0;runQuestions=0;suddenStreak=0;runFinished=false;runScore=0;
  $('t3Layout').classList.remove('hidden');$('t3SessionHead').classList.remove('hidden');
  makeSeries();renderLives();window.scrollTo({top:0,behavior:'smooth'});
@@ -2320,6 +2342,7 @@ function renderBoard(i){
  commas.onpointerup=end;commas.onpointercancel=end;
 }
 function finishPage(firstGood,corrected=0){
+ window.MATHAS_ABAQUE_PROOF.page(series);
  locked=true;runCorrect+=firstGood;runQuestions+=series.length;
  const pagePoints=series.reduce((sum,ex)=>sum+calcPoints(ex),0);
  runScore+=pagePoints;
@@ -2341,6 +2364,7 @@ function finishPage(firstGood,corrected=0){
      notifyRecord(window.MATHAS_PROGRESS.recordScore(runScore,recordMode()));
    }else{lives=recordVariant==='lives'?lives-1:0;}
    runFinished=lives===0;renderLives();
+   if(runFinished)window.MATHAS_ABAQUE_PROOF.complete();
    if(runFinished&&recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak);
    const label=recordVariant==='lives'?'3 vies':'Mort subite';
    $('t3Summary').textContent=`${suddenStreak} conversions réussies · ${runScore} points${recordVariant==='lives'?' · '+lives+' vies restantes':''}.`;
@@ -2354,6 +2378,7 @@ function finishPage(firstGood,corrected=0){
  if(pageNumber+1<totalPages){$('t3Summary').textContent=`Page ${pageNumber+1}/${totalPages} · ${firstGood}/4 au premier essai.`;$('t3New').textContent='Page suivante →'; window.MATHAS_CELEBRATE?.modal({title:'Bravo !',emoji:'🎉',text:`Page ${pageNumber+1} terminée.`,buttons:[{label:'Accueil',action:()=>{$('homeBtn').click()}},{label:'Recommencer',action:()=>startMode(selectedMode)},{label:'Page suivante',primary:true,action:()=>$('t3New').click()}]});}
  else{
    runFinished=true;
+   window.MATHAS_ABAQUE_PROOF.complete();
    const grade=window.MATHAS_PROGRESS.recordMode(selectedMode,runCorrect,total);
    const recordResult=window.MATHAS_PROGRESS.recordScore(runScore,selectedMode);notifyRecord(recordResult);
    $('t3Summary').textContent=`Série : ${runCorrect}/${total} · ${runScore} points · ${grade==='green'?'100 % !':grade==='orange'?'80 % atteint !':'À réessayer.'}`;
@@ -2370,6 +2395,7 @@ function verify(){
  const editable=series.map((ex,i)=>['pending','retry'].includes(ex.status)?i:-1).filter(i=>i>=0);
  const blank=editable.find(i=>!series[i].answer.trim());
  if(blank!==undefined){$('t3Summary').textContent=`Il manque la réponse ${blank+1}.`;setActive(blank);$('t3ExList').children[blank].querySelector('input').focus();return}
+ if(!correctionMode)window.MATHAS_ABAQUE_PROOF.first(series);
  if(selectedMode==='sudden'){
    const good=Number(series[0].answer)===series[0].result;
    series[0].status=good?'good':'badFinal';
@@ -2435,4 +2461,10 @@ $('homeBtn').addEventListener('click',()=>{$('convertScreen').classList.add('hid
 <script>
 (()=>{const toast=document.getElementById('celebrateToast'),dlg=document.getElementById('celebrateDialog'),title=document.getElementById('celebrateTitleEl'),text=document.getElementById('celebrateTextEl'),actions=document.getElementById('celebrateActions'),burst=document.getElementById('celebrateBurst');const smallMsgs=['Bravo !','Super !','Bien joué !','Excellent !','Top !'];window.MATHAS_CELEBRATE={toast(msg){toast.textContent=msg||smallMsgs[Math.floor(Math.random()*smallMsgs.length)];toast.classList.add('show');clearTimeout(window.__mathasToast);window.__mathasToast=setTimeout(()=>toast.classList.remove('show'),1550)},modal(opts={}){title.textContent=opts.title||'Bravo !';text.textContent=opts.text||'';burst.textContent=opts.emoji||'🌟';actions.replaceChildren();(opts.buttons||[]).forEach(btn=>{const b=document.createElement('button');b.type='button';b.className='btn'+(btn.primary?' celebratePrimary':'');b.textContent=btn.label;b.addEventListener('click',()=>{try{dlg.close()}catch(e){};btn.action&&btn.action()});actions.appendChild(b)});try{dlg.showModal()}catch(e){}}};})();
 </script>
+<script>
+if(new URLSearchParams(location.search).get('connect')==='1'){
+ document.documentElement.dataset.abaquePending='true';
+ for(const element of document.body.children)if(element.tagName!=='SCRIPT')element.inert=true;
+}
+</script><script type="module" src="./connect/bootstrap.mjs"></script>
 </body></html>

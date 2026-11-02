@@ -3,8 +3,10 @@
   "sourceCommit": "7dc9dc00e87302d5aafa1c9d131e500a57419c1d",
   "sourceSha256": "6af3f61d544dbd473db8a506d5340b304b39b78a3c747fd7a709dfae5244803f",
   "appKey": "abaque-longueurs",
-  "status": "isolated-demo",
+  "status": "connect-candidate-closed",
+  "defaultMode": "isolated-demo",
   "connectEnabled": false,
+  "connectOptIn": "connect=1 with approved server identity and an explicitly enabled class",
   "changes": [
     "Dedicated demo storage namespace",
     "Objectif record menu and three lives",
@@ -13,7 +15,10 @@
     "Master practice eligibility is latched for each activity, including entering/exiting mid-run",
     "Broken hearts persist without replaying their loss animation after success",
     "Sudden-death consecutive record remains visible",
-    "Reconcile previous results from the same isolated demo storage only"
+    "Reconcile previous results from the same isolated demo storage only",
+    "Optional Connect bridge, server proof contract and bounded identity-scoped durable queue",
+    "Server-only XP and trophy hydration; explicit reset epoch and permanent rights",
+    "Dedicated professor view and guarded candidate SQL/Edge, closed by default"
   ],
   "license": "No license file in source checkout; copied with repository owner authorization in task"
 }

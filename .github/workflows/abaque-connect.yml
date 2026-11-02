@@ -1,0 +1,56 @@
+name: Abaque Connect - candidat ferme
+on:
+  push:
+    branches: [feat/abaque-longueurs-connect]
+  pull_request:
+    paths:
+      - 'apps/abaque-longueurs/**'
+      - 'supabase/functions/connect-abaque/**'
+      - 'supabase/functions/connect-api/**'
+      - 'supabase/release-candidates/*abaque*'
+      - 'scripts/abaque-release.mjs'
+      - 'tests/abaque*'
+      - 'tests/local/abaque*'
+      - 'tests/local/run-abaque-local.sh'
+      - 'tests/helpers/abaque*'
+      - 'tests/fixtures/abaque*'
+      - '.github/workflows/abaque-connect.yml'
+permissions:
+  contents: read
+jobs:
+  local-connect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      MATHAS_TEST_TOOLS: ${{ github.workspace }}
+      CHROME_BIN: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+      - run: npm install --no-save --no-package-lock playwright@1.57.0 pg@8.16.3 esbuild@0.27.2 @supabase/supabase-js@2.95.0
+      - run: npx playwright install chromium --with-deps
+      - name: Contrats et moteur libre au clavier
+        run: node --test tests/abaque-contract.test.mjs tests/abaque-server-contract.test.mjs tests/laboratoire-objective-record.test.mjs tests/abaque-browser.browser.mjs
+      - name: PostgreSQL, Auth, Edge Deno et Chromium reels, donnees fictives
+        shell: bash
+        run: |
+          set +e
+          bash tests/local/run-abaque-local.sh 2>&1 | tee "$RUNNER_TEMP/abaque-connect.tap"
+          test_status=${PIPESTATUS[0]}
+          set -e
+          exit "$test_status"
+      - name: Publier les preuves locales dans le resume CI
+        if: always()
+        shell: bash
+        run: |
+          if test -f "$RUNNER_TEMP/abaque-connect.tap"; then
+            {
+              echo '### Abaque Connect — services locaux reels, profils fictifs'
+              echo 'Aucune recette Supabase hebergee ni activation de production.'
+              echo '```text'
+              cat "$RUNNER_TEMP/abaque-connect.tap"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
