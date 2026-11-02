@@ -322,3 +322,53 @@ test('Abaque : les anciennes réussites de la même démo réaffichent les troph
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });
+
+test('Abaque démo : trois états de compte simulés, XP discrets et zéro modification des acquis locaux',async()=>{
+ const h=await setup(),{page}=h;
+ try{
+  await page.goto(h.url);
+  await page.evaluate(({key,trophyKey})=>{
+   const saved=JSON.parse(localStorage.getItem(key));
+   saved.scoreRecords.allBest=129;saved.scoreRecords.allMode='lives';saved.recordsByMode.lives=129;
+   localStorage.setItem(key,JSON.stringify(saved));localStorage.setItem(trophyKey,'["silver"]');
+  },{key,trophyKey});
+  await page.reload();
+  const initial=await page.evaluate(()=>Object.fromEntries(Object.entries(localStorage)));
+  const choice=page.locator('#abaque-demo-state');
+  assert.equal(await choice.inputValue(),'signed-out');
+  assert.equal(await page.locator('.abaque-xp-remaining:visible').count(),0);
+  assert.equal(await page.locator('#personalBest').textContent(),'129');
+  await choice.selectOption('connected');
+  assert.equal(await page.locator('.abaque-demo-xp:visible').count(),7);
+  assert.equal(await page.locator('#launchBtn>.abaque-xp-remaining').textContent(),'Reste 6 XP');
+  assert.equal(await page.locator('[data-variant="sudden"]>.abaque-xp-remaining').textContent(),'Reste 32 XP');
+  assert.equal(await page.locator('#personalTrophyCount').textContent(),'0 / 3');
+  assert.equal(await page.locator('#launchBtn>.abaque-xp-remaining').evaluate(el=>getComputedStyle(el).fontWeight),'400');
+  await solveConstruction(page);
+  assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'true','une activité reste jouable dans le profil fictif');
+  await choice.selectOption('collected');
+  assert.equal(await page.locator('#personalTrophyCount').textContent(),'3 / 3');
+  assert.equal(await page.locator('#personalBest').textContent(),'580');
+  assert.equal(await page.locator('.collection-trophy.earned').count(),3);
+  assert.deepEqual(await page.locator('.abaque-demo-xp').allTextContents(),Array(7).fill('Reste 0 XP'));
+  assert.equal(await page.locator('#recordChoice .record-caption .abaque-xp-remaining').count(),0);
+  assert.deepEqual(await page.locator('.trophy-hint').allTextContents(),['','','']);
+  assert.equal(await page.locator('#trophy-launchBtn').getAttribute('title'),'Architecte de l’abaque — obtenu');
+  for(const width of [1440,768,320]){
+   await page.setViewportSize({width,height:1000});
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'simulation sans débordement à '+width);
+  }
+  await page.screenshot({path:resolve(tmpdir(),'abaque-demo-scenarios-mobile.png'),fullPage:true});
+  await page.setViewportSize({width:1440,height:1000});
+  await page.screenshot({path:resolve(tmpdir(),'abaque-demo-scenarios-desktop.png'),fullPage:true});
+  await choice.selectOption('signed-out');
+  assert.equal(await page.locator('.abaque-xp-remaining:visible').count(),0);
+  assert.equal(await page.locator('#personalBest').textContent(),'129');
+  assert.equal(await page.locator('#personalTrophyCount').textContent(),'1 / 3');
+  assert.deepEqual(await page.evaluate(()=>Object.fromEntries(Object.entries(localStorage))),initial,'aucun faux résultat, XP ou trophée enregistré');
+  await choice.selectOption('collected');await page.reload();
+  assert.equal(await choice.inputValue(),'signed-out','pas de fausse connexion conservée au rechargement');
+  assert.equal(await page.locator('.abaque-xp-remaining:visible').count(),0);
+  assert.deepEqual(h.external,[]);assert.deepEqual(h.errors,[]);
+ }finally{await h.close();}
+});
