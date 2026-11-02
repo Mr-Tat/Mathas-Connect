@@ -11,4 +11,6 @@
 - Documenter chaque constat comme **[LIVE vérifié]**, **[REPO vérifié]**, **[CI locale]**, **[RECETTE hébergée authentifiée]**, **[DÉCISION professeur]**, **[PROPOSÉ]** ou **[HISTORIQUE]**. Datation + provenance obligatoires.
 - Aucun secret JWT/service_role, export privé ni nom d'élève dans commit, issue, log partagé ou passage de relais.
 
+Pour `GRAN-abaque-m-1`, la décision du professeur du 02/11/2026 impose le dépôt autonome comme source des évolutions du moteur et de l’accueil. Connect conserve une copie versionnée dans `apps/GRAN-abaque-m-1/` et ses adaptateurs. Voir [le nommage et la synchronisation](docs/integrations/NOMMAGE_GRAN_ABAQUE_M_1.md). Conserver l’`app_key` et les clés des résultats lors du renommage des dossiers.
+
 La mission de documentation seule ne permet jamais d'appliquer SQL/Edge, de tester avec de vrais élèves ou d'ouvrir un jeu.

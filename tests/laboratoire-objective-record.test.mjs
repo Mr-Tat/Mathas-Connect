@@ -11,7 +11,7 @@ test('six démos Pages distinctes, sans app_key ni attribut d’XP Connect',()=>
   assert.equal(new Set(objectiveRecordLabPreviews.map(p=>p.id)).size,6);
   assert.equal(new Set(objectiveRecordLabPreviews.map(p=>p.url)).size,6);
   const expected=new Map([
-    ['abaque-longueurs','/Mathas-Connect/apps/abaque-longueurs/'],
+    ['abaque-longueurs','/Mathas-Connect/apps/GRAN-abaque-m-1/'],
     ['addition-simple','/CE-Addition-simple/essai-mode-score-3-vies.html'],
     ['addition-multiple','/addition-ecrite-multiple/essai-objectif-record-3-vies.html'],
     ['soustraction','/soustraction-ecrite/essai-objectif-record-3-vies.html'],
@@ -91,7 +91,7 @@ test('secours Edge limité au GET de la classe TEST, sans fausse activation Conn
     assert.ok(edge.includes(p.url),p.id);
     assert.equal(objectiveRecordLabPreviews.find(preview=>preview.id===p.id)?.url,p.url);
   }
-  assert.equal(edge.includes('https://mr-tat.github.io/Mathas-Connect/apps/abaque-longueurs/'),false,'Abaque reste une carte statique, pas une activation Edge');
+  assert.equal(edge.includes('https://mr-tat.github.io/Mathas-Connect/apps/GRAN-abaque-m-1/'),false,'Abaque reste une carte statique, pas une activation Edge');
   assert.match(hub,/apps=data\.apps\.filter\(app=>!labDemoKeys\.has\(app\.app_key\)\)/);
   assert.doesNotMatch(edge,/connect_hub_preset_entries/);
   assert.doesNotMatch(edge,/\.from\('connect_xp_credits'\)/);

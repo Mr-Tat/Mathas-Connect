@@ -1,10 +1,10 @@
 name: Abaque laboratoire - moteur isole
 on:
   push:
-    branches: [feat/abaque-longueurs-laboratoire, feat/abaque-longueurs-interface]
+    branches: [feat/abaque-longueurs-laboratoire, feat/abaque-longueurs-interface, feat/gran-abaque-m-1]
   pull_request:
     paths:
-      - 'apps/abaque-longueurs/**'
+      - 'apps/GRAN-abaque-m-1/**'
       - 'objective-record-lab-previews.mjs'
       - 'tests/abaque*'
       - 'tests/laboratoire-objective-record.test.mjs'

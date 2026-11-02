@@ -5,7 +5,7 @@ export const objectiveRecordLabPreviews = Object.freeze([
   Object.freeze({
     id: 'abaque-longueurs',
     title: 'Abaque des longueurs',
-    url: 'https://mr-tat.github.io/Mathas-Connect/apps/abaque-longueurs/',
+    url: 'https://mr-tat.github.io/Mathas-Connect/apps/GRAN-abaque-m-1/',
   }),
   Object.freeze({
     id: 'addition-simple',

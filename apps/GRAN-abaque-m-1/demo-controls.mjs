@@ -1,7 +1,7 @@
 import {createXpHints} from './xp-hints.mjs';
 
 // These are visual account presets, never authentication or server results.
-if(new URLSearchParams(location.search).get('connect')!=='1'){
+if(new URLSearchParams(location.search).get('connect')!=='1'&&(window.MATHAS_ABAQUE_ENV?.laboratory===true||new URLSearchParams(location.search).get('demo')==='1')){
  const hints=createXpHints({simulation:true});
  const notice=document.querySelector('.demo-notice'),originalNotice=notice.textContent;
  const bar=document.createElement('div');bar.id='abaque-demo-controls';bar.className='demo-controls';
