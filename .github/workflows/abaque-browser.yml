@@ -22,7 +22,7 @@ jobs:
           node-version: '22.22.0'
       - run: npm install --no-save --no-package-lock playwright@1.57.0
       - run: npx playwright install chromium --with-deps
-      - run: node --test tests/laboratoire-objective-record.test.mjs tests/abaque-contract.test.mjs
+      - run: node --test tests/laboratoire-objective-record.test.mjs tests/abaque-contract.test.mjs tests/global-catalog.test.mjs
       - name: Tester le moteur dans Chromium
         shell: bash
         env:

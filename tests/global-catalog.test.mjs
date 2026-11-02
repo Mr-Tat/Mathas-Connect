@@ -50,7 +50,7 @@ test('trophées permanents du profil et XP du parcours par application',()=>{
  assert.match(page,/id="identity-achievements" class="identity-achievements"/);
  assert.match(css,/#identity-box\.identity-connected \.identity-achievements\{[^}]*flex-direction:column;align-items:center/);
  assert.match(css,/#identity-box\.identity-connected #identity-trophies\{[^}]*justify-content:center/);
- assert.match(page,/hub-profile\.css\?v=20261031-trophees-centres-v2/);
+ assert.match(page,/<link rel="stylesheet" href="\.\/hub-profile\.css\?v=[A-Za-z0-9._-]+"/);
  assert.match(hub,/progressFor\(appKey\)/);
  assert.match(hub,/p\.xpMax\+' XP\\n🏆 '/);
  assert.doesNotMatch(hub,/XP du parcours\\n🏆|trophiesMax\+' trophées'/);
