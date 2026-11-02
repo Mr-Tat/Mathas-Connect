@@ -22,11 +22,11 @@
   <!-- Filtres de contour INTERIEUR : sans agrandir les lettres Connect. -->
   <svg aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute;overflow:hidden" xmlns="http://www.w3.org/2000/svg"><defs>
     <filter id="connect-contour-interieur" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
-      <feMorphology in="SourceAlpha" operator="erode" radius="1.6" result="interieur"/>
+      <feMorphology in="SourceAlpha" operator="erode" radius="1.4" result="interieur"/>
       <feComposite in="SourceGraphic" in2="interieur" operator="out"/>
     </filter>
     <filter id="connect-contour-interieur-compact" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
-      <feMorphology in="SourceAlpha" operator="erode" radius="0.9" result="interieur"/>
+      <feMorphology in="SourceAlpha" operator="erode" radius="0.8" result="interieur"/>
       <feComposite in="SourceGraphic" in2="interieur" operator="out"/>
     </filter>
   </defs></svg>
