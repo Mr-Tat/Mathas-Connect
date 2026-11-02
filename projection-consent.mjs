@@ -49,11 +49,16 @@ export function createProjectionConsent({classId,appKey,studentKey,getToken,
   status.textContent='Envoi sécurisé en cours.';
   dismiss();void flush();
  };
- windowRef.addEventListener('online',()=>{void flush()});
+ const onOnline=()=>{void flush()};
+ windowRef.addEventListener('online',onOnline);
  void flush(); // opt-ins explicitly accepted earlier, never ask again
  return Object.freeze({
   offer(eventId){if(!UUID.test(eventId)||showing===eventId||waiting.includes(eventId))return false;
    waiting.push(eventId);showNext();return true},
-  retry:()=>flush(),pending:()=>read().length
+  retry:()=>flush(),pending:()=>read().length,
+  destroy(){ // Hide old-app offers on a change of pupil/app; keep explicitly opted-in retries.
+   showing=null;waiting.length=0;dialog.remove();css.remove();
+   windowRef.removeEventListener('online',onOnline);
+  }
  });
 }
