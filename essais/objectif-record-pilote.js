@@ -3,7 +3,7 @@ import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 // Pont uniquement pour le laboratoire. Le jeu pedagogique conserve son moteur.
 // Le serveur authentifie la fiche TEST et calcule les droits du registre PILOTE.
 const TEST='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
-const URL='https://awmhpfofacaglewammxt.supabase.co';
+const SUPABASE_URL='https://awmhpfofacaglewammxt.supabase.co';
 const KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const MAP={
   'addition-simple':['addition-ecrite-simple','https://mr-tat.github.io/CE-Addition-simple/essai-mode-score-3-vies.html'],
@@ -14,7 +14,7 @@ const MAP={
 };
 const $=id=>document.getElementById(id);
 const teacher=new URL(location.href).searchParams.get('joueur')==='prof';
-const sb=createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
+const sb=createClient(SUPABASE_URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
   ...(teacher?{storageKey:'mathas-connect-professor-auth-v1'}:{})}});
 let studentId=null,activeSlug='',activeApp='',generation=0,snapshot=null,startId=null,lastRecording=false;
 let previousRunning=false,observedDoc=null,observedWin=null,observer=null,settle=null;
@@ -29,7 +29,7 @@ async function api(action,data={}){
  if(requestApp!==activeApp)throw Error('Le jeu a changé pendant la requête');
  if(!session?.access_token)throw Error('Session Connect absente. Ouvre d’abord le HUB de la classe TEST et approuve cet appareil.');
  if(!session.user)throw Error('Identité Connect indisponible');
- const r=await fetch(URL+'/functions/v1/connect-record-pilot',{method:'POST',
+ const r=await fetch(SUPABASE_URL+'/functions/v1/connect-record-pilot',{method:'POST',
    headers:{apikey:KEY,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
    body:JSON.stringify({action,appKey:requestApp,classId:TEST,expectedStudentId:requestStudent,...data})});
  const answer=await r.json().catch(()=>({}));
