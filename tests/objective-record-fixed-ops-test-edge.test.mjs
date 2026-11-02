@@ -16,9 +16,9 @@ test('la nouvelle Edge impose JWT, identité réelle, appareil ou Monsieur T et 
  assert.match(edge,/connect_students/);
  assert.match(edge,/is\('archived_at',null\)/);
  assert.match(edge,/connect_apps/);
- assert.match(edge,/b\.points!==0/);
- assert.match(edge,/b\.rewards!==null/);
- assert.match(edge,/!\['classic','sudden'\]\.includes\(b\.mode\)/);
+ assert.match(edge,/b\.points===0/);
+ assert.match(edge,/b\.rewards===null/);
+ assert.match(edge,/\['classic','sudden'\]\.includes\(b\.mode\)/);
  assert.match(edge,/connect_objective_record_test_fixed_v1/);
  assert.doesNotMatch(edge,/user\.user_metadata|raw_user_meta_data/);
  assert.doesNotMatch(edge,/\.from\('connect_states'\)\.update\(/);
