@@ -24,12 +24,14 @@ window.MathasPilotState=null;
 const status=(message)=>{$('status').textContent=message};
 const pilotError=e=>{status('⚠️ '+(e?.message||e))};
 async function api(action,data={}){
+ const requestApp=activeApp,requestStudent=studentId;
  const {data:{session}}=await sb.auth.getSession();
+ if(requestApp!==activeApp)throw Error('Le jeu a changé pendant la requête');
  if(!session?.access_token)throw Error('Session Connect absente. Ouvre d’abord le HUB de la classe TEST et approuve cet appareil.');
  if(!session.user)throw Error('Identité Connect indisponible');
  const r=await fetch(URL+'/functions/v1/connect-record-pilot',{method:'POST',
    headers:{apikey:KEY,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
-   body:JSON.stringify({action,appKey:activeApp,classId:TEST,expectedStudentId:studentId,...data})});
+   body:JSON.stringify({action,appKey:requestApp,classId:TEST,expectedStudentId:requestStudent,...data})});
  const answer=await r.json().catch(()=>({}));
  if(!r.ok||!answer.ok)throw Error(answer.error||'API pilote indisponible ('+r.status+')');
  return answer;
