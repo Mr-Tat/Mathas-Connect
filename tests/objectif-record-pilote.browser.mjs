@@ -106,10 +106,17 @@ test('cinq moteurs publies, pont iframe et XP projetes depuis la reponse serveur
     assert.ok(!exceptions.length,app+': '+exceptions.join(' | '));
   }
   // Simulation d'un message terminal : prouve la plomberie, pas les reponses de calcul.
+  // Le changement depuis Mélange recrée l'iframe : ne jamais prendre l'ancien
+  // document encore visible pendant le chargement de l'application suivante.
+  await page.evaluate(()=>{
+    window.__previousPilotGameDoc=document.querySelector('#gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+  });
   await page.locator('#app').selectOption('addition-simple');
   await page.waitForFunction(()=>{
     const doc=document.querySelector('#gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
-    return !!doc?.querySelector('#menuScreen .classic-xp-remaining') &&
+    return doc&&doc!==window.__previousPilotGameDoc &&
+      window.MathasPilotState?.app==='addition-ecrite-simple' &&
+      !!doc.querySelector('#menuScreen .classic-xp-remaining') &&
       typeof doc.defaultView.MathasLabV2Update==='function';
   },null,{timeout:45000});
   await page.evaluate(()=>{
