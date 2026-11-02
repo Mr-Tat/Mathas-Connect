@@ -66,24 +66,22 @@ test('cinq vrais moteurs de démonstration accessibles sous une unique page él�
  assert.match(code,/\$\('gameFrame'\)\.src=GAME_URLS\[slug\]\[1\]/);
 });
 
-test('les cinq cartes TEST proposent le nouveau lanceur sans remplacer le pilote',()=>{
- const lab=read('laboratoire.js');
- assert.match(lab,/Hôte élève · XP officiels \(lecture seule\)/);
- assert.match(lab,/new URL\('\.\/apps\/objective-record\/eleve\.html',location\.href\)/);
- assert.match(lab,/target\.searchParams\.set\('class',TEST_CLASS\)/);
- assert.match(lab,/if\(!verified\|\|!consent\(\)\)/);
- assert.match(lab,/const pilotSlug=recordPilotSlugByApp\[app\.app_key\]/);
- assert.match(lab,/buttons\.append\(student\)/);
+test('le laboratoire propose les cinq nouveaux jeux via le chemin officiel unique',()=>{
+ const lab=read('laboratoire.js'),hub=read('hub.js');
+ assert.match(lab,/SCHOOL_RECORD_LAUNCHER\+'\?app='\+encodeURIComponent\(testSlug\)/);
+ assert.match(lab,/url\.searchParams\.set\('class',TEST_CLASS\)/);
+ assert.match(lab,/student\.href=linkFor\(app\)/);
+ assert.match(lab,/if\(!consent\(\)\)/);
+ assert.doesNotMatch(lab,/candidateTeacher/);
+ assert.doesNotMatch(hub,/XP enregistrés dans le pilote TEST/);
 });
-
-test('Monsieur T peut ouvrir le nouvel hôte depuis sa session séparée, après activation',()=>{
+test('Monsieur T ouvre le même nouveau jeu depuis une session professeur distincte',()=>{
  const lab=read('laboratoire.js');
  const host=read('apps/objective-record/eleve.mjs');
- assert.match(lab,/Hôte Monsieur T · lecture seule/);
- assert.match(lab,/candidateTeacher\.disabled=!teacherReady/);
+ assert.match(lab,/const href=linkFor\(app,true\)/);
+ assert.match(lab,/teacher\.disabled=!teacherReady/);
  assert.match(lab,/guard\(\);if\(!teacherReady\)throw Error/);
- assert.match(lab,/teacherUrl\.searchParams\.set\('joueur','prof'\)/);
- assert.match(lab,/candidateTeacher\.classList\.add\('teacher-game'\)/);
+ assert.match(lab,/url\.searchParams\.set\('joueur','prof'\)/);
  assert.match(host,/teacher\?\{storageKey:'mathas-connect-professor-auth-v1'\}/);
  assert.match(host,/teacher\?'teacher-player':'student-me'/);
 });
