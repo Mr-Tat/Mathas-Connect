@@ -84,9 +84,21 @@
  #identity-box.identity-connected #identity-progress{padding-left:9px;gap:6px}
 }
 
-/* Couleur de remplissage du mot Connect, identique au rectangle de référence. */
-.connect-brand .connect-brand-suffix{background:none!important;color:#0256B8!important;-webkit-text-fill-color:#0256B8!important}
-.connect-brand .connect-brand-suffix::before{content:none!important;display:none!important}
+/* Meme contour INTERIEUR clair que le portail, sans epaissir le mot Connect. */
+.connect-brand .connect-brand-suffix{
+  position:relative;isolation:isolate;display:inline-block;
+  background:none!important;color:#0256B8!important;-webkit-text-fill-color:#0256B8!important;
+}
+.connect-brand .connect-brand-suffix::before{
+  content:"Connect"!important;display:block!important;position:absolute;inset:0;z-index:1;
+  pointer-events:none;font:inherit;letter-spacing:inherit;white-space:nowrap;text-shadow:none;
+  background:linear-gradient(90deg,#9B60DF 0%,#8082E8 47%,#66B9F6 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  -webkit-text-stroke:0;filter:url("#connect-contour-interieur");
+}
+@media(max-width:650px){
+  .connect-brand .connect-brand-suffix::before{filter:url("#connect-contour-interieur-compact")}
+}
 
 /* Niveau plus petit : chiffre et ovale réduits ensemble. */
 #identity-box.identity-connected .student-level{gap:7px;padding:3px 7px 3px 11px;border-width:1.5px;box-shadow:0 3px 10px #0004}
