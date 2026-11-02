@@ -50,6 +50,20 @@ docker_local exec -i "$RUN_NAME-db" psql -U postgres -d abaque_test -v ON_ERROR_
 DATABASE_IP=$(docker_local inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$RUN_NAME-db")
 node "$ROOT/tests/local/abaque-tcp-relay.mjs" "$DATABASE_IP" 5432 "$DATABASE_PORT" > "$LAB/database-relay.log" 2>&1 & DATABASE_RELAY=$!
 export ABAQUE_LOCAL_MANIFEST="$LAB/local.json"
+node --input-type=module <<'JS'
+import {readFileSync} from 'node:fs';
+import pg from 'pg';
+const config=JSON.parse(readFileSync(process.env.ABAQUE_LOCAL_MANIFEST,'utf8'));
+if(!config.localOnly||config.host!=='127.0.0.1'||config.database!=='abaque_test')throw Error('disposable_local_database_required');
+let ready=false;
+for(let attempt=0;attempt<30;attempt++){
+ const client=new pg.Client({host:config.host,port:config.port,database:config.database,user:config.user,password:config.password,connectionTimeoutMillis:300});
+ try{await client.connect();await client.query('SELECT 1');ready=true;break;}
+ catch{await new Promise(resolve=>setTimeout(resolve,100));}
+ finally{await client.end();}
+}
+if(!ready)throw Error('disposable_database_relay_not_ready');
+JS
 node --test "$ROOT/tests/abaque-postgres.runtime.mjs"
 if [ "${1:-}" = '--postgres-only' ]; then exit 0;fi
 for image in "$ABAQUE_AUTH_IMAGE" "$ABAQUE_REST_IMAGE" "$ABAQUE_EDGE_IMAGE" "$ABAQUE_GATEWAY_IMAGE"; do

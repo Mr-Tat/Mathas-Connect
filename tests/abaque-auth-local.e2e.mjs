@@ -55,8 +55,8 @@ async function manager(){
 async function browserPage(identity,{teacher=false}={}){
  browser??=await chromium.launch({...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),headless:true,args:['--no-sandbox']});
  const context=await browser.newContext(),page=await context.newPage();page.setDefaultTimeout(15000);
- const external=[],errors=[];let offline=false,dropAck=false;
- await page.addInitScript(({key,session})=>localStorage.setItem(key,JSON.stringify(session)),{key:teacher?'mathas-connect-professor-auth-v1':'sb-awmhpfofacaglewammxt-auth-token',session:identity.session});
+ const external=[],errors=[];let offline=false,dropAck=false,heldLoad=null;
+ await page.addInitScript(({key,session})=>{if(session)localStorage.setItem(key,JSON.stringify(session));else localStorage.removeItem(key);},{key:teacher?'mathas-connect-professor-auth-v1':'sb-awmhpfofacaglewammxt-auth-token',session:identity?.session??null});
  page.on('pageerror',error=>errors.push(error.message));
  await page.route('**/*',async route=>{
   const url=route.request().url();
@@ -65,12 +65,21 @@ async function browserPage(identity,{teacher=false}={}){
   if(url==='https://awmhpfofacaglewammxt.supabase.co/functions/v1/connect-abaque'){
    if(offline)return route.abort();
    const response=await route.fetch({url:endpoint});
+   if(heldLoad&&route.request().method()==='POST'&&route.request().postDataJSON()?.action==='load'){
+    const held=heldLoad;heldLoad=null;held.arrive();await held.promise;
+   }
    if(dropAck&&route.request().postDataJSON()?.action==='record'){dropAck=false;return route.abort();}
    return route.fulfill({response});
   }
   external.push(url);return route.abort();
  });
- return {page,context,external,errors,offline:value=>{offline=value},dropNextAck:()=>{dropAck=true}};
+ return {page,context,external,errors,offline:value=>{offline=value},dropNextAck:()=>{dropAck=true},
+  holdNextLoad(){
+   let release,arrive;
+   const promise=new Promise(resolve=>{release=resolve}),arrived=new Promise(resolve=>{arrive=resolve});
+   heldLoad={promise,arrive};
+   return {release,async wait(){let timer;try{await Promise.race([arrived,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('local_load_not_received')),12000)})]);}finally{clearTimeout(timer);}}};
+  }};
 }
 const game=config.static+'/apps/abaque-longueurs/?connect=1&class='+pilotClass;
 async function pending(page){return page.evaluate(()=>{
@@ -180,4 +189,49 @@ test('Professeur réel local : consentement avant lecture, progression et reset 
   await page.locator('#fictive-confirm').uncheck();assert.equal(await page.locator('#results tr').count(),0);
   assert.deepEqual(h.external,[]);assert.deepEqual(h.errors,[]);
  }finally{await h.context.close();}
+});
+
+
+test('Chromium + Auth réels : XP absents sans compte/approbation, hors ligne et après déconnexion avec réponse tardive',async()=>{
+ const loggedOut=await browserPage(null);
+ try{
+  await loggedOut.page.goto(game);
+  await loggedOut.page.waitForFunction(()=>document.querySelector('#abaque-connect-panel')?.textContent.includes('session_missing'));
+  assert.equal(await loggedOut.page.locator('.abaque-xp-remaining:visible').count(),0);
+  assert.deepEqual(loggedOut.errors,[]);
+ }finally{await loggedOut.context.close();}
+ const pupil=await anonymous('Fictif Visibilité XP');
+ const refused=await browserPage(pupil);
+ try{
+  await refused.page.goto(game);
+  await refused.page.waitForFunction(()=>document.querySelector('#abaque-connect-panel')?.textContent.includes('approved_identity_required'));
+  assert.equal(await refused.page.locator('.abaque-xp-remaining:visible').count(),0);
+ }finally{await refused.context.close();}
+ await pool.query("update connect_devices set state='approved' where auth_user_id=$1",[pupil.subject]);
+ const h=await browserPage(pupil),{page}=h;let delayed=null;
+ try{
+  await page.goto(config.static+'/apps/abaque-longueurs/');
+  assert.equal(await page.locator('.abaque-xp-remaining:visible').count(),0,'pas de XP en mode démo même avec une session enregistrée');
+  await page.goto(game);await page.locator('html[data-abaque-connected]').waitFor();
+  assert.equal(await page.locator('#launchBtn>.abaque-xp-remaining').textContent(),'Reste 20 XP');
+  assert.equal(await page.locator('#launchBtn>.abaque-xp-remaining').isVisible(),true);
+  assert.equal(await page.locator('#launchBtn>.abaque-xp-remaining').evaluate(el=>getComputedStyle(el).fontWeight),'400','mention discrète sans gras');
+  await h.context.setOffline(true);
+  await page.waitForFunction(()=>document.querySelector('#launchBtn>.abaque-xp-remaining')?.hidden===true);
+  assert.equal(await page.locator('.abaque-xp-remaining:visible').count(),0,'masquage immédiat sans attendre une nouvelle partie');
+  await h.context.setOffline(false);
+  await page.waitForFunction(()=>document.querySelector('#launchBtn>.abaque-xp-remaining')?.hidden===false);
+  delayed=h.holdNextLoad();await page.locator('#abaque-connect-panel button').click();await delayed.wait();
+  const signOut=await page.evaluate(async({api,anon})=>{
+   const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.95.0');
+   const client=createClient(api,anon,{auth:{persistSession:true,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'sb-awmhpfofacaglewammxt-auth-token'}});
+   const {error}=await client.auth.signOut({scope:'local'});return error?.code??null;
+  },{api:config.api,anon:config.anon});
+  assert.equal(signOut,null);
+  await page.waitForFunction(()=>document.querySelector('#abaque-connect-panel')?.textContent.includes('Session à reconnecter'));
+  assert.equal(await page.locator('.abaque-xp-remaining:visible').count(),0);
+  delayed.release();await page.waitForFunction(()=>!document.querySelector('#abaque-connect-panel button').disabled);
+  assert.equal(await page.locator('.abaque-xp-remaining:visible').count(),0,'une réponse approuvée reçue après logout ne doit pas réafficher les XP');
+  assert.deepEqual(h.external,[]);assert.deepEqual(h.errors,[]);
+ }finally{delayed?.release();await h.context.close();}
 });

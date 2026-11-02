@@ -85,3 +85,4 @@ html[data-abaque-pending] .shell{visibility:hidden}
 #homeScreen #recordChoice .record-caption .abaque-xp-remaining{display:block;text-align:right;margin-top:6px}
 html[data-abaque-connected] #homeScreen .homeModeBtn[data-mode="one"],html[data-abaque-connected] #homeScreen .homeModeBtn[data-mode="three"],html[data-abaque-connected] #homeScreen .homeModeBtn[data-mode="five"]{padding-bottom:24px}
 .abaque-xp-remaining[hidden]{display:none!important}
+html:not([data-abaque-xp-approved]) .abaque-xp-remaining{display:none!important}
