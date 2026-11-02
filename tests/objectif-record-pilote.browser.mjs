@@ -1,5 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {chromium} from 'playwright';
 
 // Contrat Chromium heberge avec Auth/Edge simulees : aucune connexion ni ecriture
@@ -40,6 +41,13 @@ test('cinq moteurs publies, pont iframe et XP projetes depuis la reponse serveur
     status:200,contentType:'text/javascript',
     headers:{'access-control-allow-origin':'*'},
     body:'export function createClient(){return {auth:{getSession:async()=>({data:{session:{access_token:"fake",user:{id:"'+fakeStudent+'",is_anonymous:true}}}})}}}'
+  }));
+  // La page et les cinq moteurs proviennent de Pages, le pont JS du SHA teste
+  // est injecte depuis la branche pour ne pas attendre la fusion GitHub Pages.
+  const candidate=readFileSync(new URL('../essais/objectif-record-pilote.js',import.meta.url),'utf8');
+  await page.route('**/essais/objectif-record-pilote.js',route=>route.fulfill({
+    status:200,contentType:'text/javascript',
+    headers:{'access-control-allow-origin':'*'},body:candidate
   }));
   await page.goto(url,{waitUntil:'domcontentloaded',timeout:40000});
   for(const app of apps){
