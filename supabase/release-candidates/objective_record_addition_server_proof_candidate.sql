@@ -95,7 +95,10 @@ BEGIN
  IF p_student IS NULL OR p_class IS DISTINCT FROM v_test OR p_session IS NULL
   OR jsonb_typeof(p_answers) IS DISTINCT FROM 'array'
   OR jsonb_array_length(p_answers)<>4 THEN RAISE EXCEPTION 'invalid_proof_answers';END IF;
- -- The first row lock serializes simultaneous completion/retry requests.
+ -- Lock the student BEFORE the challenge row, just like the issue RPC
+ -- and the official XP transaction. This prevents a start/finish deadlock.
+ PERFORM 1 FROM public.connect_students WHERE id=p_student AND archived_at IS NULL FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'inactive_student';END IF;
  SELECT * INTO v_session FROM public.connect_objective_record_test_proof_sessions
   WHERE session_id=p_session AND student_id=p_student AND class_id=v_test AND app_key=v_app FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'proof_not_found';END IF;
@@ -106,8 +109,6 @@ BEGIN
    'xp',v_session.result->'xp'||jsonb_build_object('delta',0));
  END IF;
  IF v_session.expires_at<=now() THEN RAISE EXCEPTION 'proof_expired';END IF;
- PERFORM 1 FROM public.connect_students WHERE id=p_student AND archived_at IS NULL FOR UPDATE;
- IF NOT FOUND THEN RAISE EXCEPTION 'inactive_student';END IF;
  IF NOT EXISTS(
   SELECT 1 FROM public.connect_enrollments e WHERE e.student_id=p_student
    AND e.class_id=v_test AND e.left_at IS NULL
