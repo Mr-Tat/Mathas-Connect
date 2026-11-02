@@ -22,7 +22,14 @@ jobs:
           node-version: '22.22.0'
       - run: npm install --no-save --no-package-lock playwright@1.57.0
       - run: npx playwright install chromium --with-deps
-      - run: node --test tests/laboratoire-objective-record.test.mjs tests/abaque-contract.test.mjs
+      - name: Vérifier aussi la régression Node commune avant publication
+        shell: bash
+        run: |
+          set +e
+          node --test tests/*.test.mjs 2>&1 | tee "$RUNNER_TEMP/abaque-node.tap"
+          test_status=${PIPESTATUS[0]}
+          set -e
+          exit "$test_status"
       - name: Tester le moteur dans Chromium
         shell: bash
         env:
@@ -37,11 +44,13 @@ jobs:
         if: always()
         shell: bash
         run: |
-          if test -f "$RUNNER_TEMP/abaque-browser.tap"; then
-            {
-              echo '### Abaque — tests Chromium avec données fictives'
-              echo '```text'
-              cat "$RUNNER_TEMP/abaque-browser.tap"
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
+          for report in abaque-node abaque-browser; do
+            if test -f "$RUNNER_TEMP/$report.tap"; then
+              {
+                echo "### Abaque — $report"
+                echo '```text'
+                cat "$RUNNER_TEMP/$report.tap"
+                echo '```'
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
