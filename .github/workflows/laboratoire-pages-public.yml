@@ -1,0 +1,29 @@
+name: Laboratoire - cinq essais Pages (lecture seule)
+on:
+  pull_request:
+    paths:
+      - 'tests/laboratoire-pages-public.test.mjs'
+      - '.github/workflows/laboratoire-pages-public.yml'
+      - 'objective-record-lab-previews.mjs'
+      - 'hub.js'
+  push:
+    branches: [main]
+    paths:
+      - 'tests/laboratoire-pages-public.test.mjs'
+      - '.github/workflows/laboratoire-pages-public.yml'
+      - 'objective-record-lab-previews.mjs'
+      - 'hub.js'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-public-pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier les cinq Pages hébergées et le HUB TEST, sans connexion élève
+        run: node --test tests/laboratoire-pages-public.test.mjs
