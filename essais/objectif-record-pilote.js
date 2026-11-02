@@ -62,7 +62,7 @@ function scheduleRecord(doc){
  if(!Number.isSafeInteger(d.score)||!Number.isSafeInteger(d.level)||!d.mode)return;
  const converted=d.hard?'hard-'+(d.mode==='three-lives'?'three-lives':d.mode==='sudden'?'sudden':'classic'):d.mode;
  if(!['classic','sudden','three-lives','hard-classic','hard-sudden','hard-three-lives'].includes(converted))return;
- const ops=operations(doc);
+ const ops=activeSlug==='melange'?(d.hard?['add','sub','mul']:(Array.isArray(d.ops)?d.ops:operations(doc))):null;
  if(activeSlug==='melange'&&(!ops||ops.length===0))return;
  const total=converted==='classic'?Number(d.total):null;
  if(converted==='classic'&&![4,10,20].includes(total))return;
