@@ -137,7 +137,7 @@ test('Chromium + Auth/Edge réels : clavier, XP, trophées, réponse perdue/offl
   await page.waitForFunction(()=>{const key=Object.keys(localStorage).find(key=>key.startsWith('mathas.abaque.connect.'));return key&&JSON.parse(localStorage.getItem(key)).pending.length===0;});
   assert.equal(await pending(page),0);
   assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'true');
-  assert.equal(await page.locator('#personalTrophyCount').textContent(),'1 / 3');
+  assert.equal(await page.locator('#personalTrophyCount').textContent(),'1 / 6');
   assert.equal((await request(pupil,'load')).data.xp.appXp,54,'complément unique malgré la réponse perdue');
   await seed(pupil,classic('three',10));await seed(pupil,classic('five',16));
   await page.locator('#abaque-connect-panel button').click();
@@ -149,19 +149,21 @@ test('Chromium + Auth/Edge réels : clavier, XP, trophées, réponse perdue/offl
   assert.equal(await page.locator('[data-variant="sudden"] .abaque-xp-remaining').textContent(),'Reste 26 XP');
   assert.equal(await page.locator('#recordChoice .record-caption .abaque-xp-remaining').count(),0,'XP hors du cadre sombre');
   assert.equal(await page.locator('[data-variant="sudden"]').evaluate(button=>{
-   const bounds=button.getBoundingClientRect(),inner=button.querySelector('.record-caption').getBoundingClientRect(),hint=button.querySelector('.abaque-xp-remaining').getBoundingClientRect();
-   return hint.top>=inner.bottom&&hint.bottom<=bounds.bottom&&bounds.bottom-hint.bottom<16&&bounds.right-hint.right<16;
-  }),true,'XP dans le coin inférieur droit du bouton');
+   const bounds=button.getBoundingClientRect(),inner=button.querySelector('.record-caption').getBoundingClientRect(),hint=button.querySelector('.abaque-xp-remaining').getBoundingClientRect(),cups=button.querySelector('.record-trophies').getBoundingClientRect();
+   return hint.top>=inner.bottom&&hint.bottom<=bounds.bottom&&bounds.bottom-hint.bottom<22&&hint.left-bounds.left<18&&hint.right<cups.left&&bounds.right-cups.right<18&&cups.top>inner.bottom;
+  }),true,'XP et coupes séparés en bas du bouton, hors du cadre sombre');
   await page.locator('[data-variant="sudden"]').click();
-  for(let i=0;i<11;i++){await inputConversion(page);await modal(page,'Suivante');}
+  for(let i=0;i<11;i++){await inputConversion(page);assert.equal(await page.locator('.record-trophies .earned').count(),0,'coupes Connect attendent la preuve validée serveur');await modal(page,'Suivante');}
   await inputConversion(page,true);await modal(page,'Accueil');
   await page.waitForFunction(()=>document.querySelector('.abaque-account-xp')?.textContent.includes('132 / 160'));
   const recorded=await request(pupil,'load');assert.equal(recorded.data.state.suddenBest,11);
-  assert.deepEqual(recorded.data.trophies,['abaque:bronze'],'aucun trophée supplémentaire pour les modes record');
+  assert.deepEqual(recorded.data.trophies,['abaque:bronze','abaque:sudden-bronze','abaque:sudden-gold','abaque:sudden-silver'],'trois coupes réservées à Mort subite validées serveur');
+  assert.equal(await page.locator('#personalTrophyCount').textContent(),'4 / 6');
+  assert.equal(await page.locator('.record-trophies .earned').count(),3);
   const second=sdk(),auth=await second.auth.signInAnonymously();assert.equal(auth.error,null);
   await pool.query("insert into connect_devices(auth_user_id,student_id,state) values($1,$2,'approved')",[auth.data.user.id,pupil.studentId]);
   const another=await browserPage({session:auth.data.session});
-  try{await another.page.goto(game);await another.page.locator('html[data-abaque-connected]').waitFor();assert.match(await another.page.locator('.abaque-account-xp').textContent(),/132 \/ 160/);assert.equal(await another.page.locator('#trophy-launchBtn').getAttribute('data-earned'),'true');assert.equal(await another.page.locator('#personalTrophyCount').textContent(),'1 / 3');assert.equal(await another.page.locator('#personalBest').textContent(),String(recorded.data.state.scoreRecords.allBest));assert.deepEqual(another.external,[]);assert.deepEqual(another.errors,[]);}finally{await another.context.close();}
+  try{await another.page.goto(game);await another.page.locator('html[data-abaque-connected]').waitFor();assert.match(await another.page.locator('.abaque-account-xp').textContent(),/132 \/ 160/);assert.equal(await another.page.locator('#trophy-launchBtn').getAttribute('data-earned'),'true');assert.equal(await another.page.locator('#personalTrophyCount').textContent(),'4 / 6');assert.equal(await another.page.locator('#personalBest').textContent(),String(recorded.data.state.scoreRecords.allBest));assert.deepEqual(another.external,[]);assert.deepEqual(another.errors,[]);}finally{await another.context.close();}
   const replacement=randomUUID();await pool.query('insert into connect_students(id,display_name) values($1,$2)',[replacement,'Autre profil fictif']);
   await pool.query('insert into connect_abaque_pilot_students(student_id) values($1)',[replacement]);
   await pool.query('insert into connect_enrollments(id,class_id,student_id) values($1,$2,$3)',[randomUUID(),pilotClass,replacement]);
@@ -181,7 +183,7 @@ test('Professeur réel local : consentement avant lecture, progression et reset 
   await page.goto(config.static+'/apps/abaque-longueurs/professeur.html?class='+pilotClass);
   await page.locator('#load').click();assert.equal(await page.locator('#results tr').count(),0);
   await page.locator('#fictive-confirm').check();await page.locator('#load').click();
-  const row=page.locator(`tr[data-student-id="${pupil.studentId}"]`);await row.waitFor();assert.match(await row.textContent(),/14 \/ 160/);assert.match(await row.textContent(),/🥉/);
+  const row=page.locator(`tr[data-student-id="${pupil.studentId}"]`);await row.waitFor();assert.match(await row.textContent(),/14 \/ 160/);assert.match(await row.textContent(),/Parcours : bronze/);
   page.once('dialog',dialog=>dialog.accept());await row.getByRole('button',{name:'Remettre à zéro'}).click();
   await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('réinitialisé'));
   const reset=await request(pupil,'load');assert.equal(reset.data.resetEpoch,1);assert.equal(reset.data.xp.appXp,14);assert.deepEqual(reset.data.trophies,['abaque:bronze']);

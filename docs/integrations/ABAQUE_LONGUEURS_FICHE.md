@@ -1,5 +1,7 @@
 # Abaque des longueurs — fiche d’intégration — 2 novembre 2026
 
+**[DÉCISION professeur, 02/11/2026 — montage de l’accueil, décision la plus récente]** Voir [l’accueil et les six trophées](ABAQUE_LONGUEURS_ACCUEIL_20261102.md). Carte Objectif record séparée, accès à 80 % dans chacun des trois formats classiques, trois coupes Mort subite à 3/5/8 pages consécutives, aucune en 3 vies. L’or classique reste indépendant. Résultats sans le mot « Réussite » ; médailles de score supprimées. Les descriptions de trois trophées et de médailles ci-dessous décrivent l’état antérieur.
+
 **[LIVE vérifié, GitHub] Démo publiée. [REPO vérifié] Version Connect candidate fermée ; pilote hébergé non exécuté.**
 
 - Démo : https://mr-tat.github.io/Mathas-Connect/apps/abaque-longueurs/ ; publiée sur `main` à `6ac032c6482f30d402e37ca44665521ce85ae92c`, après accord explicite du professeur pour le push direct sans PR.
@@ -16,6 +18,8 @@
 **[REPO vérifié]** Points classiques : 100/324/580 sans aide. Mort subite : `30+5*floor(réussites/4)`, coefficients aides .8/.6 arrondis ; pas de deuxième bonus de 20 %. En 3 vies, base `round((30+5*floor(réussites/4))/1.2)` avant coefficients. Incomplet : aucune vie perdue ; erreur complète : zéro point, pas de correction ; fin à la troisième erreur. Records par mode + global + série consécutive Mort subite. Preuves des dix premières réussites puis segments bornés pour conserver les records longs sans plafonner arbitrairement les parties.
 
 ## Contrat Connect candidat
+
+**[REPO vérifié — 02/11/2026, montage de l’accueil]** Le serveur exige les trois meilleurs résultats 4/4, au moins 10/12 et au moins 16/20 avant tout événement 3 vies ou Mort subite. Les trois nouvelles coupes `abaque:sudden-bronze`, `abaque:sudden-silver`, `abaque:sudden-gold` proviennent uniquement d’une preuve Mort subite atteignant 3/5/8 pages dans la même partie. Les pages terminées restent reconnues si la partie est quittée ; l’abandon ne donne toujours aucun XP. Les six coupes restent dans le registre permanent après reset. Les seuils de points ne produisent plus de médailles. Le compteur HUB, le profil, la collection et les résultats professeur annoncent six trophées. Le navigateur Connect attend l’ACK serveur avant d’afficher une coupe obtenue. Barème XP inchangé.
 
 **[REPO vérifié]** Le mode par défaut reste la démo sans requête externe. `?connect=1&class=<UUID>` charge un bridge qui exige une identité approuvée et une classe explicitement ouverte par le serveur. Edge `connect-abaque` fermée par défaut ; mode pilote limité à la classe TEST et à une liste explicite de profils fictifs. La future activation scolaire utilise les données de classe, sans deuxième application.
 

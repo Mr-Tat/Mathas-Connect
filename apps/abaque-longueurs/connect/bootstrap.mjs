@@ -45,7 +45,7 @@ async function connect(){
   document.documentElement.dataset.abaqueConnected='true';
   document.querySelector('.demo-notice').textContent=online?(CLASS===PILOT?'Laboratoire connecté · résultats liés à ton compte':'Mode Connect · résultats liés à ton compte'):'Hors connexion · résultats conservés en attente de synchronisation';
   label.textContent=snapshot.displayName||'Compte Connect';
-  xp.textContent=online?snapshot.xp.appXp+' / 160 XP acquis · '+snapshot.trophies.length+' / 3 trophées':'Connexion à confirmer';
+  xp.textContent=online?snapshot.xp.appXp+' / 160 XP acquis · '+snapshot.trophies.length+' / 6 trophées':'Connexion à confirmer';
   hints.render(snapshot.xp.remaining,showRemaining);
   if(online){
    try{localStorage.setItem(cacheKey,JSON.stringify(snapshot));localStorage.setItem(cachedBindingKey+subject,JSON.stringify({studentId:pupil}));}

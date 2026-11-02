@@ -134,7 +134,7 @@ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_
 DECLARE pupil uuid; current_state public.connect_states%ROWTYPE; native jsonb; segment jsonb; grades jsonb; scores jsonb;
  kind text; grade text; eligible boolean;level_limit integer; first_good bigint; total bigint; points bigint; count_passes integer; limit_total integer;
  earned_before integer; earned_after integer; total_xp integer; level_now integer; previous_level integer;
- reply jsonb; record_before jsonb; day_key text:=to_char(now() AT TIME ZONE 'Europe/Brussels','YYYY-MM-DD');medals jsonb;
+ reply jsonb; record_before jsonb; day_key text:=to_char(now() AT TIME ZONE 'Europe/Brussels','YYYY-MM-DD');threshold integer;trophy text;
 BEGIN
  pupil:=public.connect_abaque_subject_v1(p_actor,p_class,p_teacher);
  IF pupil IS DISTINCT FROM p_student THEN RAISE EXCEPTION 'identity_binding_conflict'; END IF;
@@ -170,7 +170,9 @@ BEGIN
  OR (kind='one' AND jsonb_array_length(coalesce(native#>'{stage2,passes}','[]'))<2)
  OR (kind='three' AND coalesce(native#>>'{modes,one}','red') NOT IN ('orange','green'))
  OR (kind='five' AND coalesce(native#>>'{modes,three}','red') NOT IN ('orange','green'))
- OR (kind IN ('lives','sudden') AND coalesce(native#>>'{modes,five}','red') NOT IN ('orange','green'))
+ OR (kind IN ('lives','sudden') AND NOT (coalesce((native#>>'{modeScores,one}')::int,0)>=4
+  AND coalesce((native#>>'{modeScores,three}')::int,0)>=10
+  AND coalesce((native#>>'{modeScores,five}')::int,0)>=16))
  THEN RAISE EXCEPTION 'activity_locked'; END IF;
 
  SELECT coalesce(sum(amount),0)::int INTO earned_before FROM public.connect_abaque_rights WHERE student_id=pupil;
@@ -209,8 +211,18 @@ BEGIN
   ELSE
    IF eligible AND first_good>=5 THEN PERFORM public.connect_abaque_award_v1(pupil,'record:5',CASE kind WHEN 'lives' THEN 6 ELSE 12 END); END IF;
    IF eligible AND first_good>=10 THEN PERFORM public.connect_abaque_award_v1(pupil,'record:10',CASE kind WHEN 'lives' THEN 10 ELSE 20 END); END IF;
-   IF kind='sudden' THEN native:=native||jsonb_build_object('suddenBest',greatest(coalesce((native->>'suddenBest')::int,0),first_good),
-    'modes',coalesce(native->'modes','{}'::jsonb)||jsonb_build_object('sudden',CASE WHEN first_good>0 THEN 'green' ELSE 'red' END)); END IF;
+   IF kind='sudden' THEN
+    native:=native||jsonb_build_object('suddenBest',greatest(coalesce((native->>'suddenBest')::int,0),first_good),
+     'modes',coalesce(native->'modes','{}'::jsonb)||jsonb_build_object('sudden',CASE WHEN first_good>0 THEN 'green' ELSE 'red' END));
+    -- Each record page is one conversion. One proof represents one run;
+    -- separate runs and the three-lives variant never combine for these cups.
+    FOR threshold,trophy IN SELECT * FROM (VALUES (3,'abaque:sudden-bronze'),(5,'abaque:sudden-silver'),(8,'abaque:sudden-gold')) AS cups(pages,trophy_key) LOOP
+     IF first_good>=threshold THEN
+      INSERT INTO public.connect_trophy_achievements(student_id,app_key,trophy_key)
+      VALUES(pupil,'abaque-longueurs',trophy) ON CONFLICT DO NOTHING;
+     END IF;
+    END LOOP;
+   END IF;
   END IF;
   scores:=coalesce(native->'recordsByMode','{}'::jsonb);
   native:=native||jsonb_build_object('recordsByMode',scores||jsonb_build_object(kind,greatest(coalesce((scores->>kind)::bigint,0),points)));
@@ -218,12 +230,7 @@ BEGIN
   IF record_before->>'dayDate' IS DISTINCT FROM day_key THEN record_before:=record_before||jsonb_build_object('dayDate',day_key,'dayBest',0,'dayMode',''); END IF;
   IF points>coalesce((record_before->>'dayBest')::bigint,0) THEN record_before:=record_before||jsonb_build_object('dayBest',points,'dayMode',kind); END IF;
   IF points>coalesce((record_before->>'allBest')::bigint,0) THEN record_before:=record_before||jsonb_build_object('allBest',points,'allMode',kind); END IF;
-  medals:=coalesce(record_before->'medals','[]'::jsonb);
-  IF kind<>'lives' THEN
-   SELECT coalesce(jsonb_agg(threshold ORDER BY threshold),'[]'::jsonb) INTO medals FROM unnest(ARRAY[100,300,500,800]) AS thresholds(threshold)
-   WHERE threshold<=points OR medals @> to_jsonb(threshold);
-  END IF;
-  native:=native||jsonb_build_object('scoreRecords',record_before||jsonb_build_object('medals',medals));
+  native:=native||jsonb_build_object('scoreRecords',record_before||jsonb_build_object('medals','[]'::jsonb));
  END IF;
  SELECT coalesce(sum(amount),0)::int INTO earned_after FROM public.connect_abaque_rights WHERE student_id=pupil;
  IF earned_after>160 THEN RAISE EXCEPTION 'xp_cap'; END IF;
@@ -298,7 +305,7 @@ BEGIN
  snapshot:=public.connect_abaque_snapshot_v1(p_student);
  SELECT archived_xp INTO archived FROM public.connect_parcours_history WHERE student_id=p_student AND app_key='abaque-longueurs' ORDER BY parcours_number DESC LIMIT 1;
  item:=jsonb_build_object('appKey','abaque-longueurs','xpEarned',greatest((snapshot#>>'{xp,appXp}')::int-coalesce(archived,0),0),
-  'xpMax',160,'trophiesEarned',jsonb_array_length(snapshot->'trophies'),'trophiesMax',3);
+  'xpMax',160,'trophiesEarned',jsonb_array_length(snapshot->'trophies'),'trophiesMax',6);
  RETURN previous||jsonb_build_object('apps',coalesce(previous->'apps','[]'::jsonb)||jsonb_build_array(item));
 END $$;
 

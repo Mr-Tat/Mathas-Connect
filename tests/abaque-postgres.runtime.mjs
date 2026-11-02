@@ -65,7 +65,7 @@ test('PostgreSQL réel : installation désactivée et autorisations publiques fe
  await assert.rejects(send(identity,moves()),/activity_locked/);
 });
 
-test('PostgreSQL réel : 160 XP, compléments, trois trophées, abandons sans XP et autres applications intactes',async()=>{
+test('PostgreSQL réel : 160 XP, compléments, six trophées, abandons sans XP et autres applications intactes',async()=>{
  const identity=await pupil();
  await pool.query("insert into connect_xp_credits(student_id,app_key,xp_credited) values($1,'addition-ecrite-multiple',50)",[identity.student]);
  await pool.query("insert into connect_states(student_id,app_key,schema_version,revision,reset_epoch,state_data) values($1,'addition-ecrite-multiple',1,3,2,'{\"sentinel\":true}')",[identity.student]);
@@ -78,7 +78,7 @@ test('PostgreSQL réel : 160 XP, compléments, trois trophées, abandons sans XP
   const ack=await send(identity,event);total+=delta;assert.equal(ack.xp.delta,delta);assert.equal(ack.xp.appXp,total);
  }
  const final=await load(identity);assert.equal(final.xp.appXp,160);assert.equal(final.xp.total,210);
- assert.deepEqual(final.trophies,['abaque:bronze','abaque:gold','abaque:silver']);
+ assert.deepEqual(final.trophies,['abaque:bronze','abaque:gold','abaque:silver','abaque:sudden-bronze','abaque:sudden-gold','abaque:sudden-silver']);
  assert.deepEqual(final.xp.remaining,{build:0,moves:0,one:0,three:0,five:0,lives:0,sudden:0});
  assert.equal((await send(identity,record('lives',10))).xp.delta,0);
  const duplicate=await send(identity,first,{revision:0});assert.equal(duplicate.duplicate,true);assert.equal(duplicate.xp.delta,0);
@@ -127,13 +127,13 @@ test('PostgreSQL réel : identité réaffectée/révoquée, reset limité à Aba
 });
 
 
-test('PostgreSQL réel : résumé HUB 160 XP et 3 trophées, contrat des anciennes applications préservé',async()=>{
+test('PostgreSQL réel : résumé HUB 160 XP et 6 trophées, contrat des anciennes applications préservé',async()=>{
  const identity=await pupil();await send(identity,build());
  const previous=(await pool.query('select connect_profile_progress_v1($1) as value',[identity.student])).rows[0].value;
  const next=(await pool.query('select connect_abaque_profile_progress_v1($1) as value',[identity.student])).rows[0].value;
  assert.deepEqual(next.apps.filter(app=>app.appKey!=='abaque-longueurs'),previous.apps);
  assert.equal(next.totalTrophies,previous.totalTrophies);
- assert.deepEqual(next.apps.find(app=>app.appKey==='abaque-longueurs'),{appKey:'abaque-longueurs',xpEarned:14,xpMax:160,trophiesEarned:1,trophiesMax:3});
+ assert.deepEqual(next.apps.find(app=>app.appKey==='abaque-longueurs'),{appKey:'abaque-longueurs',xpEarned:14,xpMax:160,trophiesEarned:1,trophiesMax:6});
 });
 
 test('PostgreSQL réel : activation ultérieure par données de classe, fermée tant que non autorisée',async()=>{
@@ -147,4 +147,35 @@ test('PostgreSQL réel : activation ultérieure par données de classe, fermée 
  await pool.query('delete from connect_abaque_pilot_students where student_id=$1',[identity.student]);
  assert.equal((await request()).rows[0].value.studentId,identity.student);
  await assert.rejects(load(identity),/fictive_profile_required/,'la classe TEST garde sa restriction fictive indépendante');
+});
+
+
+test('PostgreSQL réel : 80 % sur tous les formats et coupes distinctes à 3/5/8 pages Mort subite',async()=>{
+ const identity=await pupil();await unlocked(identity);
+ const original=(await load(identity)).state;
+ for(const scores of [{one:3,three:10,five:16},{one:4,three:9,five:16},{one:4,three:10,five:15}]){
+  const partial={...original,modeScores:scores};
+  await pool.query("update connect_states set state_data=$2::jsonb where student_id=$1 and app_key='abaque-longueurs'",[identity.student,JSON.stringify(partial)]);
+  for(const kind of ['lives','sudden'])await assert.rejects(send(identity,record(kind,3)),/activity_locked/);
+ }
+ await pool.query("update connect_states set state_data=$2::jsonb where student_id=$1 and app_key='abaque-longueurs'",[identity.student,JSON.stringify(original)]);
+ assert.deepEqual((await send(identity,record('lives',8))).trophies,[]);
+ for(let run=0;run<2;run++)assert.deepEqual((await send(identity,record('sudden',2))).trophies,[],'les parties ne se cumulent pas');
+ for(const pages of [3,4,5,7,8]){
+  const event=record('sudden',pages,{abandoned:pages===3});
+  const result=await send(identity,event);
+  const expected=['abaque:sudden-bronze',...(pages>=8?['abaque:sudden-gold']:[]),...(pages>=5?['abaque:sudden-silver']:[])];
+  assert.deepEqual(result.trophies,expected,'seuil '+pages);
+  assert.deepEqual(result.state.scoreRecords.medals,[]);
+  if(pages===3){
+   assert.equal(result.xp.delta,0,'quitter après trois pages ne donne pas de XP de fin');
+   assert.equal((await send(identity,event,{revision:0})).duplicate,true);
+  }
+ }
+ assert.equal((await load(identity)).trophies.includes('abaque:gold'),false,'l’or classique est indépendant');
+ const before=await load(identity),teacher=randomUUID();
+ await pool.query('insert into connect_class_permissions(class_id,teacher_id,can_manage) values($1,$2,true)',[pilotClass,teacher]);
+ const reset=(await pool.query('select connect_abaque_restart_v1($1,$2,$3,$4) as value',[teacher,pilotClass,identity.student,0])).rows[0].value;
+ assert.deepEqual(reset.trophies,before.trophies,'les coupes Mort subite restent permanentes après reset');
+ assert.deepEqual(reset.state,{});
 });

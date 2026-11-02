@@ -13,7 +13,7 @@
 
 ## Préparation et contrôles
 
-**[CI locale]** `bash tests/local/run-abaque-local.sh` exécute sur Docker jetable les mêmes sources SQL et Edge, avec Auth véritable et navigateur Chromium. L’installation fermée enregistre le corps SQL exact, bloque un deuxième passage, puis les tests vérifient 160 XP, trois trophées, concurrence, rollback tardif, révocation, réaffectation, reset, hors ligne, autre appareil et permissions professeur. Cela ne prouve pas une session authentifiée sur Supabase hébergé.
+**[CI locale]** `bash tests/local/run-abaque-local.sh` exécute sur Docker jetable les mêmes sources SQL et Edge, avec Auth véritable et navigateur Chromium. L’installation fermée enregistre le corps SQL exact, bloque un deuxième passage, puis les tests vérifient 160 XP, six trophées, concurrence, rollback tardif, révocation, réaffectation, reset, hors ligne, autre appareil et permissions professeur. Cela ne prouve pas une session authentifiée sur Supabase hébergé. La décision du [montage de l’accueil](ABAQUE_LONGUEURS_ACCUEIL_20261102.md) réserve les trois nouvelles coupes à Mort subite, aux pages 3/5/8 ; le serveur vérifie aussi 80 % dans chaque format classique avant les deux variantes record.
 
 **[REPO vérifié]** Les outils de préparation n’ont aucun accès réseau :
 
