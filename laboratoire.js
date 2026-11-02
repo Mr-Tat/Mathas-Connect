@@ -1,6 +1,7 @@
 // Laboratoire de test : même backend Connect que les élèves, classe fixe, aucun contournement.
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 import {objectiveRecordLabPreviews} from './objective-record-lab-previews.mjs';
+import {SCHOOL_RECORD_APPS,SCHOOL_RECORD_LAUNCHER} from './apps/objective-record/release-routing.mjs';
 import {ABAQUE_ONLINE_APP,includeAbaquePilot,mountAbaquePilot} from './apps/GRAN-abaque-m-1/connect/laboratory-pilot.mjs';
 const BASE='https://awmhpfofacaglewammxt.supabase.co';
 const KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM'; // publishable, not secret
@@ -9,14 +10,8 @@ const TEST_LABEL='Classe démo - TEST';
 const HUB='./hub.html?class='+encodeURIComponent(TEST_CLASS)+'&name='+encodeURIComponent(TEST_LABEL);
 const appKeys=['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'];
 const teacherGameKeys=[...appKeys,'abaque-longueurs'];
-// Cinq pilotes de calcul écrit restent dans le registre TEST séparé.
-const recordPilotSlugByApp=Object.freeze({
-  'addition-ecrite-simple':'addition-simple',
-  'addition-ecrite-multiple':'addition-multiple',
-  'soustraction-ecrite-simple':'soustraction',
-  'multiplication-ecrite-simple':'multiplication',
-  'melange-calculs-ecrits':'melange'
-});
+// La classe TEST utilise la nouvelle hôte scolaire commune. Le pilote est archivé.
+const recordSlugByApp=SCHOOL_RECORD_APPS;
 const fallbackApps=[
  {app_key:'addition-ecrite-simple',title:'Addition écrite',launch_url:'https://mr-tat.github.io/CE-Addition-simple/'},
  {app_key:'multiplication-ecrite-simple',title:'Multiplication écrite simple',launch_url:'./apps/multiplication-simple/'},
@@ -76,8 +71,8 @@ const api=(action,data={})=>rpc('connect-api',action,data);
 const results=(action,data={})=>{guard();return rpc('connect-results',action,{classId:TEST_CLASS,appKey:$('results-app').value,...data})};
 async function run(fn){try{await fn()}catch(e){display('Laboratoire : '+(e.message||e),true)}}
 function linkFor(app,prof=false){
- const pilotSlug=recordPilotSlugByApp[app.app_key];
- const href=pilotSlug?'./essais/objectif-record-pilote.html?app='+encodeURIComponent(pilotSlug):
+ const testSlug=recordSlugByApp[app.app_key];
+ const href=testSlug?SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(testSlug):
    app.app_key==='abaque-longueurs'?ABAQUE_ONLINE_APP.launch_url:(app.launch_url||app.url);
  if(!href)return null;
  let url;try{url=new URL(href,location.href)}catch{return null}
@@ -255,7 +250,7 @@ async function loadApps(){
        }catch(error){checkbox.checked=app.visible===true;throw error}
        finally{checkbox.disabled=false}
      });
-     card.append(el('p','Nouvelle version Connect · XP pilote sauvegardés à part · affichage limité au HUB TEST.','muted tiny'));
+     card.append(el('p',recordSlugByApp[app.app_key]?(app.app_key==='addition-ecrite-multiple'?'Nouvelle version · vrais XP Connect en Classique et Mort subite (TEST uniquement).':'Nouvelle version · vrais XP du profil consultables ; attribution pour les nouveaux modes encore en préparation.'):'Application Connect · affichage limité à la classe TEST.','muted tiny'));
    }
    const buttons=el('div','','actions');
    // Garder les boutons de test existants ; seule la case Afficher dépend
@@ -263,34 +258,6 @@ async function loadApps(){
    const student=el('a','Tester côté élève','action');student.href=linkFor(app);student.target='_blank';student.rel='noopener noreferrer';
    student.onclick=event=>{if(!consent()){event.preventDefault();display('Confirme d’abord que les profils utilisés sont fictifs avant de lancer le jeu.',true)}};
    buttons.append(student);
-   // Le futur lanceur scolaire est inspectable en TEST, avec une vraie session
-   // Connect et des XP OFFICIELS lus. Il refuse encore toute écriture de partie.
-   if(recordPilotSlugByApp[app.app_key]){
-     const candidate=el('a','Hôte élève · XP officiels (lecture seule)','secondary');
-     const target=new URL('./apps/objective-record/eleve.html',location.href);
-     target.searchParams.set('app',recordPilotSlugByApp[app.app_key]);
-     target.searchParams.set('class',TEST_CLASS);
-     candidate.href=target.href;candidate.target='_blank';candidate.rel='noopener noreferrer';
-     candidate.onclick=event=>{
-       if(!verified||!consent()){
-         event.preventDefault();
-         display('Confirme que les profils TEST sont fictifs avant la recette de l’hôte scolaire.',true);
-       }
-     };
-     buttons.append(candidate);
-     // Monsieur T réutilise la session professeur isolée du HUB TEST,
-     // sans passer pour un élève anonyme ni produire de crédits scolaires.
-     const candidateTeacher=el('button','Hôte Monsieur T · lecture seule','secondary');
-     candidateTeacher.classList.add('teacher-game');
-     candidateTeacher.disabled=!teacherReady;
-     candidateTeacher.onclick=()=>run(async()=>{
-       guard();if(!teacherReady)throw Error('Active d’abord Monsieur T.');
-       const teacherUrl=new URL(target.href);
-       teacherUrl.searchParams.set('joueur','prof');
-       window.open(teacherUrl.href,'_blank','noopener,noreferrer');
-     });
-     buttons.append(candidateTeacher);
-   }
    if(teacherGameKeys.includes(app.app_key)&&new URL(linkFor(app)).origin===location.origin){
      const teacher=el('button','Monsieur T','secondary');teacher.disabled=!teacherReady;
      teacher.onclick=()=>run(async()=>{guard();if(!teacherReady)throw Error('Active d’abord Monsieur T.');const href=linkFor(app,true);window.open(href,'_blank','noopener,noreferrer')});

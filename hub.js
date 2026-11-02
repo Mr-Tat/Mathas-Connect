@@ -2,7 +2,7 @@ import {avatarCategories,avatarGlyph,avatarColors,avatarColor} from './avatar-ca
 import { classId, classLabel, loginUrl } from './connect-context.js';
 import {rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
 import {objectiveRecordLabPreviews} from './objective-record-lab-previews.mjs';
-import {schoolRecordLaunch} from './apps/objective-record/release-routing.mjs';
+import {schoolRecordLaunch,SCHOOL_RECORD_APPS,SCHOOL_RECORD_LAUNCHER} from './apps/objective-record/release-routing.mjs';
 
 const url = 'https://awmhpfofacaglewammxt.supabase.co';
 const key = 'sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
@@ -33,13 +33,7 @@ const levels = [
 ];
 
 const connectedGameKeys=new Set(['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits']);
-const recordPilotSlugByApp=Object.freeze({
-  'addition-ecrite-simple':'addition-simple',
-  'addition-ecrite-multiple':'addition-multiple',
-  'soustraction-ecrite-simple':'soustraction',
-  'multiplication-ecrite-simple':'multiplication',
-  'melange-calculs-ecrits':'melange'
-});
+const recordSlugByApp=SCHOOL_RECORD_APPS;
 function progressFor(appKey){
   const p=activeProfile?.progress;
   return p&&Array.isArray(p.apps)?p.apps.find(a=>a.appKey===appKey):null;
@@ -61,20 +55,20 @@ function refreshCardProgress(){
 }
 function card(app) {
   const node = $('appTemplate').content.firstElementChild.cloneNode(true);
-  const pilotSlug=classId===LAB_CLASS?recordPilotSlugByApp[app.app_key]:null;
-  const target = new URL(pilotSlug?'./essais/objectif-record-pilote.html?app='+encodeURIComponent(pilotSlug):
+  const testSlug=classId===LAB_CLASS?recordSlugByApp[app.app_key]:null;
+  const target = new URL(testSlug?SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(testSlug):
     schoolRecordLaunch({classId,appKey:app.app_key,legacyUrl:app.launch_url}),location.href);
   // Le HUB fournit la classe au jeu Connect ; les autorisations restent vérifiées côté serveur.
   if (classId && target.origin === location.origin) target.searchParams.set('class', classId);
    if (playingAsTeacher && ['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
   node.href = target.href;
-  if(pilotSlug)node.dataset.labPilot=pilotSlug;
+  if(testSlug)node.dataset.labSchool=testSlug;
   else node.dataset.appKey=app.app_key;
   node.target = '_blank';
   node.rel = 'noopener noreferrer';
   node.querySelector('.app-name').textContent = app.title;
   node.querySelector('.app-initial').textContent = app.title.charAt(0).toUpperCase();
-  node.querySelector('.app-scores').textContent = pilotSlug?'🧪 Nouvelle version · XP enregistrés dans le pilote TEST':progressText(app.app_key);
+  node.querySelector('.app-scores').textContent = testSlug?(app.app_key==='addition-ecrite-multiple'?'🧪 TEST · XP Connect en Classique / Mort subite':'🧪 TEST · nouveaux modes XP en préparation'):progressText(app.app_key);
   if (app.image_url && !app.image_url.includes('jftzuslpelgzbdrftszw')) {
     const img = document.createElement('img');
     // Un numéro de version uniquement pour les deux miniatures approuvées évite
