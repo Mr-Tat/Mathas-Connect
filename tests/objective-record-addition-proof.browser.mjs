@@ -61,10 +61,11 @@ test('Chromium: 4 vraies additions émises par Connect, écritures natives et AC
      {ok:true,revision:xp?1:0,resetEpoch:0,state:{rewards},storageSubject:pupil}:
      {ok:true,appXp:xp,total:xp,level:1};
    }else if(request.url().includes('/connect-objective-record-test')){
-    if(b.action==='start-proof'){
+    if(b.action==='start-proof-v2'){
+     assert.equal(b.level,1);assert.equal(b.total,4);
      response={ok:true,sessionId,questions,revision:0,resetEpoch:0,level:1,total:4,
       expiresAt:'2090-12-31T23:59:59Z'};
-    }else if(b.action==='finish-proof'){
+    }else if(b.action==='finish-proof-v2'){
      assert.equal(b.sessionId,sessionId);
      assert.deepEqual(b.answers.map(x=>x.id),['q1','q2','q3','q4']);
      assert.equal(b.answers.length,4);
@@ -122,7 +123,7 @@ test('Chromium: 4 vraies additions émises par Connect, écritures natives et AC
   await page.waitForFunction(()=>document.getElementById('status')?.textContent
    .includes('Vérifié côté serveur'),null,{timeout:25000});
   assert.equal(xp,22);
-  assert.equal(requests.filter(x=>x.action==='finish-proof').length,1);
+  assert.equal(requests.filter(x=>x.action==='finish-proof-v2').length,1);
   assert.equal(requests.filter(x=>x.action==='game-record').length,0);
   assert.deepEqual(exceptions,[]);
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve))}
