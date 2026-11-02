@@ -1,22 +1,22 @@
 -- Executed ONLY after the candidate in disposable PG with stub official RPC.
 DO $spec$
-DECLARE r jsonb; rev bigint; event_id uuid:='22222222-2222-4222-8222-222222222222';
+DECLARE r jsonb; rev bigint; sample_event uuid:='22222222-2222-4222-8222-222222222222';
  app text:='addition-ecrite-simple';student uuid:='11111111-1111-4111-8111-111111111111';
  class_id uuid:='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';n int;
 BEGIN
- r:=public.connect_objective_record_test_fixed_v1(student,class_id,app,event_id,0,0,'classic',1,4,4);
+ r:=public.connect_objective_record_test_fixed_v1(student,class_id,app,sample_event,0,0,'classic',1,4,4);
  IF (r->>'ok')<>'true' OR (r->>'revision')::int<>1
  OR (r#>>'{xp,appXp}')::int<>22 OR (r#>>'{xp,delta}')::int<>22
  THEN RAISE EXCEPTION 'first_record_failed: %',r;END IF;
  SELECT count(*) INTO n FROM public.connect_objective_record_test_receipts;
  IF n<>1 THEN RAISE EXCEPTION 'receipt_missing';END IF;
- r:=public.connect_objective_record_test_fixed_v1(student,class_id,app,event_id,0,0,'classic',1,4,4);
+ r:=public.connect_objective_record_test_fixed_v1(student,class_id,app,sample_event,0,0,'classic',1,4,4);
  IF (r->>'duplicate')<>'true' OR (r#>>'{xp,delta}')::int<>0
  THEN RAISE EXCEPTION 'not_idempotent';END IF;
  SELECT revision INTO rev FROM public.connect_states WHERE student_id=student AND app_key=app;
  IF rev<>1 THEN RAISE EXCEPTION 'duplicate_advanced_revision';END IF;
  BEGIN
-  PERFORM public.connect_objective_record_test_fixed_v1(student,class_id,app,event_id,1,0,'classic',1,3,4);
+  PERFORM public.connect_objective_record_test_fixed_v1(student,class_id,app,sample_event,1,0,'classic',1,3,4);
   RAISE EXCEPTION 'unexpected_collision_success';
  EXCEPTION WHEN OTHERS THEN
   IF SQLERRM<>'event_collision' THEN RAISE;END IF;
