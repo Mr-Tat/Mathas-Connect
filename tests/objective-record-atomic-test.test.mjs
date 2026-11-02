@@ -54,14 +54,14 @@ test('refuse des classes reelles et toutes les apps sans chemin atomique approuv
 });
 test('le client utilise la RPC scolaire actuelle, non le pilote, et la sauvegarde hors ligne',()=>{
  const host=read('apps/objective-record/eleve.mjs');
- assert.match(host,/connect-results','game-record'/);
+ assert.match(host,/activeApp===ATOMIC_TEST_APP\?'connect-results':'connect-objective-record-test'/);
  assert.match(host,/activeApp===ATOMIC_TEST_APP/);
  assert.match(host,/recorder\.onSnapshot\(event\)/);
  assert.match(host,/\$\('refresh'\)\.addEventListener/);
  assert.doesNotMatch(host,/connect-record-pilot/);
  const ledger=read('apps/objective-record/atomic-test-recorder.mjs');
  assert.match(ledger,/mathas\.record-test-native\.v1/);
- assert.match(ledger,/appKey!==ATOMIC_TEST_APP/);
+ assert.match(ledger,/!isFixedTestApp\(appKey\)/);
 });
 
 
@@ -135,4 +135,20 @@ test('fin native vérifiée du moteur Addition multiple : ended, pas finished',(
  const p={...classic,phase:'ended'};
  assert.ok(normalizeAtomicTestCompletion({appKey:ATOMIC_TEST_APP,event:p}));
  assert.equal(normalizeAtomicTestCompletion({appKey:ATOMIC_TEST_APP,event:{...p,phase:'finished'}}),null);
+});
+
+
+test('quatre moteurs fixes ont une voie TEST identique; Mélange/HARD/3 vies restent bloqués',()=>{
+ const apps=['addition-ecrite-simple','addition-ecrite-multiple','soustraction-ecrite-simple','multiplication-ecrite-simple'];
+ for(const appKey of apps){
+  assert.ok(normalizeAtomicTestCompletion({appKey,event:classic}),appKey);
+  assert.ok(normalizeAtomicTestCompletion({appKey,event:{...classic,phase:'ended',mode:'sudden',score:5,total:null,completed:6}}));
+  assert.equal(normalizeAtomicTestCompletion({appKey,event:{...classic,mode:'three-lives'}}),null);
+  assert.equal(normalizeAtomicTestCompletion({appKey,event:{...classic,hard:true}}),null);
+ }
+ assert.equal(normalizeAtomicTestCompletion({appKey:'melange-calculs-ecrits',event:classic}),null);
+ const source=read('apps/objective-record/eleve.mjs');
+ assert.match(source,/isFixedTestApp\(activeApp\)/);
+ assert.match(source,/connect-objective-record-test/);
+ assert.match(source,/expectedStudentId:pupilId/);
 });

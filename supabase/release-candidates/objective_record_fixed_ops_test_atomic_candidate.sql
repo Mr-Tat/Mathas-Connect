@@ -37,6 +37,17 @@ BEGIN
  THEN RAISE EXCEPTION 'invalid_result';END IF;
  PERFORM 1 FROM public.connect_students WHERE id=p_student AND archived_at IS NULL FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'inactive_student';END IF;
+ -- Defence in depth: even service_role cannot submit a TEST-class award for
+ -- a real-class pupil. Monsieur T is accepted only if the teacher is actually
+ -- authorized in TEST and the pupil id is that teacher's explicit player.
+ IF NOT EXISTS(
+   SELECT 1 FROM public.connect_enrollments e
+   WHERE e.student_id=p_student AND e.class_id=v_test AND e.left_at IS NULL
+ ) AND NOT EXISTS(
+   SELECT 1 FROM public.connect_teacher_players tp
+   JOIN public.connect_class_permissions cp ON cp.teacher_id=tp.teacher_id
+   WHERE tp.student_id=p_student AND cp.class_id=v_test AND cp.can_manage=true
+ ) THEN RAISE EXCEPTION 'not_test_subject';END IF;
  v_hash:=pg_catalog.encode(pg_catalog.sha256(pg_catalog.convert_to(
  jsonb_build_object('app',p_app,'class',p_class,'mode',p_mode,'level',p_level,
    'score',p_score,'total',p_total,'epoch',p_reset_epoch)::text,'UTF8')),'hex');
