@@ -63,6 +63,20 @@
         <a class="action" href="./essais/objectif-record-pilote.html?app=melange">Mélange</a>
       </div>
       <p class="muted tiny">Pour le test élève, ouvre ces liens depuis le navigateur du profil fictif déjà approuvé. Aucun barème réel ni les quatre HUB scolaires ne sont activés par ce pilote.</p>
+      <div class="actions" style="margin-top:12px">
+        <label for="pilot-results-app">Résultats du pilote
+          <select id="pilot-results-app">
+            <option value="addition-ecrite-simple">Addition simple</option>
+            <option value="addition-ecrite-multiple">Addition multiple</option>
+            <option value="soustraction-ecrite-simple">Soustraction écrite</option>
+            <option value="multiplication-ecrite-simple">Multiplication simple</option>
+            <option value="melange-calculs-ecrits">Mélange</option>
+          </select>
+        </label>
+        <button type="button" id="pilot-results-refresh" class="secondary" disabled>Voir les résultats XP pilote</button>
+      </div>
+      <div id="pilot-results" class="stack" role="region" aria-live="polite" aria-label="Résultats fictifs du pilote"></div>
+
     </section>
     <section class="card" aria-labelledby="results-title">
       <div class="heading"><div><h2 id="results-title">Résultats et parcours de test</h2><p class="muted">Uniquement cette classe, une application à la fois.</p></div></div>

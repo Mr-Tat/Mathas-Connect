@@ -66,7 +66,7 @@ test('LAB pilote Connect : la page publique et son pont sont servis',async()=>{
  assert.match(js,/connect-record-pilot/);
  assert.match(js,/classId:TEST/);
  assert.match(js,/MathasLabV2Update/);
- assert.match(js,/expectedStudentId:studentId/);
+ assert.match(js,/expectedStudentId:requestStudent/);
 });
 test('LAB pilote Connect : rejet sans compte, aucune écriture anonyme',async()=>{
  const endpoint='https://awmhpfofacaglewammxt.supabase.co/functions/v1/connect-record-pilot';

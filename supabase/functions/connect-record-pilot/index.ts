@@ -145,8 +145,37 @@ Deno.serve(async req=>{
  if(raw.length>5000)return err('payload_too_large',413);
  let b:any;try{b=JSON.parse(raw)}catch{return err('invalid_json')};
  if(b?.classId!==TEST||!APPS.has(b?.appKey))return err('test_class_only',403);
- if(!['load','record'].includes(b?.action))return err('invalid_action');
+ if(!['load','record','teacher-summary'].includes(b?.action))return err('invalid_action');
  try{
+  if(b.action==='teacher-summary'){
+   // Aucun appareil anonyme ne peut lire les résultats, même dans la classe TEST.
+   if(user.is_anonymous)return err('teacher_required',403);
+   const {data:permission,error:permError}=await db.from('connect_class_permissions')
+     .select('can_view_results,can_manage')
+     .eq('teacher_id',user.id).eq('class_id',TEST).maybeSingle();
+   if(permError||!permission||(permission.can_view_results!==true&&permission.can_manage!==true))
+     return err('teacher_permission_required',403);
+   const {data:enrollments,error:enrollError}=await db.from('connect_enrollments')
+     .select('student_id').eq('class_id',TEST).is('left_at',null).limit(200);
+   if(enrollError)return err('pilot_unavailable',503);
+   const ids=[...new Set((enrollments||[]).map(x=>x.student_id))];
+   if(!ids.length)return response({ok:true,appKey:b.appKey,rows:[]});
+   const [people,states]=await Promise.all([
+     db.from('connect_students').select('id,display_name').in('id',ids).is('archived_at',null).limit(200),
+     db.from('connect_record_pilot_states').select('student_id,revision,state_data,updated_at')
+       .eq('class_id',TEST).eq('app_key',b.appKey).in('student_id',ids).limit(200)
+   ]);
+   if(people.error||states.error)return err('pilot_unavailable',503);
+   const names=new Map((people.data||[]).map(x=>[x.id,x.display_name]));
+   const rows=(states.data||[]).filter(x=>names.has(x.student_id)).map(x=>{
+     const state=validState(x.state_data)?x.state_data:blank();
+     return {name:names.get(x.student_id),revision:x.revision,
+       xp:Object.values(state.earned).reduce((sum,n)=>sum+Number(n||0),0),
+       best:state.best,trophies:state.trophies.length,
+       attempts:state.events.length,updatedAt:x.updated_at};
+   }).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+   return response({ok:true,appKey:b.appKey,rows});
+  }
   const studentId=await identity(user);
   if(!studentId)return err('unapproved_test_profile',403);
   if(b?.expectedStudentId!=null&&b.expectedStudentId!==studentId)return err('identity_conflict',409);
