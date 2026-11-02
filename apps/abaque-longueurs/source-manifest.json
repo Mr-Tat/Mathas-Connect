@@ -13,7 +13,10 @@
     "Master practice eligibility is latched for each activity, including entering/exiting mid-run",
     "Broken hearts persist without replaying their loss animation after success",
     "Sudden-death consecutive record remains visible",
-    "Reconcile previous results from the same isolated demo storage only"
+    "Reconcile previous results from the same isolated demo storage only",
+    "Cup-only bronze/silver/gold objectives without success conditions",
+    "Always-visible personal best and permanent trophy collection in the home header",
+    "Textured paper background and colored activity/button finishes"
   ],
   "license": "No license file in source checkout; copied with repository owner authorization in task"
 }

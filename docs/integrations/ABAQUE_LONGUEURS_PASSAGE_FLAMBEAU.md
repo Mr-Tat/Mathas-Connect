@@ -1,31 +1,15 @@
-# Abaque — passage de flambeau — 02/11/2026
+# Abaque — passage de flambeau — 2 novembre 2026
 
-**[REPO vérifié] Démonstration isolée candidate. Aucune publication Pages ni connexion XP réelle vérifiée.**
+**Démo publiée ; ajustements visuels sur `feat/abaque-longueurs-interface`. Connect reste une candidate serveur fermée.** Lire `AGENTS.md`, le guide permanent et [la fiche](ABAQUE_LONGUEURS_FICHE.md).
 
-Lire `AGENTS.md`, le guide permanent et [la fiche](ABAQUE_LONGUEURS_FICHE.md). Branche : `feat/abaque-longueurs-laboratoire`. Base `main` revérifiée : `4b28cc56ec05b8e06998c53fdccb32571f3b1066`. Source autonome : `7dc9dc00e87302d5aafa1c9d131e500a57419c1d`, inchangée. La copie originale et les 25 fichiers d’assets sont identiques à la source.
+**[LIVE vérifié, GitHub]** Le professeur a explicitement approuvé le push direct sans PR de la démonstration. Publication initiale `6ac032c` : [jeu](https://mr-tat.github.io/Mathas-Connect/apps/abaque-longueurs/), [Pages Success](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41368284892). Les retouches de cette démo poursuivent cette livraison ; ne pas les confondre avec une autorisation SQL/Edge.
 
-## Travail préparé et audit complémentaire
+**[DÉCISION professeur]** Nouvelle présentation : coupes seules sans condition affichée sur les cartes, meilleur score et collection obtenue en haut à droite, papier quadrillé et surfaces plus colorées. Les conditions des trois trophées et les règles de points restent identiques. Données locales existantes conservées ; aucun import Connect, aucun changement de barème.
 
-Trois activités et déblocages natifs, Objectif record 3 vies/Mort subite, scores par mode et record consécutif, trois trophées visuels en bas à droite, stockage démo distinct et carte expérimentale dans le registre partagé Laboratoire/HUB TEST. Aucun changement de SQL/Edge, du catalogue officiel ou des résultats réels.
+**[CI locale]** 13 vérifications réussies : 7 scénarios Chromium sur le vrai moteur et 6 tests statiques/isolation. La collection suit les trophées permanents et le meilleur score natif ; les perfections après deux réussites et les règles Master restent testées. Interface inspectée à 1440/320 px, absence de débordement vérifiée à 320/768/1024/1440. La CI d’interface est déclenchée sur sa branche par `abaque-browser.yml` ; contrôler son SHA exact avant publication.
 
-L’audit a reproduit un défaut : quitter Master pendant une partie commencée en Master permettait de gagner le bronze. La partie reste désormais en entraînement jusqu’au prochain départ normal, même après entrée/sortie de Master. Autres corrections : cœur brisé conservé sans réanimation à chaque réussite ; record consécutif réaffiché ; reprise des trophées depuis les anciens résultats de cette même démo seulement. Un sans-faute après les deux réussites de déblocage compte bien pour bronze/argent. L’or exige les trois séries classiques parfaites, pas les modes record.
+**[REPO vérifié]** Le lot serveur distinct est sur `feat/abaque-longueurs-connect`, initialement `1e80827f6b94e7ca996b6579b626941507356e8c`, [CI Success](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41376784281). Avant son déploiement, reprendre les mêmes changements d’interface et adapter le bridge aux nouveaux emplacements des XP. Ne pas réintroduire les anciennes étiquettes de trophée ni reconstruire un autre moteur. Son [dossier de déploiement](https://github.com/Mr-Tat/Mathas-Connect/blob/feat/abaque-longueurs-connect/docs/integrations/ABAQUE_LONGUEURS_DEPLOIEMENT.md) décrit l’installation fermée, l’allowlist fictive et l’arrêt non destructif. L’accord précis SQL/Edge/Pages/pilote a été demandé ; aucune réponse positive pour ce lot n’est présumée.
 
-Le test de capture ne doit plus utiliser `/workspace`, absent d’un runner GitHub standard : il utilise le dossier temporaire système. La CI conserve sa vraie sortie et son code de retour dans le résumé public. Les cinq raccourcis du serveur Edge existant ont un contrat de test explicite distinct des six démos statiques : ajouter l’Abaque ne nécessite aucun déploiement du service partagé.
+**[REPO vérifié, sécurité]** « Reste N XP » utilise uniquement les droits Connect confirmés par le serveur, y compris zéro ; aucune extrapolation locale. La question de valeurs fictives visibles dans la démo a été posée séparément : conserver la règle actuelle en l’absence de réponse. Aucun changement des HUB scolaires, résultats réels ou dépôt autonome.
 
-## Preuves du 02/11/2026
-
-- **[CI locale]** 284 tests Node réussis, 1 PostgreSQL ignoré (`pg`/serveur indisponibles). Les deux fichiers HTTP de production sont exclus de cette commande locale, pas supprimés ni désactivés dans leurs workflows.
-- **[CI locale]** 7 tests Chromium Abaque réussis + 6 tests isolation/Laboratoire réussis. Vrai clavier, premiers essais 10/12 et 7/8, perfection après deux réussites, or progressif, points 100/324/580, aides/corrections, Master, 3 vies, Mort subite, reprise des trophées et positionnement à 320/768/1024 px.
-- **[CI locale avec catalogues simulés]** Carte Abaque présente dans le HUB TEST et absente des cinq classes scolaires. Aucun compte ni donnée réelle utilisés. Cela ne prouve pas une session hébergée authentifiée.
-- **[CI locale]** 9 tests Chromium Projection/Soustraction réussis.
-- **[LIVE vérifié, GitHub]** Git lecture/push et pages web GitHub accessibles. L’API GitHub reste refusée ; l’interface web consultée est déconnectée. Ne pas conclure à une absence totale d’accès GitHub.
-- **[LIVE vérifié, ancien commit]** [CI du commit 78cfbc2 en échec](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41365970841), étape navigateur, code 1 ; logs détaillés réservés à une session. Contrôler impérativement la nouvelle CI sur le SHA poussé, via la page `/commit/<sha>/checks` puis le résumé du run.
-- **[REPO vérifié]** Backend Abaque, XP serveur 160, reçus, restauration Connect, tableau professeur et pilote authentifié : non implémentés/non validés. Les XP et trophées affichés dans cette démo ne sont pas des acquis Connect.
-
-## Publication et accès
-
-Le professeur a autorisé PR et publication de la démo isolée dans le Laboratoire. Utiliser les accès existants ; ne pas demander un jeton par réflexe. Créer la PR, contrôler la CI exacte, fusionner la seule démo puis vérifier Pages et sa carte du Laboratoire. Les pages GitHub publiques permettent déjà de lire la CI, même si l’API est refusée.
-
-Les domaines `api.github.com` et `mr-tat.github.io` sont enregistrés dans le brouillon cloud ; lors du contrôle, le runtime reste à sa révision 1 et les connexions à ces deux hôtes renvoient un refus CONNECT 403. Une permission d’action et une règle réseau appliquée sont deux choses différentes. Ne pas contourner le refus. `install_script` et `start_skill` sont enregistrés et le script de setup a été relancé avec succès ; publication du cloud et publication du site Pages sont distinctes.
-
-Après la première publication, compléter Connect sur cette même application : preuves de premier essai, identité approuvée, état élève/app/époque, file bornée avec ACK exact, XP complémentaires (160 max), trois trophées permanents indépendants du reset, résumé professeur et reset limité à l’Abaque. Ne pas importer le registre de trophées démo. PostgreSQL/Auth/Edge locaux puis accord précis avant SQL/Edge de production ; aucun élève réel ni ouverture scolaire sans validation.
+**[LIVE vérifié, accès]** Git lecture/push et HTML public de CI fonctionnent. Le runtime cloud contrôlé reste à la révision 1, sans binding Supabase ; API GitHub, Pages et Supabase renvoient CONNECT 403. Le brouillon contient scripts de setup, domaines requis et besoin sécurisé `SUPABASE_ACCESS_TOKEN`. Sauvegarde cloud, publication Pages et déploiement serveur sont trois opérations distinctes. Aucun secret dans le dépôt.

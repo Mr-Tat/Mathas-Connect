@@ -1,7 +1,7 @@
 name: Abaque laboratoire - moteur isole
 on:
   push:
-    branches: [feat/abaque-longueurs-laboratoire]
+    branches: [feat/abaque-longueurs-laboratoire, feat/abaque-longueurs-interface]
   pull_request:
     paths:
       - 'apps/abaque-longueurs/**'

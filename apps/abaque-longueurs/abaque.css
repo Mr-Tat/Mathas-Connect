@@ -9,12 +9,63 @@
 #homeScreen #recordChoice .t3Mode .record-caption{display:block;width:auto;margin-top:auto;font-size:.72rem;line-height:1.3;padding:7px 3px;white-space:normal}
 #homeScreen #recordChoice .t3Mode .modeResult{display:block;position:static;width:auto;max-width:none;margin:0;padding:3px;border:0;background:transparent;color:#fff;font-size:.7rem;overflow-wrap:normal}
 @media(max-width:400px){#homeScreen #recordChoice .t3Mode{padding:10px 5px}#homeScreen #recordChoice .t3Mode strong{font-size:.88rem}}
-#homeScreen #launchBtn,#homeScreen #moveLaunchBtn,#homeScreen #convertLaunchCard{position:relative;padding-bottom:76px}
-#homeScreen .homeCard .trophy-hint{position:absolute;right:14px;bottom:12px;display:flex;align-items:center;gap:7px;max-width:calc(100% - 28px);padding:7px 10px;border:1px dashed #a18e71;border-radius:11px;background:#fffaf0;color:#6d5a3b;text-align:right;pointer-events:none}
-#homeScreen .trophy-hint .trophy-icon{font-size:1.55rem;line-height:1;filter:grayscale(.35);opacity:.7}
-#homeScreen .trophy-hint .trophy-copy{display:flex;flex-direction:column;gap:2px;line-height:1.15}
-#homeScreen .trophy-hint b{font-size:.75rem;font-weight:800}#homeScreen .trophy-hint small{font-size:.68rem}
-#homeScreen .homeCard .trophy-hint.earned{border:1px solid #78b698;background:#edf9f1;color:#286846}
-#homeScreen .trophy-hint.earned .trophy-icon{filter:none;opacity:1}
 
 .heart-status{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* Papier quadrillé, encres colorées et boutons satinés. Aucun asset distant. */
+:root{--cup-body:#dfb557;--cup-light:#ffe6a0;--cup-shadow:#9a6d30}
+body{background-color:#dcebe8;background-image:radial-gradient(ellipse at 6% 8%,#9bd1c7aa,transparent 45%),radial-gradient(ellipse at 94% 12%,#a7c1e5a6,transparent 43%),radial-gradient(ellipse at 87% 94%,#edbc86a1,transparent 48%),repeating-linear-gradient(135deg,transparent 0 24px,#245e6810 24px 25px),linear-gradient(135deg,#e0eee8,#f3e7d5);background-attachment:fixed}
+.shell{border-color:#adc9c5;box-shadow:0 20px 70px #173e4b2b}
+.shell{background-color:#f8faf5;background-image:radial-gradient(ellipse at 94% 2%,#b7dce2a1,transparent 42%),radial-gradient(ellipse at 1% 56%,#c5e9d17a,transparent 42%),radial-gradient(ellipse at 88% 97%,#f6d9ac80,transparent 42%),repeating-linear-gradient(0deg,transparent 0 31px,#2d6c7210 31px 32px),repeating-linear-gradient(90deg,transparent 0 31px,#2d6c7210 31px 32px),linear-gradient(150deg,#fffcf4,#eff7f4)}
+.shell main{background:none}
+header{background-image:radial-gradient(ellipse at 82% -20%,#67baa05c,transparent 52%),repeating-linear-gradient(120deg,transparent 0 20px,#ffffff08 20px 21px),linear-gradient(115deg,#152b40,#1d495b 64%,#20736f);border-bottom-color:#6dcbbb}
+.demo-notice{border-color:#d9b66a;background:linear-gradient(115deg,#fff7ddd9,#fff0ccc9);box-shadow:inset 0 1px #fff9;color:#6f5020}
+.btn{background-image:linear-gradient(155deg,#fffef9,#edf3ed);box-shadow:inset 0 1px #fff,0 3px 0 #153d4912,0 4px 9px #153d490c}
+.btn.primary{background-image:repeating-linear-gradient(125deg,transparent 0 13px,#ffffff08 13px 14px),linear-gradient(135deg,#239c90,#12716f);border-color:#0e6b69;box-shadow:inset 0 1px #ffffff54,0 3px 0 #0b575e,0 5px 12px #126c6c22}
+.btn.dark{background-image:repeating-linear-gradient(125deg,transparent 0 17px,#ffffff08 17px 18px),linear-gradient(145deg,#3b5b73,#263f54);border-color:#658595;box-shadow:inset 0 1px #ffffff24,0 3px 0 #102b39}
+.btn.primary:hover:not(:disabled){background-color:#168a80;filter:brightness(1.05)}
+.btn:active:not(:disabled){box-shadow:inset 0 1px #ffffff40,0 1px 0 #153d4926}
+
+/* Le petit tableau de bord reste visible dès le premier lancement. */
+.home-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,360px);align-items:center;gap:26px;margin:0 0 25px}
+.home-intro{min-width:0}
+#homeScreen .home-intro>.screenTitle{font-size:clamp(1.7rem,3vw,2.45rem);margin:12px 0 8px;line-height:1.15}
+#homeScreen .home-intro>.sub{margin-bottom:0}
+#homeScreen .home-intro>.eyebrow{background:#e0f3e9d9;border-color:#b5dccc;box-shadow:inset 0 1px #fff9;color:#136c69}
+.personal-records{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,1fr);gap:18px;padding:23px 24px;border:1px solid #386377;border-radius:21px;color:#f4faf7;background-image:radial-gradient(ellipse at 100% 0%,#47998a6b,transparent 73%),repeating-linear-gradient(135deg,transparent 0 17px,#ffffff06 17px 18px),linear-gradient(125deg,#1a354d,#205566);box-shadow:inset 0 1px #ffffff30,0 8px 22px #1c49561c}
+.personal-records:after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,#6aceb5,#e4bc71);pointer-events:none}
+.personal-best,.personal-collection{min-width:0}
+.record-label,.collection-heading>span{font-size:.7rem;font-weight:700;letter-spacing:.025em;color:#d1e8e6}
+.personal-score{display:flex;align-items:baseline;gap:6px;margin:6px 0 1px;font-variant-numeric:tabular-nums}
+.personal-score>strong{font-size:2.2rem;font-weight:900;letter-spacing:-.045em;line-height:1.12;color:#fff2cc}
+.personal-score>span{font-size:.75rem;color:#d8e9e4}
+.personal-best>small{display:block;font-size:.66rem;line-height:1.4;color:#adcdd0;margin-top:5px}
+.personal-collection{padding-left:17px;border-left:1px solid #b0e5de30;display:flex;flex-direction:column;justify-content:center}
+.collection-heading{display:flex;flex-direction:column;gap:3px}
+.collection-heading>strong{font-size:.8rem;font-variant-numeric:tabular-nums;color:#e8f8ee}
+.collection-cups{display:flex;align-items:center;gap:9px;margin-top:9px}
+.collection-trophy{display:inline-flex;width:29px;height:35px;align-items:center;justify-content:center;opacity:.2;filter:grayscale(1)}
+.collection-trophy.earned{opacity:1;filter:none}
+.trophy-defs{position:absolute;overflow:hidden;pointer-events:none}
+.trophy-bronze{--cup-body:#c78b5a;--cup-light:#f2c99c;--cup-shadow:#825437}
+.trophy-silver{--cup-body:#b3c4d0;--cup-light:#edf8ff;--cup-shadow:#718b9d}
+.trophy-gold{--cup-body:#e7b74f;--cup-light:#ffe7a0;--cup-shadow:#a6752a}
+.trophy-icon{display:block;width:30px;height:34px;filter:drop-shadow(0 2px 1px #1836402b)}
+
+/* Les trophées se lisent d'un coup d'œil, sans texte de condition. */
+#homeScreen #launchBtn,#homeScreen #moveLaunchBtn,#homeScreen #convertLaunchCard{padding-bottom:67px;position:relative}
+#homeScreen .homeCard .trophy-hint{position:absolute;right:16px;bottom:14px;display:inline-flex;align-items:center;justify-content:center;width:34px;height:38px;pointer-events:none;opacity:.65;filter:saturate(.82);background:none;border:0;padding:0;box-shadow:none}
+#homeScreen .homeCard .trophy-hint.earned{opacity:1;filter:none}
+#homeScreen .homeGrid{margin-top:0}
+#homeScreen .homeCard{--activity-accent:#178e82;--activity-tint:#ccf0e1;border-color:#bfded2;box-shadow:inset 0 1px #fff,0 8px 23px #183b4917}
+#homeScreen #moveLaunchBtn{--activity-accent:#507bc3;--activity-tint:#d8e8ff;border-color:#c8d8eb}
+#homeScreen #convertLaunchCard{--activity-accent:#bb8b30;--activity-tint:#ffeac0;border-color:#e5d7b4}
+#homeScreen .homeCard:not(.lockedCard){background-image:radial-gradient(ellipse at 100% 0%,var(--activity-tint),transparent 80%),repeating-linear-gradient(145deg,transparent 0 19px,#2c69750a 19px 20px),linear-gradient(155deg,#fffdf8,#f1faf5)}
+#homeScreen .homeCard.lockedCard{background-color:#eef3f2!important;background-image:radial-gradient(ellipse at 100% 0%,var(--activity-tint),transparent 85%),repeating-linear-gradient(145deg,transparent 0 19px,#2c697509 19px 20px),linear-gradient(155deg,#fafbf8,#eaf2f2)!important;filter:saturate(.48)!important;opacity:.9}
+#homeScreen .homeCard .symbol{box-shadow:inset 0 1px #fff,0 4px 10px #17374613;border:1px solid #ffffffb0}
+#homeScreen .homeCard::after{opacity:.34}
+#homeScreen .homeModeBtn:not(.lockedMode):not(.grade-green):not(.grade-orange):not(.grade-red){background-image:repeating-linear-gradient(135deg,transparent 0 13px,#4d8b8110 13px 14px),linear-gradient(145deg,#fff8e7,#edf6e7);border-color:#c6d7c2}
+#homeScreen #recordChoice .record-lives{background-image:repeating-linear-gradient(125deg,transparent 0 12px,#ffffff0b 12px 13px),radial-gradient(ellipse at 100% 0%,#b270a74f,transparent 75%),linear-gradient(145deg,#82508f,#502b67);box-shadow:inset 0 1px #ffffff38,0 4px 9px #4b28562b}
+#homeScreen #recordChoice .record-sudden{background-image:repeating-linear-gradient(125deg,transparent 0 12px,#ffffff09 12px 13px),radial-gradient(ellipse at 100% 0%,#ee9a6a3d,transparent 75%),linear-gradient(145deg,#ba4251,#82283c);box-shadow:inset 0 1px #ffffff38,0 4px 9px #6b25302b}
+@media(max-width:760px){.home-hero{grid-template-columns:minmax(0,1fr);gap:17px;margin-bottom:20px}.personal-records{max-width:440px;width:100%;padding:18px 22px;grid-template-columns:minmax(0,1fr) minmax(130px,1fr)}.personal-score>strong{font-size:2rem}}
+@media(max-width:400px){.personal-records{padding:16px;gap:13px;border-radius:17px;grid-template-columns:minmax(0,1fr) minmax(112px,1fr)}.personal-collection{padding-left:12px}.record-label,.collection-heading>span{font-size:.67rem}.collection-cups{gap:7px}.collection-trophy{width:27px}.personal-score>strong{font-size:1.85rem}.personal-score>span{font-size:.7rem}#homeScreen .homeCard .trophy-hint{right:14px;bottom:12px}}
