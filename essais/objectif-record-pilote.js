@@ -55,44 +55,59 @@ async function refresh(selection={}){
  if(observedDoc)renderRights(observedDoc);
  return d;
 }
-// Affichage à partir des seuls plafonds confirmés par l'API du pilote.
-// Le prototype force "Sans connexion" pour éviter ses XP fictifs ; nous ne
-// réactivons jamais ses valeurs simulées. Les données restent côté parent.
+// Le moteur de démonstration possède DÉJÀ son emplacement XP
+// (.classic-xp-remaining / .score-mode-detail). Ne jamais superposer un
+// deuxième badge. Le pilote remplit cet emplacement avec les droits serveur,
+// ou le retire lorsque les droits ne correspondent pas à la sélection.
 function renderRights(doc){
- const rights=pilotRights;
  if(!doc?.documentElement)return;
- let style=doc.getElementById('mathas-pilot-rights-style');
- if(!style){
-   style=doc.createElement('style');
-   style.id='mathas-pilot-rights-style';
-   style.textContent=`
-     #menuScreen button[data-count] {position:relative!important}
-     #menuScreen .mathas-pilot-remaining {position:absolute;bottom:3px;right:5px;
-       font:400 10px/1.1 system-ui,sans-serif;color:#e4ddecaa;
-       pointer-events:none;white-space:nowrap;z-index:4}
-     #menuScreen #startThreeLives .mathas-pilot-remaining,
-     #menuScreen #startSudden .mathas-pilot-remaining,
-     #menuScreen #suddenBtn .mathas-pilot-remaining {right:54px;bottom:4px;
-       font-size:10px;color:#f4e7dcaa}
-   `;
-   doc.head?.appendChild(style);
- }
- const show=(selector,value)=>{
+ // Nettoyer aussi les badges d'anciennes versions du pilote déjà présents.
+ doc.querySelectorAll('#menuScreen .mathas-pilot-remaining').forEach(el=>el.remove());
+ doc.getElementById('mathas-pilot-rights-style')?.remove();
+
+ const chosen=selection(doc),rights=pilotRights;
+ const sameLevel=Number.isSafeInteger(rights?.level)&&rights.level===chosen.level;
+ const sameOps=activeSlug!=='melange'||
+   (Array.isArray(rights?.ops)&&Array.isArray(chosen.ops)&&
+    rights.ops.slice().sort().join(',')===chosen.ops.slice().sort().join(','));
+ const allowed=sameLevel&&sameOps;
+
+ const showClassic=(selector,value)=>{
    for(const button of doc.querySelectorAll(selector)){
-     let indicator=button.querySelector('.mathas-pilot-remaining');
-     if(!Number.isSafeInteger(value)||value<0){
-       indicator?.remove();continue;
+     const matches=[...button.querySelectorAll(':scope > .classic-xp-remaining')];
+     const indicator=matches.shift()||null;
+     matches.forEach(node=>node.remove());
+     if(!allowed||!Number.isSafeInteger(value)||value<0){
+       indicator?.remove();
+       continue;
      }
-     if(!indicator){indicator=doc.createElement('span');indicator.className='mathas-pilot-remaining';button.append(indicator)}
-     indicator.textContent='Reste '+value+' XP';
-     indicator.setAttribute('aria-label','Reste '+value+' XP pilotes');
+     const line=indicator||doc.createElement('span');
+     if(!indicator){line.className='classic-xp-remaining';button.appendChild(line)}
+     if(line.textContent!=='Reste '+value+' XP')line.textContent='Reste '+value+' XP';
    }
  };
- for(const amount of [4,10,20])
-   show('#menuScreen button[data-count="'+amount+'"]',
+ const showMode=(selector,value)=>{
+   for(const button of doc.querySelectorAll(selector)){
+     const meta=button.querySelector('.score-mode-meta');
+     if(!meta)continue;
+     const matches=[...meta.querySelectorAll('.score-mode-detail')];
+     const indicator=matches.shift()||null;
+     matches.forEach(node=>node.remove());
+     if(!allowed||!Number.isSafeInteger(value)||value<0){
+       indicator?.remove();
+       continue;
+     }
+     const line=indicator||doc.createElement('span');
+     if(!indicator){line.className='score-mode-detail';meta.appendChild(line)}
+     if(line.textContent!=='Reste '+value+' XP')line.textContent='Reste '+value+' XP';
+   }
+ };
+ for(const amount of [4,10,20]){
+   showClassic('#menuScreen button[data-count="'+amount+'"]',
      rights?.classic?.[amount]??null);
- show('#menuScreen #startThreeLives',rights?.threeLives??null);
- show('#menuScreen #startSudden,#menuScreen #suddenBtn',rights?.sudden??null);
+ }
+ showMode('#menuScreen #startThreeLives',rights?.threeLives??null);
+ showMode('#menuScreen #startSudden,#menuScreen #suddenBtn',rights?.sudden??null);
 }
 function operations(doc){
  if(activeSlug!=='melange')return null;
@@ -189,7 +204,9 @@ function startWatching(seq){
        renderRights(doc);
        const req=selection(doc),key=JSON.stringify(req);
        if(lastProjectionKey!==key){
-         lastProjectionKey=key;pilotRights=null;renderRights(doc);projectionInFlight=true;
+         lastProjectionKey=key;pilotRights=null;
+         if(window.MathasPilotState?.active)window.MathasPilotState={...window.MathasPilotState,rights:null};
+         renderRights(doc);projectionInFlight=true;
          refresh(req).catch(pilotError).finally(()=>{projectionInFlight=false});
        }
      }
