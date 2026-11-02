@@ -3,9 +3,11 @@
 // for real classes. The session/approved identity and XP rules are server-owned.
 // Three-lives needs a separate half-credit transaction; never disguise it as sudden.
 export const ATOMIC_TEST_APP='addition-ecrite-multiple';
+export const FIXED_TEST_APPS=Object.freeze([ATOMIC_TEST_APP,'addition-ecrite-simple','soustraction-ecrite-simple','multiplication-ecrite-simple']);
+export const isFixedTestApp=appKey=>FIXED_TEST_APPS.includes(appKey);
 const int=(v,min,max)=>Number.isSafeInteger(v)&&v>=min&&v<=max;
 export function normalizeAtomicTestCompletion({appKey,event,source='native'}={}){
- if(appKey!==ATOMIC_TEST_APP||source!=='native'||!event||typeof event!=='object'
+ if(!isFixedTestApp(appKey)||source!=='native'||!event||typeof event!=='object'
    ||event.phase!=='ended'||event.hard===true
    ||!['classic','sudden'].includes(event.mode)
    ||!int(event.level,1,3)||!int(event.score,0,1000))return null;
