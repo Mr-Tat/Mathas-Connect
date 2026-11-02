@@ -6,7 +6,7 @@ export const ATOMIC_TEST_APP='addition-ecrite-multiple';
 const int=(v,min,max)=>Number.isSafeInteger(v)&&v>=min&&v<=max;
 export function normalizeAtomicTestCompletion({appKey,event,source='native'}={}){
  if(appKey!==ATOMIC_TEST_APP||source!=='native'||!event||typeof event!=='object'
-   ||event.phase!=='ended'||event.hard===true
+   ||!((event.mode==='classic'&&event.phase==='finished')||(event.mode==='sudden'&&event.phase==='ended'))||event.hard===true
    ||!['classic','sudden'].includes(event.mode)
    ||!int(event.level,1,3)||!int(event.score,0,1000))return null;
  const total=event.mode==='classic'?event.total:null;
