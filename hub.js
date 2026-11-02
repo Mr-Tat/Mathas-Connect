@@ -32,6 +32,14 @@ const levels = [
 ];
 
 const connectedGameKeys=new Set(['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits']);
+const recordPilotSlugByApp=Object.freeze({
+  'addition-ecrite-simple':'addition-simple',
+  'addition-ecrite-multiple':'addition-multiple',
+  'soustraction-ecrite-simple':'soustraction',
+  'multiplication-ecrite-simple':'multiplication',
+  'melange-calculs-ecrits':'melange'
+});
+
 function progressFor(appKey){
   const p=activeProfile?.progress;
   return p&&Array.isArray(p.apps)?p.apps.find(a=>a.appKey===appKey):null;
@@ -53,17 +61,19 @@ function refreshCardProgress(){
 }
 function card(app) {
   const node = $('appTemplate').content.firstElementChild.cloneNode(true);
-  const target = new URL(app.launch_url, location.href);
+  const pilotSlug=classId===LAB_CLASS?recordPilotSlugByApp[app.app_key]:null;
+  const target = new URL(pilotSlug?'./essais/objectif-record-pilote.html?app='+encodeURIComponent(pilotSlug):app.launch_url, location.href);
   // Le HUB fournit la classe au jeu Connect ; les autorisations restent vérifiées côté serveur.
   if (classId && target.origin === location.origin) target.searchParams.set('class', classId);
    if (playingAsTeacher && ['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
   node.href = target.href;
-  node.dataset.appKey=app.app_key;
+  if(pilotSlug)node.dataset.labPilot=pilotSlug;
+  else node.dataset.appKey=app.app_key;
   node.target = '_blank';
   node.rel = 'noopener noreferrer';
   node.querySelector('.app-name').textContent = app.title;
   node.querySelector('.app-initial').textContent = app.title.charAt(0).toUpperCase();
-  node.querySelector('.app-scores').textContent = progressText(app.app_key);
+  node.querySelector('.app-scores').textContent = pilotSlug?'🧪 Nouvelle version · XP enregistrés dans le pilote TEST':progressText(app.app_key);
   if (app.image_url && !app.image_url.includes('jftzuslpelgzbdrftszw')) {
     const img = document.createElement('img');
     // Un numéro de version uniquement pour les deux miniatures approuvées évite
@@ -96,34 +106,6 @@ function labPreviewSection() {
     objectiveRecordLabPreviews, previewCard);
 }
 
-// Ces cinq cartes pointent vers le pilote authentifié exclusivement pour
-// la classe TEST. Aucun app_key officiel ni XP scolaire dans ces cartes.
-const recordPilotApps=Object.freeze([
-  ['addition-simple','Addition simple'],
-  ['addition-multiple','Addition multiple'],
-  ['soustraction','Soustraction écrite'],
-  ['multiplication','Multiplication simple'],
-  ['melange','Mélange de calculs écrits']
-].map(([id,title])=>Object.freeze({
-  id,title,url:'./essais/objectif-record-pilote.html?app='+encodeURIComponent(id)
-})));
-function recordPilotCard(pilot){
-  const node=$('appTemplate').content.firstElementChild.cloneNode(true);
-  node.href=pilot.url;
-  node.target='_blank';
-  node.rel='noopener noreferrer';
-  node.dataset.labPilot=pilot.id;
-  node.querySelector('.app-name').textContent=pilot.title;
-  node.querySelector('.app-initial').textContent='🧪';
-  node.querySelector('.app-scores').textContent='Pilote Connect · XP de test enregistrés séparément · classe TEST';
-  return node;
-}
-function labPilotSection(){
-  return section('record_pilot','🧪 Jeux en test Connect — Objectif record',
-    'Cinq nouvelles versions en essai authentifié dans la classe TEST. Leurs XP et scores sont enregistrés dans un registre pilote, séparé de ceux des élèves.',
-    recordPilotApps,recordPilotCard);
-}
-
 function section(kind, title, description, apps, makeCard=card) {
   const node = $('levelTemplate').content.firstElementChild.cloneNode(true);
   node.querySelector('.level-title').textContent = title;
@@ -131,7 +113,7 @@ function section(kind, title, description, apps, makeCard=card) {
   node.querySelector('.level-count').textContent = apps.length + ' app' + (apps.length > 1 ? 's' : '');
   node.querySelector('.level-apps').replaceChildren(...apps.map(makeCard));
   const toggle = node.querySelector('.level-toggle');
-  if (['objectif', 'calculs_ecrits', 'outil', 'record_lab', 'record_pilot'].includes(kind)) {
+  if (['objectif', 'calculs_ecrits', 'outil', 'record_lab'].includes(kind)) {
     node.classList.remove('collapsed'); toggle.setAttribute('aria-expanded', 'true');
   }
   toggle.onclick = () => {
@@ -197,13 +179,13 @@ async function showCatalog() {
       section(id, title, desc, apps.filter(a => a.hub_section === id))
     );
     if(classId===LAB_CLASS)groups.unshift(labPreviewSection());
-    if(classId===LAB_CLASS)groups.unshift(labPilotSection());
+
     $('levels').replaceChildren(...groups);
   } catch {
     $('dailyApps').textContent = classId===LAB_CLASS?'Catalogue Connect du laboratoire indisponible. Aucun jeu Connect affiché.':'Le catalogue est momentanément indisponible.';
     // Même si l'Edge du catalogue tombe, seuls les essais statiques sans compte restent disponibles.
     if(classId===LAB_CLASS)$('levels').replaceChildren(labPreviewSection());
-    if(classId===LAB_CLASS)$('levels').prepend(labPilotSection());
+
   }
 }
 
