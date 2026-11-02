@@ -1200,7 +1200,7 @@ body{
 <div class="scorePanel hidden" id="scorePanel" aria-label="Records de conversion">
   <div class="scorePanelRecords"><div class="scoreRecord"><span>☀️ Meilleur du jour</span><strong id="scoreDay">—</strong><small id="scoreDayMode">Aucun score aujourd’hui</small></div>
   <div class="scoreRecord"><span>🏆 Record historique</span><strong id="scoreHistory">—</strong><small id="scoreHistoryMode">À battre !</small></div></div>
-  <div class="scoreMedals"><span class="scoreMedalsTitle">Médailles · atteins un score dans une seule partie</span><div class="scoreMedalRow" id="scoreMedalRow"></div></div>
+  <div class="scoreMedals"><span class="scoreMedalsTitle">Médailles locales · atteins un score dans une seule partie</span><div class="scoreMedalRow" id="scoreMedalRow"></div></div>
 </div><div class="homeGrid"><button id="launchBtn" class="homeCard" type="button"><span class="symbol" aria-hidden="true"><svg viewBox="0 0 54 48" width="47" height="42" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="48" height="34" rx="4" stroke="currentColor" stroke-width="2.4"/><path d="M19 7v34M35 7v34M3 20h48" stroke="currentColor" stroke-width="2"/><path d="M9 14h4m12 0h4m12 0h4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="M8 28h7m10 0h5m10 0h6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></span><strong>1. Construire l’abaque</strong><p>Place les unités, puis classe les images.</p><span class="progressDots" id="stage1Dots" aria-label="Progression : 0 réussite sur 2"></span><span id="trophy-launchBtn" class="trophy-hint" title="Architecte de l’abaque : 12/12"><span class="trophy-icon" aria-hidden="true">🥉</span><span class="trophy-copy"><b>À gagner</b><small>12/12</small></span></span></button><button id="moveLaunchBtn" class="homeCard" type="button"><span class="symbol" aria-hidden="true">↔</span><strong>2. Compter les déplacements</strong><p>Fais glisser le point et compte les déplacements.</p><span class="progressDots" id="stage2Dots" aria-label="Progression : 0 réussite sur 2"></span><span class="lockNote hidden" id="moveLock">🔒 Réussis 2 fois l’activité 1 · 0/2</span><span id="trophy-moveLaunchBtn" class="trophy-hint" title="Maître des déplacements : 8/8"><span class="trophy-icon" aria-hidden="true">🥈</span><span class="trophy-copy"><b>À gagner</b><small>8/8</small></span></span></button><div id="convertLaunchCard" class="homeCard homeCardPanel"><span class="symbol" aria-hidden="true">⇄</span><strong>3. Convertir les longueurs</strong><p>Convertis les longueurs, avec deux aides facultatives.</p><div class="homeModeGrid" id="homeModeGrid" aria-label="Modes de l’activité 3"><button type="button" class="t3Mode homeModeBtn" data-mode="one"><strong>1 page</strong><span>4 conversions</span><span class="modeResult"></span></button><button type="button" class="t3Mode homeModeBtn" data-mode="three"><strong>3 pages</strong><span>12 conversions</span><span class="modeResult"></span></button><button type="button" class="t3Mode homeModeBtn" data-mode="five"><strong>5 pages</strong><span>20 conversions</span><span class="modeResult"></span></button><section id="recordChoice" class="record-choice" aria-label="Objectif record"><h2>🏆 Objectif record</h2><p>Deux façons de marquer un gros score.</p><div class="record-buttons"><button type="button" class="t3Mode homeModeBtn record-lives" data-mode="sudden" data-variant="lives"><strong>❤️❤️❤️ 3 vies</strong><span class="record-caption">Sans trophée</span><span class="modeResult"></span></button><button type="button" class="t3Mode homeModeBtn record-sudden" data-mode="sudden" data-variant="sudden"><strong>💀 Mort subite</strong><span class="record-caption">+20 % de points</span><span class="modeResult"></span></button></div></section></div><span class="lockNote hidden" id="convertLock">🔒 Réussis 2 fois l’activité 2 · 0/2</span><span id="trophy-convertLaunchCard" class="trophy-hint" title="Expert des conversions : 3 séries parfaites"><span class="trophy-icon" aria-hidden="true">🥇</span><span class="trophy-copy"><b>À gagner</b><small>3 séries parfaites</small></span></span></div></div></section><section id="moveScreen" class="hidden" aria-label="Compter les déplacements">
 <div class="moveTop">
   <div><div class="eyebrow">Activité 2 · Comprendre les déplacements</div>
@@ -1447,7 +1447,7 @@ window.MATHAS_ITEMS = [
  let earnedTrophies=[];
  try{const saved=JSON.parse(localStorage.getItem(TROPHIES));if(Array.isArray(saved))earnedTrophies=saved.filter(x=>['bronze','silver','gold'].includes(x));}catch{}
  function earnTrophy(key){if(!earnedTrophies.includes(key)){earnedTrophies.push(key);try{localStorage.setItem(TROPHIES,JSON.stringify(earnedTrophies))}catch{}}}
- let data=blank(), master=false;
+ let data=blank(), master=false, runPractice=false;
  try{const saved=JSON.parse(localStorage.getItem(STORAGE));if(saved&&typeof saved==='object'){
    for(const key of ['stage1','stage2']) if(saved[key]){
      const old=saved[key];const raw=Array.isArray(old.passes)?old.passes.slice(0,2):[];
@@ -1477,6 +1477,10 @@ window.MATHAS_ITEMS = [
      data.scoreRecords.medals=[100,300,500,800].filter(t=>Array.isArray(r.medals)&&r.medals.includes(t)&&data.scoreRecords.allBest>=t);
    }
  }}catch(e){}
+ // Reconcile only this demo's existing local results; never import native or Connect storage.
+ if(data.stage1.passes.includes('green')||data.stage1.passScores.includes(12))earnTrophy('bronze');
+ if(data.stage2.passes.includes('green')||data.stage2.passScores.includes(8))earnTrophy('silver');
+ if(['one','three','five'].every(mode=>data.modes[mode]==='green'))earnTrophy('gold');
  try{master=sessionStorage.getItem(SESSION)==='1'}catch(e){}
  const save=()=>{try{localStorage.setItem(STORAGE,JSON.stringify(data))}catch(e){}};
  const MEDAL_LEVELS=[{min:100,icon:'🥉',label:'100'},{min:300,icon:'🥈',label:'300'},{min:500,icon:'🥇',label:'500'},{min:800,icon:'🏆',label:'800'}];
@@ -1487,7 +1491,7 @@ window.MATHAS_ITEMS = [
  };
  const normalizeDay=()=>{const day=localDay(),r=data.scoreRecords;if(r.dayDate!==day){r.dayDate=day;r.dayBest=0;r.dayMode='';save()}return r};
  const recordScore=(score,mode)=>{
-  if(master)return {dayRecord:false,allRecord:false,newMedals:[]};
+  if(!canRecord())return {dayRecord:false,allRecord:false,newMedals:[]};
   data.recordsByMode[mode]=Math.max(data.recordsByMode[mode]||0,score);save();
   const r=normalizeDay(),dayRecord=score>r.dayBest,allRecord=score>r.allBest;
   if(dayRecord){r.dayBest=score;r.dayMode=mode}
@@ -1500,10 +1504,12 @@ window.MATHAS_ITEMS = [
  const eraseScores=()=>{data.scoreRecords={dayDate:'',dayBest:0,dayMode:'',allBest:0,allMode:'',medals:[]};data.suddenBest=0;data.recordsByMode={};save();render()};
  const color=(correct,total)=>correct===total?'green':correct/total>=.8?'orange':'red';
  const passes=key=>data[key].passes.length;
+ const beginRun=()=>{runPractice=master};
+ const canRecord=()=>!master&&!runPractice;
  const unlocked=what=>master||what==='stage1'||what==='stage2'&&passes('stage1')>=2||what==='stage3'&&passes('stage2')>=2||what==='one'&&passes('stage2')>=2||what==='three'&&['orange','green'].includes(data.modes.one)||what==='five'&&['orange','green'].includes(data.modes.three)||what==='sudden'&&['orange','green'].includes(data.modes.five);
  // Master autorise les essais, mais leurs résultats n'avancent pas les déblocages des élèves.
  const recordStage=(key,correct,total)=>{
-  if(master)return {grade:color(correct,total),count:passes(key)};
+  if(!canRecord())return {grade:color(correct,total),count:passes(key)};
   const grade=color(correct,total);
   if(correct===total)earnTrophy(key==='stage1'?'bronze':'silver');
   if(grade==='red'){if(passes(key)<2){data[key].failed=true;data[key].failedScore=correct}}
@@ -1511,7 +1517,7 @@ window.MATHAS_ITEMS = [
   save();render();return {grade,count:passes(key)};
  };
  const recordMode=(key,correct,total)=>{
-  const grade=color(correct,total);if(master)return grade;
+  const grade=color(correct,total);if(!canRecord())return grade;
   const rank={red:0,orange:1,green:2};
   const oldGrade=data.modes[key];const previous=data.modeScores[key];
   if(!oldGrade||rank[grade]>rank[oldGrade]){data.modes[key]=grade;data.modeScores[key]=correct}
@@ -1519,7 +1525,7 @@ window.MATHAS_ITEMS = [
   if(['one','three','five'].every(m=>data.modes[m]==='green'))earnTrophy('gold');
   save();render();return grade;
  };
- const recordSudden=points=>{if(master)return;data.suddenBest=Math.max(data.suddenBest,points);data.modes.sudden=points>0?'green':'red';save();render()};
+ const recordSudden=points=>{if(!canRecord())return;data.suddenBest=Math.max(data.suddenBest,points);data.modes.sudden=points>0?'green':'red';save();render()};
  function dots(key){const target=$(key==='stage1'?'stage1Dots':'stage2Dots');target.replaceChildren();
   const total=key==='stage1'?12:8;
   const caption=document.createElement('span');caption.className='progressCaption';
@@ -1578,7 +1584,11 @@ window.MATHAS_ITEMS = [
    document.querySelectorAll(`[data-mode="${m}"]`).forEach(b=>{
      b.classList.toggle('lockedMode',!open);b.classList.remove('grade-red','grade-orange','grade-green');if(state)b.classList.add('grade-'+state);
      b.setAttribute('aria-disabled',String(!open));
-     const note=b.querySelector('.modeResult'); if(note) note.textContent=m==='sudden'?(open?'Record : '+(data.recordsByMode[b.dataset.variant==='lives'?'lives':'sudden']||0)+' pts':noteText):noteText;
+     const note=b.querySelector('.modeResult');
+     if(note){
+       const variant=b.dataset.variant==='lives'?'lives':'sudden';
+       note.textContent=m==='sudden'&&open?'Record : '+(data.recordsByMode[variant]||0)+' pts'+(variant==='sudden'?' · '+data.suddenBest+' de suite':''):noteText;
+     }
      if(b.classList.contains('homeModeBtn')) b.classList.toggle('hidden',!homeVisibleMode(m));
    });
   }
@@ -1591,12 +1601,12 @@ window.MATHAS_ITEMS = [
  $('masterCancel').addEventListener('click',()=>$('masterDialog').close());
  $('masterForm').addEventListener('submit',e=>{e.preventDefault();
   if($('masterPassword').value!=='Thecakeisalie'){$('masterError').textContent='Mot de passe incorrect.';$('masterPassword').value='';return}
-  master=true;try{sessionStorage.setItem(SESSION,'1')}catch(e){}$('masterDialog').close();render();
+  master=true;runPractice=true;try{sessionStorage.setItem(SESSION,'1')}catch(e){}$('masterDialog').close();render();
  });
  $('masterExit').addEventListener('click',()=>{master=false;try{sessionStorage.removeItem(SESSION)}catch(e){}render()});
  $('masterEraseScores').addEventListener('click',()=>{if(master&&confirm('Effacer les points, les records et les médailles sur cet appareil ? La progression et les modes débloqués seront conservés.'))eraseScores()});
  $('masterReset').addEventListener('click',()=>{if(master&&confirm('Tout remettre à zéro sur cet appareil : progression, déblocages, points, records et médailles ?'))reset()});
- window.MATHAS_PROGRESS={unlocked,recordStage,recordMode,recordSudden,recordScore,render,grade:color,passes,reset,get master(){return master}};
+ window.MATHAS_PROGRESS={unlocked,beginRun,recordStage,recordMode,recordSudden,recordScore,render,grade:color,passes,reset,get master(){return master},get practice(){return master||runPractice}};
  render();
 })();
 </script><script>
@@ -1608,7 +1618,7 @@ function drawRound(){// Toujours 8 images : le plus souvent 2 par unité, parfoi
  let selection=[];for(const u of TARGET){const candidates=shuffle(items.filter(a=>a.unit===u));const fresh=candidates.filter(a=>!history.includes(a.id)),old=candidates.filter(a=>history.includes(a.id));selection.push(...[...fresh,...old].slice(0,counts[u]));}history=[...new Set([...selection.map(x=>x.id),...history])].slice(0,14);return shuffle(selection);
 }
 function say(t,cl=''){$('feedback').textContent=t;$('feedback').className='feedback '+cl;}
-function start(){round=drawRound();unitPosition={};imgPosition={};stage=1;verified=false;chosen=null;showUnitErrors=false;unitFirstScore=0;unitScored=false;$('homeScreen').classList.add('hidden');$('moveScreen').classList.add('hidden');$('convertScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');$('homeBtn').classList.remove('hidden');$('helpBtn').classList.remove('hidden');$('help').classList.add('hidden');say('');render();}
+function start(){window.MATHAS_PROGRESS.beginRun();round=drawRound();unitPosition={};imgPosition={};stage=1;verified=false;chosen=null;showUnitErrors=false;unitFirstScore=0;unitScored=false;$('homeScreen').classList.add('hidden');$('moveScreen').classList.add('hidden');$('convertScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');$('homeBtn').classList.remove('hidden');$('helpBtn').classList.remove('hidden');$('help').classList.add('hidden');say('');render();}
 function home(){$('homeScreen').classList.remove('hidden');$('gameScreen').classList.add('hidden');$('convertScreen').classList.add('hidden');$('moveScreen').classList.add('hidden');$('homeBtn').classList.add('hidden');$('helpBtn').classList.add('hidden');stage=0;}
 function mapForStage(){return stage===1?unitPosition:imgPosition;}
 function itemFor(id){return items.find(a=>a.id===id);}
@@ -1698,6 +1708,7 @@ function hideHelp(){
 }
 function openMoves(){
  if(!window.MATHAS_PROGRESS.unlocked('stage2'))return;
+ window.MATHAS_PROGRESS.beginRun();
  movePage=0;moveCorrect=0;pageChecked=false;
  $('homeScreen').classList.add('hidden');$('gameScreen').classList.add('hidden');$('convertScreen').classList.add('hidden');
  $('moveScreen').classList.remove('hidden');$('homeBtn').classList.remove('hidden');
@@ -1894,7 +1905,21 @@ for(const a of OPTIONS)for(const b of OPTIONS)if(a!==b)pairList.push([a,b]);
 let series=[],activeIndex=0,locked=false,first=true,correctionMode=false;
 let recordVariant="sudden", lives=3;
 const recordMode=()=>recordVariant==='lives'?'lives':'sudden';
-function renderLives(){const box=$('recordLives');box.classList.toggle('hidden',selectedMode!=='sudden'||recordVariant!=='lives'||$('convertScreen').classList.contains('hidden'));box.setAttribute('aria-label',lives+' vies restantes');box.innerHTML=[0,1,2].map(i=>`<span class="${i<lives?'':'heart-lost'}" aria-hidden="true">${i<lives?'❤️':'💔'}</span>`).join('');}
+function renderLives(){
+ const box=$('recordLives');
+ box.classList.toggle('hidden',selectedMode!=='sudden'||recordVariant!=='lives'||$('convertScreen').classList.contains('hidden'));
+ box.setAttribute('aria-label',lives+' vies restantes');
+ if(!box.children.length){
+   for(let i=0;i<3;i++){const heart=document.createElement('span');heart.className='record-heart';heart.setAttribute('aria-hidden','true');box.appendChild(heart)}
+   const status=document.createElement('span');status.className='heart-status';box.appendChild(status);
+ }
+ [...box.querySelectorAll('.record-heart')].forEach((heart,i)=>{
+   const lost=i>=lives,newLoss=lost&&!heart.classList.contains('heart-lost');
+   heart.classList.toggle('heart-lost',lost);heart.classList.toggle('heart-breaking',newLoss);
+   heart.textContent=lost?'💔':'❤️';
+ });
+ box.querySelector('.heart-status').textContent=lives+' vies restantes';
+}
 $('homeBtn').addEventListener('click',()=>$('recordLives').classList.add('hidden'));
 let selectedMode=null, pageNumber=0, totalPages=1, runCorrect=0, runQuestions=0, suddenStreak=0, runFinished=false, runScore=0;
 const helpRestricted=()=>selectedMode==='sudden'&&suddenStreak>=3;
@@ -1912,7 +1937,7 @@ const calcPoints=ex=>{
 };
 function scoreView(message){
  $('t3ScoreNow').textContent=`${runScore} ${runScore===1?'point':'points'}`;
- $('t3ScoreBadge').textContent=window.MATHAS_PROGRESS.master?'Master · scores non enregistrés':message||'Record du jour à battre !';
+ $('t3ScoreBadge').textContent=window.MATHAS_PROGRESS.practice?'Entraînement Master · scores non enregistrés':message||'Record du jour à battre !';
 }
 const random=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
 const shuffle=arr=>{const x=[...arr];for(let i=x.length-1;i>0;i--){const j=random(0,i);[x[i],x[j]]=[x[j],x[i]]}return x};
@@ -2029,6 +2054,7 @@ function makeSeries(){
 }
 function startMode(mode,variant="sudden"){
  if(!window.MATHAS_PROGRESS.unlocked(mode))return;
+ window.MATHAS_PROGRESS.beginRun();
  $('homeScreen').classList.add('hidden');$('moveScreen').classList.add('hidden');$('gameScreen').classList.add('hidden');
  $('convertScreen').classList.remove('hidden');$('homeBtn').classList.remove('hidden');$('helpBtn').classList.add('hidden');
  recordVariant=variant;lives=3;selectedMode=mode;totalPages={one:1,three:3,five:5,sudden:Infinity}[mode];pageNumber=0;runCorrect=0;runQuestions=0;suddenStreak=0;runFinished=false;runScore=0;
@@ -2315,6 +2341,7 @@ function finishPage(firstGood,corrected=0){
      notifyRecord(window.MATHAS_PROGRESS.recordScore(runScore,recordMode()));
    }else{lives=recordVariant==='lives'?lives-1:0;}
    runFinished=lives===0;renderLives();
+   if(runFinished&&recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak);
    const label=recordVariant==='lives'?'3 vies':'Mort subite';
    $('t3Summary').textContent=`${suddenStreak} conversions réussies · ${runScore} points${recordVariant==='lives'?' · '+lives+' vies restantes':''}.`;
    $('t3New').textContent=runFinished?'↻ Rejouer':'Conversion suivante →';

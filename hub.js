@@ -92,7 +92,7 @@ function previewCard(preview) {
 }
 function labPreviewSection() {
   return section('record_lab', '🏆 Objectif record — essais',
-    'Versions expérimentales des cinq jeux. Les XP affichés sont fictifs et les parties ne sont pas enregistrées sur Connect.',
+    'Versions expérimentales des jeux. Les XP affichés sont fictifs et les parties ne sont pas enregistrées sur Connect.',
     objectiveRecordLabPreviews, previewCard);
 }
 

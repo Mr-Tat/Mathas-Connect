@@ -9,7 +9,11 @@
     "Dedicated demo storage namespace",
     "Objectif record menu and three lives",
     "Separate per-mode point records; native sudden bonus unchanged",
-    "Bottom-right bronze/silver/gold objective badges and permanent local demo trophy ledger"
+    "Bottom-right bronze/silver/gold objective badges and permanent local demo trophy ledger",
+    "Master practice eligibility is latched for each activity, including entering/exiting mid-run",
+    "Broken hearts persist without replaying their loss animation after success",
+    "Sudden-death consecutive record remains visible",
+    "Reconcile previous results from the same isolated demo storage only"
   ],
   "license": "No license file in source checkout; copied with repository owner authorization in task"
 }

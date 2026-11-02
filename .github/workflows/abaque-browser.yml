@@ -23,6 +23,25 @@ jobs:
       - run: npm install --no-save --no-package-lock playwright@1.57.0
       - run: npx playwright install chromium --with-deps
       - run: node --test tests/laboratoire-objective-record.test.mjs tests/abaque-contract.test.mjs
-      - run: node --test tests/abaque-browser.browser.mjs
+      - name: Tester le moteur dans Chromium
+        shell: bash
         env:
           CHROME_BIN: ''
+        run: |
+          set +e
+          node --test tests/abaque-browser.browser.mjs 2>&1 | tee "$RUNNER_TEMP/abaque-browser.tap"
+          test_status=${PIPESTATUS[0]}
+          set -e
+          exit "$test_status"
+      - name: Conserver le résultat dans le résumé public de la CI
+        if: always()
+        shell: bash
+        run: |
+          if test -f "$RUNNER_TEMP/abaque-browser.tap"; then
+            {
+              echo '### Abaque — tests Chromium avec données fictives'
+              echo '```text'
+              cat "$RUNNER_TEMP/abaque-browser.tap"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

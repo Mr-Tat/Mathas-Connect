@@ -29,3 +29,11 @@ La démo a ses propres clés `mathas_connect_abaque_demo_progress_v1` / `mathas_
 Retrait non destructif : supprimer uniquement l’entrée `abaque-longueurs` du registre expérimental ; conserver les fichiers et données locales. La carte statique n’est pas une activation serveur.
 
 **[DÉCISION professeur + CI locale, 02/11/2026] Repères visuels :** bronze en bas à droite de la construction (12/12), argent dans les déplacements (8/8), or dans les conversions (trois séries parfaites). État « À gagner », puis « Obtenu · démo » après réussite locale. Registre local démo distinct, conservé lors d’un reset ; une performance parfaite après les deux réussites reste reconnue. Aucun trophée accordé par Master/3 vies. Les trophées Connect réels devront venir du serveur.
+
+## Audit complémentaire — 02/11/2026
+
+**[CI locale]** Les tests initiaux étaient trop permissifs : leur fixture de déblocage contenait déjà trois séries parfaites. Elle utilise désormais des réussites orange ; l’absence d’or après les deux premières séries est vérifiée explicitement. Master testé au départ et pendant les trois activités, même après sortie ; fuite de bronze reproduite avant correction. Les seuils 10/12 et 7/8, les perfections après deux réussites, les aides/corrections et les points progressifs 3 vies/Mort subite sont vérifiés par saisie réelle.
+
+Résultat réaudité : 284 Node réussis + 1 PostgreSQL ignoré, 7 Chromium Abaque + 6 tests d’isolation/Laboratoire réussis, 9 Chromium existants réussis. Références des preuves et limites de publication dans le passage de flambeau mis à jour. Les deux tests HTTP de production restent non exécutés localement faute d’accès aux services hébergés ; aucun test de backend Abaque n’existe encore.
+
+**[LIVE vérifié]** Contrairement au constat initial trop général, les pages web GitHub sont accessibles et montrent la CI. Le run de `78cfbc2` est en échec navigateur, code 1. Le test écrivait sa capture dans `/workspace` : chemin non portable corrigé, et résumé public ajouté pour vérifier le nouveau run sans confondre validations locales et CI distante.

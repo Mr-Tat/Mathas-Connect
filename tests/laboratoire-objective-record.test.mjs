@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {objectiveRecordLabPreviews} from '../objective-record-lab-previews.mjs';
+import {legacyEdgePreviews} from './fixtures/laboratoire-edge-previews.mjs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
@@ -76,8 +77,13 @@ test('secours Edge limité au GET de la classe TEST, sans fausse activation Conn
   assert.match(edge,/app_key:'lab-record-'\+id/);
   assert.match(edge,/enabled:true,\s*visible:true,\s*featured:false/);
   assert.match(edge,/Objectif record \(XP fictifs\)/);
-  // New static demos need no deployment of the existing Edge fallback.
-  for(const p of objectiveRecordLabPreviews.filter(p=>p.id!=='abaque-longueurs'))assert.ok(edge.includes(p.url),p.id);
+  // Preserve the deployed Edge contract without requiring any new deployment.
+  assert.equal(legacyEdgePreviews.length,5);
+  for(const p of legacyEdgePreviews){
+    assert.ok(edge.includes(p.url),p.id);
+    assert.equal(objectiveRecordLabPreviews.find(preview=>preview.id===p.id)?.url,p.url);
+  }
+  assert.equal(edge.includes('https://mr-tat.github.io/Mathas-Connect/apps/abaque-longueurs/'),false,'Abaque reste une carte statique, pas une activation Edge');
   assert.match(hub,/apps=data\.apps\.filter\(app=>!labDemoKeys\.has\(app\.app_key\)\)/);
   assert.doesNotMatch(edge,/connect_hub_preset_entries/);
   assert.doesNotMatch(edge,/\.from\('connect_xp_credits'\)/);
