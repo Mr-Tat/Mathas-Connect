@@ -13,6 +13,7 @@ on:
       - 'tests/postgres/objective-record-fixed-trophies-fixture.sql'
       - 'tests/postgres/objective-record-fixed-trophies.test.sql'
       - 'supabase/release-candidates/objective_record_addition_server_proof_candidate.sql'
+      - 'supabase/migrations/20261103000500_objective_record_addition_server_proof_test_v1.sql'
       - 'tests/postgres/objective-record-server-proof-addition.test.sql'
       - 'tests/postgres/objective-record-fixed-ops-setup.sql'
       - 'tests/postgres/objective-record-fixed-ops-candidate.sql'
@@ -63,6 +64,6 @@ jobs:
       - name: Trophées permanents, doublons, remise à zéro et barèmes
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-fixed-trophies.test.sql
       - name: Installer l'émission et la validation serveur TEST des additions
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/release-candidates/objective_record_addition_server_proof_candidate.sql
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103000500_objective_record_addition_server_proof_test_v1.sql
       - name: Vérifier 4 questions secrètes, reports, XP, rejouage, reset, expiration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-server-proof-addition.test.sql
