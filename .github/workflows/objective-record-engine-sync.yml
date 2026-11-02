@@ -69,6 +69,18 @@ jobs:
           for game in addition-multiple soustraction multiplication melange; do
             test -s "apps/objective-record/engines/$game/index.html"
           done
+      - name: Archiver les cinq versions visuelles avant remplacement
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .archive
+          (cd apps/objective-record && zip -q -r ../../.archive/MATHAS_CALCULS_ECRITS_ORIGINAUX_20261102.zip engines)
+      - name: Publier le ZIP original comme artefact de retour arrière
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathas-cinq-anciens-moteurs-20261102
+          path: .archive/MATHAS_CALCULS_ECRITS_ORIGINAUX_20261102.zip
+          retention-days: 30
       - name: Commit uniquement des copies d'origine, sans changer les liens en production
         shell: bash
         run: |
