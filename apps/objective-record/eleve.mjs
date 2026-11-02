@@ -2,6 +2,7 @@ import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 import {studentHostContract,permanentTrophyCount} from './student-host-contract.mjs';
 import {ATOMIC_TEST_APP,isFixedTestApp} from './native-official-record.mjs';
 import {createAtomicTestRecorder} from './atomic-test-recorder.mjs';
+import {PROOF_APP,acceptAdditionProofChallenge,normalizeAdditionFirstAttempt,createCertifiedAdditionQueue} from './certified-addition.mjs';
 
 // This is the future SCHOOL launcher, not the legacy pilot XP writer.
 // Its current release gate is TEST-only and READ-ONLY until a verified
@@ -23,11 +24,13 @@ const classId=params.get('class')||'';
 const session=createClient(BASE,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
  ...(teacher?{storageKey:'mathas-connect-professor-auth-v1'}:{})}});
 let generation=0,tokenOwner=null,activeApp='',visibleDoc=null,watching=null,recorder=null,pupilId=null;
+let certifiedRun=null,certifiedQueue=null,certifiedSending=false;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const message=(s)=>{$('status').textContent=s};
 const clear=()=>{
   for(const id of ['app-xp','total-xp','level','trophies'])$(id).textContent='—';
   $('gameFrame').hidden=true;$('gameFrame').removeAttribute('src');$('refresh').disabled=true;
+  $('certified-tools').hidden=true;$('certify').disabled=true;
 };
 async function verifiedToken(){
  const {data:{session:local}}=await session.auth.getSession();
