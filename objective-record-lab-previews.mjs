@@ -4,32 +4,32 @@
 export const objectiveRecordLabPreviews = Object.freeze([
   Object.freeze({
     id: 'abaque-longueurs',
-    title: 'Abaque des longueurs — Objectif record',
-    url: 'https://mr-tat.github.io/Mathas-Connect/apps/abaque-longueurs/',
+    title: 'Abaque des longueurs',
+    url: 'https://mr-tat.github.io/Mathas-Connect/apps/GRAN-abaque-m-1/',
   }),
   Object.freeze({
     id: 'addition-simple',
-    title: 'Addition simple — Objectif record',
+    title: 'Addition simple',
     url: 'https://mr-tat.github.io/CE-Addition-simple/essai-mode-score-3-vies.html',
   }),
   Object.freeze({
     id: 'addition-multiple',
-    title: 'Addition multiple — Objectif record',
+    title: 'Addition multiple',
     url: 'https://mr-tat.github.io/addition-ecrite-multiple/essai-objectif-record-3-vies.html',
   }),
   Object.freeze({
     id: 'soustraction',
-    title: 'Soustraction écrite — Objectif record',
+    title: 'Soustraction écrite',
     url: 'https://mr-tat.github.io/soustraction-ecrite/essai-objectif-record-3-vies.html',
   }),
   Object.freeze({
     id: 'multiplication',
-    title: 'Multiplication simple — Objectif record',
+    title: 'Multiplication simple',
     url: 'https://mr-tat.github.io/Multiplication-simple/essai-objectif-record-3-vies.html',
   }),
   Object.freeze({
     id: 'melange',
-    title: 'Mélange de calculs écrits — Objectif record',
+    title: 'Mélange de calculs écrits',
     url: 'https://mr-tat.github.io/Melange-calculs-ecrits-1/essai-objectif-record-3-vies.html',
   }),
 ]);

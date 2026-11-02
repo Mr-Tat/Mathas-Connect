@@ -39,7 +39,7 @@ async function setup(mockExternal){
   external.push(route.request().url());
   await route.abort();
  });
- return {page,origin,url:origin+'/apps/abaque-longueurs/',errors,external,
+ return {page,origin,url:origin+'/apps/GRAN-abaque-m-1/',errors,external,
   close:async()=>{await browser.close();await new Promise(done=>server.close(done));}};
 }
 const progress=page=>page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
@@ -231,7 +231,7 @@ test('Abaque : carte expérimentale dans le HUB TEST seulement, avec catalogues 
   await page.addInitScript(()=>localStorage.setItem('mathas.connect.mode-libre.v1','1'));
   await page.goto(h.origin+'/hub.html?class='+labClass);
   const preview=page.locator('[data-lab-preview="abaque-longueurs"]');
-  await preview.waitFor();assert.equal(await preview.getAttribute('href'),'https://mr-tat.github.io/Mathas-Connect/apps/abaque-longueurs/');
+  await preview.waitFor();assert.equal(await preview.getAttribute('href'),'https://mr-tat.github.io/Mathas-Connect/apps/GRAN-abaque-m-1/');
   for(const [space,classId] of [['observation','8fe170fa-9e8f-4e80-885a-b0ba68026f64'],['phase1','71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e'],['phase2','1b021ed9-4846-4203-9c7b-4b5fa8d7adab'],['phase2b','0d8ba828-59cc-468b-a4b8-7b2a1af10b88'],['2eco','a9195199-0a28-4e86-99ce-47b36dd6e646']]){
    // The teacher portal supplies both class and space, including Phase 2 B.
    await page.goto(h.origin+'/hub.html?class='+classId+'&space='+space);
@@ -369,6 +369,28 @@ test('Abaque : coupes Mort subite aux pages 3, 5 et 8 seulement, ni cumul ni 3 v
   assert.deepEqual((await progress(page)).scoreRecords.medals,[],'aucune médaille de score');
   await page.evaluate(()=>window.MATHAS_PROGRESS.reset());await page.reload();
   assert.equal(await page.locator('.record-trophies .earned').count(),3,'coupes conservées après reset');
+  assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
+ }finally{await h.close();}
+});
+
+
+test('GRAN : ancienne adresse conservée, paramètres et acquis de la démo préservés',async()=>{
+ // This scenario checks URL forwarding; real Auth is exercised by the local service suite.
+ const h=await setup(async route=>{
+  if(route.request().url()==='https://esm.sh/@supabase/supabase-js@2.95.0'){await route.abort();return true;}
+  return false;
+ }),{page}=h;
+ try{
+  await page.goto(h.url);
+  await page.evaluate(k=>{const state=JSON.parse(localStorage.getItem(k));state.scoreRecords.allBest=129;state.scoreRecords.allMode='lives';localStorage.setItem(k,JSON.stringify(state));},key);
+  await page.goto(h.origin+'/apps/abaque-longueurs/?demo=1#accueil');
+  await page.waitForURL(url=>url.pathname==='/apps/GRAN-abaque-m-1/'&&url.search==='?demo=1'&&url.hash==='#accueil');
+  assert.equal(await page.locator('#personalBest').textContent(),'129');
+  assert.equal(await page.locator('#abaque-demo-state').inputValue(),'signed-out');
+  assert.equal(await page.locator('.abaque-xp-remaining:visible').count(),0);
+  await page.goto(h.origin+'/apps/abaque-longueurs/?connect=1&class='+labClass+'#retour');
+  await page.waitForURL(url=>url.pathname==='/apps/GRAN-abaque-m-1/'&&url.searchParams.get('connect')==='1'&&url.searchParams.get('class')===labClass&&url.hash==='#retour');
+  assert.equal(await page.locator('#abaque-demo-state').count(),0);
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });

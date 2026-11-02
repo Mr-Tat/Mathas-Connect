@@ -1,4 +1,4 @@
-import {APP_KEY,judgeCompletion} from '../../../apps/abaque-longueurs/connect/completion-contract.mjs';
+import {APP_KEY,judgeCompletion} from '../../../apps/GRAN-abaque-m-1/connect/completion-contract.mjs';
 export const PILOT_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const integer=value=>Number.isSafeInteger(value)&&value>=0;

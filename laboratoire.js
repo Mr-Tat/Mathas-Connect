@@ -247,7 +247,7 @@ async function loadApps(){
      teacher.classList.add('teacher-game');buttons.append(teacher);
    }
    if(app.app_key==='abaque-longueurs'){
-     const results=el('a','Résultats Abaque','action');results.href='./apps/abaque-longueurs/professeur.html?class='+TEST_CLASS;results.target='_blank';results.rel='noopener noreferrer';
+     const results=el('a','Résultats Abaque','action');results.href='./apps/GRAN-abaque-m-1/professeur.html?class='+TEST_CLASS;results.target='_blank';results.rel='noopener noreferrer';
      results.onclick=event=>{if(!verified||!consent()){event.preventDefault();display('Confirme d’abord que les profils sont fictifs.',true)}};buttons.append(results);
    }
    card.append(buttons);container.append(card);

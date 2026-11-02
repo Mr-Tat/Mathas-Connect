@@ -1,0 +1,13 @@
+GRAN-abaque-m-1 — Abaque des longueurs, premier parcours Grandeurs.
+
+Le moteur autonome est développé dans son dépôt séparé.
+Le commit exact et les empreintes copiées sont dans source-manifest.json.
+Le dossier source local est /workspace/GRAN-abaque-m-1.
+Le dépôt distant vérifié est encore Mr-Tat/abaque-m-1 tant que le renommage
+GitHub vers Mr-Tat/GRAN-abaque-m-1 n’est pas confirmé.
+
+Cette copie Connect sélectionne uniquement l’environnement Laboratoire.
+L’ancien chemin apps/abaque-longueurs/ redirige vers apps/GRAN-abaque-m-1/.
+L’identifiant de données abaque-longueurs et les acquis ne changent pas.
+Les règles actuelles de six coupes et d’accès à 80 % sont documentées dans
+les fiches d’intégration et le README du dépôt autonome.

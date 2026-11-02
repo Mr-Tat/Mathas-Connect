@@ -2,12 +2,16 @@
 
 **[DÉCISION professeur, 02/11/2026 — montage de l’accueil, décision la plus récente]** Voir [l’accueil et les six trophées](ABAQUE_LONGUEURS_ACCUEIL_20261102.md). Carte Objectif record séparée, accès à 80 % dans chacun des trois formats classiques, trois coupes Mort subite à 3/5/8 pages consécutives, aucune en 3 vies. L’or classique reste indépendant. Résultats sans le mot « Réussite » ; médailles de score supprimées. Les descriptions de trois trophées et de médailles ci-dessous décrivent l’état antérieur.
 
+**[HISTORIQUE, LIVE vérifié sur GitHub]** Démo initiale publiée à `6ac032c` sur [GitHub Pages](https://mr-tat.github.io/Mathas-Connect/apps/abaque-longueurs/), [déploiement réussi](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41368284892). Accord explicite du professeur pour publier directement la démo sur `main`. Aucun pilote Supabase hébergé authentifié n’est revendiqué.
+
 **[LIVE vérifié, GitHub] Démo publiée. [REPO vérifié] Version Connect candidate fermée ; pilote hébergé non exécuté.**
 
 - Démo : https://mr-tat.github.io/Mathas-Connect/apps/abaque-longueurs/ ; publiée sur `main` à `6ac032c6482f30d402e37ca44665521ce85ae92c`, après accord explicite du professeur pour le push direct sans PR.
 - [Déploiement Pages réussi](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41368284892), [CI Abaque réussie](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41367786603), [régression main réussie](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41368285430). Le GET direct Pages reste refusé par le proxy de cet environnement ; ce constat s’appuie sur le déploiement GitHub.
 - Source autonome `Mr-Tat/abaque-m-1` : `7dc9dc00e87302d5aafa1c9d131e500a57419c1d`, dépôt inchangé. Copie `game-original.html` et 25 assets identiques, empreinte source dans `source-manifest.json`.
-- Candidate : `feat/abaque-longueurs-connect`, depuis la démo publiée. Même `apps/abaque-longueurs/`, même `app_key` (`abaque-longueurs`), mode Connect optionnel. Voir [le lot de déploiement](ABAQUE_LONGUEURS_DEPLOIEMENT.md) et [le passage de relais](ABAQUE_LONGUEURS_PASSAGE_FLAMBEAU.md) pour preuves et statut.
+- Candidate : `feat/abaque-longueurs-connect`, depuis la démo publiée. Même `apps/GRAN-abaque-m-1/`, même `app_key` (`abaque-longueurs`), mode Connect optionnel. Voir [le lot de déploiement](ABAQUE_LONGUEURS_DEPLOIEMENT.md) et [le passage de relais](ABAQUE_LONGUEURS_PASSAGE_FLAMBEAU.md) pour preuves et statut.
+
+**[REPO vérifié]** App `abaque-longueurs`, source autonome `GRAN-abaque-m-1` préparée à `69ed04ece90faae317dee8a2ce2d6c4224d0d763` dans son dépôt distinct ; copie versionnée sous `apps/GRAN-abaque-m-1/`. Le manifeste conserve aussi la base historique `7dc9dc0` et les empreintes. Les 25 illustrations restent identiques. Voir [le nommage et la source de référence](NOMMAGE_GRAN_ABAQUE_M_1.md). Trois activités, aides, Master et déblocages préservés. Mode par défaut : démonstration isolée ; aucun crédit Connect. Stockage `mathas_connect_abaque_demo_*` conservé, trophées locaux permanents même après reset. Le tableau de bord relit ces données et le record natif ; il n’invente aucune réussite.
 
 ## Moteur et décisions pédagogiques
 

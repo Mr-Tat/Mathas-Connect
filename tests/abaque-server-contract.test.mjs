@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {judgeCompletion,recordPoints} from '../apps/abaque-longueurs/connect/completion-contract.mjs';
-import {createAbaqueQueue} from '../apps/abaque-longueurs/connect/offline-queue.mjs';
+import {judgeCompletion,recordPoints} from '../apps/GRAN-abaque-m-1/connect/completion-contract.mjs';
+import {createAbaqueQueue} from '../apps/GRAN-abaque-m-1/connect/offline-queue.mjs';
 import {createAbaqueHandler} from '../supabase/functions/connect-abaque/handler.mjs';
 import {build,moves,classic,record,pilotClass} from './fixtures/abaque-events.mjs';
 const authId='00000000-0000-4000-8000-000000000011',studentId='00000000-0000-4000-8000-000000000012';

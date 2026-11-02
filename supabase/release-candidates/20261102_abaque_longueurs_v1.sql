@@ -11,7 +11,7 @@ BEGIN
  IF to_regclass('public.connect_trophy_achievements') IS NULL THEN RAISE EXCEPTION 'permanent_trophy_ledger_required'; END IF;
 END $guard$;
 INSERT INTO public.connect_apps(app_key,title,launch_url,image_url,enabled,hub_section,featured,display_order)
-VALUES('abaque-longueurs','Abaque des longueurs','https://mr-tat.github.io/Mathas-Connect/apps/abaque-longueurs/?connect=1',NULL,false,'outil',false,70);
+VALUES('abaque-longueurs','Abaque des longueurs','https://mr-tat.github.io/Mathas-Connect/apps/GRAN-abaque-m-1/?connect=1',NULL,false,'outil',false,70);
 INSERT INTO public.connect_lab_hub_visibility(app_key,visible) VALUES('abaque-longueurs',false);
 
 -- Future school access is a data activation, never a second application.

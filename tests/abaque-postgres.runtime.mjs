@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {randomUUID,createHash} from 'node:crypto';
 import pg from 'pg';
-import {judgeCompletion} from '../apps/abaque-longueurs/connect/completion-contract.mjs';
+import {judgeCompletion} from '../apps/GRAN-abaque-m-1/connect/completion-contract.mjs';
 import {build,moves,classic,record,pilotClass} from './fixtures/abaque-events.mjs';
 import {validateAudit,buildPilotActivation,version as migrationVersion,name as migrationName,sqlFile} from '../scripts/abaque-release.mjs';
 const path=process.env.ABAQUE_LOCAL_MANIFEST;

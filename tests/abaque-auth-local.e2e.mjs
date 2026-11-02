@@ -81,7 +81,7 @@ async function browserPage(identity,{teacher=false}={}){
    return {release,async wait(){let timer;try{await Promise.race([arrived,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('local_load_not_received')),12000)})]);}finally{clearTimeout(timer);}}};
   }};
 }
-const game=config.static+'/apps/abaque-longueurs/?connect=1&class='+pilotClass;
+const game=config.static+'/apps/GRAN-abaque-m-1/?connect=1&class='+pilotClass;
 async function pending(page){return page.evaluate(()=>{
  const key=Object.keys(localStorage).find(key=>key.startsWith('mathas.abaque.connect.'));
  return key?JSON.parse(localStorage.getItem(key)).pending.length:0;
@@ -113,7 +113,8 @@ test('Chromium + Auth/Edge réels : clavier, XP, trophées, réponse perdue/offl
  for(const event of [build(10),build(10),moves(7),moves(7)])await seed(pupil,event);
  const h=await browserPage(pupil),{page}=h;
  try{
-  await page.goto(game);await page.locator('html[data-abaque-connected]').waitFor();
+  await page.goto(game.replace('/apps/GRAN-abaque-m-1/','/apps/abaque-longueurs/'));
+  await page.waitForURL(url=>url.pathname==='/apps/GRAN-abaque-m-1/'&&url.searchParams.get('connect')==='1');await page.locator('html[data-abaque-connected]').waitFor();
   assert.match(await page.locator('.abaque-account-xp').textContent(),/28 \/ 160/);
   assert.equal(await page.locator('[data-mode="one"] .abaque-xp-remaining').textContent(),'Reste 20 XP');
   await page.setViewportSize({width:320,height:740});
@@ -180,7 +181,7 @@ test('Professeur réel local : consentement avant lecture, progression et reset 
  await seed(pupil,build());
  const teacher=await manager(),h=await browserPage(teacher,{teacher:true}),{page}=h;
  try{
-  await page.goto(config.static+'/apps/abaque-longueurs/professeur.html?class='+pilotClass);
+  await page.goto(config.static+'/apps/GRAN-abaque-m-1/professeur.html?class='+pilotClass);
   await page.locator('#load').click();assert.equal(await page.locator('#results tr').count(),0);
   await page.locator('#fictive-confirm').check();await page.locator('#load').click();
   const row=page.locator(`tr[data-student-id="${pupil.studentId}"]`);await row.waitFor();assert.match(await row.textContent(),/14 \/ 160/);assert.match(await row.textContent(),/Parcours : bronze/);
@@ -212,7 +213,7 @@ test('Chromium + Auth réels : XP absents sans compte/approbation, hors ligne et
  await pool.query("update connect_devices set state='approved' where auth_user_id=$1",[pupil.subject]);
  const h=await browserPage(pupil),{page}=h;let delayed=null;
  try{
-  await page.goto(config.static+'/apps/abaque-longueurs/');
+  await page.goto(config.static+'/apps/GRAN-abaque-m-1/');
   assert.equal(await page.locator('.abaque-xp-remaining:visible').count(),0,'pas de XP en mode démo même avec une session enregistrée');
   await page.goto(game);await page.locator('html[data-abaque-connected]').waitFor();
   assert.equal(await page.locator('#abaque-demo-controls').count(),0,'pas de simulateur dans la connexion réelle');

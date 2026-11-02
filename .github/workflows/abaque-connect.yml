@@ -4,7 +4,7 @@ on:
     branches: [feat/abaque-longueurs-connect]
   pull_request:
     paths:
-      - 'apps/abaque-longueurs/**'
+      - 'apps/GRAN-abaque-m-1/**'
       - 'supabase/functions/connect-abaque/**'
       - 'supabase/functions/connect-api/**'
       - 'supabase/release-candidates/*abaque*'
