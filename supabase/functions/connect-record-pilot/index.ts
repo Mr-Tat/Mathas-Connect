@@ -17,7 +17,7 @@ const keys=['classic:4:perfect','classic:10:pass','classic:10:bonus','classic:20
 type Stored={events:Array<{id:string,mode:string,score:number,points:number,xp:number,at:string}>,earned:Record<string,number>,best:number,trophies:string[]};
 const blank=():Stored=>({events:[],earned:{},best:0,trophies:[]});
 const validState=(s:any):s is Stored=>s&&typeof s==='object'&&Array.isArray(s.events)&&s.earned&&typeof s.earned==='object'&&integer(s.best,0,500000)&&Array.isArray(s.trophies);
-const opsKey=(ops:string[])=>ops.length?ops.join(','):'standard';
+const opsKey=(ops:string[])=>ops.length?'mixed-rate-'+ops.length:'standard';
 const normalizedOps=(raw:unknown,app:string):string[]|null=>{
  if(app!=='melange-calculs-ecrits')return raw==null?[]:null;
  if(!Array.isArray(raw)||raw.length<1||raw.length>3||raw.some(v=>!['add','sub','mul'].includes(v)))return null;
@@ -32,6 +32,7 @@ function proof(b:any,app:string){
  if(b.mode==='classic'&&(![4,10,20].includes(total)||b.score>total))return null;
  if(b.mode==='three-lives'&&b.score>400)return null;
  if(hard&&b.score>200)return null;
+ if(hard&&app==='melange-calculs-ecrits'&&Array.isArray(b.ops)&&b.ops.length!==3)return null;
  const ops=normalizedOps(b.ops,app);if(!ops)return null;
  return {mode:String(b.mode),level:Number(b.level),score:Number(b.score),total,hard,ops,eventId:b.eventId as string};
 }
@@ -45,7 +46,15 @@ function grant(s:Stored,g:NonNullable<ReturnType<typeof proof>>,awards:Record<st
  let added=0;const earned={...s.earned};const variant=g.hard?'hard':'normal';
  const scope=g.level+':'+opsKey(g.ops)+':'+variant+':';
  const possible:Array<[string,number]>=[];
- const offer=(key:string,cap=1)=>{if(awards[key]!=null)possible.push([key,Math.floor(awards[key]*cap)])};
+ const offer=(key:string,cap=1)=>{
+  if(awards[key]==null)return;
+  const base=Number(awards[key]);
+  // Mêmes paliers 1/4, 1/2, plein droit que le contrat Mélange V3.
+  let eligible=base;
+  if(g.ops.length===2)eligible=key==='classic:20:pass'?32:key==='classic:20:bonus'?6:Math.floor(base/2);
+  if(g.ops.length===1)eligible=key==='classic:10:bonus'?2:key==='classic:20:bonus'?3:Math.round(base/4);
+  possible.push([key,Math.floor(eligible*cap)]);
+ };
  if(g.mode==='classic'){
   if(g.total===4&&g.score===4)offer('classic:4:perfect');
   if(g.total===10&&g.score>=8)offer('classic:10:pass');
