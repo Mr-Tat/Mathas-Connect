@@ -50,7 +50,7 @@ test('lancement de la page exclusivement sous classe TEST et JWT approuvé',()=>
  assert.match(code,/hideFictionalXp\(doc\)/);
  assert.match(code,/const chooser=outer\?\.getElementById\('xp-preview-mode'\)/);
  assert.match(html,/XP globaux/);
- assert.match(html,/aucun résultat n’est envoyé sans preuve serveur/i);
+ assert.match(html,/Addition multiple en classe TEST/);
  assert.doesNotMatch(code,/connect-record-pilot/);
  assert.doesNotMatch(code,/action:\s*['"](?:game-record|record|student-save)['"]/);
  assert.doesNotMatch(code,/\/functions\/v1\/connect-record-pilot/);
