@@ -63,3 +63,24 @@ test('le client utilise la RPC scolaire actuelle, non le pilote, et la sauvegard
  assert.match(ledger,/mathas\.record-test-native\.v1/);
  assert.match(ledger,/appKey!==ATOMIC_TEST_APP/);
 });
+
+test('les écritures officielles sont liées à l’identifiant élève dérivé côté serveur',()=>{
+ const host=read('apps/objective-record/eleve.mjs');
+ const edge=read('supabase/functions/connect-results/index.ts');
+ assert.match(host,/if\(!UUID\.test\(loaded\?\.storageSubject\)\)/);
+ assert.match(host,/if\(pupilId&&pupilId!==linked\)/);
+ assert.match(host,/subject:pupilId,storage:localStorage/);
+ assert.match(host,/expectedStudentId:pupilId/);
+ assert.match(edge,/storageSubject:studentId/);
+ assert.match(edge,/b\.expectedStudentId!==studentId/);
+});
+test('fin native vérifiée du moteur Addition multiple : ended, pas finished',()=>{
+ const engine=read('apps/objective-record/engines/addition-multiple/index.html');
+ const bridge=read('apps/objective-record/engines/addition-multiple/lab-objectif-record-v2.js');
+ assert.match(engine,/function finishClassic\(\)/);
+ assert.match(engine,/phase='ended';setNumpadDisabled\(true\)/);
+ assert.match(bridge,/phase,completed:session\.completed/);
+ const p={...classic,phase:'ended'};
+ assert.ok(normalizeAtomicTestCompletion({appKey:ATOMIC_TEST_APP,event:p}));
+ assert.equal(normalizeAtomicTestCompletion({appKey:ATOMIC_TEST_APP,event:{...p,phase:'finished'}}),null);
+});
