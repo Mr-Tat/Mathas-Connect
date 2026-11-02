@@ -23,17 +23,20 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
  */
 export function verifyServerTranscript(session,payload){
  if(!keys(session,['sessionId','studentId','appKey','resetEpoch','rulesetVersion',
-     'level','operations','mode','questions'])
+     'level','operations','mode','total','questions'])
   ||!uuid.test(session.sessionId)||!uuid.test(session.studentId)
   ||!Object.hasOwn(APPS,session.appKey)
   ||!integer(session.resetEpoch)||!integer(session.rulesetVersion)||!session.rulesetVersion
   ||![1,2,3].includes(session.level)
-  ||!['three-lives','sudden'].includes(session.mode)
+  ||!['classic','three-lives','sudden'].includes(session.mode)
   ||!keys(payload,['sessionId','answers','finished'])
   ||payload.sessionId!==session.sessionId||payload.finished!==true
   ||!Array.isArray(payload.answers)
   ||!Array.isArray(session.questions)
   ||session.questions.length<1||session.questions.length>1000
+  ||(session.mode==='classic'
+     ?(![4,10,20].includes(session.total)||session.questions.length!==session.total)
+     :session.total!==undefined&&session.total!==null)
   ||payload.answers.length<1||payload.answers.length>session.questions.length)return null;
  const mixed=session.appKey==='melange-calculs-ecrits';
  const ops=canonicalOperations(session.operations,mixed);
@@ -61,11 +64,11 @@ export function verifyServerTranscript(session,payload){
   if(answer.value===expected)score++;else errors++;
   // Each completed wrong calculation loses exactly one life;
   // sudden death ends on the first error, 3-lives on the third.
-  if(errors >= (session.mode==='sudden'?1:3)
+  if(session.mode!=='classic'&&errors >= (session.mode==='sudden'?1:3)
    &&index!==payload.answers.length-1)return null;
  }
- const lostAll=errors===(session.mode==='sudden'?1:3);
- if(!lostAll&&payload.answers.length!==session.questions.length)return null;
+ const lostAll=session.mode!=='classic'&&errors===(session.mode==='sudden'?1:3);
+ if((session.mode==='classic'||!lostAll)&&payload.answers.length!==session.questions.length)return null;
  return Object.freeze({
   sessionId:session.sessionId,studentId:session.studentId,
   appKey:session.appKey,resetEpoch:session.resetEpoch,
@@ -74,8 +77,14 @@ export function verifyServerTranscript(session,payload){
   completed:payload.answers.length,score,errors,
   endedBy:lostAll?'mistake-limit':'question-limit',
   // Approval of these milestone keys is *still* decided by server-side rules.
-  candidateRecordMilestones:Object.freeze(
-   [5,10].filter(limit=>score>=limit).map(limit=>'record:'+limit)),
+  candidateRecordMilestones:Object.freeze(session.mode==='classic'
+   ?(session.total===4?(score===4?['classic:4:perfect']:[]):
+      session.total===10?[
+        ...(score>=8?['classic:10:pass']:[]),
+        ...(score===10?['classic:10:bonus']:[])]:[
+        ...(score>=16?['classic:20:pass']:[]),
+        ...(score===20?['classic:20:bonus']:[])])
+   :[5,10].filter(limit=>score>=limit).map(limit=>'record:'+limit)),
   trophyEligible:session.mode==='sudden'
  });
 }
