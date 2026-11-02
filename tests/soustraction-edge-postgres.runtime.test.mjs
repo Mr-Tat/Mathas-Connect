@@ -215,7 +215,15 @@ test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et repr
    page.on('pageerror',e=>errors.push(e.message));
    await page.goto(host+'/apps/soustraction-simple/?class='+CLASS,{waitUntil:'domcontentloaded'});
    const frame=page.frameLocator('iframe');
-   await frame.locator('#menuScreen').waitFor({timeout:25000});
+   try{await frame.locator('#menuScreen').waitFor({timeout:25000})}
+   catch(e){
+    const body=await page.locator('body').innerText({timeout:3000}).catch(()=>'<body indisponible>');
+    const frames=page.frames().map(f=>f.url());
+    throw new Error('Soustraction iframe absent: '+JSON.stringify({
+     page:page.url(),body:body.slice(0,1200),frames,
+     errors,actions:responses.map(x=>({action:x.action,ok:x.body?.ok,error:x.body?.error}))
+    })+'; '+String(e));
+   }
    await frame.locator('body').evaluate(()=>window.__setLastWork({label:'Calculs · Niveau 1',score:'4/4',rulerUsed:false}));
    await page.waitForFunction(()=>document.querySelector('#ce-sync')?.textContent?.includes('Synchronisé'),{timeout:25000});
    assert.equal(responses.filter(x=>x.action==='game-record').length,1);
