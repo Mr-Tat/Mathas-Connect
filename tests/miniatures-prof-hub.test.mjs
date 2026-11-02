@@ -31,10 +31,29 @@ test('le mot Connect des HUB attend un compte approuvé, sans masquer celui du p
  const html=readFileSync(path('hub.html'),'utf8');
  const css=readFileSync(path('hub-profile.css'),'utf8');
  const home=readFileSync(path('index.html'),'utf8');
- assert.match(html,/<span id="hub-connect-suffix" class="connect-brand-suffix" hidden>Connect<\/span>/);
+ assert.match(html,/<img id="hub-connect-suffix" class="connect-wordmark-3d"[^>]*alt="Connect"[^>]*hidden>/);
  assert.match(hub,/const authorized = profile\?\.status === 'approved' && profile\?\.classId === classId;/);
  assert.match(hub,/activeProfile=authorized\?profile:null;\s*\/\/[^\n]*\n\s*\$\('hub-connect-suffix'\)\.hidden=!authorized;/);
- assert.match(css,/\.connect-brand \.connect-brand-suffix\[hidden\]\{display:none!important\}/);
- assert.match(html,/hub-profile\.css\?v=20261102-connect-connexion-v1/);
- assert.match(home,/class="teacher-connect-suffix">Connect<\/span>/);
+ assert.match(css,/\.connect-brand img\.connect-wordmark-3d\[hidden\]\{display:none!important\}/);
+ assert.match(html,/hub-profile\.css\?v=20261102-connect-3d-svg-v1/);
+ assert.match(home,/<div class="teacher-logo-lockup">[^\n]*<img class="connect-wordmark-3d"[^>]*alt="Connect"/);
+});
+
+test('la signature Connect 3D est vectorielle, bleue devant et mauve-bleu sur les tranches',()=>{
+ const svg=readFileSync(path('assets/brand/connect-wordmark-3d.svg'),'utf8');
+ const home=readFileSync(path('index.html'),'utf8');
+ const hub=readFileSync(path('hub.html'),'utf8');
+ const css=readFileSync(path('style.css'),'utf8');
+ assert.match(svg,/<svg[^>]*viewBox="0 8 232 54"/);
+ assert.match(svg,/<path id="letters" d="M/);
+ assert.match(svg,/fill="#0256B8"/);
+ assert.match(svg,/#9B60DF/);
+ assert.match(svg,/#66B9F6/);
+ assert.match(svg,/translate\(1\.8 3\.0\)/);
+ assert.doesNotMatch(svg,/<text\b|<script\b|@import/);
+ assert.equal((home.match(/class="connect-wordmark-3d"/g)||[]).length,4);
+ assert.equal((hub.match(/class="connect-wordmark-3d"/g)||[]).length,1);
+ assert.match(css,/\.teacher-logo-lockup img\.connect-wordmark-3d/);
+ assert.match(css,/\.student-entry-brand img\.connect-wordmark-3d/);
+ assert.match(home,/style\.css\?v=20261102-connect-3d-svg-v1/);
 });
