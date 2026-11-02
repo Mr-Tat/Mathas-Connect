@@ -4,7 +4,7 @@ import {PROOF_APP,acceptAdditionProofChallenge,normalizeAdditionFirstAttempt,
 // First vertical slice only: native Addition simple, class TEST, classic 4/L1.
 // The database issues operands and verifies digits and carries. The browser
 // cannot choose the grade, milestone or credited XP.
-export function createAdditionProofUI({button,panel,levelSelect,totalSelect,frame,getContext,call,refresh,notify}){
+export function createAdditionProofUI({button,panel,levelSelect,totalSelect,frame,getContext,call,refresh,notify,onRecorded=()=>{}}){
  let run=null,queue=null,sending=false,suppressedTerminal=false;
  const isCurrent=seq=>seq===getContext().generation&&getContext().activeApp===PROOF_APP;
  const inner=()=>{
@@ -52,8 +52,15 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,fram
      ||!Number.isSafeInteger(ack.xp?.delta)||ack.verifiedScore<0||ack.verifiedScore>current.total)
      throw Error('Réponse mathématique non confirmée par le serveur');
    queue?.clear();run=null;suppressedTerminal=true;
-   await refresh();
-   notify('✅ Vérifié côté serveur : '+ack.verifiedScore+'/'+current.total+' · +'+ack.xp.delta+' XP Connect.');
+   // This session ID is the same eventId as the official score receipt.
+   // A consent offer follows server verification and never affects the award.
+   try{onRecorded({eventId:current.sessionId,appKey:PROOF_APP,duplicate:ack.duplicate===true})}
+   catch{/* Projection is optional, and cannot roll back an awarded result. */}
+   let profileUpdated=true;
+   try{await refresh()}catch{profileUpdated=false}
+   notify('✅ Vérifié côté serveur : '+ack.verifiedScore+'/'+current.total+
+    ' · +'+ack.xp.delta+' XP Connect.'+
+    (profileUpdated?'':' Profil à actualiser lorsque la connexion revient.'));
   }catch(e){
    if(isCurrent(current.generation))notify('⚠️ Preuve conservée. Actualiser pour retenter : '+e.message);
   }finally{sending=false}
