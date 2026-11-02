@@ -5,7 +5,7 @@ import {createAtomicTestRecorder} from '../apps/objective-record/atomic-test-rec
 import {readFileSync} from 'node:fs';
 const read=f=>readFileSync(new URL('../'+f,import.meta.url),'utf8');
 const TEST='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
-const classic={phase:'finished',mode:'classic',level:2,score:9,total:10,completed:10,hard:false};
+const classic={phase:'ended',mode:'classic',level:2,score:9,total:10,completed:10,hard:false};
 test('natif : 4, 10, 20 et Mort subite seulement pour Addition multiple',()=>{
  const p=normalizeAtomicTestCompletion({appKey:ATOMIC_TEST_APP,event:classic});
  assert.deepEqual(p,{schemaVersion:1,mode:'classic',level:2,score:9,total:10,points:0,rewards:null});
