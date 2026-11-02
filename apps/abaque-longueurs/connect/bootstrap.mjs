@@ -43,7 +43,7 @@ async function connect(){
   document.querySelector('.demo-notice').textContent=online?(CLASS===PILOT?'Laboratoire connecté · résultats liés à ton compte':'Mode Connect · résultats liés à ton compte'):'Hors connexion · résultats conservés en attente de synchronisation';
   label.textContent=snapshot.displayName||'Compte Connect';
   xp.textContent=online?snapshot.xp.appXp+' / 160 XP acquis · '+snapshot.trophies.length+' / 3 trophées':'Connexion à confirmer';
-  for(const [kind,selector] of Object.entries({build:'#launchBtn .trophy-copy',moves:'#moveLaunchBtn .trophy-copy',one:'[data-mode="one"]',three:'[data-mode="three"]',five:'[data-mode="five"]',lives:'[data-variant="lives"] .record-caption',sudden:'[data-variant="sudden"] .record-caption'})){
+  for(const [kind,selector] of Object.entries({build:'#launchBtn',moves:'#moveLaunchBtn',one:'[data-mode="one"]',three:'[data-mode="three"]',five:'[data-mode="five"]',lives:'[data-variant="lives"]',sudden:'[data-variant="sudden"]'})){
    let hint=hintNodes.get(kind);
    if(!hint){hint=element('span','','abaque-xp-remaining');document.querySelector(selector).append(hint);hintNodes.set(kind,hint);}
    hint.hidden=!online;hint.textContent='Reste '+snapshot.xp.remaining[kind]+' XP';

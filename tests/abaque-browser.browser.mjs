@@ -59,22 +59,27 @@ test('Abaque : premiers essais 10/12 et 7/8, déblocages, puis trophées parfait
   await page.goto(h.url);
   assert.equal(await page.locator('.trophy-hint').count(),3);
   assert.equal(await page.locator('.trophy-hint.earned').count(),0);
+  assert.equal(await page.locator('#personalBest').textContent(),'0');
+  assert.equal(await page.locator('#personalTrophyCount').textContent(),'0 / 3');
+  assert.deepEqual(await page.locator('.trophy-hint').allTextContents(),['','','']);
   assert.equal(await page.locator('#moveLaunchBtn').getAttribute('aria-disabled'),'true');
   for(let run=0;run<2;run++)await solveConstruction(page,{imperfect:true});
   assert.deepEqual((await progress(page)).stage1.passScores,[10,10]);
-  assert.equal(await page.locator('#trophy-launchBtn b').textContent(),'À gagner');
+  assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'false');
   assert.equal(await page.locator('#moveLaunchBtn').getAttribute('aria-disabled'),'false');
   await solveConstruction(page);
-  assert.equal(await page.locator('#trophy-launchBtn b').textContent(),'Obtenu · démo');
+  assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'true');
   for(let run=0;run<2;run++)await solveMoves(page,{imperfect:true});
   assert.deepEqual((await progress(page)).stage2.passScores,[7,7]);
-  assert.equal(await page.locator('#trophy-moveLaunchBtn b').textContent(),'À gagner');
+  assert.equal(await page.locator('#trophy-moveLaunchBtn').getAttribute('data-earned'),'false');
   await solveMoves(page);
   assert.equal(await page.locator('[data-mode="one"]').getAttribute('aria-disabled'),'false');
-  assert.equal(await page.locator('#trophy-moveLaunchBtn b').textContent(),'Obtenu · démo');
-  assert.equal(await page.locator('#trophy-convertLaunchCard b').textContent(),'À gagner');
+  assert.equal(await page.locator('#trophy-moveLaunchBtn').getAttribute('data-earned'),'true');
+  assert.equal(await page.locator('#trophy-convertLaunchCard').getAttribute('data-earned'),'false');
   await page.evaluate(()=>window.MATHAS_PROGRESS.reset());await page.reload();
   assert.equal(await page.locator('.trophy-hint.earned').count(),2,'acquis démo conservés après reset/rechargement');
+  assert.equal(await page.locator('#personalTrophyCount').textContent(),'2 / 3');
+  assert.equal(await page.locator('.collection-trophy.earned').count(),2);
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });
@@ -87,7 +92,8 @@ test('Abaque : or seulement après les trois vraies séries parfaites, scores na
    await page.locator(`[data-mode="${mode}"]`).click();
    for(let n=0;n<pages;n++){await inputConversion(page);await modal(page,n+1===pages?'Accueil':'Page suivante');}
    assert.equal((await progress(page)).recordsByMode[mode],max);
-   assert.equal(await page.locator('#trophy-convertLaunchCard b').textContent(),mode==='five'?'Obtenu · démo':'À gagner');
+   assert.equal(await page.locator('#trophy-convertLaunchCard').getAttribute('data-earned'),String(mode==='five'));
+   assert.equal(await page.locator('#personalBest').textContent(),String(max));
   }
   for(const width of [320,768,1024]){
    await page.setViewportSize({width,height:900});
@@ -98,6 +104,8 @@ test('Abaque : or seulement après les trois vraies séries parfaites, scores na
    }));
    assert.deepEqual(bounds,[true,true,true],'trophées en bas à droite à '+width+' px');
   }
+  await page.setViewportSize({width:1440,height:1000});
+  await page.screenshot({path:resolve(tmpdir(),'abaque-desktop.png'),fullPage:true});
   await page.setViewportSize({width:320,height:900});
   await page.screenshot({path:resolve(tmpdir(),'abaque-mobile.png'),fullPage:true});
   assert.deepEqual(h.external,[]);assert.deepEqual(h.errors,[]);

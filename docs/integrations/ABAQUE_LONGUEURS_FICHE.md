@@ -32,3 +32,7 @@ Tableau professeur dédié, consentement avant lecture, permission de classe et 
 Les deux tests HTTP de production et l’ancien test Soustraction PostgreSQL avec son Chromium Playwright propre sont séparés : ce dernier a atteint ses contrôles serveur mais son navigateur reste bloqué par le téléchargement interdit du binaire. Les autres tests navigateur utilisent Chromium système. Aucun de ces tests ne prouve un pilote Supabase hébergé.
 
 **[PROPOSÉ]** Installation SQL masquée/désactivée, fonctions Edge, Pages puis pilote fictif : accord précis et accès Supabase nécessaires. Aucune ouverture des HUB scolaires. Arrêt non destructif prévu dans le lot de déploiement.
+
+**[DÉCISION professeur, 02/11/2026 — interface]** Trois coupes seules, sans condition de réussite affichée ; meilleur score et collection obtenue en haut à droite ; papier quadrillé et cartes/boutons colorés. Ces changements sont repris de la branche `feat/abaque-longueurs-interface` dans cette même application candidate.
+
+**[DÉCISION professeur, réponse explicite]** « Afficher uniquement les XP confirmés par Connect ». Le libellé reste « Reste N XP », sans simulation locale et masqué hors connexion. Les nouveaux emplacements séparent l’indicateur XP des coupes. Le tableau de bord est hydraté par les mêmes données serveur que le jeu ; aucun import des acquis de la démo.
