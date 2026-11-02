@@ -45,7 +45,7 @@ test('true native engine receives issued calculations and captures first submiss
  const ui=read('apps/objective-record/certified-addition-ui.mjs');
  const edge=read('supabase/functions/connect-objective-record-test/index.ts');
  assert.match(engine,/window\.__mathasServerCertified/);
- assert.match(engine,/proofCaptured=false/);
+ assert.match(engine,/proofCaptured:false/);
  assert.match(engine,/MathasCertifiedAttempt\?\./);
  assert.ok(engine.indexOf('MathasCertifiedAttempt?.(')<engine.indexOf('s.firstTry=false;hadError=true'));
  assert.match(host,/certifiedUI\.bind\(inside\.contentWindow,doc\)/);
