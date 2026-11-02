@@ -75,3 +75,15 @@ test('les cinq cartes TEST proposent le nouveau lanceur sans remplacer le pilote
  assert.match(lab,/const pilotSlug=recordPilotSlugByApp\[app\.app_key\]/);
  assert.match(lab,/buttons\.append\(student\)/);
 });
+
+test('Monsieur T peut ouvrir le nouvel hôte depuis sa session séparée, après activation',()=>{
+ const lab=read('laboratoire.js');
+ const host=read('apps/objective-record/eleve.mjs');
+ assert.match(lab,/Hôte Monsieur T · lecture seule/);
+ assert.match(lab,/candidateTeacher\.disabled=!teacherReady/);
+ assert.match(lab,/guard\(\);if\(!teacherReady\)throw Error/);
+ assert.match(lab,/teacherUrl\.searchParams\.set\('joueur','prof'\)/);
+ assert.match(lab,/candidateTeacher\.classList\.add\('teacher-game'\)/);
+ assert.match(host,/teacher\?\{storageKey:'mathas-connect-professor-auth-v1'\}/);
+ assert.match(host,/teacher\?'teacher-player':'student-me'/);
+});

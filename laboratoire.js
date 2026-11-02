@@ -278,6 +278,18 @@ async function loadApps(){
        }
      };
      buttons.append(candidate);
+     // Monsieur T réutilise la session professeur isolée du HUB TEST,
+     // sans passer pour un élève anonyme ni produire de crédits scolaires.
+     const candidateTeacher=el('button','Hôte Monsieur T · lecture seule','secondary');
+     candidateTeacher.classList.add('teacher-game');
+     candidateTeacher.disabled=!teacherReady;
+     candidateTeacher.onclick=()=>run(async()=>{
+       guard();if(!teacherReady)throw Error('Active d’abord Monsieur T.');
+       const teacherUrl=new URL(target.href);
+       teacherUrl.searchParams.set('joueur','prof');
+       window.open(teacherUrl.href,'_blank','noopener,noreferrer');
+     });
+     buttons.append(candidateTeacher);
    }
    if(teacherGameKeys.includes(app.app_key)&&new URL(linkFor(app)).origin===location.origin){
      const teacher=el('button','Monsieur T','secondary');teacher.disabled=!teacherReady;
