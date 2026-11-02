@@ -5,11 +5,12 @@ import {objectiveRecordLabPreviews} from '../objective-record-lab-previews.mjs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
-test('cinq démos Pages distinctes, sans app_key ni attribut d’XP Connect',()=>{
-  assert.equal(objectiveRecordLabPreviews.length,5);
-  assert.equal(new Set(objectiveRecordLabPreviews.map(p=>p.id)).size,5);
-  assert.equal(new Set(objectiveRecordLabPreviews.map(p=>p.url)).size,5);
+test('six démos Pages distinctes, sans app_key ni attribut d’XP Connect',()=>{
+  assert.equal(objectiveRecordLabPreviews.length,6);
+  assert.equal(new Set(objectiveRecordLabPreviews.map(p=>p.id)).size,6);
+  assert.equal(new Set(objectiveRecordLabPreviews.map(p=>p.url)).size,6);
   const expected=new Map([
+    ['abaque-longueurs','/Mathas-Connect/apps/abaque-longueurs/'],
     ['addition-simple','/CE-Addition-simple/essai-mode-score-3-vies.html'],
     ['addition-multiple','/addition-ecrite-multiple/essai-objectif-record-3-vies.html'],
     ['soustraction','/soustraction-ecrite/essai-objectif-record-3-vies.html'],
@@ -27,7 +28,7 @@ test('cinq démos Pages distinctes, sans app_key ni attribut d’XP Connect',()=
   assert.equal(expected.size,objectiveRecordLabPreviews.length);
 });
 
-test('les cinq essais n’apparaissent que dans le HUB de la classe TEST',()=>{
+test('les essais n’apparaissent que dans le HUB de la classe TEST',()=>{
   const hub=read('hub.js'),home=read('hub.html'),catalogue=read('hub-catalog.json');
   assert.match(hub,/import \{objectiveRecordLabPreviews\} from '\.\/objective-record-lab-previews\.mjs'/);
   assert.match(hub,/const LAB_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'/);
@@ -75,7 +76,8 @@ test('secours Edge limité au GET de la classe TEST, sans fausse activation Conn
   assert.match(edge,/app_key:'lab-record-'\+id/);
   assert.match(edge,/enabled:true,\s*visible:true,\s*featured:false/);
   assert.match(edge,/Objectif record \(XP fictifs\)/);
-  for(const p of objectiveRecordLabPreviews)assert.ok(edge.includes(p.url),p.id);
+  // New static demos need no deployment of the existing Edge fallback.
+  for(const p of objectiveRecordLabPreviews.filter(p=>p.id!=='abaque-longueurs'))assert.ok(edge.includes(p.url),p.id);
   assert.match(hub,/apps=data\.apps\.filter\(app=>!labDemoKeys\.has\(app\.app_key\)\)/);
   assert.doesNotMatch(edge,/connect_hub_preset_entries/);
   assert.doesNotMatch(edge,/\.from\('connect_xp_credits'\)/);

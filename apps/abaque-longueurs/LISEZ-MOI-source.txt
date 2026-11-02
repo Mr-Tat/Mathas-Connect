@@ -1,0 +1,59 @@
+MATH'AS / LONGUEURS — v1.0.0
+
+PREMIÈRE VERSION MAJEURE : POINTS ET RECORDS
+Base : v0.8.11, dont les trois activités et les illustrations sont conservées.
+
+Installer et jouer hors ligne
+- Décompresser le ZIP en conservant index.html et assets/images ensemble.
+- Ouvrir index.html dans un navigateur récent.
+- Aucun compte ni connexion Internet n'est nécessaire.
+- Les données sont enregistrées sur cet appareil, dans le stockage local du navigateur.
+
+Points : uniquement dans « 3. Convertir les longueurs »
+- La progression et les déblocages conservent leurs règles précédentes.
+- Quatre conversions par page classique.
+- Bonne réponse au premier essai, sans aide : 25 points page 1,
+  puis 27 / 29 / 31 / 33 points selon la page.
+- Manipulation de la virgule utilisée : 5 points de moins.
+- Unités affichées : 10 points de moins.
+- Bonne réponse corrigée au deuxième essai : 6 points.
+- Réponse fausse : 0 point.
+- Une aide consultée reste comptabilisée pour l'exercice même après fermeture.
+- Les points d'une bonne réponse sont fixés dès sa validation : ouvrir
+  ensuite une aide pour une autre question ne modifie pas ses points.
+- Plafonds théoriques sans aide : 1 page = 100 pts ; 3 pages = 324 pts ;
+  5 pages = 580 pts.
+
+Mort subite
+- Une erreur termine la série, sans retirer les points déjà gagnés.
+- 30 points par bonne réponse (questions 1 à 4) ; +5 points par réponse
+  tous les 4 exercices consécutifs réussis ; aucun plafond.
+- Si une aide est utilisée aux premières questions : 80 % du barème
+  avec manipulation seule, 60 % si les unités sont affichées.
+- À partir de la question 2, les unités ne sont plus activables.
+- À partir de la question 4, toutes les aides sont indisponibles.
+- La série et les points réalisés sont sauvegardés dès chaque réussite :
+  quitter avant la prochaine question ne fait pas perdre le record acquis.
+
+Records et médailles
+- Un seul meilleur score du jour, et un seul meilleur score historique,
+  tous modes de conversion confondus. On ne cumule pas les parties.
+- En classique, le score d'une partie est enregistré à la fin de la série.
+- La date du jour est déterminée dans le fuseau horaire Europe/Brussels.
+- Médailles collectionnables aux seuils 100, 300, 500 et 800 points ;
+  elles ne rajoutent pas de points et sont basées sur une même partie.
+- Les records restent enregistrés lors d'une mise à jour du fichier HTML
+  dans le même contexte de stockage du navigateur.
+
+Mode enseignant (Master)
+- « Effacer les scores » : efface points, meilleurs scores, médailles
+  et record chiffré de Mort subite, sans effacer les réussites et déblocages.
+- « Retour à 0 » : efface aussi toute la progression et les déblocages.
+- Les deux actions demandent une confirmation.
+- Les parties réalisées en Master ne modifient pas les records ni les déblocages.
+
+Les données ne sont pour l'instant ni synchronisées entre élèves ni envoyées
+à un serveur. Une fonction de classement par classe pourra être ajoutée
+ultérieurement ; cette archive ne contient pas cette fonctionnalité.
+
+Version GitHub : https://github.com/Mr-Tat/abaque-m-1

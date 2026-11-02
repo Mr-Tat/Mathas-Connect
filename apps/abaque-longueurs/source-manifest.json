@@ -1,0 +1,14 @@
+{
+  "sourceRepository": "Mr-Tat/abaque-m-1",
+  "sourceCommit": "7dc9dc00e87302d5aafa1c9d131e500a57419c1d",
+  "sourceSha256": "6af3f61d544dbd473db8a506d5340b304b39b78a3c747fd7a709dfae5244803f",
+  "appKey": "abaque-longueurs",
+  "status": "isolated-demo",
+  "connectEnabled": false,
+  "changes": [
+    "Dedicated demo storage namespace",
+    "Objectif record menu and three lives",
+    "Separate per-mode point records; native sudden bonus unchanged"
+  ],
+  "license": "No license file in source checkout; copied with repository owner authorization in task"
+}

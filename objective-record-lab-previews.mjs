@@ -3,6 +3,11 @@
 // Leurs URL sont publiques ; seule leur mise en avant dans le HUB est limitée à la classe TEST.
 export const objectiveRecordLabPreviews = Object.freeze([
   Object.freeze({
+    id: 'abaque-longueurs',
+    title: 'Abaque des longueurs — Objectif record',
+    url: 'https://mr-tat.github.io/Mathas-Connect/apps/abaque-longueurs/',
+  }),
+  Object.freeze({
     id: 'addition-simple',
     title: 'Addition simple — Objectif record',
     url: 'https://mr-tat.github.io/CE-Addition-simple/essai-mode-score-3-vies.html',

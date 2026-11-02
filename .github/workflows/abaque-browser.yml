@@ -1,0 +1,28 @@
+name: Abaque laboratoire - moteur isole
+on:
+  push:
+    branches: [feat/abaque-longueurs-laboratoire]
+  pull_request:
+    paths:
+      - 'apps/abaque-longueurs/**'
+      - 'objective-record-lab-previews.mjs'
+      - 'tests/abaque*'
+      - 'tests/laboratoire-objective-record.test.mjs'
+      - '.github/workflows/abaque-browser.yml'
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+      - run: npm install --no-save --no-package-lock playwright@1.57.0
+      - run: npx playwright install chromium --with-deps
+      - run: node --test tests/laboratoire-objective-record.test.mjs tests/abaque-contract.test.mjs
+      - run: node --test tests/abaque-browser.browser.mjs
+        env:
+          CHROME_BIN: ''
