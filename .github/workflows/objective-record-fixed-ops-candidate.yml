@@ -15,6 +15,8 @@ on:
       - 'supabase/release-candidates/objective_record_addition_server_proof_candidate.sql'
       - 'supabase/migrations/20261103000500_objective_record_addition_server_proof_test_v1.sql'
       - 'tests/postgres/objective-record-server-proof-addition.test.sql'
+      - 'supabase/migrations/20261103013500_objective_record_addition_proof_all_classic_v2.sql'
+      - 'tests/postgres/objective-record-addition-all-classic.test.sql'
       - 'tests/postgres/objective-record-fixed-ops-setup.sql'
       - 'tests/postgres/objective-record-fixed-ops-candidate.sql'
       - '.github/workflows/objective-record-fixed-ops-candidate.yml'
@@ -67,3 +69,7 @@ jobs:
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103000500_objective_record_addition_server_proof_test_v1.sql
       - name: Vérifier 4 questions secrètes, reports, XP, rejouage, reset, expiration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-server-proof-addition.test.sql
+      - name: Installer les 9 variantes Classique certifiées TEST
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103013500_objective_record_addition_proof_all_classic_v2.sql
+      - name: Vérifier niveaux 1/2/3, séries 4/10/20, reports, trophées et refus ancien protocole
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-addition-all-classic.test.sql
