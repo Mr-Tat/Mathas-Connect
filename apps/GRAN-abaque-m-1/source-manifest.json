@@ -6,8 +6,8 @@
   "baselineSourceCommit": "7dc9dc00e87302d5aafa1c9d131e500a57419c1d",
   "baselineSourceSha256": "6af3f61d544dbd473db8a506d5340b304b39b78a3c747fd7a709dfae5244803f",
   "appKey": "abaque-longueurs",
-  "status": "isolated-demo",
-  "connectEnabled": false,
+  "status": "candidate-connect-closed",
+  "connectEnabled": true,
   "sourceFiles": {
     "index.html": "1d3c50dde603f872213750eafcdcb365815b5a6ae6ac538b8bdcee1372e06896",
     "abaque.css": "d499f2618c664d1d9788ce64c924e1ed6aa81fbb36e16bc9e5300bfed5716b97",
@@ -41,7 +41,14 @@
   },
   "changes": [
     "Versioned copy of the standalone GRAN-abaque-m-1 application",
-    "Laboratory environment adapter; historical app_key and demo storage preserved"
+    "Laboratory environment adapter; historical app_key and demo storage preserved",
+    "Optional authenticated adapter and native proof hooks; standalone source remains separate",
+    "Server-only XP and permanent trophy acknowledgements"
   ],
-  "license": "Copied with repository owner authorization in this task"
+  "license": "Copied with repository owner authorization in this task",
+  "adapterFiles": [
+    "index.html",
+    "abaque.css",
+    "environment.js"
+  ]
 }

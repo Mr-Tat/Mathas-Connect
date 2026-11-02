@@ -11,3 +11,5 @@
 .lab-visibility-toggle input{margin:0;width:15px;height:15px;accent-color:#245f92;cursor:pointer}
 .lab-visibility-toggle:has(input:disabled){opacity:.5;cursor:not-allowed}
 .lab-connected-badge[hidden]{display:none}
+
+.action[aria-disabled="true"]{opacity:.55;cursor:not-allowed}

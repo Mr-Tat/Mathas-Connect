@@ -89,6 +89,15 @@ html:not([data-abaque-demo-state="connected"]):not([data-abaque-demo-state="coll
 @media(max-width:600px){.demo-controls{order:3;width:100%;margin:0;justify-content:space-between}.demo-controls select{flex:1;max-width:235px}header .headerBtns{margin-left:auto}}
 @media(max-width:400px){.demo-controls{flex-direction:column;align-items:stretch;gap:5px}.demo-controls select{width:100%;max-width:none;flex:none}}
 
+/* La simulation ne déverrouille pas les compteurs réels. */
+html[data-abaque-pending] .shell{visibility:hidden}
+.abaque-connect-panel{position:sticky;top:0;z-index:20;display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:9px 14px;background:#173c50;color:white;font:600 .8rem system-ui}
+.abaque-connect-panel a{color:#d5f3ff}.abaque-connect-panel .btn{min-height:32px;padding:4px 9px;font-size:.78rem}.abaque-account-xp{margin-left:auto;color:#ffe6a0}
+#homeScreen #recordChoice .record-caption{position:relative}
+#homeScreen #recordChoice .record-caption .abaque-xp-remaining{display:block;text-align:right;margin-top:6px}
+html[data-abaque-connected] #homeScreen .homeModeBtn[data-mode="one"],html[data-abaque-connected] #homeScreen .homeModeBtn[data-mode="three"],html[data-abaque-connected] #homeScreen .homeModeBtn[data-mode="five"]{padding-bottom:24px}
+html:not([data-abaque-xp-approved]) .abaque-xp-remaining:not(.abaque-demo-xp){display:none!important}
+
 /* Trois activités, puis une carte record indépendante des conversions classiques. */
 #homeScreen .homeGrid{align-items:stretch;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.4fr)}
 #homeScreen #convertLaunchCard .homeModeGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}

@@ -1,0 +1,76 @@
+name: Abaque Connect - candidat ferme
+on:
+  push:
+    branches: [feat/abaque-longueurs-connect]
+  pull_request:
+    paths:
+      - 'apps/GRAN-abaque-m-1/**'
+      - 'supabase/functions/connect-abaque/**'
+      - 'supabase/functions/connect-api/**'
+      - 'supabase/release-candidates/*abaque*'
+      - 'scripts/abaque-release.mjs'
+      - 'tests/abaque*'
+      - 'tests/local/abaque*'
+      - 'tests/local/run-abaque-local.sh'
+      - 'tests/helpers/abaque*'
+      - 'tests/fixtures/abaque*'
+      - '.github/workflows/abaque-connect.yml'
+permissions:
+  contents: read
+jobs:
+  local-connect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      MATHAS_TEST_TOOLS: ${{ github.workspace }}
+      CHROME_BIN: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+      - run: npm install --no-save --no-package-lock playwright@1.57.0 pg@8.16.3 esbuild@0.27.2 @supabase/supabase-js@2.95.0
+      - run: npx playwright install chromium --with-deps
+      - name: Contrats et moteur libre au clavier
+        shell: bash
+        run: |
+          set +e
+          node --test tests/abaque-contract.test.mjs tests/abaque-server-contract.test.mjs tests/laboratoire-objective-record.test.mjs tests/abaque-browser.browser.mjs 2>&1 | tee "$RUNNER_TEMP/abaque-browser.tap"
+          test_status=${PIPESTATUS[0]}
+          set -e
+          if [ "$test_status" -ne 0 ]; then
+            python3 - "$RUNNER_TEMP/abaque-browser.tap" <<'PY'
+          import pathlib,re,sys
+          lines=re.sub(r'\x1b\[[0-9;]*m','',pathlib.Path(sys.argv[1]).read_text()).splitlines()
+          for index,line in enumerate(lines):
+              if line.startswith('not ok'):
+                  message='\n'.join(lines[index:index+38])
+                  message=message.replace('%','%25').replace('\r','%0D').replace('\n','%0A')
+                  print('::error title=Abaque navigateur::'+message)
+          PY
+          fi
+          exit "$test_status"
+      - name: PostgreSQL, Auth, Edge Deno et Chromium reels, donnees fictives
+        shell: bash
+        run: |
+          set +e
+          bash tests/local/run-abaque-local.sh 2>&1 | tee "$RUNNER_TEMP/abaque-connect.tap"
+          test_status=${PIPESTATUS[0]}
+          set -e
+          exit "$test_status"
+      - name: Publier les preuves locales dans le resume CI
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '### Abaque Connect — preuves locales, profils fictifs'
+            echo 'Aucune recette Supabase hebergee ni activation de production.'
+            for suite in browser connect; do
+              if test -f "$RUNNER_TEMP/abaque-$suite.tap"; then
+                echo "#### Suite $suite"
+                echo '```text'
+                cat "$RUNNER_TEMP/abaque-$suite.tap"
+                echo '```'
+              fi
+            done
+          } >> "$GITHUB_STEP_SUMMARY"

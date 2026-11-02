@@ -31,7 +31,7 @@ const levels = [
   ['jeux', 'Jeux', 'Pour jouer']
 ];
 
-const connectedGameKeys=new Set(['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits']);
+const connectedGameKeys=new Set(['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits']);
 const recordPilotSlugByApp=Object.freeze({
   'addition-ecrite-simple':'addition-simple',
   'addition-ecrite-multiple':'addition-multiple',
@@ -39,7 +39,6 @@ const recordPilotSlugByApp=Object.freeze({
   'multiplication-ecrite-simple':'multiplication',
   'melange-calculs-ecrits':'melange'
 });
-
 function progressFor(appKey){
   const p=activeProfile?.progress;
   return p&&Array.isArray(p.apps)?p.apps.find(a=>a.appKey===appKey):null;
@@ -65,7 +64,7 @@ function card(app) {
   const target = new URL(pilotSlug?'./essais/objectif-record-pilote.html?app='+encodeURIComponent(pilotSlug):app.launch_url, location.href);
   // Le HUB fournit la classe au jeu Connect ; les autorisations restent vérifiées côté serveur.
   if (classId && target.origin === location.origin) target.searchParams.set('class', classId);
-   if (playingAsTeacher && ['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
+   if (playingAsTeacher && ['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
   node.href = target.href;
   if(pilotSlug)node.dataset.labPilot=pilotSlug;
   else node.dataset.appKey=app.app_key;

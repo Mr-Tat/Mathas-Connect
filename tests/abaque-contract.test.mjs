@@ -17,8 +17,13 @@ test('Abaque démo : source traçable intacte, pas de réseau/identité Connect 
   const bytes=readFileSync(new URL('../'+base+file,import.meta.url));
   assert.equal(createHash('sha256').update(bytes).digest('hex'),expected,file+' provient du commit autonome annoncé');
  }
- assert.equal(manifest.connectEnabled,false);
  const html=read(base+'index.html');
+ if(manifest.status==='candidate-connect-closed'){
+  assert.equal(manifest.connectEnabled,true);
+  assert.deepEqual(manifest.adapterFiles,['index.html','abaque.css','environment.js']);
+  assert.match(html,/connect\/native-bridge\.js/);assert.match(html,/connect\/bootstrap\.mjs/);
+ }else{assert.equal(manifest.status,'isolated-demo');assert.equal(manifest.connectEnabled,false);}
+
  assert.equal(/fetch\(|XMLHttpRequest|createClient|supabase\.co|sendBeacon|(?:src|href)=["']https?:/.test(html),false,'aucune API réseau ni ressource externe');
  assert.match(html,/mathas_connect_abaque_demo_progress_v1/);
  assert.match(read(base+'environment.js'),/laboratory:true/);
