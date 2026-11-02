@@ -85,19 +85,34 @@ test('cinq moteurs publies, pont iframe et XP projetes depuis la reponse serveur
   }
   // Simulation d'un message terminal : prouve la plomberie, pas les reponses de calcul.
   await page.locator('#app').selectOption('addition-simple');
-  await page.waitForFunction(()=>document.querySelector('#gameFrame')?.contentDocument?.getElementById('game')?.contentWindow?.MathasLabV2Update,
-    null,{timeout:45000});
+  await page.waitForFunction(()=>{
+    const doc=document.querySelector('#gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+    return !!doc?.querySelector('#menuScreen .mathas-pilot-remaining') &&
+      typeof doc.defaultView.MathasLabV2Update==='function';
+  },null,{timeout:45000});
   await page.evaluate(()=>{
     const doc=document.querySelector('#gameFrame').contentDocument.getElementById('game').contentDocument;
     const g=doc.querySelector('#gameScreen'),m=doc.querySelector('#menuScreen');
     m?.classList.add('hidden');g?.classList.remove('hidden');
+  });
+  await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('Partie de test en cours'),
+    null,{timeout:10000});
+  await page.evaluate(()=>{
+    const doc=document.querySelector('#gameFrame').contentDocument.getElementById('game').contentDocument;
     const button=doc.querySelector('#gameScreen #primaryBtn');
     if(button)button.textContent='Retour au menu';
     doc.defaultView.MathasLabV2Update({mode:'three-lives',level:1,score:5,
       total:null,ops:null,phase:'ended',hearts:0,completed:8,hard:false});
   });
-  await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('Partie enregistrée'),
-    null,{timeout:30000});
+  try{
+    await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('Partie enregistrée'),
+      null,{timeout:15000});
+  }catch(e){
+    const diag=await page.evaluate(()=>({status:document.querySelector('#status')?.textContent,
+      running:document.querySelector('#gameFrame')?.contentDocument?.getElementById('game')?.contentDocument
+        ?.getElementById('gameScreen')?.className}));
+    throw Error('End-of-game mock failed '+JSON.stringify({diag,calls,errors:exceptions}));
+  }
   assert.equal(calls.length,1,'Un seul evenement final transmis');
   assert.equal(calls[0].mode,'three-lives');
   assert.equal(calls[0].hearts,0);
