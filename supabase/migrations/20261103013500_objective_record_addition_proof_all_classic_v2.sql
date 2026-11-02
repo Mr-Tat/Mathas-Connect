@@ -208,8 +208,8 @@ BEGIN
     jsonb_build_object('id','q'||v_i,'op','add','a',v_a,'b',v_b));
  END LOOP;
  INSERT INTO public.connect_objective_record_test_proof_sessions(
-  student_id,class_id,app_key,expected_revision,reset_epoch,level,total,questions)
- VALUES(p_student,v_test,v_app,v_revision,v_epoch,p_level,p_total,v_questions)
+  student_id,class_id,app_key,expected_revision,reset_epoch,level,total,questions,expires_at)
+ VALUES(p_student,v_test,v_app,v_revision,v_epoch,p_level,p_total,v_questions,now()+interval '90 minutes')
  RETURNING session_id,expires_at INTO v_id,v_expiry;
  RETURN jsonb_build_object('ok',true,'sessionId',v_id,
   'questions',v_questions,'revision',v_revision,'resetEpoch',v_epoch,
