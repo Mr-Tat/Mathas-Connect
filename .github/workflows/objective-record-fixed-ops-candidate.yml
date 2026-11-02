@@ -3,6 +3,12 @@ on:
   pull_request:
     paths:
       - 'supabase/release-candidates/objective_record_fixed_ops_test_atomic_candidate.sql'
+      - 'supabase/migrations/20261102204550_objective_record_fixed_ops_test_v1.sql'
+      - 'supabase/functions/connect-objective-record-test/**'
+      - 'apps/objective-record/native-official-record.mjs'
+      - 'apps/objective-record/atomic-test-recorder.mjs'
+      - 'apps/objective-record/eleve.mjs'
+      - 'tests/objective-record-fixed-ops-test-edge.test.mjs'
       - 'tests/postgres/objective-record-fixed-ops-setup.sql'
       - 'tests/postgres/objective-record-fixed-ops-candidate.sql'
       - '.github/workflows/objective-record-fixed-ops-candidate.yml'
@@ -29,6 +35,16 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/fixed_ops_test
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier les garanties de l'Edge et du client TEST
+        run: node --test tests/objective-record-fixed-ops-test-edge.test.mjs tests/objective-record-atomic-test.test.mjs
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck de l'Edge Supabase TEST
+        run: deno check supabase/functions/connect-objective-record-test/index.ts
       - name: Installer les tables fictives et les RPC XP substituées
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-fixed-ops-setup.sql
       - name: Installer seulement le candidat de recette TEST
