@@ -57,7 +57,7 @@ test('true native engine receives issued calculations and captures first submiss
  assert.match(host,/certifiedUI\.hasPending\(\)/);
  assert.match(ui,/call\('start-proof',\{\}\)/);
  assert.match(ui,/call\('finish-proof',\{sessionId:current\.sessionId,answers:current\.answers\}\)/);
- assert.match(ui,/ack\.proofVerified!==true/);
+ assert.match(ui,/ack\?\.proofVerified!==true/);
  assert.match(edge,/connect_objective_record_test_issue_add_v1/);
  assert.match(edge,/connect_objective_record_test_finish_add_v1/);
  assert.doesNotMatch(edge,/user\.user_metadata|raw_user_meta_data/);
