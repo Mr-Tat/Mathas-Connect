@@ -5,6 +5,9 @@ CREATE ROLE authenticated NOLOGIN;
 CREATE ROLE service_role NOLOGIN;
 CREATE TABLE public.connect_students(id uuid PRIMARY KEY,archived_at timestamptz);
 CREATE TABLE public.connect_apps(app_key text PRIMARY KEY);
+CREATE TABLE public.connect_enrollments(student_id uuid,class_id uuid,left_at timestamptz);
+CREATE TABLE public.connect_teacher_players(student_id uuid,teacher_id uuid);
+CREATE TABLE public.connect_class_permissions(teacher_id uuid,class_id uuid,can_manage boolean);
 CREATE TABLE public.connect_states(
  student_id uuid NOT NULL,app_key text NOT NULL,schema_version int NOT NULL DEFAULT 1,
  revision bigint NOT NULL DEFAULT 0,reset_epoch bigint NOT NULL DEFAULT 0,
@@ -36,7 +39,11 @@ BEGIN
  SELECT coalesce(sum(xp_credited),0) INTO v_total FROM public.connect_xp_credits WHERE student_id=p_student;
  RETURN jsonb_build_object('appXp',v_new,'total',v_total,'level',1,'delta',v_new-v_before);
 END $mock$;
-INSERT INTO public.connect_students(id) VALUES('11111111-1111-4111-8111-111111111111');
+INSERT INTO public.connect_students(id) VALUES
+ ('11111111-1111-4111-8111-111111111111'),
+ ('99999999-9999-4999-8999-999999999999');
+INSERT INTO public.connect_enrollments(student_id,class_id) VALUES
+ ('11111111-1111-4111-8111-111111111111','4bf3400d-a315-4ea4-a2f3-afaca24dc9b9');
 INSERT INTO public.connect_apps(app_key) VALUES('addition-ecrite-simple'),('soustraction-ecrite-simple'),
  ('multiplication-ecrite-simple'),('addition-ecrite-multiple');
 COMMIT;
