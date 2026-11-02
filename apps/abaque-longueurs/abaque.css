@@ -74,15 +74,26 @@ header{background-image:radial-gradient(ellipse at 82% -20%,#67baa05c,transparen
 @media(max-width:760px){.home-hero{grid-template-columns:minmax(0,1fr);gap:17px;margin-bottom:20px}.personal-records{max-width:440px;width:100%;padding:18px 22px;grid-template-columns:minmax(0,1fr) minmax(130px,1fr)}.personal-score>strong{font-size:2rem}}
 @media(max-width:400px){.personal-records{padding:16px;gap:13px;border-radius:17px;grid-template-columns:minmax(0,1fr) minmax(112px,1fr)}.personal-collection{padding-left:12px}.record-label,.collection-heading>span{font-size:.67rem}.collection-cups{gap:7px}.collection-trophy{width:27px}.personal-score>strong{font-size:1.85rem}.personal-score>span{font-size:.7rem}#homeScreen .homeCard .trophy-hint{right:14px;bottom:12px}}
 
-/* Données Connect approuvées uniquement ; masquées sans droits fiables. */
-html[data-abaque-pending] .shell{visibility:hidden}
-.abaque-connect-panel{position:sticky;top:0;z-index:20;display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:9px 14px;background:#173c50;color:white;font:600 .8rem system-ui}
-.abaque-connect-panel a{color:#d5f3ff}.abaque-connect-panel .btn{min-height:32px;padding:4px 9px;font-size:.78rem}.abaque-account-xp{margin-left:auto;color:#ffe6a0}
+/* Trois aperçus locaux, distincts d'une vraie session Connect. */
+.demo-controls{display:flex;align-items:center;gap:8px;min-width:0;margin-left:auto;padding:7px 10px;border:1px solid #b2dcd74a;border-radius:12px;background:#102a3d55;color:#e5f6f0}
+.demo-controls label{font-size:.7rem;font-weight:400;letter-spacing:.02em}
+.demo-controls select{max-width:100%;min-width:0;min-height:34px;padding:5px 25px 5px 9px;border:1px solid #8fbbb979;border-radius:8px;background:#203e51;color:#f3faf6;font:400 .78rem system-ui;cursor:pointer}
+.demo-controls select:focus-visible{outline:3px solid #f3c576;outline-offset:3px}
 .abaque-xp-remaining{font-size:.65rem!important;font-weight:400!important;color:inherit!important;line-height:1.2;white-space:nowrap}
 #homeScreen .homeCard>.abaque-xp-remaining{position:absolute;right:62px;bottom:24px;display:block;text-align:right}
 #homeScreen .homeModeBtn>.abaque-xp-remaining{position:absolute;right:8px;bottom:5px;display:block}
+#homeScreen #recordChoice .t3Mode>.abaque-xp-remaining{right:10px;bottom:9px}
+html[data-abaque-demo-state="connected"] #homeScreen .homeModeBtn[data-mode="one"],html[data-abaque-demo-state="connected"] #homeScreen .homeModeBtn[data-mode="three"],html[data-abaque-demo-state="connected"] #homeScreen .homeModeBtn[data-mode="five"],html[data-abaque-demo-state="collected"] #homeScreen .homeModeBtn[data-mode="one"],html[data-abaque-demo-state="collected"] #homeScreen .homeModeBtn[data-mode="three"],html[data-abaque-demo-state="collected"] #homeScreen .homeModeBtn[data-mode="five"]{padding-bottom:25px}
+.abaque-xp-remaining[hidden]{display:none!important}
+html:not([data-abaque-demo-state="connected"]):not([data-abaque-demo-state="collected"]) .abaque-demo-xp{display:none!important}
+@media(max-width:600px){.demo-controls{order:3;width:100%;margin:0;justify-content:space-between}.demo-controls select{flex:1;max-width:235px}header .headerBtns{margin-left:auto}}
+@media(max-width:400px){.demo-controls{flex-direction:column;align-items:stretch;gap:5px}.demo-controls select{width:100%;max-width:none;flex:none}}
+
+/* La simulation ne déverrouille pas les compteurs réels. */
+html[data-abaque-pending] .shell{visibility:hidden}
+.abaque-connect-panel{position:sticky;top:0;z-index:20;display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:9px 14px;background:#173c50;color:white;font:600 .8rem system-ui}
+.abaque-connect-panel a{color:#d5f3ff}.abaque-connect-panel .btn{min-height:32px;padding:4px 9px;font-size:.78rem}.abaque-account-xp{margin-left:auto;color:#ffe6a0}
 #homeScreen #recordChoice .record-caption{position:relative}
 #homeScreen #recordChoice .record-caption .abaque-xp-remaining{display:block;text-align:right;margin-top:6px}
 html[data-abaque-connected] #homeScreen .homeModeBtn[data-mode="one"],html[data-abaque-connected] #homeScreen .homeModeBtn[data-mode="three"],html[data-abaque-connected] #homeScreen .homeModeBtn[data-mode="five"]{padding-bottom:24px}
-.abaque-xp-remaining[hidden]{display:none!important}
-html:not([data-abaque-xp-approved]) .abaque-xp-remaining{display:none!important}
+html:not([data-abaque-xp-approved]) .abaque-xp-remaining:not(.abaque-demo-xp){display:none!important}

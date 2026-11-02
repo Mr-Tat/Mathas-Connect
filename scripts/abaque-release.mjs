@@ -72,7 +72,7 @@ export function buildPilotActivation(profiles){
 }
 export function releaseManifest(){
  const files=[sqlFile,auditFile,'supabase/release-candidates/abaque_disable_only.sql','supabase/functions/connect-abaque/index.ts','supabase/functions/connect-abaque/handler.mjs','supabase/functions/connect-api/index.ts',
-  'hub.js','laboratoire.js',...['index.html','abaque.css','professeur.html','professeur.css','source-manifest.json'].map(x=>'apps/abaque-longueurs/'+x),
+  'hub.js','laboratoire.js',...['index.html','abaque.css','professeur.html','professeur.css','source-manifest.json','demo-controls.mjs','xp-hints.mjs'].map(x=>'apps/abaque-longueurs/'+x),
   ...['completion-contract.mjs','offline-queue.mjs','bootstrap.mjs','professeur.mjs','native-bridge.js'].map(x=>'apps/abaque-longueurs/connect/'+x)];
  return {appKey:'abaque-longueurs',projectRef:'awmhpfofacaglewammxt',migrationVersion:version,migrationName:name,xpMax:160,trophiesMax:3,defaultAccess:'closed',
   files:Object.fromEntries(files.map(file=>[file,sha(read(file))])),productionExecuted:false};

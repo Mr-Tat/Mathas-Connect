@@ -213,6 +213,9 @@ test('Chromium + Auth réels : XP absents sans compte/approbation, hors ligne et
   await page.goto(config.static+'/apps/abaque-longueurs/');
   assert.equal(await page.locator('.abaque-xp-remaining:visible').count(),0,'pas de XP en mode démo même avec une session enregistrée');
   await page.goto(game);await page.locator('html[data-abaque-connected]').waitFor();
+  assert.equal(await page.locator('#abaque-demo-controls').count(),0,'pas de simulateur dans la connexion réelle');
+  assert.equal(await page.locator('.abaque-demo-xp').count(),0);
+  assert.equal(await page.evaluate(()=>{try{window.MATHAS_PROGRESS.setDemoPreview({state:{},trophies:[]});return false;}catch(error){return error.message==='preview_not_available_in_connect';}}),true,'le profil fictif ne peut pas remplacer un état Connect');
   assert.equal(await page.locator('#launchBtn>.abaque-xp-remaining').textContent(),'Reste 20 XP');
   assert.equal(await page.locator('#launchBtn>.abaque-xp-remaining').isVisible(),true);
   assert.equal(await page.locator('#launchBtn>.abaque-xp-remaining').evaluate(el=>getComputedStyle(el).fontWeight),'400','mention discrète sans gras');

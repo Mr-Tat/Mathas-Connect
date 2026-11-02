@@ -21,7 +21,8 @@
     "Dedicated professor view and guarded candidate SQL/Edge, closed by default",
     "Cup-only bronze/silver/gold objectives without success conditions",
     "Always-visible personal best and permanent trophy collection in the home header",
-    "Textured paper background and colored activity/button finishes"
+    "Textured paper background and colored activity/button finishes",
+    "Three explicit in-memory demo account previews; no Auth or cloud writes and no changes to saved local achievements"
   ],
   "license": "No license file in source checkout; copied with repository owner authorization in task"
 }

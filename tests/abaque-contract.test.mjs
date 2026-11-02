@@ -14,6 +14,9 @@ test('Abaque démo : source traçable intacte, pas de réseau/identité Connect 
  assert.match(html,/mathas_connect_abaque_demo_progress_v1/);
  assert.doesNotMatch(html,/['"]mathas_abaque_longueurs_progress_v1['"]|Reste \d+ XP/);
  assert.match(html,/XP fictifs · aucun résultat Connect/);
+ const demo=read(base+'demo-controls.mjs');
+ assert.match(demo,/get\('connect'\)!=='1'/);
+ assert.doesNotMatch(demo,/fetch\(|createClient|getSession|localStorage|sessionStorage|supabase\.co/,'les aperçus ne sont pas des connexions ni des sauvegardes');
  const preview=objectiveRecordLabPreviews.find(x=>x.id==='abaque-longueurs');
  assert.equal(preview.url,'https://mr-tat.github.io/Mathas-Connect/apps/abaque-longueurs/');
  assert.doesNotMatch(read('hub-catalog.json'),/abaque-longueurs/);

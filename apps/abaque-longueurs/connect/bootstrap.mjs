@@ -1,5 +1,6 @@
 import {createAbaqueQueue} from './offline-queue.mjs';
 import {APP_KEY} from './completion-contract.mjs';
+import {createXpHints} from '../xp-hints.mjs';
 const BASE='https://awmhpfofacaglewammxt.supabase.co';
 const KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const PILOT='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
@@ -35,8 +36,8 @@ async function connect(){
  if(!uuid.test(CLASS||'')){label.textContent='Classe manquante';details.textContent='Ouvre ce jeu depuis le HUB de ta classe.';return;}
  let client,subject,pupil,queue,latest=null,cacheKey=null,sessionActive=false,sessionVersion=0;
  const cachedBindingKey='mathas.abaque.binding.'+CLASS+'.';
- const hintNodes=new Map();
- function hideRemaining(){delete document.documentElement.dataset.abaqueXpApproved;for(const node of hintNodes.values())node.hidden=true;}
+ const hints=createXpHints();
+ function hideRemaining(){delete document.documentElement.dataset.abaqueXpApproved;hints.hide();}
  function draw(snapshot,online){
   latest=snapshot;
   const showRemaining=online&&sessionActive&&navigator.onLine;
@@ -45,11 +46,7 @@ async function connect(){
   document.querySelector('.demo-notice').textContent=online?(CLASS===PILOT?'Laboratoire connecté · résultats liés à ton compte':'Mode Connect · résultats liés à ton compte'):'Hors connexion · résultats conservés en attente de synchronisation';
   label.textContent=snapshot.displayName||'Compte Connect';
   xp.textContent=online?snapshot.xp.appXp+' / 160 XP acquis · '+snapshot.trophies.length+' / 3 trophées':'Connexion à confirmer';
-  for(const [kind,selector] of Object.entries({build:'#launchBtn',moves:'#moveLaunchBtn',one:'[data-mode="one"]',three:'[data-mode="three"]',five:'[data-mode="five"]',lives:'[data-variant="lives"]',sudden:'[data-variant="sudden"]'})){
-   let hint=hintNodes.get(kind);
-   if(!hint){hint=element('span','','abaque-xp-remaining');document.querySelector(selector).append(hint);hintNodes.set(kind,hint);}
-   hint.hidden=!showRemaining;hint.textContent='Reste '+snapshot.xp.remaining[kind]+' XP';
-  }
+  hints.render(snapshot.xp.remaining,showRemaining);
   if(online){
    try{localStorage.setItem(cacheKey,JSON.stringify(snapshot));localStorage.setItem(cachedBindingKey+subject,JSON.stringify({studentId:pupil}));}
    catch{details.textContent='Stockage local indisponible. Garde cette page ouverte et réessaie.';}
