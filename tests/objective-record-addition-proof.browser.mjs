@@ -61,10 +61,11 @@ test('Chromium: 4 vraies additions émises par Connect, écritures natives et AC
      {ok:true,revision:xp?1:0,resetEpoch:0,state:{rewards},storageSubject:pupil}:
      {ok:true,appXp:xp,total:xp,level:1};
    }else if(request.url().includes('/connect-objective-record-test')){
-    if(b.action==='start-proof'){
+    if(b.action==='start-proof-v2'){
+     assert.equal(b.level,1);assert.equal(b.total,4);
      response={ok:true,sessionId,questions,revision:0,resetEpoch:0,level:1,total:4,
       expiresAt:'2090-12-31T23:59:59Z'};
-    }else if(b.action==='finish-proof'){
+    }else if(b.action==='finish-proof-v2'){
      assert.equal(b.sessionId,sessionId);
      assert.deepEqual(b.answers.map(x=>x.id),['q1','q2','q3','q4']);
      assert.equal(b.answers.length,4);
@@ -122,8 +123,89 @@ test('Chromium: 4 vraies additions émises par Connect, écritures natives et AC
   await page.waitForFunction(()=>document.getElementById('status')?.textContent
    .includes('Vérifié côté serveur'),null,{timeout:25000});
   assert.equal(xp,22);
-  assert.equal(requests.filter(x=>x.action==='finish-proof').length,1);
+  assert.equal(requests.filter(x=>x.action==='finish-proof-v2').length,1);
   assert.equal(requests.filter(x=>x.action==='game-record').length,0);
   assert.deepEqual(exceptions,[]);
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve))}
 });
+
+for(const {level,total} of [{level:2,total:10},{level:3,total:20}]){
+ test('Chromium: native Addition simple certified level '+level+' / '+total+' questions',async()=>{
+  const {server,url}=await launchServer();
+  let browser;
+  try{
+   browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+   const page=await browser.newPage({viewport:{width:1360,height:900}});
+   const requests=[],errors=[];let awarded=0;
+   const width=({1:3,2:5,3:7})[level],base=10**(width-1);
+   const qs=Array.from({length:total},(_,i)=>({
+    id:'q'+(i+1),op:'add',a:base+i,b:base+100+i
+   }));
+   page.on('pageerror',e=>errors.push(e.message));
+   await page.route('**/supabase-js@2.95.0*',r=>r.fulfill({
+    status:200,contentType:'text/javascript',headers:{'access-control-allow-origin':'*'},
+    body:'export function createClient(){return {auth:{getSession:async()=>({data:{session:{access_token:"fake",user:{id:"'+authId+'",is_anonymous:true}}}}),getUser:async()=>({data:{user:{id:"'+authId+'",is_anonymous:true}},error:null})}}}'
+   }));
+   await page.route('**/*.supabase.co/**',async r=>{
+    const b=r.request().postDataJSON()??{};requests.push(b);
+    let result;
+    if(r.request().url().includes('connect-api')){
+     result={ok:true,status:'approved',classId};
+    }else if(r.request().url().includes('connect-results')){
+     result=b.action==='student-load'?
+      {ok:true,revision:awarded?1:0,resetEpoch:0,state:{rewards},storageSubject:pupil}:
+      {ok:true,appXp:awarded,total:awarded,level:1};
+    }else if(b.action==='start-proof-v2'){
+     assert.equal(b.level,level);assert.equal(b.total,total);
+     result={ok:true,sessionId,questions:qs,revision:0,resetEpoch:0,level,total,
+      expiresAt:'2090-12-31T23:59:59Z'};
+    }else if(b.action==='finish-proof-v2'){
+     assert.equal(b.answers.length,total);
+     assert.deepEqual(b.answers.map(x=>x.id),qs.map(x=>x.id));
+     for(const ans of b.answers)assert.equal(ans.carries.length,width);
+     awarded=total===10?36:60;
+     result={ok:true,revision:1,resetEpoch:0,proofVerified:true,
+      verifiedScore:total,xp:{appXp:awarded,total:awarded,level:1,delta:awarded}};
+    }else throw Error('unknown mocked call '+JSON.stringify(b));
+    await r.fulfill({status:200,contentType:'application/json',
+     headers:{'access-control-allow-origin':'*'},body:JSON.stringify(result)});
+   });
+   await page.goto(url+'/apps/objective-record/eleve.html?class='+classId+'&app=addition-simple',
+    {waitUntil:'domcontentloaded',timeout:25000});
+   await page.waitForFunction(()=>!document.getElementById('certify').disabled,{timeout:45000});
+   await page.locator('#certified-level').selectOption(String(level));
+   await page.locator('#certified-total').selectOption(String(total));
+   await page.locator('#certify').click();
+   await page.waitForFunction(()=>document.getElementById('gameFrame')?.contentDocument
+    ?.getElementById('game')?.contentWindow?.__mathasServerCertified?.index===2,null,{timeout:30000});
+   const status=await page.evaluate(()=>{
+    const w=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
+    return {level:w.__mathasServerCertified.level,total:w.__mathasServerCertified.total,
+     pairs:w.document.querySelectorAll('#calculationsPair .calc-box').length,
+     screen:w.document.getElementById('gameScreen').classList.contains('hidden'),
+     text:w.document.getElementById('calculationsPair').innerText.replace(/\s+/g,'')};
+   });
+   assert.equal(status.level,level);assert.equal(status.total,total);assert.equal(status.pairs,2);
+   assert.equal(status.screen,false);assert.ok(status.text.includes(String(base)));
+   await page.evaluate(()=>{
+    const w=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
+    for(const q of w.__mathasServerCertified.questions){
+     const sum=q.a+q.b,width=String(q.a).length;
+     w.MathasCertifiedAttempt({id:q.id,digits:String(sum).split('').reverse(),
+      carries:['',...Array.from({length:width-1},(_,j)=>{
+       const power=10**(j+1);
+       return (q.a%power)+(q.b%power)>=power?'1':'';
+      })]});
+    }
+    w.MathasLabV2Update({phase:'ended',mode:'classic',
+     level:w.__mathasServerCertified.level,total:w.__mathasServerCertified.total,
+     completed:w.__mathasServerCertified.total});
+   });
+   await page.waitForFunction(()=>document.getElementById('status')?.textContent
+    .includes('Vérifié côté serveur'),null,{timeout:25000});
+   assert.equal(requests.filter(x=>x.action==='finish-proof-v2').length,1);
+   assert.equal(requests.filter(x=>x.action==='game-record').length,0);
+   assert.deepEqual(errors,[]);
+  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve))}
+ });
+}

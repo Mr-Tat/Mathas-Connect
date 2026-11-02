@@ -5136,10 +5136,12 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     const certified=window.__mathasServerCertified;
     if(certified&&session?.mode==='classic'){
       const q=certified.questions?.[certified.index++];
+      const low=10**(maxDigits-1),high=10**maxDigits;
       if(!q||q.op!=='add'||!Number.isSafeInteger(q.a)||!Number.isSafeInteger(q.b)
-         ||q.a<100||q.a>999||q.b<100||q.b>999||maxDigits!==3)
+         ||q.a<low||q.a>=high||q.b<low/10||q.b>=high
+         ||maxDigits!==({1:3,2:5,3:7})[certified.level])
        throw Error('certified_question_missing_or_invalid');
-      const result=q.a+q.b,count=3,answerCount=String(result).length,p=carryPattern(q.a,q.b,count);
+      const result=q.a+q.b,count=maxDigits,answerCount=String(result).length,p=carryPattern(q.a,q.b,count);
       return{
         a:q.a,b:q.b,result,count,answerCount,carryExpected:p.incoming,
         outgoing:p.outgoing,answerValues:Array(answerCount).fill(''),
@@ -5181,9 +5183,11 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     setScoreRulerVisible(false);saveSettings();
     const maxDigits=mode==='classic'?+classicMaxDigits.value:mode==='sudden'?+suddenMaxDigits.value:+trainingMaxDigits.value;
     const certified=window.__mathasServerCertified;
-    if(certified && (mode!=='classic'||maxDigits!==3||selectedClassicCount()!==4
-      ||!Array.isArray(certified.questions)||certified.questions.length!==4)){
-      setFeedback('Session certifiée : seulement 4 calculs, niveau 1.','bad');return;
+    if(certified && (mode!=='classic'||maxDigits!==({1:3,2:5,3:7})[certified.level]
+      ||selectedClassicCount()!==certified.total
+      ||![4,10,20].includes(certified.total)
+      ||!Array.isArray(certified.questions)||certified.questions.length!==certified.total)){
+      setFeedback('Session certifiée : niveau ou nombre de calculs incorrect.','bad');return;
     }
     session={mode,maxDigits,level:normalLevelFromMax(maxDigits),totalCalculs:mode==='classic'?selectedClassicCount():null,score:0,completed:0,rulerUsed:false};
     menuScreen.classList.add('hidden');gameScreen.classList.remove('hidden');makePair()

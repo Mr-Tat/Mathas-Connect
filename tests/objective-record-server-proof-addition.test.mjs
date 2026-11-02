@@ -55,8 +55,8 @@ test('true native engine receives issued calculations and captures first submiss
  assert.match(host,/certifiedUI\.onGameEvent\(event\)/);
  assert.match(host,/certifiedUI\.reset\(\)/);
  assert.match(host,/certifiedUI\.hasPending\(\)/);
- assert.match(ui,/call\('start-proof',\{\}\)/);
- assert.match(ui,/call\('finish-proof',\{sessionId:current\.sessionId,answers:current\.answers\}\)/);
+ assert.match(ui,/call\('start-proof-v2',\{level,total\}\)/);
+ assert.match(ui,/call\('finish-proof-v2',\{sessionId:current\.sessionId,answers:current\.answers\}\)/);
  assert.match(ui,/ack\?\.proofVerified!==true/);
  assert.match(edge,/connect_objective_record_test_issue_add_v1/);
  assert.match(edge,/connect_objective_record_test_finish_add_v1/);
@@ -85,4 +85,46 @@ test('proof start/finish use JWT-derived pupil without requiring a client pupil 
  assert.match(edge,/\(record&&b\.expectedStudentId\.toLowerCase\(\)!==studentId\.toLowerCase\(\)\)/);
  assert.doesNotMatch(edge,/if\(!validId\(studentId\)\|\|b\.expectedStudentId\.toLowerCase/);
  assert.match(edge,/p_student:studentId,p_class:TEST/);
+});
+
+
+test('certified additions accept all nine level/count variants with full-width carry fields',()=>{
+ for(const level of [1,2,3]){
+  const width=({1:3,2:5,3:7})[level];
+  const base=10**(width-1);
+  for(const total of [4,10,20]){
+   const questions=Array.from({length:total},(_,i)=>({
+    id:'q'+(i+1),op:'add',a:base+i,b:base+i
+   }));
+   const c=acceptAdditionProofChallenge({...challenge,level,total,questions});
+   assert.ok(c,'level '+level+' total '+total);
+   assert.equal(c.questions.length,total);
+   assert.equal(c.level,level);
+   const sample={id:'q1',digits:String(2*base).split('').reverse(),
+    carries:Array(width).fill('')};
+   assert.deepEqual(normalizeAdditionFirstAttempt(sample,questions[0]),sample);
+   assert.equal(normalizeAdditionFirstAttempt({...sample,carries:[]},questions[0]),null);
+  }
+ }
+ const bad={...challenge,level:4};
+ assert.equal(acceptAdditionProofChallenge(bad),null);
+});
+test('v2 Edge routes require class TEST, exact allowed lengths, and JWT-only student identity',()=>{
+ const edge=read('supabase/functions/connect-objective-record-test/index.ts');
+ const sql=read('supabase/migrations/20261103013500_objective_record_addition_proof_all_classic_v2.sql');
+ assert.match(edge,/const validProofStartV2=proofStartV2/);
+ assert.match(edge,/const validProofFinishV2=proofFinishV2/);
+ assert.match(edge,/\[1,2,3\]\.includes\(b\.level\)/);
+ assert.match(edge,/\[4,10,20\]\.includes\(b\.total\)/);
+ assert.match(edge,/\[4,10,20\]\.includes\(b\.answers\.length\)/);
+ assert.match(edge,/connect_objective_record_test_issue_add_v2/);
+ assert.match(edge,/connect_objective_record_test_finish_add_v2/);
+ assert.match(edge,/record&&b\.expectedStudentId/);
+ assert.match(sql,/v_session\.total-1 LOOP/);
+ assert.match(sql,/v_width-1 LOOP/);
+ assert.match(sql,/not_test_subject/);
+ assert.match(sql,/proof_replay_collision/);
+ assert.match(sql,/connect_objective_record_test_fixed_v1/);
+ assert.match(sql,/TO service_role/);
+ assert.doesNotMatch(sql,/GRANT EXECUTE[^;]+TO (?:authenticated|anon)/i);
 });
