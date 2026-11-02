@@ -470,7 +470,7 @@ Deno.serve(async req=>{
     const {data:permanent,error:trophyError}=await db.rpc('connect_trophy_rewards_v1',{p_student:studentId,p_app:selected});
      if(trophyError)return deny('trophies_unavailable',503);
      const state=permanent?{...(current?.state_data??{}),rewards:permanent}:current?.state_data||null;
-     return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,state,...(selected===mul?{multiplierLock}:{})});
+     return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,state,storageSubject:studentId,...(selected===mul?{multiplierLock}:{})});
    }
    // Les jeux réels restent en lecture seule. Écriture exclusivement pour le laboratoire.
    if(b.action==='game-reset')return deny('teacher_only',403);
