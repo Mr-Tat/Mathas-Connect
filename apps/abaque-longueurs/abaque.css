@@ -26,6 +26,10 @@ header{background-image:radial-gradient(ellipse at 82% -20%,#67baa05c,transparen
 .btn.primary:hover:not(:disabled){background-color:#168a80;filter:brightness(1.05)}
 .btn:active:not(:disabled){box-shadow:inset 0 1px #ffffff40,0 1px 0 #153d4926}
 
+/* Les récompenses du bouton restent en dehors de son cadre intérieur. */
+#homeScreen #recordChoice .t3Mode{position:relative;padding-bottom:35px!important}
+#homeScreen #recordChoice .t3Mode>.abaque-xp-remaining{position:absolute;right:10px;bottom:9px;text-align:right}
+
 /* Le petit tableau de bord reste visible dès le premier lancement. */
 .home-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,360px);align-items:center;gap:26px;margin:0 0 25px}
 .home-intro{min-width:0}
