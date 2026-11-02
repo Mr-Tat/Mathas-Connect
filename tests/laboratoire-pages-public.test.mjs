@@ -56,3 +56,21 @@ test('Pages hébergées : le catalogue du laboratoire reste séparé des jeux of
   assert.match(list,/XP fictifs|Démonstrations publiées sur Pages/);
   for(const {url} of previews)assert.ok(list.includes(url),'Carte absente du HUB en ligne : '+url);
 });
+
+
+test('LAB pilote Connect : la page publique et son pont sont servis',async()=>{
+ const page=await get('https://mr-tat.github.io/Mathas-Connect/essais/objectif-record-pilote.html');
+ const js=await get('https://mr-tat.github.io/Mathas-Connect/essais/objectif-record-pilote.js');
+ assert.match(page,/pilote Connect authentifi/i);
+ assert.match(page,/id="gameFrame"/);
+ assert.match(js,/connect-record-pilot/);
+ assert.match(js,/classId:TEST/);
+ assert.match(js,/MathasLabV2Update/);
+ assert.match(js,/expectedStudentId:studentId/);
+});
+test('LAB pilote Connect : rejet sans compte, aucune écriture anonyme',async()=>{
+ const endpoint='https://awmhpfofacaglewammxt.supabase.co/functions/v1/connect-record-pilot';
+ const response=await fetch(endpoint,{method:'POST',signal:AbortSignal.timeout(15000),
+   headers:{'content-type':'application/json'},body:JSON.stringify({action:'record',classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',appKey:'addition-ecrite-simple'})});
+ assert.ok([401,403].includes(response.status),'Rejet JWT attendu, statut '+response.status);
+});
