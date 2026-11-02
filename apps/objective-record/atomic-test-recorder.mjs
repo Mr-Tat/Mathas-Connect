@@ -2,7 +2,7 @@ import {isFixedTestApp,normalizeAtomicTestCompletion,acceptNativeRecordAck} from
 // TEST-class bridge to atomic official Connect RPCs (the original Addition-multiple RPC and the fixed-operation candidate).
 // Only classic/sudden. Native-browser score is not an independently verified
 // arithmetic transcript, so this gate must never be opened in real classrooms.
-export function createAtomicTestRecorder({classId,appKey,subject,storage,send,reload,notify,isCurrent}){
+export function createAtomicTestRecorder({classId,appKey,subject,storage,send,reload,notify,isCurrent,onRecorded=()=>{}}){
  const TEST='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
  if(classId!==TEST||!isFixedTestApp(appKey)||!subject
    ||typeof send!=='function'||typeof reload!=='function'
@@ -49,8 +49,14 @@ export function createAtomicTestRecorder({classId,appKey,subject,storage,send,re
    version={revision:ack.revision,resetEpoch:ack.resetEpoch};
    write(null);
    await reload();
-   if(isCurrent())notify(ack.duplicate?'Partie déjà enregistrée · aucun XP en double':
-    'Partie enregistrée : XP du profil scolaire recalculés côté serveur');
+   if(isCurrent()){
+    // Offer projection publication ONLY AFTER the server ACK. Sending XP and
+    // accepting a projection offer are two distinct user decisions.
+    try{onRecorded({eventId:event.eventId,appKey,duplicate:ack.duplicate})}
+    catch{/* An optional projection prompt must never invalidate official XP. */}
+    notify(ack.duplicate?'Partie déjà enregistrée · aucun XP en double':
+     'Partie enregistrée : XP du profil scolaire recalculés côté serveur');
+   }
    return true;
   }catch(e){
    if(!isCurrent())return false;
