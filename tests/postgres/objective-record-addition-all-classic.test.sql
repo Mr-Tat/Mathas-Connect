@@ -98,7 +98,7 @@ BEGIN
  answers:=public.test_valid_add_answers_v2(issue->'questions',2);
  BEGIN
   PERFORM public.connect_objective_record_test_finish_add_v2(
-   pupil,testclass,(issue->>'sessionId')::uuid,answers-'19');
+   pupil,testclass,(issue->>'sessionId')::uuid,answers-19);
   RAISE EXCEPTION 'incomplete_accepted';
  EXCEPTION WHEN OTHERS THEN
   IF SQLERRM<>'invalid_proof_answers' THEN RAISE;END IF;
