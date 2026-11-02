@@ -180,7 +180,8 @@ test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et repr
    if(!target.startsWith(root+'/')){res.writeHead(403).end();return}
    try{
     const bytes=await readFile(target);
-    res.writeHead(200,{'content-type':extname(target)==='.html'?'text/html; charset=utf-8':'application/octet-stream'});
+    res.writeHead(200,{'content-type':extname(target)==='.html'?'text/html; charset=utf-8':
+      ['.js','.mjs'].includes(extname(target))?'text/javascript; charset=utf-8':'application/octet-stream'});
     res.end(bytes);
    }catch{res.writeHead(404).end()}
   });

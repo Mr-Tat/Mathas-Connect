@@ -22,7 +22,8 @@ const teacher=params.get('joueur')==='prof';
 const classId=params.get('class')||'';
 const session=createClient(BASE,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
  ...(teacher?{storageKey:'mathas-connect-professor-auth-v1'}:{})}});
-let generation=0,tokenOwner=null,activeApp='',visibleDoc=null,watching=null,recorder=null;
+let generation=0,tokenOwner=null,activeApp='',visibleDoc=null,watching=null,recorder=null,pupilId=null;
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const message=(s)=>{$('status').textContent=s};
 const clear=()=>{
   for(const id of ['app-xp','total-xp','level','trophies'])$(id).textContent='—';
@@ -116,13 +117,17 @@ async function refresh(seq){
   call('connect-results','student-xp',activeApp)
  ]);
  if(seq!==generation)return;
+ if(!UUID.test(loaded?.storageSubject))throw Error('Identité scolaire renvoyée par le serveur absente');
+ const linked=loaded.storageSubject.toLowerCase();
+ if(pupilId&&pupilId!==linked)throw Error('Le profil élève est différent : reconnexion nécessaire');
+ pupilId=linked;
  showOfficial({xp,loaded,appKey:activeApp});
  if(recorder&&!recorder.initialize(loaded))throw Error('Version officielle indisponible');
  return {loaded,xp};
 }
 async function choose(){
  generation++;const seq=generation;
- clearInterval(watching);visibleDoc=null;recorder=null;clear();
+ clearInterval(watching);visibleDoc=null;recorder=null;pupilId=null;clear();
  const slug=$('app').value;
  if(!Object.hasOwn(GAME_URLS,slug)){message('Jeu inconnu');return;}
  activeApp=GAME_URLS[slug][0];
@@ -130,14 +135,15 @@ async function choose(){
   message('Vérification du profil approuvé de la classe TEST…');
   await approvedProfile();
   if(seq!==generation)return;
-  if(activeApp===ATOMIC_TEST_APP){
-   recorder=createAtomicTestRecorder({classId,appKey:activeApp,subject:tokenOwner,storage:localStorage,
-    send:request=>call('connect-results','game-record',activeApp,request),
-    reload:()=>refresh(seq),notify:message,isCurrent:()=>seq===generation&&activeApp===ATOMIC_TEST_APP});
-  }
   message('Lecture des XP globaux et trophées permanents officiels…');
-  await refresh(seq);
+  const initial=await refresh(seq);
   if(seq!==generation)return;
+  if(activeApp===ATOMIC_TEST_APP){
+   recorder=createAtomicTestRecorder({classId,appKey:activeApp,subject:pupilId,storage:localStorage,
+    send:request=>call('connect-results','game-record',activeApp,{...request,expectedStudentId:pupilId}),
+    reload:()=>refresh(seq),notify:message,isCurrent:()=>seq===generation&&activeApp===ATOMIC_TEST_APP});
+   if(!recorder||!recorder.initialize(initial.loaded))throw Error('Écriture scolaire indisponible');
+  }
   if(recorder?.hasPending()&&!await recorder.retry()){
    message('Résultat conservé en attente de réseau : cliquer Actualiser.');$('refresh').disabled=false;return;
   }
