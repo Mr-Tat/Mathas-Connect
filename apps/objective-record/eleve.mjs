@@ -2,7 +2,7 @@ import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 import {studentHostContract,permanentTrophyCount} from './student-host-contract.mjs';
 import {ATOMIC_TEST_APP,isFixedTestApp} from './native-official-record.mjs';
 import {createAtomicTestRecorder} from './atomic-test-recorder.mjs';
-import {PROOF_APP,acceptAdditionProofChallenge,normalizeAdditionFirstAttempt,createCertifiedAdditionQueue} from './certified-addition.mjs';
+import {createAdditionProofUI} from './certified-addition-ui.mjs';
 
 // This is the future SCHOOL launcher, not the legacy pilot XP writer.
 // Its current release gate is TEST-only and READ-ONLY until a verified
@@ -95,6 +95,7 @@ function watchGame(seq){
     chooser.value='free';chooser.dispatchEvent(new Event('change',{bubbles:true}));
    }
    hideFictionalXp(doc);
+   certifiedUI.bind(inside.contentWindow,doc);
    const native=inside.contentWindow?.MathasLabV2Update;
    if(doc===visibleDoc||typeof native!=='function')return;
    visibleDoc=doc;
@@ -102,7 +103,7 @@ function watchGame(seq){
     inside.contentWindow.MathasLabV2Update=function(event){
      native(event);
      if(seq!==generation||!event)return;
-     // Only local demonstration: no official ACK, XP, trophy or score written.
+     if(certifiedUI.onGameEvent(event))return;
      if(recorder)recorder.onSnapshot(event);
      else if(event.phase==='ended')message('Partie terminée : aucun XP Connect (ce jeu n’est pas encore raccordé).');
     };
@@ -128,9 +129,15 @@ async function refresh(seq){
  if(recorder&&!recorder.initialize(loaded))throw Error('Version officielle indisponible');
  return {loaded,xp};
 }
+const certifiedUI=createAdditionProofUI({
+ button:$('certify'),panel:$('certified-tools'),frame:$('gameFrame'),
+ getContext:()=>({generation,activeApp,pupilId,classId}),
+ call:(action,payload)=>call('connect-objective-record-test',action,'addition-ecrite-simple',payload),
+ refresh:()=>refresh(generation),notify:message
+});
 async function choose(){
  generation++;const seq=generation;
- clearInterval(watching);visibleDoc=null;recorder=null;pupilId=null;clear();
+ clearInterval(watching);visibleDoc=null;recorder=null;pupilId=null;certifiedUI.reset();clear();
  const slug=$('app').value;
  if(!Object.hasOwn(GAME_URLS,slug)){message('Jeu inconnu');return;}
  activeApp=GAME_URLS[slug][0];
@@ -161,7 +168,7 @@ async function choose(){
   message('⚠️ '+(e?.message||'Accès indisponible')+'. Jeu non lancé.');
  }
 }
-$('refresh').addEventListener('click',async()=>{const seq=generation;try{if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
+$('refresh').addEventListener('click',async()=>{const seq=generation;try{if(certifiedUI.hasPending())await certifiedUI.retry();else if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
   if(seq===generation&&!recorder?.hasPending())message('Profil officiel actualisé.');
  }catch(e){if(seq===generation)message('⚠️ '+e.message)}});
 $('app').addEventListener('change',()=>{const next=new URL(location.href);next.searchParams.set('app',$('app').value);history.replaceState(null,'',next);void choose()});
