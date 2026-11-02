@@ -18,13 +18,21 @@ test('six démos Pages distinctes, sans app_key ni attribut d’XP Connect',()=>
     ['multiplication','/Multiplication-simple/essai-objectif-record-3-vies.html'],
     ['melange','/Melange-calculs-ecrits-1/essai-objectif-record-3-vies.html'],
   ]);
+  const expectedTitles=new Map([
+    ['abaque-longueurs','Abaque des longueurs'],
+    ['addition-simple','Addition simple'],
+    ['addition-multiple','Addition multiple'],
+    ['soustraction','Soustraction écrite'],
+    ['multiplication','Multiplication simple'],
+    ['melange','Mélange de calculs écrits'],
+  ]);
   for(const preview of objectiveRecordLabPreviews){
     assert.deepEqual(Object.keys(preview).sort(),['id','title','url']);
     const url=new URL(preview.url);
     assert.equal(url.protocol,'https:');
     assert.equal(url.hostname,'mr-tat.github.io');
     assert.equal(url.pathname,expected.get(preview.id));
-    assert.match(preview.title,/Objectif record/);
+    assert.equal(preview.title,expectedTitles.get(preview.id));
   }
   assert.equal(expected.size,objectiveRecordLabPreviews.length);
 });
