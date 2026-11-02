@@ -1,0 +1,86 @@
+{
+  "prepared_at_utc": "2026-11-02T17:03:53Z",
+  "application": {
+    "display_name": "GRAN-abaque-m-1",
+    "app_key": "abaque-longueurs",
+    "project_ref": "awmhpfofacaglewammxt",
+    "test_class_id": "4bf3400d-a315-4ea4-a2f3-afaca24dc9b9",
+    "test_class_name": "Classe démo - TEST"
+  },
+  "repositories": {
+    "standalone": {
+      "github": "Mr-Tat/abaque-m-1",
+      "local_mount": "GRAN-abaque-m-1",
+      "commit": "69ed04ece90faae317dee8a2ce2d6c4224d0d763",
+      "branch": "feat/gran-abaque-m-1",
+      "main_observed": "69ed04ece90faae317dee8a2ce2d6c4224d0d763",
+      "remote_rename_completed": false
+    },
+    "connect": {
+      "github": "Mr-Tat/Mathas-Connect",
+      "candidate_branch": "feat/abaque-longueurs-connect",
+      "candidate_commit": "38bc8821ff0c6d11728b5c551e0024758362a2b8",
+      "candidate_integrated_main": "6e2039833acf0345539873121848e5fcb50af277",
+      "main_observed_at_handoff": "d148b4373529b0f6321ee11af41d36b5b0de4127",
+      "candidate_contains_current_main": false,
+      "common_base_verified": "6e2039833acf0345539873121848e5fcb50af277"
+    }
+  },
+  "evidence": {
+    "candidate_ci": {
+      "run": "41477253078",
+      "url": "https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41477253078",
+      "status": "Success",
+      "verified_again_for_handoff": true
+    },
+    "local_node_tests": 299,
+    "local_postgres_scenarios": 10,
+    "local_auth_edge_chromium_scenarios": 5,
+    "local_browser_scenarios": 12,
+    "hosted_authenticated_acceptance_performed_for_abaque": false
+  },
+  "deployment": {
+    "candidate_published_on_main_by_this_mission": false,
+    "abaque_sql_executed_by_this_mission": false,
+    "abaque_edge_deployed_by_this_mission": false,
+    "school_hubs_opened_by_this_mission": false,
+    "current_hosted_backend_metadata": "unknown; fresh authorized read-only audit required",
+    "default_edge_access": "closed",
+    "intended_pilot_access": "pilot",
+    "xp_cap": 160,
+    "permanent_trophies": 6
+  },
+  "observed_environment": {
+    "runtime_revision": "1",
+    "observations_current": true,
+    "custom_domains": [],
+    "secret_binding_names": [],
+    "draft_revision": 16,
+    "draft_has_supabase_binding": false,
+    "draft_required_domains": [
+      "api.github.com",
+      "api.supabase.com",
+      "awmhpfofacaglewammxt.supabase.co",
+      "cdn.playwright.dev",
+      "esm.sh",
+      "mr-tat.github.io",
+      "playwright.download.prss.microsoft.com"
+    ],
+    "credential_requirement": {
+      "name": "SUPABASE_ACCESS_TOKEN",
+      "source": "secure environment settings",
+      "destination": "api.supabase.com",
+      "value_in_handoff": false
+    },
+    "runtime_observations_are_not_portable": true
+  },
+  "authorization_scope": "Continue the requested connected TEST pilot. No school opening, real-student reads/writes, destructive resets or unrelated app changes. Do not reuse old exact-SHA demo approvals as blanket approvals; honor current authorization and actual tool review.",
+  "toolchain": {
+    "node": "22.22.0",
+    "playwright": "1.57.0",
+    "pg": "8.16.3",
+    "esbuild": "0.27.2",
+    "supabase_js": "2.95.0",
+    "supabase_cli": "3.0.0"
+  }
+}
