@@ -9,6 +9,9 @@ on:
       - 'apps/objective-record/atomic-test-recorder.mjs'
       - 'apps/objective-record/eleve.mjs'
       - 'tests/objective-record-fixed-ops-test-edge.test.mjs'
+      - 'supabase/migrations/20261102211000_objective_record_test_fixed_trophies_v1.sql'
+      - 'tests/postgres/objective-record-fixed-trophies-fixture.sql'
+      - 'tests/postgres/objective-record-fixed-trophies.test.sql'
       - 'tests/postgres/objective-record-fixed-ops-setup.sql'
       - 'tests/postgres/objective-record-fixed-ops-candidate.sql'
       - '.github/workflows/objective-record-fixed-ops-candidate.yml'
@@ -51,3 +54,9 @@ jobs:
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/release-candidates/objective_record_fixed_ops_test_atomic_candidate.sql
       - name: Test atomique et refus des classes réelles, rejeu, CAS, reset et rollback XP
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-fixed-ops-candidate.sql
+      - name: Charger le registre factice des trophées permanents
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-fixed-trophies-fixture.sql
+      - name: Appliquer la migration des récompenses TEST
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261102211000_objective_record_test_fixed_trophies_v1.sql
+      - name: Trophées permanents, doublons, remise à zéro et barèmes
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-fixed-trophies.test.sql
