@@ -263,6 +263,22 @@ async function loadApps(){
    const student=el('a','Tester côté élève','action');student.href=linkFor(app);student.target='_blank';student.rel='noopener noreferrer';
    student.onclick=event=>{if(!consent()){event.preventDefault();display('Confirme d’abord que les profils utilisés sont fictifs avant de lancer le jeu.',true)}};
    buttons.append(student);
+   // Le futur lanceur scolaire est inspectable en TEST, avec une vraie session
+   // Connect et des XP OFFICIELS lus. Il refuse encore toute écriture de partie.
+   if(recordPilotSlugByApp[app.app_key]){
+     const candidate=el('a','Hôte élève · XP officiels (lecture seule)','secondary');
+     const target=new URL('./apps/objective-record/eleve.html',location.href);
+     target.searchParams.set('app',recordPilotSlugByApp[app.app_key]);
+     target.searchParams.set('class',TEST_CLASS);
+     candidate.href=target.href;candidate.target='_blank';candidate.rel='noopener noreferrer';
+     candidate.onclick=event=>{
+       if(!verified||!consent()){
+         event.preventDefault();
+         display('Confirme que les profils TEST sont fictifs avant la recette de l’hôte scolaire.',true);
+       }
+     };
+     buttons.append(candidate);
+   }
    if(teacherGameKeys.includes(app.app_key)&&new URL(linkFor(app)).origin===location.origin){
      const teacher=el('button','Monsieur T','secondary');teacher.disabled=!teacherReady;
      teacher.onclick=()=>run(async()=>{guard();if(!teacherReady)throw Error('Active d’abord Monsieur T.');const href=linkFor(app,true);window.open(href,'_blank','noopener,noreferrer')});
