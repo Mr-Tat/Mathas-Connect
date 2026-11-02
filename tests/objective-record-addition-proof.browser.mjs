@@ -60,6 +60,8 @@ test('Chromium: 4 vraies additions émises par Connect, écritures natives et AC
     response=b.action==='student-load'?
      {ok:true,revision:xp?1:0,resetEpoch:0,state:{rewards},storageSubject:pupil}:
      {ok:true,appXp:xp,total:xp,level:1};
+   }else if(request.url().includes('/connect-projection-v2')){
+    response={ok:true,consentRecorded:true};
    }else if(request.url().includes('/connect-objective-record-test')){
     if(b.action==='start-proof-v2'){
      assert.equal(b.level,1);assert.equal(b.total,4);
@@ -125,6 +127,16 @@ test('Chromium: 4 vraies additions émises par Connect, écritures natives et AC
   assert.equal(xp,22);
   assert.equal(requests.filter(x=>x.action==='finish-proof-v2').length,1);
   assert.equal(requests.filter(x=>x.action==='game-record').length,0);
+  assert.equal(requests.filter(x=>x.action==='student-share-score').length,0,
+   'un XP confirmé ne publie pas automatiquement le score');
+  await page.locator('.mathas-projection-offer button.yes').waitFor({state:'visible'});
+  const shared=page.waitForRequest(r=>r.url().includes('connect-projection-v2')&&
+   r.postDataJSON()?.action==='student-share-score');
+  await page.locator('.mathas-projection-offer button.yes').click();
+  const share=await shared;
+  assert.equal(share.postDataJSON().eventId,sessionId);
+  assert.equal(share.postDataJSON().appKey,'addition-ecrite-simple');
+  assert.equal(share.postDataJSON().classId,classId);
   assert.deepEqual(exceptions,[]);
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve))}
 });

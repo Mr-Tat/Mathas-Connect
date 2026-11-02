@@ -45,6 +45,31 @@ test('un seul envoi avec le même eventId et reprise de la file hors ligne',asyn
  assert.equal(record.hasPending(),false);
  assert.ok(messages.some(x=>x.includes('XP du profil scolaire')));
 });
+
+test('publication projection offerte seulement après ACK officiel, avec le vrai eventId reçu',async()=>{
+ const data=new Map(),calls=[],offered=[];
+ const storage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};
+ let unblock;
+ const delayed=new Promise(r=>{unblock=r});
+ const r=createAtomicTestRecorder({classId:TEST,appKey:ATOMIC_TEST_APP,subject:'test-projection-opt-in',
+  storage,send:async p=>{calls.push(p);await delayed;return {
+   ok:true,revision:1,resetEpoch:0,xp:{appXp:22,total:22,level:1,delta:22}}},
+  reload:async()=>{},notify:()=>{},isCurrent:()=>true,
+  onRecorded:ev=>offered.push(ev)});
+ assert.ok(r.initialize({revision:0,resetEpoch:0}));
+ r.onSnapshot({...classic,phase:'play'});r.onSnapshot(classic);
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(calls.length,1);
+ assert.deepEqual(offered,[],'jamais de partage avant ACK');
+ unblock();
+ await new Promise(resolve=>setTimeout(resolve,25));
+ assert.equal(offered.length,1);
+ assert.equal(offered[0].eventId,calls[0].eventId);
+ assert.equal(offered[0].appKey,ATOMIC_TEST_APP);
+ assert.equal(offered[0].duplicate,false);
+ assert.equal(r.hasPending(),false);
+});
+
 test('refuse des classes reelles et toutes les apps sans chemin atomique approuvé',()=>{
  const noop=()=>{},storage={getItem:()=>null,setItem:noop,removeItem:noop};
  const args={classId:TEST,appKey:ATOMIC_TEST_APP,subject:'fictif',storage,send:async()=>null,
