@@ -96,3 +96,18 @@ test('secours Edge limité au GET de la classe TEST, sans fausse activation Conn
   assert.doesNotMatch(edge,/connect_hub_preset_entries/);
   assert.doesNotMatch(edge,/\.from\('connect_xp_credits'\)/);
 });
+
+test('les cinq pilotes Connect authentifiés apparaissent uniquement dans le HUB TEST',()=>{
+ const hub=read('hub.js'),catalog=read('hub-catalog.json'),home=read('hub.html');
+ assert.match(hub,/function labPilotSection\(\)/);
+ assert.match(hub,/if\(classId===LAB_CLASS\)groups\.unshift\(labPilotSection\(\)\)/);
+ assert.match(hub,/if\(classId===LAB_CLASS\)\$\('levels'\)\.prepend\(labPilotSection\(\)\)/);
+ assert.match(hub,/node\.dataset\.labPilot=pilot\.id/);
+ assert.doesNotMatch(hub,/node\.dataset\.appKey=pilot\.id/);
+ assert.match(hub,/Pilote Connect · XP de test enregistrés séparément/);
+ for(const id of ['addition-simple','addition-multiple','soustraction','multiplication','melange'])
+   assert.ok(hub.includes("'"+id+"'"),id);
+ assert.match(hub,/objectif-record-pilote\.html\?app=/);
+ assert.doesNotMatch(catalog,/objectif-record-pilote/);
+ assert.doesNotMatch(home,/objectif-record-pilote/);
+});
