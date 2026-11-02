@@ -4,7 +4,7 @@ import {PROOF_APP,acceptAdditionProofChallenge,normalizeAdditionFirstAttempt,
 // First vertical slice only: native Addition simple, class TEST, classic 4/L1.
 // The database issues operands and verifies digits and carries. The browser
 // cannot choose the grade, milestone or credited XP.
-export function createAdditionProofUI({button,panel,frame,getContext,call,refresh,notify}){
+export function createAdditionProofUI({button,panel,levelSelect,totalSelect,frame,getContext,call,refresh,notify}){
  let run=null,queue=null,sending=false,suppressedTerminal=false;
  const isCurrent=seq=>seq===getContext().generation&&getContext().activeApp===PROOF_APP;
  const inner=()=>{
@@ -22,7 +22,7 @@ export function createAdditionProofUI({button,panel,frame,getContext,call,refres
   panel.hidden=false;button.disabled=false;
   if(!win)return;
   if(run && win.__mathasServerCertified?.sessionId!==run.sessionId){
-   win.__mathasServerCertified={sessionId:run.sessionId,questions:run.questions,index:0};
+   win.__mathasServerCertified={sessionId:run.sessionId,level:run.level,total:run.total,questions:run.questions,index:0};
   }else if(!run&&win.__mathasServerCertified){
    delete win.__mathasServerCertified;
   }
@@ -40,27 +40,27 @@ export function createAdditionProofUI({button,panel,frame,getContext,call,refres
  }
  async function finish(){
   if(!run||run.invalid||sending||!isCurrent(run.generation))return;
-  if(run.answers.length!==4){
-   notify('Partie certifiée incomplète : quatre premières réponses nécessaires. Aucun XP demandé.');
+  if(run.answers.length!==run.total){
+   notify('Partie certifiée incomplète : '+run.total+' premières réponses nécessaires. Aucun XP demandé.');
    return;
   }
   sending=true;const current=run;
   try{
-   const ack=await call('finish-proof',{sessionId:current.sessionId,answers:current.answers});
+   const ack=await call('finish-proof-v2',{sessionId:current.sessionId,answers:current.answers});
    if(!isCurrent(current.generation))return;
    if(ack?.proofVerified!==true||!Number.isSafeInteger(ack.verifiedScore)
-     ||!Number.isSafeInteger(ack.xp?.delta)||ack.verifiedScore<0||ack.verifiedScore>4)
+     ||!Number.isSafeInteger(ack.xp?.delta)||ack.verifiedScore<0||ack.verifiedScore>current.total)
      throw Error('Réponse mathématique non confirmée par le serveur');
    queue?.clear();run=null;suppressedTerminal=true;
    await refresh();
-   notify('✅ Vérifié côté serveur : '+ack.verifiedScore+'/4 · +'+ack.xp.delta+' XP Connect.');
+   notify('✅ Vérifié côté serveur : '+ack.verifiedScore+'/'+current.total+' · +'+ack.xp.delta+' XP Connect.');
   }catch(e){
    if(isCurrent(current.generation))notify('⚠️ Preuve conservée. Actualiser pour retenter : '+e.message);
   }finally{sending=false}
  }
  function onGameEvent(event){
   if(run){
-   if(event?.phase==='ended'&&event.mode==='classic'){
+   if(event?.phase==='ended'&&event.mode==='classic'&&event.level===run.level&&event.total===run.total){
     run.finished=true;void finish();
    }
    return true;
@@ -78,9 +78,13 @@ export function createAdditionProofUI({button,panel,frame,getContext,call,refres
    doc.getElementById('menuScreen').classList.contains('hidden')){
    notify('Reviens au menu Addition simple pour une épreuve certifiée.');return;
   }
+  const level=Number(levelSelect?.value),total=Number(totalSelect?.value);
+  if(![1,2,3].includes(level)||![4,10,20].includes(total)){
+   notify('Choisis un niveau et une série de calculs valides.');return;
+  }
   button.disabled=true;
   try{
-   const data=await call('start-proof',{});
+   const data=await call('start-proof-v2',{level,total});
    if(!isCurrent(seq))return;
    const challenge=acceptAdditionProofChallenge(data);
    if(!challenge||Date.parse(challenge.expiresAt)<=Date.now())
@@ -91,24 +95,24 @@ export function createAdditionProofUI({button,panel,frame,getContext,call,refres
    const previous=queue.read();
    run={...challenge,generation:seq,answers:[],finished:false,invalid:false};
    suppressedTerminal=false;
-   if(previous?.sessionId===challenge.sessionId&&previous.answers.length===4){
+   if(previous?.sessionId===challenge.sessionId&&previous.level===level&&previous.total===total&&previous.answers.length===total){
     run.answers=previous.answers;run.finished=true;
-    notify('Synchronisation des quatre réponses conservées…');
+    notify('Synchronisation des '+total+' réponses conservées…');
     void finish();return;
    }
    if(!queue.save(run,[]))throw Error('Stockage sécurisé de reprise impossible');
    win.__mathasServerCertified={sessionId:run.sessionId,
-    questions:run.questions,index:0};
-   const level=doc.getElementById('classicMaxDigits');
+    level:run.level,total:run.total,questions:run.questions,index:0};
+   const nativeLevel=doc.getElementById('classicMaxDigits');
    const sharedLevel=doc.getElementById('trainingMaxDigits');
-   const four=doc.querySelector('.classic-count-btn[data-count="4"]');
-   if(!level||!sharedLevel||!four)throw Error('Contrôles pédagogiques natifs introuvables');
-   // The native menu shares a difficulty selector and its 4-calculations
-   // button already starts classic play. NEVER call startClassic twice.
-   sharedLevel.value='3';level.value='3';
+   const launch=doc.querySelector('.classic-count-btn[data-count="'+total+'"]');
+   if(!nativeLevel||!sharedLevel||!launch)throw Error('Contrôles pédagogiques natifs introuvables');
+   // Native direct-start button handles the start click: only one launch.
+   const width=({1:3,2:5,3:7})[level];
+   sharedLevel.value=String(width);nativeLevel.value=String(width);
    sharedLevel.dispatchEvent(new Event('change',{bubbles:true}));
-   four.click();
-   notify('🔐 4 additions émises par Connect. Les chiffres et reports seront vérifiés côté serveur.');
+   launch.click();
+   notify('🔐 '+total+' additions niveau '+level+' émises par Connect. Chiffres et reports vérifiés côté serveur.');
   }catch(e){
    if(isCurrent(seq)){run=null;queue=null;notify('⚠️ '+e.message+' : aucun XP demandé.');}
   }finally{if(isCurrent(seq))button.disabled=false}
