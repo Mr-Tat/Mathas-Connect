@@ -323,10 +323,10 @@ $('copy-hub').onclick=()=>run(()=>copy(new URL(HUB,location.href).href));
 $('refresh').onclick=()=>run(async()=>{await loadClass();display('Laboratoire actualisé.')});
 $('fictive-confirm').onchange=()=>run(async()=>{
  const allowed=consent();
- $('results-refresh').disabled=!allowed;$('reset-student').disabled=!allowed||!selectedStudent;
+ $('results-refresh').disabled=!allowed;$('pilot-results-refresh').disabled=!allowed;$('reset-student').disabled=!allowed||!selectedStudent;
  for(const button of document.querySelectorAll('#students button,#requests button'))button.disabled=!allowed;
  refreshLockUI();
- if(!allowed){$('results').replaceChildren();$('detail').hidden=true;selectedStudent=null;$('lock-scope').replaceChildren(new Option('Pour la classe de test','class'));return}
+ if(!allowed){$('results').replaceChildren();$('pilot-results').replaceChildren();$('detail').hidden=true;selectedStudent=null;$('lock-scope').replaceChildren(new Option('Pour la classe de test','class'));return}
  await loadSummary();
 });
 $('teacher-mode').onclick=()=>run(async()=>{
@@ -337,6 +337,25 @@ $('teacher-mode').onclick=()=>run(async()=>{
  document.querySelectorAll('.teacher-game').forEach(b=>b.disabled=false);
  display('Monsieur T vérifié : tests professeur disponibles.');
 });
+$('pilot-results-refresh').onclick=()=>run(async()=>{
+ guard();
+ const appKey=$('pilot-results-app').value;
+ if(!appKeys.includes(appKey))throw Error('Application pilote inconnue');
+ const data=await rpc('connect-record-pilot','teacher-summary',{classId:TEST_CLASS,appKey});
+ const target=$('pilot-results');
+ target.replaceChildren(el('p','Résultats du pilote : '+(data.rows?.length||0)+' profil(s) fictif(s) avec des parties enregistrées.','muted'));
+ for(const row of data.rows||[]){
+   if(!people.some(p=>p.name===row.name))continue;
+   const card=el('div','','panel');
+   card.append(
+     el('strong',row.name),
+     el('p','⭐ '+row.xp+' XP pilote · 👑 '+row.best+' pts · 🏆 '+row.trophies+' coupes · '+row.attempts+' partie(s)','muted tiny')
+   );
+   target.append(card);
+ }
+ display('Résultats du pilote relus dans le registre TEST, sans XP scolaires.');
+});
+$('pilot-results-app').onchange=()=>{$('pilot-results').replaceChildren()};
 $('results-refresh').onclick=()=>run(loadSummary);
 $('results-app').onchange=()=>run(async()=>{selectedStudent=null;$('lock-scope').replaceChildren(new Option('Pour la classe de test','class'));$('detail').hidden=true;refreshLockUI();if(consent())await loadSummary()});
 $('lock-scope').onchange=renderLockChoice;
