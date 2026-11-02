@@ -117,15 +117,26 @@ test('cinq moteurs publies, pont iframe et XP projetes depuis la reponse serveur
     return doc&&doc!==window.__previousPilotGameDoc &&
       window.MathasPilotState?.app==='addition-ecrite-simple' &&
       !!doc.querySelector('#menuScreen .classic-xp-remaining') &&
-      typeof doc.defaultView.MathasLabV2Update==='function';
+      typeof doc.defaultView.MathasLabV2Update==='function' &&
+      document.querySelector('#status')?.textContent?.includes('Moteur prêt');
   },null,{timeout:45000});
   await page.evaluate(()=>{
     const doc=document.querySelector('#gameFrame').contentDocument.getElementById('game').contentDocument;
     const g=doc.querySelector('#gameScreen'),m=doc.querySelector('#menuScreen');
     m?.classList.add('hidden');g?.classList.remove('hidden');
   });
-  await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('Partie de test en cours'),
-    null,{timeout:10000});
+  try{
+    await page.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('Partie de test en cours'),
+      null,{timeout:10000});
+  }catch(e){
+    const diag=await page.evaluate(()=>({
+      status:document.querySelector('#status')?.textContent,
+      gameClass:document.querySelector('#gameFrame')?.contentDocument?.getElementById('game')?.contentDocument?.getElementById('gameScreen')?.className,
+      menuClass:document.querySelector('#gameFrame')?.contentDocument?.getElementById('game')?.contentDocument?.getElementById('menuScreen')?.className,
+      activeApp:window.MathasPilotState?.app
+    }));
+    throw Error('Start-of-game observation failed '+JSON.stringify({diag,errors:exceptions}));
+  }
   await page.evaluate(()=>{
     const doc=document.querySelector('#gameFrame').contentDocument.getElementById('game').contentDocument;
     const button=doc.querySelector('#gameScreen #primaryBtn');
