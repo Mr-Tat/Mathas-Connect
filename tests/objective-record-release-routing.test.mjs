@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {SCHOOL_RECORD_ROLLOUT,schoolRecordLaunch} from '../apps/objective-record/release-routing.mjs';
 test('school rollout closed',()=>{ assert.equal(SCHOOL_RECORD_ROLLOUT.enabled,false); assert.equal(schoolRecordLaunch({classId:'unknown',appKey:'addition-ecrite-simple',legacyUrl:'old'}),'old'); });
 test('five apps remain legacy in all school classes until approvals',()=>{
@@ -19,4 +20,9 @@ test('three independent conditions must be true before future student launch',()
  assert.equal(schoolRecordLaunch({classId:c,appKey:a,legacyUrl:'old',rollout:all}),'./apps/objective-record/eleve.html?app=addition-simple');
  for(const gate of Object.keys(all))
   assert.equal(schoolRecordLaunch({classId:c,appKey:a,legacyUrl:'old',rollout:{...all,[gate]:false}}),'old');
+});
+test('school HUB actually calls guarded link resolver; TEST keeps pilot',()=>{
+ const hub=readFileSync(new URL('../hub.js',import.meta.url),'utf8');
+ assert.match(hub,/schoolRecordLaunch\(\{classId,appKey:app\.app_key,legacyUrl:app\.launch_url\}\)/);
+ assert.match(hub,/pilotSlug=classId===LAB_CLASS\?recordPilotSlugByApp\[app\.app_key\]:null/);
 });
