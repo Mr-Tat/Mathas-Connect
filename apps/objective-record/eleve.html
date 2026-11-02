@@ -39,8 +39,12 @@ header strong{font-size:17px}a{color:#bde6ff}select,button{font:inherit;backgrou
 <button id="refresh" type="button" disabled>Actualiser le profil</button>
 </section>
 <section id="certified-tools" hidden aria-label="Épreuve arithmétique vérifiée">
-<button id="certify" type="button" disabled>🔐 Addition simple · 4 calculs vérifiés par le serveur</button>
-<span>Classe TEST · niveau 1 · reports vérifiés · XP confirmé après réponse du serveur</span>
+<label for="certified-level">Niveau
+<select id="certified-level"><option value="1">1 · 3 chiffres</option><option value="2">2 · 5 chiffres</option><option value="3">3 · 7 chiffres</option></select></label>
+<label for="certified-total">Série
+<select id="certified-total"><option value="4">4 calculs</option><option value="10">10 calculs</option><option value="20">20 calculs</option></select></label>
+<button id="certify" type="button" disabled>🔐 Lancer une série vérifiée par le serveur</button>
+<span>Classe TEST · chiffres et reports vérifiés · XP confirmé par Connect</span>
 </section>
 <div id="notice">🧪 Classe TEST fictive uniquement : les modes Classique et Mort subite des quatre calculs fixes créditent le registre XP Connect. Le score reste déclaré par le navigateur : preuve arithmétique serveur indispensable avant toute classe réelle. Mélange, 3 vies et HARD restent sans XP officiel.</div>
 <iframe id="gameFrame" hidden title="Jeu Objectif record" allow="fullscreen" referrerpolicy="no-referrer"></iframe>
