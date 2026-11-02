@@ -25,3 +25,16 @@ test('cache des deux miniatures seulement, sans modification des catalogues',()=
  assert.equal(catalog.apps.find(a=>a.app_key==='soustraction-ecrite-simple')?.image_url,
    './assets/miniatures/soustraction-ecrite-simple.webp');
 });
+
+test('le mot Connect des HUB attend un compte approuvé, sans masquer celui du portail professeur',()=>{
+ const hub=readFileSync(path('hub.js'),'utf8');
+ const html=readFileSync(path('hub.html'),'utf8');
+ const css=readFileSync(path('hub-profile.css'),'utf8');
+ const home=readFileSync(path('index.html'),'utf8');
+ assert.match(html,/<span id="hub-connect-suffix" class="connect-brand-suffix" hidden>Connect<\/span>/);
+ assert.match(hub,/const authorized = profile\?\.status === 'approved' && profile\?\.classId === classId;/);
+ assert.match(hub,/activeProfile=authorized\?profile:null;\s*\/\/[^\n]*\n\s*\$\('hub-connect-suffix'\)\.hidden=!authorized;/);
+ assert.match(css,/\.connect-brand \.connect-brand-suffix\[hidden\]\{display:none!important\}/);
+ assert.match(html,/hub-profile\.css\?v=20261102-connect-connexion-v1/);
+ assert.match(home,/class="teacher-connect-suffix">Connect<\/span>/);
+});
