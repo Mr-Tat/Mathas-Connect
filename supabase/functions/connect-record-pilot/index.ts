@@ -111,6 +111,23 @@ async function load(studentId:string,app:string){
  const state=validState(data?.state_data)?data.state_data:blank();
  return {state,revision:data?.revision??0,exists:!!data};
 }
+// Lecture du plafond encore disponible, calcule uniquement sur le serveur.
+function projection(earned:Record<string,number>,app:string,level:number,ops:string[],awards:Record<string,number>){
+ const scope=level+':'+opsKey(ops)+':normal:';
+ const eligible=(key:string)=>{
+   const base=Number(awards[key]||0);
+   if(ops.length===2)return key==='classic:20:pass'?32:key==='classic:20:bonus'?6:Math.floor(base/2);
+   if(ops.length===1)return key==='classic:10:bonus'?2:key==='classic:20:bonus'?3:Math.round(base/4);
+   return base;
+ };
+ const remaining=(key:string,cap:number)=>Math.max(0,Math.floor(eligible(key)*cap)-Number(earned[scope+key]||0));
+ return {level,ops,classic:{
+   '4':remaining('classic:4:perfect',1),
+   '10':remaining('classic:10:pass',1)+remaining('classic:10:bonus',1),
+   '20':remaining('classic:20:pass',1)+remaining('classic:20:bonus',1)},
+   sudden:remaining('sudden:5',1)+remaining('sudden:10',1),
+   threeLives:remaining('sudden:5',.5)+remaining('sudden:10',.5)};
+}
 Deno.serve(async req=>{
  if(req.method==='OPTIONS')return new Response('',{headers});
  if(req.method!=='POST')return err('method_not_allowed',405);
@@ -129,7 +146,18 @@ Deno.serve(async req=>{
   if(b?.expectedStudentId!=null&&b.expectedStudentId!==studentId)return err('identity_conflict',409);
   if(b.action==='load'){
    const {state,revision}=await load(studentId,b.appKey);
-   return response({ok:true,studentId,revision,pilot:true,
+   let rights=null;
+   if(integer(b.level,1,3)){
+    const ops=normalizedOps(b.ops,b.appKey);
+    if(ops){
+     const {data:rules,error:e}=await db.from('connect_xp_award_rules')
+       .select('award_key,points').eq('app_key',b.appKey).in('award_key',keys);
+     if(e||!rules?.length)throw Error('rules_unavailable');
+     rights=projection(state.earned,b.appKey,b.level,ops,
+       Object.fromEntries(rules.map(row=>[row.award_key,row.points])));
+    }
+   }
+   return response({ok:true,studentId,revision,pilot:true,rights,
      xp:Object.values(state.earned).reduce((a,b)=>a+Number(b||0),0),
      earned:state.earned,best:state.best,trophies:state.trophies,
      recent:state.events.slice(-15)});
