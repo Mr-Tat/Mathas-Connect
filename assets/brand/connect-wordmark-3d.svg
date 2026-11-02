@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 8 232 54" role="img" aria-labelledby="title">
+<title id="title">Connect</title>
+<!-- Mot converti en courbes : rendu autonome et net, aucune police externe. -->
+<defs>
+ <path id="letters" d="M28.17 53.02C38.03 53.02 44.99 47.02 46.08 37.91H35.24C34.56 41.53 32.08 43.7 28.38 43.7C23.13 43.7 20.3 39.87 20.3 33.15C20.3 26.39 23.15 22.54 28.38 22.54C32.08 22.54 34.59 24.74 35.24 28.38H46.08C45.02 19.27 38.03 13.22 28.17 13.22C17.64 13.22 9.44 20.26 9.44 33.15C9.44 45.93 17.64 53.02 28.17 53.02Z M62.26 53.02C71.16 53.02 77.17 47.48 77.17 38.74C77.17 30.01 71.16 24.45 62.26 24.45C53.38 24.45 47.35 30.01 47.35 38.74C47.35 47.51 53.38 53.02 62.26 53.02ZM62.26 44.95C59.8 44.95 57.81 42.85 57.81 38.74C57.81 34.62 59.8 32.52 62.26 32.52C64.72 32.52 66.71 34.62 66.71 38.74C66.71 42.85 64.72 44.95 62.26 44.95Z M90.03 37.91C90.03 34.75 91.41 33.2 93.84 33.2C96.27 33.2 97.64 34.75 97.64 37.49V52.4H107.99V35.16C107.99 28.59 104.86 24.45 98.78 24.45C94.48 24.45 91.72 26.5 89.9 29.63V25.07H79.68V52.4H90.03Z M121.9 37.91C121.9 34.75 123.27 33.2 125.7 33.2C128.13 33.2 129.5 34.75 129.5 37.49V52.4H139.86V35.16C139.86 28.59 136.72 24.45 130.64 24.45C126.35 24.45 123.58 26.5 121.77 29.63V25.07H111.54V52.4H121.9Z M156.89 53.02C164.08 53.02 169.88 49.06 170.89 43.47H161.73C161.16 44.95 159.5 45.83 157.3 45.83C154.3 45.83 152.49 44.12 152.41 41.22H170.99V38.45C170.99 30.25 165.07 24.45 156.68 24.45C148.3 24.45 142.37 30.38 142.37 38.74C142.37 47.09 148.38 53.02 156.89 53.02ZM152.49 35.42C152.85 33.17 154.46 31.85 156.97 31.85C159.48 31.85 161.08 33.17 161.45 35.42Z M186.97 53.02C195.2 53.02 200.94 48.05 200.94 40.96H191.06C190.88 43.45 189.37 45 187.17 45C184.46 45 182.83 42.64 182.83 38.74C182.83 34.8 184.43 32.47 187.17 32.47C189.37 32.47 190.88 33.97 191.06 36.41H200.94C200.68 29.32 194.99 24.45 186.97 24.45C178.22 24.45 172.37 30.2 172.37 38.74C172.37 47.3 178.19 53.02 186.97 53.02Z M222.3 25.07H216.66V17.62H206.3V25.07H201.7V32.94H206.3V44.22C206.3 49.92 209.44 52.4 216.6 52.4H222.3V44.53H219.04C217.15 44.53 216.66 44.04 216.66 42.41V32.94H222.3Z"/>
+ <linearGradient id="edge" x1="0%" y1="0%" x2="100%" y2="0%"><stop stop-color="#9B60DF"/><stop offset=".47" stop-color="#8082E8"/><stop offset="1" stop-color="#66B9F6"/></linearGradient>
+ <linearGradient id="bevel" x1="0%" y1="0%" x2="0%" y2="100%"><stop stop-color="#FFFFFF" stop-opacity=".52"/><stop offset=".28" stop-color="#CBE3FF" stop-opacity=".28"/><stop offset="1" stop-color="#0C2569" stop-opacity=".42"/></linearGradient>
+ <filter id="shadow" x="-15%" y="-20%" width="140%" height="160%"><feGaussianBlur stdDeviation="1.4"/></filter>
+ <clipPath id="inside"><use xlink:href="#letters"/></clipPath>
+</defs>
+<!-- Vue légèrement par-dessus : tranche colorée visible en haut, face bleue au premier plan. -->
+<use xlink:href="#letters" fill="#0C173D" opacity=".24" transform="translate(.8 1.9)" filter="url(#shadow)"/>
+<use xlink:href="#letters" fill="url(#edge)" transform="translate(1.25 -2.1)"/>
+<use xlink:href="#letters" fill="url(#edge)" transform="translate(.75 -1.2)"/>
+<use xlink:href="#letters" fill="url(#edge)" stroke="url(#edge)" stroke-width="1.7" stroke-linejoin="round" transform="translate(.28 -.45)"/>
+<!-- Face principale de la charte (bleu uni #0256B8). -->
+<use xlink:href="#letters" fill="#0256B8"/>
+<g clip-path="url(#inside)"><use xlink:href="#letters" fill="none" stroke="url(#bevel)" stroke-width="1.55" stroke-linejoin="round"/></g>
+</svg>

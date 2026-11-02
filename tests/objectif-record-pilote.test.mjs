@@ -42,3 +42,42 @@ test('cinq moteurs, memes pilotes et interface de bilan',()=>{
   assert.match(html,/id="best"/);
   assert.match(html,/id="trophies"/);
 });
+
+test('les cinq boutons affichent uniquement les XP restants confirmes par le serveur',()=>{
+ assert.match(pilot,/function renderRights\(doc\)/);
+ assert.match(pilot,/pilotRights=d\.rights\?\?null/);
+ assert.match(pilot,/rights\?\.classic\?\.\[amount\]\?\?null/);
+ assert.match(pilot,/rights\?\.threeLives\?\?null/);
+ assert.match(pilot,/rights\?\.sudden\?\?null/);
+ assert.match(pilot,/indicator\?\.remove\(\)/);
+ assert.match(pilot,/pilotRights=null;/);
+ assert.match(pilot,/renderRights\(doc\)/);
+ assert.match(pilot,/querySelectorAll\('#menuScreen \.mathas-pilot-remaining'\)/);
+ assert.match(pilot,/const matches=\[\.\.\.button\.querySelectorAll\(':scope > \.classic-xp-remaining'\)\]/);
+ assert.match(pilot,/const matches=\[\.\.\.meta\.querySelectorAll\('\.score-mode-detail'\)\]/);
+ assert.doesNotMatch(pilot,/line\.className='mathas-pilot-remaining'/);
+ assert.doesNotMatch(pilot,/window\.MathasPilotState\.rights\|\|/);
+});
+test('les fins 3 vies livrent un motif de fin et le serveur refuse les parties interrompues',()=>{
+ assert.match(pilot,/phase:d\.phase,hearts:d\.hearts,completed:d\.completed/);
+ assert.match(edge,/b\.mode\.endsWith\('three-lives'\)/);
+ assert.match(edge,/b\.phase!=='ended'\|\|b\.hearts!==0/);
+ assert.match(edge,/b\.completed<b\.score\+3/);
+});
+
+test('la lecture professeur des resultats pilotes est strictement autorisee et cantonnée a TEST',()=>{
+ const edge=read('supabase/functions/connect-record-pilot/index.ts');
+ const lab=read('laboratoire.js'),html=read('laboratoire.html');
+ assert.match(edge,/b\.action==='teacher-summary'/);
+ assert.match(edge,/user\.is_anonymous\)return err\('teacher_required',403\)/);
+ assert.match(edge,/\.eq\('teacher_id',user\.id\)\.eq\('class_id',TEST\)/);
+ assert.match(edge,/permission\.can_view_results!==true&&permission\.can_manage!==true/);
+ assert.match(edge,/\.eq\('class_id',TEST\)\.eq\('app_key',b\.appKey\)/);
+ assert.match(edge,/\.is\('left_at',null\)/);
+ assert.doesNotMatch(edge,/\.from\(['"]connect_xp_credits['"]\)/);
+ assert.match(lab,/guard\(\);\s*const appKey=\$\('pilot-results-app'\)/);
+ assert.match(lab,/rpc\('connect-record-pilot','teacher-summary'/);
+ assert.match(html,/id="pilot-results-refresh"/);
+ assert.match(html,/id="pilot-results-app"/);
+ assert.match(html,/id="pilot-results"/);
+});

@@ -3,7 +3,7 @@ import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 // Pont uniquement pour le laboratoire. Le jeu pedagogique conserve son moteur.
 // Le serveur authentifie la fiche TEST et calcule les droits du registre PILOTE.
 const TEST='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
-const URL='https://awmhpfofacaglewammxt.supabase.co';
+const SUPABASE_URL='https://awmhpfofacaglewammxt.supabase.co';
 const KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const MAP={
   'addition-simple':['addition-ecrite-simple','https://mr-tat.github.io/CE-Addition-simple/essai-mode-score-3-vies.html'],
@@ -14,21 +14,24 @@ const MAP={
 };
 const $=id=>document.getElementById(id);
 const teacher=new URL(location.href).searchParams.get('joueur')==='prof';
-const sb=createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
+const sb=createClient(SUPABASE_URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
   ...(teacher?{storageKey:'mathas-connect-professor-auth-v1'}:{})}});
 let studentId=null,activeSlug='',activeApp='',generation=0,snapshot=null,startId=null,lastRecording=false;
 let previousRunning=false,observedDoc=null,observedWin=null,observer=null,settle=null;
 let lastProjectionKey='',projectionInFlight=false;
+let pilotRights=null,loadSequence=0;
 window.MathasPilotState=null;
 const status=(message)=>{$('status').textContent=message};
 const pilotError=e=>{status('⚠️ '+(e?.message||e))};
 async function api(action,data={}){
+ const requestApp=activeApp,requestStudent=studentId;
  const {data:{session}}=await sb.auth.getSession();
+ if(requestApp!==activeApp)throw Error('Le jeu a changé pendant la requête');
  if(!session?.access_token)throw Error('Session Connect absente. Ouvre d’abord le HUB de la classe TEST et approuve cet appareil.');
  if(!session.user)throw Error('Identité Connect indisponible');
- const r=await fetch(URL+'/functions/v1/connect-record-pilot',{method:'POST',
+ const r=await fetch(SUPABASE_URL+'/functions/v1/connect-record-pilot',{method:'POST',
    headers:{apikey:KEY,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
-   body:JSON.stringify({action,appKey:activeApp,classId:TEST,expectedStudentId:studentId,...data})});
+   body:JSON.stringify({action,appKey:requestApp,classId:TEST,expectedStudentId:requestStudent,...data})});
  const answer=await r.json().catch(()=>({}));
  if(!r.ok||!answer.ok)throw Error(answer.error||'API pilote indisponible ('+r.status+')');
  return answer;
@@ -40,12 +43,71 @@ function render(data){
  $('attempts').textContent=String(data.recent?.length??'—');
 }
 async function refresh(selection={}){
+ const requestApp=activeApp,requestGeneration=generation,requestSequence=++loadSequence;
  const d=await api('load',selection);
+ if(requestGeneration!==generation||requestApp!==activeApp||requestSequence!==loadSequence)return null;
  if(studentId&&studentId!==d.studentId)throw Error('Le profil actif a changé : recharge la page');
  studentId=d.studentId;
  render(d);
- window.MathasPilotState={active:true,app:activeApp,rights:d.rights||window.MathasPilotState?.rights||null,trophies:d.trophies||[]};
+ // Ne jamais garder les droits d'un autre niveau/jeu en cas de réponse incomplète.
+ pilotRights=d.rights??null;
+ window.MathasPilotState={active:true,app:activeApp,rights:pilotRights,trophies:d.trophies||[]};
+ if(observedDoc)renderRights(observedDoc);
  return d;
+}
+// Le moteur de démonstration possède DÉJÀ son emplacement XP
+// (.classic-xp-remaining / .score-mode-detail). Ne jamais superposer un
+// deuxième badge. Le pilote remplit cet emplacement avec les droits serveur,
+// ou le retire lorsque les droits ne correspondent pas à la sélection.
+function renderRights(doc){
+ if(!doc?.documentElement)return;
+ // Nettoyer aussi les badges d'anciennes versions du pilote déjà présents.
+ doc.querySelectorAll('#menuScreen .mathas-pilot-remaining').forEach(el=>el.remove());
+ doc.getElementById('mathas-pilot-rights-style')?.remove();
+
+ const chosen=selection(doc),rights=pilotRights;
+ const sameLevel=Number.isSafeInteger(rights?.level)&&rights.level===chosen.level;
+ const sameOps=activeSlug!=='melange'||
+   (Array.isArray(rights?.ops)&&Array.isArray(chosen.ops)&&
+    rights.ops.slice().sort().join(',')===chosen.ops.slice().sort().join(','));
+ const allowed=sameLevel&&sameOps;
+
+ const showClassic=(selector,value)=>{
+   for(const button of doc.querySelectorAll(selector)){
+     const matches=[...button.querySelectorAll(':scope > .classic-xp-remaining')];
+     const indicator=matches.shift()||null;
+     matches.forEach(node=>node.remove());
+     if(!allowed||!Number.isSafeInteger(value)||value<0){
+       indicator?.remove();
+       continue;
+     }
+     const line=indicator||doc.createElement('span');
+     if(!indicator){line.className='classic-xp-remaining';button.appendChild(line)}
+     if(line.textContent!=='Reste '+value+' XP')line.textContent='Reste '+value+' XP';
+   }
+ };
+ const showMode=(selector,value)=>{
+   for(const button of doc.querySelectorAll(selector)){
+     const meta=button.querySelector('.score-mode-meta');
+     if(!meta)continue;
+     const matches=[...meta.querySelectorAll('.score-mode-detail')];
+     const indicator=matches.shift()||null;
+     matches.forEach(node=>node.remove());
+     if(!allowed||!Number.isSafeInteger(value)||value<0){
+       indicator?.remove();
+       continue;
+     }
+     const line=indicator||doc.createElement('span');
+     if(!indicator){line.className='score-mode-detail';meta.appendChild(line)}
+     if(line.textContent!=='Reste '+value+' XP')line.textContent='Reste '+value+' XP';
+   }
+ };
+ for(const amount of [4,10,20]){
+   showClassic('#menuScreen button[data-count="'+amount+'"]',
+     rights?.classic?.[amount]??null);
+ }
+ showMode('#menuScreen #startThreeLives',rights?.threeLives??null);
+ showMode('#menuScreen #startSudden,#menuScreen #suddenBtn',rights?.sudden??null);
 }
 function operations(doc){
  if(activeSlug!=='melange')return null;
@@ -83,7 +145,8 @@ function scheduleRecord(doc){
  status('Partie terminée : enregistrement serveur dans le registre du laboratoire…');
  writing=writing.then(async()=>{
    if(seq!==generation)return;
-   const proof={eventId,mode:converted,level:Number(d.level),score:Number(d.score),total,ops};
+   const proof={eventId,mode:converted,level:Number(d.level),score:Number(d.score),total,ops,
+     phase:d.phase,hearts:d.hearts,completed:d.completed};
    const result=await api('record',proof);
    if(seq!==generation)return;
    $('xp').textContent=String(result.xp);
@@ -112,6 +175,7 @@ function mount(doc,win,seq){
  const old=win.MathasLabV2Update;
  if(typeof old!=='function')return;
  observer?.disconnect();observedDoc=doc;observedWin=win;previousRunning=false;
+ renderRights(doc);
  win.MathasLabV2Update=function(d){
    old(d);
    if(seq!==generation||!d)return;
@@ -137,9 +201,12 @@ function startWatching(seq){
      if(choice&&choice.value!=='free'){choice.value='free';choice.dispatchEvent(new Event('change',{bubbles:true}))}
      if(win.MathasLabV2Update&&doc!==observedDoc)mount(doc,win,seq);
      if(doc===observedDoc&&!projectionInFlight){
+       renderRights(doc);
        const req=selection(doc),key=JSON.stringify(req);
        if(lastProjectionKey!==key){
-         lastProjectionKey=key;projectionInFlight=true;
+         lastProjectionKey=key;pilotRights=null;
+         if(window.MathasPilotState?.active)window.MathasPilotState={...window.MathasPilotState,rights:null};
+         renderRights(doc);projectionInFlight=true;
          refresh(req).catch(pilotError).finally(()=>{projectionInFlight=false});
        }
      }
@@ -149,7 +216,7 @@ function startWatching(seq){
 async function choose(){
  generation++;const seq=generation;
  observer?.disconnect();observedDoc=null;observedWin=null;snapshot=null;startId=null;
- previousRunning=false;lastRecording=false;lastProjectionKey='';projectionInFlight=false;
+ previousRunning=false;lastRecording=false;lastProjectionKey='';projectionInFlight=false;pilotRights=null;loadSequence++;
  window.MathasPilotState=null;
  clearInterval(settle);
  activeSlug=$('app').value;activeApp=MAP[activeSlug]?.[0]||'';

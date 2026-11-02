@@ -9,6 +9,14 @@ const TEST_LABEL='Classe démo - TEST';
 const HUB='./hub.html?class='+encodeURIComponent(TEST_CLASS)+'&name='+encodeURIComponent(TEST_LABEL);
 const appKeys=['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'];
 const teacherGameKeys=[...appKeys,'abaque-longueurs'];
+// Cinq pilotes de calcul écrit restent dans le registre TEST séparé.
+const recordPilotSlugByApp=Object.freeze({
+  'addition-ecrite-simple':'addition-simple',
+  'addition-ecrite-multiple':'addition-multiple',
+  'soustraction-ecrite-simple':'soustraction',
+  'multiplication-ecrite-simple':'multiplication',
+  'melange-calculs-ecrits':'melange'
+});
 const fallbackApps=[
  {app_key:'addition-ecrite-simple',title:'Addition écrite',launch_url:'https://mr-tat.github.io/CE-Addition-simple/'},
  {app_key:'multiplication-ecrite-simple',title:'Multiplication écrite simple',launch_url:'./apps/multiplication-simple/'},
@@ -67,7 +75,19 @@ async function rpc(edge,action,data={}){const s=await session();const response=a
 const api=(action,data={})=>rpc('connect-api',action,data);
 const results=(action,data={})=>{guard();return rpc('connect-results',action,{classId:TEST_CLASS,appKey:$('results-app').value,...data})};
 async function run(fn){try{await fn()}catch(e){display('Laboratoire : '+(e.message||e),true)}}
-function linkFor(app,prof=false){const href=app.app_key==='abaque-longueurs'?ABAQUE_ONLINE_APP.launch_url:app.launch_url||app.url;if(!href)return null;let url;try{url=new URL(href,location.href)}catch{return null}if(url.protocol!=='https:'&&url.protocol!=='http:')return null;if(url.origin===location.origin){url.searchParams.set('class',TEST_CLASS);if(prof&&teacherGameKeys.includes(app.app_key))url.searchParams.set('joueur','prof')}return url.href}
+function linkFor(app,prof=false){
+ const pilotSlug=recordPilotSlugByApp[app.app_key];
+ const href=pilotSlug?'./essais/objectif-record-pilote.html?app='+encodeURIComponent(pilotSlug):
+   app.app_key==='abaque-longueurs'?ABAQUE_ONLINE_APP.launch_url:(app.launch_url||app.url);
+ if(!href)return null;
+ let url;try{url=new URL(href,location.href)}catch{return null}
+ if(url.protocol!=='https:'&&url.protocol!=='http:')return null;
+ if(url.origin===location.origin){
+   url.searchParams.set('class',TEST_CLASS);
+   if(prof&&teacherGameKeys.includes(app.app_key))url.searchParams.set('joueur','prof');
+ }
+ return url.href;
+}
 function renderObjectiveRecordPreviews(){
  const list=$('record-previews');list.replaceChildren();
  for(const preview of objectiveRecordLabPreviews){
@@ -220,7 +240,7 @@ async function loadApps(){
    const label=el('label','','lab-visibility-toggle');
    const checkbox=document.createElement('input');
    checkbox.type='checkbox';checkbox.checked=app.visible===true;checkbox.disabled=!app.enabled;
-   checkbox.setAttribute('aria-label','Afficher '+(app.title||app.app_key)+' dans le HUB test');
+   checkbox.setAttribute('aria-label','Afficher la nouvelle version de '+(app.title||app.app_key)+' dans le HUB test');
    label.append(checkbox,document.createTextNode(' Afficher'));card.append(label);
    if(!app.enabled){
      card.append(el('p','Application désactivée côté serveur : affichage indisponible.','muted warning'));
@@ -235,7 +255,7 @@ async function loadApps(){
        }catch(error){checkbox.checked=app.visible===true;throw error}
        finally{checkbox.disabled=false}
      });
-     card.append(el('p','Visibilité indépendante des quatre HUB réels.','muted tiny'));
+     card.append(el('p','Nouvelle version Connect · XP pilote sauvegardés à part · affichage limité au HUB TEST.','muted tiny'));
    }
    const buttons=el('div','','actions');
    // Garder les boutons de test existants ; seule la case Afficher dépend
@@ -335,10 +355,10 @@ $('copy-hub').onclick=()=>run(()=>copy(new URL(HUB,location.href).href));
 $('refresh').onclick=()=>run(async()=>{await loadClass();await loadApps();display('Laboratoire actualisé.')});
 $('fictive-confirm').onchange=()=>run(async()=>{
  const allowed=consent();
- $('results-refresh').disabled=!allowed;$('reset-student').disabled=!allowed||!selectedStudent;
+ $('results-refresh').disabled=!allowed;$('pilot-results-refresh').disabled=!allowed;$('reset-student').disabled=!allowed||!selectedStudent;
  for(const button of document.querySelectorAll('#students button,#requests button'))button.disabled=!allowed;
  refreshLockUI();
- if(!allowed){$('results').replaceChildren();$('detail').hidden=true;selectedStudent=null;$('lock-scope').replaceChildren(new Option('Pour la classe de test','class'));return}
+ if(!allowed){$('results').replaceChildren();$('pilot-results').replaceChildren();$('detail').hidden=true;selectedStudent=null;$('lock-scope').replaceChildren(new Option('Pour la classe de test','class'));return}
  await loadSummary();
 });
 $('teacher-mode').onclick=()=>run(async()=>{
@@ -349,6 +369,25 @@ $('teacher-mode').onclick=()=>run(async()=>{
  document.querySelectorAll('.teacher-game').forEach(b=>b.disabled=false);abaquePilotPanel?.refreshConsent();
  display('Monsieur T vérifié : tests professeur disponibles.');
 });
+$('pilot-results-refresh').onclick=()=>run(async()=>{
+ guard();
+ const appKey=$('pilot-results-app').value;
+ if(!appKeys.includes(appKey))throw Error('Application pilote inconnue');
+ const data=await rpc('connect-record-pilot','teacher-summary',{classId:TEST_CLASS,appKey});
+ const target=$('pilot-results');
+ target.replaceChildren(el('p','Résultats du pilote : '+(data.rows?.length||0)+' profil(s) fictif(s) avec des parties enregistrées.','muted'));
+ for(const row of data.rows||[]){
+   if(!people.some(p=>p.name===row.name))continue;
+   const card=el('div','','panel');
+   card.append(
+     el('strong',row.name),
+     el('p','⭐ '+row.xp+' XP pilote · 👑 '+row.best+' pts · 🏆 '+row.trophies+' coupes · '+row.attempts+' partie(s)','muted tiny')
+   );
+   target.append(card);
+ }
+ display('Résultats du pilote relus dans le registre TEST, sans XP scolaires.');
+});
+$('pilot-results-app').onchange=()=>{$('pilot-results').replaceChildren()};
 $('results-refresh').onclick=()=>run(loadSummary);
 $('results-app').onchange=()=>run(async()=>{selectedStudent=null;$('lock-scope').replaceChildren(new Option('Pour la classe de test','class'));$('detail').hidden=true;refreshLockUI();if(consent())await loadSummary()});
 $('lock-scope').onchange=renderLockChoice;

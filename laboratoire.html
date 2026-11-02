@@ -52,17 +52,25 @@
     </section>
     <section class="card" aria-labelledby="pilot-record-title">
       <div class="heading"><div>
-        <h2 id="pilot-record-title">🧪 Objectif record — pilote Connect authentifié</h2>
-        <p class="muted">Uniquement avec un profil approuvé dans la classe fictive TEST. Les parties et les XP d'essai sont sauvegardés dans un registre séparé, jamais dans les crédits scolaires.</p>
+        <h2 id="pilot-record-title">Résultats des nouvelles versions — Classe TEST</h2>
+        <p class="muted">Les cinq nouvelles versions se lancent maintenant depuis « Tests en ligne » ci-dessus. Consulte ici leurs XP, scores et trophées d’essai, enregistrés séparément des données scolaires.</p>
       </div><span class="pill">PILOTE TEST</span></div>
-      <div class="actions">
-        <a class="action" href="./essais/objectif-record-pilote.html?app=addition-simple">Addition simple</a>
-        <a class="action" href="./essais/objectif-record-pilote.html?app=addition-multiple">Addition multiple</a>
-        <a class="action" href="./essais/objectif-record-pilote.html?app=soustraction">Soustraction</a>
-        <a class="action" href="./essais/objectif-record-pilote.html?app=multiplication">Multiplication</a>
-        <a class="action" href="./essais/objectif-record-pilote.html?app=melange">Mélange</a>
+
+      <p class="muted tiny">Depuis les cinq cartes « Tests en ligne », utilise « Tester côté élève » ou « Monsieur T ». Les profils TEST doivent rester authentifiés et approuvés.</p>
+      <div class="actions" style="margin-top:12px">
+        <label for="pilot-results-app">Résultats du pilote
+          <select id="pilot-results-app">
+            <option value="addition-ecrite-simple">Addition simple</option>
+            <option value="addition-ecrite-multiple">Addition multiple</option>
+            <option value="soustraction-ecrite-simple">Soustraction écrite</option>
+            <option value="multiplication-ecrite-simple">Multiplication simple</option>
+            <option value="melange-calculs-ecrits">Mélange</option>
+          </select>
+        </label>
+        <button type="button" id="pilot-results-refresh" class="secondary" disabled>Voir les résultats XP pilote</button>
       </div>
-      <p class="muted tiny">Pour le test élève, ouvre ces liens depuis le navigateur du profil fictif déjà approuvé. Aucun barème réel ni les quatre HUB scolaires ne sont activés par ce pilote.</p>
+      <div id="pilot-results" class="stack" role="region" aria-live="polite" aria-label="Résultats fictifs du pilote"></div>
+
     </section>
     <section class="card" aria-labelledby="results-title">
       <div class="heading"><div><h2 id="results-title">Résultats et parcours de test</h2><p class="muted">Uniquement cette classe, une application à la fois.</p></div></div>
