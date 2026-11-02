@@ -97,25 +97,23 @@ test('secours Edge limité au GET de la classe TEST, sans fausse activation Conn
   assert.doesNotMatch(edge,/\.from\('connect_xp_credits'\)/);
 });
 
-test('les cinq nouvelles versions remplacent les liens des cartes TEST, sans modifier les autres HUB',()=>{
- const hub=read('hub.js'),catalog=read('hub-catalog.json'),home=read('hub.html');
- const lab=read('laboratoire.js'),laboratory=read('laboratoire.html');
- assert.match(hub,/pilotSlug=classId===LAB_CLASS\?recordPilotSlugByApp\[app\.app_key\]:null/);
- assert.match(hub,/if\(pilotSlug\)node\.dataset\.labPilot=pilotSlug/);
- assert.match(hub,/else node\.dataset\.appKey=app\.app_key/);
- assert.match(hub,/XP enregistrés dans le pilote TEST/);
- assert.doesNotMatch(hub,/function labPilotSection\(/);
- assert.match(lab,/pilotSlug=recordPilotSlugByApp\[app\.app_key\]/);
- assert.match(lab,/const href=pilotSlug\?'\.\/essais\/objectif-record-pilote\.html\?app='/);
+test('les cinq cartes TEST ouvrent le lanceur scolaire commun; les autres classes gardent leurs URLs',()=>{
+ const hub=read('hub.js'),lab=read('laboratoire.js');
+ const release=read('apps/objective-record/release-routing.mjs');
+ const home=read('hub.html'),catalog=read('hub-catalog.json');
+ assert.match(hub,/testSlug=classId===LAB_CLASS\?recordSlugByApp\[app\.app_key\]:null/);
+ assert.match(hub,/if\(testSlug\)node\.dataset\.labSchool=testSlug/);
+ assert.match(hub,/SCHOOL_RECORD_LAUNCHER\+'\?app='\+encodeURIComponent\(testSlug\)/);
+ assert.doesNotMatch(hub,/essais\/objectif-record-pilote\.html/);
+ assert.match(lab,/testSlug=recordSlugByApp\[app\.app_key\]/);
+ assert.match(lab,/const href=testSlug\?SCHOOL_RECORD_LAUNCHER\+'\?app='/);
  assert.match(lab,/labCatalog\('set',\{appKey:app\.app_key,visible:wanted\}\)/);
  assert.match(lab,/student\.href=linkFor\(app\)/);
  assert.match(lab,/const href=linkFor\(app,true\)/);
- for(const id of ['addition-simple','addition-multiple','soustraction','multiplication','melange']){
-   assert.ok(hub.includes("'"+id+"'"),id+' HUB');
-   assert.ok(lab.includes("'"+id+"'"),id+' laboratoire');
- }
- assert.match(laboratory,/id="pilot-results-refresh"/);
- assert.doesNotMatch(laboratory,/<a class="action" href="\.\/essais\/objectif-record-pilote\.html/);
+ assert.doesNotMatch(lab,/Hôte élève · XP officiels \(lecture seule\)/);
+ assert.doesNotMatch(lab,/candidateTeacher/);
+ for(const slug of ['addition-simple','addition-multiple','soustraction','multiplication','melange'])
+   assert.ok(release.includes("'"+slug+"'"),slug+' shared mapping');
  assert.doesNotMatch(catalog,/objectif-record-pilote/);
  assert.doesNotMatch(home,/objectif-record-pilote/);
 });
