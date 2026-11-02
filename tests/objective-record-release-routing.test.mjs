@@ -7,3 +7,8 @@ test('five apps remain legacy in all school classes until approvals',()=>{
  const names=['addition-ecrite-simple','addition-ecrite-multiple','soustraction-ecrite-simple','multiplication-ecrite-simple','melange-calculs-ecrits'];
  for(const classId of ids)for(const appKey of names)assert.equal(schoolRecordLaunch({classId,appKey,legacyUrl:'old'}),'old');
 });
+test('LAB never uses school routing, even when gates are true',()=>{
+ const all={enabled:true,atomicXpAndTrophiesVerified:true,hostedTestClassE2EVerified:true};
+ for(const appKey of ['addition-ecrite-simple','addition-ecrite-multiple','soustraction-ecrite-simple','multiplication-ecrite-simple','melange-calculs-ecrits'])
+  assert.equal(schoolRecordLaunch({classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',appKey,legacyUrl:'old',rollout:all}),'old');
+});
