@@ -1,10 +1,10 @@
-import {ATOMIC_TEST_APP,normalizeAtomicTestCompletion,acceptNativeRecordAck} from './native-official-record.mjs';
-// TEST-class bridge to the existing atomic Connect Addition-multiple RPC.
+import {isFixedTestApp,normalizeAtomicTestCompletion,acceptNativeRecordAck} from './native-official-record.mjs';
+// TEST-class bridge to atomic official Connect RPCs (the original Addition-multiple RPC and the fixed-operation candidate).
 // Only classic/sudden. Native-browser score is not an independently verified
 // arithmetic transcript, so this gate must never be opened in real classrooms.
 export function createAtomicTestRecorder({classId,appKey,subject,storage,send,reload,notify,isCurrent}){
  const TEST='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
- if(classId!==TEST||appKey!==ATOMIC_TEST_APP||!subject
+ if(classId!==TEST||!isFixedTestApp(appKey)||!subject
    ||typeof send!=='function'||typeof reload!=='function'
    ||typeof notify!=='function'||typeof isCurrent!=='function')return null;
  const key='mathas.record-test-native.v1.'+classId+'.'+subject+'.'+appKey;
