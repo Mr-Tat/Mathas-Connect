@@ -1,0 +1,24 @@
+name: Objectif record - contrat candidat LAB
+on:
+  pull_request:
+    paths:
+      - 'apps/record-lab-pilot/**'
+      - 'tests/record-lab-contract.test.mjs'
+      - '.github/workflows/record-lab-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/record-lab-pilot/**'
+      - 'tests/record-lab-contract.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/record-lab-contract.test.mjs
