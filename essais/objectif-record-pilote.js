@@ -1,0 +1,152 @@
+import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
+
+// Pont uniquement pour le laboratoire. Le jeu pedagogique conserve son moteur.
+// Le serveur authentifie la fiche TEST et calcule les droits du registre PILOTE.
+const TEST='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
+const URL='https://awmhpfofacaglewammxt.supabase.co';
+const KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
+const MAP={
+  'addition-simple':['addition-ecrite-simple','https://mr-tat.github.io/CE-Addition-simple/essai-mode-score-3-vies.html'],
+  'addition-multiple':['addition-ecrite-multiple','https://mr-tat.github.io/addition-ecrite-multiple/essai-objectif-record-3-vies.html'],
+  'soustraction':['soustraction-ecrite-simple','https://mr-tat.github.io/soustraction-ecrite/essai-objectif-record-3-vies.html'],
+  'multiplication':['multiplication-ecrite-simple','https://mr-tat.github.io/Multiplication-simple/essai-objectif-record-3-vies.html'],
+  'melange':['melange-calculs-ecrits','https://mr-tat.github.io/Melange-calculs-ecrits-1/essai-objectif-record-3-vies.html']
+};
+const $=id=>document.getElementById(id);
+const teacher=new URL(location.href).searchParams.get('joueur')==='prof';
+const sb=createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
+  ...(teacher?{storageKey:'mathas-connect-professor-auth-v1'}:{})}});
+let studentId=null,activeSlug='',activeApp='',generation=0,snapshot=null,startId=null,lastRecording=false;
+let previousRunning=false,observedDoc=null,observedWin=null,observer=null,settle=null;
+const status=(message)=>{$('status').textContent=message};
+const pilotError=e=>{status('⚠️ '+(e?.message||e))};
+async function api(action,data={}){
+ const {data:{session}}=await sb.auth.getSession();
+ if(!session?.access_token)throw Error('Session Connect absente. Ouvre d’abord le HUB de la classe TEST et approuve cet appareil.');
+ if(!session.user)throw Error('Identité Connect indisponible');
+ const r=await fetch(URL+'/functions/v1/connect-record-pilot',{method:'POST',
+   headers:{apikey:KEY,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
+   body:JSON.stringify({action,appKey:activeApp,classId:TEST,expectedStudentId:studentId,...data})});
+ const answer=await r.json().catch(()=>({}));
+ if(!r.ok||!answer.ok)throw Error(answer.error||'API pilote indisponible ('+r.status+')');
+ return answer;
+}
+function render(data){
+ $('xp').textContent=String(data.xp??0);
+ $('best').textContent=String(data.best??0);
+ $('trophies').textContent=String(data.trophies?.length??0);
+ $('attempts').textContent=String(data.recent?.length??'—');
+}
+async function refresh(){
+ const d=await api('load');
+ if(studentId&&studentId!==d.studentId)throw Error('Le profil actif a changé : recharge la page');
+ studentId=d.studentId;
+ render(d);
+ return d;
+}
+function operations(doc){
+ if(activeSlug!=='melange')return null;
+ return ['add','sub','mul'].filter(op=>doc.querySelector('#opsSelector .op-toggle[data-op="'+op+'"]')?.classList.contains('active'));
+}
+function determinePhase(doc,s){
+ const end=doc.querySelector('#gameScreen:not(.hidden) #primaryBtn,#gameScreen:not(.hidden) #primaryBtnText,#gameScreen:not(.hidden) #primaryAction');
+ const mainIsEnd=!!end&&/Retour au menu/i.test(end.textContent||'');
+ const hard=doc.querySelector('#hardGameScreen:not(.hidden) #hardPrimary,#hardGame:not(.hidden) #hardPrimary');
+ const hardIsEnd=!!hard&&/Retour au menu HARD/i.test(hard.textContent||'');
+ return s?.phase==='ended'||(s?.hard?hardIsEnd:mainIsEnd);
+}
+let writing=Promise.resolve();
+function scheduleRecord(doc){
+ if(!snapshot||!startId||lastRecording||!determinePhase(doc,snapshot))return;
+ const d=snapshot;
+ if(!Number.isSafeInteger(d.score)||!Number.isSafeInteger(d.level)||!d.mode)return;
+ const converted=d.hard?'hard-'+(d.mode==='three-lives'?'three-lives':d.mode==='sudden'?'sudden':'classic'):d.mode;
+ if(!['classic','sudden','three-lives','hard-classic','hard-sudden','hard-three-lives'].includes(converted))return;
+ const ops=operations(doc);
+ if(activeSlug==='melange'&&(!ops||ops.length===0))return;
+ const total=converted==='classic'?Number(d.total):null;
+ if(converted==='classic'&&![4,10,20].includes(total))return;
+ const eventId=startId,seq=generation;
+ lastRecording=true;
+ status('Partie terminée : enregistrement serveur dans le registre du laboratoire…');
+ writing=writing.then(async()=>{
+   if(seq!==generation)return;
+   const proof={eventId,mode:converted,level:Number(d.level),score:Number(d.score),total,ops};
+   const result=await api('record',proof);
+   if(seq!==generation)return;
+   $('xp').textContent=String(result.xp);
+   $('best').textContent=String(result.best);
+   $('trophies').textContent=String(result.trophies?.length||0);
+   status((result.duplicate?'Partie déjà enregistrée.':'Partie enregistrée : +'+result.awarded+' XP pilote.')+' Aucun XP scolaire modifié.');
+   await refresh();
+ }).catch(e=>{lastRecording=false;pilotError(e)});
+}
+function syncObservation(){
+ if(!observedDoc)return;
+ const doc=observedDoc;
+ const game=doc.getElementById('gameScreen');
+ const hard=doc.getElementById('hardGameScreen')||doc.getElementById('hardGame');
+ const running=!!((game&&!game.classList.contains('hidden')&&!game.hidden)||(hard&&!hard.classList.contains('hidden')&&!hard.hidden));
+ if(running&&!previousRunning){
+   startId=crypto.randomUUID();lastRecording=false;snapshot=null;
+   status('Partie de test en cours. Le serveur enregistrera uniquement la fin.');
+ }
+ if(!running&&previousRunning){startId=null;snapshot=null;lastRecording=false}
+ previousRunning=running;
+ if(running)scheduleRecord(doc);
+}
+function mount(doc,win,seq){
+ if(seq!==generation||doc===observedDoc)return;
+ observer?.disconnect();observedDoc=doc;observedWin=win;previousRunning=false;
+ const old=win.MathasLabV2Update;
+ if(typeof old!=='function')return;
+ win.MathasLabV2Update=function(d){
+   old(d);
+   if(seq!==generation||!d)return;
+   snapshot=d;
+   syncObservation();
+ };
+ observer=new MutationObserver(syncObservation);
+ observer.observe(doc.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,
+   attributeFilter:['class','hidden']});
+ syncObservation();
+ status('Moteur prêt · les parties terminées seront sauvegardées dans le registre TEST.');
+}
+function startWatching(seq){
+ clearInterval(settle);
+ settle=setInterval(()=>{
+   if(seq!==generation){clearInterval(settle);return}
+   try{
+     const outer=$('gameFrame').contentDocument;
+     const inner=outer?.getElementById('game');
+     const doc=inner?.contentDocument,win=inner?.contentWindow;
+     if(!doc||!win||!doc.querySelector('#menuScreen'))return;
+     const choice=outer?.getElementById('xp-preview-mode')||outer?.getElementById('xpMode');
+     if(choice&&choice.value!=='free'){choice.value='free';choice.dispatchEvent(new Event('change',{bubbles:true}))}
+     if(win.MathasLabV2Update&&doc!==observedDoc)mount(doc,win,seq);
+   }catch(e){pilotError('Impossible de lire la démo du moteur : '+e.message);clearInterval(settle)}
+ },350);
+}
+async function choose(){
+ generation++;const seq=generation;
+ observer?.disconnect();observedDoc=null;observedWin=null;snapshot=null;startId=null;
+ previousRunning=false;lastRecording=false;
+ clearInterval(settle);
+ activeSlug=$('app').value;activeApp=MAP[activeSlug]?.[0]||'';
+ $('gameFrame').removeAttribute('src');
+ if(!activeApp)return;
+ try{
+   studentId=null;
+   status('Vérification de la session et de la classe TEST…');
+   await refresh();
+   if(seq!==generation)return;
+   status('Compte fictif approuvé : chargement du moteur d’essai…');
+   $('gameFrame').src=MAP[activeSlug][1];
+   startWatching(seq);
+ }catch(e){if(seq===generation)pilotError(e)}
+}
+$('refresh').addEventListener('click',()=>refresh().then(()=>status('Bilan pilote relu depuis le serveur.')).catch(pilotError));
+$('app').addEventListener('change',()=>{const q=new URL(location.href);q.searchParams.set('app',$('app').value);history.replaceState(null,'',q);choose()});
+const requested=new URL(location.href).searchParams.get('app');
+if(MAP[requested])$('app').value=requested;
+choose();
