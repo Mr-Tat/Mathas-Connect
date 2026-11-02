@@ -39,7 +39,9 @@ test('pont pilote : vraie navigation et fin de partie -> recu LAB une seule fois
   const url='https://mr-tat.github.io/Mathas-Connect/essais/objectif-record-pilote.html?app=addition-simple';
   await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
   const inner=page.frameLocator('#gameFrame').frameLocator('#game');
-  await inner.locator('#menuScreen .classic-count-btn[data-count="4"]').waitFor({timeout:35000});
+  await page.waitForTimeout(5000);
+  console.log('PILOT DIAGNOSTIC',JSON.stringify({status:await page.locator('#status').textContent(),frames:page.frames().map(f=>f.url()),frameSrc:await page.locator('#gameFrame').getAttribute('src')}));
+  await inner.locator('#menuScreen .classic-count-btn[data-count="4"]').waitFor({timeout:12000});
   await page.getByText('Moteur prêt',{exact:false}).waitFor({timeout:12000});
   await inner.locator('#menuScreen .classic-count-btn[data-count="4"]').click();
   await inner.locator('body').evaluate(()=>{
