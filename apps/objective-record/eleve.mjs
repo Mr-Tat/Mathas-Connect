@@ -3,6 +3,7 @@ import {studentHostContract,permanentTrophyCount} from './student-host-contract.
 import {ATOMIC_TEST_APP,isFixedTestApp} from './native-official-record.mjs';
 import {createAtomicTestRecorder} from './atomic-test-recorder.mjs';
 import {createAdditionProofUI} from './certified-addition-ui.mjs';
+import {createProjectionConsent} from '../../projection-consent.mjs';
 
 // This is the future SCHOOL launcher, not the legacy pilot XP writer.
 // Its current release gate is TEST-only and READ-ONLY until a verified
@@ -24,7 +25,7 @@ const classId=params.get('class')||'';
 const session=createClient(BASE,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
  ...(teacher?{storageKey:'mathas-connect-professor-auth-v1'}:{})}});
 let generation=0,tokenOwner=null,activeApp='',visibleDoc=null,watching=null,recorder=null,pupilId=null;
-let certifiedRun=null,certifiedQueue=null,certifiedSending=false;
+let certifiedRun=null,certifiedQueue=null,certifiedSending=false,projectionConsent=null;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const message=(s)=>{$('status').textContent=s};
 const clear=()=>{
@@ -133,11 +134,15 @@ const certifiedUI=createAdditionProofUI({
  button:$('certify'),panel:$('certified-tools'),levelSelect:$('certified-level'),totalSelect:$('certified-total'),frame:$('gameFrame'),
  getContext:()=>({generation,activeApp,pupilId,classId}),
  call:(action,payload)=>call('connect-objective-record-test',action,'addition-ecrite-simple',payload),
- refresh:()=>refresh(generation),notify:message
+ refresh:()=>refresh(generation),notify:message,
+ onRecorded:receipt=>{
+  if(receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);
+ }
 });
 async function choose(){
  generation++;const seq=generation;
- clearInterval(watching);visibleDoc=null;recorder=null;pupilId=null;certifiedUI.reset();clear();
+ clearInterval(watching);visibleDoc=null;recorder=null;pupilId=null;certifiedUI.reset();
+ projectionConsent?.destroy();projectionConsent=null;clear();
  const slug=$('app').value;
  if(!Object.hasOwn(GAME_URLS,slug)){message('Jeu inconnu');return;}
  activeApp=GAME_URLS[slug][0];
@@ -148,10 +153,18 @@ async function choose(){
   message('Lecture des XP globaux et trophées permanents officiels…');
   const initial=await refresh(seq);
   if(seq!==generation)return;
+  // The public projection board lists a result only after explicit pupil opt-in.
+  // Creating this controller does NOT authorize or publish any game result.
+  projectionConsent=createProjectionConsent({
+   classId,appKey:activeApp,studentKey:pupilId,getToken:verifiedToken
+  });
   if(isFixedTestApp(activeApp)){
    recorder=createAtomicTestRecorder({classId,appKey:activeApp,subject:pupilId,storage:localStorage,
     send:request=>call(activeApp===ATOMIC_TEST_APP?'connect-results':'connect-objective-record-test','game-record',activeApp,{...request,expectedStudentId:pupilId}),
-    reload:()=>refresh(seq),notify:message,isCurrent:()=>seq===generation&&isFixedTestApp(activeApp)});
+    reload:()=>refresh(seq),notify:message,isCurrent:()=>seq===generation&&isFixedTestApp(activeApp),
+    onRecorded:receipt=>{
+     if(seq===generation&&receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);
+    }});
    if(!recorder||!recorder.initialize(initial.loaded))throw Error('Écriture scolaire indisponible');
   }
   if(recorder?.hasPending()&&!await recorder.retry()){
@@ -174,5 +187,5 @@ $('refresh').addEventListener('click',async()=>{const seq=generation;try{if(cert
 $('app').addEventListener('change',()=>{const next=new URL(location.href);next.searchParams.set('app',$('app').value);history.replaceState(null,'',next);void choose()});
 const requested=params.get('app');
 if(requested&&Object.hasOwn(GAME_URLS,requested))$('app').value=requested;
-window.addEventListener('pagehide',()=>clearInterval(watching));
+window.addEventListener('pagehide',()=>{clearInterval(watching);projectionConsent?.destroy()});
 void choose();
