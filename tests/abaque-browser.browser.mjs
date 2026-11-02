@@ -442,10 +442,13 @@ test('Laboratoire : carte Abaque en ligne, attente serveur puis autorisation fic
   await page.waitForFunction(()=>document.querySelector('#teacher-status').textContent.includes('approuvé'));
   assert.equal(await card.getByRole('button',{name:'Monsieur T',exact:true}).isDisabled(),true,'l’activation commune ne doit pas débloquer un backend absent');
   catalogue='disabled';await card.getByRole('button',{name:'Vérifier la connexion'}).click();
-  await page.waitForFunction(()=>document.querySelector('#apps [data-online-app="abaque-longueurs"]').textContent.includes('Application désactivée côté serveur'));
+  await page.waitForFunction(()=>document.querySelector('#apps [data-online-app="abaque-longueurs"]')?.textContent.includes('Application désactivée côté serveur')===true);
   assert.equal(await card.locator('[data-abaque-pilot-approve]').isDisabled(),true);
   catalogue='enabled';await card.getByRole('button',{name:'Vérifier la connexion'}).click();
-  await page.waitForFunction(()=>!document.querySelector('#apps [data-online-app="abaque-longueurs"]').textContent.includes('Application désactivée côté serveur'));
+  await page.waitForFunction(()=>{
+   const card=document.querySelector('#apps [data-online-app="abaque-longueurs"]');
+   return !!card&&!card.textContent.includes('Application désactivée côté serveur');
+  });
   assert.equal(await link.getAttribute('aria-disabled'),'true','catalogue activé mais pilote fermé');
   serverReady=true;await card.getByRole('button',{name:'Vérifier la connexion'}).click();
   await page.waitForFunction(()=>document.querySelector('#apps [data-online-app="abaque-longueurs"] a').getAttribute('aria-disabled')==='false');

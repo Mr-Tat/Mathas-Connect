@@ -9,6 +9,9 @@
 
 **[CI locale, 02/11/2026 — pilote Tests en ligne]** 299 tests Node hors services réussis ; dix scénarios PostgreSQL et cinq scénarios Auth/Edge/Chromium réels locaux réussis. Le nouveau parcours de la page Laboratoire complète passe avec transports/Auth simulés ; le composant d’autorisation passe séparément avec véritable Auth/Edge local et démontre les XP de Monsieur T distincts de ceux de l’élève. La première exécution simultanée des deux suites Chromium a échoué sur délais et indisponibilité Auth locale ; la relance des services seule est entièrement réussie. Les douze scénarios navigateur ont chacun passé : onze dans la suite complète, puis le scénario de séries parfaites relancé seul après un délai de navigation. Aucun service hébergé n’a été modifié ou validé par ces preuves.
 
+
+**[CI distante, 02/11/2026 — diagnostic]** Les runs `41475273792`, `41476023005` puis `41476609393` ont signalé un échec du nouveau test de la page Laboratoire. Les journaux et résumés détaillés étant inaccessibles, le workflow conserve le TAP et émet une annotation sur échec, tout en conservant le code de sortie. L’annotation du troisième run a identifié une lecture de carte DOM absente pendant le rechargement du catalogue (ligne 445 du test). Les attentes vérifient désormais sa présence avant son contenu ; aucune assertion métier n’a été retirée. La CI du commit de correction doit être vérifiée séparément.
+
 ## Historique des étapes précédentes
 
 
