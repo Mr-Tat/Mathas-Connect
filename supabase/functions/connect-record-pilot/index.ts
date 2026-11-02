@@ -32,6 +32,12 @@ function proof(b:any,app:string){
  if(b.mode==='classic'&&(![4,10,20].includes(total)||b.score>total))return null;
  if(b.mode==='three-lives'&&b.score>400)return null;
  if(hard&&b.score>200)return null;
+ // Les trois vies ne sont pas une Mort subite : la preuve doit attester
+ // l'épuisement des trois coeurs, pas un abandon ou un écran simplement quitté.
+ if(b.mode.endsWith('three-lives')){
+   if(b.phase!=='ended'||b.hearts!==0)return null;
+   if(!hard&&(!integer(b.completed,3,10000)||b.completed<b.score+3))return null;
+ }
  if(hard&&app==='melange-calculs-ecrits'&&Array.isArray(b.ops)&&b.ops.length!==3)return null;
  const ops=normalizedOps(b.ops,app);if(!ops)return null;
  return {mode:String(b.mode),level:Number(b.level),score:Number(b.score),total,hard,ops,eventId:b.eventId as string};
