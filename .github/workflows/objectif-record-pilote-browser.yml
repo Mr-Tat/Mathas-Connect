@@ -1,0 +1,21 @@
+name: Pilote Objectif record - Chromium heberge avec API simulee
+on:
+  pull_request:
+    paths:
+      - 'tests/objectif-record-pilote.browser.mjs'
+      - '.github/workflows/objectif-record-pilote-browser.yml'
+      - 'essais/objectif-record-pilote.*'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  hosted-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-save --no-package-lock playwright@1.58.2
+      - run: npx playwright install chromium --with-deps
+      - run: node --test tests/objectif-record-pilote.browser.mjs
