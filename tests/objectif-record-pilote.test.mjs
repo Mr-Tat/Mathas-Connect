@@ -42,3 +42,20 @@ test('cinq moteurs, memes pilotes et interface de bilan',()=>{
   assert.match(html,/id="best"/);
   assert.match(html,/id="trophies"/);
 });
+
+test('les cinq boutons affichent uniquement les XP restants confirmes par le serveur',()=>{
+ assert.match(pilot,/function renderRights\(doc\)/);
+ assert.match(pilot,/pilotRights=d\.rights\?\?null/);
+ assert.match(pilot,/rights\?\.classic\?\.\[amount\]\?\?null/);
+ assert.match(pilot,/rights\?\.threeLives\?\?null/);
+ assert.match(pilot,/rights\?\.sudden\?\?null/);
+ assert.match(pilot,/indicator\?\.remove\(\)/);
+ assert.match(pilot,/pilotRights=null;renderRights\(doc\)/);
+ assert.doesNotMatch(pilot,/window\.MathasPilotState\.rights\|\|/);
+});
+test('les fins 3 vies livrent un motif de fin et le serveur refuse les parties interrompues',()=>{
+ assert.match(pilot,/phase:d\.phase,hearts:d\.hearts,completed:d\.completed/);
+ assert.match(edge,/b\.mode\.endsWith\('three-lives'\)/);
+ assert.match(edge,/b\.phase!=='ended'\|\|b\.hearts!==0/);
+ assert.match(edge,/b\.completed<b\.score\+3/);
+});
