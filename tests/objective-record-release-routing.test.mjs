@@ -12,3 +12,11 @@ test('LAB never uses school routing, even when gates are true',()=>{
  for(const appKey of ['addition-ecrite-simple','addition-ecrite-multiple','soustraction-ecrite-simple','multiplication-ecrite-simple','melange-calculs-ecrits'])
   assert.equal(schoolRecordLaunch({classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',appKey,legacyUrl:'old',rollout:all}),'old');
 });
+test('three independent conditions must be true before future student launch',()=>{
+ const c='8fe170fa-9e8f-4e80-885a-b0ba68026f64';
+ const a='addition-ecrite-simple';
+ const all={enabled:true,atomicXpAndTrophiesVerified:true,hostedTestClassE2EVerified:true};
+ assert.equal(schoolRecordLaunch({classId:c,appKey:a,legacyUrl:'old',rollout:all}),'./apps/objective-record/eleve.html?app=addition-simple');
+ for(const gate of Object.keys(all))
+  assert.equal(schoolRecordLaunch({classId:c,appKey:a,legacyUrl:'old',rollout:{...all,[gate]:false}}),'old');
+});
