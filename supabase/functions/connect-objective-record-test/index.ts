@@ -64,7 +64,9 @@ Deno.serve(async(req:Request)=>{
    if(!player)return fail('teacher_player_missing',403);
    studentId=player.student_id;
   }
-  if(!validId(studentId)||b.expectedStudentId.toLowerCase()!==studentId.toLowerCase())
+  // Proof routes bind the pupil entirely from the verified JWT/device/teacher player.
+  // Only the legacy native record action carries an expectedStudentId.
+  if(!validId(studentId)||(record&&b.expectedStudentId.toLowerCase()!==studentId.toLowerCase()))
    return fail('identity_binding_conflict',409);
   const active=await one(db.from('connect_students').select('id')
    .eq('id',studentId).is('archived_at',null));
