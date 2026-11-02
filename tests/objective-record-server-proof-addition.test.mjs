@@ -64,6 +64,8 @@ test('true native engine receives issued calculations and captures first submiss
 });
 test('SQL is strictly private, TEST-scoped, grades all 4 digits/carries and atomically consumes receipt',()=>{
  const sql=read('supabase/release-candidates/objective_record_addition_server_proof_candidate.sql');
+ const deploy=read('supabase/migrations/20261103000500_objective_record_addition_server_proof_test_v1.sql');
+ assert.equal(deploy,sql);
  for(const term of ['ENABLE ROW LEVEL SECURITY','FROM PUBLIC,anon,authenticated',
   'TO service_role','proof_test_only','not_test_subject','v_session.expires_at<=now()',
   'proof_replay_collision','v_session.reset_epoch','v_expected_carry',
