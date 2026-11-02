@@ -28,7 +28,7 @@ DECLARE
  testclass uuid:='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
  issued jsonb;again jsonb;result jsonb;repeat jsonb;
  newissued jsonb;bad jsonb;before_xp integer;after_xp integer;
- sid uuid;retry_sid uuid;correct jsonb;tampered jsonb;tmp jsonb;
+ sid uuid;retry_sid uuid;correct jsonb;tampered jsonb;tmp jsonb;i integer;
 BEGIN
  INSERT INTO public.connect_students(id) VALUES(st);
  INSERT INTO public.connect_enrollments(student_id,class_id) VALUES(st,testclass);
