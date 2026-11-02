@@ -18,6 +18,8 @@ const sb=createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,d
   ...(teacher?{storageKey:'mathas-connect-professor-auth-v1'}:{})}});
 let studentId=null,activeSlug='',activeApp='',generation=0,snapshot=null,startId=null,lastRecording=false;
 let previousRunning=false,observedDoc=null,observedWin=null,observer=null,settle=null;
+let lastProjectionKey='',projectionInFlight=false;
+window.MathasPilotState=null;
 const status=(message)=>{$('status').textContent=message};
 const pilotError=e=>{status('⚠️ '+(e?.message||e))};
 async function api(action,data={}){
@@ -37,16 +39,26 @@ function render(data){
  $('trophies').textContent=String(data.trophies?.length??0);
  $('attempts').textContent=String(data.recent?.length??'—');
 }
-async function refresh(){
- const d=await api('load');
+async function refresh(selection={}){
+ const d=await api('load',selection);
  if(studentId&&studentId!==d.studentId)throw Error('Le profil actif a changé : recharge la page');
  studentId=d.studentId;
  render(d);
+ window.MathasPilotState={active:true,app:activeApp,rights:d.rights||window.MathasPilotState?.rights||null,trophies:d.trophies||[]};
  return d;
 }
 function operations(doc){
  if(activeSlug!=='melange')return null;
  return ['add','sub','mul'].filter(op=>doc.querySelector('#opsSelector .op-toggle[data-op="'+op+'"]')?.classList.contains('active'));
+}
+function selection(doc){
+ const el=doc.querySelector('#menuScreen #classicMaxDigits')||
+   doc.querySelector('#menuScreen #classicLevel')||doc.querySelector('#menuScreen #levelSelect');
+ const label=el?.selectedOptions?.[0]?.textContent||'';
+ const p=label.match(/(?:Niveau|Niv\.?)\s*([123])/i);
+ const v=Number(el?.value);
+ const level=p?Number(p[1]):el?.id==='classicMaxDigits'&&v>=2&&v<=4?v-1:v;
+ return {level:Number.isInteger(level)&&level>=1&&level<=3?level:1,ops:operations(doc)};
 }
 function determinePhase(doc,s){
  const end=doc.querySelector('#gameScreen:not(.hidden) #primaryBtn,#gameScreen:not(.hidden) #primaryBtnText,#gameScreen:not(.hidden) #primaryAction');
@@ -78,7 +90,7 @@ function scheduleRecord(doc){
    $('best').textContent=String(result.best);
    $('trophies').textContent=String(result.trophies?.length||0);
    status((result.duplicate?'Partie déjà enregistrée.':'Partie enregistrée : +'+result.awarded+' XP pilote.')+' Aucun XP scolaire modifié.');
-   await refresh();
+   await refresh(observedDoc?selection(observedDoc):{});
  }).catch(e=>{lastRecording=false;pilotError(e)});
 }
 function syncObservation(){
@@ -124,13 +136,21 @@ function startWatching(seq){
      const choice=outer?.getElementById('xp-preview-mode')||outer?.getElementById('xpMode');
      if(choice&&choice.value!=='free'){choice.value='free';choice.dispatchEvent(new Event('change',{bubbles:true}))}
      if(win.MathasLabV2Update&&doc!==observedDoc)mount(doc,win,seq);
+     if(doc===observedDoc&&!projectionInFlight){
+       const req=selection(doc),key=JSON.stringify(req);
+       if(lastProjectionKey!==key){
+         lastProjectionKey=key;projectionInFlight=true;
+         refresh(req).catch(pilotError).finally(()=>{projectionInFlight=false});
+       }
+     }
    }catch(e){pilotError('Impossible de lire la démo du moteur : '+e.message);clearInterval(settle)}
  },350);
 }
 async function choose(){
  generation++;const seq=generation;
  observer?.disconnect();observedDoc=null;observedWin=null;snapshot=null;startId=null;
- previousRunning=false;lastRecording=false;
+ previousRunning=false;lastRecording=false;lastProjectionKey='';projectionInFlight=false;
+ window.MathasPilotState=null;
  clearInterval(settle);
  activeSlug=$('app').value;activeApp=MAP[activeSlug]?.[0]||'';
  $('gameFrame').removeAttribute('src');
