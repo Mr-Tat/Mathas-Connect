@@ -9,3 +9,10 @@
 #homeScreen #recordChoice .t3Mode .record-caption{display:block;width:auto;margin-top:auto;font-size:.72rem;line-height:1.3;padding:7px 3px;white-space:normal}
 #homeScreen #recordChoice .t3Mode .modeResult{display:block;position:static;width:auto;max-width:none;margin:0;padding:3px;border:0;background:transparent;color:#fff;font-size:.7rem;overflow-wrap:normal}
 @media(max-width:400px){#homeScreen #recordChoice .t3Mode{padding:10px 5px}#homeScreen #recordChoice .t3Mode strong{font-size:.88rem}}
+#homeScreen #launchBtn,#homeScreen #moveLaunchBtn,#homeScreen #convertLaunchCard{position:relative;padding-bottom:76px}
+#homeScreen .homeCard .trophy-hint{position:absolute;right:14px;bottom:12px;display:flex;align-items:center;gap:7px;max-width:calc(100% - 28px);padding:7px 10px;border:1px dashed #a18e71;border-radius:11px;background:#fffaf0;color:#6d5a3b;text-align:right;pointer-events:none}
+#homeScreen .trophy-hint .trophy-icon{font-size:1.55rem;line-height:1;filter:grayscale(.35);opacity:.7}
+#homeScreen .trophy-hint .trophy-copy{display:flex;flex-direction:column;gap:2px;line-height:1.15}
+#homeScreen .trophy-hint b{font-size:.75rem;font-weight:800}#homeScreen .trophy-hint small{font-size:.68rem}
+#homeScreen .homeCard .trophy-hint.earned{border:1px solid #78b698;background:#edf9f1;color:#286846}
+#homeScreen .trophy-hint.earned .trophy-icon{filter:none;opacity:1}

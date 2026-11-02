@@ -13,3 +13,5 @@ Ensuite compléter Connect sur cette même application : preuves de premier essa
 SQL/Edge de production : préparer et valider PostgreSQL/Auth/Edge locaux, puis demander l’accord précis prévu par le prompt. Aucun accès aux vrais élèves, aucun élargissement aux quatre HUB. La recette hébergée doit utiliser une fiche fictive approuvée ; des mocks ne suffisent pas.
 
 Configuration cloud : `install_script` et `start_skill` enregistrés dans le brouillon ; Node 22.22.0 + Playwright 1.57.0 + Chromium système + Python 3 vérifiés. Script de setup relancé sans modification des dépôts. Vérification finale ciblée : 8 tests réussis, zéro ignoré ; pas de vérification de publication Pages.
+
+Dernière demande professeur : montrer le trophée à récupérer en bas à droite de chaque case. Badges bronze/argent/or ajoutés avec leur condition, état « À gagner » / « Obtenu · démo » et conservation locale indépendante du reset. La future connexion doit afficher les droits et acquis serveur, sans importer ce registre démo.

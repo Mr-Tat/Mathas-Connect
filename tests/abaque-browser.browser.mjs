@@ -40,7 +40,7 @@ async function fixture(page){await page.evaluate(k=>{localStorage.setItem(k,JSON
 test('Abaque : deux vraies constructions débloquent déplacements ; deux séries clavier débloquent conversions',async()=>{
  const h=await setup();const {page}=h;
  try{
-  await page.goto(h.url);assert.equal(await page.locator('#moveLaunchBtn').getAttribute('aria-disabled'),'true');
+  await page.goto(h.url);assert.equal(await page.locator('.trophy-hint').count(),3);assert.equal(await page.locator('.trophy-hint.earned').count(),0);assert.equal(await page.locator('#moveLaunchBtn').getAttribute('aria-disabled'),'true');
   for(let run=0;run<2;run++){
    await page.locator('#launchBtn').click();
    for(const unit of ['km','m','cm','mm']){await page.locator(`#unitBank [data-id="${unit}"]`).click();await page.locator(`#abaque .col[data-unit="${unit}"]`).click();}
@@ -60,6 +60,11 @@ test('Abaque : deux vraies constructions débloquent déplacements ; deux série
    }
   }
   assert.equal(await page.locator('[data-mode="one"]').getAttribute('aria-disabled'),'false');
+  assert.equal(await page.locator('#trophy-launchBtn b').textContent(),'Obtenu · démo');
+  assert.equal(await page.locator('#trophy-moveLaunchBtn b').textContent(),'Obtenu · démo');
+  assert.equal(await page.locator('#trophy-convertLaunchCard b').textContent(),'À gagner');
+  await page.evaluate(()=>window.MATHAS_PROGRESS.reset());await page.reload();
+  assert.equal(await page.locator('.trophy-hint.earned').count(),2,'trophées locaux conservés après reset/rechargement');
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });
@@ -72,6 +77,7 @@ test('Abaque : scores natifs, aides, 3 vies sans correction, incomplet et doublo
    for(let n=0;n<pages;n++){await inputConversion(page);await modal(page,n+1===pages?'Accueil':'Page suivante');}
    const data=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);assert.equal(data.recordsByMode[mode],max);
   }
+  assert.equal(await page.locator('#trophy-convertLaunchCard b').textContent(),'Obtenu · démo');
   await page.locator('[data-variant="lives"]').click();
   await page.locator('#t3Verify').click();assert.match(await page.locator('#recordLives').getAttribute('aria-label'),/3 vies/);
   await inputConversion(page);assert.match(await page.locator('#t3ScoreNow').textContent(),/25 points/);await modal(page,'Suivante');
@@ -85,7 +91,9 @@ test('Abaque : scores natifs, aides, 3 vies sans correction, incomplet et doublo
   await page.locator('[data-variant="sudden"]').click();await inputConversion(page);assert.match(await page.locator('#t3ScoreNow').textContent(),/30 points/);await modal(page,'Suivante');
   assert.equal(await page.locator('.t3UnitsBtn').isDisabled(),true);
   await inputConversion(page,true);assert.match(await page.locator('#celebrateTitleEl').textContent(),/Fin de partie/);await modal(page,'Accueil');
-  for(const width of [320,768,1024]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),String(width));}
+  for(const width of [320,768,1024]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),String(width));
+   const bounds=await page.locator('.trophy-hint').evaluateAll(els=>els.map(el=>{const b=el.getBoundingClientRect(),p=el.closest('.homeCard').getBoundingClientRect();return b.left>=p.left&&b.right<=p.right&&b.bottom<=p.bottom&&p.bottom-b.bottom<22&&p.right-b.right<22}));
+   assert.deepEqual(bounds,[true,true,true],'trophées en bas à droite sans débordement à '+width+' px');}
   await page.setViewportSize({width:320,height:900});await page.screenshot({path:'/workspace/abaque-mobile.png',fullPage:true});
   assert.deepEqual(h.external,[]);assert.deepEqual(h.errors,[]);
   assert.equal(await page.evaluate(()=>localStorage.getItem('mathas_abaque_longueurs_progress_v1')),null);

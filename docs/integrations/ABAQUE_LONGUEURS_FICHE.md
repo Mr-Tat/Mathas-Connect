@@ -27,3 +27,5 @@ La démo a ses propres clés `mathas_connect_abaque_demo_progress_v1` / `mathas_
 - Git lecture + push dry-run : accessibles. API GitHub/Pages : refus de politique réseau, domaines ajoutés au brouillon de configuration. Aucun constat de production Supabase.
 
 Retrait non destructif : supprimer uniquement l’entrée `abaque-longueurs` du registre expérimental ; conserver les fichiers et données locales. La carte statique n’est pas une activation serveur.
+
+**[DÉCISION professeur + CI locale, 02/11/2026] Repères visuels :** bronze en bas à droite de la construction (12/12), argent dans les déplacements (8/8), or dans les conversions (trois séries parfaites). État « À gagner », puis « Obtenu · démo » après réussite locale. Registre local démo distinct, conservé lors d’un reset ; une performance parfaite après les deux réussites reste reconnue. Aucun trophée accordé par Master/3 vies. Les trophées Connect réels devront venir du serveur.
