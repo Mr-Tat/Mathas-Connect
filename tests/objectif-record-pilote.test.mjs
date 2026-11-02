@@ -59,3 +59,20 @@ test('les fins 3 vies livrent un motif de fin et le serveur refuse les parties i
  assert.match(edge,/b\.phase!=='ended'\|\|b\.hearts!==0/);
  assert.match(edge,/b\.completed<b\.score\+3/);
 });
+
+test('la lecture professeur des resultats pilotes est strictement autorisee et cantonnée a TEST',()=>{
+ const edge=read('supabase/functions/connect-record-pilot/index.ts');
+ const lab=read('laboratoire.js'),html=read('laboratoire.html');
+ assert.match(edge,/b\.action==='teacher-summary'/);
+ assert.match(edge,/user\.is_anonymous\)return err\('teacher_required',403\)/);
+ assert.match(edge,/\.eq\('teacher_id',user\.id\)\.eq\('class_id',TEST\)/);
+ assert.match(edge,/permission\.can_view_results!==true&&permission\.can_manage!==true/);
+ assert.match(edge,/\.eq\('class_id',TEST\)\.eq\('app_key',b\.appKey\)/);
+ assert.match(edge,/\.is\('left_at',null\)/);
+ assert.doesNotMatch(edge,/\.from\(['"]connect_xp_credits['"]\)/);
+ assert.match(lab,/guard\(\);\s*const appKey=\$\('pilot-results-app'\)/);
+ assert.match(lab,/rpc\('connect-record-pilot','teacher-summary'/);
+ assert.match(html,/id="pilot-results-refresh"/);
+ assert.match(html,/id="pilot-results-app"/);
+ assert.match(html,/id="pilot-results"/);
+});
