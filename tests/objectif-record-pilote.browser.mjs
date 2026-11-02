@@ -44,13 +44,28 @@ test('cinq moteurs publies, pont iframe et XP projetes depuis la reponse serveur
   await page.goto(url,{waitUntil:'domcontentloaded',timeout:40000});
   for(const app of apps){
     await page.locator('#app').selectOption(app);
-    await page.waitForFunction(()=>{
-      const body=document.querySelector('#gameFrame')?.contentDocument;
-      const inner=body?.getElementById('game')?.contentDocument;
-      return inner?.querySelector('#menuScreen')&&
-        [...inner.querySelectorAll('#menuScreen .mathas-pilot-remaining')]
-          .filter(n=>/Reste (22|36|60|10|20) XP/.test(n.textContent)).length>=3;
-    },null,{timeout:55000});
+    try{
+      await page.waitForFunction(()=>{
+        const body=document.querySelector('#gameFrame')?.contentDocument;
+        const inner=body?.getElementById('game')?.contentDocument;
+        return inner?.querySelector('#menuScreen')&&
+          [...inner.querySelectorAll('#menuScreen .mathas-pilot-remaining')]
+            .filter(n=>/Reste (22|36|60|10|20) XP/.test(n.textContent)).length>=3;
+      },null,{timeout:20000});
+    }catch(error){
+      const diag=await page.evaluate(()=>{
+        const outer=document.querySelector('#gameFrame');
+        let first=null,second=null,labels=[];
+        try{first=outer?.contentDocument;second=first?.getElementById('game')?.contentDocument;
+          labels=[...(second?.querySelectorAll('#menuScreen .mathas-pilot-remaining')||[])].map(x=>x.textContent)}
+        catch(e){return {crossOrigin:String(e)}}
+        return {status:document.querySelector('#status')?.textContent,
+          topSrc:outer?.getAttribute('src'),first:!!first,second:!!second,
+          menu:!!second?.querySelector('#menuScreen'),labels,
+          state:window.MathasPilotState};
+      });
+      throw Error(app+' '+String(error)+' DIAG '+JSON.stringify(diag)+' ERR '+exceptions.join(' | '));
+    }
     const values=await page.evaluate(()=>{
       const doc=document.querySelector('#gameFrame').contentDocument.getElementById('game').contentDocument;
       return [...doc.querySelectorAll('#menuScreen .mathas-pilot-remaining')].map(el=>el.textContent);
