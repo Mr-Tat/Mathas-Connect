@@ -19,7 +19,9 @@ export function acceptAdditionProofChallenge(data){
  });
 }
 export function normalizeAdditionFirstAttempt(input,expectedQuestion){
- if(input?.id!==expectedQuestion?.id
+ if(!input||typeof input!=='object'||Array.isArray(input)
+  ||Object.keys(input).sort().join(',')!=='carries,digits,id'
+  ||input?.id!==expectedQuestion?.id
   ||!Array.isArray(input.digits)||!Array.isArray(input.carries)
   ||input.digits.length!==String(expectedQuestion.a+expectedQuestion.b).length
   ||input.carries.length!==3
