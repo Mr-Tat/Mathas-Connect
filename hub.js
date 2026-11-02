@@ -229,6 +229,8 @@ main.append(progressGroup);
 function drawIdentity(profile) {
   const authorized = profile?.status === 'approved' && profile?.classId === classId;
   activeProfile=authorized?profile:null;
+  // Ne montrer le nom Connect dans les HUB qu'après approbation du compte pour cette classe.
+  $('hub-connect-suffix').hidden=!authorized;
   refreshCardProgress();
   if(authorized && classId && profile.classId===classId){
     rememberRecentProfile(classId,profile.displayName);
