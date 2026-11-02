@@ -97,9 +97,9 @@ function syncObservation(){
 }
 function mount(doc,win,seq){
  if(seq!==generation||doc===observedDoc)return;
- observer?.disconnect();observedDoc=doc;observedWin=win;previousRunning=false;
  const old=win.MathasLabV2Update;
  if(typeof old!=='function')return;
+ observer?.disconnect();observedDoc=doc;observedWin=win;previousRunning=false;
  win.MathasLabV2Update=function(d){
    old(d);
    if(seq!==generation||!d)return;
