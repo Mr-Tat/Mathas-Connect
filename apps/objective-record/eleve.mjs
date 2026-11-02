@@ -1,6 +1,6 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 import {studentHostContract,permanentTrophyCount} from './student-host-contract.mjs';
-import {ATOMIC_TEST_APP} from './native-official-record.mjs';
+import {ATOMIC_TEST_APP,isFixedTestApp} from './native-official-record.mjs';
 import {createAtomicTestRecorder} from './atomic-test-recorder.mjs';
 
 // This is the future SCHOOL launcher, not the legacy pilot XP writer.
@@ -138,10 +138,10 @@ async function choose(){
   message('Lecture des XP globaux et trophées permanents officiels…');
   const initial=await refresh(seq);
   if(seq!==generation)return;
-  if(activeApp===ATOMIC_TEST_APP){
+  if(isFixedTestApp(activeApp)){
    recorder=createAtomicTestRecorder({classId,appKey:activeApp,subject:pupilId,storage:localStorage,
-    send:request=>call('connect-results','game-record',activeApp,{...request,expectedStudentId:pupilId}),
-    reload:()=>refresh(seq),notify:message,isCurrent:()=>seq===generation&&activeApp===ATOMIC_TEST_APP});
+    send:request=>call(activeApp===ATOMIC_TEST_APP?'connect-results':'connect-objective-record-test','game-record',activeApp,{...request,expectedStudentId:pupilId}),
+    reload:()=>refresh(seq),notify:message,isCurrent:()=>seq===generation&&isFixedTestApp(activeApp)});
    if(!recorder||!recorder.initialize(initial.loaded))throw Error('Écriture scolaire indisponible');
   }
   if(recorder?.hasPending()&&!await recorder.retry()){
@@ -150,7 +150,7 @@ async function choose(){
   $('gameFrame').src=GAME_URLS[slug][1];
   $('gameFrame').hidden=false;$('refresh').disabled=false;
   watchGame(seq);
-  message(recorder?'Addition multiple TEST : Classique/Mort subite reliés aux vrais XP. Le mode 3 vies reste bloqué.':
+  message(recorder?'Classe TEST : Classique/Mort subite reliés aux XP officiels (preuves arithmétiques serveur encore à terminer). 3 vies et HARD restent bloqués.':
    'Session Connect authentifiée · sauvegarde des parties de ce jeu encore désactivée.');
  }catch(e){
   if(seq!==generation)return;
