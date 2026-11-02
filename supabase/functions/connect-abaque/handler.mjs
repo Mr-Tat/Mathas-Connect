@@ -5,7 +5,7 @@ const integer=value=>Number.isSafeInteger(value)&&value>=0;
 const headers={'content-type':'application/json; charset=utf-8','cache-control':'no-store','access-control-allow-origin':'*','access-control-allow-headers':'authorization,apikey,content-type,x-client-info','access-control-allow-methods':'POST,OPTIONS'};
 const reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers});
 const deny=(code,status=400)=>reply({ok:false,error:code},status);
-const knownErrors=new Set(['pilot_class_required','approved_identity_required','identity_binding_conflict','app_disabled','invalid_result','stale_reset_epoch','revision_conflict','xp_cap','professor_required','not_enrolled','activity_locked','event_id_reused','fictive_profile_required','app_class_not_open']);
+const knownErrors=new Set(['pilot_class_required','approved_identity_required','identity_binding_conflict','app_disabled','invalid_result','stale_reset_epoch','revision_conflict','xp_cap','professor_required','not_enrolled','activity_locked','event_id_reused','fictive_profile_required','app_class_not_open','fictive_confirmation_required','teacher_player_required']);
 async function readBody(request){
  const reader=request.body?.getReader();if(!reader)throw Error('invalid_json');
  const chunks=[];let size=0;
@@ -26,7 +26,7 @@ export function createAbaqueHandler({auth,db,access='closed'}){
   let body;
   try{body=await readBody(request);}catch(error){return deny(error.message,error.message==='payload_too_large'?413:400);}
   if(!body||body.appKey!==APP_KEY||!uuid.test(body.classId)||
-   !['load','record','teacher-summary','teacher-reset'].includes(body.action))return deny('invalid_request');
+   !['load','record','teacher-summary','teacher-reset','teacher-pilot-status','teacher-pilot-approve'].includes(body.action))return deny('invalid_request');
   if(access==='pilot'&&body.classId!==PILOT_CLASS)return deny('app_class_not_open',403);
   try{
    const verified=await auth.auth.getUser(token),user=verified.data?.user;
@@ -45,7 +45,15 @@ export function createAbaqueHandler({auth,db,access='closed'}){
      p_event:result.eventId,p_revision:body.revision,p_epoch:body.resetEpoch,p_result:result});
    }else{
     if(!teacher)return deny('professor_required',403);
-    if(body.action==='teacher-summary')routine='connect_abaque_teacher_v1';
+    if(body.action==='teacher-pilot-status'||body.action==='teacher-pilot-approve'){
+     if(body.classId!==PILOT_CLASS)return deny('pilot_class_required',403);
+     routine='connect_abaque_pilot_status_v1';
+     if(body.action==='teacher-pilot-approve'){
+      if(body.fictiveConfirmed!==true||!Array.isArray(body.studentIds)||body.studentIds.length>100||
+       !body.studentIds.every(id=>uuid.test(id))||typeof body.includeTeacher!=='boolean'||(!body.studentIds.length&&!body.includeTeacher))return deny('invalid_request');
+      routine='connect_abaque_pilot_approve_v1';Object.assign(args,{p_students:body.studentIds,p_include_teacher:body.includeTeacher,p_confirmed:true});
+     }
+    }else if(body.action==='teacher-summary')routine='connect_abaque_teacher_v1';
     else{
      if(!uuid.test(body.studentId)||!integer(body.resetEpoch)||body.repeatXp===true)return deny('invalid_request');
      routine='connect_abaque_restart_v1';args.p_student=body.studentId;args.p_epoch=body.resetEpoch;

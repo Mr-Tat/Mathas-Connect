@@ -296,6 +296,51 @@ BEGIN
  RETURN jsonb_build_object('ok',true,'appKey','abaque-longueurs','students',result);
 END $$;
 
+-- Pilot administration is limited to the TEST class and an authenticated manager.
+-- Confirmation adds only an explicit allowlist; it changes no score, XP or device approval.
+CREATE FUNCTION public.connect_abaque_pilot_status_v1(p_actor uuid,p_class uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $$
+DECLARE ready boolean;
+BEGIN
+ IF p_class IS DISTINCT FROM '4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'::uuid THEN RAISE EXCEPTION 'pilot_class_required'; END IF;
+ PERFORM 1 FROM public.connect_class_permissions WHERE teacher_id=p_actor AND class_id=p_class AND can_manage FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'professor_required'; END IF;
+ SELECT coalesce(a.enabled AND c.enabled AND c.pilot_only,false) INTO ready
+ FROM public.connect_apps a CROSS JOIN public.connect_abaque_classes c
+ WHERE a.app_key='abaque-longueurs' AND c.class_id=p_class;
+ RETURN jsonb_build_object('ok',true,'appKey','abaque-longueurs','ready',coalesce(ready,false));
+END $$;
+
+CREATE FUNCTION public.connect_abaque_pilot_approve_v1(p_actor uuid,p_class uuid,p_students uuid[],p_include_teacher boolean,p_confirmed boolean)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $$
+DECLARE selected uuid[];teacher_student uuid;valid_count integer;
+BEGIN
+ IF p_class IS DISTINCT FROM '4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'::uuid THEN RAISE EXCEPTION 'pilot_class_required'; END IF;
+ IF p_confirmed IS DISTINCT FROM true OR p_students IS NULL OR cardinality(p_students)>100
+ OR array_position(p_students,NULL) IS NOT NULL OR (cardinality(p_students)=0 AND p_include_teacher IS DISTINCT FROM true)
+ THEN RAISE EXCEPTION 'fictive_confirmation_required'; END IF;
+ PERFORM 1 FROM public.connect_class_permissions WHERE teacher_id=p_actor AND class_id=p_class AND can_manage FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'professor_required'; END IF;
+ PERFORM 1 FROM public.connect_abaque_classes WHERE class_id=p_class AND enabled AND pilot_only FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'app_class_not_open'; END IF;
+ PERFORM 1 FROM public.connect_apps WHERE app_key='abaque-longueurs' AND enabled FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'app_disabled'; END IF;
+ SELECT coalesce(array_agg(DISTINCT id),'{}'::uuid[]) INTO selected FROM unnest(p_students) AS chosen(id);
+ PERFORM 1 FROM public.connect_students s JOIN public.connect_enrollments e ON e.student_id=s.id AND e.class_id=p_class AND e.left_at IS NULL
+ WHERE s.id=ANY(selected) AND s.archived_at IS NULL FOR UPDATE OF s FOR SHARE OF e;
+ SELECT count(*) INTO valid_count FROM public.connect_students s WHERE s.id=ANY(selected) AND s.archived_at IS NULL AND EXISTS(
+  SELECT 1 FROM public.connect_enrollments e WHERE e.student_id=s.id AND e.class_id=p_class AND e.left_at IS NULL);
+ IF valid_count<>cardinality(selected) THEN RAISE EXCEPTION 'not_enrolled'; END IF;
+ IF p_include_teacher THEN
+  SELECT t.student_id INTO teacher_student FROM public.connect_teacher_players t JOIN public.connect_students s ON s.id=t.student_id AND s.archived_at IS NULL
+  WHERE t.teacher_id=p_actor FOR UPDATE OF s FOR SHARE OF t;
+  IF teacher_student IS NULL THEN RAISE EXCEPTION 'teacher_player_required'; END IF;
+  SELECT array_agg(DISTINCT id) INTO selected FROM unnest(selected||ARRAY[teacher_student]) AS chosen(id);
+ END IF;
+ INSERT INTO public.connect_abaque_pilot_students(student_id) SELECT unnest(selected) ON CONFLICT DO NOTHING;
+ RETURN jsonb_build_object('ok',true,'appKey','abaque-longueurs','approvedCount',cardinality(selected));
+END $$;
+
 -- Additive wrapper: existing profile RPC and its five apps remain unchanged.
 CREATE FUNCTION public.connect_abaque_profile_progress_v1(p_student uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $$

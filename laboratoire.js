@@ -1,6 +1,7 @@
 // Laboratoire de test : même backend Connect que les élèves, classe fixe, aucun contournement.
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 import {objectiveRecordLabPreviews} from './objective-record-lab-previews.mjs';
+import {ABAQUE_ONLINE_APP,includeAbaquePilot,mountAbaquePilot} from './apps/GRAN-abaque-m-1/connect/laboratory-pilot.mjs';
 const BASE='https://awmhpfofacaglewammxt.supabase.co';
 const KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM'; // publishable, not secret
 const TEST_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
@@ -20,7 +21,7 @@ const $=id=>document.getElementById(id);
 const el=(tag,text,cls='')=>{const n=document.createElement(tag);n.textContent=text;if(cls)n.className=cls;return n};
 const consent=()=>$('fictive-confirm').checked;
 let verified=false,teacherReady=false,people=[],requested=[],apps=[],selectedStudent=null,locks=[];
-let connectedStudentName=null;
+let connectedStudentName=null,abaquePilotPanel=null;
 // Deux stockages Supabase séparés : professeur et élève.
 // La présence d'un appareil approuvé en base ne prouve pas une connexion.
 const studentSb=createClient(BASE,KEY,{auth:{persistSession:true,autoRefreshToken:false,detectSessionInUrl:false}});
@@ -66,7 +67,7 @@ async function rpc(edge,action,data={}){const s=await session();const response=a
 const api=(action,data={})=>rpc('connect-api',action,data);
 const results=(action,data={})=>{guard();return rpc('connect-results',action,{classId:TEST_CLASS,appKey:$('results-app').value,...data})};
 async function run(fn){try{await fn()}catch(e){display('Laboratoire : '+(e.message||e),true)}}
-function linkFor(app,prof=false){const href=app.launch_url||app.url;if(!href)return null;let url;try{url=new URL(href,location.href)}catch{return null}if(url.protocol!=='https:'&&url.protocol!=='http:')return null;if(url.origin===location.origin){url.searchParams.set('class',TEST_CLASS);if(prof&&teacherGameKeys.includes(app.app_key))url.searchParams.set('joueur','prof')}return url.href}
+function linkFor(app,prof=false){const href=app.app_key==='abaque-longueurs'?ABAQUE_ONLINE_APP.launch_url:app.launch_url||app.url;if(!href)return null;let url;try{url=new URL(href,location.href)}catch{return null}if(url.protocol!=='https:'&&url.protocol!=='http:')return null;if(url.origin===location.origin){url.searchParams.set('class',TEST_CLASS);if(prof&&teacherGameKeys.includes(app.app_key))url.searchParams.set('joueur','prof')}return url.href}
 function renderObjectiveRecordPreviews(){
  const list=$('record-previews');list.replaceChildren();
  for(const preview of objectiveRecordLabPreviews){
@@ -211,9 +212,10 @@ async function loadApps(){
    container.append(el('p','Impossible de charger les cases « Afficher ». Aucune modification du HUB possible.','muted warning'));
    throw e;
  }
- apps=list.filter(a=>linkFor(a));
+ abaquePilotPanel?.dispose();abaquePilotPanel=null;
+ apps=includeAbaquePilot(list).filter(a=>linkFor(a));
  for(const app of apps){
-   const card=el('article','','game'),name=el('h3',app.title||app.app_key);
+   const card=el('article','','game'),name=el('h3',app.title||app.app_key);card.dataset.onlineApp=app.app_key;
    card.append(name);
    const label=el('label','','lab-visibility-toggle');
    const checkbox=document.createElement('input');
@@ -251,6 +253,11 @@ async function loadApps(){
      results.onclick=event=>{if(!verified||!consent()){event.preventDefault();display('Confirme d’abord que les profils sont fictifs.',true)}};buttons.append(results);
    }
    card.append(buttons);container.append(card);
+   if(app.app_key==='abaque-longueurs'){
+     abaquePilotPanel=mountAbaquePilot({card,app,launches:[...buttons.querySelectorAll('a')],teacherButton:buttons.querySelector('.teacher-game'),
+       request:(action,data={})=>rpc('connect-abaque',action,{appKey:'abaque-longueurs',classId:TEST_CLASS,...data}),
+       confirmed:()=>verified&&consent(),profiles:()=>people,teacherReady:()=>teacherReady,notify:display,reloadCatalogue:()=>run(loadApps)});
+   }
  }
  if(!apps.length)container.append(el('p','Aucune application disponible.','muted'));
  $('results-app').replaceChildren(...apps.filter(a=>appKeys.includes(a.app_key)).map(a=>new Option(a.title||a.app_key,a.app_key)));
@@ -325,7 +332,7 @@ async function setLocks(multipliers){
  await loadLocks();display('Verrouillage de tables du laboratoire enregistré.');
 }
 $('copy-hub').onclick=()=>run(()=>copy(new URL(HUB,location.href).href));
-$('refresh').onclick=()=>run(async()=>{await loadClass();display('Laboratoire actualisé.')});
+$('refresh').onclick=()=>run(async()=>{await loadClass();await loadApps();display('Laboratoire actualisé.')});
 $('fictive-confirm').onchange=()=>run(async()=>{
  const allowed=consent();
  $('results-refresh').disabled=!allowed;$('reset-student').disabled=!allowed||!selectedStudent;
@@ -339,7 +346,7 @@ $('teacher-mode').onclick=()=>run(async()=>{
  const r=await api('teacher-player',{classId:TEST_CLASS});
  if(r.status!=='approved'||r.displayName!=='Monsieur T')throw Error('Profil Monsieur T non autorisé pour ce compte.');
  teacherReady=true;$('teacher-status').textContent='Monsieur T approuvé sur cette session professeur.';
- document.querySelectorAll('.teacher-game').forEach(b=>b.disabled=false);
+ document.querySelectorAll('.teacher-game').forEach(b=>b.disabled=false);abaquePilotPanel?.refreshConsent();
  display('Monsieur T vérifié : tests professeur disponibles.');
 });
 $('results-refresh').onclick=()=>run(loadSummary);
@@ -360,3 +367,5 @@ run(async()=>{await session();await loadTeacher()});
 
 window.addEventListener('focus',()=>{if(verified)void refreshConnectedTestStudent()});
 document.addEventListener('visibilitychange',()=>{if(verified&&!document.hidden)void refreshConnectedTestStudent()});
+
+$('fictive-confirm').addEventListener('change',()=>abaquePilotPanel?.refreshConsent());

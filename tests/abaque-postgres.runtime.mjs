@@ -5,7 +5,7 @@ import {randomUUID,createHash} from 'node:crypto';
 import pg from 'pg';
 import {judgeCompletion} from '../apps/GRAN-abaque-m-1/connect/completion-contract.mjs';
 import {build,moves,classic,record,pilotClass} from './fixtures/abaque-events.mjs';
-import {validateAudit,buildPilotActivation,version as migrationVersion,name as migrationName,sqlFile} from '../scripts/abaque-release.mjs';
+import {validateAudit,buildInstall,releaseManifest,buildPilotActivation,version as migrationVersion,name as migrationName,sqlFile} from '../scripts/abaque-release.mjs';
 const path=process.env.ABAQUE_LOCAL_MANIFEST;
 if(!/^\/tmp\/mathas-abaque-local\.[a-zA-Z0-9]+\/local\.json$/.test(path||''))throw Error('disposable_local_database_required');
 const config=JSON.parse(readFileSync(path,'utf8'));
@@ -33,6 +33,14 @@ test('PostgreSQL réel : installation atomique fermée, historique exact unique 
  assert.equal(validateAudit(audit).ok,true);
  const changed=structuredClone(audit);changed.structure.tables.connect_states.columns.find(c=>c.name==='revision').type='integer';
  assert.equal(validateAudit(changed).ok,false);
+ const later=structuredClone(audit);later.structure.history.latest='20261102134600';later.structure.history.count=1;
+ assert.equal(validateAudit(later).ok,false,'une migration plus récente exige un choix explicite');
+ const options={migrationVersion:'20261102180000'};
+ assert.equal(validateAudit(later,options).ok,true);
+ assert.match(buildInstall(later,options),/'20261102180000'/);
+ assert.equal(releaseManifest(options).migrationVersion,'20261102180000');
+ assert.throws(()=>buildInstall(later,{migrationVersion:'invalid'}),/invalid_migration_version/);
+
  const rows=(await pool.query('select version,name,statements from supabase_migrations.schema_migrations')).rows;
  assert.equal(rows.length,1);assert.equal(rows[0].version,migrationVersion);assert.equal(rows[0].name,migrationName);
  const source=readFileSync(new URL('../'+sqlFile,import.meta.url),'utf8').replace(/^([\s\S]*?)\bBEGIN;\s*/,'').replace(/\s*COMMIT;\s*$/,'');
@@ -60,6 +68,8 @@ test('PostgreSQL réel : installation désactivée et autorisations publiques fe
  }
  await pool.query('update connect_abaque_classes set enabled=false where class_id=$1',[pilotClass]);
  assert.throws(()=>buildPilotActivation({classId:pilotClass,studentIds:[identity.student]}),/explicit_fictive_profiles/);
+ assert.match(buildPilotActivation({classId:pilotClass,fictiveConfirmed:true,studentIds:[],deferProfileApproval:true}),/ARRAY\[\]::uuid\[\]/);
+ assert.throws(()=>buildPilotActivation({classId:pilotClass,fictiveConfirmed:true,studentIds:[]}),/explicit_fictive_profiles/);
  await pool.query(buildPilotActivation({classId:pilotClass,fictiveConfirmed:true,studentIds:[identity.student]}));
  const snapshot=await load(identity);assert.equal(snapshot.xp.appXp,0);assert.equal(snapshot.xp.max,160);
  await assert.rejects(send(identity,moves()),/activity_locked/);
@@ -178,4 +188,31 @@ test('PostgreSQL réel : 80 % sur tous les formats et coupes distinctes à 3/5/8
  const reset=(await pool.query('select connect_abaque_restart_v1($1,$2,$3,$4) as value',[teacher,pilotClass,identity.student,0])).rows[0].value;
  assert.deepEqual(reset.trophies,before.trophies,'les coupes Mort subite restent permanentes après reset');
  assert.deepEqual(reset.state,{});
+});
+
+test('PostgreSQL réel : autorisation explicite des profils TEST et Monsieur T, sans XP ni élargissement scolaire',async()=>{
+ const identity=await pupil(),teacher=randomUUID(),outsider=randomUUID(),teacherStudent=randomUUID();
+ await pool.query('delete from connect_abaque_pilot_students where student_id=$1',[identity.student]);
+ const status=()=>pool.query('select connect_abaque_pilot_status_v1($1,$2) as value',[teacher,pilotClass]);
+ const approve=(ids,include=false,confirmed=true,classId=pilotClass)=>pool.query('select connect_abaque_pilot_approve_v1($1,$2,$3,$4,$5) as value',[teacher,classId,ids,include,confirmed]);
+ await assert.rejects(status(),/professor_required/);
+ await pool.query('insert into connect_class_permissions(class_id,teacher_id,can_manage) values($1,$2,true)',[pilotClass,teacher]);
+ assert.equal((await status()).rows[0].value.ready,true);
+ await assert.rejects(load(identity),/fictive_profile_required/);
+ await assert.rejects(approve([identity.student],false,false),/fictive_confirmation_required/);
+ await assert.rejects(approve([identity.student,outsider]),/not_enrolled/);
+ assert.equal((await pool.query('select count(*)::int n from connect_abaque_pilot_students where student_id=$1',[identity.student])).rows[0].n,0,'aucune insertion partielle');
+ await assert.rejects(approve([identity.student],true),/teacher_player_required/);
+ await assert.rejects(approve([identity.student],false,true,outsider),/pilot_class_required/);
+ await pool.query('insert into connect_students(id,display_name) values($1,$2)',[teacherStudent,'Monsieur T fictif']);
+ await pool.query('insert into connect_teacher_players(teacher_id,student_id) values($1,$2)',[teacher,teacherStudent]);
+ const result=(await approve([identity.student],true)).rows[0].value;
+ assert.equal(result.approvedCount,2);assert.equal((await load(identity)).xp.appXp,0);
+ assert.equal((await pool.query('select connect_abaque_load_v1($1,$2,true) as value',[teacher,pilotClass])).rows[0].value.studentId,teacherStudent);
+ assert.equal((await approve([identity.student],true)).rows[0].value.approvedCount,2,'confirmation idempotente');
+ const connection=await pool.connect();
+ try{
+  await connection.query('begin');await connection.query('set local role authenticated');
+  await assert.rejects(connection.query('select connect_abaque_pilot_approve_v1($1,$2,$3,false,true)',[teacher,pilotClass,[identity.student]]),/permission denied/);
+ }finally{await connection.query('rollback');connection.release();}
 });

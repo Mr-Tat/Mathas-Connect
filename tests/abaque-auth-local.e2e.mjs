@@ -194,6 +194,47 @@ test('Professeur réel local : consentement avant lecture, progression et reset 
  }finally{await h.context.close();}
 });
 
+test('Panneau Tests en ligne avec Auth/Edge réels : confirmation des profils et Monsieur T séparé des élèves',async()=>{
+ const pupil=await anonymous('Fictif Autorisation Abaque');
+ await pool.query("update connect_devices set state='approved' where auth_user_id=$1",[pupil.subject]);
+ await pool.query('delete from connect_abaque_pilot_students where student_id=$1',[pupil.studentId]);
+ const teacher=await manager(),teacherStudent=randomUUID();
+ await pool.query('insert into connect_students(id,display_name) values($1,$2)',[teacherStudent,'Monsieur T fictif Abaque']);
+ await pool.query('insert into connect_teacher_players(teacher_id,student_id) values($1,$2)',[teacher.subject,teacherStudent]);
+ const h=await browserPage(teacher,{teacher:true}),{page}=h;
+ try{
+  await page.goto(config.static+'/apps/GRAN-abaque-m-1/professeur.html?class='+pilotClass);
+  await page.setContent('<label><input id="confirmed" type="checkbox">Profils fictifs vérifiés</label><article id="pilot"><a id="student" href="#">Tester côté élève</a><button id="teacher">Monsieur T</button></article><p id="notice"></p>');
+  await page.evaluate(async({classId,studentId})=>{
+   const {mountAbaquePilot,ABAQUE_ONLINE_APP}=await import('/apps/GRAN-abaque-m-1/connect/laboratory-pilot.mjs');
+   const panel=mountAbaquePilot({
+    card:document.querySelector('#pilot'),app:{...ABAQUE_ONLINE_APP,enabled:true},launches:[document.querySelector('#student')],teacherButton:document.querySelector('#teacher'),
+    confirmed:()=>document.querySelector('#confirmed').checked,profiles:()=>[{id:studentId}],teacherReady:()=>true,
+    notify:message=>{document.querySelector('#notice').textContent=message;},
+    request:async(action,fields={})=>{
+     const session=JSON.parse(localStorage.getItem('mathas-connect-professor-auth-v1'));
+     const response=await fetch('https://awmhpfofacaglewammxt.supabase.co/functions/v1/connect-abaque',{method:'POST',headers:{authorization:'Bearer '+session.access_token,'content-type':'application/json'},body:JSON.stringify({action,appKey:'abaque-longueurs',classId,...fields})});
+     const data=await response.json();if(!response.ok||!data.ok)throw Error('pilot_request_refused');return data;
+    }
+   });
+   document.querySelector('#confirmed').addEventListener('change',panel.refreshConsent);
+  },{classId:pilotClass,studentId:pupil.studentId});
+  await page.waitForFunction(()=>document.querySelector('[data-abaque-pilot-status]').textContent.includes('XP, trophées'));
+  const approve=page.locator('[data-abaque-pilot-approve]');assert.equal(await approve.isDisabled(),true);
+  assert.equal((await request(pupil,'load')).status,403,'l’appareil approuvé ne suffit pas sans confirmation fictive');
+  await page.locator('#confirmed').check();await approve.click();
+  await page.waitForFunction(()=>document.querySelector('#notice').textContent.includes('2 profil'));
+  assert.equal((await request(pupil,'load')).data.xp.appXp,0);
+  const teacherLoaded=await request(teacher,'load');assert.equal(teacherLoaded.status,200);assert.equal(teacherLoaded.data.studentId,teacherStudent);
+  await page.goto(game+'&joueur=prof');await page.locator('html[data-abaque-connected]').waitFor();
+  await solveConstruction(page);
+  await page.waitForFunction(()=>document.querySelector('.abaque-account-xp').textContent.includes('14 / 160'));
+  assert.equal((await request(teacher,'load')).data.xp.appXp,14);
+  assert.equal((await request(pupil,'load')).data.xp.appXp,0,'les XP de Monsieur T ne vont pas à l’élève');
+  assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
+ }finally{await h.context.close();}
+});
+
 
 test('Chromium + Auth réels : XP absents sans compte/approbation, hors ligne et après déconnexion avec réponse tardive',async()=>{
  const loggedOut=await browserPage(null);

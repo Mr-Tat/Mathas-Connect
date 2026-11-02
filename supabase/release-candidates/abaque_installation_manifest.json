@@ -7,14 +7,16 @@
   "trophiesMax": 6,
   "defaultAccess": "closed",
   "files": {
-    "supabase/release-candidates/20261102_abaque_longueurs_v1.sql": "c95c0859d97399889decd8021c87c792f42612ed379b9cb415d7895f8eee27b2",
+    "supabase/release-candidates/20261102_abaque_longueurs_v1.sql": "fa90822ec4f980298b6b543ff1d6bea1b2db5b75a8382e799d642e755b62e3f6",
     "supabase/release-candidates/abaque_schema_readonly.sql": "7b14e28d82dc20a2f4a1079827e140193ee1899500f7c74900213c081c8459bf",
     "supabase/release-candidates/abaque_disable_only.sql": "3756276b790e2c7a350e9b4337d16ab82c52fde382cec96b34299e6f1a0d6ab1",
     "supabase/functions/connect-abaque/index.ts": "19438e7f1fcd925dad382726b8fff0b0674ca65f9e18225ce2a1d34c1a5ad88b",
-    "supabase/functions/connect-abaque/handler.mjs": "037f225b7cf926bbc7dba758f3aa4b6aef9b19bde408bee72e25e395c305dac3",
+    "supabase/functions/connect-abaque/handler.mjs": "1d07acc68c42d6b84d83b691800bf5194cdc5bdb5d5ec1dc766ce0a2f3bf763f",
     "supabase/functions/connect-api/index.ts": "8b2ee7836fee3476b3fef912ffbe60ba0651d4299175593d850027b4caedac6d",
     "hub.js": "c47952a8d321a4e7b0f4c6892eeb44a1382c3c0336fc5b9a1eb2eb6e196dd5e0",
-    "laboratoire.js": "cb748fee1bed6c3760df4bb4b64014684a8d90b15d78d0de2cffebd6177d403e",
+    "laboratoire.js": "7b22a84b27d4d52c0d2786d2df68b9a975b88c656929c632f64e2fc5a1095a32",
+    "laboratoire.html": "0d6d76e21c9597abde33c6b3107665cd356249e15326eed232f4163902986cfa",
+    "laboratoire.css": "d88c8dc8f02a259481b759e5d9a423f7486e48b0897b1202c1cc1ff054eb1473",
     "apps/GRAN-abaque-m-1/index.html": "0ce89c49e0241520f4c745b74b3325e7868e6f6e527aed74079a91c212bffd15",
     "apps/GRAN-abaque-m-1/abaque.css": "2cb5ae754cfb40322c84be645019d354bf10f27dde469377ed19cdcb9c128b03",
     "apps/GRAN-abaque-m-1/professeur.html": "b9ccb38e09c3444a45813da0a4589663a7b6cc476ffabd2654f239f9f124488d",
@@ -27,7 +29,8 @@
     "apps/GRAN-abaque-m-1/connect/offline-queue.mjs": "727ac20a0a1ea07c3c20687323d243493b18d0aa259b70f1f21f9a0169821465",
     "apps/GRAN-abaque-m-1/connect/bootstrap.mjs": "b8d8fa6b150d0931c9cdd64b54619b33507248bcd844b2a1bf700f43950e9d1c",
     "apps/GRAN-abaque-m-1/connect/professeur.mjs": "021d82e90de79a427a668573eba96ec4134ff356320b4e8bed3842afae6effc8",
-    "apps/GRAN-abaque-m-1/connect/native-bridge.js": "fb5f5d443f2188e9ba7fe8b3ff2726baec812e6d214b5b3a5ae64f2a3be66724"
+    "apps/GRAN-abaque-m-1/connect/native-bridge.js": "fb5f5d443f2188e9ba7fe8b3ff2726baec812e6d214b5b3a5ae64f2a3be66724",
+    "apps/GRAN-abaque-m-1/connect/laboratory-pilot.mjs": "a82b8f0b84fc25a3731ee7dd5b593b771fdd6e58573beefe66bdce95ad5cf87e"
   },
   "productionExecuted": false
 }

@@ -74,3 +74,19 @@ test('Abaque record long : mémoire de preuve bornée, formule native exacte et 
   assert.equal(event.tasks.length,10);assert.equal(event.tailSegments.length,kind==='lives'?4:2);
  }
 });
+
+test('Abaque pilote, Auth simulée : gestion réservée au professeur TEST et confirmation explicite des profils',async()=>{
+ let calls=0,last;
+ const db={rpc:async(name,args)=>{calls++;last={name,args};return {data:{ok:true,ready:true,approvedCount:1},error:null}}};
+ const auth={auth:{getUser:async token=>({data:{user:{id:authId,is_anonymous:token==='pupil'}},error:null})}};
+ const handler=createAbaqueHandler({auth,db,access:'pilot'});
+ const request=(data,token='teacher')=>new Request('http://local.invalid',{method:'POST',headers:{authorization:'Bearer '+token},body:JSON.stringify({appKey:'abaque-longueurs',classId:pilotClass,...data})});
+ assert.equal((await handler(request({action:'teacher-pilot-status'},'pupil'))).status,403);assert.equal(calls,0);
+ assert.equal((await handler(request({action:'teacher-pilot-approve',studentIds:[studentId],includeTeacher:false},'teacher'))).status,400);assert.equal(calls,0);
+ assert.equal((await handler(request({action:'teacher-pilot-approve',fictiveConfirmed:true,studentIds:[studentId],includeTeacher:false}))).status,200);
+ assert.equal(last.name,'connect_abaque_pilot_approve_v1');assert.equal(last.args.p_actor,authId);
+ assert.deepEqual(last.args.p_students,[studentId]);assert.equal(last.args.p_confirmed,true);
+ assert.equal((await handler(request({action:'teacher-pilot-status'}))).status,200);assert.equal(last.name,'connect_abaque_pilot_status_v1');
+ const open=createAbaqueHandler({auth,db,access:'open'});
+ assert.equal((await open(request({action:'teacher-pilot-status',classId:studentId}))).status,403);
+});

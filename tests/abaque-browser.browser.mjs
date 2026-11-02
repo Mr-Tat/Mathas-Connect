@@ -394,3 +394,76 @@ test('GRAN : ancienne adresse conservée, paramètres et acquis de la démo pré
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });
+
+test('Laboratoire : carte Abaque en ligne, attente serveur puis autorisation fictive, avec Auth et transports simulés',async()=>{
+ // Full portal UI coverage only. Real Auth/Edge are covered by abaque-auth-local.e2e.mjs.
+ const pupil='10000000-0000-4000-8000-000000000001';
+ const archived='10000000-0000-4000-8000-000000000002';
+ let catalogue='missing',serverReady=false;
+ const approvals=[],visibility=[];
+ const h=await setup(async route=>{
+  const url=new URL(route.request().url());
+  if(url.href==='https://esm.sh/@supabase/supabase-js@2.95.0'){
+   const body=`export function createClient(base,key,options={}){return {auth:{getSession:async()=>({data:{session:options.auth?.storageKey==='mathas-connect-professor-auth-v1'?{access_token:'test-teacher-token',user:{id:'10000000-0000-4000-8000-000000000010',is_anonymous:false}}:null},error:null})}}}`;
+   await route.fulfill({status:200,contentType:'text/javascript',body});return true;
+  }
+  if(url.hostname!=='awmhpfofacaglewammxt.supabase.co')return false;
+  const headers={'access-control-allow-origin':'*','access-control-allow-headers':'authorization,apikey,content-type','access-control-allow-methods':'POST,OPTIONS'};
+  if(route.request().method()==='OPTIONS'){await route.fulfill({status:204,headers});return true;}
+  const body=route.request().postDataJSON();let data={ok:true};
+  if(url.pathname.endsWith('/connect-api')){
+   if(body.action==='teacher-dashboard')data={ok:true,classes:[{id:labClass,name:'Classe démo - TEST'}],students:[{id:pupil,display_name:'Fictif laboratoire'},{id:archived,display_name:'Fictif archivé',archived_at:'2026-01-01'}],requests:[],devices:[]};
+   else if(body.action==='teacher-player')data={ok:true,status:'approved',displayName:'Monsieur T'};
+   else assert.fail('Unexpected Connect API action: '+body.action);
+  }else if(url.pathname.endsWith('/connect-lab-catalog')){
+   if(body.action==='list')data={ok:true,apps:catalogue==='missing'?[]:[{app_key:'abaque-longueurs',title:'Abaque des longueurs',enabled:catalogue==='enabled',visible:false,launch_url:'./apps/GRAN-abaque-m-1/?demo=1'}]};
+   else{visibility.push(body);data={ok:true,visible:body.visible};}
+  }else if(url.pathname.endsWith('/connect-abaque')){
+   if(body.action==='teacher-pilot-status')data={ok:true,ready:serverReady};
+   else if(body.action==='teacher-pilot-approve'){approvals.push(body);data={ok:true,approvedCount:2};}
+   else assert.fail('Unexpected Abaque action: '+body.action);
+  }else if(url.pathname.endsWith('/connect-results'))data={ok:true,students:[],locks:[]};
+  else return false;
+  await route.fulfill({status:200,contentType:'application/json',headers,body:JSON.stringify(data)});return true;
+ }),{page}=h;
+ try{
+  await page.goto(h.origin+'/laboratoire.html');
+  const card=page.locator('#apps [data-online-app="abaque-longueurs"]');
+  await card.waitFor();
+  assert.equal(await page.locator('#apps-title').textContent(),'Tests en ligne');
+  assert.match(await card.locator('[data-abaque-pilot-status]').textContent(),/Activation Connect en attente/);
+  const link=card.getByRole('link',{name:'Tester côté élève'});
+  const href=new URL(await link.getAttribute('href'));
+  assert.equal(href.pathname,'/apps/GRAN-abaque-m-1/');assert.equal(href.searchParams.get('connect'),'1');
+  assert.equal(href.searchParams.get('class'),labClass);assert.equal(href.searchParams.has('demo'),false);
+  assert.equal(await link.getAttribute('aria-disabled'),'true');
+  assert.equal(await card.getByRole('link',{name:'Résultats Abaque'}).getAttribute('aria-disabled'),'true');
+  await page.locator('#teacher-mode').click();
+  await page.waitForFunction(()=>document.querySelector('#teacher-status').textContent.includes('approuvé'));
+  assert.equal(await card.getByRole('button',{name:'Monsieur T',exact:true}).isDisabled(),true,'l’activation commune ne doit pas débloquer un backend absent');
+  catalogue='disabled';await card.getByRole('button',{name:'Vérifier la connexion'}).click();
+  await page.waitForFunction(()=>document.querySelector('#apps [data-online-app="abaque-longueurs"]').textContent.includes('Application désactivée côté serveur'));
+  assert.equal(await card.locator('[data-abaque-pilot-approve]').isDisabled(),true);
+  catalogue='enabled';await card.getByRole('button',{name:'Vérifier la connexion'}).click();
+  await page.waitForFunction(()=>!document.querySelector('#apps [data-online-app="abaque-longueurs"]').textContent.includes('Application désactivée côté serveur'));
+  assert.equal(await link.getAttribute('aria-disabled'),'true','catalogue activé mais pilote fermé');
+  serverReady=true;await card.getByRole('button',{name:'Vérifier la connexion'}).click();
+  await page.waitForFunction(()=>document.querySelector('#apps [data-online-app="abaque-longueurs"] a').getAttribute('aria-disabled')==='false');
+  assert.equal(await card.locator('[data-abaque-pilot-approve]').isDisabled(),true,'pas d’autorisation sans confirmation fictive');
+  assert.equal(await card.getByRole('button',{name:'Monsieur T',exact:true}).isDisabled(),false);
+  await page.locator('#fictive-confirm').check();
+  await card.locator('[data-abaque-pilot-approve]').click();
+  await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('2 profil(s) fictif(s) autorisé(s)'));
+  assert.deepEqual(approvals,[{action:'teacher-pilot-approve',appKey:'abaque-longueurs',classId:labClass,fictiveConfirmed:true,studentIds:[pupil],includeTeacher:true}]);
+  assert.deepEqual(visibility,[],'ni activation ni publication HUB pendant une autorisation de profils');
+  const demo=page.locator('#record-previews a[href*="GRAN-abaque-m-1"]');
+  assert.equal(await demo.count(),1,'la démo reste dans la rubrique hors ligne');
+  assert.equal(new URL(await demo.getAttribute('href'),h.origin).searchParams.has('connect'),false);
+  await page.locator('#fictive-confirm').uncheck();
+  assert.equal(await card.locator('[data-abaque-pilot-approve]').isDisabled(),true);
+  await page.setViewportSize({width:320,height:900});
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  await page.screenshot({path:resolve(tmpdir(),'abaque-laboratoire-online-mobile.png'),fullPage:true});
+  assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
+ }finally{await h.close();}
+});
