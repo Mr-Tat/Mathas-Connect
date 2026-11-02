@@ -49,10 +49,14 @@ test('la signature Connect 3D est vectorielle, bleue devant et mauve-bleu sur le
  assert.match(svg,/fill="#0256B8"/);
  assert.match(svg,/#9B60DF/);
  assert.match(svg,/#66B9F6/);
- assert.match(svg,/translate\(1\.8 3\.0\)/);
+ assert.match(svg,/translate\(1\.25 -2\.1\)/); // tranche visible vers le haut
+ assert.match(svg,/translate\(\.75 -1\.2\)/);
+ assert.doesNotMatch(svg,/translate\(1\.8 3\.0\)/); // ancien relief vu du dessous
  assert.doesNotMatch(svg,/<text\b|<script\b|@import/);
  assert.equal((home.match(/class="connect-wordmark-3d"/g)||[]).length,4);
  assert.equal((hub.match(/class="connect-wordmark-3d"/g)||[]).length,1);
+ assert.equal((home.match(/connect-wordmark-3d\.svg\?v=20261102-vue-dessus-v2/g)||[]).length,4);
+ assert.equal((hub.match(/connect-wordmark-3d\.svg\?v=20261102-vue-dessus-v2/g)||[]).length,1);
  assert.match(css,/\.teacher-logo-lockup img\.connect-wordmark-3d/);
  assert.match(css,/\.student-entry-brand img\.connect-wordmark-3d/);
  assert.match(home,/style\.css\?v=20261102-connect-3d-svg-v1/);
