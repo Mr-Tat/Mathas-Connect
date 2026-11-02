@@ -75,3 +75,14 @@ test('SQL is strictly private, TEST-scoped, grades all 4 digits/carries and atom
  assert.doesNotMatch(sql,/GRANT\s+EXECUTE[\s\S]*?TO\s+authenticated/i);
  assert.doesNotMatch(sql,/DROP\s+TABLE/i);
 });
+
+test('proof start/finish use JWT-derived pupil without requiring a client pupil ID',()=>{
+ const edge=read('supabase/functions/connect-objective-record-test/index.ts');
+ assert.match(edge,/const validProofStart=proofStart/);
+ assert.match(edge,/Object\.keys\(b\)\.sort\(\)\.join\(','\)==='action,appKey,classId'/);
+ assert.match(edge,/const validProofFinish=proofFinish/);
+ assert.match(edge,/Object\.keys\(b\)\.sort\(\)\.join\(','\)==='action,answers,appKey,classId'/);
+ assert.match(edge,/\(record&&b\.expectedStudentId\.toLowerCase\(\)!==studentId\.toLowerCase\(\)\)/);
+ assert.doesNotMatch(edge,/if\(!validId\(studentId\)\|\|b\.expectedStudentId\.toLowerCase/);
+ assert.match(edge,/p_student:studentId,p_class:TEST/);
+});
