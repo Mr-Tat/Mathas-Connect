@@ -97,17 +97,25 @@ test('secours Edge limité au GET de la classe TEST, sans fausse activation Conn
   assert.doesNotMatch(edge,/\.from\('connect_xp_credits'\)/);
 });
 
-test('les cinq pilotes Connect authentifiés apparaissent uniquement dans le HUB TEST',()=>{
+test('les cinq nouvelles versions remplacent les liens des cartes TEST, sans modifier les autres HUB',()=>{
  const hub=read('hub.js'),catalog=read('hub-catalog.json'),home=read('hub.html');
- assert.match(hub,/function labPilotSection\(\)/);
- assert.match(hub,/if\(classId===LAB_CLASS\)groups\.unshift\(labPilotSection\(\)\)/);
- assert.match(hub,/if\(classId===LAB_CLASS\)\$\('levels'\)\.prepend\(labPilotSection\(\)\)/);
- assert.match(hub,/node\.dataset\.labPilot=pilot\.id/);
- assert.doesNotMatch(hub,/node\.dataset\.appKey=pilot\.id/);
- assert.match(hub,/Pilote Connect · XP de test enregistrés séparément/);
- for(const id of ['addition-simple','addition-multiple','soustraction','multiplication','melange'])
-   assert.ok(hub.includes("'"+id+"'"),id);
- assert.match(hub,/objectif-record-pilote\.html\?app=/);
+ const lab=read('laboratoire.js'),laboratory=read('laboratoire.html');
+ assert.match(hub,/pilotSlug=classId===LAB_CLASS\?recordPilotSlugByApp\[app\.app_key\]:null/);
+ assert.match(hub,/if\(pilotSlug\)node\.dataset\.labPilot=pilotSlug/);
+ assert.match(hub,/else node\.dataset\.appKey=app\.app_key/);
+ assert.match(hub,/XP enregistrés dans le pilote TEST/);
+ assert.doesNotMatch(hub,/function labPilotSection\(/);
+ assert.match(lab,/pilotSlug=recordPilotSlugByApp\[app\.app_key\]/);
+ assert.match(lab,/const href=pilotSlug\?'\.\/essais\/objectif-record-pilote\.html\?app='/);
+ assert.match(lab,/labCatalog\('set',\{appKey:app\.app_key,visible:wanted\}\)/);
+ assert.match(lab,/student\.href=linkFor\(app\)/);
+ assert.match(lab,/const href=linkFor\(app,true\)/);
+ for(const id of ['addition-simple','addition-multiple','soustraction','multiplication','melange']){
+   assert.ok(hub.includes("'"+id+"'"),id+' HUB');
+   assert.ok(lab.includes("'"+id+"'"),id+' laboratoire');
+ }
+ assert.match(laboratory,/id="pilot-results-refresh"/);
+ assert.doesNotMatch(laboratory,/<a class="action" href="\.\/essais\/objectif-record-pilote\.html/);
  assert.doesNotMatch(catalog,/objectif-record-pilote/);
  assert.doesNotMatch(home,/objectif-record-pilote/);
 });
