@@ -19,7 +19,7 @@ test('les cinq moteurs d origine sont présents et lisibles sur le même domaine
   assert.match(s,/frame\.srcdoc=game/);
   assert.match(s,/lab-objectif-record-v2\.js/);
   assert.ok(s.includes("fetch('./"+core+"'"),slug);
-  assert.match(host,new RegExp('\\./engines/'+slug+'/'+wrapper.replace(/[.*+?^$()|[\]{}]/g,'\\$&')));
+  assert.ok(host.includes('./engines/'+slug+'/'+wrapper),slug);
  }
 });
 test('aucun moteur de la V finale ne dépend d un iframe externe',()=>{
