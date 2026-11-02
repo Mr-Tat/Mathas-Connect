@@ -1,5 +1,7 @@
 # Abaque des longueurs — fiche — 2 novembre 2026
 
+**[DÉCISION professeur, 02/11/2026 — montage de l’accueil, décision la plus récente]** Voir [l’accueil et les six trophées](ABAQUE_LONGUEURS_ACCUEIL_20261102.md). Carte Objectif record séparée, accès à 80 % dans chacun des trois formats classiques, trois coupes Mort subite à 3/5/8 pages consécutives, aucune en 3 vies. L’or classique reste indépendant. Résultats sans le mot « Réussite » ; médailles de score supprimées. Les descriptions de trois trophées et de médailles ci-dessous décrivent l’état antérieur.
+
 **[LIVE vérifié, GitHub]** Démo publiée à `6ac032c` sur [GitHub Pages](https://mr-tat.github.io/Mathas-Connect/apps/abaque-longueurs/), [déploiement réussi](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41368284892). Accord explicite du professeur pour publier directement la démo sur `main`. Aucun pilote Supabase hébergé authentifié n’est revendiqué.
 
 **[DÉCISION professeur, ajustement visuel]** Trois coupes bronze/argent/or seules, en bas à droite des cartes, sans mention de la condition de réussite. Tableau de bord en haut à droite : meilleur score en points, trophées obtenus et compteur sur trois. Fond papier quadrillé et cartes/boutons plus colorés et texturés. Les textures et icônes sont locales (CSS/SVG), sans dépendance distante.

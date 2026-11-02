@@ -88,3 +88,26 @@ html[data-abaque-demo-state="connected"] #homeScreen .homeModeBtn[data-mode="one
 html:not([data-abaque-demo-state="connected"]):not([data-abaque-demo-state="collected"]) .abaque-demo-xp{display:none!important}
 @media(max-width:600px){.demo-controls{order:3;width:100%;margin:0;justify-content:space-between}.demo-controls select{flex:1;max-width:235px}header .headerBtns{margin-left:auto}}
 @media(max-width:400px){.demo-controls{flex-direction:column;align-items:stretch;gap:5px}.demo-controls select{width:100%;max-width:none;flex:none}}
+
+/* Trois activités, puis une carte record indépendante des conversions classiques. */
+#homeScreen .homeGrid{align-items:stretch;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.4fr)}
+#homeScreen #convertLaunchCard .homeModeGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+#homeScreen #convertLaunchCard .homeModeBtn{min-width:0;padding:12px 10px 26px;min-height:105px}
+#homeScreen #convertLaunchCard .homeModeBtn strong{font-size:1rem}
+#homeScreen #recordChoice{grid-column:1/-1;width:100%;max-width:850px;min-height:0;justify-self:center;padding:22px 28px;--activity-accent:#bb8b30;--activity-tint:#fff0d4;border-color:#e5d7b4}
+#homeScreen #recordChoice h2{margin:0 0 5px;font-size:1.4rem;color:#1b3d4d}
+#homeScreen #recordChoice>p{margin:0 0 16px;min-height:0}
+#homeScreen #recordChoice .record-buttons{gap:18px;width:100%}
+#homeScreen #recordChoice .t3Mode{min-height:190px;padding:16px 18px 55px!important;text-align:left;gap:12px}
+#homeScreen #recordChoice .t3Mode strong{font-size:1.15rem;text-align:center}
+#homeScreen #recordChoice .t3Mode .record-caption{margin:0;text-align:center;font-size:.85rem;line-height:1.3;padding:7px 9px}
+#homeScreen #recordChoice .t3Mode .modeResult{font-size:.88rem;font-weight:750;text-align:left}
+#homeScreen #recordChoice .record-trophies{position:absolute;right:12px;bottom:10px;display:flex;gap:7px}
+#homeScreen #recordChoice .record-trophies .trophy-hint{position:static;display:inline-flex;width:26px;height:31px}
+#homeScreen #recordChoice .record-trophies .trophy-icon{width:26px;height:30px}
+#homeScreen #recordChoice .record-sudden>.abaque-xp-remaining{left:14px;right:auto;bottom:17px}
+#homeScreen #recordLock{margin:0 0 14px;font-size:.75rem}
+.collection-cups{display:grid;grid-template-columns:repeat(3,29px);gap:5px 9px}
+@media(max-width:1100px){#homeScreen .homeGrid{grid-template-columns:repeat(2,minmax(0,1fr))}#homeScreen #convertLaunchCard{grid-column:1/-1}}
+@media(max-width:600px){#homeScreen .homeGrid{grid-template-columns:minmax(0,1fr)}#homeScreen #recordChoice{padding:18px}#homeScreen #recordChoice .record-buttons{gap:12px}#homeScreen #recordChoice .t3Mode{padding:14px 12px 55px!important}#homeScreen #convertLaunchCard .homeModeGrid{gap:7px}#homeScreen #convertLaunchCard .homeModeBtn{padding:10px 7px 25px}#homeScreen #convertLaunchCard .homeModeBtn strong{font-size:.93rem}}
+@media(max-width:480px){#homeScreen #recordChoice .record-buttons{grid-template-columns:minmax(0,1fr)}#homeScreen #recordChoice .t3Mode{min-height:180px}#homeScreen #convertLaunchCard .homeModeGrid{grid-template-columns:minmax(0,1fr)}#homeScreen #convertLaunchCard .homeModeBtn{min-height:95px}}

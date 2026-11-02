@@ -123,11 +123,11 @@ test('Abaque : premiers essais 10/12 et 7/8, déblocages, puis trophées parfait
  const h=await setup(),{page}=h;
  try{
   await page.goto(h.url);
-  assert.equal(await page.locator('.trophy-hint').count(),3);
+  assert.equal(await page.locator('.trophy-hint').count(),6);
   assert.equal(await page.locator('.trophy-hint.earned').count(),0);
   assert.equal(await page.locator('#personalBest').textContent(),'0');
-  assert.equal(await page.locator('#personalTrophyCount').textContent(),'0 / 3');
-  assert.deepEqual(await page.locator('.trophy-hint').allTextContents(),['','','']);
+  assert.equal(await page.locator('#personalTrophyCount').textContent(),'0 / 6');
+  assert.deepEqual(await page.locator('.trophy-hint').allTextContents(),Array(6).fill(''));
   assert.equal(await page.locator('#moveLaunchBtn').getAttribute('aria-disabled'),'true');
   for(let run=0;run<2;run++)await solveConstruction(page,{imperfect:true});
   assert.deepEqual((await progress(page)).stage1.passScores,[10,10]);
@@ -144,7 +144,7 @@ test('Abaque : premiers essais 10/12 et 7/8, déblocages, puis trophées parfait
   assert.equal(await page.locator('#trophy-convertLaunchCard').getAttribute('data-earned'),'false');
   await page.evaluate(()=>window.MATHAS_PROGRESS.reset());await page.reload();
   assert.equal(await page.locator('.trophy-hint.earned').count(),2,'acquis démo conservés après reset/rechargement');
-  assert.equal(await page.locator('#personalTrophyCount').textContent(),'2 / 3');
+  assert.equal(await page.locator('#personalTrophyCount').textContent(),'2 / 6');
   assert.equal(await page.locator('.collection-trophy.earned').count(),2);
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
@@ -164,7 +164,7 @@ test('Abaque : or seulement après les trois vraies séries parfaites, scores na
   for(const width of [320,768,1024]){
    await page.setViewportSize({width,height:900});
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),String(width));
-   const bounds=await page.locator('.trophy-hint').evaluateAll(els=>els.map(el=>{
+   const bounds=await page.locator('.homeCard>.trophy-hint').evaluateAll(els=>els.map(el=>{
     const badge=el.getBoundingClientRect(),card=el.closest('.homeCard').getBoundingClientRect();
     return badge.left>=card.left&&badge.right<=card.right&&badge.bottom<=card.bottom&&card.bottom-badge.bottom<22&&card.right-badge.right<22;
    }));
@@ -246,6 +246,11 @@ test('Abaque : Master au départ ou pendant une partie exclut résultats et trop
   }
   await page.locator('[data-mode="one"]').click();await inputConversion(page);await modal(page,'Accueil');
   assert.equal((await progress(page)).recordsByMode.one,100,'la prochaine partie ordinaire compte normalement');
+  await enterMaster(page);await page.locator('[data-variant="sudden"]').click();await page.locator('#masterExit').click();
+  for(let n=0;n<3;n++){await inputConversion(page);await modal(page,n===2?'Accueil':'Suivante');}
+  assert.deepEqual(await trophies(page),[],'trois pages commencées en Master ne donnent pas de coupe Mort subite');
+  assert.equal((await progress(page)).suddenBest,0,'la série Master ne devient pas un record');
+
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });
@@ -315,9 +320,9 @@ test('Abaque : les anciennes réussites de la même démo réaffichent les troph
    modes:{one:'green',three:'green',five:'green'}
   });
   assert.deepEqual((await trophies(page)).sort(),['bronze','gold','silver']);
-  assert.equal(await page.locator('.trophy-hint.earned').count(),3);
+  assert.equal(await page.locator('.homeCard>.trophy-hint.earned').count(),3);
   await page.evaluate(()=>window.MATHAS_PROGRESS.reset());await page.reload();
-  assert.equal(await page.locator('.trophy-hint.earned').count(),3);
+  assert.equal(await page.locator('.homeCard>.trophy-hint.earned').count(),3);
   assert.equal(await page.evaluate(()=>localStorage.getItem('mathas_abaque_longueurs_progress_v1')),null);
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
@@ -342,21 +347,28 @@ test('Abaque démo : trois états de compte simulés, XP discrets et zéro modif
   assert.equal(await page.locator('.abaque-demo-xp:visible').count(),7);
   assert.equal(await page.locator('#launchBtn>.abaque-xp-remaining').textContent(),'Reste 6 XP');
   assert.equal(await page.locator('[data-variant="sudden"]>.abaque-xp-remaining').textContent(),'Reste 32 XP');
-  assert.equal(await page.locator('#personalTrophyCount').textContent(),'0 / 3');
+  assert.equal(await page.locator('#personalTrophyCount').textContent(),'0 / 6');
   assert.equal(await page.locator('#launchBtn>.abaque-xp-remaining').evaluate(el=>getComputedStyle(el).fontWeight),'400');
   await solveConstruction(page);
   assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'true','une activité reste jouable dans le profil fictif');
   await choice.selectOption('collected');
-  assert.equal(await page.locator('#personalTrophyCount').textContent(),'3 / 3');
+  assert.equal(await page.locator('#personalTrophyCount').textContent(),'6 / 6');
   assert.equal(await page.locator('#personalBest').textContent(),'580');
-  assert.equal(await page.locator('.collection-trophy.earned').count(),3);
+  assert.equal(await page.locator('.collection-trophy.earned').count(),6);
   assert.deepEqual(await page.locator('.abaque-demo-xp').allTextContents(),Array(7).fill('Reste 0 XP'));
   assert.equal(await page.locator('#recordChoice .record-caption .abaque-xp-remaining').count(),0);
-  assert.deepEqual(await page.locator('.trophy-hint').allTextContents(),['','','']);
+  assert.deepEqual(await page.locator('.trophy-hint').allTextContents(),Array(6).fill(''));
   assert.equal(await page.locator('#trophy-launchBtn').getAttribute('title'),'Architecte de l’abaque — obtenu');
   for(const width of [1440,768,320]){
    await page.setViewportSize({width,height:1000});
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'simulation sans débordement à '+width);
+   assert.equal(await page.locator('[data-variant="sudden"]').evaluate(button=>{
+    const card=button.getBoundingClientRect(),cups=button.querySelector('.record-trophies').getBoundingClientRect();
+    const caption=button.querySelector('.record-caption').getBoundingClientRect(),xp=button.querySelector('.abaque-xp-remaining').getBoundingClientRect();
+    return cups.right<=card.right&&cups.bottom<=card.bottom&&card.right-cups.right<17&&card.bottom-cups.bottom<17&&caption.bottom<cups.top&&xp.right<cups.left;
+   }),true,'coupes et XP séparés, hors du cadre intérieur à '+width);
+   assert.equal(await page.locator('#recordChoice').evaluate(el=>el.getBoundingClientRect().top>document.querySelector('#convertLaunchCard').getBoundingClientRect().bottom),true);
+
   }
   await page.screenshot({path:resolve(tmpdir(),'abaque-demo-scenarios-mobile.png'),fullPage:true});
   await page.setViewportSize({width:1440,height:1000});
@@ -364,11 +376,65 @@ test('Abaque démo : trois états de compte simulés, XP discrets et zéro modif
   await choice.selectOption('signed-out');
   assert.equal(await page.locator('.abaque-xp-remaining:visible').count(),0);
   assert.equal(await page.locator('#personalBest').textContent(),'129');
-  assert.equal(await page.locator('#personalTrophyCount').textContent(),'1 / 3');
+  assert.equal(await page.locator('#personalTrophyCount').textContent(),'1 / 6');
   assert.deepEqual(await page.evaluate(()=>Object.fromEntries(Object.entries(localStorage))),initial,'aucun faux résultat, XP ou trophée enregistré');
   await choice.selectOption('collected');await page.reload();
   assert.equal(await choice.inputValue(),'signed-out','pas de fausse connexion conservée au rechargement');
   assert.equal(await page.locator('.abaque-xp-remaining:visible').count(),0);
   assert.deepEqual(h.external,[]);assert.deepEqual(h.errors,[]);
+ }finally{await h.close();}
+});
+
+
+test('Abaque : les deux modes record exigent 80 % dans chacun des trois formats, résultats sans libellé',async()=>{
+ const h=await setup(),{page}=h;
+ try{
+  await page.goto(h.url);
+  for(const scores of [{one:3,three:10,five:16},{one:4,three:9,five:16},{one:4,three:10,five:15}]){
+   await fixture(page,{modeScores:scores});
+   assert.equal(await page.locator('#recordChoice').isVisible(),true);
+   for(const variant of ['lives','sudden']){
+    const button=page.locator('[data-variant="'+variant+'"]');
+    assert.equal(await button.getAttribute('aria-disabled'),'true');
+    await button.click({force:true});assert.equal(await page.locator('#homeScreen').isVisible(),true);
+   }
+  }
+  await fixture(page,{modeScores:{one:4,three:10,five:16}});
+  for(const variant of ['lives','sudden'])assert.equal(await page.locator('[data-variant="'+variant+'"]').getAttribute('aria-disabled'),'false');
+  for(const [mode,result] of [['one','4/4'],['three','10/12'],['five','16/20']])assert.equal(await page.locator('[data-mode="'+mode+'"] .modeResult').textContent(),result);
+  assert.equal(await page.locator('#recordLock').isVisible(),false);
+  assert.equal(await page.locator('.scoreMedals,.scoreMedal').count(),0);
+  assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
+ }finally{await h.close();}
+});
+
+test('Abaque : coupes Mort subite aux pages 3, 5 et 8 seulement, ni cumul ni 3 vies ni or classique',async()=>{
+ const h=await setup(),{page}=h;
+ try{
+  await page.goto(h.url);await fixture(page);
+  await page.locator('[data-variant="lives"]').click();
+  for(let n=0;n<8;n++){await inputConversion(page);await modal(page,'Suivante');}
+  for(let n=0;n<3;n++){await inputConversion(page,true);await modal(page,n===2?'Accueil':'Suivante');}
+  assert.deepEqual(await trophies(page),[],'huit pages en 3 vies ne donnent aucune coupe');
+  await page.locator('[data-variant="sudden"]').click();
+  for(let n=0;n<2;n++){await inputConversion(page);await modal(page,'Suivante');}
+  await inputConversion(page,true);await modal(page,'Accueil');
+  assert.deepEqual(await trophies(page),[]);
+  await page.locator('[data-variant="sudden"]').click();
+  for(let pages=1;pages<=8;pages++){
+   await inputConversion(page);
+   const expected=[...(pages>=3?['sudden-bronze']:[]),...(pages>=5?['sudden-silver']:[]),...(pages>=8?['sudden-gold']:[])];
+   assert.deepEqual(await trophies(page),expected,'seuil exact à '+pages+' pages consécutives');
+   await modal(page,pages===8?'Accueil':'Suivante');
+  }
+  await page.reload();
+  assert.equal(await page.locator('#personalTrophyCount').textContent(),'3 / 6');
+  assert.equal(await page.locator('#trophy-convertLaunchCard').getAttribute('data-earned'),'false','l’or classique est indépendant');
+  assert.equal(await page.locator('.record-trophies .earned').count(),3);
+  assert.equal((await progress(page)).suddenBest,8);
+  assert.deepEqual((await progress(page)).scoreRecords.medals,[],'aucune médaille de score');
+  await page.evaluate(()=>window.MATHAS_PROGRESS.reset());await page.reload();
+  assert.equal(await page.locator('.record-trophies .earned').count(),3,'coupes conservées après reset');
+  assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });

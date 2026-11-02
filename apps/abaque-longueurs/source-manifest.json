@@ -17,7 +17,10 @@
     "Cup-only bronze/silver/gold objectives without success conditions",
     "Always-visible personal best and permanent trophy collection in the home header",
     "Textured paper background and colored activity/button finishes",
-    "Three explicit in-memory demo account previews; no Auth or cloud writes and no changes to saved local achievements"
+    "Three explicit in-memory demo account previews; no Auth or cloud writes and no changes to saved local achievements",
+    "Separate Objectif record home card; both variants require at least 80 percent in all three classic conversion formats",
+    "Three additional sudden-death cups for 3, 5 and 8 correct consecutive pages, independent of classic conversion gold",
+    "Remove score medals and shorten conversion result labels without losing results"
   ],
   "license": "No license file in source checkout; copied with repository owner authorization in task"
 }

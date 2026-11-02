@@ -19,11 +19,11 @@ if(new URLSearchParams(location.search).get('connect')!=='1'){
    stage2:stage(collected?['green','green']:['orange','orange'],collected?8:7),
    modes:{one:'green',three:collected?'green':'orange',five:collected?'green':'orange',sudden:collected?'green':null},
    modeScores:{one:4,three:collected?12:10,five:collected?20:16},
-   recordsByMode:{one:100,three:collected?324:266,five:collected?580:448,lives:collected?282:0,sudden:collected?340:0},
-   suddenBest:collected?10:0,
-   scoreRecords:{dayDate:'',dayBest:0,dayMode:'',allBest:collected?580:448,allMode:'five',medals:collected?[100,300,500]:[100,300]}
+   recordsByMode:{one:100,three:collected?324:266,five:collected?580:448,lives:collected?282:0,sudden:collected?260:0},
+   suddenBest:collected?8:0,
+   scoreRecords:{dayDate:'',dayBest:0,dayMode:'',allBest:collected?580:448,allMode:'five',medals:[]}
   };
-  return {state,trophies:collected?['bronze','silver','gold']:[],
+  return {state,trophies:collected?['bronze','silver','gold','sudden-bronze','sudden-silver','sudden-gold']:[],
    remaining:collected?{build:0,moves:0,one:0,three:0,five:0,lives:0,sudden:0}:{build:6,moves:6,one:0,three:10,five:12,lives:16,sudden:32}};
  }
  function apply(){

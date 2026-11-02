@@ -1,5 +1,7 @@
 # Abaque — passage de flambeau — 2 novembre 2026
 
+**[DÉCISION professeur, 02/11/2026 — dernière demande]** Le [montage de l’accueil et ses règles](ABAQUE_LONGUEURS_ACCUEIL_20261102.md) remplace les anciennes descriptions limitées à trois trophées : six coupes, dont trois réservées à Mort subite aux pages 3/5/8 ; aucun trophée en 3 vies et aucune médaille de points. Les deux variantes exigent 80 % dans les trois formats classiques. Or classique indépendant ; carte record séparée, résultats classiques sans préfixe.
+
 **Démo publiée ; ajustements visuels sur `feat/abaque-longueurs-interface`. Connect reste une candidate serveur fermée.** Lire `AGENTS.md`, le guide permanent et [la fiche](ABAQUE_LONGUEURS_FICHE.md).
 
 **[LIVE vérifié, GitHub]** Le professeur a explicitement approuvé le push direct sans PR de la démonstration. Publication initiale `6ac032c` : [jeu](https://mr-tat.github.io/Mathas-Connect/apps/abaque-longueurs/), [Pages Success](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41368284892). Les retouches de cette démo poursuivent cette livraison ; ne pas les confondre avec une autorisation SQL/Edge.
