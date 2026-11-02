@@ -27,6 +27,14 @@ export function createAtomicTestRecorder({classId,appKey,subject,storage,send,re
   version={revision:doc.revision,resetEpoch:doc.resetEpoch};
   pending=read();return true;
  }
+ // Never replay a queued receipt into a different parcours after a teacher
+ // reset. Archive the ORIGINAL payload before clearing the live queue; if
+ // local storage is full, fail closed and keep the pending event untouched.
+ function quarantine(event,reason){
+  const archiveKey=key+'.archive.'+event.eventId;
+  storage.setItem(archiveKey,JSON.stringify({...event,quarantineReason:reason}));
+  write(null);
+ }
  async function retry(){
   if(!isCurrent()||sending||!pending||!version)return !pending;
   sending=true;
@@ -45,7 +53,41 @@ export function createAtomicTestRecorder({classId,appKey,subject,storage,send,re
     'Partie enregistrée : XP du profil scolaire recalculés côté serveur');
    return true;
   }catch(e){
-   if(isCurrent())notify('⚠️ Partie conservée : '+(e?.message||'Erreur réseau')+'. Actualiser pour retenter.');
+   if(!isCurrent())return false;
+   const error=String(e?.message||'Erreur réseau');
+   if(error==='stale_reset_epoch'){
+    try{
+     quarantine(event,'stale_reset_epoch');
+     await reload();
+     if(isCurrent())notify('Ancienne partie isolée après la remise à zéro : aucun XP transféré au nouveau parcours.');
+     return true;
+    }catch{
+     notify('⚠️ Impossible de terminer la reprise après remise à zéro. Actualiser pour vérifier le profil.');
+     return false;
+    }
+   }
+   if(error==='revision_conflict'){
+    try{
+     const fresh=await reload();
+     if(!isCurrent())return false;
+     const latest=fresh?.loaded;
+     if(latest&&Number.isSafeInteger(latest.revision)&&Number.isSafeInteger(latest.resetEpoch)){
+      if(latest.resetEpoch!==event.expectedResetEpoch){
+       quarantine(event,'reset_epoch_changed_on_conflict');
+       notify('Ancienne partie isolée : parcours modifié entre deux onglets.');
+       return true;
+      }
+      if(latest.revision>event.expectedRevision){
+       write({...event,expectedRevision:latest.revision});
+       notify('Un autre onglet a enregistré une partie. Révision mise à jour ; réessayer la synchronisation.');
+       return false;
+      }
+     }
+    }catch{
+     // Keep the exact original event until a verified server reload succeeds.
+    }
+   }
+   if(isCurrent())notify('⚠️ Partie conservée : '+error+'. Actualiser pour retenter.');
    return false;
   }finally{sending=false}
  }
