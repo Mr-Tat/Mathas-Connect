@@ -7,6 +7,15 @@ const TEST_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 const TEST_LABEL='Classe démo - TEST';
 const HUB='./hub.html?class='+encodeURIComponent(TEST_CLASS)+'&name='+encodeURIComponent(TEST_LABEL);
 const appKeys=['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'];
+// Dans le laboratoire, les cartes existantes ouvrent les NOUVELLES versions pilotes.
+// Les identifiants app_key continuent de piloter la visibilité de la classe TEST.
+const recordPilotSlugByApp=Object.freeze({
+  'addition-ecrite-simple':'addition-simple',
+  'addition-ecrite-multiple':'addition-multiple',
+  'soustraction-ecrite-simple':'soustraction',
+  'multiplication-ecrite-simple':'multiplication',
+  'melange-calculs-ecrits':'melange'
+});
 const fallbackApps=[
  {app_key:'addition-ecrite-simple',title:'Addition écrite',launch_url:'https://mr-tat.github.io/CE-Addition-simple/'},
  {app_key:'multiplication-ecrite-simple',title:'Multiplication écrite simple',launch_url:'./apps/multiplication-simple/'},
@@ -65,7 +74,18 @@ async function rpc(edge,action,data={}){const s=await session();const response=a
 const api=(action,data={})=>rpc('connect-api',action,data);
 const results=(action,data={})=>{guard();return rpc('connect-results',action,{classId:TEST_CLASS,appKey:$('results-app').value,...data})};
 async function run(fn){try{await fn()}catch(e){display('Laboratoire : '+(e.message||e),true)}}
-function linkFor(app,prof=false){const href=app.launch_url||app.url;if(!href)return null;let url;try{url=new URL(href,location.href)}catch{return null}if(url.protocol!=='https:'&&url.protocol!=='http:')return null;if(url.origin===location.origin){url.searchParams.set('class',TEST_CLASS);if(prof&&appKeys.includes(app.app_key))url.searchParams.set('joueur','prof')}return url.href}
+function linkFor(app,prof=false){
+ const pilotSlug=recordPilotSlugByApp[app.app_key];
+ const href=pilotSlug?'./essais/objectif-record-pilote.html?app='+encodeURIComponent(pilotSlug):(app.launch_url||app.url);
+ if(!href)return null;
+ let url;try{url=new URL(href,location.href)}catch{return null}
+ if(url.protocol!=='https:'&&url.protocol!=='http:')return null;
+ if(url.origin===location.origin){
+   url.searchParams.set('class',TEST_CLASS);
+   if(prof&&appKeys.includes(app.app_key))url.searchParams.set('joueur','prof');
+ }
+ return url.href;
+}
 function renderObjectiveRecordPreviews(){
  const list=$('record-previews');list.replaceChildren();
  for(const preview of objectiveRecordLabPreviews){
@@ -217,7 +237,7 @@ async function loadApps(){
    const label=el('label','','lab-visibility-toggle');
    const checkbox=document.createElement('input');
    checkbox.type='checkbox';checkbox.checked=app.visible===true;checkbox.disabled=!app.enabled;
-   checkbox.setAttribute('aria-label','Afficher '+(app.title||app.app_key)+' dans le HUB test');
+   checkbox.setAttribute('aria-label','Afficher la nouvelle version de '+(app.title||app.app_key)+' dans le HUB test');
    label.append(checkbox,document.createTextNode(' Afficher'));card.append(label);
    if(!app.enabled){
      card.append(el('p','Application désactivée côté serveur : affichage indisponible.','muted warning'));
@@ -232,7 +252,7 @@ async function loadApps(){
        }catch(error){checkbox.checked=app.visible===true;throw error}
        finally{checkbox.disabled=false}
      });
-     card.append(el('p','Visibilité indépendante des quatre HUB réels.','muted tiny'));
+     card.append(el('p','Nouvelle version Connect · XP pilote sauvegardés à part · affichage limité au HUB TEST.','muted tiny'));
    }
    const buttons=el('div','','actions');
    // Garder les boutons de test existants ; seule la case Afficher dépend
