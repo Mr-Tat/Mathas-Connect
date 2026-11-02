@@ -84,9 +84,18 @@
  #identity-box.identity-connected #identity-progress{padding-left:9px;gap:6px}
 }
 
-/* Couleur de remplissage du mot Connect, identique au rectangle de référence. */
-.connect-brand .connect-brand-suffix{background:none!important;color:#0256B8!important;-webkit-text-fill-color:#0256B8!important}
-.connect-brand .connect-brand-suffix::before{content:none!important;display:none!important}
+/* Le HUB utilise la meme signature Connect que l'accueil et l'espace professeur. */
+.connect-brand .connect-brand-suffix{
+  position:relative;isolation:isolate;display:inline-block;
+  background:none!important;color:#0256B8!important;-webkit-text-fill-color:#0256B8!important;
+}
+.connect-brand .connect-brand-suffix::before{
+  content:"Connect"!important;display:block!important;position:absolute;inset:0;z-index:-1;
+  pointer-events:none;font:inherit;letter-spacing:inherit;white-space:nowrap;text-shadow:none;
+  background:linear-gradient(90deg,#7139a8 0%,#4c42a9 47%,#2059ae 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  -webkit-text-stroke:clamp(1.5px,.065em,2.6px) transparent;
+}
 
 /* Niveau plus petit : chiffre et ovale réduits ensemble. */
 #identity-box.identity-connected .student-level{gap:7px;padding:3px 7px 3px 11px;border-width:1.5px;box-shadow:0 3px 10px #0004}
