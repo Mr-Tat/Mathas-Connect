@@ -1,5 +1,7 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 import {studentHostContract,permanentTrophyCount} from './student-host-contract.mjs';
+import {ATOMIC_TEST_APP} from './native-official-record.mjs';
+import {createAtomicTestRecorder} from './atomic-test-recorder.mjs';
 
 // This is the future SCHOOL launcher, not the legacy pilot XP writer.
 // Its current release gate is TEST-only and READ-ONLY until a verified
@@ -20,7 +22,7 @@ const teacher=params.get('joueur')==='prof';
 const classId=params.get('class')||'';
 const session=createClient(BASE,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
  ...(teacher?{storageKey:'mathas-connect-professor-auth-v1'}:{})}});
-let generation=0,tokenOwner=null,activeApp='',visibleDoc=null,watching=null;
+let generation=0,tokenOwner=null,activeApp='',visibleDoc=null,watching=null,recorder=null;
 const message=(s)=>{$('status').textContent=s};
 const clear=()=>{
   for(const id of ['app-xp','total-xp','level','trophies'])$(id).textContent='—';
@@ -36,7 +38,7 @@ async function verifiedToken(){
  tokenOwner=user.id;
  return local.access_token;
 }
-async function call(endpoint,action,appKey){
+async function call(endpoint,action,appKey,payload={}){
  const token=await verifiedToken();
  const controller=new AbortController();
  const timeout=setTimeout(()=>controller.abort(),12000);
@@ -44,7 +46,7 @@ async function call(endpoint,action,appKey){
   const res=await fetch(BASE+'/functions/v1/'+endpoint,{
    method:'POST',signal:controller.signal,
    headers:{apikey:KEY,authorization:'Bearer '+token,'content-type':'application/json'},
-   body:JSON.stringify({action,classId,...(appKey?{appKey}:{})})
+   body:JSON.stringify({action,classId,...(appKey?{appKey}:{}),...payload})
   });
   const body=await res.json().catch(()=>null);
   if(!res.ok||body?.ok!==true)throw Error(body?.error||'connect_unavailable');
@@ -89,15 +91,16 @@ function watchGame(seq){
     chooser.value='free';chooser.dispatchEvent(new Event('change',{bubbles:true}));
    }
    hideFictionalXp(doc);
-   if(doc===visibleDoc)return;
-   visibleDoc=doc;
    const native=inside.contentWindow?.MathasLabV2Update;
-   if(typeof native==='function'){
+   if(doc===visibleDoc||typeof native!=='function')return;
+   visibleDoc=doc;
+   {
     inside.contentWindow.MathasLabV2Update=function(event){
      native(event);
      if(seq!==generation||!event)return;
      // Only local demonstration: no official ACK, XP, trophy or score written.
-     if(event.phase==='ended')message('Partie terminée sur le moteur · enregistrement scolaire en attente de validation serveur. Aucun XP attribué.');
+     if(recorder)recorder.onSnapshot(event);
+     else if(event.phase==='ended')message('Partie terminée : aucun XP Connect (ce jeu n’est pas encore raccordé).');
     };
    }
   }catch{
@@ -114,11 +117,12 @@ async function refresh(seq){
  ]);
  if(seq!==generation)return;
  showOfficial({xp,loaded,appKey:activeApp});
+ if(recorder&&!recorder.initialize(loaded))throw Error('Version officielle indisponible');
  return {loaded,xp};
 }
 async function choose(){
  generation++;const seq=generation;
- clearInterval(watching);visibleDoc=null;clear();
+ clearInterval(watching);visibleDoc=null;recorder=null;clear();
  const slug=$('app').value;
  if(!Object.hasOwn(GAME_URLS,slug)){message('Jeu inconnu');return;}
  activeApp=GAME_URLS[slug][0];
@@ -126,20 +130,31 @@ async function choose(){
   message('Vérification du profil approuvé de la classe TEST…');
   await approvedProfile();
   if(seq!==generation)return;
+  if(activeApp===ATOMIC_TEST_APP){
+   recorder=createAtomicTestRecorder({classId,appKey:activeApp,subject:tokenOwner,storage:localStorage,
+    send:request=>call('connect-results','game-record',activeApp,request),
+    reload:()=>refresh(seq),notify:message,isCurrent:()=>seq===generation&&activeApp===ATOMIC_TEST_APP});
+  }
   message('Lecture des XP globaux et trophées permanents officiels…');
   await refresh(seq);
   if(seq!==generation)return;
+  if(recorder?.hasPending()&&!await recorder.retry()){
+   message('Résultat conservé en attente de réseau : cliquer Actualiser.');$('refresh').disabled=false;return;
+  }
   $('gameFrame').src=GAME_URLS[slug][1];
   $('gameFrame').hidden=false;$('refresh').disabled=false;
   watchGame(seq);
-  message('Session Connect authentifiée · moteur d’essai affiché · sauvegarde Objectif record non encore activée.');
+  message(recorder?'Addition multiple TEST : Classique/Mort subite reliés aux vrais XP. Le mode 3 vies reste bloqué.':
+   'Session Connect authentifiée · sauvegarde des parties de ce jeu encore désactivée.');
  }catch(e){
   if(seq!==generation)return;
   clear();
   message('⚠️ '+(e?.message||'Accès indisponible')+'. Jeu non lancé.');
  }
 }
-$('refresh').addEventListener('click',()=>refresh(generation).then(()=>message('Profil officiel actualisé (lecture seule).')).catch(e=>message('⚠️ '+e.message)));
+$('refresh').addEventListener('click',async()=>{const seq=generation;try{if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
+  if(seq===generation&&!recorder?.hasPending())message('Profil officiel actualisé.');
+ }catch(e){if(seq===generation)message('⚠️ '+e.message)}});
 $('app').addEventListener('change',()=>{const next=new URL(location.href);next.searchParams.set('app',$('app').value);history.replaceState(null,'',next);void choose()});
 const requested=params.get('app');
 if(requested&&Object.hasOwn(GAME_URLS,requested))$('app').value=requested;
