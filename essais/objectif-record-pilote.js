@@ -19,7 +19,7 @@ const sb=createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,d
 let studentId=null,activeSlug='',activeApp='',generation=0,snapshot=null,startId=null,lastRecording=false;
 let previousRunning=false,observedDoc=null,observedWin=null,observer=null,settle=null;
 let lastProjectionKey='',projectionInFlight=false;
-let pilotRights=null;
+let pilotRights=null,loadSequence=0;
 window.MathasPilotState=null;
 const status=(message)=>{$('status').textContent=message};
 const pilotError=e=>{status('⚠️ '+(e?.message||e))};
@@ -41,9 +41,9 @@ function render(data){
  $('attempts').textContent=String(data.recent?.length??'—');
 }
 async function refresh(selection={}){
- const requestApp=activeApp,requestGeneration=generation;
+ const requestApp=activeApp,requestGeneration=generation,requestSequence=++loadSequence;
  const d=await api('load',selection);
- if(requestGeneration!==generation||requestApp!==activeApp)return null;
+ if(requestGeneration!==generation||requestApp!==activeApp||requestSequence!==loadSequence)return null;
  if(studentId&&studentId!==d.studentId)throw Error('Le profil actif a changé : recharge la page');
  studentId=d.studentId;
  render(d);
@@ -187,7 +187,7 @@ function startWatching(seq){
        renderRights(doc);
        const req=selection(doc),key=JSON.stringify(req);
        if(lastProjectionKey!==key){
-         lastProjectionKey=key;projectionInFlight=true;
+         lastProjectionKey=key;pilotRights=null;renderRights(doc);projectionInFlight=true;
          refresh(req).catch(pilotError).finally(()=>{projectionInFlight=false});
        }
      }
@@ -197,7 +197,7 @@ function startWatching(seq){
 async function choose(){
  generation++;const seq=generation;
  observer?.disconnect();observedDoc=null;observedWin=null;snapshot=null;startId=null;
- previousRunning=false;lastRecording=false;lastProjectionKey='';projectionInFlight=false;pilotRights=null;
+ previousRunning=false;lastRecording=false;lastProjectionKey='';projectionInFlight=false;pilotRights=null;loadSequence++;
  window.MathasPilotState=null;
  clearInterval(settle);
  activeSlug=$('app').value;activeApp=MAP[activeSlug]?.[0]||'';
