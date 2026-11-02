@@ -80,12 +80,26 @@ test('Chromium: 4 vraies additions émises par Connect, écritures natives et AC
    {waitUntil:'domcontentloaded',timeout:25000});
   await page.waitForFunction(()=>!document.getElementById('certify').disabled,{timeout:45000});
   await page.locator('#certify').click();
-  await page.waitForFunction(()=>{
+  try{await page.waitForFunction(()=>{
    const w=document.getElementById('gameFrame')?.contentDocument
     ?.getElementById('game')?.contentWindow;
    return w?.__mathasServerCertified?.index===2 &&
     w?.document?.getElementById('gameScreen')?.classList.contains('hidden')===false;
-  },null,{timeout:30000});
+  },null,{timeout:25000});}
+  catch(error){
+   const debug=await page.evaluate(()=>{
+    const outer=document.getElementById('gameFrame');
+    const frame=outer?.contentDocument?.getElementById('game');
+    const doc=frame?.contentDocument;
+    const win=frame?.contentWindow;
+    return {outerStatus:outer?.contentDocument?.getElementById('state')?.textContent,
+     status:document.getElementById('status')?.textContent,
+     isGameLoaded:!!doc,menu:doc?.getElementById('menuScreen')?.className,
+     game:doc?.getElementById('gameScreen')?.className,
+     cert:win?.__mathasServerCertified,inlineErrors:win?.__mathasLabError||null};
+   });
+   throw Error('native-cert-timeout '+JSON.stringify({debug,exceptions,actions:requests.map(x=>x.action)})+' '+error);
+  }
   const issued=await page.evaluate(()=>{
    const w=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
    return {issued:w.__mathasServerCertified.questions.map(q=>[q.a,q.b]),
