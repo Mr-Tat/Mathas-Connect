@@ -10,7 +10,7 @@
   <title>Math’as Connect — Professeur</title>
   <link rel="icon" type="image/png" href="./assets/brand/favicon.png">
   <link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png">
-  <link rel="stylesheet" href="./style.css?v=20261102-contour-degrade-connect">
+  <link rel="stylesheet" href="./style.css?v=20261102-contour-interieur-v2">
   <link rel="preconnect" href="https://esm.sh" crossorigin>
   <link rel="preconnect" href="https://awmhpfofacaglewammxt.supabase.co" crossorigin>
   <script type="module" src="./app.js?v=20261031-cinq-classes-v1"></script>
@@ -19,6 +19,17 @@
 <script type="module" src="./join-avatar.js?v=20261027avatars2"></script>
 </head>
 <body>
+  <!-- Filtres de contour INTERIEUR : sans agrandir les lettres Connect. -->
+  <svg aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute;overflow:hidden" xmlns="http://www.w3.org/2000/svg"><defs>
+    <filter id="connect-contour-interieur" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+      <feMorphology in="SourceAlpha" operator="erode" radius="2.7" result="interieur"/>
+      <feComposite in="SourceGraphic" in2="interieur" operator="out"/>
+    </filter>
+    <filter id="connect-contour-interieur-compact" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+      <feMorphology in="SourceAlpha" operator="erode" radius="1.45" result="interieur"/>
+      <feComposite in="SourceGraphic" in2="interieur" operator="out"/>
+    </filter>
+  </defs></svg>
   <main class="shell">
     <header class="topbar">
       <span class="brand">Math’as <em>Connect</em></span><div class="student-entry-brand"><img src="./assets/brand/mathas-wordmark.webp" alt="Math’as" width="840" height="280"><span>Connect</span></div>
