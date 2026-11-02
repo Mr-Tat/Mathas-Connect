@@ -1,0 +1,37 @@
+name: Objectif record - écritures atomiques TEST sur PostgreSQL jetable
+on:
+  pull_request:
+    paths:
+      - 'supabase/release-candidates/objective_record_fixed_ops_test_atomic_candidate.sql'
+      - 'tests/postgres/objective-record-fixed-ops-setup.sql'
+      - 'tests/postgres/objective-record-fixed-ops-candidate.sql'
+      - '.github/workflows/objective-record-fixed-ops-candidate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  postgres-test-only:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fixed_ops_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d fixed_ops_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/fixed_ops_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer les tables fictives et les RPC XP substituées
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-fixed-ops-setup.sql
+      - name: Installer seulement le candidat de recette TEST
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/release-candidates/objective_record_fixed_ops_test_atomic_candidate.sql
+      - name: Test atomique et refus des classes réelles, rejeu, CAS, reset et rollback XP
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-fixed-ops-candidate.sql
