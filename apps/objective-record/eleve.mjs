@@ -8,11 +8,11 @@ const CLASS_TEST='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 const BASE='https://awmhpfofacaglewammxt.supabase.co';
 const KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const GAME_URLS=Object.freeze({
-  'addition-simple':['addition-ecrite-simple','https://mr-tat.github.io/CE-Addition-simple/essai-mode-score-3-vies.html'],
-  'addition-multiple':['addition-ecrite-multiple','https://mr-tat.github.io/addition-ecrite-multiple/essai-objectif-record-3-vies.html'],
-  'soustraction':['soustraction-ecrite-simple','https://mr-tat.github.io/soustraction-ecrite/essai-objectif-record-3-vies.html'],
-  'multiplication':['multiplication-ecrite-simple','https://mr-tat.github.io/Multiplication-simple/essai-objectif-record-3-vies.html'],
-  'melange':['melange-calculs-ecrits','https://mr-tat.github.io/Melange-calculs-ecrits-1/essai-objectif-record-3-vies.html']
+  'addition-simple':['addition-ecrite-simple','./engines/addition-simple/essai-mode-score-3-vies.html'],
+  'addition-multiple':['addition-ecrite-multiple','./engines/addition-multiple/essai-objectif-record-3-vies.html'],
+  'soustraction':['soustraction-ecrite-simple','./engines/soustraction/essai-objectif-record-3-vies.html'],
+  'multiplication':['multiplication-ecrite-simple','./engines/multiplication/essai-objectif-record-3-vies.html'],
+  'melange':['melange-calculs-ecrits','./engines/melange/essai-objectif-record-3-vies.html']
 });
 const $=id=>document.getElementById(id);
 const params=new URL(location.href).searchParams;
