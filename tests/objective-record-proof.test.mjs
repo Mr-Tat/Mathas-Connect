@@ -95,3 +95,43 @@ test('règles arithmétiques adaptées par application et session issue du serve
  const s={...fixture(['add'],2,'three-lives',4),appKey:'unknown-game'};
  assert.equal(verifyServerTranscript(s,pack(s,[true,true,true,true])),null);
 });
+
+test('séries scolaires 4 / 10 / 20 : 5 moteurs, jalons uniquement depuis les réponses vérifiées',()=>{
+ const games=[
+  ['addition-ecrite-simple',['add']],
+  ['addition-ecrite-multiple',['add']],
+  ['soustraction-ecrite-simple',['sub']],
+  ['multiplication-ecrite-simple',['mul']],
+  ['melange-calculs-ecrits',['add','sub','mul']]
+ ];
+ for(const [appKey,ops] of games)for(const count of [4,10,20]){
+  const session={...fixture(ops,2,'classic',count),appKey,total:count,
+   operations:appKey==='melange-calculs-ecrits'?ops:[]};
+  const perfect=verifyServerTranscript(session,pack(session,Array(count).fill(true)));
+  assert.ok(perfect,appKey+' '+count);
+  assert.equal(perfect.score,count);
+  assert.equal(perfect.endedBy,'question-limit');
+  assert.equal(perfect.trophyEligible,false);
+  assert.deepEqual(perfect.candidateRecordMilestones,
+   count===4?['classic:4:perfect']:
+   count===10?['classic:10:pass','classic:10:bonus']:
+   ['classic:20:pass','classic:20:bonus']);
+  const partially=verifyServerTranscript(session,pack(session,Array.from({length:count},(_,i)=>i!==0)));
+  assert.ok(partially);
+  assert.equal(partially.score,count-1);
+  assert.deepEqual(partially.candidateRecordMilestones,
+   count===4?[]:count===10?['classic:10:pass']:['classic:20:pass']);
+  assert.equal(verifyServerTranscript(session,pack(session,Array(count-1).fill(true))),null);
+  assert.equal(verifyServerTranscript({...session,total:count===4?10:4},pack(session,Array(count).fill(true))),null);
+  assert.equal(verifyServerTranscript({...session,total:null},pack(session,Array(count).fill(true))),null);
+  assert.equal(verifyServerTranscript(session,{...pack(session,Array(count).fill(true)),score:count}),null);
+ }
+});
+test('les limites des parties 3 vies et Mort subite ne changent pas avec le contrat classique',()=>{
+ const s=fixture(['add'],2,'three-lives',12);
+ assert.equal(verifyServerTranscript({...s,total:10},pack(s,Array(12).fill(true))),null);
+ assert.ok(verifyServerTranscript(s,pack(s,Array(12).fill(true))));
+ const sudden=fixture(['add'],2,'sudden',12);
+ assert.equal(verifyServerTranscript({...sudden,total:4},pack(sudden,Array(12).fill(true))),null);
+ assert.equal(verifyServerTranscript(sudden,pack(sudden,[false,true])),null);
+});
