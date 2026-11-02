@@ -51,7 +51,7 @@ export function createAtomicTestRecorder({classId,appKey,subject,storage,send,re
  }
  function onSnapshot(event){
   if(!isCurrent()||!version||!event||pending)return;
-  const terminal=(event.mode==='classic'&&event.phase==='finished')||(event.mode==='sudden'&&event.phase==='ended');
+  const terminal=event.phase==='ended';
   if(!terminal){
    if(ended||!runId)runId=uuid();
    ended=false;return;
