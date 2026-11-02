@@ -187,11 +187,12 @@ test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et repr
   await new Promise(ok=>http.listen(0,'127.0.0.1',ok));
   const host='http://127.0.0.1:'+http.address().port;
   const ctx=await browser.newContext({viewport:{width:390,height:740},reducedMotion:'reduce'});
-  const responses=[];
+  const responses=[],visited=[];
   try{
    const jsStub="export function createClient(){return {auth:{getSession:async()=>({data:{session:{user:{id:'"+AUTH+"',is_anonymous:true},access_token:'FAKE_STUDENT'}}})}}}";
    await ctx.route('**/*',async route=>{
     const uri=route.request().url();
+    visited.push(uri.slice(0,200));
     if(uri.startsWith(host))return route.continue();
     if(uri.startsWith('https://esm.sh/'))return route.fulfill({status:200,contentType:'application/javascript',
       headers:{'access-control-allow-origin':'*'},body:jsStub});
@@ -221,7 +222,7 @@ test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et repr
     const frames=page.frames().map(f=>f.url());
     throw new Error('Soustraction iframe absent: '+JSON.stringify({
      page:page.url(),body:body.slice(0,1200),frames,
-     errors,actions:responses.map(x=>({action:x.action,ok:x.body?.ok,error:x.body?.error}))
+     errors,visited:visited.slice(-40),actions:responses.map(x=>({action:x.action,ok:x.body?.ok,error:x.body?.error}))
     })+'; '+String(e));
    }
    await frame.locator('body').evaluate(()=>window.__setLastWork({label:'Calculs · Niveau 1',score:'4/4',rulerUsed:false}));
