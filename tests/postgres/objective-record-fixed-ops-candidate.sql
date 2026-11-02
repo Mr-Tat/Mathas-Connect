@@ -44,6 +44,15 @@ BEGIN
  EXCEPTION WHEN OTHERS THEN
   IF SQLERRM<>'invalid_result' THEN RAISE;END IF;
  END;
+ -- A foreign-class student cannot gain TEST XP even if a privileged caller lies about p_class.
+ BEGIN
+  PERFORM public.connect_objective_record_test_fixed_v1(
+   '99999999-9999-4999-8999-999999999999',class_id,app,
+   '77777777-7777-4777-8777-777777777777',0,0,'classic',1,4,4);
+  RAISE EXCEPTION 'unexpected_cross_class_credit_success';
+ EXCEPTION WHEN OTHERS THEN
+  IF SQLERRM<>'not_test_subject' THEN RAISE;END IF;
+ END;
  -- Simulated failure in XP sync MUST roll back receipt/state in one transaction.
  BEGIN
   PERFORM public.connect_objective_record_test_fixed_v1(student,class_id,app,
