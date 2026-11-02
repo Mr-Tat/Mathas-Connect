@@ -1,0 +1,296 @@
+/* Prototype laboratoire uniquement : aucun vrai XP, trophée ou résultat Connect. */
+(function(){
+function labUI(){
+  const colors=["#c78a52","#b7cad9","#f6c74d"],keys=["bronze","silver","gold"];
+  const m=d=>d.hard?3.375*Math.pow(1.2,d.level-1):Math.pow(1.5,d.level-1);
+  window.MathasLabV2Update=d=>{
+    if(!d||!["classic","sudden","three-lives"].includes(d.mode))return;
+    const target=document.getElementById(d.hard?"hardSessionScore":"sessionScore")||document.getElementById(d.hard?"hardScore":"scorePill");
+    if(!target)return;
+    const unit=d.mode==="sudden"?2:d.mode==="three-lives"?1:d.total===4?4:d.total===10?3:2;
+    const value=Math.round(d.score*m(d)*unit);
+    if(target.textContent!=="Score : "+value+" pts")target.textContent="Score : "+value+" pts";
+    target.title=d.score+" calcul(s) correct(s) · score LAB";
+    if(d.hard&&d.mode==="three-lives"){
+      const meta=document.getElementById("hardSessionMeta")||document.getElementById("hardMeta");
+      if(meta){const tx=meta.textContent.replace(/\s*·\s*❤️+\s*$/,"")+" · "+"❤️".repeat(Math.max(0,d.hearts||0));if(meta.textContent!==tx)meta.textContent=tx}
+    }
+  };
+  function cup(i,done,caption){
+    const a=done?"#25232d":colors[i],b=done?"#111116":"#725530";
+    return '<span class="mlab-cup" role="img" aria-label="'+caption+(done?" obtenu":" à gagner")+'" title="'+caption+(done?" — obtenu":" — à gagner")+'"><svg viewBox="0 0 48 50" aria-hidden="true"><path d="M12 5h24v12c0 11-5 18-12 18S12 28 12 17V5Z" fill="'+a+'" stroke="'+b+'" stroke-width="2"/><path d="M13 10H5v6c0 10 6 13 12 13M35 10h8v6c0 10-6 13-12 13" stroke="'+b+'" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M22 33h4v8h-4Z" fill="'+b+'"/><path d="M14 44h20v4H14Z" fill="'+a+'" stroke="'+b+'" stroke-width="2"/></svg>'+(done?'<b aria-hidden="true">✓</b>':'')+'</span>'
+  }
+  const upd=(n,s)=>{if(n&&n.innerHTML!==s)n.innerHTML=s};
+  function trophies(){
+    // Laboratoire isolé : rendre l'entrée HARD essayable, sans changer les
+    // règles internes des niveaux HARD ni les jeux officiels GitHub/Connect.
+    if(window.__mathasThreeLivesDemo){
+      document.querySelectorAll('#menuScreen option[value="__hard__"],#menuScreen .hard-option,#menuScreen .level-option.hard').forEach(el=>{
+        if(el.disabled)el.disabled=false;
+        el.classList.remove('progress-locked');
+        el.removeAttribute('aria-disabled');
+        if(el.title?.includes('Débloque HARD'))el.title='HARD accessible en essai isolé du laboratoire';
+      });
+    }
+    let t;try{t=window.MathasPoints?.readTrophies?.()}catch{return}
+    if(!t)return;
+    // Dans le pilote authentifie uniquement, la source des coupes est le
+    // registre LAB serveur (jamais le localStorage fictif du prototype).
+    let pilot=null;
+    try{pilot=window.parent?.parent?.MathasPilotState||null}catch{}
+    if(pilot?.active&&Array.isArray(pilot.trophies)){
+      const gained=new Set(pilot.trophies);
+      const mastery={4:[],10:[],20:[]};
+      for(const n of [4,10,20])for(let l=1;l<=3;l++)mastery[n].push(gained.has("mastery:"+l+":"+n));
+      t={...t,mastery,
+        sudden:[1,2,3].map(l=>gained.has("sudden:"+l)),
+        hardAwards:Object.fromEntries(keys.map((name,i)=>[name,[1,2,3].map(l=>gained.has("hard:"+l+":"+[3,5,10][i]))])),
+        scoreOne:Object.fromEntries(keys.map((name,i)=>[name,gained.has("score:"+[200,400,600][i])]))};
+    }
+    // Les cinq gabarits ont des CSS tardifs : priorite stable au texte 4/10/20.
+    document.querySelectorAll("#menuScreen .classic-count-btn[data-count],#menuScreen .countBtn[data-count]").forEach(button=>{
+      button.style.setProperty("font-size","clamp(.66rem,2.1vw,1.125rem)","important");
+      button.style.setProperty("line-height","1.12","important");
+    });
+    // La coupe de maîtrise n'est plus dans le tableau des records : elle ne
+    // doit ni élargir ses cellules, ni changer la taille des boutons 4/10/20.
+    document.querySelectorAll("#menuScreen .mathas-v535-table .mlab-mastery,#menuScreen .mlab-mastery-fallback").forEach(node=>node.remove());
+    const panel=document.querySelector("#menuScreen .mode-card.classic .mathas-series-panel")
+      ||document.querySelector("#menuScreen .mathas-series-panel");
+    // Les styles historiques du tableau peuvent etre reinjectes plus tard :
+    // verrouiller localement ce rapprochement, uniquement dans le LAB.
+    const compactSummary=document.querySelector("#menuScreen .mathas-v535-actions > .mode-card.classic > .mathas-v535-summary");
+    if(compactSummary){
+      compactSummary.style.setProperty("margin-top","6px","important");
+      compactSummary.style.setProperty("padding-top","6px","important");
+    }
+    let mastery=document.querySelector("#menuScreen .mlab-mastery-under-series");
+    if(panel){
+      if(!mastery){mastery=document.createElement("div");mastery.className="mlab-mastery-under-series"}
+      if(mastery.previousElementSibling!==panel)panel.insertAdjacentElement("afterend",mastery);
+      const selected=document.querySelector("#menuScreen #classicMaxDigits")
+        ||document.querySelector("#menuScreen #classicLevel")
+        ||document.querySelector("#menuScreen #levelSelect");
+      const text=selected?.selectedOptions?.[0]?.textContent||"";
+      const parsed=text.match(/(?:Niveau|Niv\.?)\s*([123])/i);
+      const numeric=Number(selected?.value);
+      // En Addition/Soustraction, les valeurs natives sont des chiffres
+      // (2/3/4) ; en Multiplication/Mélange ce sont les niveaux (1/2/3).
+      const fallback=selected?.id==="classicMaxDigits"
+        ?(numeric>=2&&numeric<=4?numeric-1:1)
+        :(numeric>=1&&numeric<=3?numeric:1);
+      const level=parsed?Number(parsed[1]):fallback;
+      const done=[4,10,20].every(n=>t.mastery?.[n]?.[level-1]===true);
+      upd(mastery,cup(level-1,done,"Coupe de maîtrise niveau "+level+" : 4/4, 10/10 et 20/20"));
+    }else{
+      mastery?.remove();
+    }
+    const btn=document.getElementById("startSudden")||document.getElementById("suddenBtn");
+    if(btn){
+      let meta=btn.querySelector(".score-mode-meta");
+      if(!meta){
+        meta=document.createElement("span");meta.className="score-mode-meta";
+        const oldBonus=btn.querySelector(".score-mode-bonus");
+        if(oldBonus)meta.appendChild(oldBonus);
+        btn.appendChild(meta);
+      }
+      let slot=btn.querySelector(":scope > .mlab-sudden");if(!slot){slot=document.createElement("span");slot.className="mlab-sudden";btn.appendChild(slot)}
+      upd(slot,keys.map((_,i)=>cup(i,t.sudden?.[i]===true,"Mort subite niveau "+(i+1)+" : 25 calculs")).join(""));
+      let bonus=btn.querySelector(".score-mode-bonus");
+      if(!bonus){bonus=document.createElement("span");bonus.className="score-mode-foot score-mode-bonus";meta.prepend(bonus)}
+      if(bonus.textContent!=="Score ×2")bonus.textContent="Score ×2";
+      if(btn.getAttribute("aria-label")?.includes("20 pour cent"))btn.setAttribute("aria-label","Mort subite · Score ×2");
+    }
+    // Le mode 3 vies n'a pas de trophée : inutile de répéter "Sans trophée"
+    // dans une sous-carte sombre. La seule annotation reste le crédit XP.
+    const three=document.getElementById("startThreeLives");
+    if(three&&!three.querySelector(".score-mode-meta")){
+      const meta=document.createElement("span");meta.className="score-mode-meta";three.appendChild(meta);
+    }
+    three?.querySelectorAll(".score-mode-foot:not(.score-mode-bonus)").forEach(node=>node.remove());
+    // Quelques moteurs retirent un conteneur lors de la normalisation du menu.
+    // Récréer seulement le badge XP fictif en mode Connect simulé, sans appel réseau.
+    let simulation=null;
+    try{simulation=window.parent?.document?.getElementById("xp-preview-mode")?.value||null}catch{}
+    if(simulation){
+      for(const [button,value] of [[three,10],[btn,20]]){
+        const meta=button?.querySelector(".score-mode-meta");
+        if(!meta)continue;
+        let xp=meta.querySelector(".score-mode-detail");
+        if(simulation==="free"){xp?.remove();continue}
+        if(!xp){xp=document.createElement("span");xp.className="score-mode-detail";meta.appendChild(xp)}
+        xp.textContent="Reste "+(simulation==="zero"?0:value)+" XP";
+      }
+    }
+    // Dans le pilote Connect, le serveur renvoie les plafonds restants pour
+    // le niveau et les operations actuellement choisis. Jamais d'estimation locale.
+    if(pilot?.active&&pilot.rights){
+      const rights=pilot.rights;
+      const select=document.querySelector("#menuScreen #classicMaxDigits")
+        ||document.querySelector("#menuScreen #classicLevel")
+        ||document.querySelector("#menuScreen #levelSelect");
+      const title=select?.selectedOptions?.[0]?.textContent||"";
+      const m=title.match(/(?:Niveau|Niv\.?)\s*([123])/i);
+      const v=Number(select?.value);
+      const current=m?Number(m[1]):select?.id==="classicMaxDigits"&&v>=2&&v<=4?v-1:v;
+      if(current===rights.level){
+        document.querySelectorAll("#menuScreen .classic-count-btn[data-count],#menuScreen .countBtn[data-count]").forEach(button=>{
+          const amount=rights.classic?.[button.getAttribute("data-count")];
+          if(!Number.isSafeInteger(amount))return;
+          let line=button.querySelector(".classic-xp-remaining");
+          if(!line){line=document.createElement("span");line.className="classic-xp-remaining";button.appendChild(line)}
+          line.textContent="Reste "+amount+" XP";
+        });
+        for(const [button,amount] of [[three,rights.threeLives],[btn,rights.sudden]]){
+          if(!button||!Number.isSafeInteger(amount))continue;
+          const meta=button.querySelector(".score-mode-meta");
+          if(!meta)continue;
+          let line=meta.querySelector(".score-mode-detail");
+          if(!line){line=document.createElement("span");line.className="score-mode-detail";meta.appendChild(line)}
+          line.textContent="Reste "+amount+" XP";
+        }
+      }
+    }
+    // Trois coupes de score (200, 400 et 600 points) dans la carte du score.
+    const scoreCard=document.querySelector("#menuScreen #mathasPointsQuick .mathas-points-quick-item--best");
+    if(scoreCard){
+      let scoreSlot=scoreCard.querySelector(".mlab-score-awards");
+      if(!scoreSlot){scoreSlot=document.createElement("span");scoreSlot.className="mlab-score-awards";scoreCard.appendChild(scoreSlot)}
+      upd(scoreSlot,keys.map((c,i)=>cup(i,t.scoreOne?.[c]===true,"Défi de score : "+[200,400,600][i]+" points sur une partie")).join(""));
+
+    }
+    document.querySelectorAll("#hardMenuScreen .hard-level-card,#hardMenu .hard-level-card,#hardMenu .hard-card").forEach((card,i)=>{
+      const level=Number((card.querySelector("h3")?.textContent||"").match(/[123]/)?.[0]||i+1);
+      if(level<1||level>3)return;
+      let slot=card.querySelector(".mlab-hard");if(!slot){slot=document.createElement("div");slot.className="mlab-hard";card.appendChild(slot)}
+      upd(slot,keys.map((c,k)=>cup(k,t.hardAwards?.[c]?.[level-1]===true,"HARD "+level+" · "+[3,5,10][k]+" réussites Mort subite")).join(""));
+    });
+    const note=document.querySelector("#hardMenuScreen .hard-welcome-v6,#hardMenu .hard-welcome-v6");
+    if(note?.textContent.includes("La faute est toujours fatale"))note.textContent="Deux défis HARD : 3 vies ou Mort subite.";
+    // L'ancien CSS des cinq moteurs est très spécifique ; les indicateurs
+    // portent leur taille directement, pour garder partout la réduction de 40 %.
+    document.querySelectorAll("#menuScreen .mlab-cup,#hardMenuScreen .mlab-cup,#hardMenu .mlab-cup").forEach(el=>{
+      const mastery=!!el.closest(".mlab-mastery-under-series");
+      el.style.setProperty("width",mastery?"18px":"16px","important");
+      el.style.setProperty("height",mastery?"20px":"18px","important");
+      el.style.setProperty("min-width",mastery?"18px":"16px","important");
+      el.style.setProperty("min-height",mastery?"20px":"18px","important");
+      el.style.setProperty("flex","0 0 auto","important");
+    });
+    // La sous-zone transparente doit primer sur les styles natifs et sur
+    // certaines règles du panneau de démonstration injectées plus tard.
+    document.querySelectorAll("#menuScreen #startThreeLives .score-mode-meta,#menuScreen #startSudden .score-mode-meta,#menuScreen #suddenBtn .score-mode-meta").forEach(meta=>{
+      for(const key of ["background","background-image","box-shadow","outline"])meta.style.setProperty(key,key==="background"?"transparent":key==="background-image"?"none":"none","important");
+      meta.style.setProperty("border","0","important");
+      meta.style.setProperty("position","static","important");
+      meta.style.setProperty("width","auto","important");
+      meta.style.setProperty("min-height","0","important");
+      meta.style.setProperty("padding","0","important");
+    });
+  }
+  const css=document.createElement("style");
+  css.textContent=[
+   ".mlab-cup{width:16px;height:18px;display:inline-flex;position:relative;flex:none;vertical-align:middle;margin:0 1px;filter:drop-shadow(0 1px 2px #0009)}",
+   ".mlab-cup svg{display:block;width:100%;height:100%}",
+   ".mlab-cup b{position:absolute;right:-2px;bottom:-2px;border-radius:50%;background:#173b2e;color:#bcffd0;border:1px solid #6cba8c;width:10px;height:10px;font:900 8px system-ui;display:grid;place-items:center}",
+   "#menuScreen .mlab-mastery-under-series{display:flex!important;align-items:center!important;justify-content:flex-end!important;grid-column:1/-1!important;flex:0 0 100%!important;min-width:0!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;min-height:34px!important;padding:1px clamp(18px,2vw,32px) 2px!important;margin:2px 0 0!important;pointer-events:none}",
+   "#menuScreen .mlab-mastery-under-series .mlab-cup{width:18px;height:20px;margin:0;pointer-events:auto}",
+   ".mlab-mastery-fallback{display:flex;align-items:center;justify-content:flex-end;gap:5px;margin:6px 0 0;color:#c3d2e4;font:700 11px system-ui}",
+   ".mlab-sudden,.mlab-hard,.mlab-score-awards{display:flex;align-items:center;justify-content:flex-end;gap:2px}",
+   "#menuScreen .mode-card.sudden .score-mode-options > button{position:relative!important;isolation:isolate!important;padding-bottom:29px!important;overflow:visible!important}",
+   "#menuScreen .mode-card.sudden .score-mode-options > button .score-mode-meta,#menuScreen .mode-card.sudden .score-mode-options > button .score-mode-meta:has(>.score-mode-detail){position:static!important;display:flex!important;align-items:center!important;justify-content:center!important;flex:0 0 auto!important;width:auto!important;max-width:100%!important;min-width:0!important;min-height:0!important;margin:2px 0 0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;outline:0!important;gap:0!important;overflow:visible!important}",
+   "#menuScreen .mode-card.sudden #startThreeLives .score-mode-meta,#menuScreen .mode-card.sudden #startSudden .score-mode-meta,#menuScreen .mode-card.sudden #suddenBtn .score-mode-meta{background:transparent!important;background-image:none!important;border:0!important;box-shadow:none!important;outline:0!important;min-height:0!important;padding:0!important;position:static!important;width:auto!important;min-width:0!important}",
+   "#menuScreen .mode-card.sudden .score-mode-options > button .score-mode-detail{position:absolute!important;bottom:6px!important;right:7px!important;left:auto!important;max-width:none!important;white-space:nowrap!important;font-size:clamp(8px,.8vw,10px)!important;font-weight:500!important;line-height:1.15!important;text-align:right!important;opacity:.75!important}",
+   "#menuScreen .mode-card.sudden .score-mode-options > #startSudden .score-mode-detail,#menuScreen .mode-card.sudden .score-mode-options > #suddenBtn .score-mode-detail{right:69px!important}",
+   "#menuScreen .mode-card.sudden .score-mode-options > button .score-mode-foot:not(.score-mode-bonus){display:none!important}",
+   "#menuScreen .mode-card.sudden .score-mode-options > button .score-mode-bonus{position:relative!important;inset:auto!important;margin:1px auto 0!important}",
+   "#menuScreen #startSudden > .mlab-sudden,#menuScreen #suddenBtn > .mlab-sudden{position:absolute!important;bottom:4px!important;right:7px!important;z-index:5!important;margin:0!important;flex-wrap:nowrap!important;pointer-events:none}",
+   "#hardMenuScreen .hard-level-card,#hardMenu .hard-level-card,#hardMenu .hard-card{position:relative!important;padding-bottom:38px!important}",
+   "#hardMenuScreen .mlab-hard,#hardMenu .mlab-hard{position:absolute!important;right:9px!important;bottom:6px!important;z-index:4!important;margin:0!important;flex-wrap:nowrap!important;pointer-events:none}",
+   "#menuScreen #mathasPointsQuick .mathas-points-quick-item--best{position:relative!important}",
+   "#menuScreen #mathasPointsQuick .mlab-score-awards{position:absolute!important;bottom:7px!important;right:9px!important;z-index:4!important;white-space:nowrap!important;pointer-events:none}",
+   "@media(max-width:370px){#menuScreen .mode-card.sudden .score-mode-options > #startSudden .score-mode-detail,#menuScreen .mode-card.sudden .score-mode-options > #suddenBtn .score-mode-detail{right:63px!important}}",
+   ".mlab-sudden,.mlab-hard,.mlab-score-awards{flex-wrap:nowrap}",
+   "#hardMenuScreen .mlab-pair,#hardMenu .mlab-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;width:100%;min-width:0}",
+   ".mlab-pair>button{box-sizing:border-box;min-width:0;width:100%;min-height:54px;padding:9px 3px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font:900 .8rem system-ui}",
+   ".mlab-pair>.mlab-three{background:linear-gradient(155deg,#754287,#502963)!important;border:1px solid #b28ace!important}",
+   ".mlab-pair>.hard-sudden,.mlab-pair>.hard-start[data-mode='sudden']{background:linear-gradient(155deg,#a32b47,#7e253b)!important;border:1px solid #ec889a!important}",
+   ".mlab-pair>button:disabled{opacity:.4;filter:grayscale(.5);cursor:not-allowed}",
+   "@media(max-width:380px){.mlab-cup{width:23px;height:25px}.mlab-pair>button{font-size:.68rem}}",
+   "/* LAB V5 : panneau trophées plus discret, sans transformer la surface cliquable ni le Platine. */",
+   "#menuScreen #mathasTrophiesStrip:not(.is-platinum){padding-top:2px!important}",
+   "#menuScreen #mathasTrophiesStrip:not(.is-platinum) .mathas-trophies-badges{gap:6px!important}",
+   "#menuScreen #mathasTrophiesStrip:not(.is-platinum) .mathas-trophy-badge{min-height:58px!important;padding:7px 3px 6px!important;gap:3px!important;border-radius:12px!important}",
+   "body:not(.light):not(.light-mode) #menuScreen #mathasTrophiesStrip:not(.is-platinum) .mathas-trophy-badge{background:rgba(104,130,149,.10)!important;border-color:rgba(139,174,198,.16)!important}",
+   "#menuScreen #mathasTrophiesStrip:not(.is-platinum) .mathas-trophy-name{font-size:clamp(.63rem,1.02vw,.77rem)!important;font-weight:900!important;letter-spacing:.02em!important}",
+   "#menuScreen #mathasTrophiesStrip:not(.is-platinum) .mathas-trophy-face{gap:5px!important}",
+   "#menuScreen #mathasTrophiesStrip:not(.is-platinum) .mathas-trophy-count{font-size:clamp(.96rem,1.38vw,1.15rem)!important}",
+   "#menuScreen #mathasTrophiesStrip:not(.is-platinum) .mathas-trophy-medal{font-size:clamp(1rem,1.47vw,1.18rem)!important}",
+   "#menuScreen #mathasTrophiesStrip:not(.is-platinum) .mathas-trophies-footer{margin:6px 0 0!important;padding:5px 6px 5px!important;gap:4px!important;border-top-color:rgba(134,191,214,.15)!important}",
+   "#menuScreen #mathasTrophiesStrip:not(.is-platinum) .mathas-trophies-total{font-size:1.09rem!important}",
+   "#menuScreen #mathasTrophiesStrip:not(.is-platinum) .mathas-trophies-total small{font-size:.72rem!important}",
+   "#menuScreen #mathasTrophiesStrip:not(.is-platinum) .mathas-trophies-hint{font-size:clamp(.56rem,.98vw,.68rem)!important;font-weight:850!important;letter-spacing:.012em!important}",
+   "@media(max-width:600px){html.mathas-handheld-portrait #menuScreen .mathas-v531-results > #mathasTrophiesStrip:not(.is-platinum) .mathas-trophies-badges{gap:3px!important}html.mathas-handheld-portrait #menuScreen .mathas-v531-results > #mathasTrophiesStrip:not(.is-platinum) .mathas-trophy-badge{min-height:24px!important;padding:3px 6px!important;gap:4px!important;border-radius:7px!important}html.mathas-handheld-portrait #menuScreen .mathas-v531-results > #mathasTrophiesStrip:not(.is-platinum) .mathas-trophy-name{font-size:clamp(.58rem,2.2vw,.68rem)!important;letter-spacing:0!important}html.mathas-handheld-portrait #menuScreen .mathas-v531-results > #mathasTrophiesStrip:not(.is-platinum) .mathas-trophy-count{font-size:clamp(.69rem,2.65vw,.86rem)!important}html.mathas-handheld-portrait #menuScreen .mathas-v531-results > #mathasTrophiesStrip:not(.is-platinum) .mathas-trophy-medal{font-size:clamp(.78rem,3vw,.92rem)!important}html.mathas-handheld-portrait #menuScreen .mathas-v531-results > #mathasTrophiesStrip:not(.is-platinum) .mathas-trophies-footer{padding:3px 1px 1px!important;margin:3px 0 0!important}}",
+   "/* LAB V4 : typography, trophy spacing, burgundy three-lives accents. */",
+   "html body #menuScreen .classic-count-btn[data-count],html body #menuScreen .countBtn[data-count]{font-size:clamp(.66rem,2.1vw,1.125rem)!important;line-height:1.12!important}",
+   "#menuScreen .mlab-mastery-under-series{flex:0 0 auto!important;height:23px!important;min-height:23px!important;max-height:23px!important;padding-top:0!important;padding-bottom:0!important;margin-top:0!important}",
+   "html body #menuScreen .mathas-v535-actions > .mode-card.classic > .mathas-v535-summary{margin-top:6px!important;padding-top:6px!important}",
+   "#menuScreen .mode-card.sudden .score-mode-options > #startThreeLives,#menuScreen #startThreeLives{background:linear-gradient(165deg,#602d49 0%,#371c35 100%)!important;border-color:#a16c86!important;box-shadow:inset 0 1px 0 #ffffff17,inset 0 -2px 0 #281423b8,0 4px 0 #281826,0 7px 13px #0004!important}",
+   "#hardMenuScreen .mlab-pair > .mlab-three,#hardMenu .mlab-pair > .mlab-three{background:linear-gradient(155deg,#602d49,#371c35)!important;border-color:#a16c86!important}"
+  ].join("\n");document.body.appendChild(css);
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",trophies);else trophies();
+  setInterval(()=>{if(!document.hidden)trophies()},850);
+}
+function patch(game,kind){
+  function swap(a,b,why){const parts=game.split(a);if(parts.length!==2)throw Error(kind+" "+why+" (matches "+(parts.length-1)+")");game=parts.join(b)}
+  const hookNormal="queueMicrotask(()=>window.MathasLabV2Update?.({mode:session.mode,level:session.level,score:session.score,total:session.total??session.totalCalculs??null,ops:session.ops??null,phase,completed:session.completed??null,hearts:session.hearts??null,hard:false}));";
+  const hookHard="queueMicrotask(()=>window.MathasLabV2Update?.({mode:hardSession.mode,level:hardSession.level,score:hardSession.score,hearts:hardSession.hearts,ops:hardSession.ops??null,phase:hardPhase,hard:true}));";
+  swap("function updateBar(){","function updateBar(){"+hookNormal,"score normal");
+  const fn=kind==="mix"?"updateHardBar":"updateHardHeader";
+  swap("function "+fn+"(){","function "+fn+"(){"+hookHard,"score HARD");
+  if(kind==="mix"){
+    swap("if(mode==='sudden'&&!hardSuddenUnlocked(level))return;","if(mode==='sudden'&&!hardSuddenUnlocked(level))return;if(mode==='three-lives'&&!hardThreeUnlocked(level))return;","verrou HARD");
+    swap("hardSession={level,mode,","hardSession={level,mode,hearts:mode==='three-lives'?3:null,","vies HARD");
+    swap("if(hardSession.mode==='sudden'){hardSession.score++;const d=hardBest()","if(hardSession.mode==='three-lives')hardSession.score++;if(hardSession.mode==='sudden'){hardSession.score++;const d=hardBest()","score 3 vies");
+    swap("  markErrors(hardState,0,true);\n  if(hardSession.mode==='sudden'){",
+       "  if(hardSession.mode==='three-lives'){hardSession.hearts--;hardSession.completed++;if(hardSession.hearts===0){hardPhase='ended';$('hardPrimary').textContent='Retour au menu HARD';setFeedbackText('Trois vies perdues · Score : '+hardSession.score,'bad',true)}else{hardPhase='review';$('hardPrimary').textContent='Calcul suivant';setFeedbackText('Une vie perdue · '+hardSession.hearts+' restantes','bad',true)}updateHardBar();return}\n  markErrors(hardState,0,true);\n  if(hardSession.mode==='sudden'){","troisième erreur");
+    const re=/<button class="hard-sudden" \$\{suddenOpen\?'':'disabled'\}>💀 Mort subite<\/button>/g;
+    if((game.match(re)||[]).length!==1)throw Error("mix button not found");
+    game=game.replace(re,'<div class="mlab-pair"><button type="button" class="mlab-three" ${challengeOpen?\'\':\'disabled\'}>❤️ 3 vies</button><button class="hard-sudden" ${suddenOpen?\'\':\'disabled\'}>💀 Mort subite</button></div>');
+    swap("card.querySelector('.hard-sudden').onclick=()=>startHard(l,'sudden');","card.querySelector('.hard-sudden').onclick=()=>startHard(l,'sudden');card.querySelector('.mlab-three').onclick=()=>startHard(l,'three-lives');","clic HARD");
+    swap("const label=hardSession.mode==='training'?'🧠 Entraînement':hardSession.mode==='challenge'?'🎯 5 calculs':'💀 Mort subite';","const label=hardSession.mode==='training'?'🧠 Entraînement':hardSession.mode==='three-lives'?'❤️ 3 vies':hardSession.mode==='challenge'?'🎯 5 calculs':'💀 Mort subite';","titre HARD");
+  }else{
+    swap("if(mode==='sudden'&&!hardSuddenUnlocked(spec.level))return;","if(mode==='sudden'&&!hardSuddenUnlocked(spec.level))return;if(mode==='three-lives'&&!hardThreeUnlocked(spec.level))return;","verrou HARD");
+    if(kind==="mul"){
+      swap("hardSession={...spec,mode,","hardSession={...spec,mode,hearts:mode==='three-lives'?3:null,","vies HARD");
+      swap("if(hardSession.mode==='sudden'){hardSession.score++;saveHardBest()}","if(hardSession.mode==='three-lives')hardSession.score++;if(hardSession.mode==='sudden'){hardSession.score++;saveHardBest()}","score 3 vies");
+      swap("    markHardErrors();\n    if(hardSession.mode==='sudden'){",
+      "    if(hardSession.mode==='three-lives'){hardSession.hearts--;hardSession.completed++;if(hardSession.hearts===0){hardPhase='ended';setHardEnabled(false);hardPrimary.textContent='Retour au menu HARD';setHardFeedback('Trois vies perdues · Score : '+hardSession.score)}else{hardPhase='review';setHardEnabled(false);hardPrimary.textContent='Calcul suivant';setHardFeedback('Une vie perdue · '+hardSession.hearts+' restantes')}updateHardHeader();return}\n    markHardErrors();\n    if(hardSession.mode==='sudden'){","troisième erreur");
+      const re=/<button class="hard-sudden" \$\{suddenOpen\?'':'disabled'\}>💀 Mort subite<\/button>/g;
+      if((game.match(re)||[]).length!==1)throw Error("mul button not found");
+      game=game.replace(re,'<div class="mlab-pair"><button class="mlab-three" ${challengeOpen?\'\':\'disabled\'}>❤️ 3 vies</button><button class="hard-sudden" ${suddenOpen?\'\':\'disabled\'}>💀 Mort subite</button></div>');
+      swap("c.querySelector('.hard-sudden').onclick=()=>startHard(spec,'sudden');","c.querySelector('.hard-sudden').onclick=()=>startHard(spec,'sudden');c.querySelector('.mlab-three').onclick=()=>startHard(spec,'three-lives');","clic HARD");
+      swap("const label=hardSession.mode==='training'?'🧠 Entraînement':hardSession.mode==='challenge'?'🎯 5 calculs':'💀 Mort subite';","const label=hardSession.mode==='training'?'🧠 Entraînement':hardSession.mode==='three-lives'?'❤️ 3 vies':hardSession.mode==='challenge'?'🎯 5 calculs':'💀 Mort subite';","titre HARD");
+    }else{
+      swap("score:0,completed:0,spec,currentFirstTry:true","score:0,completed:0,spec,currentFirstTry:true,hearts:mode==='three-lives'?3:null","vies HARD");
+      swap("if(hardSession.mode==='sudden'){hardSession.score++;saveBest()}","if(hardSession.mode==='three-lives')hardSession.score++;if(hardSession.mode==='sudden'){hardSession.score++;saveBest()}","score 3 vies");
+      swap("    markHardErrors();\n    if(hardSession.mode==='sudden'){",
+      "    if(hardSession.mode==='three-lives'){hardSession.hearts--;hardSession.completed++;if(hardSession.hearts===0){hardPhase='ended';setHardEnabled(false);clearBtn.disabled=true;primary.textContent='Retour au menu HARD';setFeedback('Trois vies perdues · Score : '+hardSession.score,'bad')}else{hardPhase='review';setHardEnabled(false);clearBtn.disabled=true;primary.textContent='Calcul suivant';setFeedback('Une vie perdue · '+hardSession.hearts+' restantes','bad')}updateHardHeader();return}\n    markHardErrors();\n    if(hardSession.mode==='sudden'){","troisième erreur");
+      const re=/<button type="button" class="hard-start" data-level="\$\{l\.level\}" data-mode="sudden" \$\{suddenOpen\?'':'disabled'\}>💀 Mort subite<\/button>/g;
+      if((game.match(re)||[]).length!==1)throw Error(kind+" button not found");
+      game=game.replace(re,'<div class="mlab-pair"><button type="button" class="hard-start mlab-three" data-level="${l.level}" data-mode="three-lives" ${challengeOpen?\'\':\'disabled\'}>❤️ 3 vies</button><button type="button" class="hard-start" data-level="${l.level}" data-mode="sudden" ${suddenOpen?\'\':\'disabled\'}>💀 Mort subite</button></div>');
+      swap("const modeLabel=hardSession.mode==='training'?'🧠 Entraînement':hardSession.mode==='challenge'?'🎯 5 calculs':'💀 Mort subite';","const modeLabel=hardSession.mode==='training'?'🧠 Entraînement':hardSession.mode==='three-lives'?'❤️ 3 vies':hardSession.mode==='challenge'?'🎯 5 calculs':'💀 Mort subite';","titre HARD");
+    }
+  }
+  // Le moteur original recalcule les verrous fréquemment : dans cette page
+  // d'essai seulement, ouvrir HARD sans altérer la progression sauvegardée.
+  game=game.replaceAll("h.disabled=!p.hard;h.textContent=hardLabel(!p.hard)",
+    "h.disabled=!p.hard&&!window.__mathasThreeLivesDemo;h.textContent=hardLabel(!p.hard&&!window.__mathasThreeLivesDemo)");
+  game=game.replaceAll("hb.disabled=!p.hard;","hb.disabled=!p.hard&&!window.__mathasThreeLivesDemo;");
+  game=game.replaceAll("hb.classList.toggle('progress-locked',!p.hard)","hb.classList.toggle('progress-locked',!p.hard&&!window.__mathasThreeLivesDemo)");
+  game=game.replaceAll("hb.textContent=hardLabel(!p.hard)","hb.textContent=hardLabel(!p.hard&&!window.__mathasThreeLivesDemo)");
+  swap("</body>","<scr"+"ipt>("+labUI.toString()+")();</scr"+"ipt></body>","chargement");
+  return game;
+}
+window.MathasLabV2={patch};
+})();

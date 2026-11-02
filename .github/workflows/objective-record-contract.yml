@@ -7,6 +7,7 @@ on:
       - 'tests/objective-record-proof.test.mjs'
       - 'tests/objective-record-release-routing.test.mjs'
       - 'tests/objective-record-student-host.test.mjs'
+      - 'tests/objective-record-engine-vendor.test.mjs'
       - 'docs/integrations/OBJECTIF_RECORD_AUDIT_CONTRAT_CANDIDAT_20261101.md'
       - '.github/workflows/objective-record-contract.yml'
   workflow_dispatch:
@@ -21,4 +22,4 @@ jobs:
         with:
           node-version: '22'
       - name: Tests contrat fail-closed et compléments (aucune connexion)
-        run: node --test tests/objective-record-contract.test.mjs tests/objective-record-proof.test.mjs tests/objective-record-release-routing.test.mjs tests/objective-record-student-host.test.mjs
+        run: node --test tests/objective-record-contract.test.mjs tests/objective-record-proof.test.mjs tests/objective-record-release-routing.test.mjs tests/objective-record-student-host.test.mjs tests/objective-record-engine-vendor.test.mjs

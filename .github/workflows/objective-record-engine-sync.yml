@@ -1,0 +1,94 @@
+name: Objectif record - importer les 5 moteurs visuels figés
+on:
+  push:
+    branches: ['feat/objective-record-engines-20261102']
+    paths: ['.github/workflows/objective-record-engine-sync.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Destination Mathas Connect
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Source Addition simple (commit figé)
+        uses: actions/checkout@v4
+        with:
+          repository: Mr-Tat/CE-Addition-simple
+          ref: 69dbb5a56dcc950598d2da3494c6d7b5f273e1bc
+          path: .source/addition-simple
+          persist-credentials: false
+      - name: Source Addition multiple (commit figé)
+        uses: actions/checkout@v4
+        with:
+          repository: Mr-Tat/addition-ecrite-multiple
+          ref: 084e3988e0002f1fb53d2f23776917eb523ddf64
+          path: .source/addition-multiple
+          persist-credentials: false
+      - name: Source Soustraction (commit figé)
+        uses: actions/checkout@v4
+        with:
+          repository: Mr-Tat/soustraction-ecrite
+          ref: 2ab2600cbd409dcdad06fbd2b829200c6cc6ce69
+          path: .source/soustraction
+          persist-credentials: false
+      - name: Source Multiplication (commit figé)
+        uses: actions/checkout@v4
+        with:
+          repository: Mr-Tat/Multiplication-simple
+          ref: a38b4008c0bfa192d5d4ad82e01f8e3e9f2d8a2b
+          path: .source/multiplication
+          persist-credentials: false
+      - name: Source Mélange (commit figé)
+        uses: actions/checkout@v4
+        with:
+          repository: Mr-Tat/Melange-calculs-ecrits-1
+          ref: 8ae21ae3537e41bace75f360216f1865ea855fee
+          path: .source/melange
+          persist-credentials: false
+      - name: Copier moteurs, scripts et illustrations à l'identique
+        shell: bash
+        run: |
+          set -euo pipefail
+          for game in addition-simple addition-multiple soustraction multiplication melange; do
+            mkdir -p "apps/objective-record/engines/$game"
+            cp ".source/$game/"*.html "apps/objective-record/engines/$game/"
+            cp ".source/$game/"*.js "apps/objective-record/engines/$game/"
+            cp ".source/$game/"*.webp "apps/objective-record/engines/$game/"
+            cp ".source/$game/"*.png "apps/objective-record/engines/$game/"
+          done
+          test -s apps/objective-record/engines/addition-simple/essai-mode-score-3-vies.html
+          for game in addition-multiple soustraction multiplication melange; do
+            test -s "apps/objective-record/engines/$game/essai-objectif-record-3-vies.html"
+          done
+          # Verifier que chaque moteur a bien son vrai code de jeu.
+          test -s apps/objective-record/engines/addition-simple/game-original.html
+          for game in addition-multiple soustraction multiplication melange; do
+            test -s "apps/objective-record/engines/$game/index.html"
+          done
+      - name: Archiver les cinq versions visuelles avant remplacement
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .archive
+          (cd apps/objective-record && zip -q -r ../../.archive/MATHAS_CALCULS_ECRITS_ORIGINAUX_20261102.zip engines)
+      - name: Publier le ZIP original comme artefact de retour arrière
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathas-cinq-anciens-moteurs-20261102
+          path: .archive/MATHAS_CALCULS_ECRITS_ORIGINAUX_20261102.zip
+          retention-days: 30
+      - name: Commit uniquement des copies d'origine, sans changer les liens en production
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/objective-record/engines
+          if ! git diff --cached --quiet; then
+            git commit -m "vendor(objective-record): import original visual engines pinned to exact source commits"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
