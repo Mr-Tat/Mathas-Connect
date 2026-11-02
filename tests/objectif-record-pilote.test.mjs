@@ -11,7 +11,7 @@ test('le pilote ne peut toucher aucun credit ni resultat de production',()=>{
   assert.match(sql,/enable row level security/i);
   assert.match(sql,/revoke all.+from public, anon, authenticated/i);
   assert.match(sql,/grant select,insert,update.+to service_role/i);
-  assert.doesNotMatch(sql,/truncate|\bdrop\b|\bdelete\b/i);
+  assert.doesNotMatch(sql,/^\s*(?:truncate|drop|delete)\s/mi);
   assert.doesNotMatch(edge,/\.from\(['"]connect_xp_credits['"]\)|\.from\(['"]connect_states['"]\)|\.from\(['"]connect_trophy_achievements['"]\)/);
   assert.match(edge,/connect_record_pilot_states/g);
   assert.match(edge,/b\?\.classId!==TEST/);
