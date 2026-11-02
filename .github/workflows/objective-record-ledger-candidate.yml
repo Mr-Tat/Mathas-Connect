@@ -2,6 +2,10 @@ name: Objectif record - ledger PostgreSQL candidat (sans production)
 on:
   pull_request:
     paths:
+      - 'apps/objective-record/contract.mjs'
+      - 'apps/objective-record/server-proof.mjs'
+      - 'tests/objective-record-contract.test.mjs'
+      - 'tests/objective-record-proof.test.mjs'
       - 'supabase/release-candidates/objective_record_ledger_candidate.sql'
       - 'supabase/release-candidates/objective_record_sessions_candidate.sql'
       - 'tests/objective-record-ledger-candidate.sql'
@@ -11,6 +15,13 @@ on:
 permissions:
   contents: read
 jobs:
+  candidate-node:
+    name: preuve arithmetique 5 jeux - 4/10/20, 3 vies, mort subite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Contrat, preuves et refus de falsification
+        run: node --test tests/objective-record-contract.test.mjs tests/objective-record-proof.test.mjs
   candidate-postgres:
     name: postgres-16-disposable
     runs-on: ubuntu-latest
