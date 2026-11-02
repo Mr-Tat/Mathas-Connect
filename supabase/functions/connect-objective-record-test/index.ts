@@ -34,6 +34,15 @@ Deno.serve(async(req:Request)=>{
  // Proof start/finish do not trust a client-supplied pupil ID, score or questions.
  const proofStart=b?.action==='start-proof';
  const proofFinish=b?.action==='finish-proof';
+ const proofStartV2=b?.action==='start-proof-v2';
+ const proofFinishV2=b?.action==='finish-proof-v2';
+ const validProofStartV2=proofStartV2&&b.appKey==='addition-ecrite-simple'
+   &&[1,2,3].includes(b.level)&&[4,10,20].includes(b.total)
+   &&Object.keys(b).sort().join(',')==='action,appKey,classId,level,total';
+ const validProofFinishV2=proofFinishV2&&b.appKey==='addition-ecrite-simple'
+   &&validId(b.sessionId)&&Array.isArray(b.answers)
+   &&[4,10,20].includes(b.answers.length)
+   &&Object.keys(b).sort().join(',')==='action,answers,appKey,classId';
  const validProofStart=proofStart&&b.appKey==='addition-ecrite-simple'
    &&Object.keys(b).sort().join(',')==='action,appKey,classId';
  const validProofFinish=proofFinish&&b.appKey==='addition-ecrite-simple'
@@ -45,7 +54,7 @@ Deno.serve(async(req:Request)=>{
    &&int(b.expectedRevision,0,1000000000)&&int(b.expectedResetEpoch,0,1000000000)
    &&['classic','sudden'].includes(b.mode)&&int(b.level,1,3)&&int(b.score,0,1000)
    &&(b.mode==='classic'?([4,10,20].includes(b.total)&&b.score<=b.total):b.total===null);
- if(!b||b.classId!==TEST||(!record&&!validProofStart&&!validProofFinish))
+ if(!b||b.classId!==TEST||(!record&&!validProofStart&&!validProofFinish&&!validProofStartV2&&!validProofFinishV2))
   return fail('invalid_test_record',400);
  try{
   let studentId:string|null=null;
@@ -74,10 +83,14 @@ Deno.serve(async(req:Request)=>{
   const enabled=await one(db.from('connect_apps').select('enabled').eq('app_key',b.appKey));
   if(enabled?.enabled!==true)return fail('app_disabled',403);
 
-  if(proofStart||proofFinish){
+  if(proofStart||proofFinish||proofStartV2||proofFinishV2){
+   const start=proofStart||proofStartV2;
    const functionName=proofStart?'connect_objective_record_test_issue_add_v1':
-     'connect_objective_record_test_finish_add_v1';
+     proofStartV2?'connect_objective_record_test_issue_add_v2':
+     proofFinish?'connect_objective_record_test_finish_add_v1':
+     'connect_objective_record_test_finish_add_v2';
    const args=proofStart?{p_student:studentId,p_class:TEST}:
+     proofStartV2?{p_student:studentId,p_class:TEST,p_level:b.level,p_total:b.total}:
      {p_student:studentId,p_class:TEST,p_session:b.sessionId,p_answers:b.answers};
    const {data,error}=await db.rpc(functionName,args);
    if(error){
@@ -89,8 +102,10 @@ Deno.serve(async(req:Request)=>{
       msg==='proof_expired'?410:msg==='proof_not_found'?404:
       msg==='invalid_proof_answers'?400:503);
    }
-   if(data?.ok!==true||(proofStart?
-     (!validId(data.sessionId)||!Array.isArray(data.questions)||data.questions.length!==4):
+   if(data?.ok!==true||(start?
+     (!validId(data.sessionId)||!Array.isArray(data.questions)
+      ||data.questions.length!==(proofStart?4:b.total)
+      ||(proofStartV2&&(data.level!==b.level||data.total!==b.total))):
      (data.proofVerified!==true||!Number.isSafeInteger(data.verifiedScore)
       ||!Number.isSafeInteger(data.xp?.delta))))
      return fail('invalid_proof_response',503);
