@@ -175,12 +175,20 @@ body:has(.login-panel:not([hidden])) footer{color:#afc8d9}
 .recent-profiles-list button:hover{background:#30638c}
 #other-profile{width:100%}
 
-/* Identité visuelle : couleur exacte du rectangle de référence (uniquement le mot Connect). */
+/* Signature Connect : conserver le bleu #0256B8 au centre, avec un contour mauve -> bleu.
+   Le duplicata decoratif reste derriere les vrais caracteres pour proteger leur lisibilite. */
 .brand em,.login-brand span,.teacher-connect-suffix,.student-entry-brand span{
+  position:relative;isolation:isolate;display:inline-block;
   background:none!important;color:#0256B8!important;-webkit-text-fill-color:#0256B8!important;
   text-shadow:0 1px 0 #06111e;
 }
-.brand em::before,.login-brand span::before,.teacher-connect-suffix::before,.student-entry-brand span::before{content:none!important;display:none!important}
+.brand em::before,.login-brand span::before,.teacher-connect-suffix::before,.student-entry-brand span::before{
+  content:"Connect"!important;display:block!important;position:absolute;inset:0;z-index:-1;
+  pointer-events:none;font:inherit;letter-spacing:inherit;white-space:nowrap;text-shadow:none;
+  background:linear-gradient(90deg,#7139a8 0%,#4c42a9 47%,#2059ae 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  -webkit-text-stroke:clamp(1.5px,.065em,2.6px) transparent;
+}
 /* Sélection des comptes locaux, accessible même sur petit PC. */
 #recent-profiles[hidden],#join-form[hidden]{display:none!important}
 #recent-profiles-list button{min-height:48px;padding:12px 15px;font-size:16px;background:#215783;color:#fff;border:1px solid #689bc4}
