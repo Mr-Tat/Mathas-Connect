@@ -121,3 +121,13 @@
 
 /* Les deux statistiques de chaque application restent lisibles sur petits écrans. */
 .app-card .app-scores{white-space:pre-line}
+
+/* Logo Connect en relief 3D ; ne s'affiche que si le profil est approuve. */
+.connect-brand img.connect-wordmark-3d{
+  display:block;width:clamp(101px,14.2vw,178px);height:auto;
+  max-height:none;flex:0 0 auto;object-fit:contain;margin:0;
+}
+.connect-brand img.connect-wordmark-3d[hidden]{display:none!important}
+@media(max-width:650px){
+  .connect-brand img.connect-wordmark-3d{width:clamp(88px,27vw,132px)}
+}
