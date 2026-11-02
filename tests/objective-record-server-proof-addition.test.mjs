@@ -47,7 +47,10 @@ test('true native engine receives issued calculations and captures first submiss
  assert.match(engine,/window\.__mathasServerCertified/);
  assert.match(engine,/proofCaptured:false/);
  assert.match(engine,/MathasCertifiedAttempt\?\./);
- assert.ok(engine.indexOf('MathasCertifiedAttempt?.(')<engine.indexOf('s.firstTry=false;hadError=true'));
+ const classBranch=engine.slice(engine.indexOf('// Keep the FIRST submitted digits'),
+ engine.indexOf('function verifyCorrections()'));
+ assert.ok(classBranch.indexOf('MathasCertifiedAttempt?.(')>=0);
+ assert.ok(classBranch.indexOf('MathasCertifiedAttempt?.(')<classBranch.indexOf('s.firstTry=false;hadError=true'));
  assert.match(host,/certifiedUI\.bind\(inside\.contentWindow,doc\)/);
  assert.match(host,/certifiedUI\.onGameEvent\(event\)/);
  assert.match(host,/certifiedUI\.reset\(\)/);
@@ -63,7 +66,7 @@ test('SQL is strictly private, TEST-scoped, grades all 4 digits/carries and atom
  const sql=read('supabase/release-candidates/objective_record_addition_server_proof_candidate.sql');
  for(const term of ['ENABLE ROW LEVEL SECURITY','FROM PUBLIC,anon,authenticated',
   'TO service_role','proof_test_only','not_test_subject','v_session.expires_at<=now()',
-  'proof_replay_collision','stale_reset_epoch','v_expected_carry',
+  'proof_replay_collision','v_session.reset_epoch','v_expected_carry',
   'v_correct THEN v_score:=v_score+1',
   'public.connect_objective_record_test_fixed_v1','result=v_ack'])
   assert.ok(sql.includes(term),term);
