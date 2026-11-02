@@ -558,3 +558,23 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
 .teacher-lab-management-link:hover{background:#bee0eb}
 .teacher-lab-management-link:focus-visible{outline:3px solid #70add1;outline-offset:2px}
 @media(max-width:620px){.teacher-management-heading{align-items:flex-start}.teacher-management-actions{width:100%;margin-left:0;justify-content:flex-start}.teacher-lab-management-link{flex:1;min-width:190px}}
+
+/* Signature Connect 3D : dessin SVG vectoriel commun, face bleu #0256B8.
+   Le logo Math'as reste la source visuelle principale; anciennes regles de texte inactives. */
+.brand img.connect-wordmark-3d{
+  display:inline-block;width:110px;height:auto;vertical-align:middle;object-fit:contain;
+}
+.login-brand img.connect-wordmark-3d{
+  display:block;width:clamp(99px,13.2vw,166px);height:auto;max-height:none;flex:0 0 auto;object-fit:contain;
+}
+.teacher-logo-lockup img.connect-wordmark-3d{
+  display:block;width:clamp(100px,14.4vw,181px);height:auto;max-height:none;flex:0 0 auto;object-fit:contain;
+}
+.student-entry-brand img.connect-wordmark-3d{
+  display:block;width:clamp(102px,12.6vw,159px);height:auto;max-height:none;flex:0 0 auto;object-fit:contain;
+}
+@media(max-width:650px){
+  .login-brand img.connect-wordmark-3d{width:clamp(86px,26vw,132px)}
+  .teacher-logo-lockup img.connect-wordmark-3d{width:clamp(88px,27vw,129px)}
+  .student-entry-brand img.connect-wordmark-3d{width:clamp(89px,25vw,128px)}
+}
