@@ -106,8 +106,8 @@ test('Chromium: 4 vraies additions émises par Connect, écritures natives et AC
     text:w.document.querySelector('#calculationsPair')?.innerText||''};
   });
   assert.deepEqual(issued.issued,questions.map(q=>[q.a,q.b]));
-  assert.match(issued.text,/123/);
-  assert.match(issued.text,/456/);
+  assert.ok(issued.text.split(/\s+/).join('').includes('123'));
+  assert.ok(issued.text.split(/\s+/).join('').includes('456'));
   await page.evaluate(()=>{
    const w=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
    for(const q of w.__mathasServerCertified.questions){
