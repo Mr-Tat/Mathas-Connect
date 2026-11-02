@@ -100,11 +100,14 @@ export function createAdditionProofUI({button,panel,frame,getContext,call,refres
    win.__mathasServerCertified={sessionId:run.sessionId,
     questions:run.questions,index:0};
    const level=doc.getElementById('classicMaxDigits');
+   const sharedLevel=doc.getElementById('trainingMaxDigits');
    const four=doc.querySelector('.classic-count-btn[data-count="4"]');
-   const classic=doc.getElementById('startClassic');
-   if(!level||!four||!classic)throw Error('Contrôles pédagogiques natifs introuvables');
-   level.value='3';level.dispatchEvent(new Event('change',{bubbles:true}));
-   four.click();classic.click();
+   if(!level||!sharedLevel||!four)throw Error('Contrôles pédagogiques natifs introuvables');
+   // The native menu shares a difficulty selector and its 4-calculations
+   // button already starts classic play. NEVER call startClassic twice.
+   sharedLevel.value='3';level.value='3';
+   sharedLevel.dispatchEvent(new Event('change',{bubbles:true}));
+   four.click();
    notify('🔐 4 additions émises par Connect. Les chiffres et reports seront vérifiés côté serveur.');
   }catch(e){
    if(isCurrent(seq)){run=null;queue=null;notify('⚠️ '+e.message+' : aucun XP demandé.');}
