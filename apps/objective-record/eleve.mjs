@@ -130,7 +130,7 @@ async function refresh(seq){
  return {loaded,xp};
 }
 const certifiedUI=createAdditionProofUI({
- button:$('certify'),panel:$('certified-tools'),frame:$('gameFrame'),
+ button:$('certify'),panel:$('certified-tools'),levelSelect:$('certified-level'),totalSelect:$('certified-total'),frame:$('gameFrame'),
  getContext:()=>({generation,activeApp,pupilId,classId}),
  call:(action,payload)=>call('connect-objective-record-test',action,'addition-ecrite-simple',payload),
  refresh:()=>refresh(generation),notify:message
