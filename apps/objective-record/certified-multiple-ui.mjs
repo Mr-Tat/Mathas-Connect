@@ -1,7 +1,8 @@
 import {MULTI_PROOF_APP,MULTI_PROOF_WIDTH,acceptMultiChallenge,
+ normalizeMultiFirstAttempt,createMultiProofQueue} from './certified-multiple.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
 const VALID_PROOF_CLASSES=new Set(['4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',...SCHOOL_CLASS_IDS]);
- normalizeMultiFirstAttempt,createMultiProofQueue} from './certified-multiple.mjs';
+
 
 // Uses the SAME existing school host and native game. No additional LAB page.
 // PostgreSQL chooses numbers, grades every result digit and multi-addend carry,
