@@ -21,7 +21,7 @@ test('cache des deux miniatures seulement, sans modification des catalogues',()=
  const catalog=JSON.parse(readFileSync(path('hub-catalog.json'),'utf8'));
  assert.match(hub,/\['soustraction-ecrite-simple','melange-calculs-ecrits'\]\.includes\(app\.app_key\)/);
  assert.match(hub,/thumbUrl\.searchParams\.set\('v','20261031-miniatures-prof'\)/);
- assert.match(html,/hub\.js\?v=20261103-profile-rewards-v1/);
+ assert.match(html,/hub\.js\?v=20261103-celebrations-v1/);
  assert.equal(catalog.apps.find(a=>a.app_key==='soustraction-ecrite-simple')?.image_url,
    './assets/miniatures/soustraction-ecrite-simple.webp');
 });
@@ -33,9 +33,10 @@ test('le mot Connect des HUB attend un compte approuvé, sans masquer celui du p
  const home=readFileSync(path('index.html'),'utf8');
  assert.match(html,/<img id="hub-connect-suffix" class="connect-wordmark-3d"[^>]*alt="Connect"[^>]*hidden>/);
  assert.match(hub,/const authorized = profile\?\.status === 'approved' && profile\?\.classId === classId;/);
- assert.match(hub,/activeProfile=authorized\?profile:null;\s*\/\/[^\n]*\n\s*\$\('hub-connect-suffix'\)\.hidden=!authorized;/);
+ assert.match(hub,/activeProfile=authorized\?profile:null;/);
+ assert.match(hub,/\$\('hub-connect-suffix'\)\.hidden=!authorized;/);
  assert.match(css,/\.connect-brand img\.connect-wordmark-3d\[hidden\]\{display:none!important\}/);
- assert.match(html,/hub-profile\.css\?v=20261103-profile-rewards-v1/);
+ assert.match(html,/hub-profile\.css\?v=20261103-celebrations-v1/);
  assert.match(home,/<div class="teacher-logo-lockup">[^\n]*<img class="connect-wordmark-3d"[^>]*alt="Connect"/);
 });
 
