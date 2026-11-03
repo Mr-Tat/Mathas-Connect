@@ -1,0 +1,93 @@
+// Browser E2E using a fake authenticated school account ONLY. No real
+// student JWT, no production writes, actual DOM/keyboard and BigInt columns.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createServer} from 'node:http';
+import {readFile} from 'node:fs/promises';
+import {resolve,extname,sep} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {chromium} from 'playwright';
+import {expectedExtendedWidth} from '../apps/objective-record/certified-extended.mjs';
+const root=resolve(fileURLToPath(new URL('..',import.meta.url)));
+const CLASS='8fe170fa-9e8f-4e80-885a-b0ba68026f64';
+const PUPIL='11111111-1111-4111-8111-111111111111';
+const AUTH='22222222-2222-4222-8222-222222222222';
+const SESSION='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const REWARDS={version:3,mastery:{'4':[false,false,false],'10':[false,false,false],'20':[false,false,false]},
+ sudden:[false,false,false],hardAwards:{bronze:[false,false,false],silver:[false,false,false],gold:[false,false,false]},
+ scoreOne:{bronze:false,silver:false,gold:false},unlockedGold:false};
+const examples=[
+ {slug:'addition-simple',app:'addition-ecrite-simple',mode:'sudden',level:1,wrong:1},
+ {slug:'addition-multiple',app:'addition-ecrite-multiple',mode:'hard-three-lives',level:3,wrong:3}
+];
+for(const item of examples){
+ test('school browser certified '+item.slug+' '+item.mode+' early stop, score, XP, projected consent',async()=>{
+  const server=createServer(async(req,res)=>{
+   const path=resolve(root,'.'+new URL(req.url,'http://localhost').pathname);
+   if(!path.startsWith(root+sep)){res.writeHead(403).end();return}
+   try{const bytes=await readFile(path);
+    res.writeHead(200,{'content-type':({'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript',
+    '.png':'image/png','.webp':'image/webp'})[extname(path)]||'application/octet-stream'}).end(bytes)
+   }catch{res.writeHead(404).end()}
+  });
+  await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
+  const url='http://127.0.0.1:'+server.address().port;let browser;
+  const width=expectedExtendedWidth(item.app,item.mode,item.level);
+  const terms=item.app==='addition-ecrite-simple'?2:item.level===3?7:6;
+  const number='9'.repeat(width);
+  const questions=Array.from({length:120},(_,i)=>({id:'q'+(i+1),op:'add',width,
+   addends:Array(terms).fill(number)}));
+  const actions=[],errors=[];
+  try{
+   browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+   const page=await browser.newPage({viewport:{width:1160,height:820}});
+   page.on('pageerror',e=>errors.push(e.message));
+   await page.route('**/supabase-js@2.95.0*',r=>r.fulfill({status:200,contentType:'text/javascript',
+    headers:{'access-control-allow-origin':'*'},
+    body:'export function createClient(){return {auth:{getSession:async()=>({data:{session:{access_token:"fake",user:{id:"'+AUTH+'",is_anonymous:true}}}}),getUser:async()=>({data:{user:{id:"'+AUTH+'",is_anonymous:true}},error:null})}}}'
+   }));
+   await page.route('**/*.supabase.co/**',async r=>{
+    const b=r.request().postDataJSON()||{};actions.push(b);
+    const part=r.request().url();let ack;
+    if(part.includes('/connect-api'))ack={ok:true,status:'approved',classId:CLASS};
+    else if(part.includes('/connect-results'))ack=b.action==='student-load'?
+     {ok:true,revision:0,resetEpoch:0,state:{rewards:REWARDS},storageSubject:PUPIL}:
+     {ok:true,appXp:0,total:0,level:1};
+    else if(part.includes('/connect-objective-record-school')){
+     if(b.action==='start-extended-proof-v1'){
+      assert.equal(b.mode,item.mode);assert.equal(b.level,item.level);
+      ack={ok:true,sessionId:SESSION,questions,mode:item.mode,level:item.level,width,
+       limit:120,revision:0,resetEpoch:0,expiresAt:'2090-12-31T23:59:59Z'};
+     }else if(b.action==='finish-extended-proof-v1'){
+      assert.equal(b.answers.length,item.wrong);
+      assert.ok(b.answers.every(a=>a.digits.every(x=>x==='0')));
+      assert.ok(b.answers.every((a,i)=>a.id==='q'+(i+1)));
+      ack={ok:true,proofVerified:true,verifiedScore:0,mode:item.mode,attempted:item.wrong,
+       revision:1,resetEpoch:0,xp:{delta:0,appXp:0,total:0,level:1}};
+     }else throw Error('unexpected extended action '+b.action);
+    }else throw Error('unhandled endpoint '+part);
+    await r.fulfill({status:200,contentType:'application/json',
+     headers:{'access-control-allow-origin':'*'},body:JSON.stringify(ack)});
+   });
+   await page.goto(url+'/apps/objective-record/eleve.html?class='+CLASS+'&app='+item.slug,
+    {waitUntil:'domcontentloaded',timeout:25000});
+   await page.locator('#certify:not([disabled])').waitFor({state:'visible',timeout:45000});
+   await page.locator('#certified-mode').selectOption(item.mode);
+   await page.locator('#certified-level').selectOption(String(item.level));
+   await page.locator('#certify').click();
+   await page.locator('#extended-certified:not([hidden])').waitFor({state:'visible',timeout:15000});
+   for(let i=0;i<item.wrong;i++){
+    const fields=page.locator('#extended-grid input.answer');
+    const n=await fields.count();assert.ok(n>=width);
+    for(let j=0;j<n;j++)await fields.nth(j).fill('0');
+    await page.locator('#extended-verify').click();
+    if(i<item.wrong-1)await page.locator('#extended-next').click();
+   }
+   await page.waitForFunction(()=>document.getElementById('status').textContent.includes('XP officiels'),
+    null,{timeout:18000});
+   assert.equal(actions.filter(a=>a.action==='finish-extended-proof-v1').length,1);
+   assert.equal(actions.filter(a=>a.action==='game-record').length,0);
+   assert.deepEqual(errors,[]);
+  }finally{await browser?.close();await new Promise(ok=>server.close(ok))}
+ });
+}
