@@ -1,5 +1,18 @@
 # Mise en service finale – Addition simple et Addition de plusieurs nombres – 03/11/2026
 
+## État effectivement vérifié — 3 novembre 2026, après les PR #142, #143 et #144
+
+**Ceci prime sur le mode opératoire de déploiement initial situé plus bas : ne pas rejouer les migrations déjà appliquées.**
+
+- **GitHub** : #142 (modes certifiés, 120 épreuves maximum) et #143 (changement d'application) sont fusionnées dans `main`. #144 a été fusionnée pour rendre les tests de catalogue compatibles avec la visibilité réglable par classe. Les anciennes variantes concurrentes #140 et #141, ainsi que le pilote LAB #103, sont clôturées sans fusion, avec historique conservé.
+- **Base Supabase Math'as Connect** : quatre migrations `20261103130000_school_extended_sessions`, `20261103130010_school_extended_issue`, `20261103130020_school_extended_record` et `20261103130030_school_extended_finish` figurent **déjà** dans l'historique de production, enregistrées sous les versions respectives `20261103102104`, `20261103102108`, `20261103102112` et `20261103102116`. Ne pas appliquer les migrations alternatives `advanced_additions_*` (#140) ni `additions_modes_*` (#141).
+- **Edge** : `connect-objective-record-school` déployée en version **2**, `verify_jwt=true`. Le contenu déployé de `index.ts` a été comparé au fichier `main` : correspondance exacte. Les trois RPC `issue_extended_v1`, `finish_extended_v1` et `record_extended_v1` ne sont pas exécutables par `anon` ni `authenticated`, mais le sont par `service_role`. La table des sessions est privée (RLS activée, aucune politique de lecture publique).
+- **Catalogue** : `addition-ecrite-simple` et `addition-ecrite-multiple` sont `enabled=true` dans `connect_apps` et `visible=true` dans `connect_lab_hub_visibility`. Leurs **présences dans les HUB des classes** restent soumises aux préréglages de visibilité professeur (notamment l'addition multiple masquée par défaut en observation et phase1).
+- **CI** : sur la version #143, les tests Chromium et la preuve PostgreSQL ont réussi. La suite générale a échoué uniquement sur une assertion historique imposant la visibilité de Mélange dans quatre HUB où il était masqué. La PR #144 a corrigé cette hypothèse **dans les tests**, sans ouvrir les HUB ; ses deux workflows ont réussi, et la suite de régression a aussi réussi après fusion dans `main`.
+- **Pages** : GitHub Pages s'est déployé avec succès après #143. Le déploiement de la mise à jour de tests #144 doit être vérifié dans GitHub Actions ; cette mise à jour ne modifie aucune page élève.
+
+**Ce qui reste à confirmer par une vraie recette pédagogique** : accès d'un élève autorisé avec son compte Connect, lancement d'une partie de 3 vies / Mort subite / HARD dans chacune des deux applications, contrôle des XP/records/coupes sur le compte de l'élève et du professeur, et publication volontaire d'un score sur le tableau projeté. Aucune donnée scolaire de production n'a été créée ni modifiée pour cette vérification de reprise. Les tests automatiques utilisent PostgreSQL jetable et des identités fictives simulées.
+
 ## Portée de la livraison
 
 Les deux cartes des classes scolaires de Math'as Connect conservent exactement leurs paramètres de visibilité professeur ; seul leur écran jeu certifié est complété. Le routage scolaire n'affecte pas Soustraction, Multiplication ou Mélange. Les séries Classique demeurent hébergées dans les moteurs natifs et conservent leur preuve PostgreSQL précédente.
