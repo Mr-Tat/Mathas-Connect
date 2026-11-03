@@ -71,7 +71,9 @@ for(const item of examples){
    });
    await page.goto(url+'/apps/objective-record/eleve.html?class='+CLASS+'&app='+item.slug,
     {waitUntil:'domcontentloaded',timeout:25000});
-   await page.locator('#certify:not([disabled])').waitFor({state:'visible',timeout:45000});
+   await page.waitForFunction(()=>!document.getElementById('certify').disabled,null,{timeout:45000});
+   await page.locator('#challenge-toggle').click();
+   await page.locator('#certify:not([disabled])').waitFor({state:'visible',timeout:10000});
    await page.locator('#certified-mode').selectOption(item.mode);
    await page.locator('#certified-level').selectOption(String(item.level));
    await page.locator('#certify').click();
@@ -90,6 +92,7 @@ for(const item of examples){
    // Switching straight from a finished extended mode to the other addition
    // must never leave the shared certified start button disabled.
    const other=item.slug==='addition-simple'?'addition-multiple':'addition-simple';
+   await page.locator('#challenge-toggle').click();
    await page.locator('#app').selectOption(other);
    await page.waitForFunction(()=>!document.getElementById('certify').disabled,
     null,{timeout:35000});
