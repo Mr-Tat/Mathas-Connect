@@ -4,16 +4,63 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Math’as Connect — Objectif record</title>
 <style>
-:root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;font:14px/1.4 system-ui,sans-serif;background:#071e31;color:#f5f9ff}
-main{display:flex;flex-direction:column;min-height:100dvh}header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;background:#12324f;border-bottom:1px solid #42617a}
-header strong{font-size:17px}a{color:#bde6ff}select,button{font:inherit;background:#234662;border:1px solid #829bb2;border-radius:8px;padding:6px 8px;color:inherit}button{cursor:pointer}button:disabled{opacity:.5}
-#status{padding:9px 14px;background:#10304a;color:#fff0c4;font-weight:600;min-height:39px}
-#progress{display:flex;gap:18px;flex-wrap:wrap;align-items:center;padding:9px 14px;background:#162d43;border-bottom:1px solid #39566d}
-#progress strong{font-size:17px;color:#ffe2a0}#progress span{white-space:nowrap}
-#certified-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:9px 14px;background:#173c42}
-#certified-tools[hidden]{display:none}
-#certified-tools span{font-size:12px;color:#c6ebed}
+:root{color-scheme:dark;--connect-bar-height:58px}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;font:14px/1.4 system-ui,sans-serif;background:#071e31;color:#f5f9ff}
+main{display:flex;flex-direction:column;height:100dvh;min-height:0}
+a{color:#bde6ff}
+select,button{font:inherit;background:#234662;border:1px solid #829bb2;border-radius:8px;padding:6px 8px;color:inherit}
+button{cursor:pointer}button:disabled{opacity:.5}
+[hidden]{display:none!important}
+#connect-bar{position:fixed;top:0;left:0;right:0;z-index:1200;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:7px 14px;background:linear-gradient(110deg,#102c46,#15384d);border-bottom:1px solid #5c91ad;box-shadow:0 6px 18px #0007;transition:transform .28s ease;min-height:54px}
+#connect-bar.retracted{transform:translateY(calc(-100% - 9px));pointer-events:none}
+#connect-bar .connect-ident{display:flex;align-items:center;gap:13px;flex:1 1 auto;min-width:0}
+#connected-name-wrap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:650;color:#d6f3ff}
+#connected-dot{color:#79e3b2;margin-right:5px}
+#connect-xp-meter{display:flex;align-items:center;gap:10px;min-width:177px;background:#173d59;border:1px solid #486f86;border-radius:12px;padding:4px 9px}
+#level-label{white-space:nowrap;font-size:11px;color:#ffe4a0}
+#level{font-size:22px;color:#fff5cd;margin-left:3px}
+#meter-progress{display:grid;gap:3px;min-width:75px;flex:1}
+#level-xp{font-size:11px;color:#f9e2a4;white-space:nowrap;font-variant-numeric:tabular-nums}
+#meter-track{background:#0c263a;border:1px solid #527893;height:9px;border-radius:99px;overflow:hidden}
+#level-fill{display:block;height:100%;width:0;background:linear-gradient(90deg,#d9a336,#ffe18b);transition:width .6s ease}
+#bar-actions{display:flex;gap:7px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+#bar-actions button,#bar-actions a{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;min-height:34px;white-space:nowrap;border-radius:9px;border:1px solid #82a6be;padding:6px 10px;font-size:12px;font-weight:700;background:#245472;color:#f8fcff}
+#bar-actions #xp-toggle{border-color:#caac63;background:#61491f;color:#ffedbd}
+#bar-actions #bar-home{background:#2c435d}
+#bar-actions button[aria-expanded="true"]{outline:2px solid #ffda75}
+#bar-handle{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1201;min-height:20px;padding:1px 16px 3px;border-radius:0 0 12px 12px;background:#1b4a68;color:#ffedae;border:1px solid #5789a5;border-top:0;font-size:11px;font-weight:800;box-shadow:0 4px 9px #0008}
+#guest-home{position:fixed;top:10px;left:10px;z-index:1100;border:1px solid #81acc3;background:#123f5d;padding:8px 12px;border-radius:9px;color:#fff;text-decoration:none;font-weight:700}
+#status{position:fixed;z-index:1190;bottom:12px;left:50%;transform:translateX(-50%);width:max-content;max-width:min(96vw,780px);padding:9px 14px;border:1px solid #96afbc;border-radius:10px;background:#132d45f0;box-shadow:0 6px 20px #0009;color:#ffe9bd;font-weight:650;text-align:center;pointer-events:none}
+#status.status-error{border-color:#e9a765;background:#4c292af5}
+#xp-panel,#challenge-panel{position:fixed;z-index:1200;top:calc(var(--connect-bar-height) + 5px);right:10px;max-width:calc(100vw - 20px);max-height:calc(100dvh - var(--connect-bar-height) - 20px);overflow:auto;border:1px solid #739bb3;border-radius:13px;background:#102c43f7;padding:13px;box-shadow:0 14px 35px #000a}
+#xp-panel{width:min(500px,calc(100vw - 20px))}
+#challenge-panel{width:min(780px,calc(100vw - 20px))}
+.panel-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+.panel-heading strong{font-size:15px;color:#ffdf98}
+.panel-close{min-width:30px;font-size:17px}
+#xp-summary{display:flex;flex-wrap:wrap;gap:9px;color:#c7e5f4;margin:5px 0 10px}
+#xp-summary strong{color:#ffe3a0}
+#xp-table{width:100%;border-collapse:collapse;font-size:12px}
+#xp-table td{padding:5px 3px;border-bottom:1px solid #30536b}
+#xp-table td:last-child{text-align:right;white-space:nowrap}
+#xp-table tr.is-earned{color:#9cedbd}
+#xp-note{font-size:12px;color:#b3d5ec}
+#certified-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#certified-tools label{display:grid;gap:4px;font-size:12px}
+#certified-tools select{max-width:180px}
+#certify{font-weight:700;min-height:36px}
 #extended-certified[hidden]{display:none}
+#notice{display:none}
+@media(max-width:720px){
+ #connect-bar{padding:5px 8px;gap:5px;flex-wrap:wrap}
+ #connect-bar .connect-ident{gap:7px;min-width:0;flex:1 1 100%;justify-content:space-between}
+ #connected-name-wrap{max-width:calc(100% - 171px)}
+ #connect-xp-meter{min-width:160px;max-width:170px;padding:2px 6px}
+ #bar-actions{width:100%;gap:5px;justify-content:flex-end}
+ #bar-actions button,#bar-actions a{padding:4px 7px;min-height:30px;font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){#connect-bar,#level-fill{transition:none!important}}
 #extended-certified{padding:16px;display:flex;flex-direction:column;gap:12px;background:#092c3c;flex:1;min-height:370px}
 #extended-certified h2{margin:0;font-size:clamp(18px,3vw,24px);color:#ffe0a6}
 #extended-status{font-weight:650;color:#c6f4e7;min-height:24px}
@@ -40,26 +87,42 @@ header strong{font-size:17px}a{color:#bde6ff}select,button{font:inherit;backgrou
 </style>
 </head>
 <body><main>
-<header><strong>🏆 Objectif record · Math’as Connect</strong>
-<label for="app">Calcul écrit :
-<select id="app">
-<option value="addition-simple">Addition simple</option>
-<option value="addition-multiple">Addition multiple</option>
-<option value="soustraction">Soustraction écrite</option>
-<option value="multiplication">Multiplication simple</option>
-<option value="melange">Mélange de calculs</option>
-</select></label>
-<a href="../../hub.html">Retour au HUB</a>
+<header id="connect-bar" hidden aria-label="Profil Math’as Connect">
+ <div class="connect-ident">
+  <span id="connected-name-wrap"><span id="connected-dot">●</span>Connecté · <strong id="connected-name">Élève</strong></span>
+  <div id="connect-xp-meter" aria-label="Progression Connect">
+   <span id="level-label">Niveau <strong id="level">—</strong></span>
+   <div id="meter-progress"><small id="level-xp">— / — XP</small>
+    <div id="meter-track" role="progressbar" aria-label="Progression XP dans le niveau" aria-valuemin="0" aria-valuemax="50" aria-valuenow="0"><i id="level-fill"></i></div>
+   </div>
+  </div>
+ </div>
+ <nav id="bar-actions" aria-label="Commandes Connect">
+  <button id="challenge-toggle" type="button" aria-controls="challenge-panel" aria-expanded="false">✏️ Défi Connect</button>
+  <button id="xp-toggle" type="button" aria-controls="xp-panel" aria-expanded="false">🏆 XP à gagner</button>
+  <a id="bar-home" href="../../hub.html">⌂ Accueil</a>
+ </nav>
 </header>
-<div id="status" role="status" aria-live="polite">Vérification du compte Connect…</div>
-<section id="progress" aria-label="Progression officielle Math’as Connect">
-<span>⭐ XP de l’application : <strong id="app-xp">—</strong></span>
-<span>🌟 XP globaux : <strong id="total-xp">—</strong></span>
-<span>🎖️ Niveau : <strong id="level">—</strong></span>
-<span>🏆 Trophées permanents : <strong id="trophies">—</strong></span>
-<button id="refresh" type="button" disabled>Actualiser le profil</button>
+<button id="bar-handle" type="button" hidden aria-label="Afficher la barre Connect">⌄ Profil Connect</button>
+<a id="guest-home" href="../../hub.html">↩ Retour au HUB</a>
+<div id="status" role="status" aria-live="polite" hidden>Vérification de la connexion…</div>
+<section id="xp-panel" hidden aria-label="Relevé des XP officiels">
+ <div class="panel-heading"><strong>🏆 XP acquis et à gagner</strong><button id="xp-close" class="panel-close" type="button" aria-label="Fermer les XP">×</button></div>
+ <div id="xp-summary">
+  <span>Ce jeu : <strong id="app-xp">—</strong> XP</span>
+  <span>Total : <strong id="total-xp">—</strong> XP</span>
+  <span>Trophées : <strong id="trophies">—</strong></span>
+ </div>
+ <p id="xp-note">Les points et récompenses proviennent du serveur Connect.</p>
+ <table id="xp-table" aria-label="Récompenses XP"><tbody id="xp-rows"><tr><td>Ouvre ce relevé pour consulter tes XP.</td></tr></tbody></table>
+ <p><button id="refresh" type="button" disabled>↻ Actualiser le profil</button></p>
 </section>
-<section id="certified-tools" hidden aria-label="Épreuve arithmétique vérifiée">
+<section id="challenge-panel" hidden aria-label="Démarrer une série certifiée">
+ <div class="panel-heading"><strong>✏️ Choisir un défi Connect</strong><button id="challenge-close" class="panel-close" type="button" aria-label="Fermer les réglages">×</button></div>
+ <label for="app">Calcul écrit :
+ <select id="app"><option value="addition-simple">Addition simple</option><option value="addition-multiple">Addition multiple</option>
+ <option value="soustraction">Soustraction écrite</option><option value="multiplication">Multiplication simple</option><option value="melange">Mélange de calculs</option></select></label>
+ <section id="certified-tools" hidden aria-label="Épreuve arithmétique vérifiée">
 <label for="certified-mode">Mode
 <select id="certified-mode">
 <option value="classic">➕ Classique</option>
@@ -73,9 +136,11 @@ header strong{font-size:17px}a{color:#bde6ff}select,button{font:inherit;backgrou
 <label for="certified-total" id="certified-count-label">Série
 <select id="certified-total"><option value="4">4 calculs</option><option value="10">10 calculs</option><option value="20">20 calculs</option></select></label>
 <button id="certify" type="button" disabled>🔐 Lancer une série vérifiée par le serveur</button>
-<span>Chiffres, retenues, records et XP validés par Connect</span>
+
 </section>
-<div id="notice">Toutes les séries lancées avec le cadenas Connect sont corrigées et enregistrées côté serveur. Les modes libres dans le moteur natif restent des exercices sans XP Connect. La projection exige l’accord de l’élève.</div>
+ <p id="challenge-hint" style="font-size:12px;color:#c6e0ec">Seules les séries validées par le serveur enregistrent les XP officiels.</p>
+</section>
+<div id="notice" hidden></div>
 <section id="extended-certified" hidden aria-label="Calcul écrit certifié">
 <h2 id="extended-title">Défi certifié</h2>
 <p id="extended-status" role="status" aria-live="polite"></p>
