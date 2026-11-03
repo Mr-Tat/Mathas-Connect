@@ -10,7 +10,7 @@ import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-conn
 import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 import {createSchoolScoreView} from './school-score-view.mjs';
-import {installTensFirstDuringGame} from './in-game-tens-first.mjs';
+import {installTensFirstDuringGame} from './in-game-tens-first.mjs?v=20261103-leading-carry-amber-v1';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
 
