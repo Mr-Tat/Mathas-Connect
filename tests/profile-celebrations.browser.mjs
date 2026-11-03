@@ -110,7 +110,7 @@ test('Célébrations : retour HUB, ACK inter-appareils, 5 paliers en ordre, repo
    await p.locator('#reward-celebration:not([hidden])').waitFor({state:'visible'});
    assert.match(await p.locator('#reward-level').textContent(),new RegExp('Niveau '+expected+' atteint'));
    await p.locator('#reward-continue').click();
-   await p.waitForFunction(e=>document.getElementById('reward-level')?.textContent!==('Niveau '+e+' atteint !'),expected);
+   await p.waitForFunction(e=>document.getElementById('reward-celebration')?.hidden || document.getElementById('reward-level')?.textContent!==('Niveau '+e+' atteint !'),expected);
   }
   await p.locator('#reward-celebration').waitFor({state:'hidden'});
   assert.deepEqual([...seen],[3,6,10,15,20]);
