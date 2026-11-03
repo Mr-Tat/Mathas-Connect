@@ -32,3 +32,20 @@ CREATE TABLE IF NOT EXISTS public.connect_objective_record_school_receipts(
 ALTER TABLE public.connect_objective_record_school_receipts ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.connect_objective_record_school_receipts FROM PUBLIC,anon,authenticated;
 GRANT SELECT,INSERT ON public.connect_objective_record_school_receipts TO service_role;
+
+-- DB independently rechecks the school allow-list, including against compromised
+-- or misconfigured Edge clients. TEST profiles are not accepted.
+CREATE OR REPLACE FUNCTION public.connect_objective_record_school_class_allowed_v1(p_class uuid)
+ RETURNS boolean LANGUAGE sql IMMUTABLE SET search_path='' AS $check$
+ SELECT p_class IN (
+  '8fe170fa-9e8f-4e80-885a-b0ba68026f64'::uuid,
+  '71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e'::uuid,
+  '1b021ed9-4846-4203-9c7b-4b5fa8d7adab'::uuid,
+  '0d8ba828-59cc-468b-a4b8-7b2a1af10b88'::uuid,
+  'a9195199-0a28-4e86-99ce-47b36dd6e646'::uuid
+ );
+$check$;
+REVOKE ALL ON FUNCTION public.connect_objective_record_school_class_allowed_v1(uuid)
+ FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.connect_objective_record_school_class_allowed_v1(uuid)
+ TO service_role;
