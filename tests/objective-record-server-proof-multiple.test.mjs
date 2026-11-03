@@ -82,7 +82,8 @@ test('Edge routes proof through JWT and service_role, school launch stays off',(
    "'action,appKey,classId,level,total'"])assert.ok(edge.includes(s),s);
  assert.ok(host.includes('certifiedMultiUI.onGameEvent(event)')||
   host.includes('activeProofUI.onGameEvent(event)'));
- assert.match(host,/call\('connect-objective-record-test',action,'addition-ecrite-multiple',payload\)/);
+ assert.match(host,/classId===CLASS_TEST\?'connect-objective-record-test':'connect-objective-record-school'/);
+  assert.match(host,/action,'addition-ecrite-multiple',payload/);
  assert.match(routing,/enabled:false/);
  for(const s of ['connect_enrollments','connect_teacher_players','not_test_subject',
   'proof_replay_collision','FOR UPDATE','v_session.expires_at<=now()',
