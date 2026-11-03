@@ -202,10 +202,16 @@ export function createCertifiedExtendedUI({
   controlsBusy(false);verifyButton.disabled=true;nextButton.hidden=true;
   info('Retour au jeu. Une série interrompue conserve ses réponses jusqu’à expiration.');
  }
+ function startNative(mode,level){
+  if(!EXTENDED_MODES.includes(mode)||![1,2,3].includes(level))return Promise.resolve();
+  modeSelect.value=mode;levelSelect.value=String(level);
+  modeSelect.dispatchEvent(new Event('change',{bubbles:true}));
+  return start();
+ }
  button.addEventListener('click',()=>{if(EXTENDED_MODES.includes(modeSelect.value))void start()});
  verifyButton.addEventListener('click',verify);
  nextButton.addEventListener('click',()=>{if(run&&!run.finished)render()});
  exitButton.addEventListener('click',exit);
- return Object.freeze({reset,hasPending:()=>!!run?.finished,
+ return Object.freeze({reset,startNative,hasPending:()=>!!run?.finished,
   retry:()=>run?.finished?finish():Promise.resolve()});
 }
