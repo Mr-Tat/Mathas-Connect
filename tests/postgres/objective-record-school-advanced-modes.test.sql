@@ -65,7 +65,7 @@ BEGIN
      IF SQLERRM<>'advanced_stop_rule_broken' THEN RAISE;END IF;
     END;
     v_answers:=public.test_advanced_answers(v_issued->'questions',v_length,v_misses);
-    v_ack:=public.connect_objective_record_advanced_finish_v1(v_student,v_school,'addition-ecrite-simple',v_session,v_answers);
+    v_ack:=public.connect_objective_record_advanced_finish_v1(v_student,v_school,v_app,v_session,v_answers);
     IF v_ack->>'ok'<>'true' OR v_ack->>'proofVerified'<>'true'
       OR (v_ack->>'verifiedScore')::integer<>v_length-v_misses
       OR (v_ack->>'verifiedErrors')::integer<>v_misses
@@ -98,7 +98,7 @@ BEGIN
  v_session:=(v_issued->>'sessionId')::uuid;
  -- A complete 64 correct-answer run may legitimately reach the fixed cap.
  v_answers:=public.test_advanced_answers(v_issued->'questions',64,0);
- v_ack:=public.connect_objective_record_advanced_finish_v1(v_student,v_school,v_app,v_session,v_answers);
+ v_ack:=public.connect_objective_record_advanced_finish_v1(v_student,v_school,'addition-ecrite-simple',v_session,v_answers);
  IF (v_ack->>'verifiedScore')::integer<>64 THEN RAISE EXCEPTION 'cap_not_credited';END IF;
  IF (SELECT count(*) FROM public.connect_objective_record_advanced_sessions)<>25
  THEN RAISE EXCEPTION 'sessions_lost';END IF;
