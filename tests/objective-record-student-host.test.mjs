@@ -36,7 +36,7 @@ test('les 25 trophées permanents sont comptés depuis la forme native officiell
  assert.equal(permanentTrophyCount({...complete,sudden:[]}),null);
  assert.equal(permanentTrophyCount({...complete,hardAwards:{}}),null);
 });
-test('lancement de la page exclusivement sous classe TEST et JWT approuvé',()=>{
+test('lancement TEST ou deux additions scolaires : JWT approuvé, classe stricte',()=>{
  const code=read('apps/objective-record/eleve.mjs');
  const html=read('apps/objective-record/eleve.html');
  assert.match(code,/classId!==CLASS_TEST/);
@@ -50,7 +50,9 @@ test('lancement de la page exclusivement sous classe TEST et JWT approuvé',()=>
  assert.match(code,/hideFictionalXp\(doc\)/);
  assert.match(code,/const chooser=outer\?\.getElementById\('xp-preview-mode'\)/);
  assert.match(html,/XP globaux/);
- assert.match(html,/Classe TEST fictive uniquement/);
+ assert.match(html,/séries Classique/i);
+  assert.match(code,/SCHOOL_CLASSES\.has\(classId\)/);
+  assert.match(code,/classId===CLASS_TEST\?'connect-objective-record-test':'connect-objective-record-school'/);
  assert.doesNotMatch(code,/connect-record-pilot/);
  assert.doesNotMatch(code,/action:\s*['"](?:game-record|record|student-save)['"]/);
  assert.doesNotMatch(code,/\/functions\/v1\/connect-record-pilot/);

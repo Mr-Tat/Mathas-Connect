@@ -2,7 +2,7 @@ import {avatarCategories,avatarGlyph,avatarColors,avatarColor} from './avatar-ca
 import { classId, classLabel, loginUrl } from './connect-context.js';
 import {rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
 import {objectiveRecordLabPreviews} from './objective-record-lab-previews.mjs';
-import {schoolRecordLaunch,SCHOOL_RECORD_APPS,SCHOOL_RECORD_LAUNCHER} from './apps/objective-record/release-routing.mjs';
+import {schoolRecordLaunch,schoolAdditionsLaunch,SCHOOL_RECORD_APPS,SCHOOL_RECORD_LAUNCHER} from './apps/objective-record/release-routing.mjs';
 
 const url = 'https://awmhpfofacaglewammxt.supabase.co';
 const key = 'sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
@@ -57,7 +57,8 @@ function card(app) {
   const node = $('appTemplate').content.firstElementChild.cloneNode(true);
   const testSlug=classId===LAB_CLASS?recordSlugByApp[app.app_key]:null;
   const target = new URL(testSlug?SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(testSlug):
-    schoolRecordLaunch({classId,appKey:app.app_key,legacyUrl:app.launch_url}),location.href);
+    schoolAdditionsLaunch({classId,appKey:app.app_key,legacyUrl:
+      schoolRecordLaunch({classId,appKey:app.app_key,legacyUrl:app.launch_url})}),location.href);
   // Le HUB fournit la classe au jeu Connect ; les autorisations restent vérifiées côté serveur.
   if (classId && target.origin === location.origin) target.searchParams.set('class', classId);
    if (playingAsTeacher && ['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');

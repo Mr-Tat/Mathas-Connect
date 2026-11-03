@@ -9,7 +9,8 @@ import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 
 const root=resolve(fileURLToPath(new URL('..',import.meta.url)));
-const CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
+const TEST_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
+const CLASS=process.env.MATHAS_SCHOOL_KEYBOARD_CLASS||TEST_CLASS;
 const PUPIL='11111111-1111-4111-8111-111111111111';
 const AUTH='22222222-2222-4222-8222-222222222222';
 const SID='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -71,7 +72,9 @@ for(const item of examples){
      reply=b.action==='student-load'
       ?{ok:true,revision:xp?1:0,resetEpoch:0,state:{rewards:REWARDS},storageSubject:PUPIL}
       :{ok:true,appXp:xp,total:xp,level:1};
-    }else if(r.request().url().includes('/connect-objective-record-test')){
+    }else if(r.request().url().includes('/connect-objective-record-')){
+     assert.ok(r.request().url().includes(CLASS===TEST_CLASS?'connect-objective-record-test':'connect-objective-record-school'),
+      'the authenticated host must use only the matching proof endpoint');
      if(b.action===item.start){
       assert.equal(b.level,1);assert.equal(b.total,4);
       reply={ok:true,sessionId:SID,questions:item.questions,revision:0,resetEpoch:0,

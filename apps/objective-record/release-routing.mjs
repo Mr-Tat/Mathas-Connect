@@ -35,3 +35,19 @@ export function schoolRecordLaunch({classId,appKey,legacyUrl,rollout=SCHOOL_RECO
      ||rollout?.hostedTestClassE2EVerified!==true)return legacyUrl;
   return SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(SCHOOL_RECORD_APPS[appKey]);
 }
+
+/**
+ * Two certified additions can roll out independently of the other three.
+ * This flag is deliberately CLOSED until school proof RPCs, hosted JWT,
+ * professor results and projection have passed school-specific E2E tests.
+ */
+export const SCHOOL_ADDITIONS_ROLLOUT=Object.freeze({
+  enabled:false,proofRpcsReady:false,hostedJwtVerified:false,projectionVerified:false
+});
+const ADDITION_KEYS=new Set(['addition-ecrite-simple','addition-ecrite-multiple']);
+export function schoolAdditionsLaunch({classId,appKey,legacyUrl,rollout=SCHOOL_ADDITIONS_ROLLOUT}){
+  if(!SCHOOL_CLASSES.has(classId)||!ADDITION_KEYS.has(appKey)
+    ||rollout.enabled!==true||rollout.proofRpcsReady!==true
+    ||rollout.hostedJwtVerified!==true||rollout.projectionVerified!==true)return legacyUrl;
+  return SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(SCHOOL_RECORD_APPS[appKey]);
+}

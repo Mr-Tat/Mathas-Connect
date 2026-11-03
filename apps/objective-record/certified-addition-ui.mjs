@@ -1,5 +1,8 @@
 import {PROOF_APP,acceptAdditionProofChallenge,normalizeAdditionFirstAttempt,
  createCertifiedAdditionQueue} from './certified-addition.mjs';
+import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
+const VALID_PROOF_CLASSES=new Set(['4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',...SCHOOL_CLASS_IDS]);
+
 
 // Server-issued Addition simple, CLASSIC 4/10/20 across 3 levels; TEST-only until school release.
 // The database issues operands and verifies digits and carries. The browser
@@ -78,7 +81,7 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,fram
  }
  async function start(){
   const ctx=getContext(),seq=ctx.generation;
-  if(ctx.classId!=='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'
+  if(!VALID_PROOF_CLASSES.has(ctx.classId)
     ||ctx.activeApp!==PROOF_APP||!ctx.pupilId)return;
   const {win,doc}=inner();
   if(!win||!doc?.getElementById('menuScreen')||

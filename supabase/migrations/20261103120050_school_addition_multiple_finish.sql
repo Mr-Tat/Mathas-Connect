@@ -1,0 +1,115 @@
+-- Grade multiaddend addition digits and carries before atomic official XP award.
+CREATE OR REPLACE FUNCTION public.connect_objective_record_school_finish_multi_v1(
+ p_student uuid,p_class uuid,p_session uuid,p_answers jsonb
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $finish$
+DECLARE
+ v_class constant uuid:=p_class;
+ v_app constant text:='addition-ecrite-multiple';
+ v_session public.connect_objective_record_school_proof_sessions%ROWTYPE;
+ v_answer jsonb;v_question jsonb;v_terms jsonb;
+ v_digits jsonb;v_carries jsonb;v_i integer;v_j integer;v_k integer;
+ v_width integer;v_len integer;v_term_count integer;
+ v_sum integer;v_operand integer;v_partial integer;v_power integer;v_carry integer;
+ v_actual text;v_expected_digit text;v_expected_carry text;
+ v_correct boolean;v_score integer:=0;v_hash text;v_ack jsonb;v_rewards jsonb;
+BEGIN
+ IF p_student IS NULL OR (p_class IS NULL OR public.connect_objective_record_school_class_allowed_v1(p_class) IS DISTINCT FROM true) OR p_session IS NULL
+  OR jsonb_typeof(p_answers) IS DISTINCT FROM 'array'
+  OR jsonb_array_length(p_answers) NOT IN (4,10,20)
+ THEN RAISE EXCEPTION 'invalid_proof_answers';END IF;
+ -- Same lock order as issuer and native XP transaction.
+ PERFORM 1 FROM public.connect_students WHERE id=p_student AND archived_at IS NULL FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'inactive_student';END IF;
+ SELECT * INTO v_session FROM public.connect_objective_record_school_proof_sessions
+  WHERE session_id=p_session AND student_id=p_student AND class_id=v_class AND app_key=v_app
+  FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'proof_not_found';END IF;
+ IF v_session.level NOT IN (1,2,3) OR v_session.total NOT IN (4,10,20)
+  OR jsonb_array_length(p_answers)<>v_session.total
+ THEN RAISE EXCEPTION 'invalid_proof_answers';END IF;
+ v_hash:=pg_catalog.encode(pg_catalog.sha256(pg_catalog.convert_to(p_answers::text,'UTF8')),'hex');
+ IF v_session.consumed_at IS NOT NULL THEN
+  IF v_session.answers_hash<>v_hash THEN RAISE EXCEPTION 'proof_replay_collision';END IF;
+  RETURN v_session.result||jsonb_build_object('duplicate',true,
+   'xp',v_session.result->'xp'||jsonb_build_object('delta',0));
+ END IF;
+ IF v_session.expires_at<=now() THEN RAISE EXCEPTION 'proof_expired';END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.connect_enrollments
+     WHERE student_id=p_student AND class_id=v_class AND left_at IS NULL)
+  AND NOT EXISTS(SELECT 1 FROM public.connect_teacher_players tp
+     JOIN public.connect_class_permissions cp ON cp.teacher_id=tp.teacher_id
+     WHERE tp.student_id=p_student AND cp.class_id=v_class AND cp.can_manage=true)
+ THEN RAISE EXCEPTION 'not_school_subject';END IF;
+ v_width:=v_session.level+4;
+ FOR v_i IN 0..v_session.total-1 LOOP
+  v_question:=v_session.questions->v_i;v_answer:=p_answers->v_i;
+  IF jsonb_typeof(v_answer) IS DISTINCT FROM 'object'
+    OR (SELECT count(*) FROM jsonb_object_keys(v_answer))<>3
+    OR NOT (v_answer ? 'id' AND v_answer ? 'digits' AND v_answer ? 'carries')
+    OR v_answer->>'id' IS DISTINCT FROM v_question->>'id'
+    OR jsonb_typeof(v_answer->'digits') IS DISTINCT FROM 'array'
+    OR jsonb_typeof(v_answer->'carries') IS DISTINCT FROM 'array'
+  THEN RAISE EXCEPTION 'invalid_proof_answers';END IF;
+  v_terms:=v_question->'addends';v_term_count:=jsonb_array_length(v_terms);
+  IF v_term_count<3 OR v_term_count>6 THEN RAISE EXCEPTION 'invalid_proof_answers';END IF;
+  v_sum:=0;
+  FOR v_k IN 0..v_term_count-1 LOOP
+   v_operand:=(v_terms->>v_k)::integer;
+   IF v_operand<1 OR v_operand>=power(10::numeric,v_width)::integer
+   THEN RAISE EXCEPTION 'invalid_proof_answers';END IF;
+   v_sum:=v_sum+v_operand;
+  END LOOP;
+  v_len:=length(v_sum::text);
+  v_digits:=v_answer->'digits';v_carries:=v_answer->'carries';
+  IF jsonb_array_length(v_digits)<>v_len OR jsonb_array_length(v_carries)<>v_width
+  THEN RAISE EXCEPTION 'invalid_proof_answers';END IF;
+  v_correct:=true;
+  FOR v_j IN 0..v_len-1 LOOP
+   IF jsonb_typeof(v_digits->v_j) IS DISTINCT FROM 'string' THEN RAISE EXCEPTION 'invalid_proof_answers';END IF;
+   v_actual:=v_digits->>v_j;
+   IF v_actual !~ '^[0-9]?$' THEN RAISE EXCEPTION 'invalid_proof_answers';END IF;
+   v_expected_digit:=((v_sum/(10^v_j)::integer)%10)::text;
+   IF v_actual IS DISTINCT FROM v_expected_digit THEN v_correct:=false;END IF;
+  END LOOP;
+  IF jsonb_typeof(v_carries->0) IS DISTINCT FROM 'string'
+    OR (v_carries->>0) NOT IN ('','0') THEN RAISE EXCEPTION 'invalid_proof_answers';END IF;
+  FOR v_j IN 1..v_width-1 LOOP
+   IF jsonb_typeof(v_carries->v_j) IS DISTINCT FROM 'string' THEN RAISE EXCEPTION 'invalid_proof_answers';END IF;
+   v_actual:=v_carries->>v_j;
+   IF v_actual !~ '^[0-5]?$' THEN RAISE EXCEPTION 'invalid_proof_answers';END IF;
+   v_power:=(10^v_j)::integer;
+   v_partial:=0;
+   FOR v_k IN 0..v_term_count-1 LOOP
+    v_partial:=v_partial+((v_terms->>v_k)::integer % v_power);
+   END LOOP;
+   v_carry:=v_partial/v_power;
+   v_expected_carry:=CASE WHEN v_carry=0 THEN '' ELSE v_carry::text END;
+   IF v_expected_carry='' AND v_actual='0' THEN v_actual:='';END IF;
+   IF v_actual IS DISTINCT FROM v_expected_carry THEN v_correct:=false;END IF;
+  END LOOP;
+  IF v_correct THEN v_score:=v_score+1;END IF;
+ END LOOP;
+ -- Import permanent trophies before merging the new server-proven mastery.
+ -- A client cannot claim score cups or HARD trophies through this route.
+ v_rewards:=coalesce(public.connect_trophy_rewards_v1(p_student,v_app),
+  '{"version":3,"mastery":{"4":[false,false,false],"10":[false,false,false],"20":[false,false,false]},
+    "sudden":[false,false,false],"hardAwards":{"bronze":[false,false,false],
+    "silver":[false,false,false],"gold":[false,false,false]},
+    "scoreOne":{"bronze":false,"silver":false,"gold":false},"unlockedGold":false}'::jsonb);
+ IF v_score=v_session.total THEN
+  v_rewards:=jsonb_set(v_rewards,
+    ARRAY['mastery',v_session.total::text,(v_session.level-1)::text],'true'::jsonb,false);
+ END IF;
+ -- No client-chosen score or trophies. In this SAME transaction, the native
+ -- recorder merges server-authorized awards, state, official XP and projection.
+ v_ack:=public.connect_addition_multiple_record_v1(p_student,p_session,
+  v_session.expected_revision,v_session.reset_epoch,'classic',v_session.level,
+  v_score,v_session.total,v_rewards);
+ UPDATE public.connect_objective_record_school_proof_sessions
+ SET consumed_at=now(),answers_hash=v_hash,
+  result=v_ack||jsonb_build_object('proofVerified',true,'verifiedScore',v_score)
+ WHERE session_id=p_session;
+ RETURN v_ack||jsonb_build_object('proofVerified',true,'verifiedScore',v_score);
+END $finish$;
+REVOKE ALL ON FUNCTION public.connect_objective_record_school_finish_multi_v1(uuid,uuid,uuid,jsonb) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.connect_objective_record_school_finish_multi_v1(uuid,uuid,uuid,jsonb) TO service_role;

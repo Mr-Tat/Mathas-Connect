@@ -1,0 +1,65 @@
+name: Two school additions — isolated PostgreSQL arithmetic proof
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/202611031200*.sql'
+      - 'supabase/functions/connect-objective-record-school/**'
+      - 'tests/postgres/objective-record-school-*.sql'
+      - 'tests/objective-record-school-contract.test.mjs'
+      - '.github/workflows/objective-record-school-additions.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  school-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: school_additions
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d school_additions"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/school_additions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: School release and JWT contract
+        run: node --test tests/objective-record-school-contract.test.mjs
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck authenticated school Edge
+        run: deno check supabase/functions/connect-objective-record-school/index.ts
+      - name: Disposable Connect identities, XP and states
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-fixed-ops-setup.sql
+      - name: Disposable permanent trophies
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-fixed-trophies-fixture.sql
+      - name: Disposable school class, enrollments
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-school-class-fixture.sql
+      - name: Official Addition multiple atomic recorder (disposable fixture)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-atomic-rpc-candidate.sql
+      - name: School session ledger, permanent class allow-list and web-role denial
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120000_school_certified_additions_tables.sql
+      - name: Addition simple atomic score, XP, trophy and receipt
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120010_school_addition_simple_atomic_record.sql
+      - name: Addition simple issuer and server grader
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120020_school_addition_simple_issue.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120030_school_addition_simple_finish.sql
+      - name: Multiple-addition issuer and server grader
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120040_school_addition_multiple_issue.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120050_school_addition_multiple_finish.sql
+      - name: All 18 variants, identity denial, wrong first answers, replay and XP
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-school-additions.test.sql

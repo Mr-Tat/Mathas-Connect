@@ -7,11 +7,13 @@ import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
+import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
 
-// This is the future SCHOOL launcher, not the legacy pilot XP writer.
-// Its current release gate is TEST-only and READ-ONLY until a verified
-// atomic challenge/session/XP/trophy transaction is deployed.
+// Canonical school/test host; the HUB rollout flag controls when real pupils
+// see this route. JWT and PostgreSQL proofs remain mandatory even by direct URL.
+// Other three written-calculation games remain on their existing school URLs.
 const CLASS_TEST='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
+const SCHOOL_CLASSES=new Set(SCHOOL_CLASS_IDS);
 const BASE='https://awmhpfofacaglewammxt.supabase.co';
 const KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const GAME_URLS=Object.freeze({
@@ -25,6 +27,15 @@ const $=id=>document.getElementById(id);
 const params=new URL(location.href).searchParams;
 const teacher=params.get('joueur')==='prof';
 const classId=params.get('class')||'';
+// Preserve the authenticated school context when returning to the pupil HUB.
+const backLink=document.querySelector('header a[href="../../hub.html"]');
+if(backLink&&UUID_SAFE_CLASS(classId)){
+ const back=new URL('../../hub.html',location.href);
+ back.searchParams.set('class',classId);
+ if(teacher)back.searchParams.set('joueur','prof');
+ backLink.href=back.href;
+}
+function UUID_SAFE_CLASS(x){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x)}
 const session=createClient(BASE,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
  ...(teacher?{storageKey:'mathas-connect-professor-auth-v1'}:{})}});
 let generation=0,tokenOwner=null,activeApp='',visibleDoc=null,watching=null,recorder=null,pupilId=null;
@@ -69,9 +80,10 @@ async function call(endpoint,action,appKey,payload={}){
  }finally{clearTimeout(timeout)}
 }
 async function approvedProfile(){
- if(classId!==CLASS_TEST)throw Error('Version candidate réservée à la classe TEST');
+ if(classId!==CLASS_TEST&&!SCHOOL_CLASSES.has(classId))throw Error('Classe non autorisée pour ces calculs');
+ if(classId!==CLASS_TEST&&!SERVER_PROOF_ADDITIONS.has(activeApp))throw Error('Ce calcul écrit n’est pas encore ouvert aux classes scolaires');
  const profile=await call('connect-api',teacher?'teacher-player':'student-me');
- if(profile.status!=='approved'||profile.classId!==classId)throw Error('Profil TEST non approuvé');
+ if(profile.status!=='approved'||profile.classId!==classId)throw Error('Profil Connect non approuvé dans cette classe');
  return profile;
 }
 function showOfficial({xp,loaded,appKey}){
@@ -161,7 +173,7 @@ async function refresh(seq){
 const certifiedUI=createAdditionProofUI({
  button:$('certify'),panel:$('certified-tools'),levelSelect:$('certified-level'),totalSelect:$('certified-total'),frame:$('gameFrame'),
  getContext:()=>({generation,activeApp,pupilId,classId}),
- call:(action,payload)=>call('connect-objective-record-test',action,'addition-ecrite-simple',payload),
+ call:(action,payload)=>call(classId===CLASS_TEST?'connect-objective-record-test':'connect-objective-record-school',action,'addition-ecrite-simple',payload),
  refresh:()=>refresh(generation),notify:message,
  onRecorded:receipt=>{
   if(receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);
@@ -171,7 +183,7 @@ const certifiedMultiUI=createMultipleProofUI({
  button:$('certify'),panel:$('certified-tools'),levelSelect:$('certified-level'),
  totalSelect:$('certified-total'),frame:$('gameFrame'),
  getContext:()=>({generation,activeApp,pupilId,classId}),
- call:(action,payload)=>call('connect-objective-record-test',action,'addition-ecrite-multiple',payload),
+ call:(action,payload)=>call(classId===CLASS_TEST?'connect-objective-record-test':'connect-objective-record-school',action,'addition-ecrite-multiple',payload),
  refresh:()=>refresh(generation),notify:message,
  onRecorded:receipt=>{
   if(receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);
@@ -185,7 +197,7 @@ async function choose(){
  if(!Object.hasOwn(GAME_URLS,slug)){message('Jeu inconnu');return;}
  activeApp=GAME_URLS[slug][0];
  try{
-  message('Vérification du profil approuvé de la classe TEST…');
+  message('Vérification de l’identité et de la classe Connect…');
   await approvedProfile();
   if(seq!==generation)return;
   message('Lecture des XP globaux et trophées permanents officiels…');
@@ -212,6 +224,10 @@ async function choose(){
     ?{1:5,2:6,3:7}:{1:3,2:5,3:7})){
    const option=$('certified-level').querySelector('option[value="'+level+'"]');
    if(option)option.textContent=level+' · '+width+' chiffres';
+  }
+  if(classId!==CLASS_TEST){
+   for(const option of $('app').options)option.disabled=!['addition-simple','addition-multiple'].includes(option.value);
+   $('notice').textContent='Séries classiques certifiées : résultats, XP et trophées officiels. Les autres modes restent jouables sans XP. Les autres calculs écrits conservent leur version historique dans le HUB.';
   }
   $('gameFrame').src=GAME_URLS[slug][1]+(SERVER_PROOF_ADDITIONS.has(activeApp)?'?connect=1':'');
   $('gameFrame').hidden=false;$('refresh').disabled=false;
