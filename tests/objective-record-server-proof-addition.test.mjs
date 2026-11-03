@@ -81,7 +81,7 @@ test('proof start/finish use JWT-derived pupil without requiring a client pupil 
  assert.match(edge,/const validProofStart=proofStart/);
  assert.match(edge,/Object\.keys\(b\)\.sort\(\)\.join\(','\)==='action,appKey,classId'/);
  assert.match(edge,/const validProofFinish=proofFinish/);
- assert.match(edge,/Object\.keys\(b\)\.sort\(\)\.join\(','\)==='action,answers,appKey,classId'/);
+ assert.match(edge,/Object\.keys\(b\)\.sort\(\)\.join\(','\)==='action,answers,appKey,classId,sessionId'/);
  assert.match(edge,/\(record&&b\.expectedStudentId\.toLowerCase\(\)!==studentId\.toLowerCase\(\)\)/);
  assert.doesNotMatch(edge,/if\(!validId\(studentId\)\|\|b\.expectedStudentId\.toLowerCase/);
  assert.match(edge,/p_student:studentId,p_class:TEST/);
@@ -127,4 +127,35 @@ test('v2 Edge routes require class TEST, exact allowed lengths, and JWT-only stu
  assert.match(sql,/connect_objective_record_test_fixed_v1/);
  assert.match(sql,/TO service_role/);
  assert.doesNotMatch(sql,/GRANT EXECUTE[^;]+TO (?:authenticated|anon)/i);
+});
+
+test('proof finish Edge validation accepts actual sessionId payload, rejects extra client-controlled claims',()=>{
+ const edge=read('supabase/functions/connect-objective-record-test/index.ts');
+ const ui=read('apps/objective-record/certified-addition-ui.mjs');
+ assert.match(ui,/call\('finish-proof-v2',\{sessionId:current\.sessionId,answers:current\.answers\}\)/);
+ const validId=value=>typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+ const validate=(name,b)=>{
+  const match=edge.match(new RegExp('const '+name+'=([\\s\\S]*?);'));
+  assert.ok(match,name+' predicate must exist');
+  // Execute exactly the TypeScript Edge's JavaScript-compatible guard, not
+  // a duplicate test-side whitelist that could drift from deployed behavior.
+  const actual=new Function('b','validId',
+   "const proofFinish=b?.action==='finish-proof'; const proofFinishV2=b?.action==='finish-proof-v2'; return Boolean("+match[1]+");");
+  return actual(b,validId);
+ };
+ const base={appKey:'addition-ecrite-simple',classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',
+  sessionId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'};
+ for(const total of [4,10,20]){
+  const request={...base,action:'finish-proof-v2',answers:Array.from({length:total},(_,i)=>({id:'q'+(i+1),digits:[],carries:[]}))};
+  assert.equal(validate('validProofFinishV2',request),true,'v2 valid series '+total);
+  assert.equal(validate('validProofFinishV2',{...request,sessionId:undefined}),false,'session id required');
+  assert.equal(validate('validProofFinishV2',{...request,score:total}),false,'client cannot send score');
+  assert.equal(validate('validProofFinishV2',{...request,expectedStudentId:base.sessionId}),false,'student bound by JWT');
+  assert.equal(validate('validProofFinishV2',{...request,answers:request.answers.slice(0,3)}),false,'unapproved series size');
+ }
+ const v1={...base,action:'finish-proof',answers:[{},{},{},{}]};
+ assert.equal(validate('validProofFinish',v1),true,'legacy v1 finish still supported');
+ assert.equal(validate('validProofFinish',{...v1,sessionId:'missing'}),false);
+ assert.equal(validate('validProofFinish',{...v1,answers:[{}]}),false);
+ assert.equal(validate('validProofFinish',{...v1,score:4}),false);
 });
