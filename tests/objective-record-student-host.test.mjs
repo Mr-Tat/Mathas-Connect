@@ -49,11 +49,16 @@ test('lancement TEST ou deux additions scolaires : JWT approuvé, classe stricte
  assert.match(code,/connect-results','student-xp'/);
  assert.match(code,/hideFictionalXp\(doc\)/);
  assert.match(code,/const chooser=outer\?\.getElementById\('xp-preview-mode'\)/);
- assert.match(html,/XP globaux/);
+ assert.match(html,/id="xp-panel"/);
+ assert.match(html,/id="total-xp"/);
+ assert.match(html,/id="connect-bar"/);
+ assert.match(html,/id="bar-handle"/);
  assert.match(html,/option value="classic"/i);
  assert.match(html,/option value="three-lives"/i);
  assert.match(html,/option value="hard-sudden"/i);
- assert.match(html,/cadenas Connect/i);
+ assert.match(html,/id="challenge-panel"/);
+ assert.match(html,/Défi Connect/i);
+ assert.match(code,/showConnectedBar\(approved\)/);
   assert.match(code,/SCHOOL_CLASSES\.has\(classId\)/);
   assert.match(code,/classId===CLASS_TEST\?'connect-objective-record-test':'connect-objective-record-school'/);
  assert.doesNotMatch(code,/connect-record-pilot/);
