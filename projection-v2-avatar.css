@@ -23,3 +23,44 @@
 @media(max-width:690px){
  .entry .projection-avatar{flex-basis:29px;width:29px;height:29px;font-size:23px}
 }
+
+/* Un seul groupe (1 à 7 élèves) : un flex item à largeur auto avec
+ * des marges auto se contractait à ~300 px, malgré >900 px disponibles.
+ * Fixer une largeur réelle avant de centrer évite les cartes étroites et
+ * protège prénom + avatar + points sans changer le classement 8+8. */
+.ranking-list.single{
+ width:100%;
+ max-width:720px;
+ min-width:0;
+ margin:0 auto;
+ grid-template-columns:minmax(0,1fr);
+}
+.ranking-list.single .ranking-col{width:100%;min-width:0}
+.ranking-list.single .entry{
+ grid-template-columns:32px minmax(0,1fr);
+ gap:12px;
+ padding-inline:14px;
+}
+.ranking-list.single .entry .primary{gap:14px}
+.ranking-list.single .entry .player-label{gap:10px}
+.ranking-list.single .entry .projection-avatar{
+ flex-basis:34px;width:34px;height:34px;font-size:27px;
+}
+/* Les lettres transparentes étaient blanches sur les cartes pastel du
+ * podium : restaurer le contraste sans changer les emojis ni les fonds. */
+html[data-proj-da] .entry:is(.rank-1,.rank-2,.rank-3) .projection-avatar.transparent{
+ color:#233342;
+}
+@media(max-width:690px){
+ .ranking-list.single{max-width:100%}
+ .ranking-list.single .entry{
+  grid-template-columns:26px minmax(0,1fr);
+  gap:7px;
+  padding-inline:8px;
+ }
+ .ranking-list.single .entry .primary{gap:6px}
+ .ranking-list.single .entry .player-label{gap:5px}
+ .ranking-list.single .entry .projection-avatar{
+  flex-basis:28px;width:28px;height:28px;font-size:22px;
+ }
+}
