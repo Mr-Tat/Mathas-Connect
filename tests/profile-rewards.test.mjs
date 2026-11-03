@@ -40,7 +40,7 @@ test('L’initiale accentuée est conservée, le fond est transparent',()=>{
 
 test('Le serveur ignore les niveaux annoncés par les élèves et protège les profils',()=>{
  const api=get('supabase/functions/connect-api/index.ts');
- const edit=api.slice(api.indexOf("case 'student-avatar':{"),api.indexOf("case 'student-device-label':{"));
+ const edit=api.slice(api.indexOf("case 'student-avatar':{"),api.indexOf("case 'student-reward-celebrate':{"));
  assert.match(api,/const avatarMinLevel:Record<string,number>=\{letter:1,animal:3,object:15,smiley:20\}/);
  assert.match(api,/db\.rpc\('connect_xp_read_v2'/);
  assert.match(api,/connect_level_profiles/);

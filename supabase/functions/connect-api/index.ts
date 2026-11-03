@@ -31,6 +31,18 @@ async function optionalProfileUnlockLevel(studentId:string,knownLevel?:number|nu
 }
 const initialFromName=(name:string)=>Array.from(name.trim())[0]?.toLocaleUpperCase('fr')||'E';
 const avatarMinLevel:Record<string,number>={letter:1,animal:3,object:15,smiley:20};
+const profileRewardLevels=[3,6,10,15,20] as const;
+// Lecture facultative pour ne pas bloquer le HUB si le service XP est indisponible.
+// Aucun niveau déclaré par le navigateur n'entre dans le calcul.
+async function pendingProfileRewardLevels(studentId:string,level:number):Promise<number[]>{
+ if(!Number.isSafeInteger(level)||level<3)return [];
+ const {data,error}=await db.from('connect_profile_reward_celebrations')
+  .select('reward_level').eq('student_id',studentId);
+ if(error)throw Error('reward_read_failed');
+ const seen=new Set((data||[]).map((entry:any)=>entry.reward_level));
+ return profileRewardLevels.filter(reward=>reward<=level&&!seen.has(reward));
+}
+
 
 async function handle(req:Request){
  if(req.method==='OPTIONS')return new Response('',{headers:h});
@@ -97,10 +109,10 @@ async function handle(req:Request){
  }
  case 'student-avatar':{
    const kind=b.kind,value=b.value,color=b.color;
-   const animals=['fox','panda','frog','lion','penguin','owl','cat','dog','rabbit','bear','koala','wolf','tiger','monkey','elephant','giraffe','zebra','horse','cow','pig','sheep','deer','hedgehog','squirrel','otter','dolphin','whale','octopus','turtle','seal','duck','parrot','flamingo','bee','butterfly','dragon'];
-   const objects=['soccer','basketball','tennis','volleyball','bicycle','airplane','rocket','car','train','skateboard','guitar','microphone','headphones','controller','paint','books','camera','star','trophy','music'];
-   const smileys=['smile','cool','starstruck','grin','angel','party','cowboy','catface','heartcat','ghost','robot','alien','laughing','happy','wink','hug'];
-   const colors=['transparent','ocean','sky','indigo','violet','plum','rose','coral','sun','amber','mint','forest','slate'];
+   const animals=['fox','cat','dog','panda','frog','lion','penguin','owl','rabbit','bear','koala','wolf','tiger','hedgehog','squirrel','dolphin','turtle','parrot','butterfly','dragon','otter','flamingo','raccoon','octopus'];
+   const objects=['soccer','basketball','tennis','volleyball','bicycle','airplane','rocket','car','train','skateboard','guitar','microphone','headphones','controller','paint','books','camera','star','trophy','music','puzzle','scooter','kite','roller'];
+   const smileys=['smile','cool','starstruck','grin','angel','party','cowboy','catface','heartcat','ghost','robot','alien','laughing','happy','wink','hug','heartEyes','yummy','playful','upsideDown','peaceful','moved','delighted','melting'];
+   const colors=['transparent','ocean','sky','indigo','violet','plum','rose','coral','sun','amber','mint','forest','slate','lemon','tangerine','electric','turquoise','lime','fuchsia','ruby'];
    if(!colors.includes(color)||!Object.hasOwn(avatarMinLevel,kind)||
      (kind==='animal'?!animals.includes(value):kind==='object'?!objects.includes(value):kind==='smiley'?!smileys.includes(value):!(/^\p{Lu}$/u).test(value)))
      return fail('input_invalid');
@@ -149,6 +161,28 @@ async function handle(req:Request){
    if(result.error||!result.data?.length)return fail('db_failed',500);
    return ok({publicAlias:alias});
  }
+ case 'student-reward-celebrate':{
+   // L'élève reconnaît explicitement une récompense après sa présentation.
+   // L'appareil doit toujours être approuvé et lié à la bonne classe.
+   if(!user.is_anonymous||!U.test(b.classId||'')||
+      !profileRewardLevels.includes(b.level))return fail('forbidden',403);
+   const device=await one(db.from('connect_devices').select('student_id')
+    .eq('auth_user_id',user.id).eq('state','approved').is('revoked_at',null).limit(1));
+   if(!device)return fail('forbidden',403);
+   const [enrollment,student]=await Promise.all([
+    one(db.from('connect_enrollments').select('id')
+      .eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null)),
+    one(db.from('connect_students').select('id')
+      .eq('id',device.student_id).is('archived_at',null))
+   ]);
+   if(!enrollment||!student)return fail('forbidden',403);
+   const level=await readProfileUnlockLevel(device.student_id);
+   if(level<b.level)return fail('reward_locked',403);
+   const result=await db.from('connect_profile_reward_celebrations')
+    .upsert({student_id:device.student_id,reward_level:b.level},
+      {onConflict:'student_id,reward_level',ignoreDuplicates:true});
+   return result.error?fail('celebration_unavailable',503):ok({celebratedLevel:b.level});
+ }
  case 'student-device-label':{
    if(!user.is_anonymous||typeof b.label!=='string')return fail('forbidden',403);
    const label=b.label.trim();
@@ -180,7 +214,15 @@ async function handle(req:Request){
      if(!student||student.archived_at)return ok({status:'revoked'});
      const xp=b.includeXp===true?await optionalXp(d.student_id):undefined;
      const progress=b.includeXp===true?await optionalProgress(d.student_id):undefined;
-     return ok({status:'approved',displayName:student?.display_name??'Élève',avatar:{kind:student?.avatar_kind||'letter',value:student?.avatar_value||initialFromName(student?.display_name||'E'),color:student?.avatar_color||'transparent'},publicAlias:student?.public_alias||student?.display_name,unlockLevel:await optionalProfileUnlockLevel(d.student_id,xp?.level),level:{number:1,xp:0,next:90,active:false},classId:b.classId,...(b.includeXp===true?{xp,progress}:{})});
+     const unlockLevel=await optionalProfileUnlockLevel(d.student_id,xp?.level);
+     // Ne jamais créer d'animation sur la foi d'un profil XP incomplet.
+     // Cette lecture additionnelle est limitée aux profils déjà de niveau 3.
+     let pendingProfileRewards:number[]=[];
+     if(b.includeXp===true&&xp?.active===true&&unlockLevel>=3){
+       try{pendingProfileRewards=await pendingProfileRewardLevels(d.student_id,unlockLevel)}
+       catch{ /* Les jeux restent accessibles, aucune célébration n'est marquée vue. */ }
+     }
+     return ok({status:'approved',displayName:student?.display_name??'Élève',avatar:{kind:student?.avatar_kind||'letter',value:student?.avatar_value||initialFromName(student?.display_name||'E'),color:student?.avatar_color||'transparent'},publicAlias:student?.public_alias||student?.display_name,unlockLevel,pendingProfileRewards,level:{number:1,xp:0,next:90,active:false},classId:b.classId,...(b.includeXp===true?{xp,progress}:{})});
    }
    const revoked=await one(db.from('connect_devices').select('id').eq('auth_user_id',user.id).eq('state','revoked').limit(1));
    return ok({status:revoked?'revoked':'unregistered'});
