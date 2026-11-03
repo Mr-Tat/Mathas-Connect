@@ -92,6 +92,8 @@ for(const item of [
     await input.focus();await page.keyboard.press(item.digits[c]);
     assert.equal(await input.inputValue(),item.digits[c]);
    }
+   // Validate the typed first attempt through the native keyboard handler.
+   await page.keyboard.press('Enter');
    await page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('vérifié'),
     null,{timeout:25000});
    assert.equal(requests.filter(x=>x.action==='finish-mode-v1').length,1);
