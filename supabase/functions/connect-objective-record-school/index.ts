@@ -40,16 +40,24 @@ Deno.serve(async(req:Request)=>{
  const cls=typeof b?.classId==='string'?b.classId.toLowerCase():'';
  const contract=(map as Record<string,typeof map['addition-ecrite-simple']>)[b?.appKey];
  if(!SCHOOL.has(cls)||!contract)return deny('school_class_not_allowed',403);
- const start=b.action===contract.start,finish=b.action===contract.finish;
+ const modeStart=b.action==='start-mode-v1',modeFinish=b.action==='finish-mode-v1';
+ const start=b.action===contract.start||modeStart;
+ const finish=b.action===contract.finish||modeFinish;
  if(!start&&!finish)return deny('proof_only',403);
  if(start){
-  if(![1,2,3].includes(b.level)||![4,10,20].includes(b.total)
-   ||Object.keys(b).sort().join(',')!=='action,appKey,classId,level,total')
+  if(![1,2,3].includes(b.level))return deny('invalid_configuration');
+  if(modeStart){
+   if(!['three-lives','sudden','hard-three-lives','hard-sudden'].includes(b.mode)
+      ||Object.keys(b).sort().join(',')!=='action,appKey,classId,level,mode')
+    return deny('invalid_mode_configuration');
+  }else if(![4,10,20].includes(b.total)
+    ||Object.keys(b).sort().join(',')!=='action,appKey,classId,level,total')
     return deny('invalid_configuration');
  }else{
   if(!valid(b.sessionId)||!Array.isArray(b.answers)
-   ||![4,10,20].includes(b.answers.length)
-   ||Object.keys(b).sort().join(',')!=='action,answers,appKey,classId,sessionId')
+    ||(modeFinish?(b.answers.length<1||b.answers.length>64):
+        ![4,10,20].includes(b.answers.length))
+    ||Object.keys(b).sort().join(',')!=='action,answers,appKey,classId,sessionId')
     return deny('invalid_answers');
  }
  try{
@@ -76,25 +84,35 @@ Deno.serve(async(req:Request)=>{
   if(!alive)return deny('inactive_student',403);
   const app=await one(db.from('connect_apps').select('enabled').eq('app_key',b.appKey));
   if(app?.enabled!==true)return deny('app_disabled',403);
-  const args=start?{p_student:student,p_class:cls,p_level:b.level,p_total:b.total}
+  const args=modeStart?
+    {p_student:student,p_class:cls,p_app:b.appKey,p_mode:b.mode,p_level:b.level}
+   :start?{p_student:student,p_class:cls,p_level:b.level,p_total:b.total}
    :{p_student:student,p_class:cls,p_session:b.sessionId,p_answers:b.answers};
-  const {data,error:rpcError}=await db.rpc(start?contract.issue:contract.grade,args);
+  const rpc=modeStart?'connect_objective_record_school_issue_mode_v1':
+    modeFinish?'connect_objective_record_school_finish_mode_v1':
+    start?contract.issue:contract.grade;
+  const {data,error:rpcError}=await db.rpc(rpc,args);
   if(rpcError){
    const known=new Set(['proof_expired','proof_not_found','proof_replay_collision','stale_reset_epoch',
-     'revision_conflict','not_school_subject','invalid_proof_answers','school_class_not_allowed']);
+     'revision_conflict','not_school_subject','invalid_proof_answers','school_class_not_allowed',
+     'invalid_mode_configuration','invalid_mode_answers','mode_not_finished',
+     'mode_terminal_mismatch']);
    const msg=known.has(rpcError.message)?rpcError.message:'proof_unavailable';
    if(!known.has(rpcError.message))console.error('school_addition_rpc_failed',rpcError.code);
    const code=['proof_replay_collision','stale_reset_epoch','revision_conflict'].includes(msg)?409:
     msg==='proof_expired'?410:msg==='proof_not_found'?404:
     ['not_school_subject','school_class_not_allowed'].includes(msg)?403:
-    msg==='invalid_proof_answers'?400:503;
+    ['invalid_proof_answers','invalid_mode_answers','invalid_mode_configuration'].includes(msg)?400:
+    ['mode_not_finished','mode_terminal_mismatch'].includes(msg)?409:503;
    return deny(msg,code);
   }
   if(data?.ok!==true||(start?
-   (!valid(data.sessionId)||!Array.isArray(data.questions)||data.questions.length!==b.total
-     ||data.level!==b.level||data.total!==b.total):
+   (!valid(data.sessionId)||!Array.isArray(data.questions)
+    ||data.questions.length!==(modeStart?64:b.total)
+    ||data.level!==b.level||(modeStart?data.mode!==b.mode:data.total!==b.total)):
    (data.proofVerified!==true||!Number.isSafeInteger(data.verifiedScore)
-      ||!Number.isSafeInteger(data.xp?.delta))))
+    ||!Number.isSafeInteger(data.xp?.delta)||data.verifiedScore<0
+    ||(modeFinish&&data.verifiedScore>64))))
    return deny('invalid_proof_response',503);
   return reply(data);
  }catch(e){
