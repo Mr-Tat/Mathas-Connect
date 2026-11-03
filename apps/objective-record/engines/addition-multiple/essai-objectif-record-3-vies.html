@@ -34,6 +34,7 @@ iframe{display:block;flex:1 1 auto;width:100%;height:auto;min-height:0;border:0;
 </header>
 <div id="state" role="alert">Préparation du jeu de démonstration…</div>
 <iframe id="game" title="Essai sur le véritable moteur Addition multiple" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
+<script src="./certified-multiple-patch.js"></script>
 <script src="./lab-objectif-record-v2.js"></script>
 <script>
 (async function(){
@@ -304,6 +305,7 @@ iframe{display:block;flex:1 1 auto;width:100%;height:auto;min-height:0;border:0;
      "function refreshSuddenLock(p=loadProgression()){if(window.__mathasThreeLivesDemo)return;",
      "préserver les deux boutons du prototype contre la réécriture tardive");
    game=window.MathasLabV2.patch(game,'multi');
+   game=window.MathasCertifiedMultiPatch(game);
    frame.srcdoc=game;
    status.remove();
  }catch(error){
