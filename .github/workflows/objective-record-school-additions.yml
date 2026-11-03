@@ -9,6 +9,7 @@ on:
       - 'supabase/functions/connect-objective-record-school/**'
       - 'tests/postgres/objective-record-school-*.sql'
       - 'tests/objective-record-school-contract.test.mjs'
+      - 'tests/objective-record-school-modes.test.mjs'
       - '.github/workflows/objective-record-school-additions.yml'
   workflow_dispatch:
 permissions:
@@ -38,7 +39,7 @@ jobs:
         with:
           node-version: '22'
       - name: School release and JWT contract
-        run: node --test tests/objective-record-school-contract.test.mjs
+        run: node --test tests/objective-record-school-contract.test.mjs tests/objective-record-school-modes.test.mjs
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
