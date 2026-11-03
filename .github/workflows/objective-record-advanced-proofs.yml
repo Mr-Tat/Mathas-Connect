@@ -6,6 +6,11 @@ on:
       - 'supabase/functions/connect-objective-record-school/**'
       - 'tests/postgres/objective-record-school-advanced-modes.test.sql'
       - 'tests/objective-record-advanced-contract.test.mjs'
+      - 'tests/objective-record-school-advanced-keyboard.browser.mjs'
+      - 'apps/objective-record/certified-advanced*.mjs'
+      - 'apps/objective-record/engines/certified-advanced-patch.js'
+      - 'apps/objective-record/engines/addition-simple/**'
+      - 'apps/objective-record/engines/addition-multiple/**'
       - '.github/workflows/objective-record-advanced-proofs.yml'
   workflow_dispatch:
 permissions:
@@ -56,3 +61,17 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103110030_advanced_additions_finish_v1.sql
       - name: 24 variants plus deterministic 64-question cap and anti-forgery
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-school-advanced-modes.test.sql
+  advanced-native-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated Playwright Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.58.2
+          npx playwright install chromium --with-deps
+      - name: Four real native advanced modes via school JWT and mocked server
+        run: node --test tests/objective-record-school-advanced-keyboard.browser.mjs
