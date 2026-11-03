@@ -35,20 +35,27 @@ Deno.serve(async(req:Request)=>{
  const {data:{user},error}=await client.auth.getUser(token);
  if(error||!user)return deny('auth_required',401);
  const raw=await req.text();
- if(raw.length>10000)return deny('invalid_request',413);
+ if(raw.length>60000)return deny('invalid_request',413);
  let b:any;try{b=JSON.parse(raw)}catch{return deny('invalid_json');}
  const cls=typeof b?.classId==='string'?b.classId.toLowerCase():'';
  const contract=(map as Record<string,typeof map['addition-ecrite-simple']>)[b?.appKey];
  if(!SCHOOL.has(cls)||!contract)return deny('school_class_not_allowed',403);
+ const extendedStart=b.action==='start-extended-proof-v1';
+ const extendedFinish=b.action==='finish-extended-proof-v1';
  const start=b.action===contract.start,finish=b.action===contract.finish;
- if(!start&&!finish)return deny('proof_only',403);
- if(start){
-  if(![1,2,3].includes(b.level)||![4,10,20].includes(b.total)
+ if(!start&&!finish&&!extendedStart&&!extendedFinish)return deny('proof_only',403);
+ if(start||extendedStart){
+  if(![1,2,3].includes(b.level))return deny('invalid_configuration');
+  if(extendedStart){
+   if(!['three-lives','sudden','hard-three-lives','hard-sudden'].includes(b.mode)
+    ||Object.keys(b).sort().join(',')!=='action,appKey,classId,level,mode')
+     return deny('invalid_configuration');
+  }else if(![4,10,20].includes(b.total)
    ||Object.keys(b).sort().join(',')!=='action,appKey,classId,level,total')
     return deny('invalid_configuration');
  }else{
   if(!valid(b.sessionId)||!Array.isArray(b.answers)
-   ||![4,10,20].includes(b.answers.length)
+   ||(extendedFinish?b.answers.length<1||b.answers.length>120:![4,10,20].includes(b.answers.length))
    ||Object.keys(b).sort().join(',')!=='action,answers,appKey,classId,sessionId')
     return deny('invalid_answers');
  }
@@ -76,23 +83,32 @@ Deno.serve(async(req:Request)=>{
   if(!alive)return deny('inactive_student',403);
   const app=await one(db.from('connect_apps').select('enabled').eq('app_key',b.appKey));
   if(app?.enabled!==true)return deny('app_disabled',403);
-  const args=start?{p_student:student,p_class:cls,p_level:b.level,p_total:b.total}
-   :{p_student:student,p_class:cls,p_session:b.sessionId,p_answers:b.answers};
-  const {data,error:rpcError}=await db.rpc(start?contract.issue:contract.grade,args);
+  const args=extendedStart?
+    {p_student:student,p_class:cls,p_app:b.appKey,p_mode:b.mode,p_level:b.level}:
+   extendedFinish?
+    {p_student:student,p_class:cls,p_app:b.appKey,p_session:b.sessionId,p_answers:b.answers}:
+   start?{p_student:student,p_class:cls,p_level:b.level,p_total:b.total}
+    :{p_student:student,p_class:cls,p_session:b.sessionId,p_answers:b.answers};
+  const rpc=extendedStart?'connect_objective_record_school_issue_extended_v1':
+   extendedFinish?'connect_objective_record_school_finish_extended_v1':
+   start?contract.issue:contract.grade;
+  const {data,error:rpcError}=await db.rpc(rpc,args);
   if(rpcError){
    const known=new Set(['proof_expired','proof_not_found','proof_replay_collision','stale_reset_epoch',
-     'revision_conflict','not_school_subject','invalid_proof_answers','school_class_not_allowed']);
+     'revision_conflict','not_school_subject','invalid_proof_answers','school_class_not_allowed',
+     'proof_continued_after_end','proof_incomplete_game']);
    const msg=known.has(rpcError.message)?rpcError.message:'proof_unavailable';
    if(!known.has(rpcError.message))console.error('school_addition_rpc_failed',rpcError.code);
    const code=['proof_replay_collision','stale_reset_epoch','revision_conflict'].includes(msg)?409:
     msg==='proof_expired'?410:msg==='proof_not_found'?404:
     ['not_school_subject','school_class_not_allowed'].includes(msg)?403:
-    msg==='invalid_proof_answers'?400:503;
+    ['invalid_proof_answers','proof_continued_after_end','proof_incomplete_game'].includes(msg)?400:503;
    return deny(msg,code);
   }
-  if(data?.ok!==true||(start?
-   (!valid(data.sessionId)||!Array.isArray(data.questions)||data.questions.length!==b.total
-     ||data.level!==b.level||data.total!==b.total):
+  if(data?.ok!==true||((start||extendedStart)?
+   (!valid(data.sessionId)||!Array.isArray(data.questions)||
+     data.questions.length!==(extendedStart?120:b.total)
+     ||data.level!==b.level||(extendedStart?data.mode!==b.mode||data.limit!==120:data.total!==b.total)):
    (data.proofVerified!==true||!Number.isSafeInteger(data.verifiedScore)
       ||!Number.isSafeInteger(data.xp?.delta))))
    return deny('invalid_proof_response',503);
