@@ -23,6 +23,12 @@ async function readProfileUnlockLevel(studentId:string,knownLevel?:number|null){
  if(error)throw Error('db_failed');
  return Math.max(1,current!,Number(history?.highest_level_reached)||1);
 }
+// La lecture d'identité doit rester disponible même si le calcul des XP
+// est momentanément indisponible : les mutations, elles, échouent fermées.
+async function optionalProfileUnlockLevel(studentId:string,knownLevel?:number|null){
+ try{return await readProfileUnlockLevel(studentId,knownLevel)}
+ catch{return Number.isSafeInteger(knownLevel)&&knownLevel!>=1?knownLevel!:1}
+}
 const initialFromName=(name:string)=>Array.from(name.trim())[0]?.toLocaleUpperCase('fr')||'E';
 const avatarMinLevel:Record<string,number>={letter:1,animal:3,object:15,smiley:20};
 
@@ -174,7 +180,7 @@ async function handle(req:Request){
      if(!student||student.archived_at)return ok({status:'revoked'});
      const xp=b.includeXp===true?await optionalXp(d.student_id):undefined;
      const progress=b.includeXp===true?await optionalProgress(d.student_id):undefined;
-     return ok({status:'approved',displayName:student?.display_name??'Élève',avatar:{kind:student?.avatar_kind||'letter',value:student?.avatar_value||initialFromName(student?.display_name||'E'),color:student?.avatar_color||'transparent'},publicAlias:student?.public_alias||student?.display_name,unlockLevel:await readProfileUnlockLevel(d.student_id,xp?.level),level:{number:1,xp:0,next:90,active:false},classId:b.classId,...(b.includeXp===true?{xp,progress}:{})});
+     return ok({status:'approved',displayName:student?.display_name??'Élève',avatar:{kind:student?.avatar_kind||'letter',value:student?.avatar_value||initialFromName(student?.display_name||'E'),color:student?.avatar_color||'transparent'},publicAlias:student?.public_alias||student?.display_name,unlockLevel:await optionalProfileUnlockLevel(d.student_id,xp?.level),level:{number:1,xp:0,next:90,active:false},classId:b.classId,...(b.includeXp===true?{xp,progress}:{})});
    }
    const revoked=await one(db.from('connect_devices').select('id').eq('auth_user_id',user.id).eq('state','revoked').limit(1));
    return ok({status:revoked?'revoked':'unregistered'});
