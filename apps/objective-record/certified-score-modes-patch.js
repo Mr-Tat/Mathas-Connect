@@ -71,6 +71,25 @@
       'appel correct des réponses multiples');
   }
 
+  // Capture BOTH native normal challenges before the special three-lives
+  // or sudden branches evaluate/clear answers. Classic capture stays separate.
+  // The demo wrapper inserts three-lives ahead of native sudden in both games.
+  game=swap(game,
+   "    if(session.mode==='three-lives'){\\n      let right=0,lost=0;",
+   `    if(window.__mathasServerCertifiedModes?.sessionId){
+      for(const i of candidates){
+        const state=states[i];
+        if(!state.proofCaptured){
+          state.proofCaptured=true;
+          window.MathasCertifiedModeAttempt?.({id:state.proofId,
+            digits:[...state.answerValues],carries:[...state.carryValues]});
+        }
+      }
+    }
+    if(session.mode==='three-lives'){
+      let right=0,lost=0;`,
+   'capture scores spéciaux avant correction');
+
   // HARD has 10/12/16-digit simple sums or 9/12/14-digit multiaddend sums.
   // Keep decimal strings and BigInt: 16 digits are unsafe as Number.
   game=swap(game,"  function additionState(spec){",
