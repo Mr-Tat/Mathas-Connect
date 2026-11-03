@@ -67,6 +67,6 @@ html[data-proj-da="papier"] .entry .projection-avatar.transparent{border-color:#
  border:1px solid #cbd7e3;border-radius:7px;
  box-shadow:0 1px 3px #13202e40;
 }
-html[data-proj-da] .entry:is(.rank-1,.rank-2,.rank-3) .points{
+html[data-proj-da] .entry:is(.rank-1,.rank-2,.rank-3) .primary .points{
  color:#fff3d2!important;text-shadow:none!important;
 }
