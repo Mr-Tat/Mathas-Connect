@@ -327,8 +327,8 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
      "  if(!startSudden.querySelector('.score-mode-name'))startSudden.textContent='Mort subite';",
      'préserver le bouton rouge Mort subite');
    game=swap(game,
-     "     const r=button.getBoundingClientRect();\n     const gap=-1;\n     const safeTop=8;\n     const wanted=normalHeight(menu);\n     const available=Math.max(90,Math.floor(r.top-gap-safeTop));\n     const height=Math.min(wanted,available);\n     const top=Math.max(safeTop,Math.round(r.top-gap-height));",
-     "     const r=button.getBoundingClientRect();\n     const top=Math.max(8,Math.ceil(r.bottom+5));\n     const viewport=window.visualViewport?.height??window.innerHeight;\n     const wanted=normalHeight(menu);\n     // The level list always opens below its button, scrollable if needed.\n     const available=Math.max(56,Math.floor(viewport-top-8));\n     const height=Math.min(wanted,available);",
+     "    const r=button.getBoundingClientRect();\n    const gap=-1;\n    const safeTop=8;\n    const wanted=normalHeight(menu);\n    const available=Math.max(90,Math.floor(r.top-gap-safeTop));\n    const height=Math.min(wanted,available);\n    const top=Math.max(safeTop,Math.round(r.top-gap-height));",
+     "    const r=button.getBoundingClientRect();\n    const top=Math.max(8,Math.ceil(r.bottom+5));\n    const viewport=window.visualViewport?.height??window.innerHeight;\n    const wanted=normalHeight(menu);\n    // The level list always opens below its button, scrollable if needed.\n    const available=Math.max(56,Math.floor(viewport-top-8));\n    const height=Math.min(wanted,available);",
      'menu Niveau : ouvrir vers le bas');
    game=window.MathasLabV2.patch(game,'multi');
    game=window.MathasCertifiedMultiPatch(game);
