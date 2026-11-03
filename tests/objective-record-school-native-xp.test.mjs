@@ -50,7 +50,7 @@ test('HARD modes share server proof but training remains a free game',()=>{
 });
 
 import {schoolUnlockProgress,schoolProgressSnapshot,schoolModeAllowed,
- schoolModeLockReason} from '../apps/objective-record/school-official-unlocks.mjs';
+ schoolModeLockReason,visibleSchoolHardLevels} from '../apps/objective-record/school-official-unlocks.mjs';
 
 test('Objectif record remains locked after 4/4 even though its milestone awards 22 XP',()=>{
  const state={classic:[{'4':4},{},{}],progress:{}};
@@ -89,4 +89,19 @@ test('HARD requires one genuine 10/10 or 20/20 at each of three levels',()=>{
  const c=schoolProgressSnapshot('addition-ecrite-simple',{...one,hard:[2,3,0]});
  assert.equal(schoolModeAllowed(c,'hard-sudden',2),false);
  assert.equal(schoolUnlockProgress({progress:{sudden1:true}}).sudden1,true);
+});
+
+test('HARD score row must not advertise locked levels on either written addition',()=>{
+ for(const app of ['addition-ecrite-simple','addition-ecrite-multiple']){
+  const fresh=schoolProgressSnapshot(app,{classic:[{'4':4},{},{}],hard:[0,0,0]});
+  assert.deepEqual(visibleSchoolHardLevels(fresh),[],
+   'zero-valued HARD records do not unlock the row');
+  const perfection=[{'10':10},{'20':20},{'10':10}];
+  const first=schoolProgressSnapshot(app,{classic:perfection,hard:[0,0,0]});
+  assert.deepEqual(visibleSchoolHardLevels(first),[1]);
+  const second=schoolProgressSnapshot(app,{classic:perfection,hard:[3,0,0]});
+  assert.deepEqual(visibleSchoolHardLevels(second),[1,2]);
+  const third=schoolProgressSnapshot(app,{classic:perfection,hard:[3,3,0]});
+  assert.deepEqual(visibleSchoolHardLevels(third),[1,2,3]);
+ }
 });
