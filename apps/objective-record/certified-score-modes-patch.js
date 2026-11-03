@@ -75,7 +75,7 @@
   // or sudden branches evaluate/clear answers. Classic capture stays separate.
   // The demo wrapper inserts three-lives ahead of native sudden in both games.
   game=swap(game,
-   "    if(session.mode==='three-lives'){\\n      let right=0,lost=0;",
+   "    if(session.mode==='three-lives'){\n      let right=0,lost=0;",
    `    if(window.__mathasServerCertifiedModes?.sessionId){
       for(const i of candidates){
         const state=states[i];
