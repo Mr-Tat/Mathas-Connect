@@ -39,7 +39,7 @@ for(const item of examples){
     {waitUntil:'domcontentloaded',timeout:28000});
    const game=page.frameLocator('#game');
    await game.locator('#menuScreen:not(.hidden)').waitFor({state:'visible',timeout:25000});
-   await game.locator('#classicMaxDigits option[value="__hard__"]').waitFor({state:'attached',timeout:12000});
+   await game.locator('#trainingMaxDigits option[value="__hard__"]').waitFor({state:'attached',timeout:12000});
    // Le moteur HARD local n'a pas besoin d'auth : activer le contrôle Connect
    // uniquement pour vérifier son rendu ambre sur l'iframe natif.
    const installed=await page.evaluate(async app=>{
@@ -51,7 +51,7 @@ for(const item of examples){
     // Chiffres 9 partout : deux nombres à chiffres max (simple), ou
     // plusieurs grands termes (multiple) => report au-delà du nombre.
     w.Math.random=()=>.999999;
-    const select=d.getElementById('classicMaxDigits');
+    const select=d.getElementById('trainingMaxDigits');
     select.value='__hard__';select.dispatchEvent(new w.Event('change',{bubbles:true}));
     return ok;
    },item.app);
