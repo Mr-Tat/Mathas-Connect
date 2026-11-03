@@ -5,6 +5,7 @@ import {createAtomicTestRecorder,isWritableTestApp} from './atomic-test-recorder
 import {MIXED_TEST_APP,isMixedTestTerminal} from './mixed-test-proof.mjs';
 import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
+import {createAdvancedProofUI} from './certified-advanced-ui.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
@@ -131,6 +132,7 @@ function watchGame(seq){
    // hook. Never enable certified launch until the native engine is ready.
    if(typeof native!=='function')return;
    activeProofUI.bind(inside.contentWindow,doc);
+   advancedProofUI.bind(inside.contentWindow,doc);
    if(doc===visibleDoc)return;
    visibleDoc=doc;
    {
@@ -138,6 +140,7 @@ function watchGame(seq){
      native(event);
      if(seq!==generation||!event)return;
      if(activeProofUI.onGameEvent(event))return;
+     if(advancedProofUI.onGameEvent(event))return;
      if(recorder){
       const mixed=activeApp===MIXED_TEST_APP&&isMixedTestTerminal(event);
       const observed=mixed?{...event,
@@ -189,9 +192,18 @@ const certifiedMultiUI=createMultipleProofUI({
   if(receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);
  }
 });
+const advancedProofUI=createAdvancedProofUI({
+ frame:$('gameFrame'),
+ getContext:()=>({generation,activeApp,pupilId,classId}),
+ call:(action,payload)=>call('connect-objective-record-school',action,activeApp,payload),
+ refresh:()=>refresh(generation),notify:message,
+ onRecorded:receipt=>{
+  if(receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);
+ }
+});
 async function choose(){
  generation++;const seq=generation;
- clearInterval(watching);visibleDoc=null;recorder=null;pupilId=null;certifiedUI.reset();certifiedMultiUI.reset();
+ clearInterval(watching);visibleDoc=null;recorder=null;pupilId=null;certifiedUI.reset();certifiedMultiUI.reset();advancedProofUI.reset();
  projectionConsent?.destroy();projectionConsent=null;clear();
  const slug=$('app').value;
  if(!Object.hasOwn(GAME_URLS,slug)){message('Jeu inconnu');return;}
@@ -242,7 +254,7 @@ async function choose(){
   message('⚠️ '+(e?.message||'Accès indisponible')+'. Jeu non lancé.');
  }
 }
-$('refresh').addEventListener('click',async()=>{const seq=generation;try{if(certifiedUI.hasPending())await certifiedUI.retry();else if(certifiedMultiUI.hasPending())await certifiedMultiUI.retry();else if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
+$('refresh').addEventListener('click',async()=>{const seq=generation;try{if(certifiedUI.hasPending())await certifiedUI.retry();else if(certifiedMultiUI.hasPending())await certifiedMultiUI.retry();else if(advancedProofUI.hasPending())await advancedProofUI.retry();else if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
   if(seq===generation&&!recorder?.hasPending())message('Profil officiel actualisé.');
  }catch(e){if(seq===generation)message('⚠️ '+e.message)}});
 $('app').addEventListener('change',()=>{const next=new URL(location.href);next.searchParams.set('app',$('app').value);history.replaceState(null,'',next);void choose()});
