@@ -39,8 +39,9 @@ function labUI(){
     // The approved Connect pupil's permanent awards override ALL native
     // localStorage trophies. The pilot remains available only for standalone
     // demonstrations, which have no official Connect identity.
-    let official=null;
+    let official=null,pilot=null;
     try{official=window.parent?.parent?.MathasConnectOfficialTrophies||null}catch{}
+    try{pilot=window.parent?.parent?.MathasPilotState||null}catch{}
     if(official?.active===true){
       if(!official.rewards){
         document.documentElement.classList.add('mathas-connect-official-trophies-unavailable');
@@ -48,10 +49,7 @@ function labUI(){
       }
       document.documentElement.classList.remove('mathas-connect-official-trophies-unavailable');
       t={...t,...official.rewards};
-    }else{
-    let pilot=null;
-    try{pilot=window.parent?.parent?.MathasPilotState||null}catch{}
-    if(pilot?.active&&Array.isArray(pilot.trophies)){
+    }else if(pilot?.active&&Array.isArray(pilot.trophies)){
       const gained=new Set(pilot.trophies);
       const mastery={4:[],10:[],20:[]};
       for(const n of [4,10,20])for(let l=1;l<=3;l++)mastery[n].push(gained.has("mastery:"+l+":"+n));
@@ -59,7 +57,6 @@ function labUI(){
         sudden:[1,2,3].map(l=>gained.has("sudden:"+l)),
         hardAwards:Object.fromEntries(keys.map((name,i)=>[name,[1,2,3].map(l=>gained.has("hard:"+l+":"+[3,5,10][i]))])),
         scoreOne:Object.fromEntries(keys.map((name,i)=>[name,gained.has("score:"+[200,400,600][i])]))};
-    }
     }
     // Les cinq gabarits ont des CSS tardifs : priorite stable au texte 4/10/20.
     document.querySelectorAll("#menuScreen .classic-count-btn[data-count],#menuScreen .countBtn[data-count]").forEach(button=>{
