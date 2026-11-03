@@ -67,11 +67,11 @@ async function handle(req:Request){
    // Monsieur T utilise sa fiche joueur personnelle dans n'importe quelle
    // classe autorisée au professeur, sans inscription fictive comme élève.
    if(!await manage(b.classId))return fail('forbidden',403);
-   const student=await one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color,archived_at').eq('id',player.student_id));
+   const student=await one(db.from('connect_students').select('display_name,public_alias,avatar_kind,avatar_value,avatar_color,archived_at').eq('id',player.student_id));
    if(!student||student.archived_at)return ok({status:'revoked'});
    const xp=b.includeXp===true?await optionalXp(player.student_id):undefined;
    const progress=b.includeXp===true?await optionalProgress(player.student_id):undefined;
-   return ok({status:'approved',displayName:student.display_name,avatar:{kind:student.avatar_kind||'letter',value:student.avatar_value||'T',color:student.avatar_color||'ocean'},classId:b.classId,...(b.includeXp===true?{xp,progress}:{})});
+   return ok({status:'approved',displayName:student.display_name,avatar:{kind:student.avatar_kind||'letter',value:student.avatar_value||'T',color:student.avatar_color||'transparent'},publicAlias:student.public_alias||student.display_name,unlockLevel:20,classId:b.classId,...(b.includeXp===true?{xp,progress}:{})});
  }
  case 'player-xp':{
    let id:string|null=null;
@@ -170,11 +170,11 @@ async function handle(req:Request){
    if(d){
      const e=await one(db.from('connect_enrollments').select('id').eq('student_id',d.student_id).eq('class_id',b.classId).is('left_at',null));
      if(!e)return ok({status:'wrong_class'});
-     const student=await one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color,archived_at').eq('id',d.student_id));
+     const student=await one(db.from('connect_students').select('display_name,public_alias,avatar_kind,avatar_value,avatar_color,archived_at').eq('id',d.student_id));
      if(!student||student.archived_at)return ok({status:'revoked'});
      const xp=b.includeXp===true?await optionalXp(d.student_id):undefined;
      const progress=b.includeXp===true?await optionalProgress(d.student_id):undefined;
-     return ok({status:'approved',displayName:student?.display_name??'Élève',avatar:{kind:student?.avatar_kind||'letter',value:student?.avatar_value||String(student?.display_name||'E').slice(0,1).toUpperCase(),color:student?.avatar_color||'ocean'},level:{number:1,xp:0,next:90,active:false},classId:b.classId,...(b.includeXp===true?{xp,progress}:{})});
+     return ok({status:'approved',displayName:student?.display_name??'Élève',avatar:{kind:student?.avatar_kind||'letter',value:student?.avatar_value||initialFromName(student?.display_name||'E'),color:student?.avatar_color||'transparent'},publicAlias:student?.public_alias||student?.display_name,unlockLevel:await readProfileUnlockLevel(d.student_id,xp?.level),level:{number:1,xp:0,next:90,active:false},classId:b.classId,...(b.includeXp===true?{xp,progress}:{})});
    }
    const revoked=await one(db.from('connect_devices').select('id').eq('auth_user_id',user.id).eq('state','revoked').limit(1));
    return ok({status:revoked?'revoked':'unregistered'});
@@ -343,7 +343,7 @@ async function handle(req:Request){
        .eq('auth_user_id',user.id).eq('state','approved').limit(1));
      if(d){
        const [student,enrolled]=await Promise.all([
-         one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color')
+         one(db.from('connect_students').select('display_name,public_alias,avatar_kind,avatar_value,avatar_color')
            .eq('id',d.student_id).is('archived_at',null)),
          one(db.from('connect_enrollments').select('class_id')
            .eq('student_id',d.student_id).is('left_at',null).limit(1))
@@ -351,7 +351,7 @@ async function handle(req:Request){
        if(student&&enrolled&&b.awaitingApproval===true&&r.data?.state==='approved'&&enrolled.class_id===b.classId)return ok({request:{state:'approved'}});
        if(student&&enrolled)return ok({request:{state:'already_approved',
          classId:enrolled.class_id,displayName:student.display_name,
-         avatar:{kind:student.avatar_kind||'animal',value:student.avatar_value||'fox',color:student.avatar_color||'ocean'}}});
+         avatar:{kind:student.avatar_kind||'letter',value:student.avatar_value||initialFromName(student.display_name),color:student.avatar_color||'transparent'}}});
        return ok({request:{state:'revoked'}});
      }
    }
