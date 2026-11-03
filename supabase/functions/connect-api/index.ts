@@ -109,10 +109,10 @@ async function handle(req:Request){
  }
  case 'student-avatar':{
    const kind=b.kind,value=b.value,color=b.color;
-   const animals=['fox','panda','frog','lion','penguin','owl','cat','dog','rabbit','bear','koala','wolf','tiger','monkey','elephant','giraffe','zebra','horse','cow','pig','sheep','deer','hedgehog','squirrel','otter','dolphin','whale','octopus','turtle','seal','duck','parrot','flamingo','bee','butterfly','dragon'];
-   const objects=['soccer','basketball','tennis','volleyball','bicycle','airplane','rocket','car','train','skateboard','guitar','microphone','headphones','controller','paint','books','camera','star','trophy','music'];
-   const smileys=['smile','cool','starstruck','grin','angel','party','cowboy','catface','heartcat','ghost','robot','alien','laughing','happy','wink','hug'];
-   const colors=['transparent','ocean','sky','indigo','violet','plum','rose','coral','sun','amber','mint','forest','slate'];
+   const animals=['fox','cat','dog','panda','frog','lion','penguin','owl','rabbit','bear','koala','wolf','tiger','hedgehog','squirrel','dolphin','turtle','parrot','butterfly','dragon','otter','flamingo','raccoon','octopus'];
+   const objects=['soccer','basketball','tennis','volleyball','bicycle','airplane','rocket','car','train','skateboard','guitar','microphone','headphones','controller','paint','books','camera','star','trophy','music','puzzle','scooter','kite','roller'];
+   const smileys=['smile','cool','starstruck','grin','angel','party','cowboy','catface','heartcat','ghost','robot','alien','laughing','happy','wink','hug','heartEyes','yummy','playful','upsideDown','peaceful','moved','delighted','melting'];
+   const colors=['transparent','ocean','sky','indigo','violet','plum','rose','coral','sun','amber','mint','forest','slate','lemon','tangerine','electric','turquoise','lime','fuchsia','ruby'];
    if(!colors.includes(color)||!Object.hasOwn(avatarMinLevel,kind)||
      (kind==='animal'?!animals.includes(value):kind==='object'?!objects.includes(value):kind==='smiley'?!smileys.includes(value):!(/^\p{Lu}$/u).test(value)))
      return fail('input_invalid');
