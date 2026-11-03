@@ -10,6 +10,7 @@ import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-conn
 import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 import {createSchoolScoreView} from './school-score-view.mjs';
+import {installTensFirstDuringGame} from './in-game-tens-first.mjs';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
 
@@ -274,6 +275,7 @@ function watchGame(seq){
    hideFictionalXp(doc);
    renderNativeOfficialXp(doc,activeApp,lastOfficialXp);
    schoolScoreView?.mount(doc);
+   installTensFirstDuringGame(doc,activeApp);
    if(lastOfficialProgress){
     syncOfficialGameProgress(doc,lastOfficialProgress);
     syncOfficialHardSummary(doc,lastOfficialProgress);
@@ -312,7 +314,8 @@ function watchGame(seq){
       :'Partie terminée : aucun XP Connect (ce jeu n’est pas encore raccordé).');
     };
    }
-  }catch{
+  }catch(error){
+   console.error('Contrôle du jeu natif : vérification interrompue',error);
    // No fallback to unauthenticated writes if a nested iframe cannot be read.
    clearInterval(watching);
    message('Le moteur est visible, mais son contrôle de recette est indisponible.');

@@ -60,6 +60,7 @@ for(const item of examples){
    const page=await browser.newPage({viewport:{width:1440,height:900}});
    const requests=[],errors=[];let xp=0;
    page.on('pageerror',err=>errors.push(err.message));
+   page.on('console',msg=>{if(msg.type()==='error')errors.push('console: '+msg.text())});
    await page.route('**/supabase-js@2.95.0*',r=>r.fulfill({
     status:200,contentType:'text/javascript',headers:{'access-control-allow-origin':'*'},
     body:'export function createClient(){return {auth:{getSession:async()=>({data:{session:{access_token:"fake",user:{id:"'+AUTH+'",is_anonymous:true}}}}),getUser:async()=>({data:{user:{id:"'+AUTH+'",is_anonymous:true}},error:null})}}}'
@@ -102,11 +103,51 @@ for(const item of examples){
    });
    await page.goto(url+'/apps/objective-record/eleve.html?class='+CLASS+'&app='+item.slug,
     {waitUntil:'domcontentloaded',timeout:25000});
-   await page.waitForFunction(()=>!document.getElementById('certify').disabled,null,{timeout:45000});
+   try{await page.waitForFunction(()=>!document.getElementById('certify').disabled,null,{timeout:9000});}
+   catch(error){
+    const diag=await page.evaluate(()=>({title:document.title,
+     status:document.getElementById('status')?.textContent,
+     certifyDisabled:document.getElementById('certify')?.disabled,
+     module:document.querySelector('script[type="module"]')?.getAttribute('src')}));
+    throw Error('Student app bootstrap failed '+JSON.stringify({errors,diag})+' '+error);
+   }
    await page.locator('#challenge-toggle').click();
    await page.locator('#certify').click();
    const game=page.frameLocator('#gameFrame').frameLocator('#game');
    await game.locator('#gameScreen:not(.hidden)').waitFor({state:'visible',timeout:30000});
+   // Permettre de changer « dizaines d'abord » pendant une partie, pour les
+   // deux additions : un seul état sur l'accueil, le calcul et HARD.
+   const inGame=game.locator('#mathasTensFirstDuringGame-normal');
+   await inGame.waitFor({state:'visible',timeout:12000});
+   await inGame.check();
+   const enabled=await page.evaluate(()=>{
+    const w=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
+    const d=w.document;
+    return {home:d.getElementById('tensFirstToggle').checked,
+     running:d.getElementById('mathasTensFirstDuringGame-normal').checked,
+     hard:d.getElementById('mathasTensFirstDuringGame-hard')?.checked,
+     stored:w.__mathasTensFirst,
+     hint:d.getElementById('instructionText').textContent};
+   });
+   assert.equal(enabled.home,true,'l’accueil doit suivre le choix pendant le calcul');
+   assert.equal(enabled.running,true);
+   assert.equal(enabled.hard,true,'le choix doit aussi être synchronisé avec HARD');
+   assert.equal(enabled.stored,true,'le moteur doit réagir immédiatement');
+   assert.match(enabled.hint,/écris d’abord/i);
+   await inGame.uncheck();
+   const disabled=await page.evaluate(()=>{
+    const w=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
+    const d=w.document;
+    return {home:d.getElementById('tensFirstToggle').checked,
+     hard:d.getElementById('mathasTensFirstDuringGame-hard')?.checked,
+     stored:w.__mathasTensFirst,
+     hint:d.getElementById('instructionText').textContent};
+   });
+   assert.equal(disabled.home,false);
+   assert.equal(disabled.hard,false);
+   assert.equal(disabled.stored,false);
+   assert.match(disabled.hint,/écris ensuite/i);
+
 
    for(let batch=0;batch<2;batch++){
     for(let slot=0;slot<2;slot++){
