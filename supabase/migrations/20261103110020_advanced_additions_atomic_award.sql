@@ -13,6 +13,7 @@ DECLARE
  v_state jsonb;v_ids jsonb;v_recent jsonb;v_event jsonb;
  v_hash text;v_existing text;v_when timestamptz:=now();v_i int;
  v_previous int;v_points int;v_xp jsonb;v_day text;v_best_today int;v_rewards jsonb;v_track text;
+ v_replay int;v_repeat boolean;v_stage_key text;
 BEGIN
  IF (p_class IS NULL OR public.connect_objective_record_school_class_allowed_v1(p_class) IS DISTINCT FROM true)
   OR p_app NOT IN ('addition-ecrite-simple','addition-ecrite-multiple')
@@ -143,6 +144,30 @@ BEGIN
   VALUES(p_student,p_app,'hard:'||p_level||':3',
     jsonb_build_object('source','advanced_proof','mode',p_mode,'eventId',p_event,'score',p_score))
   ON CONFLICT DO NOTHING;
+ END IF;
+ -- Existing Connect parcours replay must also recognize verified 3-lives
+ -- stages: the generic XP sync checks only the sudden/HARD record arrays.
+ -- Insert the corresponding retry bonus once, never fabricate a milestone.
+ IF (p_mode='three-lives' AND p_score>=5)
+    OR (p_mode='hard-three-lives' AND p_score>=3) THEN
+  v_stage_key:=CASE WHEN p_mode='three-lives'
+   THEN 'sudden:'||p_level||':5' ELSE 'hard:'||p_level||':3' END;
+  SELECT parcours_number,repeat_xp INTO v_replay,v_repeat
+  FROM public.connect_parcours_current
+  WHERE student_id=p_student AND app_key=p_app;
+  IF v_repeat IS TRUE AND v_replay>=2 THEN
+   INSERT INTO public.connect_parcours_xp_bonus(
+    student_id,app_key,parcours_number,milestone_key,points
+   )
+   SELECT p_student,p_app,v_replay,v_stage_key,r.points
+   FROM public.connect_xp_award_rules r
+   WHERE r.app_key=p_app
+    AND r.award_key=(CASE WHEN p_mode='three-lives' THEN 'sudden:5' ELSE 'hard:3' END)
+    AND EXISTS(SELECT 1 FROM public.connect_xp_milestones m
+     WHERE m.student_id=p_student AND m.app_key=p_app
+      AND m.milestone_key=v_stage_key)
+   ON CONFLICT DO NOTHING;
+  END IF;
  END IF;
  v_xp:=public.connect_xp_sync_v2(p_student,p_app,false);
  RETURN jsonb_build_object('ok',true,'duplicate',false,'revision',v_current.revision+1,
