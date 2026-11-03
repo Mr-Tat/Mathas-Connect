@@ -1,5 +1,6 @@
 import {classId,classLabel} from './connect-context.js';
 import {rankMultiClass,splitProjectedRanking} from './projection-v2-model.mjs';
+import {avatarGlyph,avatarColor} from './avatar-catalog.js';
 
 // Projection V2: écran séparé de la projection collective historique.
 // Les scores proviennent uniquement de l'Edge Function professeur sécurisée.
@@ -108,6 +109,22 @@ function score(person,appKey){
  const row=person.scores?.find(x=>x.appKey===appKey);
  return Number.isFinite(row?.bestScore)?row.bestScore:null;
 }
+// Avatars du HUB uniquement pour les élèves autorisés à la projection.
+function projectedAvatar(person){
+ const initial=Array.from(String(person.name||'Élève').trim())[0]?.toLocaleUpperCase('fr')||'E';
+ const raw=person.avatar;
+ const selected=raw&&typeof raw==='object'&&
+   ['letter','animal','object','smiley'].includes(raw.kind)&&
+   typeof raw.value==='string'&&raw.value.length<=32&&raw.value
+   ?raw:{kind:'letter',value:initial,color:'transparent'};
+ const symbol=document.createElement('span');symbol.className='projection-avatar';
+ symbol.setAttribute('aria-hidden','true');
+ symbol.textContent=avatarGlyph(selected);
+ const background=avatarColor(selected.color);
+ symbol.style.background=background;
+ symbol.classList.toggle('transparent',background==='transparent');
+ return symbol;
+}
 function render(){
  const principal=mainData();
  const app=apps.find(a=>a.key===currentApp);
@@ -132,10 +149,12 @@ function render(){
    const row=document.createElement('div');row.className='entry rank-'+place+(p.score===null?' unplayed':'');
    row.style.setProperty('--rank-progress',String((place-1)/15));
    const rank=document.createElement('span');rank.className='place';
-   rank.textContent=place<=3?['🥇','🥈','🥉'][place-1]:String(place);
+   rank.textContent=String(place);
    const detail=document.createElement('div');
    const primary=document.createElement('div');primary.className='primary';
    const name=document.createElement('strong');name.textContent=p.name;
+   const playerLabel=document.createElement('span');playerLabel.className='player-label';
+   playerLabel.append(projectedAvatar(p),name);
    const points=document.createElement('span');points.className='points';
    points.textContent=p.score===null?'—':p.score+' pts';
    const minor=document.createElement('div');minor.className='minor';
@@ -143,7 +162,7 @@ function render(){
    classMark.textContent=p.className;
    minor.append(document.createTextNode('Niveau '+(p.level??'—')+'   🏆 '+(p.trophies??0)));
    if(multiple)minor.append(classMark);
-   primary.append(name,points);detail.append(primary,minor);
+   primary.append(playerLabel,points);detail.append(primary,minor);
    row.append(rank,detail);column.append(row);
   });
   $('ranking-list').append(column);

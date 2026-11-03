@@ -4,6 +4,7 @@ on:
     paths:
       - 'supabase/functions/connect-projection-v2/**'
       - 'tests/projection-v2-api.test.mjs'
+      - 'tests/projection-v2-avatar.test.mjs'
       - '.github/workflows/projection-v2-api.yml'
   workflow_dispatch:
 permissions:
@@ -18,7 +19,7 @@ jobs:
         with:
           node-version: '22'
       - name: Contrat d'authentification et d'isolation
-        run: node --test tests/projection-v2-api.test.mjs
+        run: node --test tests/projection-v2-api.test.mjs tests/projection-v2-avatar.test.mjs
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x

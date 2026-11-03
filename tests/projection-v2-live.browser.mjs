@@ -27,6 +27,9 @@ async function serve(){
 }
 function fakeStudent(i){
  return {id:'fake-student-'+i,name:'Élève '+(i+1),level:4,trophies:i%4,
+  avatar:i===0?{kind:'letter',value:'É',color:'transparent'}:
+   i===1?{kind:'animal',value:'fox',color:'fuchsia'}:
+   i===2?{kind:'object',value:'rocket',color:'electric'}:null,
   scores:[{appKey:'addition-ecrite-simple',bestScore:220-i*10},
   {appKey:'multiplication-ecrite-simple',bestScore:90-i*3}]};
 }
@@ -87,7 +90,20 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   assert.equal(await page.locator('.ranking-col').nth(1).locator('.entry').count(),7);
   assert.equal(await page.locator('.entry.rank-8').count(),1);
   assert.equal(await page.locator('.entry.rank-1').count(),1);
-  assert.ok(await page.locator('.entry.rank-1 .place').textContent());
+  for(const rank of [1,2,3]){
+   assert.equal(await page.locator('.entry.rank-'+rank+' .place').textContent(),String(rank),'Podium numérique');
+  }
+  assert.equal(await page.locator('.entry.rank-1 .projection-avatar').textContent(),'É');
+  assert.equal(await page.locator('.entry.rank-1 .projection-avatar').evaluate(el=>getComputedStyle(el).backgroundColor),
+    'rgba(0, 0, 0, 0)','Initiale sans fond comme dans le HUB');
+  assert.equal(await page.locator('.entry.rank-2 .projection-avatar').textContent(),'🦊');
+  assert.equal(await page.locator('.entry.rank-2 .projection-avatar').evaluate(el=>getComputedStyle(el).backgroundColor),
+    'rgb(243, 75, 177)','Fond choisi dans le HUB');
+  assert.equal(await page.locator('.entry.rank-3 .projection-avatar').textContent(),'🚀');
+  assert.equal(await page.locator('.entry.rank-1 .player-label strong').textContent(),'Élève 1');
+  const avatarBox=await page.locator('.entry.rank-1 .projection-avatar').boundingBox();
+  const nameBox=await page.locator('.entry.rank-1 .player-label strong').boundingBox();
+  assert.ok(avatarBox&&nameBox&&avatarBox.x+avatarBox.width<nameBox.x+3,'Avatar avant le prénom');
   assert.equal(await page.locator('.entry.rank-8 .place').textContent(),'8');
   assert.notEqual(await page.locator('.entry.rank-1 .place').evaluate(el=>getComputedStyle(el).backgroundColor),
     await page.locator('.entry.rank-8 .place').evaluate(el=>getComputedStyle(el).backgroundColor));

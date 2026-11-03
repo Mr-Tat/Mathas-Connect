@@ -132,6 +132,7 @@ label.setting{justify-content:space-between;max-width:380px}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 </style>
 <link rel="stylesheet" href="./projection-v2-da.css?v=podium-2">
+<link rel="stylesheet" href="../projection-v2-avatar.css?v=20261103-rangs-avatars-v1">
 </head>
 <body>
 <header>
@@ -178,7 +179,9 @@ const apps=[
  {key:"melange",title:"Mélange de calculs",score:true,pct:true}
 ];
 const names=["Lina","Adam","Zoé","Hugo","Emma","Noé","Léa","Lucas","Jade","Louis","Mila","Tom","Inès","Nathan"];
-const base=names.map((name,i)=>({id:i,name,level:Math.max(1,7-Math.floor(i/2)),trophies:Math.max(0,10-Math.floor(i*.65))}));
+const demoAvatarSymbols=["🦊","🐼","😀","🐱","🐸","🦋","🚀","⭐","🤩","🐧","🦉","🎮","🐶","🐢","🦜","🐨"];
+const demoAvatarColors=["transparent","#2563a5","#f34bb1","#00cba7","#f5d547"];
+const base=names.map((name,i)=>({id:i,name,avatar:demoAvatarSymbols[i%demoAvatarSymbols.length],avatarColor:demoAvatarColors[i%demoAvatarColors.length],level:Math.max(1,7-Math.floor(i/2)),trophies:Math.max(0,10-Math.floor(i*.65))}));
 const others=[{name:"Observation",pct:72,score:true,percentage:true},{name:"Phase 1",pct:79,score:false,percentage:false},{name:"Phase 2 B",pct:75,score:false,percentage:false},{name:"2 ECO",pct:81,score:false,percentage:false}];
 let selected="addition",seconds=30,paused=false,wasPaused=false;
 function selectedApps(){return apps.filter(a=>a.score)}
@@ -188,7 +191,8 @@ function entries(){
  const main=base.map((p,i)=>({...p,className:"Phase 2 A",score:(i+ix*3)%14===13?null:Math.max(4,168-((i*7+ix*4)%14)*10)}));
  const challengers=others.filter(o=>o.score).flatMap((c,j)=>Array.from({length:11},(_,i)=>({
   id:c.name+"-"+i,name:["Rayan","Camille","Sarah","Maya","Elliot","Amine","Chloé","Sacha","Yanis","Rose","Robin"][i],
-  className:c.name,level:2+(i%5),trophies:i%7,score:Math.max(4,175-i*11-j*4-ix*2)
+  className:c.name,avatar:demoAvatarSymbols[(i+j+5)%demoAvatarSymbols.length],
+   avatarColor:demoAvatarColors[(i+j+5)%demoAvatarColors.length],level:2+(i%5),trophies:i%7,score:Math.max(4,175-i*11-j*4-ix*2)
  })));
  return [...main,...challengers].sort((a,b)=>(b.score??-1)-(a.score??-1)||a.name.localeCompare(b.name,"fr")).slice(0,16);
 }
@@ -210,14 +214,20 @@ function render(){
    const position=++positionIndex;
    const el=document.createElement("div");el.className="entry rank-"+position+(person.score===null?" unplayed":"");
    el.style.setProperty("--rank-progress",String((position-1)/15));
-   const rank=document.createElement("span");rank.className="place";rank.textContent=position<=3?["🥇","🥈","🥉"][position-1]:position;
+   const rank=document.createElement("span");rank.className="place";rank.textContent=String(position);
    const detail=document.createElement("div");
    const primary=document.createElement("div");primary.className="primary";
    const name=document.createElement("strong");name.textContent=person.name;
+    const avatar=document.createElement("span");avatar.className="projection-avatar";
+    avatar.setAttribute("aria-hidden","true");avatar.textContent=person.avatar||person.name.trim().charAt(0);
+    avatar.style.background=person.avatarColor||"transparent";
+    avatar.classList.toggle("transparent",!person.avatarColor||person.avatarColor==="transparent");
+    const label=document.createElement("span");label.className="player-label";
+    label.append(avatar,name);
    const points=document.createElement("span");points.className="points";points.textContent=person.score===null?"—":String(person.score)+" pts";
    const minor=document.createElement("div");minor.className="minor";minor.textContent="Niveau "+person.level+"   🏆 "+person.trophies;
    if(multi){const mark=document.createElement("span");mark.className="class-mark";mark.textContent=person.className;minor.append(mark);}
-   primary.append(name,points);detail.append(primary,minor);el.append(rank,detail);column.append(el);
+   primary.append(label,points);detail.append(primary,minor);el.append(rank,detail);column.append(el);
   });list.append(column);
  });
  const buttons=$("app-tabs");buttons.replaceChildren();
