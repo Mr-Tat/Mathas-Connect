@@ -81,7 +81,9 @@ for(const item of [
    await page.waitForFunction(()=>!document.getElementById('certify').disabled,null,{timeout:45000});
    const game=page.frameLocator('#gameFrame').frameLocator('#game');
    await game.locator('#menuScreen:not(.hidden)').waitFor({state:'visible',timeout:30000});
-   await game.locator('#suddenMaxDigits').selectOption(String(item.width));
+   // The learner sets one shared visible level; the native sudden select is hidden.
+   await game.locator('#trainingMaxDigits').selectOption(String(item.width));
+   assert.equal(await game.locator('#suddenMaxDigits').inputValue(),String(item.width));
    await game.locator('#startSudden').click();
    await game.locator('#gameScreen:not(.hidden)').waitFor({state:'visible',timeout:25000});
    assert.equal(requests.filter(x=>x.action==='start-mode-v1').length,1);
