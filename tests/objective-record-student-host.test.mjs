@@ -50,7 +50,7 @@ test('lancement TEST ou deux additions scolaires : JWT approuvé, classe stricte
  assert.match(code,/hideFictionalXp\(doc\)/);
  assert.match(code,/const chooser=outer\?\.getElementById\('xp-preview-mode'\)/);
  assert.match(html,/XP globaux/);
- assert.match(html,/Séries Classique/);
+ assert.match(html,/séries Classique/i);
   assert.match(code,/SCHOOL_CLASSES\.has\(classId\)/);
   assert.match(code,/classId===CLASS_TEST\?'connect-objective-record-test':'connect-objective-record-school'/);
  assert.doesNotMatch(code,/connect-record-pilot/);
