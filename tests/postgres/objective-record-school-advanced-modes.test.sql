@@ -59,19 +59,19 @@ BEGIN
     -- No self-termination before the required final error.
     v_wrong:=public.test_advanced_answers(v_issued->'questions',2,0);
     BEGIN
-     PERFORM public.connect_objective_record_advanced_finish_v1(v_student,v_school,v_session,v_wrong);
+     PERFORM public.connect_objective_record_advanced_finish_v1(v_student,v_school,v_app,v_session,v_wrong);
      RAISE EXCEPTION 'accepted_early_stop';
     EXCEPTION WHEN OTHERS THEN
      IF SQLERRM<>'advanced_stop_rule_broken' THEN RAISE;END IF;
     END;
     v_answers:=public.test_advanced_answers(v_issued->'questions',v_length,v_misses);
-    v_ack:=public.connect_objective_record_advanced_finish_v1(v_student,v_school,v_session,v_answers);
+    v_ack:=public.connect_objective_record_advanced_finish_v1(v_student,v_school,'addition-ecrite-simple',v_session,v_answers);
     IF v_ack->>'ok'<>'true' OR v_ack->>'proofVerified'<>'true'
       OR (v_ack->>'verifiedScore')::integer<>v_length-v_misses
       OR (v_ack->>'verifiedErrors')::integer<>v_misses
       OR (v_ack->>'questionsChecked')::integer<>v_length
     THEN RAISE EXCEPTION 'wrong_advanced_grade % % %: %',v_app,v_mode,v_level,v_ack;END IF;
-    v_replay:=public.connect_objective_record_advanced_finish_v1(v_student,v_school,v_session,v_answers);
+    v_replay:=public.connect_objective_record_advanced_finish_v1(v_student,v_school,v_app,v_session,v_answers);
     IF v_replay->>'duplicate'<>'true' OR (v_replay#>>'{xp,delta}')::integer<>0
     THEN RAISE EXCEPTION 'replay_gives_xp';END IF;
     v_count:=v_count+1;
@@ -98,7 +98,7 @@ BEGIN
  v_session:=(v_issued->>'sessionId')::uuid;
  -- A complete 64 correct-answer run may legitimately reach the fixed cap.
  v_answers:=public.test_advanced_answers(v_issued->'questions',64,0);
- v_ack:=public.connect_objective_record_advanced_finish_v1(v_student,v_school,v_session,v_answers);
+ v_ack:=public.connect_objective_record_advanced_finish_v1(v_student,v_school,v_app,v_session,v_answers);
  IF (v_ack->>'verifiedScore')::integer<>64 THEN RAISE EXCEPTION 'cap_not_credited';END IF;
  IF (SELECT count(*) FROM public.connect_objective_record_advanced_sessions)<>25
  THEN RAISE EXCEPTION 'sessions_lost';END IF;
@@ -118,7 +118,7 @@ BEGIN
   IF SQLERRM<>'not_school_subject' THEN RAISE;END IF;
  END;
  IF has_function_privilege('anon','public.connect_objective_record_advanced_issue_v1(uuid,uuid,text,text,integer)','EXECUTE')
-  OR has_function_privilege('authenticated','public.connect_objective_record_advanced_finish_v1(uuid,uuid,uuid,jsonb)','EXECUTE')
+  OR has_function_privilege('authenticated','public.connect_objective_record_advanced_finish_v1(uuid,uuid,text,uuid,jsonb)','EXECUTE')
   OR has_function_privilege('anon','public.connect_objective_record_advanced_award_v1(uuid,uuid,text,uuid,bigint,bigint,text,integer,integer,integer)','EXECUTE')
   OR has_table_privilege('anon','public.connect_objective_record_advanced_sessions','SELECT')
  THEN RAISE EXCEPTION 'browser_can_forge_awards';END IF;
