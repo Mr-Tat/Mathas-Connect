@@ -1,4 +1,4 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Math’as Connect — HUB</title><link rel="icon" type="image/png" href="./assets/brand/favicon.png"><link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png"><link rel="stylesheet" href="./hub.css?v=20261026bleu175"><link rel="stylesheet" href="./hub-profile.css?v=20261103-profile-rewards-v1"><script>
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Math’as Connect — HUB</title><link rel="icon" type="image/png" href="./assets/brand/favicon.png"><link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png"><link rel="stylesheet" href="./hub.css?v=20261026bleu175"><link rel="stylesheet" href="./hub-profile.css?v=20261103-celebrations-v1"><script>
 (function(){
   var q=new URLSearchParams(location.search);
   var spaces={
@@ -37,6 +37,40 @@
   if(label)label.textContent=c.name;
 })();
 </script>
+<!-- Célébration HUB : entièrement dédiée à une récompense réellement atteinte.
+     Jamais affichée en mode libre ou professeur. Aucun jeton ni nom ici. -->
+<div id="reward-celebration" class="reward-celebration" role="dialog" aria-modal="true" aria-labelledby="reward-level" aria-describedby="reward-detail-text" hidden>
+ <div class="reward-sky-glow" aria-hidden="true"></div>
+ <div id="reward-confetti" class="reward-confetti" aria-hidden="true"></div>
+ <div class="reward-screen">
+  <div class="reward-brand" aria-hidden="true"><span>Math’as</span> <strong>Connect</strong> ✨</div>
+  <div id="reward-card" class="reward-card">
+   <div class="reward-ribbon">
+    <span aria-hidden="true">🏆</span>
+    <h2 id="reward-level">Niveau 3 atteint !</h2>
+    <span aria-hidden="true">🏆</span>
+   </div>
+   <div class="reward-card-inside">
+    <p class="reward-unlocked-tag">✨ NOUVELLE RÉCOMPENSE DÉBLOQUÉE ! ✨</p>
+    <div class="reward-main">
+     <div class="reward-main-icon" id="reward-icon" aria-hidden="true">🐾</div>
+     <div class="reward-main-text">
+      <h3 id="reward-detail-title">Un nouvel ami t’attend !</h3>
+      <p id="reward-detail-text">Tu peux maintenant choisir un avatar animal.</p>
+     </div>
+     <div class="reward-preview" id="reward-preview" aria-hidden="true">🦊</div>
+    </div>
+    <div class="reward-actions">
+     <button type="button" id="reward-continue" class="reward-continue">Continuer vers le HUB</button>
+     <button type="button" id="reward-customize" class="reward-customize">✏️ Personnaliser mon profil !</button>
+    </div>
+    <p id="reward-feedback" class="reward-feedback" aria-live="polite" role="status"></p>
+   </div>
+  </div>
+  <div id="reward-milestones" class="reward-milestones" aria-label="Les cinq récompenses de profil"></div>
+  <button id="reward-later" class="reward-later" type="button">Plus tard</button>
+ </div>
+</div>
 <div id="avatar-dialog" class="avatar-dialog" hidden>
  <div class="avatar-modal" role="dialog" aria-modal="true" aria-labelledby="avatar-dialog-title">
   <h2 id="avatar-dialog-title">Mes récompenses de profil</h2>
@@ -70,4 +104,4 @@
 <main class="page-shell">
 <section class="daily-section panel panel-hero"><div class="section-heading"><div class="title-row title-row-large"><h2>Sélection du jour</h2><span id="dailyCount" class="count-pill">0 app</span></div></div><div id="dailyApps" class="app-grid daily-grid empty-grid"><p class="empty-state">Chargement…</p></div></section><div id="levels"></div></main>
 <template id="levelTemplate"><section class="level panel collapsed"><button class="level-toggle" type="button" aria-expanded="false"><span class="level-heading-group"><span class="level-title"></span><small class="level-description"></small></span><span class="level-spacer"></span><span class="level-count count-pill">0 app</span><span class="chevron">⌄</span></button><div class="level-content"><div class="app-grid level-apps"></div></div></section></template>
-<template id="appTemplate"><a class="app-card" href="#"><div class="app-thumb"><span class="app-initial">M</span></div><div class="app-meta"><strong class="app-name">Application</strong><small class="app-scores">Accès libre · scores locaux</small></div></a></template><script type="module" src="./hub.js?v=20261103-profile-rewards-v1"></script></body></html>
+<template id="appTemplate"><a class="app-card" href="#"><div class="app-thumb"><span class="app-initial">M</span></div><div class="app-meta"><strong class="app-name">Application</strong><small class="app-scores">Accès libre · scores locaux</small></div></a></template><script type="module" src="./hub.js?v=20261103-celebrations-v1"></script></body></html>
