@@ -1,4 +1,6 @@
 import {MULTI_PROOF_APP,MULTI_PROOF_WIDTH,acceptMultiChallenge,
+import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
+const VALID_PROOF_CLASSES=new Set(['4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',...SCHOOL_CLASS_IDS]);
  normalizeMultiFirstAttempt,createMultiProofQueue} from './certified-multiple.mjs';
 
 // Uses the SAME existing school host and native game. No additional LAB page.
@@ -73,7 +75,7 @@ export function createMultipleProofUI({
  }
  async function start(){
   const ctx=getContext(),seq=ctx.generation;
-  if(ctx.classId!=='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'
+  if(!VALID_PROOF_CLASSES.has(ctx.classId)
    ||ctx.activeApp!==MULTI_PROOF_APP||!ctx.pupilId)return;
   const {win,doc}=inner();
   if(!win||!doc?.getElementById('menuScreen')
