@@ -8,7 +8,8 @@ const URL=Deno.env.get('SUPABASE_URL')!;
 const PUBLISHABLE=Deno.env.get('SUPABASE_ANON_KEY')!;
 const ADMIN=Deno.env.get('SUPABASE_'+'SERVICE_ROLE_KEY')!;
 const TEST='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
-const APPS=new Set(['addition-ecrite-simple','soustraction-ecrite-simple','multiplication-ecrite-simple']);
+// Certified Addition simple must never use the legacy client-declared score RPC.
+const APPS=new Set(['soustraction-ecrite-simple','multiplication-ecrite-simple']);
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const validId=(x:unknown):x is string=>typeof x==='string'&&UUID.test(x);
 const int=(x:unknown,min:number,max:number)=>Number.isSafeInteger(x)&&Number(x)>=min&&Number(x)<=max;

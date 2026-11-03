@@ -18,7 +18,7 @@ export function createMultipleProofUI({
  function bind(win,doc){
   const ctx=getContext();
   if(ctx.activeApp!==MULTI_PROOF_APP||!ctx.pupilId||!doc?.getElementById('menuScreen'))return;
-  panel.hidden=false;button.disabled=false;
+  panel.hidden=false;button.disabled=!!run||sending;
   if(!win)return;
   if(run&&win.__mathasServerCertifiedMulti?.sessionId!==run.sessionId)
    win.__mathasServerCertifiedMulti={sessionId:run.sessionId,
@@ -84,6 +84,7 @@ export function createMultipleProofUI({
   if(!Object.hasOwn(MULTI_PROOF_WIDTH,level)||![4,10,20].includes(total)){
    notify('Choisis un niveau et une série valides.');return;
   }
+  if(run||sending)return;
   button.disabled=true;
   try{
    const data=await call('start-proof-multi-v1',{level,total});
@@ -117,7 +118,7 @@ export function createMultipleProofUI({
     ' émises par Connect. Reports et résultats vérifiés côté serveur.');
   }catch(e){
    if(isCurrent(seq)){run=null;queue=null;notify('⚠️ '+e.message+' : aucun XP demandé.')}
-  }finally{if(isCurrent(seq))button.disabled=false}
+  }finally{if(isCurrent(seq))button.disabled=!!run||sending}
  }
  button.addEventListener('click',()=>{void start()});
  return Object.freeze({reset,bind,onGameEvent,hasPending:()=>!!run?.finished,

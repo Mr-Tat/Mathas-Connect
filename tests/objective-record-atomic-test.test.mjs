@@ -173,7 +173,10 @@ test('quatre moteurs fixes et Mélange séparé : TEST uniquement, HARD/3 vies b
  }
  assert.equal(normalizeAtomicTestCompletion({appKey:'melange-calculs-ecrits',event:classic}),null);
  const source=read('apps/objective-record/eleve.mjs');
- assert.match(source,/isWritableTestApp\(activeApp\)/);
+ // Pure native completion still recognizes all four engines, but the
+ // canonical host may credit only the two unfinished games from this protocol.
+ assert.match(source,/nativeRecordAllowed=appKey=>isWritableTestApp\(appKey\)&&!SERVER_PROOF_ADDITIONS\.has\(appKey\)/);
+ assert.match(source,/if\(nativeRecordAllowed\(activeApp\)\)/);
  assert.match(source,/connect-objective-record-test/);
  assert.match(source,/expectedStudentId:pupilId/);
 });

@@ -1,7 +1,7 @@
 import {PROOF_APP,acceptAdditionProofChallenge,normalizeAdditionFirstAttempt,
  createCertifiedAdditionQueue} from './certified-addition.mjs';
 
-// First vertical slice only: native Addition simple, class TEST, classic 4/L1.
+// Server-issued Addition simple, CLASSIC 4/10/20 across 3 levels; TEST-only until school release.
 // The database issues operands and verifies digits and carries. The browser
 // cannot choose the grade, milestone or credited XP.
 export function createAdditionProofUI({button,panel,levelSelect,totalSelect,frame,getContext,call,refresh,notify,onRecorded=()=>{}}){
@@ -19,7 +19,7 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,fram
  function bind(win,doc){
   const ctx=getContext();
   if(ctx.activeApp!==PROOF_APP||!ctx.pupilId||!doc?.getElementById('menuScreen'))return;
-  panel.hidden=false;button.disabled=false;
+  panel.hidden=false;button.disabled=!!run||sending;
   if(!win)return;
   if(run && win.__mathasServerCertified?.sessionId!==run.sessionId){
    win.__mathasServerCertified={sessionId:run.sessionId,level:run.level,total:run.total,questions:run.questions,index:0};
@@ -89,6 +89,7 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,fram
   if(![1,2,3].includes(level)||![4,10,20].includes(total)){
    notify('Choisis un niveau et une série de calculs valides.');return;
   }
+  if(run||sending)return;
   button.disabled=true;
   try{
    const data=await call('start-proof-v2',{level,total});
@@ -122,7 +123,7 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,fram
    notify('🔐 '+total+' additions niveau '+level+' émises par Connect. Chiffres et reports vérifiés côté serveur.');
   }catch(e){
    if(isCurrent(seq)){run=null;queue=null;notify('⚠️ '+e.message+' : aucun XP demandé.');}
-  }finally{if(isCurrent(seq))button.disabled=false}
+  }finally{if(isCurrent(seq))button.disabled=!!run||sending}
  }
  button.addEventListener('click',()=>{void start()});
  return Object.freeze({reset,bind,onGameEvent,hasPending:()=>!!run?.finished,retry:()=>run?.finished?finish():Promise.resolve()});

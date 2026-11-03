@@ -9,6 +9,8 @@ on:
       - 'apps/objective-record/engines/addition-multiple/**'
       - 'tests/objective-record-addition-proof.browser.mjs'
       - 'tests/objective-record-multiple-proof.browser.mjs'
+      - 'tests/objective-record-additions-proof-only.browser.mjs'
+      - 'tests/objective-record-additions-real-keyboard.browser.mjs'
       - 'apps/objective-record/mixed-test-proof.mjs'
       - 'apps/objective-record/engines/melange/**'
       - 'tests/objective-record-mixed-native.browser.mjs'
@@ -30,4 +32,4 @@ jobs:
           npm install --no-save --no-package-lock playwright@1.58.2
           npx playwright install chromium --with-deps
       - name: Jeu natif, questions serveur et transmission des premiers chiffres/reports
-        run: node --test tests/objective-record-addition-proof.browser.mjs tests/objective-record-multiple-proof.browser.mjs tests/objective-record-mixed-native.browser.mjs
+        run: node --test tests/objective-record-addition-proof.browser.mjs tests/objective-record-multiple-proof.browser.mjs tests/objective-record-additions-proof-only.browser.mjs tests/objective-record-additions-real-keyboard.browser.mjs tests/objective-record-mixed-native.browser.mjs
