@@ -1,0 +1,35 @@
+name: Additions — report sortant et unités ambre
+on:
+  pull_request:
+    paths:
+      - 'apps/objective-record/engines/addition-simple/**'
+      - 'apps/objective-record/engines/addition-multiple/**'
+      - 'apps/objective-record/in-game-tens-first.mjs'
+      - 'apps/objective-record/eleve.*'
+      - 'tests/additions-leading-hard.browser.mjs'
+      - 'tests/objective-record-additions-real-keyboard.browser.mjs'
+      - '.github/workflows/additions-leading-carry.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-keyboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier syntaxe des modules
+        run: |
+          node --check apps/objective-record/eleve.mjs
+          node --check apps/objective-record/in-game-tens-first.mjs
+          node --check tests/additions-leading-hard.browser.mjs
+          node --check tests/objective-record-additions-real-keyboard.browser.mjs
+      - name: Installer Chromium sans données d'élèves
+        run: |
+          npm install --no-save --no-package-lock playwright@1.58.2
+          npx playwright install chromium --with-deps
+      - name: Report sortant, surbrillance ambre, corrections et XP fictifs
+        run: node --test tests/objective-record-additions-real-keyboard.browser.mjs tests/additions-leading-hard.browser.mjs

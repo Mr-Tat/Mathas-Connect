@@ -6232,8 +6232,17 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     active={kind:'carry',calc:i,col:c};updateNumpadTitle();
     window.mathasEntryNavigation.schedule(()=>{const x=carryFor(i,c);if(x&&!x.disabled){setActiveEntry(x);x.focus({preventScroll:true})}})
   }
+  // Au sommet, une retenue (parfois > 1 en addition multiple) crée
+  // une nouvelle colonne de résultat : écrire cette retenue avant les unités.
+  function hasLeadingCarry(s){return s.answerCount>s.count&&s.outgoing[s.count-1]>0}
   function focusColumnStart(i,c){
     const s=states[i];if(!s||s.solved)return;
+    if(tensFirstEnabled()&&c===s.count-1&&hasLeadingCarry(s)
+      &&s.answerValues[c+1]!==String(s.outgoing[c])){
+      focusAnswer(i,c+1);
+      setFeedback('Écris d’abord la retenue tout à gauche, puis le chiffre des unités de cette colonne.','info');
+      return
+    }
     if(tensFirstEnabled()&&c<s.count-1&&s.outgoing[c]>0&&s.carryValues[c+1]!==String(s.outgoing[c])){focusCarry(i,c+1);setFeedback('Écris d’abord la dizaine du report, puis le chiffre des unités.','info');return}
     focusAnswer(i,c)
   }
@@ -6241,6 +6250,10 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
   function afterAnswer(i,c){
     const s=states[i],carry=c<s.count-1?s.outgoing[c]:0;
     if(!tensFirstEnabled()&&carry>0&&s.carryValues[c+1]!==String(carry)){focusCarry(i,c+1);setFeedback('Retenue nécessaire : écris maintenant la retenue dans la petite case au-dessus de la colonne de gauche.','info');return}
+    if(tensFirstEnabled()&&hasLeadingCarry(s)){
+      if(c===s.count&&s.answerValues[c-1]===''){focusAnswer(i,c-1);return}
+      if(c===s.count-1&&s.answerValues[c+1]!==''){nextCalcOrStay(i);return}
+    }
     if(c<s.answerCount-1){focusColumnStart(i,c+1);return}
     nextCalcOrStay(i)
   }
@@ -6272,7 +6285,18 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
   function mathasEntryValue(s,t){
     return t.kind==='carry'?(s.carryValues[t.col]||''):(s.answerValues[t.col]||'')
   }
-  function mathasEntrySequence(s,calc){const seq=[];for(let c=0;c<s.answerCount;c++){if(tensFirstEnabled()){if(c<s.count-1&&s.outgoing[c]>0)seq.push({kind:'carry',calc,col:c+1});seq.push({kind:'answer',calc,col:c})}else{seq.push({kind:'answer',calc,col:c});if(c<s.count-1&&s.outgoing[c]>0)seq.push({kind:'carry',calc,col:c+1})}}return seq}
+  function mathasEntrySequence(s,calc){
+    const seq=[],leading=tensFirstEnabled()&&hasLeadingCarry(s);
+    for(let c=0;c<s.answerCount;c++){
+      if(leading&&c===s.count)continue;
+      if(tensFirstEnabled()){
+        if(c<s.count-1&&s.outgoing[c]>0)seq.push({kind:'carry',calc,col:c+1});
+        if(leading&&c===s.count-1)seq.push({kind:'answer',calc,col:c+1});
+        seq.push({kind:'answer',calc,col:c})
+      }else{seq.push({kind:'answer',calc,col:c});if(c<s.count-1&&s.outgoing[c]>0)seq.push({kind:'carry',calc,col:c+1})}
+    }
+    return seq
+  }
   function mathasSameEntry(a,b){return a&&b&&a.kind===b.kind&&a.calc===b.calc&&a.col===b.col}
   function mathasPreviousFilledEntry(current){
     for(let calc=current.calc;calc>=0;calc--){
@@ -7496,7 +7520,16 @@ function hardThreeScore(level){
     window.mathasEntryNavigation.schedule(()=>setHardActive(inputFor(kind,col),kind,col))
   }
   const hardTensFirst=()=>!!window.__mathasTensFirst;
-  function focusHardColumn(c){if(!hardState)return;if(hardTensFirst()&&c<hardState.count-1&&hardState.outgoing[c]>0&&hardState.carries[c+1]!==String(hardState.outgoing[c]))focusHard('carry',c+1);else focusHard('answer',c)}
+  const hardLeadingCarry=()=>CFG.type==='addition'&&hardState?.answerCount>hardState?.count&&hardState.outgoing?.[hardState.count-1]>0;
+  function focusHardColumn(c){
+    if(!hardState)return;
+    if(hardTensFirst()&&hardLeadingCarry()&&c===hardState.count-1
+      &&hardState.answers[c+1]!==String(hardState.outgoing[c])){
+      focusHard('answer',c+1);return
+    }
+    if(hardTensFirst()&&c<hardState.count-1&&hardState.outgoing[c]>0&&hardState.carries[c+1]!==String(hardState.outgoing[c]))focusHard('carry',c+1);
+    else focusHard('answer',c)
+  }
 
   // V5.4.16 — Même règle sur l'unique calcul affiché en HARD
   let mathasAutoHardTimer=0;
@@ -7516,13 +7549,29 @@ function hardThreeScore(level){
     inp.value=d;inp.classList.remove('bad','good');
     if(kind==='answer'){
       hardState.answers[col]=d;const wh=op.querySelector(`[data-wrong-answer="${col}"]`);if(wh)wh.textContent='';
-      if(!hardTensFirst()&&CFG.type==='addition'&&col<hardState.count-1&&hardState.outgoing[col]>0)focusHard('carry',col+1);else if(col+1<hardState.answerCount)focusHardColumn(col+1)
+      if(hardTensFirst()&&hardLeadingCarry()&&col===hardState.count){
+        if(hardState.answers[col-1]==='')focusHard('answer',col-1)
+      }else if(hardTensFirst()&&hardLeadingCarry()&&col===hardState.count-1&&hardState.answers[col+1]!==''){
+        // La colonne de tête est déjà complétée.
+      }else if(!hardTensFirst()&&CFG.type==='addition'&&col<hardState.count-1&&hardState.outgoing[col]>0)focusHard('carry',col+1);
+      else if(col+1<hardState.answerCount)focusHardColumn(col+1)
     }else{
       hardState.carries[col]=d;const wh=op.querySelector(`[data-wrong-carry="${col}"]`);if(wh)wh.textContent='';hardTensFirst()&&col>0?focusHard('answer',col-1):focusHard('answer',col)
     }
     mathasScheduleHard();
   }
-  function hardEntrySequence(){const seq=[];for(let c=0;c<hardState.answerCount;c++){if(hardTensFirst()){if(c<hardState.count-1&&hardState.outgoing[c]>0)seq.push({kind:'carry',col:c+1});seq.push({kind:'answer',col:c})}else{seq.push({kind:'answer',col:c});if(c<hardState.count-1&&hardState.outgoing[c]>0)seq.push({kind:'carry',col:c+1})}}return seq}
+  function hardEntrySequence(){
+    const seq=[],leading=hardTensFirst()&&hardLeadingCarry();
+    for(let c=0;c<hardState.answerCount;c++){
+      if(leading&&c===hardState.count)continue;
+      if(hardTensFirst()){
+        if(c<hardState.count-1&&hardState.outgoing[c]>0)seq.push({kind:'carry',col:c+1});
+        if(leading&&c===hardState.count-1)seq.push({kind:'answer',col:c+1});
+        seq.push({kind:'answer',col:c})
+      }else{seq.push({kind:'answer',col:c});if(c<hardState.count-1&&hardState.outgoing[c]>0)seq.push({kind:'carry',col:c+1})}
+    }
+    return seq
+  }
   function hardEntryValue(t){return t.kind==='carry'?(hardState.carries?.[t.col]||''):(hardState.answers?.[t.col]||'')}
   function hardSameEntry(a,b){return a&&b&&a.kind===b.kind&&a.col===b.col}
   function hardClearAndFocus(t){

@@ -5272,8 +5272,17 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     active={kind:'carry',calc:i,col:c};updateNumpadTitle();
     window.mathasEntryNavigation.schedule(()=>{const x=carryFor(i,c);if(x&&!x.disabled){setActiveEntry(x);x.focus({preventScroll:true})}})
   }
+  // Une retenue qui crée une colonne à gauche (500 + 900 = 1 400)
+  // appartient à la ligne du résultat, et non aux petites cases de retenue.
+  function hasLeadingCarry(s){return s.answerCount>s.count&&s.outgoing[s.count-1]>0}
   function focusColumnStart(i,c){
     const s=states[i];if(!s||s.solved)return;
+    if(tensFirstEnabled()&&c===s.count-1&&hasLeadingCarry(s)
+      &&s.answerValues[c+1]!==String(s.outgoing[c])){
+      focusAnswer(i,c+1);
+      setFeedback('Écris d’abord la retenue tout à gauche, puis le chiffre des unités de cette colonne.','info');
+      return
+    }
     if(tensFirstEnabled()&&c<s.count-1&&s.outgoing[c]===1&&s.carryValues[c+1]!=='1'){focusCarry(i,c+1);setFeedback('Écris d’abord la dizaine du report, puis le chiffre des unités.','info');return}
     focusAnswer(i,c)
   }
@@ -5281,6 +5290,10 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
   function afterAnswer(i,c){
     const s=states[i];
     if(!tensFirstEnabled()&&c<s.count-1&&s.outgoing[c]===1&&s.carryValues[c+1]!=='1'){focusCarry(i,c+1);setFeedback('Retenue nécessaire : écris 1 dans la petite case au-dessus de la colonne de gauche.','info');return}
+    if(tensFirstEnabled()&&hasLeadingCarry(s)){
+      if(c===s.count&&s.answerValues[c-1]===''){focusAnswer(i,c-1);return}
+      if(c===s.count-1&&s.answerValues[c+1]!==''){nextCalcOrStay(i);return}
+    }
     if(c<s.answerCount-1){focusColumnStart(i,c+1);return}
     nextCalcOrStay(i)
   }
@@ -5313,10 +5326,14 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     return t.kind==='carry'?(s.carryValues[t.col]||''):(s.answerValues[t.col]||'')
   }
   function mathasEntrySequence(s,calc){
-    const seq=[];
+    const seq=[],leading=tensFirstEnabled()&&hasLeadingCarry(s);
     for(let c=0;c<s.answerCount;c++){
-      if(tensFirstEnabled()){if(c<s.count-1&&s.outgoing[c]===1)seq.push({kind:'carry',calc,col:c+1});seq.push({kind:'answer',calc,col:c})}
-      else{seq.push({kind:'answer',calc,col:c});if(c<s.count-1&&s.outgoing[c]===1)seq.push({kind:'carry',calc,col:c+1})}
+      if(leading&&c===s.count)continue; // Le report de tête figure avant le dernier chiffre des unités.
+      if(tensFirstEnabled()){
+        if(c<s.count-1&&s.outgoing[c]===1)seq.push({kind:'carry',calc,col:c+1});
+        if(leading&&c===s.count-1)seq.push({kind:'answer',calc,col:c+1});
+        seq.push({kind:'answer',calc,col:c})
+      }else{seq.push({kind:'answer',calc,col:c});if(c<s.count-1&&s.outgoing[c]===1)seq.push({kind:'carry',calc,col:c+1})}
     }
     return seq
   }
@@ -6526,7 +6543,16 @@ function hardThreeScore(level){
     window.mathasEntryNavigation.schedule(()=>setHardActive(inputFor(kind,col),kind,col))
   }
   const hardTensFirst=()=>!!window.__mathasTensFirst;
-  function focusHardColumn(c){if(!hardState)return;if(hardTensFirst()&&c<hardState.count-1&&hardState.outgoing[c]>0&&hardState.carries[c+1]!==String(hardState.outgoing[c]))focusHard('carry',c+1);else focusHard('answer',c)}
+  const hardLeadingCarry=()=>CFG.type==='addition'&&hardState?.answerCount>hardState?.count&&hardState.outgoing?.[hardState.count-1]>0;
+  function focusHardColumn(c){
+    if(!hardState)return;
+    if(hardTensFirst()&&hardLeadingCarry()&&c===hardState.count-1
+      &&hardState.answers[c+1]!==String(hardState.outgoing[c])){
+      focusHard('answer',c+1);return
+    }
+    if(hardTensFirst()&&c<hardState.count-1&&hardState.outgoing[c]>0&&hardState.carries[c+1]!==String(hardState.outgoing[c]))focusHard('carry',c+1);
+    else focusHard('answer',c)
+  }
 
   // V5.4.16 — Même règle sur l'unique calcul affiché en HARD
   let mathasAutoHardTimer=0;
@@ -6547,7 +6573,11 @@ function hardThreeScore(level){
     if(kind==='answer'){
       hardState.answers[col]=d;
       const wh=op.querySelector(`[data-wrong-answer="${col}"]`);if(wh)wh.textContent='';
-      if(!hardTensFirst()&&CFG.type==='addition'&&col<hardState.count-1&&hardState.outgoing[col]>0)focusHard('carry',col+1);
+      if(hardTensFirst()&&hardLeadingCarry()&&col===hardState.count){
+        if(hardState.answers[col-1]==='')focusHard('answer',col-1)
+      }else if(hardTensFirst()&&hardLeadingCarry()&&col===hardState.count-1&&hardState.answers[col+1]!==''){
+        // Le report de tête a déjà été écrit, ne pas y revenir.
+      }else if(!hardTensFirst()&&CFG.type==='addition'&&col<hardState.count-1&&hardState.outgoing[col]>0)focusHard('carry',col+1);
       else if(col+1<hardState.answerCount)focusHardColumn(col+1)
     }else{
       hardState.carries[col]=d;
@@ -6557,7 +6587,16 @@ function hardThreeScore(level){
     mathasScheduleHard();
   }
   function hardEntrySequence(){
-    const seq=[];for(let c=0;c<hardState.answerCount;c++){if(hardTensFirst()){if(c<hardState.count-1&&hardState.outgoing[c]>0)seq.push({kind:'carry',col:c+1});seq.push({kind:'answer',col:c})}else{seq.push({kind:'answer',col:c});if(c<hardState.count-1&&hardState.outgoing[c]>0)seq.push({kind:'carry',col:c+1})}}return seq
+    const seq=[],leading=hardTensFirst()&&hardLeadingCarry();
+    for(let c=0;c<hardState.answerCount;c++){
+      if(leading&&c===hardState.count)continue;
+      if(hardTensFirst()){
+        if(c<hardState.count-1&&hardState.outgoing[c]>0)seq.push({kind:'carry',col:c+1});
+        if(leading&&c===hardState.count-1)seq.push({kind:'answer',col:c+1});
+        seq.push({kind:'answer',col:c})
+      }else{seq.push({kind:'answer',col:c});if(c<hardState.count-1&&hardState.outgoing[c]>0)seq.push({kind:'carry',col:c+1})}
+    }
+    return seq
   }
   function hardEntryValue(t){return t.kind==='carry'?(hardState.carries?.[t.col]||''):(hardState.answers?.[t.col]||'')}
   function hardSameEntry(a,b){return a&&b&&a.kind===b.kind&&a.col===b.col}
