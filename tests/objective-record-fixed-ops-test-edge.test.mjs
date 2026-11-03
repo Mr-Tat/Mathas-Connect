@@ -36,7 +36,7 @@ test('aucune des trois nouvelles écritures TEST ne vise l’ancienne branche ga
  for(const app of ['addition-ecrite-simple','soustraction-ecrite-simple','multiplication-ecrite-simple']){
   assert.ok(contract.includes("'"+app+"'"));
  }
- assert.match(recorder,/!isFixedTestApp\(appKey\)/);
+ assert.match(recorder,/!isWritableTestApp\(appKey\)/);
 });
 
 test('transaction scolaire TEST : vraie inscription, refus autres élèves et privilèges serveur exclusivement',()=>{
