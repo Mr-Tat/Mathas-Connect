@@ -315,7 +315,7 @@ function watchGame(seq){
     };
    }
   }catch(error){
-   console.warn('Contrôle du jeu natif : vérification interrompue',error);
+   console.error('Contrôle du jeu natif : vérification interrompue',error);
    // No fallback to unauthenticated writes if a nested iframe cannot be read.
    clearInterval(watching);
    message('Le moteur est visible, mais son contrôle de recette est indisponible.');
