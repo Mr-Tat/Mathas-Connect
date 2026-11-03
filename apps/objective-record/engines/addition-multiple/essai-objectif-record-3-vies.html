@@ -45,6 +45,7 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
 <div id="state" role="alert">Préparation du jeu de démonstration…</div>
 <iframe id="game" title="Essai sur le véritable moteur Addition multiple" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
 <script src="./certified-multiple-patch.js"></script>
+<script src="../../certified-score-modes-patch.js"></script>
 <script src="./lab-objectif-record-v2.js"></script>
 <script>
 (async function(){
@@ -316,6 +317,7 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
      "préserver les deux boutons du prototype contre la réécriture tardive");
    game=window.MathasLabV2.patch(game,'multi');
    game=window.MathasCertifiedMultiPatch(game);
+   game=window.MathasCertifiedModesPatch(game,'multi');
    frame.srcdoc=game;
    status.remove();
  }catch(error){
