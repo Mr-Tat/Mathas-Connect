@@ -88,7 +88,11 @@ for(const item of examples){
     // A real click on the familiar Mort subite card must issue a school proof;
     // no separate hidden "Défi Connect" action is necessary.
     const native=page.frameLocator('#gameFrame').frameLocator('#game');
-    await native.locator('#suddenMaxDigits').selectOption('3'); // Niveau 1
+    await page.evaluate(()=>{
+     const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+     const level=doc.getElementById('suddenMaxDigits');level.value='3';
+     level.dispatchEvent(new Event('change',{bubbles:true}));
+    });
     await native.locator('#startSudden .mathas-connect-official-xp').waitFor({state:'visible',timeout:15000});
     assert.match(await native.locator('#startSudden').textContent(),/Reste 20 XP/);
     await native.locator('#startSudden').click();
