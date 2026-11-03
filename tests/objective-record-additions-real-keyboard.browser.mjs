@@ -37,7 +37,7 @@ const examples=[
    {id:'q1',op:'add',a:123,b:456},
    {id:'q2',op:'add',a:589,b:632},
    {id:'q3',op:'add',a:500,b:503},
-   {id:'q4',op:'add',a:909,b:191}
+   {id:'q4',op:'add',a:500,b:900}
   ]},
  {slug:'addition-multiple',app:'addition-ecrite-multiple',start:'start-proof-multi-v1',finish:'finish-proof-multi-v1',
   width:5,questions:[
@@ -148,12 +148,46 @@ for(const item of examples){
    assert.equal(disabled.stored,false);
    assert.match(disabled.hint,/écris ensuite/i);
 
+   // Le mode normal n'affiche pas l'ambre sur une case de retenue.
+   const disabledCarry=game.locator('.carry-input[data-calc="1"][data-carry-col="1"]');
+   await disabledCarry.focus();
+   assert.equal(await game.locator('.answer-input[data-calc="1"][data-col="0"]')
+    .evaluate(el=>el.classList.contains('mathas-amber-followup')),false);
+   await inGame.check();
 
    for(let batch=0;batch<2;batch++){
     for(let slot=0;slot<2;slot++){
      const q=item.questions[2*batch+slot],nums=numbers(q);
      const digits=String(nums.reduce((s,n)=>s+n,0)).split('').reverse();
+     const overflow=digits.length>item.width;
+     if(carry(nums,1)){
+      const carry1=game.locator('.carry-input[data-calc="'+slot+'"][data-carry-col="1"]');
+      const following=game.locator('.answer-input[data-calc="'+slot+'"][data-col="0"]');
+      await carry1.focus();
+      assert.equal(await following.evaluate(el=>el.classList.contains('mathas-amber-followup')),
+       true,'la case d’unité suivante est discrètement ambre');
+      await following.focus();
+      assert.equal(await following.evaluate(el=>el.classList.contains('mathas-amber-followup')),false,
+       'l’ambre disparaît dès que la case devient active');
+     }
      for(let c=0;c<digits.length;c++){
+      if(overflow&&c===item.width)continue; // Report extérieur déjà saisi avant.
+      if(overflow&&c===item.width-1){
+       const leading=game.locator('.answer-input[data-calc="'+slot+'"][data-col="'+item.width+'"]');
+       const follower=game.locator('.answer-input[data-calc="'+slot+'"][data-col="'+(item.width-1)+'"]');
+       // Après la colonne précédente, la case du millier / cent-millier
+       // doit s'activer seule AVANT les unités de cette colonne.
+       await game.locator('.answer-input[data-calc="'+slot+'"][data-col="'+item.width+'"].active-entry')
+        .waitFor({state:'visible',timeout:4000});
+       assert.equal(await follower.evaluate(el=>el.classList.contains('mathas-amber-followup')),
+        true,'le prochain chiffre d’unité est ambre pendant le report extérieur');
+       await page.keyboard.press(digits[item.width]);
+       assert.equal(await leading.inputValue(),digits[item.width],
+        'la retenue extérieure doit être écrite avant les unités');
+       await game.locator('.answer-input[data-calc="'+slot+'"][data-col="'+(item.width-1)+'"].active-entry')
+        .waitFor({state:'visible',timeout:4000});
+       assert.equal(await follower.evaluate(el=>el.classList.contains('mathas-amber-followup')),false);
+      }
       const input=game.locator('.answer-input[data-calc="'+slot+'"][data-col="'+c+'"]');
       await input.focus();
       await page.keyboard.press(digits[c]);
