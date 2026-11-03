@@ -77,6 +77,9 @@ for(const item of [
      data=b.action==='student-load'?
       {ok:true,revision:0,resetEpoch:0,state:{rewards:REWARDS},storageSubject:PUPIL}:
       {ok:true,appXp:0,total:0,level:1};
+    }else if(r.request().url().includes('/connect-projection-v2')){
+     if(b.action!=='student-score-history')throw Error('UNEXPECTED_SCORE_ACTION '+b.action);
+     data={ok:true,events:[],bestThree:[],todayBest:null,boardBest:0};
     }else if(r.request().url().includes('/connect-objective-record-test')){
      if(b.action!==item.startAction)throw Error('UNEXPECTED_PROOF_WRITE '+b.action);
      data={ok:true,sessionId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
