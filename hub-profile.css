@@ -131,3 +131,32 @@
 @media(max-width:650px){
   .connect-brand img.connect-wordmark-3d{width:clamp(88px,27vw,132px)}
 }
+
+/* Profil progressif : une initiale sans fond au départ ; les autres
+   personnalisations sont gagnées avec les niveaux Connect. */
+.identity-avatar.avatar-transparent,.avatar-preview.avatar-transparent{
+ background:transparent!important;box-shadow:none!important;
+}
+.profile-rewards{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 15px}
+.profile-reward-chip{font:700 12px/1.35 system-ui;padding:6px 9px;border:1px solid #537793;border-radius:10px;background:#1e3952;color:#d6e4f1}
+.profile-reward-chip.unlocked{background:#1b4b43;border-color:#51a490;color:#e5fff5}
+.profile-reward-chip.locked{opacity:.73}
+.avatar-modal h3{font:800 16px system-ui;margin:16px 0 8px}
+.avatar-modal p{font-size:13px;line-height:1.5}
+.avatar-tabs button:disabled,.avatar-choices button:disabled,.avatar-colors button:disabled{
+ opacity:.4;cursor:not-allowed;outline:none
+}
+.avatar-palette-line{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.avatar-palette-line .avatar-colors{margin:8px 0;flex:1}
+.avatar-preview{display:grid;place-items:center;width:56px;height:56px;border-radius:13px;color:#fff;font-size:36px;font-weight:900}
+.avatar-colors button[title="Sans fond"]{border:2px dashed #c6d9e7}
+.profile-alias-panel{margin:19px 0 12px;padding:13px;background:#203d53;border:1px solid #6286a0;border-radius:12px}
+.profile-alias-panel[hidden]{display:none!important}
+.profile-alias-panel label{display:block;font-weight:850;margin-bottom:6px}
+.profile-alias-panel p,.profile-alias-panel small{display:block;margin:5px 0;color:#d5e6f1}
+.profile-alias-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0}
+.profile-alias-controls input{flex:1 1 170px;min-width:0;background:#e6f1fa;border:1px solid #a7c3d9;color:#152e45;border-radius:9px;padding:10px 12px;font:600 14px system-ui}
+.profile-alias-controls button{background:#286b9a;border:1px solid #96d1ef;border-radius:9px;color:white;font-weight:750;padding:9px 12px;cursor:pointer}
+#profile-alias-locked{color:#d8c8ed}
+#profile-alias-locked[hidden]{display:none!important}
+@media(max-width:520px){.avatar-modal{padding:15px}.profile-reward-chip{font-size:11px;padding:5px 7px}.avatar-palette-line{gap:8px}}
