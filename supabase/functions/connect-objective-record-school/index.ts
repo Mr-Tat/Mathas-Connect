@@ -35,7 +35,7 @@ Deno.serve(async(req:Request)=>{
  const {data:{user},error}=await client.auth.getUser(token);
  if(error||!user)return deny('auth_required',401);
  const raw=await req.text();
- if(raw.length>10000)return deny('invalid_request',413);
+ if(raw.length>28000)return deny('invalid_request',413);
  let b:any;try{b=JSON.parse(raw)}catch{return deny('invalid_json');}
  const cls=typeof b?.classId==='string'?b.classId.toLowerCase():'';
  const contract=(map as Record<string,typeof map['addition-ecrite-simple']>)[b?.appKey];
