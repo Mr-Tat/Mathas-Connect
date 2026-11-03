@@ -160,3 +160,167 @@
 #profile-alias-locked{color:#d8c8ed}
 #profile-alias-locked[hidden]{display:none!important}
 @media(max-width:520px){.avatar-modal{padding:15px}.profile-reward-chip{font-size:11px;padding:5px 7px}.avatar-palette-line{gap:8px}}
+
+/* CÉLÉBRATIONS — panneau monumental au retour sur le HUB (03/11/2026).
+   Accessible, sans musique, jamais pendant un jeu, et sans animation
+   imposée si l'élève demande une réduction du mouvement. */
+.reward-celebration[hidden]{display:none!important}
+body.reward-celebration-open{overflow:hidden}
+.reward-celebration{
+ position:fixed;z-index:10000;inset:0;isolation:isolate;
+ overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
+ color:#24175c;font-family:"Fredoka",system-ui,sans-serif;
+ background:radial-gradient(ellipse 70% 60% at 50% 24%,#ffcd5f55 0%,transparent 70%),
+  radial-gradient(circle at 11% 70%,#7341ae 0%,transparent 45%),
+  radial-gradient(circle at 90% 60%,#45389f 0%,transparent 40%),
+  linear-gradient(150deg,#101f55 0%,#252568 52%,#151b48 100%);
+}
+.reward-celebration .reward-sky-glow{
+ position:absolute;z-index:-1;left:50%;top:-38%;width:min(120vw,1200px);
+ aspect-ratio:1;transform:translateX(-50%);
+ background:repeating-conic-gradient(from 6deg,#ffd97225 0 13deg,transparent 13deg 26deg);
+ border-radius:50%;pointer-events:none;animation:reward-halo 22s linear infinite;
+}
+.reward-screen{
+ position:relative;z-index:2;min-height:100dvh;max-width:1200px;
+ margin:0 auto;display:flex;flex-direction:column;align-items:center;
+ justify-content:center;gap:clamp(14px,2vh,26px);
+ padding:clamp(14px,3.8vh,32px) clamp(12px,3vw,38px);
+ padding-top:max(14px,env(safe-area-inset-top));padding-bottom:max(12px,env(safe-area-inset-bottom));
+}
+.reward-brand{
+ align-self:flex-start;letter-spacing:-.035em;font-size:clamp(22px,3vw,36px);
+ font-weight:950;color:white;text-shadow:0 3px 10px #09124788;line-height:1;
+}
+.reward-brand strong{display:inline-block;font-size:.82em;letter-spacing:0;
+ background:linear-gradient(145deg,#1194f2,#246ed7);padding:7px 12px;
+ border-radius:999px;box-shadow:0 4px 0 #124599}
+.reward-card{
+ position:relative;width:min(950px,100%);flex:none;
+ margin:clamp(15px,2vw,28px) 0 0;
+ border:clamp(4px,.65vw,7px) solid #ffca36;border-radius:clamp(22px,4vw,52px);
+ background:linear-gradient(157deg,#fffaf0 0%,#fffbf6 47%,#fff3dc 100%);
+ box-shadow:0 14px 0 #a45320,0 22px 58px #050c3977,
+  0 0 62px #ffe184aa,inset 0 0 0 3px #fff0c5;
+}
+.reward-card.reward-pop{animation:reward-card-pop .7s cubic-bezier(.17,1.15,.45,1) both}
+.reward-ribbon{
+ position:relative;z-index:3;width:calc(100% - 25px);min-height:clamp(77px,11vw,121px);
+ margin:clamp(-45px,-4.5vw,-30px) auto 0;
+ display:flex;gap:clamp(5px,2vw,20px);align-items:center;justify-content:center;
+ text-align:center;padding:12px 24px;
+ border:4px solid #fff5bc;border-radius:50% 50% 17% 17% / 22% 22% 20% 20%;
+ background:linear-gradient(180deg,#fff57e 0%,#ffcf32 58%,#f5a91b 100%);
+ box-shadow:0 8px 0 #b96c19,0 11px 24px #ae580755,inset 0 3px 6px #fff5;
+ transform:rotate(-1deg);text-shadow:0 1px 0 #fff5;
+}
+.reward-ribbon>span{font-size:clamp(22px,3.1vw,40px);filter:drop-shadow(0 2px 0 #c07a20)}
+.reward-ribbon h2{
+ font:950 clamp(26px,5vw,61px)/1.08 "Fredoka",system-ui,sans-serif;
+ letter-spacing:-.035em;color:#19115e;margin:0;
+}
+.reward-card-inside{padding:clamp(15px,3.5vw,38px) clamp(17px,4vw,47px) clamp(19px,3vw,31px)}
+.reward-unlocked-tag{
+ width:max-content;max-width:100%;margin:0 auto clamp(15px,3.5vw,32px);
+ padding:11px clamp(12px,3vw,34px);text-align:center;
+ font:950 clamp(12px,2vw,22px)/1.25 "Fredoka",system-ui,sans-serif;
+ color:#fff;background:linear-gradient(110deg,#5522c4,#8934e9,#5522c4);
+ border-radius:999px;box-shadow:0 4px 0 #35166d,0 8px 16px #390b7b33;
+}
+.reward-main{display:grid;grid-template-columns:clamp(60px,12vw,128px) 1fr clamp(95px,18vw,180px);
+ align-items:center;gap:clamp(8px,3vw,28px);margin-bottom:clamp(14px,2.3vw,25px)}
+.reward-main-icon{
+ display:grid;place-items:center;aspect-ratio:1;font-size:clamp(41px,8vw,94px);
+ border-radius:50%;background:radial-gradient(#fff1a8,transparent 72%);
+ filter:drop-shadow(0 4px 5px #ffcd3f99);animation:reward-float 2s ease-in-out infinite;
+}
+.reward-main-text h3{font:950 clamp(21px,3.1vw,40px)/1.12 "Fredoka",system-ui,sans-serif;color:#402199;margin:0 0 12px}
+.reward-main-text p{font:850 clamp(17px,2.2vw,30px)/1.24 "Fredoka",system-ui,sans-serif;color:#31205f;margin:0}
+.reward-preview{
+ display:grid;place-items:center;aspect-ratio:1;border-radius:50%;
+ background:radial-gradient(circle at 50% 30%,#e8e1ff,#b8b3f2 82%);
+ border:7px solid white;box-shadow:0 6px 0 #c5b2d6,0 10px 25px #47267433;
+ font-size:clamp(61px,11vw,130px);animation:reward-float 2.2s ease-in-out infinite .3s;
+}
+.reward-actions{display:grid;grid-template-columns:1fr 1.25fr;gap:clamp(10px,2vw,22px);align-items:stretch}
+.reward-actions button{
+ min-height:clamp(54px,6vw,77px);border-radius:999px;border:3px solid #fff8;
+ padding:10px 14px;cursor:pointer;text-align:center;
+ font:950 clamp(15px,2vw,23px)/1.1 "Fredoka",system-ui,sans-serif;
+ transition:transform .18s ease,filter .18s ease;
+}
+.reward-actions button:hover:not(:disabled){transform:translateY(-3px);filter:brightness(1.07)}
+.reward-actions button:focus-visible,.reward-later:focus-visible{outline:4px solid #ffe06b;outline-offset:4px}
+.reward-actions button:disabled{opacity:.65;cursor:wait}
+.reward-continue{color:#24175e;background:linear-gradient(180deg,#fff,#ded6ff);box-shadow:0 5px 0 #9384bd}
+.reward-customize{color:#fff;background:linear-gradient(180deg,#70ec42 0%,#0bb527 65%,#008b19 100%);box-shadow:0 5px 0 #046d1f;text-shadow:0 2px 1px #083d16aa}
+.reward-feedback{min-height:1.25em;margin:12px 0 0;text-align:center;font:700 13px system-ui;color:#a23835}
+.reward-milestones{
+ width:min(920px,100%);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+ gap:clamp(5px,1.5vw,18px);align-items:stretch;
+}
+.reward-milestone{
+ min-width:0;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+ padding:clamp(8px,1.4vw,15px) 4px;border:2px solid #ded3ff77;
+ border-radius:clamp(12px,2vw,25px);color:#211a64;
+ background:linear-gradient(145deg,#dcd5ee,#b4add2);box-shadow:0 6px 0 #14104455;
+ opacity:.76;gap:3px;
+}
+.reward-milestone.current{
+ border:4px solid #ffe877;background:linear-gradient(180deg,#fff9c4,#ffcf42);
+ opacity:1;box-shadow:0 0 27px #ffdf69b5,0 6px 0 #d79121;
+ transform:scale(1.07);z-index:2;
+}
+.reward-milestone.earned{background:linear-gradient(145deg,#e4ffdb,#91dfaa);opacity:.95}
+.reward-milestone-level{font:950 clamp(11px,1.6vw,18px)/1.1 "Fredoka",system-ui,sans-serif;text-align:center}
+.reward-milestone-icon{font-size:clamp(23px,3vw,43px)}
+.reward-milestone-state{font:800 clamp(9px,1.1vw,13px) system-ui;white-space:nowrap}
+.reward-later{color:#fff;text-decoration:underline;text-underline-offset:3px;cursor:pointer;
+ background:none;border:0;font:700 13px system-ui;padding:4px 15px;opacity:.9}
+.reward-confetti{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none}
+.reward-confetti-piece{
+ position:absolute;left:var(--x);top:-20px;width:clamp(7px,1.2vw,15px);height:clamp(12px,2vw,22px);
+ background:hsl(var(--hue) 97% 61%);border-radius:3px;
+ animation:reward-fall var(--duration) linear var(--delay) infinite;
+}
+@keyframes reward-fall{from{transform:translate3d(0,-25px,0) rotate(var(--turn));opacity:1}
+ to{transform:translate3d(var(--drift),105dvh,0) rotate(calc(var(--turn) + 720deg));opacity:.8}}
+@keyframes reward-card-pop{from{opacity:0;transform:translateY(35px) scale(.88)}
+ 70%{opacity:1;transform:translateY(-7px) scale(1.025)}to{transform:translateY(0) scale(1)}}
+@keyframes reward-halo{from{transform:translateX(-50%) rotate(0)}to{transform:translateX(-50%) rotate(360deg)}}
+@keyframes reward-float{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-8px) rotate(3deg)}}
+@media(max-width:660px){
+ .reward-screen{justify-content:flex-start;gap:15px;padding:18px 9px 24px}
+ .reward-brand{font-size:22px;padding:0 6px}
+ .reward-card{margin-top:22px;border-radius:22px}
+ .reward-ribbon{min-height:70px;margin-top:-29px;padding:8px 5px;width:calc(100% - 8px);gap:5px}
+ .reward-ribbon>span{font-size:20px}
+ .reward-ribbon h2{font-size:clamp(23px,5.5vw,38px)}
+ .reward-card-inside{padding:16px 13px}
+ .reward-main{grid-template-columns:64px 1fr;grid-template-areas:"icon text" "preview text";gap:8px 12px;margin:12px 0 20px}
+ .reward-main-icon{grid-area:icon;font-size:46px}
+ .reward-main-text{grid-area:text}
+ .reward-main-text h3{font-size:clamp(20px,5vw,28px);margin-bottom:8px}
+ .reward-main-text p{font-size:clamp(16px,4vw,23px)}
+ .reward-preview{grid-area:preview;width:64px;aspect-ratio:1;border-width:4px;font-size:41px}
+ .reward-unlocked-tag{font-size:12px;padding:9px 10px}
+ .reward-actions{grid-template-columns:1fr;gap:10px}
+ .reward-actions button{min-height:49px;font-size:17px}
+ .reward-milestones{gap:4px}
+ .reward-milestone{padding:9px 2px;border-radius:12px}
+ .reward-milestone.current{border-width:2px}
+ .reward-milestone-icon{font-size:22px}
+ .reward-milestone-state{font-size:9px}
+}
+@media(max-width:360px){
+ .reward-milestone-level{font-size:10px}
+ .reward-milestone-icon{font-size:18px}
+ .reward-milestone-state{font-size:8px}
+ .reward-ribbon h2{font-size:22px}
+}
+@media(prefers-reduced-motion:reduce){
+ .reward-celebration *, .reward-celebration *::before,.reward-celebration *::after{
+  animation:none!important;transition:none!important
+ }
+ .reward-confetti{display:none}
+}
