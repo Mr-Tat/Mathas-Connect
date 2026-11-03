@@ -80,6 +80,7 @@ test('HUB : les cinq jalons contrôlent la personnalisation, sans colorer les in
     await tabs.nth(1).click();
     await page.locator('#avatar-choices button').first().click();
     await page.locator('#avatar-save').click();
+    await page.waitForFunction(()=>document.getElementById('identity-avatar')?.textContent==='🦊',null,{timeout:8000});
     assert.equal(await page.locator('#identity-avatar').textContent(),'🦊');
     assert.equal(writes.at(-1).color,'transparent');
     assert.equal(writes.at(-1).kind,'animal');
@@ -87,6 +88,7 @@ test('HUB : les cinq jalons contrôlent la personnalisation, sans colorer les in
    if(stage===10){
     await page.locator('#profile-alias-input').fill('Capitaine');
     await page.locator('#profile-alias-save').click();
+    await page.waitForFunction(()=>document.getElementById('identity-title')?.textContent==='Capitaine',null,{timeout:8000});
     assert.equal(await page.locator('#identity-title').textContent(),'Capitaine');
     assert.equal(writes.at(-1).action,'student-profile-alias');
     assert.equal(writes.at(-1).alias,'Capitaine');
