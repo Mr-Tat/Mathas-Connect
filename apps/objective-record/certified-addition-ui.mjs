@@ -120,16 +120,26 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,mode
    const sharedLevel=doc.getElementById('trainingMaxDigits');
    const launch=doc.querySelector('.classic-count-btn[data-count="'+total+'"]');
    if(!nativeLevel||!sharedLevel||!launch)throw Error('Contrôles pédagogiques natifs introuvables');
-   // Native direct-start button handles the start click: only one launch.
+   // The 4/10/20 native buttons ONLY select a count. The native
+   // #startClassic button actually starts the game. Never stop at selection.
    const width=({1:3,2:5,3:7})[level];
    sharedLevel.value=String(width);nativeLevel.value=String(width);
    sharedLevel.dispatchEvent(new Event('change',{bubbles:true}));
    launch.click();
+   const realStart=doc.getElementById('startClassic');
+   if(!realStart)throw Error('Bouton de lancement natif introuvable');
+   realStart.click();
    notify('🔐 '+total+' additions niveau '+level+' émises par Connect. Chiffres et reports vérifiés côté serveur.');
   }catch(e){
    if(isCurrent(seq)){run=null;queue=null;notify('⚠️ '+e.message+' : aucun XP demandé.');}
   }finally{if(isCurrent(seq))button.disabled=!!run||sending}
  }
+ function startNative(level,total){
+  if(![1,2,3].includes(level)||![4,10,20].includes(total))return Promise.resolve();
+  modeSelect.value='classic';levelSelect.value=String(level);totalSelect.value=String(total);
+  return start();
+ }
  button.addEventListener('click',()=>{void start()});
- return Object.freeze({reset,bind,onGameEvent,hasPending:()=>!!run?.finished,retry:()=>run?.finished?finish():Promise.resolve()});
+ return Object.freeze({reset,bind,onGameEvent,startNative,
+  hasPending:()=>!!run?.finished,retry:()=>run?.finished?finish():Promise.resolve()});
 }
