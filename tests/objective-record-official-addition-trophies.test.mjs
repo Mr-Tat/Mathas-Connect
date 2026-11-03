@@ -44,3 +44,15 @@ test('official host does not show fictional local trophies if Connect returns no
    'official record must win over pilot/local fake');
  }
 });
+
+test('new school additions with zero trophy achievements receive an official empty registry',()=>{
+ const edge=read('supabase/functions/connect-results/index.ts');
+ assert.match(edge,/EMPTY_SCHOOL_ADDITION_TROPHIES/);
+ assert.match(edge,/selected===app\|\|selected===addMulti/);
+ assert.match(edge,/const awards=permanent\?\?/);
+ assert.match(edge,/if\(trophyError\)return deny\('trophies_unavailable',503\)/);
+ // The full empty snapshot is not a partial trophy count or an XP award.
+ assert.match(edge,/mastery:\{'4':\[false,false,false\]/);
+ assert.match(edge,/unlockedGold:false/);
+ assert.ok(edge.indexOf("if(trophyError)return deny('trophies_unavailable',503)",edge.indexOf("const awards=permanent")-500)>-1);
+});
