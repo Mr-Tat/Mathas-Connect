@@ -76,3 +76,29 @@ jobs:
       - name: All 24 score modes plus 16-digit HARD, first attempts, trophy and replay
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-school-modes.test.sql
 
+  school-xp-real:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: school_additions_xp
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d school_additions_xp"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/school_additions_xp
+    steps:
+      - uses: actions/checkout@v4
+      - name: Disposable production-shaped XP and progress tables
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-school-xp-fixture.sql
+      - name: Install real xp_sync_v2 with half-credit rules in disposable PostgreSQL
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103130010_additions_three_lives_half_xp.sql
+      - name: Original 474 XP cap and 3-lives half-credit supersession for both additions
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-school-xp-half.test.sql
