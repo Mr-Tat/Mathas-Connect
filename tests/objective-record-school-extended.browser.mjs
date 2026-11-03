@@ -87,6 +87,12 @@ for(const item of examples){
     null,{timeout:18000});
    assert.equal(actions.filter(a=>a.action==='finish-extended-proof-v1').length,1);
    assert.equal(actions.filter(a=>a.action==='game-record').length,0);
+   // Switching straight from a finished extended mode to the other addition
+   // must never leave the shared certified start button disabled.
+   const other=item.slug==='addition-simple'?'addition-multiple':'addition-simple';
+   await page.locator('#app').selectOption(other);
+   await page.waitForFunction(()=>!document.getElementById('certify').disabled,
+    null,{timeout:35000});
    assert.deepEqual(errors,[]);
   }finally{await browser?.close();await new Promise(ok=>server.close(ok))}
  });

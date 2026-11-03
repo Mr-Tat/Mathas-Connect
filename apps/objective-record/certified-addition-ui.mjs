@@ -23,7 +23,7 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,mode
   const ctx=getContext();
   if(ctx.activeApp!==PROOF_APP||!ctx.pupilId||!doc?.getElementById('menuScreen'))return;
   panel.hidden=false;
-  if(!modeSelect||modeSelect.value==='classic')button.disabled=!!run||sending;
+  if(!button.dataset.extendedBusy)button.disabled=!!run||sending;
   if(!win)return;
   if(run && win.__mathasServerCertified?.sessionId!==run.sessionId){
    win.__mathasServerCertified={sessionId:run.sessionId,level:run.level,total:run.total,questions:run.questions,index:0};

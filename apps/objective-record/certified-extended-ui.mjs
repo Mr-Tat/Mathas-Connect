@@ -16,6 +16,7 @@ export function createCertifiedExtendedUI({
  const active=seq=>seq===getContext().generation&&run?.appKey===getContext().activeApp;
  const info=text=>{status.textContent=text;notify(text)};
  function controlsBusy(busy){
+  if(busy)button.dataset.extendedBusy='1';else delete button.dataset.extendedBusy;
   button.disabled=busy;modeSelect.disabled=busy;levelSelect.disabled=busy;
  }
  function reset(){
