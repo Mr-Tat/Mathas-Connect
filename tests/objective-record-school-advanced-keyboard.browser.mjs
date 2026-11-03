@@ -38,7 +38,15 @@ const cases=[
  {slug:'addition-simple',app:'addition-ecrite-simple',mode:'hard-sudden',
   width:10,terms:['1111111111','1111111111'],sum:'2222222222',errors:1},
  {slug:'addition-multiple',app:'addition-ecrite-multiple',mode:'hard-sudden',
-  width:9,terms:Array(6).fill('111111111'),sum:'666666666',errors:1}
+  width:9,terms:Array(6).fill('111111111'),sum:'666666666',errors:1},
+ {slug:'addition-simple',app:'addition-ecrite-simple',mode:'three-lives',
+  width:3,terms:['123','45'],sum:'168',errors:3},
+ {slug:'addition-multiple',app:'addition-ecrite-multiple',mode:'three-lives',
+  width:5,terms:['12345','11111','22222'],sum:'45678',errors:3},
+ {slug:'addition-simple',app:'addition-ecrite-simple',mode:'hard-three-lives',
+  width:10,terms:['1111111111','1111111111'],sum:'2222222222',errors:3},
+ {slug:'addition-multiple',app:'addition-ecrite-multiple',mode:'hard-three-lives',
+  width:9,terms:Array(6).fill('111111111'),sum:'666666666',errors:3}
 ];
 for(const item of cases)test('Chromium genuine native advanced keyboard '+item.slug+' '+item.mode,async()=>{
  const {server,url}=await serve();let browser;
@@ -66,13 +74,15 @@ for(const item of cases)test('Chromium genuine native advanced keyboard '+item.s
       maxQuestions:64,questions,revision:0,resetEpoch:0,expiresAt:'2099-01-01T00:00:00Z'};
     }else if(b.action==='finish-advanced-v1'){
      assert.equal(b.sessionId,SID);
-     assert.equal(b.answers.length,1);
-     assert.equal(b.answers[0].id,'q1');
-     assert.deepEqual(b.answers[0].digits,Array(item.sum.length).fill('0'),
-      'native keyboard submitted different first digits');
-     assert.deepEqual(b.answers[0].carries,Array(item.width).fill(''),
-      'native keyboard submitted different first carries');
-     response={ok:true,proofVerified:true,verifiedScore:0,verifiedErrors:1,questionsChecked:1,
+     assert.equal(b.answers.length,item.errors);
+     for(let i=0;i<item.errors;i++){
+      assert.equal(b.answers[i].id,'q'+(i+1));
+      assert.deepEqual(b.answers[i].digits,Array(item.sum.length).fill('0'),
+       'native keyboard submitted different first digits');
+      assert.deepEqual(b.answers[i].carries,Array(item.width).fill(''),
+       'native keyboard submitted different first carries');
+     }
+     response={ok:true,proofVerified:true,verifiedScore:0,verifiedErrors:item.errors,questionsChecked:item.errors,
       mode:item.mode,duplicate:false,xp:{delta:0,appXp:0,total:0,level:1}};
     }else throw Error('unexpected certified school action '+b.action);
    }else throw Error('unexpected endpoint '+r.request().url());
@@ -83,29 +93,44 @@ for(const item of cases)test('Chromium genuine native advanced keyboard '+item.s
    {waitUntil:'domcontentloaded',timeout:25000});
   const game=page.frameLocator('#gameFrame').frameLocator('#game');
   if(item.mode.startsWith('hard-')){
-   const sel=game.locator('#trainingMaxDigits');
-   await sel.waitFor({state:'visible',timeout:35000});
-   await sel.selectOption('__hard__');
+   await game.locator('#trainingMaxDigits').waitFor({state:'visible',timeout:35000});
+   await game.locator('#trainingMaxDigits').selectOption('__hard__');
    await game.locator('#hardMenuScreen:not(.hidden)').waitFor({state:'visible',timeout:15000});
-   await game.locator('.hard-start[data-level="1"][data-mode="sudden"]').click();
+   await game.locator('.hard-start[data-level="1"][data-mode="'+
+     (item.errors===3?'three-lives':'sudden')+'"]')
+    .click();
    await game.locator('#hardGameScreen:not(.hidden)').waitFor({state:'visible',timeout:20000});
-   for(let col=0;col<item.sum.length;col++){
-    const input=game.locator('.hard-answer[data-col="'+col+'"]');
-    await input.focus();await page.keyboard.press('0');
-    assert.equal(await input.inputValue(),'0');
+   for(let question=0;question<item.errors;question++){
+    if(question>0){
+     await game.locator('#hardPrimary').click();
+     await game.locator('#hardSessionCounter')
+      .filter({hasText:'Calcul '+(question+1)}).waitFor({timeout:15000});
+    }
+    for(let col=0;col<item.sum.length;col++){
+     const input=game.locator('.hard-answer[data-col="'+col+'"]');
+     await input.focus();await page.keyboard.press('0');
+     assert.equal(await input.inputValue(),'0');
+    }
+    // HARD automatically verifies a fully filled operation. No second
+    // click after the terminal result: projection consent then overlays it.
    }
-   // The native HARD engine automatically verifies the fully filled row.
-   // Pressing the button again after its terminal ACK would click through the
-   // projection consent dialog, not test arithmetic.
   }else{
-   await game.locator('#startSudden').click();
+   await game.locator(item.errors===3?'#startThreeLives':'#startSudden').click();
    await game.locator('#gameScreen:not(.hidden)').waitFor({state:'visible',timeout:20000});
-   for(let col=0;col<item.sum.length;col++){
-    const input=game.locator('.answer-input[data-calc="0"][data-col="'+col+'"]');
-    await input.focus();await page.keyboard.press('0');
-    assert.equal(await input.inputValue(),'0');
+   for(let question=0;question<item.errors;question++){
+    if(question===2){
+     await game.locator('#primaryBtn').click();
+     await game.locator('.calc-label').first().filter({hasText:'Calcul 3'})
+      .waitFor({state:'visible',timeout:15000});
+    }
+    const slot=question%2;
+    for(let col=0;col<item.sum.length;col++){
+     const input=game.locator('.answer-input[data-calc="'+slot+'"][data-col="'+col+'"]');
+     await input.focus();await page.keyboard.press('0');
+     assert.equal(await input.inputValue(),'0');
+    }
+    await game.locator('#primaryBtn').click();
    }
-   await game.locator('#primaryBtn').click();
   }
   await page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('XP Connect vérifiés'),
    null,{timeout:25000});
