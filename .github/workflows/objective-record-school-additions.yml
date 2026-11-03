@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'supabase/migrations/202611031200*.sql'
+      - 'supabase/migrations/202611031300*.sql'
+      - 'apps/objective-record/certified-score-modes*.mjs'
+      - 'apps/objective-record/certified-score-modes*.js'
       - 'supabase/functions/connect-objective-record-school/**'
       - 'tests/postgres/objective-record-school-*.sql'
       - 'tests/objective-record-school-contract.test.mjs'
@@ -61,5 +64,14 @@ jobs:
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120040_school_addition_multiple_issue.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120050_school_addition_multiple_finish.sql
-      - name: All 18 variants, identity denial, wrong first answers, replay and XP
+      - name: All 18 CLASSIC variants, identity denial, wrong first answers and replay
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-school-additions.test.sql
+      - name: Score-mode private 64-question sessions and SQL proof functions
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103130000_additions_modes_private_sessions.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103130020_additions_issue_score_modes.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103130030_additions_record_score_modes.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103130040_additions_finish_score_modes.sql
+      - name: All 24 score modes plus 16-digit HARD, first attempts, trophy and replay
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-school-modes.test.sql
+
