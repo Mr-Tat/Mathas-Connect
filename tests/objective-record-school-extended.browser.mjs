@@ -117,6 +117,66 @@ for(const item of examples){
    assert.doesNotMatch(schoolLayout.redText,/Lancer la mort subite/i);
    assert.equal(schoolLayout.hardLocked,item.slug==='addition-simple',
     'HARD hidden until official progression has unlocked it');
+   // Reproduce the ACTUAL customer screenshot: a native script rewrites
+   // an XP label into plain button text, while an official badge also exists.
+   // Removing just .classic-xp-remaining would not fix this.
+   await page.evaluate(()=>{
+    const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+    const button=doc.querySelector('.classic-count-btn[data-count="10"]');
+    button.append(doc.createTextNode(' Reste 36 XP'));
+    const nested=doc.createElement('span');
+    nested.textContent='Reste 36 XP';
+    button.append(nested);
+   });
+   await page.waitForFunction(()=>{
+    const doc=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+    const button=doc?.querySelector('.classic-count-btn[data-count="10"]');
+    return !!button&&(button.textContent.match(/Reste\s+36\s+XP/g)||[]).length===1;
+   },null,{timeout:9000});
+   // A late native trophy redraw must not re-add fake XP.
+   await page.waitForTimeout(1050);
+   await page.waitForFunction(()=>{
+    const doc=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+    return !!doc&&doc.querySelectorAll('.classic-xp-remaining,.score-mode-detail,.mathas-pilot-remaining').length===0;
+   },null,{timeout:8000});
+   // Test actual bounding boxes (not CSS selectors only) on desktop/mobile.
+   await page.waitForFunction(()=>{
+    const doc=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+    return !!doc?.querySelector('#startSudden > .mlab-sudden .mlab-cup')&&
+     !!doc.querySelector('#startSudden > .mathas-connect-official-xp');
+   },null,{timeout:12000});
+   for(const viewportWidth of [1160,390]){
+    await page.setViewportSize({width:viewportWidth,height:820});
+    await page.waitForTimeout(950);
+    const boxes=await page.evaluate(()=>{
+     const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+     const red=doc.getElementById('startSudden');
+     const xp=red.querySelector(':scope > .mathas-connect-official-xp');
+     const cups=red.querySelector(':scope > .mlab-sudden');
+     const classical=[...doc.querySelectorAll('.classic-count-btn[data-count]')].map(button=>{
+      const label=button.querySelector('.mathas-connect-official-xp');
+      const b=button.getBoundingClientRect(),x=label?.getBoundingClientRect();
+      return {label:button.textContent,
+       count:(button.textContent.match(/Reste\s+\d+\s+XP/g)||[]).length,
+       inside:!!x&&x.top>=b.top-1&&x.bottom<=b.bottom+1&&x.left>=b.left-1&&x.right<=b.right+1};
+     });
+     const b=red.getBoundingClientRect(),x=xp.getBoundingClientRect(),c=cups.getBoundingClientRect();
+     const intersects=x.left<c.right-1&&x.right>c.left+1&&x.top<c.bottom-1&&x.bottom>c.top+1;
+     return {classic:classical,intersects,
+      xpInside:x.left>=b.left-1&&x.right<=b.right+1&&x.top>=b.top-1&&x.bottom<=b.bottom+1,
+      cupsInside:c.left>=b.left-1&&c.right<=b.right+1&&c.top>=b.top-1&&c.bottom<=b.bottom+1,
+      rects:{red:{w:b.width,h:b.height},xp:{x:x.x,y:x.y,w:x.width,h:x.height},
+       cups:{x:c.x,y:c.y,w:c.width,h:c.height}}};
+    });
+    for(const b of boxes.classic){
+     assert.equal(b.count,1,'only ONE XP indication in '+viewportWidth+'px '+JSON.stringify(b));
+     assert.equal(b.inside,true,'classic badge stays INSIDE its button '+viewportWidth+'px '+JSON.stringify(b));
+    }
+    assert.equal(boxes.intersects,false,'Mort subite cups must not cover XP '+viewportWidth+'px '+JSON.stringify(boxes));
+    assert.equal(boxes.xpInside,true,'Mort subite XP inside the button '+viewportWidth+'px '+JSON.stringify(boxes));
+    assert.equal(boxes.cupsInside,true,'Mort subite trophies inside the button '+viewportWidth+'px '+JSON.stringify(boxes));
+   }
+   await page.setViewportSize({width:1160,height:820});
    // Opening the custom Niveau selector must place its portal BELOW the
    // button, never in the header or above the window.
    const nativeMenu=page.frameLocator('#gameFrame').frameLocator('#game');

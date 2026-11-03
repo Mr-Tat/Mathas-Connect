@@ -44,7 +44,7 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
 </header>
 <div id="state" role="alert">Préparation du jeu de démonstration…</div>
 <iframe id="game" title="Essai sur le véritable moteur Addition simple" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
-<script src="./lab-objectif-record-v2.js"></script>
+<script src="./lab-objectif-record-v2.js?v=20261103-xp-layout-v4"></script>
 <script src="../../native-hub-link.js"></script>
 <script>
 (async function(){
@@ -62,7 +62,11 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
  function renderConnectPreview(){
    const doc=frame.contentDocument;
    if(!doc||!xpPreviewMode)return;
-   if(hostedByConnect)xpPreviewMode.value='free';
+   if(hostedByConnect){
+    xpPreviewMode.value='free';
+    doc.querySelectorAll('#menuScreen .classic-xp-remaining,#menuScreen .score-mode-detail,#menuScreen .mathas-pilot-remaining').forEach(n=>n.remove());
+    return; // The official host exclusively owns all XP labels.
+   }
    for(const [id,total] of [['startThreeLives',10],['startSudden',20]]){
      const meta=doc.querySelector('#'+id+' .score-mode-meta');
      if(!meta)continue;

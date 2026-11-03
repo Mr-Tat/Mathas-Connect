@@ -6,7 +6,7 @@ import {MIXED_TEST_APP,isMixedTestTerminal} from './mixed-test-proof.mjs';
 import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
 import {createCertifiedExtendedUI} from './certified-extended-ui.mjs';
-import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs';
+import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs?v=20261103-xp-layout-v4';
 import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
@@ -418,7 +418,7 @@ async function choose(){
    for(const option of $('certified-mode').options)option.disabled=option.value!=='classic';
   }
   updateCertifiedModeControls();
-  $('gameFrame').src=GAME_URLS[slug][1]+(SERVER_PROOF_ADDITIONS.has(activeApp)?'?connect=1':'');
+  $('gameFrame').src=GAME_URLS[slug][1]+(SERVER_PROOF_ADDITIONS.has(activeApp)?'?connect=1&ui=20261103-xp-layout-v4':'');
   $('gameFrame').hidden=false;$('refresh').disabled=false;
   watchGame(seq);
   message(SERVER_PROOF_ADDITIONS.has(activeApp)
@@ -432,7 +432,7 @@ async function choose(){
   // aucune requête de validation XP ni privilège d'enregistrement.
   // Le repli libre est EXPLICITE pour ne jamais faire croire à un crédit Connect.
   if(SERVER_PROOF_ADDITIONS.has(activeApp)){
-   $('gameFrame').src=GAME_URLS[slug][1]+'?connect=1';
+   $('gameFrame').src=GAME_URLS[slug][1]+'?connect=1&ui=20261103-xp-layout-v4';
    $('gameFrame').hidden=false;
    $('guest-home').hidden=true; // le bouton HUB existe dans le moteur lui-même
    message('⚠️ Profil Connect indisponible : mode libre sans XP officiel. '+(e?.message||''));

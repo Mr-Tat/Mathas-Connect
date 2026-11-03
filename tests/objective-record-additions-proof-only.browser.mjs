@@ -49,7 +49,7 @@ test('Server: both TEST endpoints close client-declared score bypass for additio
  assert.match(resultsEdge,/b\.action==='game-record'&&proofOnlyAddClasses\.has\(b\.classId\)/);
  assert.match(resultsEdge,/b\.appKey===app\|\|b\.appKey===addMulti/);
  assert.match(resultsEdge,/return deny\('server_proof_required',403\)/);
- assert.match(host,/SERVER_PROOF_ADDITIONS.has\(activeApp\)\?'\?connect=1'/);
+  assert.ok(host.includes("SERVER_PROOF_ADDITIONS.has(activeApp)?'?connect=1"));
 });
 for(const item of [
  {slug:'addition-simple',appKey:'addition-ecrite-simple',startAction:'start-proof-v2',
@@ -98,7 +98,7 @@ for(const item of [
    });
    assert.equal(displayed.display,'none');
    assert.equal(displayed.hasGame,true);
-   assert.ok(displayed.href.endsWith('?connect=1'));
+   assert.equal(new URL(displayed.href,url).searchParams.get('connect'),'1');
    // Even a fabricated terminal native event is not allowed to award XP.
    await page.evaluate(()=>{
     const inner=document.getElementById('gameFrame').contentDocument

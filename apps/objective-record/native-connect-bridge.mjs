@@ -53,8 +53,29 @@ export function xpStillAvailable(xp,mode,level,total=null){
  if(!awards)return null;
  return awards.reduce((n,[key,amount])=>n+(pool.has(key)?0:amount),0);
 }
+// Some native scripts rebuild a button from its textContent. An XP label
+// present during that rewrite becomes an unstyled PLAIN text node next to
+// "4 calculs". Hiding the old class cannot remove those orphaned words.
+const LEGACY_XP_WORDS=/Reste[\s\u00a0]*[0-9]+[\s\u00a0]*XP/gi;
+export function stripNativeDuplicateXp(button){
+ if(!button)return;
+ button.querySelectorAll('.classic-xp-remaining,.score-mode-detail,.mathas-pilot-remaining')
+  .forEach(el=>el.remove());
+ function scrub(parent){
+  for(const node of [...parent.childNodes]){
+   if(node.nodeType===3){
+    const value=node.nodeValue.replace(LEGACY_XP_WORDS,'');
+    if(value!==node.nodeValue)node.nodeValue=value;
+   }else if(node.nodeType===1&&!node.classList.contains('mathas-connect-official-xp')){
+    scrub(node);
+   }
+  }
+ }
+ scrub(button);
+}
 function applyBadge(button,amount,title){
  if(!button||amount===null)return;
+ stripNativeDuplicateXp(button);
  let label=button.querySelector('.mathas-connect-official-xp');
  if(!label){
   label=button.ownerDocument.createElement('span');
@@ -73,6 +94,41 @@ function applyBadge(button,amount,title){
   ['width','max-content'],['max-width','calc(100% - 12px)'],
   ['pointer-events','none'],['white-space','nowrap']
  ])label.style.setProperty(property,value,'important');
+ // The wrapper sets an inline !important padding shorthand. Reserve the
+ // lower strip for official XP; keep 4/10/20 words in the actual button label.
+ if(button.matches('#menuScreen .classic-count-btn[data-count]')){
+  button.style.setProperty('position','relative','important');
+  button.style.setProperty('padding','5px 5px 24px','important');
+  button.style.setProperty('min-height','59px','important');
+  button.style.setProperty('box-sizing','border-box','important');
+ }
+ return label;
+}
+// Mort subite owns three trophies at bottom-right. Put XP to their LEFT,
+// or on a separate row above for very narrow mobile buttons.
+export function positionSuddenXp(button){
+ const label=button?.querySelector(':scope > .mathas-connect-official-xp');
+ const cups=button?.querySelector(':scope > .mlab-sudden');
+ if(!button||!label||!cups)return;
+ const width=button.getBoundingClientRect().width;
+ const cupsWidth=cups.getBoundingClientRect().width;
+ const xpWidth=label.getBoundingClientRect().width;
+ if(!(width>0&&cupsWidth>0&&xpWidth>0))return;
+ const sideBySide=width>=xpWidth+cupsWidth+20;
+ button.style.setProperty('position','relative','important');
+ button.style.setProperty('padding-bottom',sideBySide?'28px':'46px','important');
+ if(sideBySide){
+  label.style.setProperty('left','6px','important');
+  label.style.setProperty('right','auto','important');
+  label.style.setProperty('bottom','5px','important');
+ }else{
+  label.style.setProperty('left','auto','important');
+  label.style.setProperty('right','6px','important');
+  label.style.setProperty('bottom','26px','important');
+ }
+ label.style.setProperty('z-index','6','important');
+ cups.style.setProperty('right','7px','important');
+ cups.style.setProperty('bottom','4px','important');
 }
 export function renderNativeOfficialXp(doc,appKey,xp){
  if(!doc?.head||!APPS.has(appKey)||!milestonePool(xp))return;
@@ -108,6 +164,7 @@ export function renderNativeOfficialXp(doc,appKey,xp){
  const lifeXp=xpStillAvailable(xp,'sudden',lifeLevel);
  for(const id of ['startThreeLives','startSudden'])
   applyBadge(doc.getElementById(id),lifeXp,'Récompenses XP communes aux modes 3 vies et Mort subite');
+ positionSuddenXp(doc.getElementById('startSudden'));
  for(const button of doc.querySelectorAll('#hardMenu .hard-start,#hardMenu .mlab-three,#hardMenu .hard-sudden')){
   const level=hardLevel(button);
   applyBadge(button,xpStillAvailable(xp,'hard',level),
