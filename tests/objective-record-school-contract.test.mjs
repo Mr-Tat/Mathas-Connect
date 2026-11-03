@@ -53,7 +53,7 @@ test('School proof DB is isolated from LAB, with RLS, private RPCs, server arith
   assert.ok(all.includes(term),term);
  for(const fn of ['fixed_v1','issue_add_v1','finish_add_v1','issue_multi_v1','finish_multi_v1'])
   assert.ok(all.includes('FUNCTION public.connect_objective_record_school_'+fn+'('),fn);
- for(const name of ['issue_add_v1','finish_add_v1','issue_multi_v1','finish_multi_v1'])
+ for(const name of ['fixed_v1','issue_add_v1','finish_add_v1','issue_multi_v1','finish_multi_v1'])
   assert.ok(all.includes('GRANT EXECUTE ON FUNCTION public.connect_objective_record_school_'+name));
  assert.ok(!all.includes('connect_objective_record_test_'));
  assert.ok(!all.includes(pilot));
