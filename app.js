@@ -1,7 +1,7 @@
 import {avatarGlyph,avatarColor} from './avatar-catalog.js';
 import {hubUrl} from './connect-context.js';
 import {listRecentProfiles,rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
-import {beginJoinAvatar,useApprovedAvatar,editedJoinAvatar,clearJoinAvatarDraft} from './join-avatar.js?v=20261027avatars2';
+import {beginJoinAvatar,useApprovedAvatar,clearJoinAvatarDraft} from './join-avatar.js?v=20261103-profile-rewards-v1';
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 const url='https://awmhpfofacaglewammxt.supabase.co', key='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const params=new URLSearchParams(location.search);
@@ -282,7 +282,7 @@ function startWaiting(){
  stopWaiting();waitAvatar();show('waiting');$('finish-avatar').hidden=!waitingApproved;
  $('waiting-actions').hidden=waitingApproved;
  $('waiting-expiry').hidden=waitingApproved;
- if(waitingApproved){$('waiting-status-note').textContent='✅ Demande acceptée ! Conserve ton avatar ou change-le, puis appuie sur le bouton.';return}
+ if(waitingApproved){$('waiting-status-note').textContent='✅ Demande acceptée ! Ton avatar est prêt : tu peux rejoindre le HUB. Les autres choix se débloquent en gagnant des niveaux.';return}
  $('waiting-status-note').textContent='En attente du professeur…';
  // Contrôle rare : une requête toutes les 15 secondes maximum, onglet visible.
  waitingTimer=setTimeout(async()=>{
@@ -407,12 +407,8 @@ async function cancelStudentRequestAndReturn() {
 $('cancel-student-form').onclick=()=>run(cancelStudentRequestAndReturn);
 $('finish-avatar').onclick=()=>run(async()=>{
  if(!waitingApproved)return;
- const choice=editedJoinAvatar();
- if(choice){
-  try{await call('student-avatar',choice)}
-  catch(e){$('waiting-status-note').textContent='Avatar non enregistré. Vérifie la connexion et réessaie.';return}
-  rememberRecentAvatar(cls,$('first-name').value.trim()+' '+$('last-initial').value.trim(),choice);
- }
+ // L'initiale est calculée côté serveur. Aucun avatar en attente
+ // ne doit écraser cette personnalisation de départ.
  clearJoinAvatarDraft();
  rememberRecentProfile(cls,$('first-name').value.trim()+' '+$('last-initial').value.trim().toUpperCase());
  stopWaiting();location.href=hubLink;
