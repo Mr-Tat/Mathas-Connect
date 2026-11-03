@@ -64,6 +64,15 @@ function applyBadge(button,amount,title){
  const text='Reste '+amount+' XP';
  if(label.textContent!==text)label.textContent=text;
  label.title=title;
+ // Five generations of native button CSS coexist. Setting the positioning
+ // directly on the one official XP badge wins over late native styles.
+ for(const [property,value] of [
+  ['position','absolute'],['right','6px'],['bottom','4px'],
+  ['left','auto'],['top','auto'],['display','block'],
+  ['font-size','10px'],['line-height','1.1'],['font-weight','650'],
+  ['width','max-content'],['max-width','calc(100% - 12px)'],
+  ['pointer-events','none'],['white-space','nowrap']
+ ])label.style.setProperty(property,value,'important');
 }
 export function renderNativeOfficialXp(doc,appKey,xp){
  if(!doc?.head||!APPS.has(appKey)||!milestonePool(xp))return;
