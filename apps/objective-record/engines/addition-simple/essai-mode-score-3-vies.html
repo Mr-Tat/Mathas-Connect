@@ -44,6 +44,7 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
 </header>
 <div id="state" role="alert">Préparation du jeu de démonstration…</div>
 <iframe id="game" title="Essai sur le véritable moteur Addition simple" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
+<script src="../certified-advanced-patch.js"></script>
 <script src="./lab-objectif-record-v2.js"></script>
 <script>
 (async function(){
@@ -312,6 +313,7 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
      "    const locked=false; // Essai isolé : déblocages réels inchangés.",
      'déblocage local de l’essai');
    game=window.MathasLabV2.patch(game,'add');
+   game=window.MathasCertifiedAdvancedPatch(game,'simple');
    frame.srcdoc=game;
    status.remove();
  }catch(error){
