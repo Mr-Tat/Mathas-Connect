@@ -3,6 +3,7 @@ import {
  normalizeExtendedAttempt,extendedFirstTryCorrect,extendedEndState,
  createExtendedQueue
 } from './certified-extended.mjs';
+import {schoolModeAllowed,schoolModeLockReason} from './school-official-unlocks.mjs';
 
 // Authenticated non-classic course embedded in the SAME pupil game host.
 // Native visuals remain available for practice; this written-column interface
@@ -167,6 +168,10 @@ export function createCertifiedExtendedUI({
   const ctx=getContext(),mode=modeSelect.value,level=Number(levelSelect.value),seq=ctx.generation;
   if(!ctx.pupilId||!ctx.classId||
    !['addition-ecrite-simple','addition-ecrite-multiple'].includes(ctx.activeApp))return;
+  if(ctx.classId!=='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'
+    &&!schoolModeAllowed(ctx.officialProgress,mode,level)){
+   info('🔒 '+schoolModeLockReason(mode,level));return;
+  }
   controlsBusy(true);
   try{
    const received=await call('start-extended-proof-v1',ctx.activeApp,{level,mode});

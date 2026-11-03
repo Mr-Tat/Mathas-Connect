@@ -7,6 +7,7 @@ import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
 import {createCertifiedExtendedUI} from './certified-extended-ui.mjs';
 import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs';
+import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress} from './school-official-unlocks.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
@@ -49,7 +50,7 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 const SERVER_PROOF_ADDITIONS=new Set(['addition-ecrite-simple','addition-ecrite-multiple']);
 const nativeRecordAllowed=appKey=>isWritableTestApp(appKey)&&!SERVER_PROOF_ADDITIONS.has(appKey);
 
-let statusTimer=null,barTimer=null,lastOfficialXp=null;
+let statusTimer=null,barTimer=null,lastOfficialXp=null,lastOfficialProgress=null;
 const bar=$('connect-bar'),handle=$('bar-handle'),xpPanel=$('xp-panel'),challengePanel=$('challenge-panel');
 function message(s){
  const status=$('status');
@@ -180,7 +181,7 @@ const clear=()=>{
   $('gameFrame').hidden=true;$('gameFrame').removeAttribute('src');$('refresh').disabled=true;
   $('certified-tools').hidden=true;$('certify').disabled=true;
   bar.hidden=true;handle.hidden=true;$('guest-home').hidden=false;stopBarTimer();closePanels();
-  lastOfficialXp=null;
+  lastOfficialXp=null;lastOfficialProgress=null;window.MathasConnectOfficialSchoolProgress=null;
 };
 async function verifiedToken(){
  const {data:{session:local}}=await session.auth.getSession();
@@ -222,6 +223,8 @@ function showOfficial({xp,loaded,appKey}){
  $('level').textContent=String(summary.level);
  $('trophies').textContent=permanentTrophyCount(loaded.state?.rewards) ?? '—';
  lastOfficialXp=xp;renderMeter(summary.total,summary.level);
+ lastOfficialProgress=classId===CLASS_TEST?null:schoolProgressSnapshot(appKey,loaded.state);
+ window.MathasConnectOfficialSchoolProgress=lastOfficialProgress;
  if(SERVER_PROOF_ADDITIONS.has(appKey)){
   // A null official award snapshot is 'unavailable', never a local fake zero.
   window.MathasConnectOfficialTrophies={
@@ -262,6 +265,7 @@ function watchGame(seq){
    }
    hideFictionalXp(doc);
    renderNativeOfficialXp(doc,activeApp,lastOfficialXp);
+   if(lastOfficialProgress)syncOfficialGameProgress(doc,lastOfficialProgress);
    const activeProofUI=activeApp==='addition-ecrite-multiple'?certifiedMultiUI:certifiedUI;
    const native=inside.contentWindow?.MathasLabV2Update;
    // The menu DOM may exist before the real script has installed its update
@@ -270,6 +274,9 @@ function watchGame(seq){
    activeProofUI.bind(inside.contentWindow,doc);
    installNativeCertifiedLaunch(doc,activeApp,choice=>{
     if(seq!==generation||!pupilId)return;
+    if(classId!==CLASS_TEST&&!schoolModeAllowed(lastOfficialProgress,choice.mode,choice.level)){
+     message('🔒 '+schoolModeLockReason(choice.mode,choice.level));return;
+    }
     // The familiar game buttons now enter the authenticated, server-issued
     // proof. Never accept a native game score as an XP claim.
     if(choice.mode==='classic')void activeProofUI.startNative(choice.level,choice.total);
@@ -316,7 +323,7 @@ async function refresh(seq){
 }
 const certifiedUI=createAdditionProofUI({
  button:$('certify'),panel:$('certified-tools'),levelSelect:$('certified-level'),totalSelect:$('certified-total'),modeSelect:$('certified-mode'),frame:$('gameFrame'),
- getContext:()=>({generation,activeApp,pupilId,classId}),
+ getContext:()=>({generation,activeApp,pupilId,classId,officialProgress:lastOfficialProgress}),
  call:(action,payload)=>call(classId===CLASS_TEST?'connect-objective-record-test':'connect-objective-record-school',action,'addition-ecrite-simple',payload),
  refresh:()=>refresh(generation),notify:message,
  onRecorded:receipt=>{
@@ -326,7 +333,7 @@ const certifiedUI=createAdditionProofUI({
 const certifiedMultiUI=createMultipleProofUI({
  button:$('certify'),panel:$('certified-tools'),levelSelect:$('certified-level'),
  totalSelect:$('certified-total'),modeSelect:$('certified-mode'),frame:$('gameFrame'),
- getContext:()=>({generation,activeApp,pupilId,classId}),
+ getContext:()=>({generation,activeApp,pupilId,classId,officialProgress:lastOfficialProgress}),
  call:(action,payload)=>call(classId===CLASS_TEST?'connect-objective-record-test':'connect-objective-record-school',action,'addition-ecrite-multiple',payload),
  refresh:()=>refresh(generation),notify:message,
  onRecorded:receipt=>{
@@ -338,7 +345,7 @@ const extendedUI=createCertifiedExtendedUI({
  frame:$('gameFrame'),root:$('extended-certified'),title:$('extended-title'),
  status:$('extended-status'),grid:$('extended-grid'),
  verifyButton:$('extended-verify'),nextButton:$('extended-next'),exitButton:$('extended-exit'),
- getContext:()=>({generation,activeApp,pupilId,classId}),
+ getContext:()=>({generation,activeApp,pupilId,classId,officialProgress:lastOfficialProgress}),
  call:(action,app,payload)=>call('connect-objective-record-school',action,app,payload),
  refresh:()=>refresh(generation),notify:message,
  onRecorded:receipt=>{if(receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);}

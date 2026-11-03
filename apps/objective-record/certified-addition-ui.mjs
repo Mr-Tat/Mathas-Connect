@@ -1,6 +1,7 @@
 import {PROOF_APP,acceptAdditionProofChallenge,normalizeAdditionFirstAttempt,
  createCertifiedAdditionQueue} from './certified-addition.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
+import {schoolModeAllowed,schoolModeLockReason} from './school-official-unlocks.mjs';
 const VALID_PROOF_CLASSES=new Set(['4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',...SCHOOL_CLASS_IDS]);
 
 
@@ -91,6 +92,10 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,mode
    notify('Reviens au menu Addition simple pour une épreuve certifiée.');return;
   }
   const level=Number(levelSelect?.value),total=Number(totalSelect?.value);
+  if(ctx.classId!=='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'
+    &&!schoolModeAllowed(ctx.officialProgress,'classic',level)){
+   notify('🔒 '+schoolModeLockReason('classic',level));return;
+  }
   if(![1,2,3].includes(level)||![4,10,20].includes(total)){
    notify('Choisis un niveau et une série de calculs valides.');return;
   }

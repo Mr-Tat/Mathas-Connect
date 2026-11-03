@@ -48,3 +48,45 @@ test('HARD modes share server proof but training remains a free game',()=>{
  const disabled=button('startSudden');disabled.disabled=true;
  assert.equal(classifyNativeLaunch(disabled,doc),null);
 });
+
+import {schoolUnlockProgress,schoolProgressSnapshot,schoolModeAllowed,
+ schoolModeLockReason} from '../apps/objective-record/school-official-unlocks.mjs';
+
+test('Objectif record remains locked after 4/4 even though its milestone awards 22 XP',()=>{
+ const state={classic:[{'4':4},{},{}],progress:{}};
+ const profile=schoolProgressSnapshot('addition-ecrite-simple',state);
+ assert.equal(profile.progress.level2,false);
+ assert.equal(profile.progress.sudden1,false);
+ assert.equal(schoolModeAllowed(profile,'sudden',1),false);
+ assert.equal(schoolModeAllowed(profile,'three-lives',1),false);
+ assert.equal(schoolModeAllowed(profile,'classic',1),true);
+ assert.ok(schoolModeLockReason('sudden',1).includes('8/10 ou 16/20'));
+});
+
+test('8/10 or 16/20 independently unlock both Objectif record buttons at their own levels',()=>{
+ const s={classic:[{'10':8},{'20':16},{'10':7}],progress:{}};
+ const p=schoolProgressSnapshot('addition-ecrite-multiple',s);
+ assert.equal(p.progress.level2,true);
+ assert.equal(p.progress.level3,true);
+ assert.equal(schoolModeAllowed(p,'three-lives',1),true);
+ assert.equal(schoolModeAllowed(p,'sudden',2),true);
+ assert.equal(schoolModeAllowed(p,'sudden',3),false);
+ const third=schoolProgressSnapshot('addition-ecrite-simple',{classic:[{}, {},{'20':16}]});
+ assert.equal(schoolModeAllowed(third,'sudden',3),true);
+ assert.equal(schoolModeAllowed(third,'classic',2),false);
+});
+
+test('HARD requires one genuine 10/10 or 20/20 at each of three levels',()=>{
+ const one={classic:[{'4':4,'10':10},{'20':20},{'10':10}],hard:[3,3,0]};
+ const a=schoolProgressSnapshot('addition-ecrite-simple',one);
+ assert.equal(a.progress.hard,true);
+ assert.equal(schoolModeAllowed(a,'hard-sudden',1),true);
+ assert.equal(schoolModeAllowed(a,'hard-three-lives',2),true);
+ assert.equal(schoolModeAllowed(a,'hard-three-lives',3),true);
+ const b=schoolProgressSnapshot('addition-ecrite-simple',{classic:[{'4':4},{'20':20},{'10':10}],hard:[3,3,0]});
+ assert.equal(b.progress.hard,false);
+ assert.equal(schoolModeAllowed(b,'hard-sudden',1),false);
+ const c=schoolProgressSnapshot('addition-ecrite-simple',{...one,hard:[2,3,0]});
+ assert.equal(schoolModeAllowed(c,'hard-sudden',2),false);
+ assert.equal(schoolUnlockProgress({progress:{sudden1:true}}).sudden1,true);
+});

@@ -37,7 +37,7 @@ for(const item of examples){
   const number='9'.repeat(width);
   const questions=Array.from({length:120},(_,i)=>({id:'q'+(i+1),op:'add',width,
    addends:Array(terms).fill(number)}));
-  const actions=[],errors=[];
+  const actions=[],errors=[];let recordUnlocked=item.slug!=='addition-simple';
   try{
    browser=await chromium.launch({headless:true,args:['--no-sandbox']});
    const page=await browser.newPage({viewport:{width:1160,height:820}});
@@ -51,7 +51,7 @@ for(const item of examples){
     const part=r.request().url();let ack;
     if(part.includes('/connect-api'))ack={ok:true,status:'approved',classId:CLASS};
     else if(part.includes('/connect-results'))ack=b.action==='student-load'?
-     {ok:true,revision:0,resetEpoch:0,state:{rewards:REWARDS},storageSubject:PUPIL}:
+     {ok:true,revision:0,resetEpoch:0,state:{rewards:REWARDS,progress:recordUnlocked?{level2:true,level3:true,sudden1:true,sudden2:true,sudden3:true,perfect1:true,perfect2:true,perfect3:true,hard:true}:{},hard:[3,3,0]},storageSubject:PUPIL}:
      {ok:true,appXp:0,total:0,level:1,milestones:[],currentMilestones:[],
       parcours:1,repeatXp:false};
     else if(part.includes('/connect-objective-record-school')){
@@ -85,6 +85,22 @@ for(const item of examples){
     return !!link&&link.getAttribute('href')?.includes('/hub.html?class=');
    },null,{timeout:16000});
    if(item.slug==='addition-simple'){
+    // A new approved pupil cannot launch either Objectif record mode.
+    await page.waitForFunction(()=>{
+     const doc=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+     return doc?.getElementById('startSudden')?.disabled===true &&
+      doc?.getElementById('startThreeLives')?.disabled===true &&
+      doc?.getElementById('mathas-school-record-lock')?.hidden===false;
+    },null,{timeout:16000});
+    // The same pupil unlocks both modes after a server-verified 8/10.
+    // Simulate only the official student-load reply, NEVER a local browser score.
+    recordUnlocked=true;
+    await page.evaluate(()=>document.getElementById('refresh').click());
+    await page.waitForFunction(()=>{
+     const doc=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+     return doc?.getElementById('startSudden')?.disabled===false &&
+      doc?.getElementById('startThreeLives')?.disabled===false;
+    },null,{timeout:16000});
     // A real click on the familiar Mort subite card must issue a school proof;
     // no separate hidden "Défi Connect" action is necessary.
     const native=page.frameLocator('#gameFrame').frameLocator('#game');
