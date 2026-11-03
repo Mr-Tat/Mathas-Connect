@@ -52,7 +52,8 @@ for(const item of examples){
     if(part.includes('/connect-api'))ack={ok:true,status:'approved',classId:CLASS};
     else if(part.includes('/connect-results'))ack=b.action==='student-load'?
      {ok:true,revision:0,resetEpoch:0,state:{rewards:REWARDS},storageSubject:PUPIL}:
-     {ok:true,appXp:0,total:0,level:1};
+     {ok:true,appXp:0,total:0,level:1,milestones:[],currentMilestones:[],
+      parcours:1,repeatXp:false};
     else if(part.includes('/connect-objective-record-school')){
      if(b.action==='start-extended-proof-v1'){
       assert.equal(b.mode,item.mode);assert.equal(b.level,item.level);
@@ -83,11 +84,22 @@ for(const item of examples){
     const link=inner?.contentDocument?.getElementById('mathas-game-hub-return');
     return !!link&&link.getAttribute('href')?.includes('/hub.html?class=');
    },null,{timeout:16000});
-   await page.locator('#challenge-toggle').click();
-   await page.locator('#certify:not([disabled])').waitFor({state:'visible',timeout:10000});
-   await page.locator('#certified-mode').selectOption(item.mode);
-   await page.locator('#certified-level').selectOption(String(item.level));
-   await page.locator('#certify').click();
+   if(item.slug==='addition-simple'){
+    // A real click on the familiar Mort subite card must issue a school proof;
+    // no separate hidden "Défi Connect" action is necessary.
+    const native=page.frameLocator('#gameFrame').frameLocator('#game');
+    await native.locator('#suddenMaxDigits').selectOption('3'); // Niveau 1
+    await native.locator('#startSudden .mathas-connect-official-xp').waitFor({state:'visible',timeout:15000});
+    assert.match(await native.locator('#startSudden').textContent(),/Reste 20 XP/);
+    await native.locator('#startSudden').click();
+    assert.equal(await page.locator('#certified-mode').inputValue(),'sudden');
+   }else{
+    await page.locator('#challenge-toggle').click();
+    await page.locator('#certify:not([disabled])').waitFor({state:'visible',timeout:10000});
+    await page.locator('#certified-mode').selectOption(item.mode);
+    await page.locator('#certified-level').selectOption(String(item.level));
+    await page.locator('#certify').click();
+   }
    await page.locator('#extended-certified:not([hidden])').waitFor({state:'visible',timeout:15000});
    for(let i=0;i<item.wrong;i++){
     const fields=page.locator('#extended-grid input.answer');
