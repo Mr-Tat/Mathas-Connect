@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {cleanScoreEntry,schoolScoreSnapshot,canShareBestScore} from '../apps/objective-record/school-score-view.mjs';
+import {cleanScoreEntry,schoolScoreSnapshot,canShareBestScore,nativeDayPoints} from '../apps/objective-record/school-score-view.mjs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const stamp=new Date().toISOString();
@@ -39,6 +39,15 @@ test('Sans Connect, un score local ne peut jamais provoquer un envoi au tableau'
  assert.equal(canShareBestScore(snapshot),false);
  assert.equal(snapshot.official,false);
  assert.equal(cleanScoreEntry({...a,total:null}).total,null);
+});
+test('Le nombre natif s’extrait sans le macaron Record, et non d’une étiquette inventée',()=>{
+ const withRecord={querySelector:()=>({firstElementChild:{textContent:'1\u202f234'},textContent:'1\u202f234★ RECORD'})};
+ const zero={querySelector:()=>({firstElementChild:null,textContent:'0'})};
+ const invalid={querySelector:()=>({firstElementChild:{textContent:'20 points'},textContent:'20 points'})};
+ assert.equal(nativeDayPoints(withRecord),1234);
+ assert.equal(nativeDayPoints(zero),0);
+ assert.equal(nativeDayPoints(invalid),null);
+ assert.equal(nativeDayPoints(null),null);
 });
 test('Les additions réutilisent les cartes natives et une invitation sécurisée sur le score affiché',()=>{
  const src=read('apps/objective-record/school-score-view.mjs');

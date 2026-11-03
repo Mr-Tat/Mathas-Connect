@@ -39,6 +39,15 @@ export function canShareBestScore(snapshot){
   &&snapshot.boardBest!==null&&snapshot.today.points>snapshot.boardBest);
 }
 
+export function nativeDayPoints(top){
+ // Le moteur met le nombre dans le premier span, puis ajoute parfois un
+ // macaron RECORD. Ne jamais lire la concaténation « 20RECORD ».
+ const box=top?.querySelector('[data-points="daily"]');
+ const value=(box?.firstElementChild?.textContent??box?.textContent??'').trim();
+ if(!/^\d[\d\s]*$/.test(value))return null;
+ const n=Number(value.replace(/\s/g,''));
+ return Number.isSafeInteger(n)&&n>=0?n:null;
+}
 // Réutilise les cartes natives : Top du jour, coupes et podium historique.
 // Le clic ne propose que l'envoi volontaire d'un score certifié Connect.
 export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
@@ -51,12 +60,7 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
   +'#mathasPointsQuick .mathas-points-quick-item--best.mathas-school-shareable:focus-visible{outline:3px solid #ffe3a1}'
   +'#mathasPointsQuick .mathas-school-share-hint{display:block;font:750 11px/1.35 system-ui;color:#c5e7f6;margin-top:4px}'
   +'body.light #mathasPointsQuick .mathas-school-share-hint,body.light-mode #mathasPointsQuick .mathas-school-share-hint{color:#24536c}';
- function nativeBestPoints(){
-  const value=clickTarget?.querySelector('[data-points="daily"]')?.textContent?.trim()||'';
-  if(!/^\d[\d\s]*$/.test(value))return null;
-  const n=Number(value.replace(/\s/g,''));
-  return Number.isSafeInteger(n)&&n>=0?n:null;
- }
+ function nativeBestPoints(){return nativeDayPoints(clickTarget)}
  async function load(force=false){
   if(destroyed)return false;
   if(loading){

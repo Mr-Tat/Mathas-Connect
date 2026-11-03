@@ -93,7 +93,7 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
    const clickTop=score=>page.evaluate(points=>{
     const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
     const top=doc.querySelector('#mathasPointsQuick .mathas-points-quick-item--best');
-    top.querySelector('[data-points="daily"]').textContent=String(points);
+    top.querySelector('[data-points="daily"]').innerHTML='<span>'+String(points)+'</span><span class="mathas-points-record">RECORD</span>';
     top.click();
    },score);
    await clickTop(12);
