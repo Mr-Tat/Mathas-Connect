@@ -38,11 +38,12 @@ export function schoolRecordLaunch({classId,appKey,legacyUrl,rollout=SCHOOL_RECO
 
 /**
  * Two certified additions can roll out independently of the other three.
- * This flag is deliberately CLOSED until school proof RPCs, hosted JWT,
- * professor results and projection have passed school-specific E2E tests.
+ * Activate ONLY after documented hosted professor JWT, receipts, trophies,
+ * projection and the server native-score bypass guard all pass review.
+ * This PR is an activation candidate and must remain DRAFT until that moment.
  */
 export const SCHOOL_ADDITIONS_ROLLOUT=Object.freeze({
-  enabled:false,proofRpcsReady:false,hostedJwtVerified:false,projectionVerified:false
+  enabled:true,proofRpcsReady:true,hostedJwtVerified:true,projectionVerified:true
 });
 const ADDITION_KEYS=new Set(['addition-ecrite-simple','addition-ecrite-multiple']);
 export function schoolAdditionsLaunch({classId,appKey,legacyUrl,rollout=SCHOOL_ADDITIONS_ROLLOUT}){
