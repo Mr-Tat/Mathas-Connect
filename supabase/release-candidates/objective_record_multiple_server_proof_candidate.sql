@@ -76,7 +76,7 @@ DECLARE
  v_width integer;v_len integer;v_term_count integer;
  v_sum integer;v_operand integer;v_partial integer;v_power integer;v_carry integer;
  v_actual text;v_expected_digit text;v_expected_carry text;
- v_correct boolean;v_score integer:=0;v_hash text;v_ack jsonb;
+ v_correct boolean;v_score integer:=0;v_hash text;v_ack jsonb;v_rewards jsonb;
 BEGIN
  IF p_student IS NULL OR p_class IS DISTINCT FROM v_test OR p_session IS NULL
   OR jsonb_typeof(p_answers) IS DISTINCT FROM 'array'
@@ -154,11 +154,22 @@ BEGIN
   END LOOP;
   IF v_correct THEN v_score:=v_score+1;END IF;
  END LOOP;
- -- No client-chosen score; same transaction consumes proof and calls existing
- -- native Addition multiple XP/state/receipt/trophy/projection logic.
+ -- Import permanent trophies before merging the new server-proven mastery.
+ -- A client cannot claim score cups or HARD trophies through this route.
+ v_rewards:=coalesce(public.connect_trophy_rewards_v1(p_student,v_app),
+  '{"version":3,"mastery":{"4":[false,false,false],"10":[false,false,false],"20":[false,false,false]},
+    "sudden":[false,false,false],"hardAwards":{"bronze":[false,false,false],
+    "silver":[false,false,false],"gold":[false,false,false]},
+    "scoreOne":{"bronze":false,"silver":false,"gold":false},"unlockedGold":false}'::jsonb);
+ IF v_score=v_session.total THEN
+  v_rewards:=jsonb_set(v_rewards,
+    ARRAY['mastery',v_session.total::text,(v_session.level-1)::text],'true'::jsonb,false);
+ END IF;
+ -- No client-chosen score or trophies. In this SAME transaction, the native
+ -- recorder merges server-authorized awards, state, official XP and projection.
  v_ack:=public.connect_addition_multiple_record_v1(p_student,p_session,
   v_session.expected_revision,v_session.reset_epoch,'classic',v_session.level,
-  v_score,v_session.total,NULL);
+  v_score,v_session.total,v_rewards);
  UPDATE public.connect_objective_record_test_proof_sessions
  SET consumed_at=now(),answers_hash=v_hash,
   result=v_ack||jsonb_build_object('proofVerified',true,'verifiedScore',v_score)
