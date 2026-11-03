@@ -1,0 +1,109 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createServer} from 'node:http';
+import {readFile} from 'node:fs/promises';
+import {resolve,extname,sep} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {chromium} from 'playwright';
+const root=resolve(fileURLToPath(new URL('..',import.meta.url)));
+const klass='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
+const pupil='11111111-1111-4111-8111-111111111111';
+const auth='22222222-2222-4222-8222-222222222222';
+function rewards(mastery){
+ return {version:3,mastery:{'4':[mastery,false,false],
+   '10':[mastery,false,false],'20':[mastery,false,false]},
+  sudden:[false,false,false],hardAwards:{bronze:[false,false,false],
+   silver:[false,false,false],gold:[false,false,false]},
+  scoreOne:{bronze:false,silver:false,gold:false},unlockedGold:false};
+}
+async function serve(){
+ const server=createServer(async(req,res)=>{
+  const file=resolve(root,'.'+new URL(req.url,'http://localhost').pathname);
+  if(!file.startsWith(root+sep)){res.writeHead(403).end();return;}
+  try{const bytes=await readFile(file);
+   const type=({'.html':'text/html; charset=utf-8',
+    '.mjs':'text/javascript','.js':'text/javascript','.css':'text/css',
+    '.png':'image/png','.webp':'image/webp'})[extname(file)]||'application/octet-stream';
+   res.writeHead(200,{'content-type':type}).end(bytes);
+  }catch{res.writeHead(404).end()}
+ });
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ return {server,url:'http://127.0.0.1:'+server.address().port};
+}
+for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5']]){
+ test('Chromium official trophies '+slug+': awarded, reset, unavailable, never local demo',async()=>{
+  const {server,url}=await serve();let browser;
+  try{
+   browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+   const page=await browser.newPage({viewport:{width:1340,height:900}});
+   const errors=[];page.on('pageerror',e=>errors.push(e.message));
+   let serverRewards=rewards(true);
+   await page.route('**/supabase-js@2.95.0*',r=>r.fulfill({
+    status:200,contentType:'text/javascript',headers:{'access-control-allow-origin':'*'},
+    body:'export function createClient(){return {auth:{getSession:async()=>({data:{session:{access_token:"x",user:{id:"'+auth+'",is_anonymous:true}}}}),getUser:async()=>({data:{user:{id:"'+auth+'",is_anonymous:true}},error:null})}}}'
+   }));
+   await page.route('**/*.supabase.co/**',async r=>{
+    const b=r.request().postDataJSON()??{};let data;
+    if(r.request().url().includes('/connect-api'))data={ok:true,status:'approved',classId:klass};
+    else if(r.request().url().includes('/connect-results'))
+     data=b.action==='student-load'
+      ?{ok:true,revision:0,resetEpoch:0,storageSubject:pupil,state:{rewards:serverRewards}}
+      :{ok:true,appXp:0,total:0,level:1};
+    else throw Error('unexpected server call '+b.action);
+    await r.fulfill({status:200,contentType:'application/json',
+     headers:{'access-control-allow-origin':'*'},body:JSON.stringify(data)});
+   });
+   await page.goto(url+'/apps/objective-record/eleve.html?class='+klass+'&app='+slug,
+    {waitUntil:'domcontentloaded',timeout:25000});
+   await page.waitForFunction(()=>!document.getElementById('certify').disabled,
+    null,{timeout:45000});
+   assert.equal(await page.locator('#trophies').textContent(),'3');
+   await page.evaluate(width=>{
+    const native=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+    const select=native.getElementById('classicMaxDigits');
+    select.value=width;select.dispatchEvent(new Event('change',{bubbles:true}));
+   },levelWidth);
+   const cup=()=>page.evaluate(()=>{
+    const native=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+    return native.querySelector('.mlab-mastery-under-series .mlab-cup')?.getAttribute('aria-label')??'';
+   });
+   await page.waitForFunction(()=>{
+    const native=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+    return native?.querySelector('.mlab-mastery-under-series .mlab-cup')?.getAttribute('aria-label')?.includes('obtenu');
+   },null,{timeout:12000});
+   assert.match(await cup(),/obtenu/);
+
+   // Native localStorage claims the pupil won NOTHING; official achievement
+   // still wins because the Connect profile is the only authority.
+   await page.evaluate(()=>{
+    const w=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
+    const allFalse={
+     mastery:{4:[false,false,false],10:[false,false,false],20:[false,false,false]},
+     sudden:[false,false,false],hardAwards:{bronze:[false,false,false],
+      silver:[false,false,false],gold:[false,false,false]},
+     scoreOne:{bronze:false,silver:false,gold:false},unlockedGold:false
+    };
+    if(w.MathasPoints)w.MathasPoints.readTrophies=()=>allFalse;
+   });
+   await page.waitForTimeout(1000);
+   assert.match(await cup(),/obtenu/,'local game cannot remove permanent trophies');
+
+   // The authentic REST profile changes, so the native display follows it.
+   serverRewards=rewards(false);
+   await page.locator('#refresh').click();
+   await page.waitForFunction(()=>document.getElementById('trophies')?.textContent==='0',
+    null,{timeout:12000});
+   await page.waitForTimeout(1000);
+   assert.match(await cup(),/à gagner/);
+
+   serverRewards=null;await page.locator('#refresh').click();
+   await page.waitForFunction(()=>document.getElementById('trophies')?.textContent==='—',
+    null,{timeout:12000});
+   await page.waitForFunction(()=>{
+    const native=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+    return native?.documentElement.classList.contains('mathas-connect-official-trophies-unavailable');
+   },null,{timeout:10000});
+   assert.deepEqual(errors,[]);
+  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve))}
+ });
+}
