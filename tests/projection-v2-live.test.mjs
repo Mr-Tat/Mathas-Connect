@@ -14,6 +14,11 @@ test('Projection V2 live : chargement professeur volontaire, lecture protégée 
  assert.match(js,/if\(!hasLoaded\)return note\('Clique d’abord sur Afficher/);
  assert.doesNotMatch(js,/signInAnonymously|localStorage\.setItem/);
 });
+test('Jeu sans score : pas de colonne fantôme, état vide spécifique à l’application',()=>{
+ assert.match(js,/people\.length\?splitProjectedRanking\(people,multiple\):\[\]/);
+ assert.match(html,/Aucun score enregistré pour cette application/);
+ assert.doesNotMatch(html,/Aucun élève autorisé à afficher pour cette application/);
+});
 test('Projection V2 live : 14 élèves maximum, classement propre aux jeux, score près du nom',()=>{
  assert.match(js,/limit:16/);
  assert.match(js,/rankMultiClass/);

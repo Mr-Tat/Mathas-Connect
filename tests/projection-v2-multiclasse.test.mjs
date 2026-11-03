@@ -30,6 +30,25 @@ test('Projection : un score absent ne remplace jamais un vrai résultat',()=>{
 test('Projection : score des applications jamais mélangé',()=>{
  const p=rankMultiClass({classes:[A,B],primaryClassId:'A',scoreClassIds:['B'],
   appKey:'multiplication-ecrite-simple'});
- assert.equal(p.every(x=>x.score===null),true);
- assert.equal(p.some(x=>x.classId==='B'),false);
+ assert.deepEqual(p,[],'un jeu sans score publié ne réutilise aucune carte d’un autre jeu');
+ assert.deepEqual(splitProjectedRanking(p,false),[[]]);
+});
+test('Projection : chaque jeu n’affiche que ses vrais joueurs, sans héritage de l’addition',()=>{
+ const classes=[{classId:'A',name:'A',students:[
+  {id:'add',name:'Addition uniquement',scores:[{appKey:'addition-ecrite-simple',bestScore:123}]},
+  {id:'sub',name:'Soustraction uniquement',scores:[{appKey:'soustraction-ecrite-simple',bestScore:45}]},
+  {id:'both',name:'Deux scores',scores:[
+   {appKey:'addition-ecrite-simple',bestScore:75},
+   {appKey:'soustraction-ecrite-simple',bestScore:18}]},
+  {id:'missing',name:'Aucun record',scores:[]},
+  {id:'invalid',name:'Score non valide',scores:[{appKey:'soustraction-ecrite-simple',bestScore:null}]}
+ ]}];
+ const addition=rankMultiClass({classes,primaryClassId:'A',appKey:'addition-ecrite-simple'});
+ const subtraction=rankMultiClass({classes,primaryClassId:'A',appKey:'soustraction-ecrite-simple'});
+ const multiplication=rankMultiClass({classes,primaryClassId:'A',appKey:'multiplication-ecrite-simple'});
+ assert.deepEqual(addition.map(x=>[x.id,x.score]),[['add',123],['both',75]]);
+ assert.deepEqual(subtraction.map(x=>[x.id,x.score]),[['sub',45],['both',18]]);
+ assert.deepEqual(multiplication,[]);
+ assert.ok(addition.every(x=>x.score!==null));
+ assert.ok(subtraction.every(x=>x.score!==null));
 });

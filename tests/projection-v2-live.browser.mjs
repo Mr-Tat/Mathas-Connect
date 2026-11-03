@@ -125,6 +125,19 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   assert.equal(await page.locator('#comparison-results .compare-row').count(),0);
   assert.equal(await page.locator('#settings-left').count(),1);
   assert.equal(await page.locator('#open-settings').count(),0);
+  // Une application sans aucun score publié ne montre même pas les cartes
+  // des élèves qui ont joué à l'addition ou à la multiplication.
+  await page.locator('#app-tabs').getByRole('button',{name:'Soustraction écrite'}).click();
+  assert.equal(await page.locator('#app-name').textContent(),'Soustraction écrite');
+  assert.equal(await page.locator('#ranking-list .entry').count(),0);
+  assert.equal(await page.locator('#ranking-list .ranking-col').count(),0);
+  assert.match(await page.locator('#ranking-list').evaluate(el=>getComputedStyle(el,'::after').content),
+   /Aucun score enregistré pour cette application/);
+  await page.locator('#app-tabs').getByRole('button',{name:'Multiplication écrite'}).click();
+  assert.equal(await page.locator('.entry.rank-1 .points').textContent(),'90 pts',
+   'la multiplication ne récupère pas les 220 points de l’addition');
+  await page.locator('#app-tabs').getByRole('button',{name:'Addition écrite',exact:true}).click();
+  assert.equal(await page.locator('.entry.rank-1 .points').textContent(),'220 pts');
   // Cas de classe partiellement active : 5 élèves en une colonne, comme
   // la capture signalée. Le classement doit utiliser l'espace disponible,
   // et non se contracter autour du prénom le plus long.

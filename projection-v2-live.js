@@ -141,7 +141,9 @@ function render(){
   appKey:currentApp,limit:16,includeTeacher:$('show-teacher').checked
  });
  const multiple=compared.length>0;
- const columns=splitProjectedRanking(people,multiple);
+ // Keep the list truly empty when nobody has a published score for this app.
+ // splitProjectedRanking([]) returns [[]], which would block the :empty notice.
+ const columns=people.length?splitProjectedRanking(people,multiple):[];
  $('ranking-list').classList.toggle('single',columns.length===1);
  $('ranking-list').classList.toggle('multi',multiple);
  let position=0;
