@@ -18,7 +18,7 @@ export const avatarSmileys={
  heartcat:'😻',ghost:'👻',robot:'🤖',alien:'👾',laughing:'😄',happy:'😊',wink:'😉',hug:'🤗'
 };
 export const avatarColors={
- ocean:'#2563a5',sky:'#247cb5',indigo:'#5444b7',violet:'#8147bb',plum:'#963d86',rose:'#ac4568',
+ transparent:'transparent',ocean:'#2563a5',sky:'#247cb5',indigo:'#5444b7',violet:'#8147bb',plum:'#963d86',rose:'#ac4568',
  coral:'#bc5948',sun:'#b47b27',amber:'#946122',mint:'#238c81',forest:'#297246',slate:'#4b657d'
 };
 export const avatarCategories=[
@@ -31,8 +31,8 @@ export function avatarGlyph(avatar){
  const v=String(avatar?.value??''),kind=avatar?.kind;
  const lookup={...avatarAnimals,...avatarOlderAnimals,...avatarObjects,...avatarSmileys};
  // Priorité aux identifiants connus même si une ancienne fiche a un type incohérent.
- if(kind==='letter'&&/^[A-Z]$/.test(v))return v;
+ if(kind==='letter'&&/^\p{Lu}$/u.test(v))return v;
  if(kind==='animal'||kind==='object'||kind==='smiley')return lookup[v]||'🙂';
- return lookup[v]||(/^[A-Z]$/.test(v)?v:'🙂');
+ return lookup[v]||(/^\p{Lu}$/u.test(v)?v:'🙂');
 }
-export function avatarColor(value){return avatarColors[value]||avatarColors.ocean}
+export function avatarColor(value){return avatarColors[value]||avatarColors.transparent}
