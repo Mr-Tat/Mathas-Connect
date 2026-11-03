@@ -5,6 +5,7 @@ import {createAtomicTestRecorder,isWritableTestApp} from './atomic-test-recorder
 import {MIXED_TEST_APP,isMixedTestTerminal} from './mixed-test-proof.mjs';
 import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
+import {createCertifiedExtendedUI} from './certified-extended-ui.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
@@ -171,7 +172,7 @@ async function refresh(seq){
  return {loaded,xp};
 }
 const certifiedUI=createAdditionProofUI({
- button:$('certify'),panel:$('certified-tools'),levelSelect:$('certified-level'),totalSelect:$('certified-total'),frame:$('gameFrame'),
+ button:$('certify'),panel:$('certified-tools'),levelSelect:$('certified-level'),totalSelect:$('certified-total'),modeSelect:$('certified-mode'),frame:$('gameFrame'),
  getContext:()=>({generation,activeApp,pupilId,classId}),
  call:(action,payload)=>call(classId===CLASS_TEST?'connect-objective-record-test':'connect-objective-record-school',action,'addition-ecrite-simple',payload),
  refresh:()=>refresh(generation),notify:message,
@@ -181,7 +182,7 @@ const certifiedUI=createAdditionProofUI({
 });
 const certifiedMultiUI=createMultipleProofUI({
  button:$('certify'),panel:$('certified-tools'),levelSelect:$('certified-level'),
- totalSelect:$('certified-total'),frame:$('gameFrame'),
+ totalSelect:$('certified-total'),modeSelect:$('certified-mode'),frame:$('gameFrame'),
  getContext:()=>({generation,activeApp,pupilId,classId}),
  call:(action,payload)=>call(classId===CLASS_TEST?'connect-objective-record-test':'connect-objective-record-school',action,'addition-ecrite-multiple',payload),
  refresh:()=>refresh(generation),notify:message,
@@ -189,9 +190,34 @@ const certifiedMultiUI=createMultipleProofUI({
   if(receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);
  }
 });
+const extendedUI=createCertifiedExtendedUI({
+ button:$('certify'),modeSelect:$('certified-mode'),levelSelect:$('certified-level'),
+ frame:$('gameFrame'),root:$('extended-certified'),title:$('extended-title'),
+ status:$('extended-status'),grid:$('extended-grid'),
+ verifyButton:$('extended-verify'),nextButton:$('extended-next'),exitButton:$('extended-exit'),
+ getContext:()=>({generation,activeApp,pupilId,classId}),
+ call:(action,app,payload)=>call('connect-objective-record-school',action,app,payload),
+ refresh:()=>refresh(generation),notify:message,
+ onRecorded:receipt=>{if(receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);}
+});
+function updateCertifiedModeControls(){
+ const mode=$('certified-mode').value,classic=mode==='classic',hard=mode.startsWith('hard-');
+ const widths=activeApp==='addition-ecrite-multiple'?
+   (hard?[9,12,14]:[5,6,7]):
+   (hard?[10,12,16]:[3,5,7]);
+ for(let l=1;l<=3;l++){
+  const option=$('certified-level').querySelector('option[value="'+l+'"]');
+  if(option)option.textContent=l+' · '+widths[l-1]+' chiffres';
+ }
+ $('certified-count-label').hidden=!classic;
+ $('certify').textContent=classic?'🔐 Lancer une série vérifiée par le serveur':
+  '🔐 Lancer ce défi vérifié par le serveur';
+}
+$('certified-mode').addEventListener('change',updateCertifiedModeControls);
+updateCertifiedModeControls();
 async function choose(){
  generation++;const seq=generation;
- clearInterval(watching);visibleDoc=null;recorder=null;pupilId=null;certifiedUI.reset();certifiedMultiUI.reset();
+ clearInterval(watching);visibleDoc=null;recorder=null;pupilId=null;certifiedUI.reset();certifiedMultiUI.reset();extendedUI.reset();
  projectionConsent?.destroy();projectionConsent=null;clear();
  const slug=$('app').value;
  if(!Object.hasOwn(GAME_URLS,slug)){message('Jeu inconnu');return;}
@@ -227,13 +253,18 @@ async function choose(){
   }
   if(classId!==CLASS_TEST){
    for(const option of $('app').options)option.disabled=!['addition-simple','addition-multiple'].includes(option.value);
-   $('notice').textContent='Séries classiques certifiées : résultats, XP et trophées officiels. Les autres modes restent jouables sans XP. Les autres calculs écrits conservent leur version historique dans le HUB.';
+   for(const option of $('certified-mode').options)option.disabled=false;
+   $('notice').textContent='Classique, 3 vies, Mort subite et HARD : démarre avec le cadenas Connect pour obtenir les XP, records et trophées vérifiés côté serveur. Dans les pages natives, les parties libres restent sans XP.';
+  }else{
+   $('certified-mode').value='classic';
+   for(const option of $('certified-mode').options)option.disabled=option.value!=='classic';
   }
+  updateCertifiedModeControls();
   $('gameFrame').src=GAME_URLS[slug][1]+(SERVER_PROOF_ADDITIONS.has(activeApp)?'?connect=1':'');
   $('gameFrame').hidden=false;$('refresh').disabled=false;
   watchGame(seq);
   message(SERVER_PROOF_ADDITIONS.has(activeApp)
-   ?'Profil Connect approuvé · lance une série vérifiée pour enregistrer le score, les XP et les trophées de maîtrise. Les autres modes restent libres, sans XP.'
+   ?'Profil Connect approuvé · choisis Classique, 3 vies, Mort subite ou HARD puis lance le défi certifié. Les parties natives libres restent sans XP.'
    :recorder?'Classe TEST : calculs autres qu’addition en essai · scores natifs encore en cours de certification, sans ouverture scolaire.'
    :'Session Connect authentifiée · sauvegarde des parties de ce jeu encore désactivée.');
  }catch(e){
@@ -242,7 +273,7 @@ async function choose(){
   message('⚠️ '+(e?.message||'Accès indisponible')+'. Jeu non lancé.');
  }
 }
-$('refresh').addEventListener('click',async()=>{const seq=generation;try{if(certifiedUI.hasPending())await certifiedUI.retry();else if(certifiedMultiUI.hasPending())await certifiedMultiUI.retry();else if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
+$('refresh').addEventListener('click',async()=>{const seq=generation;try{if(extendedUI.hasPending())await extendedUI.retry();else if(certifiedUI.hasPending())await certifiedUI.retry();else if(certifiedMultiUI.hasPending())await certifiedMultiUI.retry();else if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
   if(seq===generation&&!recorder?.hasPending())message('Profil officiel actualisé.');
  }catch(e){if(seq===generation)message('⚠️ '+e.message)}});
 $('app').addEventListener('change',()=>{const next=new URL(location.href);next.searchParams.set('app',$('app').value);history.replaceState(null,'',next);void choose()});

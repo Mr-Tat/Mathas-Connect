@@ -8,7 +8,7 @@ const VALID_PROOF_CLASSES=new Set(['4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',...SCH
 // PostgreSQL chooses numbers, grades every result digit and multi-addend carry,
 // and alone decides the official XP. The client preserves only retry evidence.
 export function createMultipleProofUI({
- button,panel,levelSelect,totalSelect,frame,getContext,call,refresh,notify,onRecorded=()=>{}
+ button,panel,levelSelect,totalSelect,modeSelect,frame,getContext,call,refresh,notify,onRecorded=()=>{}
 }){
  let run=null,queue=null,sending=false,suppressedTerminal=false;
  const isCurrent=seq=>seq===getContext().generation&&getContext().activeApp===MULTI_PROOF_APP;
@@ -21,7 +21,8 @@ export function createMultipleProofUI({
  function bind(win,doc){
   const ctx=getContext();
   if(ctx.activeApp!==MULTI_PROOF_APP||!ctx.pupilId||!doc?.getElementById('menuScreen'))return;
-  panel.hidden=false;button.disabled=!!run||sending;
+  panel.hidden=false;
+  if(!modeSelect||modeSelect.value==='classic')button.disabled=!!run||sending;
   if(!win)return;
   if(run&&win.__mathasServerCertifiedMulti?.sessionId!==run.sessionId)
    win.__mathasServerCertifiedMulti={sessionId:run.sessionId,
@@ -75,6 +76,7 @@ export function createMultipleProofUI({
   return false;
  }
  async function start(){
+  if(modeSelect&&modeSelect.value!=='classic')return;
   const ctx=getContext(),seq=ctx.generation;
   if(!VALID_PROOF_CLASSES.has(ctx.classId)
    ||ctx.activeApp!==MULTI_PROOF_APP||!ctx.pupilId)return;

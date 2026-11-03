@@ -7,7 +7,7 @@ const VALID_PROOF_CLASSES=new Set(['4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',...SCH
 // Server-issued Addition simple, CLASSIC 4/10/20 across 3 levels; TEST-only until school release.
 // The database issues operands and verifies digits and carries. The browser
 // cannot choose the grade, milestone or credited XP.
-export function createAdditionProofUI({button,panel,levelSelect,totalSelect,frame,getContext,call,refresh,notify,onRecorded=()=>{}}){
+export function createAdditionProofUI({button,panel,levelSelect,totalSelect,modeSelect,frame,getContext,call,refresh,notify,onRecorded=()=>{}}){
  let run=null,queue=null,sending=false,suppressedTerminal=false;
  const isCurrent=seq=>seq===getContext().generation&&getContext().activeApp===PROOF_APP;
  const inner=()=>{
@@ -22,7 +22,8 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,fram
  function bind(win,doc){
   const ctx=getContext();
   if(ctx.activeApp!==PROOF_APP||!ctx.pupilId||!doc?.getElementById('menuScreen'))return;
-  panel.hidden=false;button.disabled=!!run||sending;
+  panel.hidden=false;
+  if(!modeSelect||modeSelect.value==='classic')button.disabled=!!run||sending;
   if(!win)return;
   if(run && win.__mathasServerCertified?.sessionId!==run.sessionId){
    win.__mathasServerCertified={sessionId:run.sessionId,level:run.level,total:run.total,questions:run.questions,index:0};
@@ -80,6 +81,7 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,fram
   return false;
  }
  async function start(){
+  if(modeSelect&&modeSelect.value!=='classic')return;
   const ctx=getContext(),seq=ctx.generation;
   if(!VALID_PROOF_CLASSES.has(ctx.classId)
     ||ctx.activeApp!==PROOF_APP||!ctx.pupilId)return;

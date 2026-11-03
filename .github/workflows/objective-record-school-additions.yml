@@ -3,9 +3,12 @@ on:
   pull_request:
     paths:
       - 'supabase/migrations/202611031200*.sql'
+      - 'supabase/migrations/202611031300*.sql'
+      - 'apps/objective-record/certified-extended*.mjs'
       - 'supabase/functions/connect-objective-record-school/**'
       - 'tests/postgres/objective-record-school-*.sql'
       - 'tests/objective-record-school-contract.test.mjs'
+      - 'tests/objective-record-school-extended.test.mjs'
       - '.github/workflows/objective-record-school-additions.yml'
   workflow_dispatch:
 permissions:
@@ -35,7 +38,7 @@ jobs:
         with:
           node-version: '22'
       - name: School release and JWT contract
-        run: node --test tests/objective-record-school-contract.test.mjs
+        run: node --test tests/objective-record-school-contract.test.mjs tests/objective-record-school-extended.test.mjs
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -61,5 +64,13 @@ jobs:
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120040_school_addition_multiple_issue.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120050_school_addition_multiple_finish.sql
+      - name: Certified 3-vies / Sudden / HARD RLS session, issuer, records and grader
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103130000_school_extended_sessions.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103130010_school_extended_issue.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103130020_school_extended_record.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103130030_school_extended_finish.sql
       - name: All 18 variants, identity denial, wrong first answers, replay and XP
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-school-additions.test.sql
+      - name: All 24 normal and HARD mode variants, early-stop proof, XP and replay
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-school-extended.test.sql
