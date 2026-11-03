@@ -72,6 +72,9 @@ for(const item of examples){
      reply=b.action==='student-load'
       ?{ok:true,revision:xp?1:0,resetEpoch:0,state:{rewards:REWARDS},storageSubject:PUPIL}
       :{ok:true,appXp:xp,total:xp,level:1};
+    }else if(r.request().url().includes('/connect-projection-v2')){
+     if(b.action!=='student-score-history')throw Error('unexpected score action '+b.action);
+     reply={ok:true,events:[],bestThree:[],todayBest:null,boardBest:0};
     }else if(r.request().url().includes('/connect-objective-record-')){
      assert.ok(r.request().url().includes(CLASS===TEST_CLASS?'connect-objective-record-test':'connect-objective-record-school'),
       'the authenticated host must use only the matching proof endpoint');
