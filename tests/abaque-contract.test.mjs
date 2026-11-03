@@ -7,7 +7,13 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const base='apps/GRAN-abaque-m-1/';
 test('Abaque démo : source traçable intacte, pas de réseau/identité Connect ni stockage partagé',()=>{
  const manifest=JSON.parse(read(base+'source-manifest.json'));
- assert.equal(createHash('sha256').update(read(base+'game-original.html')).digest('hex'),manifest.sourceSha256);
+ // Le favicon Connect est la seule surcouche de présentation autorisée
+ // dans la copie épinglée. Le moteur importé reste octet pour octet
+ // identique au SHA-256 du dépôt autonome après retrait de cette balise.
+ const copiedSource=read(base+'game-original.html');
+ const favicon='<link rel="icon" type="image/png" href="../../assets/brand/favicon.png">';
+ assert.equal(copiedSource.split(favicon).length,2,'une seule balise favicon Connect');
+ assert.equal(createHash('sha256').update(copiedSource.replace('\n'+favicon,'')).digest('hex'),manifest.sourceSha256);
  assert.equal(manifest.repositoryDisplayName,'GRAN-abaque-m-1');
  assert.match(manifest.sourceCommit,/^[a-f0-9]{40}$/);
  for(const [file,expected] of Object.entries(manifest.sourceFiles)){
