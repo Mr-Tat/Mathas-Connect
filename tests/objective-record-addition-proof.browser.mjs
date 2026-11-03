@@ -62,7 +62,11 @@ test('Chromium: 4 vraies additions émises par Connect, écritures natives et AC
      {ok:true,appXp:xp,total:xp,level:1,milestones:xp?['classic:1:4:perfect']:[],
        currentMilestones:[],parcours:1,repeatXp:false};
    }else if(request.url().includes('/connect-projection-v2')){
-    response={ok:true,consentRecorded:true};
+    if(b.action==='student-score-history'){
+     const recorded=xp>0?{eventId:sessionId,mode:'classic',score:4,total:4,points:22,at:new Date().toISOString()}:null;
+     response={ok:true,events:recorded?[recorded]:[],bestThree:recorded?[recorded]:[],
+      todayBest:recorded,boardBest:0};
+    }else response={ok:true,consentRecorded:true};
    }else if(request.url().includes('/connect-objective-record-test')){
     if(b.action==='start-proof-v2'){
      assert.equal(b.level,1);assert.equal(b.total,4);
@@ -180,6 +184,8 @@ for(const {level,total} of [{level:2,total:10},{level:3,total:20}]){
      result=b.action==='student-load'?
       {ok:true,revision:awarded?1:0,resetEpoch:0,state:{rewards},storageSubject:pupil}:
       {ok:true,appXp:awarded,total:awarded,level:1};
+    }else if(r.request().url().includes('/connect-projection-v2')){
+     result={ok:true,events:[],bestThree:[],todayBest:null,boardBest:0};
     }else if(b.action==='start-proof-v2'){
      assert.equal(b.level,level);assert.equal(b.total,total);
      result={ok:true,sessionId,questions:qs,revision:0,resetEpoch:0,level,total,

@@ -36,7 +36,14 @@ export function createProjectionConsent({classId,appKey,studentKey,getToken,
     headers:{apikey:KEY,authorization:'Bearer '+token,'content-type':'application/json'},
     body:JSON.stringify({action:'student-share-score',classId,appKey,eventId})});
    const body=await response.json().catch(()=>null);
-   if(!response.ok||body?.ok!==true)break;
+   if(!response.ok||body?.ok!==true){
+    // Un score ancien/égal ou effacé du tableau n'est plus en attente.
+    if(['not_improved','score_reset','event_not_found'].includes(body?.error)){
+     save(read().filter(v=>v!==eventId));
+     continue;
+    }
+    break;
+   }
    save(read().filter(v=>v!==eventId));
   }}catch{ /* Offline: keep opted-in event IDs for later retransmission. */ }
   finally{flushing=false}

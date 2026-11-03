@@ -49,6 +49,8 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
      data=b.action==='student-load'
       ?{ok:true,revision:0,resetEpoch:0,storageSubject:pupil,state:{rewards:serverRewards===null?rewards(false):serverRewards}}
       :{ok:true,appXp:0,total:0,level:1};
+    else if(r.request().url().includes('/connect-projection-v2')&&b.action==='student-score-history')
+     data={ok:true,events:[],bestThree:[],todayBest:null,boardBest:0};
     else throw Error('unexpected server call '+b.action);
     await r.fulfill({status:200,contentType:'application/json',
      headers:{'access-control-allow-origin':'*'},body:JSON.stringify(data)});
