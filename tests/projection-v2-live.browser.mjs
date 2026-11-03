@@ -36,7 +36,7 @@ function fakeStudent(i){
 test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isolés et reset (Chromium)',{timeout:125000},async()=>{
  const {server,url}=await serve();
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
- const errors=[],unknown=[];let storedOptions=null,resetCalls=0,loads=0;
+ const errors=[],unknown=[];let storedOptions=null,resetCalls=0,loads=0,visibleStudents=14;
  try{
   const page=await browser.newPage({viewport:{width:1366,height:768}});
   page.on('pageerror',e=>errors.push(e.message));
@@ -54,7 +54,7 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
     });
     if(input.action==='teacher-load'){
      loads++;
-     const classes=[{classId:A,name:'Phase 2 A',enrolled:14,options:storedOptions,students:Array.from({length:14},(_,i)=>fakeStudent(i)),
+     const classes=[{classId:A,name:'Phase 2 A',enrolled:visibleStudents,options:storedOptions,students:Array.from({length:visibleStudents},(_,i)=>fakeStudent(i)),
        scorePeriods:[],totals:[{appKey:'addition-ecrite-simple',bestSum:1800}],percentages:null}];
      if(input.comparisons?.includes(B))classes.push({classId:B,name:'Phase 2 B',enrolled:11,students:Array.from({length:11},(_,i)=>fakeStudent(i+14)),
        options:null,scorePeriods:[],totals:[{appKey:'addition-ecrite-simple',bestSum:1234}],percentages:null});
@@ -125,6 +125,38 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   assert.equal(await page.locator('#comparison-results .compare-row').count(),0);
   assert.equal(await page.locator('#settings-left').count(),1);
   assert.equal(await page.locator('#open-settings').count(),0);
+  // Cas de classe partiellement active : 5 élèves en une colonne, comme
+  // la capture signalée. Le classement doit utiliser l'espace disponible,
+  // et non se contracter autour du prénom le plus long.
+  visibleStudents=5;
+  await page.locator('#load-real').click();
+  await page.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===5);
+  assert.equal(await page.locator('#ranking-list .ranking-col').count(),1);
+  assert.equal(await page.locator('#ranking-list.single').count(),1);
+  const singleGeometry=await page.locator('#ranking-list').evaluate(list=>{
+   const panel=list.closest('.ranking-wrap').getBoundingClientRect();
+   const listRect=list.getBoundingClientRect();
+   const first=list.querySelector('.entry').getBoundingClientRect();
+   const label=list.querySelector('.player-label').getBoundingClientRect();
+   const points=list.querySelector('.points').getBoundingClientRect();
+   return {panelWidth:panel.width,listWidth:listRect.width,
+    cardWidth:first.width,listLeft:listRect.left,panelLeft:panel.left,
+    panelRight:panel.right,cardLeft:first.left,
+    textRight:label.right,pointsLeft:points.left,
+    color:getComputedStyle(list.querySelector('.rank-1 .projection-avatar')).color};
+  });
+  assert.ok(singleGeometry.cardWidth>=Math.min(640,singleGeometry.panelWidth*.8),
+    'Cinq lignes doivent occuper la largeur centrale ; pas de tuiles de ~300 px : '+JSON.stringify(singleGeometry));
+  assert.ok(singleGeometry.listLeft>=singleGeometry.panelLeft-2&&
+    singleGeometry.listLeft+singleGeometry.listWidth<=singleGeometry.panelRight+2,
+    'Le classement reste dans sa colonne');
+  assert.ok(singleGeometry.textRight<=singleGeometry.pointsLeft+2,
+    'Le prénom et les points ne se chevauchent pas');
+  assert.equal(singleGeometry.color,'rgb(35, 51, 66)','La lettre reste lisible sur le podium doré');
+  // Le retour au classement complet rétablit 7+7, puis 8+8 sans effet de bord.
+  visibleStudents=14;
+  await page.locator('#load-real').click();
+  await page.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===14);
   await page.locator('#settings-left').click();
   await page.locator('#settings').waitFor({state:'visible'});
   assert.equal(await page.locator('#show-teacher').isChecked(),false,'Monsieur T décoché');
