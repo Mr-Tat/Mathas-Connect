@@ -60,6 +60,30 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
    await page.waitForFunction(()=>!document.getElementById('certify').disabled,
     null,{timeout:45000});
    assert.equal(await page.locator('#trophies').textContent(),'3');
+   // Le récapitulatif récent ajouté en doublon ne doit plus masquer les
+   // 2 éléments d'origine : meilleur score du jour et podium des records.
+   await page.waitForFunction(()=>{
+    const doc=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+    return !!doc?.querySelector('#mathasPointsQuick .mathas-points-quick-item--best.mathas-school-shareable')
+     &&!!doc?.getElementById('mathasPointsDetail');
+   },null,{timeout:15000});
+   const cards=await page.evaluate(()=>{
+    const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+    const top=doc.getElementById('mathasPointsQuick'),history=doc.getElementById('mathasPointsDetail');
+    return {top:getComputedStyle(top).display!=='none'&&top.getBoundingClientRect().height>0,
+     history:getComputedStyle(history).display!=='none'&&history.getBoundingClientRect().height>0,
+     originalPodium:!!history.querySelector('.mathas-v541-podium'),
+     originalTrophies:!!doc.getElementById('mathasTrophiesStrip'),
+     extra:!!doc.getElementById('mathasSchoolScoreHistory')||!!doc.getElementById('mathasSchoolScoreTop'),
+     role:top.querySelector('.mathas-points-quick-item--best')?.getAttribute('role')};
+   });
+   assert.equal(cards.top,true,'Meilleur score du jour visible');
+   assert.equal(cards.history,true,'Records historiques visibles');
+   assert.equal(cards.originalPodium,true,'Coupes historiques conservées');
+   assert.equal(cards.originalTrophies,true,'Coupes de progression conservées');
+   assert.equal(cards.extra,false,'Aucun nouveau cadre Connect en doublon');
+   assert.equal(cards.role,'button','Le score du jour est activable au clavier');
+
    await page.evaluate(width=>{
     const native=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
     const select=native.getElementById('classicMaxDigits');

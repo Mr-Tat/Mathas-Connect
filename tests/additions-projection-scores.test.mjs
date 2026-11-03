@@ -40,6 +40,27 @@ test('Sans Connect, un score local ne peut jamais provoquer un envoi au tableau'
  assert.equal(snapshot.official,false);
  assert.equal(cleanScoreEntry({...a,total:null}).total,null);
 });
+test('Les additions réutilisent les cartes natives et une invitation sécurisée sur le score affiché',()=>{
+ const src=read('apps/objective-record/school-score-view.mjs');
+ assert.match(src,/mathasPointsQuick/);
+ assert.match(src,/\.mathas-points-quick-item--best/);
+ assert.match(src,/nativeBestPoints/);
+ assert.match(src,/displayed!==snapshot\.today\.points/);
+ assert.match(src,/target\.addEventListener\('click',onClick\)/);
+ assert.match(src,/target\.addEventListener\('keydown',onKeydown\)/);
+ assert.match(src,/target===clickTarget/);
+ assert.match(src,/removeEventListener\('click',onClick\)/);
+ assert.doesNotMatch(src,/setProperty\('display','none','important'\)/);
+ assert.doesNotMatch(src,/mathasSchoolScoreHistory|mathasSchoolScoreTop/);
+ for(const game of ['addition-simple/game-original.html','addition-multiple/index.html']){
+  const html=read('apps/objective-record/engines/'+game);
+  assert.match(html,/id='mathasPointsQuick'/);
+  assert.match(html,/id='mathasPointsDetail'/);
+  assert.match(html,/mathas-v541-cup/);
+ }
+ assert.match(read('apps/objective-record/eleve.mjs'),/school-score-view\.mjs\?v=20261104-native-records-v1/);
+ assert.match(read('apps/objective-record/eleve.html'),/eleve\.mjs\?v=20261104-native-records-v1/);
+});
 test('Protection Edge: RPC atomique, identité élève et preuve du résultat',()=>{
  const edge=read('supabase/functions/connect-projection-v2/index.ts');
  const sql=read('supabase/release-candidates/20261103_projection_additions_improved_only.sql');
