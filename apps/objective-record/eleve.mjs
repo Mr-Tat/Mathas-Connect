@@ -77,7 +77,7 @@ function updateBarHeight(){
 const aPanelOpen=()=>!xpPanel.hidden||!challengePanel.hidden;
 function stopBarTimer(){clearTimeout(barTimer);barTimer=null}
 function retractBar(){
- if(bar.hidden||aPanelOpen()||bar.matches(':hover')||bar.contains(document.activeElement))return;
+ if(bar.hidden||aPanelOpen()||bar.contains(document.activeElement))return;
  bar.classList.add('retracted');handle.hidden=false;
 }
 function scheduleBar(){
@@ -161,11 +161,12 @@ $('xp-close').addEventListener('click',closePanels);
 $('challenge-close').addEventListener('click',closePanels);
 $('certify').addEventListener('click',()=>{if(!$('certify').disabled)closePanels()});
 handle.addEventListener('click',()=>{revealBar();bar.focus?.()});
-bar.addEventListener('pointerenter',()=>{revealBar();stopBarTimer()});
+bar.addEventListener('pointerenter',revealBar);
 bar.addEventListener('pointerleave',scheduleBar);
 bar.addEventListener('focusin',()=>{revealBar();stopBarTimer()});
 bar.addEventListener('focusout',scheduleBar);
-document.addEventListener('pointermove',event=>{if(event.clientY<26&&event.isTrusted)revealBar()},{passive:true});
+document.addEventListener('pointermove',event=>{if(event.isTrusted)revealBar()},{passive:true});
+document.addEventListener('pointerdown',event=>{if(event.isTrusted)revealBar()},{passive:true});
 document.addEventListener('keydown',event=>{
  if(event.key==='Escape'&&aPanelOpen()){closePanels();$('xp-toggle').focus();return}
  if(event.key==='Tab'&&!bar.hidden)revealBar();
@@ -247,9 +248,12 @@ function watchGame(seq){
    const inside=outer?.getElementById('game');
    const doc=inside?.contentDocument;
    if(!doc?.querySelector('#menuScreen'))return;
-   if(doc!==visibleDoc&&!doc.__mathasToolbarActivity){
-    doc.__mathasToolbarActivity=true;
-    doc.addEventListener('pointermove',event=>{if(event.clientY<27)revealBar()},{passive:true});
+   for(const surface of [outer,doc]){
+    if(surface.__mathasToolbarActivity)continue;
+    surface.__mathasToolbarActivity=true;
+    surface.addEventListener('pointermove',event=>{if(event.isTrusted)revealBar()},{passive:true});
+    surface.addEventListener('pointerdown',event=>{if(event.isTrusted)revealBar()},{passive:true});
+    surface.addEventListener('keydown',revealBar);
    }
    const chooser=outer?.getElementById('xp-preview-mode')||outer?.getElementById('xpMode');
    if(chooser&&chooser.value!=='free'){
