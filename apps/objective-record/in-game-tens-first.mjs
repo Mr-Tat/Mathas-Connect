@@ -76,7 +76,10 @@ export function installTensFirstDuringGame(doc,appKey){
   const caption=doc.createElement('span');caption.textContent='Dizaines d’abord';
   label.append(checkbox,caption);
   const back=bar.querySelector(kind==='hard'?'#hardGameBack':'#menuBtn');
-  if(back)bar.insertBefore(label,back);else bar.append(label);
+  // Certains moteurs placent Menu/HARD dans un sous-conteneur :
+  // insertBefore impose un enfant direct, sinon il faut l'ajouter à la barre.
+  if(back?.parentElement===bar)bar.insertBefore(label,back);
+  else bar.append(label);
   checkbox.addEventListener('change',()=>{
    home.checked=checkbox.checked;
    home.dispatchEvent(new doc.defaultView.Event('change',{bubbles:true}));
