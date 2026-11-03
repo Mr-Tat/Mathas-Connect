@@ -11,9 +11,10 @@ const school='8fe170fa-9e8f-4e80-885a-b0ba68026f64';
 const pilot='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 const release={enabled:true,proofRpcsReady:true,hostedJwtVerified:true,projectionVerified:true};
 test('The two additions ship independently; other 3 apps, TEST, and missing flags stay legacy',()=>{
- assert.equal(SCHOOL_ADDITIONS_ROLLOUT.enabled,false);
+ assert.equal(SCHOOL_ADDITIONS_ROLLOUT.enabled,true);
+ assert.deepEqual(SCHOOL_ADDITIONS_ROLLOUT,release);
  for(const appKey of ['addition-ecrite-simple','addition-ecrite-multiple']){
-  assert.equal(schoolAdditionsLaunch({classId:school,appKey,legacyUrl:'old'}),'old');
+  assert.match(schoolAdditionsLaunch({classId:school,appKey,legacyUrl:'old'}),/objective-record\/eleve.html\?app=addition-/);
   assert.match(schoolAdditionsLaunch({classId:school,appKey,legacyUrl:'old',rollout:release}),/objective-record\/eleve.html\?app=addition-/);
   assert.equal(schoolAdditionsLaunch({classId:pilot,appKey,legacyUrl:'old',rollout:release}),'old');
   for(const key of Object.keys(release))

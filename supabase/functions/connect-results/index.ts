@@ -113,11 +113,19 @@ Deno.serve(async req=>{
  const raw=await req.text();if(raw.length>18000)return deny('too_large',413);
  let b:any;try{b=JSON.parse(raw)}catch{return deny('json')};
  if(!valid(b?.classId))return deny('class');
- // The TEST classroom's two additions now have authenticated, server-issued
- // arithmetic proofs. Stop alternate native-score writes through connect-results:
- // this affects NO real-school classes and NO other game keys.
- if(b.classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'
-    &&b.action==='game-record'
+ // Activation switch: every school class with server-issued arithmetic
+ // proofs must stop the legacy browser-declared score path. Only these two
+ // additions are affected; other three calculation games remain untouched.
+ // Deploy this Edge version BEFORE enabling SCHOOL_ADDITIONS_ROLLOUT in Pages.
+ const proofOnlyAddClasses=new Set([
+  '4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',
+  '8fe170fa-9e8f-4e80-885a-b0ba68026f64',
+  '71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e',
+  '1b021ed9-4846-4203-9c7b-4b5fa8d7adab',
+  '0d8ba828-59cc-468b-a4b8-7b2a1af10b88',
+  'a9195199-0a28-4e86-99ce-47b36dd6e646'
+ ]);
+ if(b.action==='game-record'&&proofOnlyAddClasses.has(b.classId)
     &&(b.appKey===app||b.appKey===addMulti))
    return deny('server_proof_required',403);
  if(b.appKey===mixed&&!MIXED_SERVER_READY)return deny('integration_not_ready',403);
