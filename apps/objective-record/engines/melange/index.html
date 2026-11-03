@@ -3779,18 +3779,47 @@ function markErrors(s,calc,hard=false){s.firstTry=false;const r=rootFor(calc,har
 function lock(s,calc,hard=false){s.solved=true;const r=rootFor(calc,hard);r.querySelectorAll('input').forEach(x=>{x.disabled=true;x.classList.remove('bad','incorrect','active-entry');if(x.value)x.classList.add('correct')});r.querySelectorAll('button.borrow-cell').forEach(b=>b.disabled=true);const st=r.querySelector('.status');if(st){st.textContent='Correct';st.className='status ok'}}
 
 /* normal session */
+function recordMixedTestSolved(s){
+ const j=window.__mathasMixedTestJournal;
+ if(!j||!session||!['classic','sudden'].includes(session.mode))return;
+ if(!['add','sub','mul'].includes(s.op)||j.operationsCompleted.length>=1000){j.invalid=true;return;}
+ j.operationsCompleted.push(s.op);
+ j.firstTry.push(s.firstTry===true);
+}
+function publishMixedTestCompletion(){
+ const j=window.__mathasMixedTestJournal;
+ window.__mathasMixedTestFinished=null;
+ if(!j||j.invalid||!session||!['classic','sudden'].includes(session.mode))return;
+ if(j.mode!==session.mode||j.level!==session.level
+    ||(session.mode==='classic'&&j.operationsCompleted.length!==session.total)
+    ||(session.mode==='sudden'&&j.operationsCompleted.length!==session.score)
+    ||j.firstTry.filter(Boolean).length!==session.score)return;
+ window.__mathasMixedTestFinished={
+  mode:j.mode,level:j.level,total:session.mode==='classic'?session.total:null,
+  score:session.score,operationsSelectedAtStart:[...j.operationsSelectedAtStart],
+  operationsCompleted:[...j.operationsCompleted],firstTry:[...j.firstTry],
+  aidUsed:!!session.aidUsed,masterMode:j.masterMode===true
+ };
+}
+/* TEST-only operation receipt: not an independent arithmetic proof. */
 function startSession(mode,total=null){
   aidOpen=false;closeAid();
   session={mode,total,level:settings.level,max:LEVELS[settings.level],score:0,completed:0,ops:[...settings.ops],tablesUsed:false,aidUsed:false};
+ window.__mathasMixedTestFinished=null;
+ window.__mathasMixedTestJournal=['classic','sudden'].includes(mode)?{
+  mode,level:session.level,operationsSelectedAtStart:[...session.ops],
+  operationsCompleted:[],firstTry:[],masterMode:window.__masterMode===true,
+  invalid:false
+ }:null;
   $('hintBtn')?.classList.remove('hidden');if($('hintBtn'))$('hintBtn').textContent=mode==='training'?'🧭 Guide':'💡 Indice';
   $('menuScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');makePair()
 }
 function makePair(){document.querySelectorAll('.mathas-hint-overlay').forEach(x=>{if(typeof x._mathasHintCleanup==='function')x._mathasHintCleanup();x.remove()});states=[generate(chosenOp(session.ops),session.max),generate(chosenOp(session.ops),session.max)];phase='answering';active={calc:0,kind:'answer',col:0};$('pair').innerHTML='';states.forEach((s,i)=>renderState(s,i,$('pair'),false));rootFor(1,false).classList.add('waiting');$('primaryBtn').textContent='Valider';setFeedbackText('','');updateBar();updateSecond();focusTarget(nextTarget(states[0],0),false);requestAnimationFrame(updateScrollArrow)}
 function updateSecond(){const b=rootFor(1,false);if(b)b.classList.toggle('waiting',!states[0].solved&&!calcFilled(states[0]));requestAnimationFrame(updateScrollArrow)}
-function validateNormal(){if(phase==='review'){makePair();return}if(phase==='ended'||phase==='finished'){goMenu();return}const ev=states.map(s=>s.solved?{filled:true,correct:true}:evaluate(s));const candidates=[];if(!states[0].solved&&ev[0].filled)candidates.push(0);const both=(states[0].solved||ev[0].filled)&&(states[1].solved||ev[1].filled);if(!states[1].solved&&ev[1].filled&&(states[0].solved||both))candidates.push(1);if(!candidates.length){const i=!states[0].solved?0:1;setFeedbackText(`Termine le calcul ${i+1} avant de le vérifier.`,'info');focusTarget(nextTarget(states[i],i));return}if(session.mode==='sudden'){for(const i of candidates){if(ev[i].correct){lock(states[i],i);session.score++;session.completed++}else{markErrors(states[i],i);endSudden(i);return}}if(states.every(s=>s.solved)){phase='review';$('primaryBtn').textContent='Calculs suivants';setFeedbackText(`Parfait. Score : ${session.score}.`,'ok');celebrate()}else{setFeedbackText('Calcul 1 correct. Continue avec le calcul 2.','ok');focusTarget(nextTarget(states[1],1))}updateBar();return}let wrong=false;for(const i of candidates){if(ev[i].correct){const point=session.mode==='classic'&&states[i].firstTry?1:0;lock(states[i],i);if(session.mode==='classic')session.score+=point;session.completed++}else{markErrors(states[i],i);wrong=true}}updateBar();if(states.every(s=>s.solved)){if(session.mode==='classic'&&session.completed>=session.total)finishClassic();else{phase='review';$('primaryBtn').textContent=session.mode==='training'?'Nouveaux calculs':'Calculs suivants';setFeedbackText('Les deux calculs sont terminés.','ok');celebrate()}}else if(wrong){setFeedbackText('Corrige les cases indiquées.','bad');const i=!states[0].solved?0:1;focusTarget(nextTarget(states[i],i))}else{setFeedbackText('Calcul 1 correct. Continue avec le calcul 2.','ok');focusTarget(nextTarget(states[1],1))}}
+function validateNormal(){if(phase==='review'){makePair();return}if(phase==='ended'||phase==='finished'){goMenu();return}const ev=states.map(s=>s.solved?{filled:true,correct:true}:evaluate(s));const candidates=[];if(!states[0].solved&&ev[0].filled)candidates.push(0);const both=(states[0].solved||ev[0].filled)&&(states[1].solved||ev[1].filled);if(!states[1].solved&&ev[1].filled&&(states[0].solved||both))candidates.push(1);if(!candidates.length){const i=!states[0].solved?0:1;setFeedbackText(`Termine le calcul ${i+1} avant de le vérifier.`,'info');focusTarget(nextTarget(states[i],i));return}if(session.mode==='sudden'){for(const i of candidates){if(ev[i].correct){recordMixedTestSolved(states[i]);lock(states[i],i);session.score++;session.completed++}else{markErrors(states[i],i);endSudden(i);return}}if(states.every(s=>s.solved)){phase='review';$('primaryBtn').textContent='Calculs suivants';setFeedbackText(`Parfait. Score : ${session.score}.`,'ok');celebrate()}else{setFeedbackText('Calcul 1 correct. Continue avec le calcul 2.','ok');focusTarget(nextTarget(states[1],1))}updateBar();return}let wrong=false;for(const i of candidates){if(ev[i].correct){const point=session.mode==='classic'&&states[i].firstTry?1:0;if(session.mode==='classic')recordMixedTestSolved(states[i]);lock(states[i],i);if(session.mode==='classic')session.score+=point;session.completed++}else{markErrors(states[i],i);wrong=true}}updateBar();if(states.every(s=>s.solved)){if(session.mode==='classic'&&session.completed>=session.total)finishClassic();else{phase='review';$('primaryBtn').textContent=session.mode==='training'?'Nouveaux calculs':'Calculs suivants';setFeedbackText('Les deux calculs sont terminés.','ok');celebrate()}}else if(wrong){setFeedbackText('Corrige les cases indiquées.','bad');const i=!states[0].solved?0:1;focusTarget(nextTarget(states[i],i))}else{setFeedbackText('Calcul 1 correct. Continue avec le calcul 2.','ok');focusTarget(nextTarget(states[1],1))}}
 function updateBar(){const ops=session.ops.map(o=>OPINFO[o].symbol).join(' ');$('sessionMode').textContent=session.mode==='training'?`🧭 Exercice guidé · ${ops}`:session.mode==='sudden'?`💀 ${ops}`:`🔢 ${ops}`;$('levelPill').textContent=`Niveau ${session.level}`;if(session.mode==='training'){$('progressPill').textContent=`Calculs ${session.completed+1}–${session.completed+2}`;$('scorePill').textContent='Sans points'}else if(session.mode==='sudden'){$('progressPill').textContent=`Calcul ${session.completed+1}`;$('scorePill').textContent=`Score : ${session.score}`}else{$('progressPill').textContent=`${Math.min(session.completed+1,session.total)}–${Math.min(session.completed+2,session.total)} / ${session.total}`;$('scorePill').textContent=`Score : ${session.score} / ${session.total}`}$('scorePill').classList.toggle('aid-used-score',session.aidUsed)}
-function finishClassic(){window.__progressionUnlockRecord?.(session.level,session.score,session.total);phase='finished';disableNormal();$('primaryBtn').textContent='Retour au menu';setFeedbackText(`Série terminée : ${session.score} / ${session.total}.`,'ok');const rec=saveClassic();saveMathas(session.score,session.total);setLast(`Calculs · Niveau ${session.level}`,`${session.score}/${session.total}`);rec?recordAnim(`${session.score} / ${session.total}`):finishAnim(`${session.score} / ${session.total}`)}
-function endSudden(i){phase='ended';disableNormal();$('primaryBtn').textContent='Retour au menu';const rec=saveSudden();saveMathas(session.score,session.score+1);setLast(`Mort subite · Niveau ${session.level}`,String(session.score));setFeedbackText(`Mort subite terminée. Score : ${session.score}.`,'bad');rec?recordAnim(`Score ${session.score}`):finishAnim(`Score ${session.score}`)}
+function finishClassic(){publishMixedTestCompletion();window.__progressionUnlockRecord?.(session.level,session.score,session.total);phase='finished';disableNormal();$('primaryBtn').textContent='Retour au menu';setFeedbackText(`Série terminée : ${session.score} / ${session.total}.`,'ok');const rec=saveClassic();saveMathas(session.score,session.total);setLast(`Calculs · Niveau ${session.level}`,`${session.score}/${session.total}`);rec?recordAnim(`${session.score} / ${session.total}`):finishAnim(`${session.score} / ${session.total}`)}
+function endSudden(i){publishMixedTestCompletion();phase='ended';disableNormal();$('primaryBtn').textContent='Retour au menu';const rec=saveSudden();saveMathas(session.score,session.score+1);setLast(`Mort subite · Niveau ${session.level}`,String(session.score));setFeedbackText(`Mort subite terminée. Score : ${session.score}.`,'bad');rec?recordAnim(`Score ${session.score}`):finishAnim(`Score ${session.score}`)}
 function disableNormal(){$('pair').querySelectorAll('input,button.borrow-cell').forEach(x=>x.disabled=true)}
 function saveMathas(score,total){enregistrerResultatMathas(score,total,`Niveau ${session.level}`,session.level,session.aidUsed,session.ops)}
 

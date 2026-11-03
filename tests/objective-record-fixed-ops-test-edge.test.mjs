@@ -30,13 +30,13 @@ test('aucune des trois nouvelles écritures TEST ne vise l’ancienne branche ga
  const host=read('apps/objective-record/eleve.mjs');
  const contract=read('apps/objective-record/native-official-record.mjs');
  const recorder=read('apps/objective-record/atomic-test-recorder.mjs');
- assert.match(host,/activeApp===ATOMIC_TEST_APP\?'connect-results':'connect-objective-record-test'/);
+ assert.match(host,/activeApp===ATOMIC_TEST_APP\|\|activeApp===MIXED_TEST_APP\?'connect-results':'connect-objective-record-test'/);
  assert.match(host,/expectedStudentId:pupilId/);
  assert.match(contract,/FIXED_TEST_APPS=Object\.freeze/);
  for(const app of ['addition-ecrite-simple','soustraction-ecrite-simple','multiplication-ecrite-simple']){
   assert.ok(contract.includes("'"+app+"'"));
  }
- assert.match(recorder,/!isFixedTestApp\(appKey\)/);
+ assert.match(recorder,/!isWritableTestApp\(appKey\)/);
 });
 
 test('transaction scolaire TEST : vraie inscription, refus autres élèves et privilèges serveur exclusivement',()=>{
