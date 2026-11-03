@@ -64,7 +64,9 @@ BEGIN
    END IF;
    v_min:=power(10::numeric,v_len-1);
    v_n:=v_min+trunc(random()::numeric*9*v_min);
-   v_terms:=v_terms||jsonb_build_array(v_n::text);
+   -- NUMERIC preserves fractional scale from random(); cast through BIGINT
+   -- before sending a decimal string, otherwise '123.000' fails the grader.
+   v_terms:=v_terms||jsonb_build_array(v_n::bigint::text);
   END LOOP;
   v_questions:=v_questions||jsonb_build_array(jsonb_build_object(
     'id','q'||v_i,'op','add','addends',v_terms));
