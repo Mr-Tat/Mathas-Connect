@@ -105,9 +105,12 @@ function watchGame(seq){
    }
    hideFictionalXp(doc);
    const activeProofUI=activeApp==='addition-ecrite-multiple'?certifiedMultiUI:certifiedUI;
-   activeProofUI.bind(inside.contentWindow,doc);
    const native=inside.contentWindow?.MathasLabV2Update;
-   if(doc===visibleDoc||typeof native!=='function')return;
+   // The menu DOM may exist before the real script has installed its update
+   // hook. Never enable certified launch until the native engine is ready.
+   if(typeof native!=='function')return;
+   activeProofUI.bind(inside.contentWindow,doc);
+   if(doc===visibleDoc)return;
    visibleDoc=doc;
    {
     inside.contentWindow.MathasLabV2Update=function(event){
