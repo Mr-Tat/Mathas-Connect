@@ -71,7 +71,9 @@ test('Chromium Mélange : 3 opérations choisies, journal natif, XP officiel et 
    {waitUntil:'domcontentloaded',timeout:26000});
   await page.waitForFunction(()=>{
    const o=document.getElementById('gameFrame')?.contentDocument;
-   return !!o?.getElementById('game')?.contentWindow?.MathasLabV2Update;
+   const w=o?.getElementById('game')?.contentWindow;
+   return typeof w?.MathasLabV2Update==='function'
+    &&String(w.MathasLabV2Update).includes('recorder.onSnapshot');
   },null,{timeout:40000});
   await page.evaluate(()=>{
    const w=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
@@ -83,8 +85,20 @@ test('Chromium Mélange : 3 opérations choisies, journal natif, XP officiel et 
    w.__mathasMixedTestFinished=journal;
    w.MathasLabV2Update({phase:'finished',mode:'classic',level:1,score:3,total:4,completed:4,hard:false});
   });
-  await page.waitForFunction(()=>document.getElementById('status')?.textContent
-   .includes('Partie enregistrée'),null,{timeout:26000});
+  try{await page.waitForFunction(()=>document.getElementById('status')?.textContent
+   .includes('Partie enregistrée'),null,{timeout:22000});}
+  catch(error){
+   const state=await page.evaluate(()=>{
+    const outer=document.getElementById('gameFrame')?.contentDocument;
+    const win=outer?.getElementById('game')?.contentWindow;
+    return {status:document.getElementById('status')?.textContent,
+     gameStatus:outer?.getElementById('state')?.textContent,
+     wrapped:String(win?.MathasLabV2Update).includes('recorder.onSnapshot'),
+     journal:win?.__mathasMixedTestFinished};
+   });
+   throw Error('Mélange TEST receipt failed '+JSON.stringify({
+    state,actions:requests.map(r=>r.action),errors})+' '+error);
+  }
   const credited=requests.filter(x=>x.action==='game-record');
   assert.equal(credited.length,1);
   assert.equal(xp,18);
