@@ -1,4 +1,4 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Math’as Connect — HUB</title><link rel="icon" type="image/png" href="./assets/brand/favicon.png"><link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png"><link rel="stylesheet" href="./hub.css?v=20261026bleu175"><link rel="stylesheet" href="./hub-profile.css?v=20261102-connect-3d-svg-v1"><script>
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Math’as Connect — HUB</title><link rel="icon" type="image/png" href="./assets/brand/favicon.png"><link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png"><link rel="stylesheet" href="./hub.css?v=20261026bleu175"><link rel="stylesheet" href="./hub-profile.css?v=20261103-profile-rewards-v1"><script>
 (function(){
   var q=new URLSearchParams(location.search);
   var spaces={
@@ -37,8 +37,37 @@
   if(label)label.textContent=c.name;
 })();
 </script>
-<div id="avatar-dialog" class="avatar-dialog" hidden><div class="avatar-modal" role="dialog" aria-modal="true" aria-labelledby="avatar-dialog-title"><h2 id="avatar-dialog-title">Choisir mon avatar</h2><p>Un animal ou une lettre majuscule, avec ta couleur préférée.</p><div id="avatar-choices" class="avatar-choices"></div><div id="avatar-colors" class="avatar-colors"></div><div class="avatar-actions"><button id="avatar-cancel" type="button">Annuler</button><button id="avatar-save" type="button">Enregistrer</button></div><p id="avatar-feedback" role="status"></p></div></div>
+<div id="avatar-dialog" class="avatar-dialog" hidden>
+ <div class="avatar-modal" role="dialog" aria-modal="true" aria-labelledby="avatar-dialog-title">
+  <h2 id="avatar-dialog-title">Mes récompenses de profil</h2>
+  <p id="avatar-dialog-help">Personnalise ton profil grâce aux niveaux Connect.</p>
+  <div id="profile-rewards" class="profile-rewards" aria-label="Récompenses de niveaux"></div>
+  <h3>Mon avatar</h3>
+  <div id="avatar-choices" class="avatar-choices"></div>
+  <h3>Fond de l’avatar</h3>
+  <p id="avatar-color-note"></p>
+  <div class="avatar-palette-line">
+   <div id="avatar-colors" class="avatar-colors"></div>
+   <div id="avatar-preview" class="avatar-preview" aria-label="Aperçu de l’avatar">E</div>
+  </div>
+  <div id="profile-alias-panel" class="profile-alias-panel" hidden>
+   <label for="profile-alias-input">Mon pseudo (niveau 10)</label>
+   <p>Ton vrai prénom reste connu du professeur. Ton pseudo est ton nom d’affichage dans le HUB.</p>
+   <div class="profile-alias-controls">
+    <input id="profile-alias-input" maxlength="18" minlength="3" autocomplete="off" placeholder="Mon pseudo">
+    <button id="profile-alias-save" type="button">Enregistrer le pseudo</button>
+   </div>
+   <small>3 à 18 caractères : lettres, chiffres, espaces, tirets ou _. Laisse vide pour retrouver ton prénom.</small>
+  </div>
+  <p id="profile-alias-locked"></p>
+  <div class="avatar-actions">
+   <button id="avatar-cancel" type="button">Fermer</button>
+   <button id="avatar-save" type="button">Enregistrer l’avatar</button>
+  </div>
+  <p id="avatar-feedback" role="status" aria-live="polite"></p>
+ </div>
+</div>
 <main class="page-shell">
 <section class="daily-section panel panel-hero"><div class="section-heading"><div class="title-row title-row-large"><h2>Sélection du jour</h2><span id="dailyCount" class="count-pill">0 app</span></div></div><div id="dailyApps" class="app-grid daily-grid empty-grid"><p class="empty-state">Chargement…</p></div></section><div id="levels"></div></main>
 <template id="levelTemplate"><section class="level panel collapsed"><button class="level-toggle" type="button" aria-expanded="false"><span class="level-heading-group"><span class="level-title"></span><small class="level-description"></small></span><span class="level-spacer"></span><span class="level-count count-pill">0 app</span><span class="chevron">⌄</span></button><div class="level-content"><div class="app-grid level-apps"></div></div></section></template>
-<template id="appTemplate"><a class="app-card" href="#"><div class="app-thumb"><span class="app-initial">M</span></div><div class="app-meta"><strong class="app-name">Application</strong><small class="app-scores">Accès libre · scores locaux</small></div></a></template><script type="module" src="./hub.js?v=20261102-record-school-host-v2"></script></body></html>
+<template id="appTemplate"><a class="app-card" href="#"><div class="app-thumb"><span class="app-initial">M</span></div><div class="app-meta"><strong class="app-name">Application</strong><small class="app-scores">Accès libre · scores locaux</small></div></a></template><script type="module" src="./hub.js?v=20261103-profile-rewards-v1"></script></body></html>

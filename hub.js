@@ -1,4 +1,5 @@
 import {avatarCategories,avatarGlyph,avatarColors,avatarColor} from './avatar-catalog.js';
+import {PROFILE_REWARDS,officialInitial,unlockedProfileLevel,avatarKindUnlocked,colorUnlocked,aliasUnlocked} from './profile-rewards.mjs';
 import { classId, classLabel, loginUrl } from './connect-context.js';
 import {rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
 import {objectiveRecordLabPreviews} from './objective-record-lab-previews.mjs';
@@ -185,47 +186,143 @@ async function showCatalog() {
   }
 }
 
-let activeProfile=null,avatarChoice={kind:'animal',value:'fox',color:'ocean'};
+let activeProfile=null,avatarChoice={kind:'letter',value:'E',color:'transparent'};
 function paintAvatar(node,avatar){
  const v=avatar||avatarChoice;
  node.textContent=avatarGlyph(v);
  node.style.background=avatarColor(v.color);
+ node.classList.toggle('avatar-transparent',v.color==='transparent');
+}
+function profileLevel(){
+ return playingAsTeacher?20:unlockedProfileLevel(activeProfile);
+}
+function profileError(code){
+ const errors={
+  reward_locked:'Cette récompense n’est pas encore débloquée.',
+  initial_only:'Tu peux seulement utiliser la première lettre de ton prénom.',
+  pseudo_invalide:'Choisis 3 à 18 caractères : lettres, chiffres, espaces, tirets ou _.',
+  pseudo_deja_utilise:'Ce pseudo est déjà pris. Essaie-en un autre.',
+  input_invalid:'Ce choix n’est pas reconnu.'
+ };
+ return errors[code]||code||'Enregistrement impossible';
+}
+async function saveProfileChange(action,payload){
+ const sb=await getSupabase();
+ const {data:{session}}=await sb.auth.getSession();
+ if(!session?.user)throw Error('Connecte-toi à ton profil');
+ const response=await fetch(url+'/functions/v1/connect-api',{method:'POST',
+  headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
+  body:JSON.stringify({action,...payload})});
+ const data=await response.json();
+ if(!response.ok||!data.ok)throw Error(profileError(data.error));
+ return data;
 }
 function openAvatarEditor(){
+ if(!activeProfile)return;
+ const level=profileLevel(),initial=officialInitial(activeProfile.displayName);
  const dialog=$('avatar-dialog');dialog.hidden=false;
+ $('avatar-dialog-title').textContent='Mes récompenses de profil';
+ $('avatar-dialog-help').textContent='Plus tu gagnes de niveaux Connect, plus tu peux personnaliser ton profil.';
+ const progress=$('profile-rewards');progress.replaceChildren();
+ for(const reward of PROFILE_REWARDS){
+  const item=document.createElement('span');
+  const unlocked=level>=reward.level;
+  item.className='profile-reward-chip'+(unlocked?' unlocked':' locked');
+  item.textContent=(unlocked?'✓ ':'🔒 ')+reward.icon+' Niv. '+reward.level+' · '+reward.label;
+  progress.append(item);
+ }
  const choices=$('avatar-choices');choices.replaceChildren();
- let tabs=$('hub-avatar-tabs');if(!tabs){tabs=document.createElement('div');tabs.id='hub-avatar-tabs';tabs.className='avatar-tabs';choices.before(tabs)}tabs.replaceChildren();
- for(const category of avatarCategories){
-  const tab=document.createElement('button');tab.type='button';tab.textContent=category.label;tab.className=avatarChoice.kind===category.kind?'selected':'';
-  tab.onclick=()=>{avatarChoice.kind=category.kind;avatarChoice.value=Object.keys(category.icons)[0];openAvatarEditor()};tabs.append(tab)
+ let tabs=$('hub-avatar-tabs');
+ if(!tabs){tabs=document.createElement('div');tabs.id='hub-avatar-tabs';tabs.className='avatar-tabs';choices.before(tabs)}
+ tabs.replaceChildren();
+ const categories=[
+  {kind:'letter',label:'🔤 Mon initiale',icons:{[initial]:initial}},
+  ...avatarCategories.filter(cat=>cat.kind!=='letter')
+ ];
+ // Un choix récemment débloqué n'autorise jamais les autres catégories :
+ // le serveur vérifie également les XP avant chaque sauvegarde.
+ if(!avatarKindUnlocked(avatarChoice.kind,level))
+  avatarChoice={...avatarChoice,kind:'letter',value:initial};
+ if(avatarChoice.kind==='letter')avatarChoice.value=initial;
+ if(!colorUnlocked(level))avatarChoice.color='transparent';
+ for(const category of categories){
+  const unlocked=playingAsTeacher||avatarKindUnlocked(category.kind,level);
+  const need=category.kind==='letter'?1:category.kind==='animal'?3:category.kind==='object'?15:20;
+  const tab=document.createElement('button');tab.type='button';
+  tab.textContent=category.label+(unlocked?'':' · Niv. '+need+' 🔒');
+  tab.disabled=!unlocked;tab.title=unlocked?category.label:'Se débloque au niveau '+need;
+  tab.className=avatarChoice.kind===category.kind?'selected':'';
+  tab.onclick=()=>{
+   avatarChoice.kind=category.kind;
+   avatarChoice.value=Object.keys(category.icons)[0];
+   openAvatarEditor()
+  };
+  tabs.append(tab);
  }
- for(const [value,emoji] of Object.entries(avatarCategories.find(x=>x.kind===avatarChoice.kind)?.icons||{})){
-  const b=document.createElement('button');b.type='button';b.textContent=emoji;b.title=value;b.setAttribute('aria-label','Avatar : '+value);
-  b.className=avatarChoice.value===value?'selected':'';
-  b.onclick=()=>{avatarChoice.value=value;openAvatarEditor()};choices.append(b)
+ const category=categories.find(cat=>cat.kind===avatarChoice.kind);
+ for(const [value,emoji] of Object.entries(category?.icons||{})){
+  const button=document.createElement('button');button.type='button';
+  button.textContent=emoji;button.title=value;button.setAttribute('aria-label','Avatar : '+value);
+  button.className=avatarChoice.value===value?'selected':'';
+  button.onclick=()=>{avatarChoice.value=value;openAvatarEditor()};
+  choices.append(button);
  }
- const colors=$('avatar-colors');colors.replaceChildren();
+ const palette=$('avatar-colors');palette.replaceChildren();
+ const colorInfo=$('avatar-color-note');
+ colorInfo.textContent=colorUnlocked(level)||playingAsTeacher
+  ?'Choisis un fond coloré ou transparent.'
+  :'🔒 Les couleurs de fond se débloquent au niveau 6. Pour le moment, ton avatar est transparent.';
  for(const [name,hex] of Object.entries(avatarColors)){
-  const b=document.createElement('button');b.type='button';b.style.background=hex;b.setAttribute('aria-label','Couleur '+name);b.title=name;b.className=avatarChoice.color===name?'selected':'';
-  b.onclick=()=>{avatarChoice.color=name;openAvatarEditor()};colors.append(b);
+  const button=document.createElement('button');button.type='button';
+  button.className=avatarChoice.color===name?'selected':'';
+  button.title=name==='transparent'?'Sans fond':'Couleur '+name;
+  button.setAttribute('aria-label',name==='transparent'?'Fond transparent':'Couleur '+name);
+  button.style.background=hex==='transparent'?'repeating-conic-gradient(#e4e8ec 0% 25%,#8395a5 0% 50%) 50% / 12px 12px':hex;
+  button.disabled=name!=='transparent'&&!colorUnlocked(level)&&!playingAsTeacher;
+  button.onclick=()=>{avatarChoice.color=name;openAvatarEditor()};
+  palette.append(button);
  }
+ paintAvatar($('avatar-preview'),avatarChoice);
+ const aliasPanel=$('profile-alias-panel');
+ const mayAlias=aliasUnlocked(level)&&!playingAsTeacher;
+ aliasPanel.hidden=!mayAlias;
+ $('profile-alias-locked').hidden=mayAlias;
+ $('profile-alias-locked').textContent='🔒 Le choix du pseudo se débloque au niveau 10.';
+ if(mayAlias){
+  const current=String(activeProfile.publicAlias||'');
+  $('profile-alias-input').value=current===activeProfile.displayName?'':current;
+ }
+ $('avatar-feedback').textContent='';
+ $('avatar-save').disabled=!playingAsTeacher&&level<3;
+ $('avatar-save').textContent=level<3&&!playingAsTeacher?'Débloqué au niveau 3':'Enregistrer l’avatar';
 }
 $('avatar-cancel').onclick=()=>$('avatar-dialog').hidden=true;
-$('edit-avatar').onclick=()=>{if(!activeProfile)return;avatarChoice={...activeProfile.avatar};openAvatarEditor()};
+$('edit-avatar').onclick=()=>{
+ if(!activeProfile)return;
+ avatarChoice={...activeProfile.avatar};
+ openAvatarEditor()
+};
 $('avatar-save').onclick=async()=>{
  const button=$('avatar-save');button.disabled=true;
  try{
-  const sb=await getSupabase();
-  const {data:{session}}=await sb.auth.getSession();
-  if(!session?.user)throw Error('Connecte-toi à ton profil');
-  const response=await fetch(url+'/functions/v1/connect-api',{method:'POST',
-   headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
-   body:JSON.stringify({action:'student-avatar',...avatarChoice})});
-  const data=await response.json();
-  if(!response.ok||!data.ok)throw Error(data.error||'Enregistrement impossible');
+  const data=await saveProfileChange('student-avatar',avatarChoice);
   activeProfile={...activeProfile,avatar:data.avatar};
-  drawIdentity(activeProfile);$('avatar-dialog').hidden=true;
- }catch(e){$('avatar-feedback').textContent=e.message||'Erreur';}finally{button.disabled=false}
+  drawIdentity(activeProfile);
+  $('avatar-dialog').hidden=true;
+ }catch(e){$('avatar-feedback').textContent=e.message||'Erreur';}
+ finally{button.disabled=false}
+};
+$('profile-alias-save').onclick=async()=>{
+ if(!activeProfile||!aliasUnlocked(profileLevel()))return;
+ const button=$('profile-alias-save');button.disabled=true;
+ try{
+  const candidate=$('profile-alias-input').value.trim();
+  const data=await saveProfileChange('student-profile-alias',{alias:candidate||null});
+  activeProfile={...activeProfile,publicAlias:data.publicAlias};
+  drawIdentity(activeProfile);
+  $('avatar-feedback').textContent='Pseudo enregistré !';
+ }catch(e){$('avatar-feedback').textContent=e.message||'Erreur';}
+ finally{button.disabled=false}
 };
 
 // Groupement visuel uniquement : aucun effet sur les comptes et les XP.
@@ -245,7 +342,9 @@ function drawIdentity(profile) {
     rememberRecentAvatar(classId,profile.displayName,profile.avatar);
   }
   $('identity-box').className=authorized?'identity-connected':'identity-classic';
-  $('identity-title').textContent = authorized ? String(profile.displayName||'Élève').replace(/\.\s*(?=[\p{L}]$)/u,' ') : 'Mode Classique';
+  const shownName=authorized&&!playingAsTeacher&&unlockedProfileLevel(profile)>=10&&profile.publicAlias&&profile.publicAlias!==profile.displayName
+    ?profile.publicAlias:profile?.displayName;
+  $('identity-title').textContent=authorized?String(shownName||'Élève').replace(/\.\s*(?=[\p{L}]$)/u,' '):'Mode Classique';
   const oldBar=$('connect-xp-bar');if(oldBar)oldBar.remove();
   if(authorized&&profile.xp?.active){
     const level=profile.xp.level,total=profile.xp.total,from=level<=7?(level-1)*50:300+(level-7)*100,to=profile.xp.next;
@@ -269,6 +368,7 @@ function drawIdentity(profile) {
   const avatar=$('identity-avatar');avatar.hidden=!authorized;
   if(authorized)paintAvatar(avatar,profile.avatar);
   $('edit-avatar').hidden=!authorized;
+  $('edit-avatar').textContent='🏅 Mes récompenses de profil';
   $('classLabel').textContent = classId ? classLabel : 'Jeux';
   const action = $('identity-action');
   action.textContent = authorized ? '⚙ Mon profil' : 'Se connecter';

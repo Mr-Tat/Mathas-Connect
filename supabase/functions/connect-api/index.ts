@@ -10,6 +10,28 @@ const good=(v:unknown,n:number)=>typeof v==='string'&&v.trim().length>0&&v.lengt
 const random=()=>Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');
 const hash=async(v:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v))),x=>x.toString(16).padStart(2,'0')).join('');
 async function one(query:any){const {data,error}=await query.maybeSingle();if(error)throw Error('db_failed');return data;}
+async function readProfileUnlockLevel(studentId:string,knownLevel?:number|null){
+ let current=knownLevel;
+ if(typeof current!=='number'||!Number.isSafeInteger(current)||current<1){
+  const {data,error}=await db.rpc('connect_xp_read_v2',{
+   p_student:studentId,p_app:'addition-ecrite-simple',p_include_milestones:false});
+  if(error||!Number.isSafeInteger(data?.level)||data.level<1)throw Error('xp_unavailable');
+  current=data.level;
+ }
+ const {data:history,error}=await db.from('connect_level_profiles')
+  .select('highest_level_reached').eq('student_id',studentId).maybeSingle();
+ if(error)throw Error('db_failed');
+ return Math.max(1,current!,Number(history?.highest_level_reached)||1);
+}
+// La lecture d'identité doit rester disponible même si le calcul des XP
+// est momentanément indisponible : les mutations, elles, échouent fermées.
+async function optionalProfileUnlockLevel(studentId:string,knownLevel?:number|null){
+ try{return await readProfileUnlockLevel(studentId,knownLevel)}
+ catch{return Number.isSafeInteger(knownLevel)&&knownLevel!>=1?knownLevel!:1}
+}
+const initialFromName=(name:string)=>Array.from(name.trim())[0]?.toLocaleUpperCase('fr')||'E';
+const avatarMinLevel:Record<string,number>={letter:1,animal:3,object:15,smiley:20};
+
 async function handle(req:Request){
  if(req.method==='OPTIONS')return new Response('',{headers:h});
  if(req.method!=='POST')return fail('method_not_allowed',405);
@@ -51,11 +73,11 @@ async function handle(req:Request){
    // Monsieur T utilise sa fiche joueur personnelle dans n'importe quelle
    // classe autorisée au professeur, sans inscription fictive comme élève.
    if(!await manage(b.classId))return fail('forbidden',403);
-   const student=await one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color,archived_at').eq('id',player.student_id));
+   const student=await one(db.from('connect_students').select('display_name,public_alias,avatar_kind,avatar_value,avatar_color,archived_at').eq('id',player.student_id));
    if(!student||student.archived_at)return ok({status:'revoked'});
    const xp=b.includeXp===true?await optionalXp(player.student_id):undefined;
    const progress=b.includeXp===true?await optionalProgress(player.student_id):undefined;
-   return ok({status:'approved',displayName:student.display_name,avatar:{kind:student.avatar_kind||'letter',value:student.avatar_value||'T',color:student.avatar_color||'ocean'},classId:b.classId,...(b.includeXp===true?{xp,progress}:{})});
+   return ok({status:'approved',displayName:student.display_name,avatar:{kind:student.avatar_kind||'letter',value:student.avatar_value||'T',color:student.avatar_color||'transparent'},publicAlias:student.public_alias||student.display_name,unlockLevel:20,classId:b.classId,...(b.includeXp===true?{xp,progress}:{})});
  }
  case 'player-xp':{
    let id:string|null=null;
@@ -78,20 +100,54 @@ async function handle(req:Request){
    const animals=['fox','panda','frog','lion','penguin','owl','cat','dog','rabbit','bear','koala','wolf','tiger','monkey','elephant','giraffe','zebra','horse','cow','pig','sheep','deer','hedgehog','squirrel','otter','dolphin','whale','octopus','turtle','seal','duck','parrot','flamingo','bee','butterfly','dragon'];
    const objects=['soccer','basketball','tennis','volleyball','bicycle','airplane','rocket','car','train','skateboard','guitar','microphone','headphones','controller','paint','books','camera','star','trophy','music'];
    const smileys=['smile','cool','starstruck','grin','angel','party','cowboy','catface','heartcat','ghost','robot','alien','laughing','happy','wink','hug'];
-   const colors=['ocean','sky','indigo','violet','plum','rose','coral','sun','amber','mint','forest','slate'];
-   if(!colors.includes(color)||!(['animal','letter','object','smiley'].includes(kind))||(kind==='animal'?!animals.includes(value):kind==='object'?!objects.includes(value):kind==='smiley'?!smileys.includes(value):!(/^[A-Z]$/).test(value)))return fail('input_invalid');
-   let studentId:string|null=null;
+   const colors=['transparent','ocean','sky','indigo','violet','plum','rose','coral','sun','amber','mint','forest','slate'];
+   if(!colors.includes(color)||!Object.hasOwn(avatarMinLevel,kind)||
+     (kind==='animal'?!animals.includes(value):kind==='object'?!objects.includes(value):kind==='smiley'?!smileys.includes(value):!(/^\p{Lu}$/u).test(value)))
+     return fail('input_invalid');
+   let studentId:string|null=null,teacherPlayer=false;
    if(user.is_anonymous){
      const device=await one(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));
      studentId=device?.student_id||null;
    }else if(await teacher()){
      const player=await one(db.from('connect_teacher_players').select('student_id').eq('teacher_id',user.id));
-     studentId=player?.student_id||null;
+     studentId=player?.student_id||null;teacherPlayer=!!studentId;
    }
    if(!studentId)return fail('forbidden',403);
-   const updated=await db.from('connect_students').update({avatar_kind:kind,avatar_value:value,avatar_color:color}).eq('id',studentId).is('archived_at',null).select('id');
+   const student=await one(db.from('connect_students').select('display_name').eq('id',studentId).is('archived_at',null));
+   if(!student)return fail('profile_archived',403);
+   if(!teacherPlayer){
+     const level=await readProfileUnlockLevel(studentId);
+     if(level<avatarMinLevel[kind]||(level<6&&color!=='transparent'))return fail('reward_locked',403);
+     if(kind==='letter'&&value!==initialFromName(student.display_name))return fail('initial_only',403);
+   }
+   const updated=await db.from('connect_students').update({avatar_kind:kind,avatar_value:value,avatar_color:color})
+     .eq('id',studentId).is('archived_at',null).select('id');
    if(!updated.error&&!updated.data?.length)return fail('profile_archived',403);
    return updated.error?fail('db_failed',500):ok({avatar:{kind,value,color}});
+ }
+ case 'student-profile-alias':{
+   if(!user.is_anonymous)return fail('forbidden',403);
+   const candidate=b.alias;
+   // Null : rétablir l'affichage scolaire ; pas de modification du nom réel.
+   if(candidate!==null&&(typeof candidate!=='string'||candidate!==candidate.trim()||
+     candidate.length<3||candidate.length>18||
+     !/^[\p{L}\p{N}][\p{L}\p{N} _-]*$/u.test(candidate)||/ {2}/.test(candidate)))
+     return fail('pseudo_invalide');
+   const device=await one(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));
+   if(!device?.student_id)return fail('forbidden',403);
+   const student=await one(db.from('connect_students').select('display_name').eq('id',device.student_id).is('archived_at',null));
+   if(!student)return fail('profile_archived',403);
+   if(await readProfileUnlockLevel(device.student_id)<10)return fail('reward_locked',403);
+   const alias=candidate===null?student.display_name:candidate;
+   const others=await db.from('connect_students').select('id,public_alias').neq('id',device.student_id)
+     .is('archived_at',null).limit(2000);
+   if(others.error)return fail('db_failed',500);
+   if(others.data.some((entry:any)=>entry.public_alias?.toLocaleLowerCase('fr')===alias.toLocaleLowerCase('fr')))
+     return fail('pseudo_deja_utilise',409);
+   const result=await db.from('connect_students').update({public_alias:alias}).eq('id',device.student_id)
+     .is('archived_at',null).select('id');
+   if(result.error||!result.data?.length)return fail('db_failed',500);
+   return ok({publicAlias:alias});
  }
  case 'student-device-label':{
    if(!user.is_anonymous||typeof b.label!=='string')return fail('forbidden',403);
@@ -120,11 +176,11 @@ async function handle(req:Request){
    if(d){
      const e=await one(db.from('connect_enrollments').select('id').eq('student_id',d.student_id).eq('class_id',b.classId).is('left_at',null));
      if(!e)return ok({status:'wrong_class'});
-     const student=await one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color,archived_at').eq('id',d.student_id));
+     const student=await one(db.from('connect_students').select('display_name,public_alias,avatar_kind,avatar_value,avatar_color,archived_at').eq('id',d.student_id));
      if(!student||student.archived_at)return ok({status:'revoked'});
      const xp=b.includeXp===true?await optionalXp(d.student_id):undefined;
      const progress=b.includeXp===true?await optionalProgress(d.student_id):undefined;
-     return ok({status:'approved',displayName:student?.display_name??'Élève',avatar:{kind:student?.avatar_kind||'letter',value:student?.avatar_value||String(student?.display_name||'E').slice(0,1).toUpperCase(),color:student?.avatar_color||'ocean'},level:{number:1,xp:0,next:90,active:false},classId:b.classId,...(b.includeXp===true?{xp,progress}:{})});
+     return ok({status:'approved',displayName:student?.display_name??'Élève',avatar:{kind:student?.avatar_kind||'letter',value:student?.avatar_value||initialFromName(student?.display_name||'E'),color:student?.avatar_color||'transparent'},publicAlias:student?.public_alias||student?.display_name,unlockLevel:await optionalProfileUnlockLevel(d.student_id,xp?.level),level:{number:1,xp:0,next:90,active:false},classId:b.classId,...(b.includeXp===true?{xp,progress}:{})});
    }
    const revoked=await one(db.from('connect_devices').select('id').eq('auth_user_id',user.id).eq('state','revoked').limit(1));
    return ok({status:revoked?'revoked':'unregistered'});
@@ -293,7 +349,7 @@ async function handle(req:Request){
        .eq('auth_user_id',user.id).eq('state','approved').limit(1));
      if(d){
        const [student,enrolled]=await Promise.all([
-         one(db.from('connect_students').select('display_name,avatar_kind,avatar_value,avatar_color')
+         one(db.from('connect_students').select('display_name,public_alias,avatar_kind,avatar_value,avatar_color')
            .eq('id',d.student_id).is('archived_at',null)),
          one(db.from('connect_enrollments').select('class_id')
            .eq('student_id',d.student_id).is('left_at',null).limit(1))
@@ -301,7 +357,7 @@ async function handle(req:Request){
        if(student&&enrolled&&b.awaitingApproval===true&&r.data?.state==='approved'&&enrolled.class_id===b.classId)return ok({request:{state:'approved'}});
        if(student&&enrolled)return ok({request:{state:'already_approved',
          classId:enrolled.class_id,displayName:student.display_name,
-         avatar:{kind:student.avatar_kind||'animal',value:student.avatar_value||'fox',color:student.avatar_color||'ocean'}}});
+         avatar:{kind:student.avatar_kind||'letter',value:student.avatar_value||initialFromName(student.display_name),color:student.avatar_color||'transparent'}}});
        return ok({request:{state:'revoked'}});
      }
    }
