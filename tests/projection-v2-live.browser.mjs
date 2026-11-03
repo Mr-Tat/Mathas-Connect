@@ -146,13 +146,16 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
     textRight:label.right,pointsLeft:points.left,
     color:getComputedStyle(list.querySelector('.rank-1 .projection-avatar')).color};
   });
-  assert.ok(singleGeometry.cardWidth>=Math.min(640,singleGeometry.panelWidth*.8),
-    'Cinq lignes doivent occuper la largeur centrale ; pas de tuiles de ~300 px : '+JSON.stringify(singleGeometry));
+  assert.ok(singleGeometry.cardWidth>=Math.min(520,singleGeometry.panelWidth*.75)
+    &&singleGeometry.cardWidth<=552,
+    'Retrouver les cartes compactes de 550 px du matin, sans tuiles étriquées : '+JSON.stringify(singleGeometry));
   assert.ok(singleGeometry.listLeft>=singleGeometry.panelLeft-2&&
     singleGeometry.listLeft+singleGeometry.listWidth<=singleGeometry.panelRight+2,
     'Le classement reste dans sa colonne');
   assert.ok(singleGeometry.textRight<=singleGeometry.pointsLeft+2,
     'Le prénom et les points ne se chevauchent pas');
+  assert.ok(singleGeometry.pointsLeft-singleGeometry.textRight<=24,
+    'Comme ce matin, les points doivent rester proches du prénom');
   assert.equal(singleGeometry.color,'rgb(35, 51, 66)','La lettre reste lisible sur le podium doré');
   // Le retour au classement complet rétablit 7+7, puis 8+8 sans effet de bord.
   visibleStudents=14;
