@@ -72,6 +72,7 @@ test('Chromium: native multiple engine renders server terms and submits only pro
   await page.goto(url+'/apps/objective-record/eleve.html?class='+classId+'&app=addition-multiple',
    {waitUntil:'domcontentloaded',timeout:25000});
   await page.waitForFunction(()=>!document.getElementById('certify').disabled,null,{timeout:45000});
+  await page.locator('#challenge-toggle').click();
   await page.locator('#certify').click();
   try{
    await page.waitForFunction(()=>{
