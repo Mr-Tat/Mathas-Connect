@@ -314,7 +314,8 @@ function watchGame(seq){
       :'Partie terminée : aucun XP Connect (ce jeu n’est pas encore raccordé).');
     };
    }
-  }catch{
+  }catch(error){
+   console.warn('Contrôle du jeu natif : vérification interrompue',error);
    // No fallback to unauthenticated writes if a nested iframe cannot be read.
    clearInterval(watching);
    message('Le moteur est visible, mais son contrôle de recette est indisponible.');
