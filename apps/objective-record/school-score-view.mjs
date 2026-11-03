@@ -7,7 +7,7 @@ const day=value=>{
   ?new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(date):'';
 };
 const today=()=>day(new Date());
-const points=value=>Number.isSafeInteger(Number(value))&&Number(value)>=0?Number(value):null;
+const points=value=>value!==null&&value!==undefined&&value!==''&&Number.isSafeInteger(Number(value))&&Number(value)>=0?Number(value):null;
 const modeNames={'classic':'Exercices','three-lives':'3 vies','sudden':'Mort subite',
  'hard-three-lives':'HARD · 3 vies','hard-sudden':'HARD · Mort subite'};
 const viewMode=mode=>modeNames[mode]||'Partie certifiée';
