@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'profile-rewards.mjs'
+      - 'profile-celebration.mjs'
       - 'avatar-catalog.js'
       - 'hub.js'
       - 'hub.html'
@@ -13,6 +14,7 @@ on:
       - 'join-avatar.css'
       - 'supabase/functions/connect-api/**'
       - 'supabase/release-candidates/20261103_profile_rewards_initials_v1.sql'
+      - 'supabase/release-candidates/20261103_profile_reward_celebrations_v1.sql'
       - 'tests/profile-rewards*'
       - '.github/workflows/profile-rewards.yml'
   workflow_dispatch:
@@ -28,10 +30,10 @@ jobs:
         with:
           node-version: '22'
       - name: Contrats de niveau et sécurité côté serveur
-        run: node --test tests/profile-rewards.test.mjs
+        run: node --test tests/profile-rewards.test.mjs tests/profile-celebrations.test.mjs
       - name: Installer Playwright Chromium
         run: |
           npm install --no-save --no-package-lock playwright@1.58.2
           npx playwright install chromium --with-deps
       - name: Parcours profil complet (identité et XP factices)
-        run: node --test tests/profile-rewards.browser.mjs
+        run: node --test tests/profile-rewards.browser.mjs tests/profile-celebrations.browser.mjs
