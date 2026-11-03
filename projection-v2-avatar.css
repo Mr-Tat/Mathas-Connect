@@ -1,6 +1,5 @@
-/* Projection V2 — proportions des cartes du matin (avant #159/#160).
-   Seulement l'avatar en tête du prénom et le rang 1/2/3 chiffré sont ajoutés.
-   Ne modifie pas les scores, les hauteurs, les deux colonnes ou les thèmes. */
+/* Projection V2 : avatars encadrés, scores de podium contrastés et lignes compactes.
+   Présentation uniquement : aucun changement aux scores, rangs ni autorisations. */
 .entry .player-label{
  display:inline-flex;align-items:center;gap:6px;flex:0 1 auto;min-width:0;overflow:hidden;
 }
@@ -12,11 +11,11 @@
  display:inline-flex;align-items:center;justify-content:center;
  flex:0 0 26px;width:26px;height:26px;line-height:1;
  font-size:22px;font-weight:900;border-radius:7px;
- border:1px solid #ffffff40;color:var(--v-text,#f5faff);
+ border:2px solid #b1cee5;color:var(--v-text,#f5faff);
  text-shadow:0 1px 2px #12203965;
 }
 .entry .projection-avatar.transparent{
- background:transparent!important;border-color:transparent;box-shadow:none;text-shadow:none;
+ background:transparent!important;border-color:#b1cee5;box-shadow:none;text-shadow:none;
 }
 .entry .points{margin-left:0;flex:0 0 auto}
 .entry .place{font-variant-numeric:tabular-nums}
@@ -33,7 +32,7 @@
 
 /* Sur les cartes podium claires, la lettre reste foncée et lisible. */
 html[data-proj-da] .entry:is(.rank-1,.rank-2,.rank-3) .projection-avatar.transparent{
- color:#233342;
+ color:#233342;border-color:#43566b;
 }
 @media(max-width:1000px){
  .entry .player-label{gap:5px}
@@ -42,4 +41,32 @@ html[data-proj-da] .entry:is(.rank-1,.rank-2,.rank-3) .projection-avatar.transpa
 @media(max-width:690px){
  .ranking-list.single{max-width:100%}
  .entry .projection-avatar{flex-basis:25px;width:25px;height:25px;font-size:21px}
+}
+
+
+/* Toutes les lettres restent sans fond mais avec un cadre visible ;
+   le podium clair et le thème Papier demandent une bordure plus foncée. */
+.entry:is(.rank-1,.rank-2,.rank-3) .projection-avatar.transparent{border-color:#43566b}
+html[data-proj-da="papier"] .entry .projection-avatar.transparent{border-color:#43566b}
+
+/* Sur grand écran, on garde un plateau d'une hauteur d'écran, mais les
+   cartes n'en occupent plus arbitrairement toute la hauteur disponible.
+   Défilement interne seulement si la place manque. */
+@media (min-width:1101px) and (min-height:640px){
+ .ranking-list{align-items:start;overflow-y:auto;scrollbar-width:thin}
+ .ranking-list.single{margin:0 auto}
+ .ranking-col{height:auto;grid-template-rows:none;grid-auto-rows:minmax(56px,auto);align-content:start}
+ .ranking-col .entry{height:auto;min-height:56px;overflow:hidden}
+}
+
+/* Sur or, argent et bronze, les points ont un cartouche foncé très lisible.
+   Le score reste accolé au prénom sans changer sa valeur. */
+.entry:is(.rank-1,.rank-2,.rank-3) .points{
+ display:inline-block;padding:3px 9px;line-height:1.2;
+ background:#203348;color:#fff3d2;
+ border:1px solid #cbd7e3;border-radius:7px;
+ box-shadow:0 1px 3px #13202e40;
+}
+html[data-proj-da] .entry:is(.rank-1,.rank-2,.rank-3) .points{
+ color:#fff3d2!important;text-shadow:none!important;
 }
