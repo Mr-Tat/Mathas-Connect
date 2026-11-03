@@ -76,7 +76,7 @@ test('Native advanced patch has exact structural hooks for both games',()=>{
  ].join('\n');
  const simple=sandbox.window.MathasCertifiedAdvancedPatch(base,'simple');
  assert.match(simple,/MathasAdvancedAttempt/);
- assert.match(simple,/MathasCertified/);
+ assert.match(simple,/__mathasServerAdvanced/);
  assert.match(simple,/advanced_question_unavailable/);
  const multiple=sandbox.window.MathasCertifiedAdvancedPatch(base.replace('  function generateAddition(maxDigits){',''),'multiple');
  assert.match(multiple,/hard_proof_unavailable/);
