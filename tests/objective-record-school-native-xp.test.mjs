@@ -60,7 +60,7 @@ test('Objectif record remains locked after 4/4 even though its milestone awards 
  assert.equal(schoolModeAllowed(profile,'sudden',1),false);
  assert.equal(schoolModeAllowed(profile,'three-lives',1),false);
  assert.equal(schoolModeAllowed(profile,'classic',1),true);
- assert.match(schoolModeLockReason('sudden',1),/8/10 ou 16/20/);
+ assert.ok(schoolModeLockReason('sudden',1).includes('8/10 ou 16/20'));
 });
 
 test('8/10 or 16/20 independently unlock both Objectif record buttons at their own levels',()=>{
