@@ -1,5 +1,6 @@
 import {avatarCategories,avatarGlyph,avatarColors,avatarColor} from './avatar-catalog.js';
 import {PROFILE_REWARDS,officialInitial,unlockedProfileLevel,avatarKindUnlocked,colorUnlocked,aliasUnlocked} from './profile-rewards.mjs';
+import {createProfileCelebrations} from './profile-celebration.mjs';
 import { classId, classLabel, loginUrl } from './connect-context.js';
 import {rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
 import {objectiveRecordLabPreviews} from './objective-record-lab-previews.mjs';
@@ -325,6 +326,19 @@ $('profile-alias-save').onclick=async()=>{
  finally{button.disabled=false}
 };
 
+// La célébration arrive UNIQUEMENT au retour sur le HUB, jamais dans les jeux.
+// L'enregistrement côté serveur intervient seulement après un clic de l'élève.
+const profileCelebrations=createProfileCelebrations({
+ documentRef:document,
+ enabled:!playingAsTeacher,
+ acknowledge:level=>saveProfileChange('student-reward-celebrate',{classId,level}),
+ onPersonalize:()=>{
+  if(!activeProfile)return;
+  avatarChoice={...activeProfile.avatar};
+  openAvatarEditor();
+ }
+});
+
 // Groupement visuel uniquement : aucun effet sur les comptes et les XP.
 const progressGroup=document.createElement('div');
 progressGroup.id='identity-progress';
@@ -334,6 +348,7 @@ main.append(progressGroup);
 function drawIdentity(profile) {
   const authorized = profile?.status === 'approved' && profile?.classId === classId;
   activeProfile=authorized?profile:null;
+  if(!authorized)profileCelebrations.reset();
   // Ne montrer le nom Connect dans les HUB qu'après approbation du compte pour cette classe.
   $('hub-connect-suffix').hidden=!authorized;
   refreshCardProgress();
@@ -424,6 +439,7 @@ async function showIdentity(refresh=false) {
     if (profile.ok && profile.status === 'approved' && (profile.classId === classId)) {
       // Une seule requête authentifiée pour identité + XP + progressions.
       drawIdentity(profile);
+      profileCelebrations.receive(profile);
     }else if(refresh)drawIdentity(null);
     // Aucun accès reconnu au seul motif de connaître le lien de classe.
   } catch { /* Toujours laisser le HUB et les jeux accessibles en mode libre. */ }
