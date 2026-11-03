@@ -73,9 +73,16 @@ jobs:
           UPDATE public.connect_apps SET enabled=true WHERE app_key='addition-ecrite-multiple';
           -- The production connect-api also reads avatar columns.
           ALTER TABLE public.connect_students
+            ADD COLUMN public_alias text,
             ADD COLUMN avatar_kind text DEFAULT 'letter',
             ADD COLUMN avatar_value text DEFAULT 'E',
-            ADD COLUMN avatar_color text DEFAULT 'ocean';
+            ADD COLUMN avatar_color text DEFAULT 'transparent';
+          -- Align the isolated AUTH fixture with the LIVE profile contract;
+          -- the source Edge now reads public_alias and level history.
+          CREATE TABLE IF NOT EXISTS public.connect_level_profiles (
+            student_id uuid primary key,
+            highest_level_reached integer NOT NULL DEFAULT 1
+          );
           CREATE TABLE public.connect_devices (
             id uuid primary key, auth_user_id uuid not null, student_id uuid not null,
             state text not null
