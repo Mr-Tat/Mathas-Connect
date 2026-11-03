@@ -84,3 +84,39 @@ export function syncOfficialGameProgress(doc,profile){
   return true;
  }catch{return false}
 }
+
+/**
+ * The original results table treats any stored HARD record key (even a 0)
+ * as "HARD unlocked". Certified Connect mirrors blank records as zeroes,
+ * so the row could appear before pupils earned access. Hide using only the
+ * APPROVED server progress; never use local/browser score to unlock a mode.
+ * Hide H2/H3 until their preceding HARD levels are actually unlocked too.
+ */
+export function visibleSchoolHardLevels(profile){
+ return [1,2,3].filter(level=>schoolModeAllowed(profile,'hard-sudden',level));
+}
+export function syncOfficialHardSummary(doc,profile){
+ if(!doc?.head||!profile?.active)return false;
+ let style=doc.getElementById('mathas-school-hard-summary-style');
+ if(!style){
+  style=doc.createElement('style');
+  style.id='mathas-school-hard-summary-style';
+  style.textContent=`
+    html.mathas-school-hard-locked #menuScreen .mathas-v535-hard-row{display:none!important}
+    html.mathas-school-hard2-locked #menuScreen .mathas-v535-hard-row .mathas-v540-hard-badge:nth-child(2),
+    html.mathas-school-hard3-locked #menuScreen .mathas-v535-hard-row .mathas-v540-hard-badge:nth-child(3){display:none!important}
+    html.mathas-school-hard-controlled #menuScreen .mathas-v535-hard-row .mathas-v540-hard-records{
+      grid-template-columns:repeat(var(--mathas-school-hard-visible,1),minmax(0,1fr))!important
+    }
+  `;
+  doc.head.append(style);
+ }
+ const unlocked=visibleSchoolHardLevels(profile);
+ const classes=doc.documentElement.classList;
+ classes.add('mathas-school-hard-controlled');
+ classes.toggle('mathas-school-hard-locked',unlocked.length===0);
+ classes.toggle('mathas-school-hard2-locked',!unlocked.includes(2));
+ classes.toggle('mathas-school-hard3-locked',!unlocked.includes(3));
+ doc.documentElement.style.setProperty('--mathas-school-hard-visible',String(Math.max(1,unlocked.length)));
+ return true;
+}

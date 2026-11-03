@@ -33,3 +33,6 @@
 Avant d'accuser le nouveau changement : reproduire sur l'ancien `main` quand possible. Quand une assertion teste un libellé au lieu d'un droit, la rendre structurelle. Si l'échec vient d'un service réseau inaccessible, ne pas le présenter comme un échec du contrat local. Ne jamais réduire une règle de sécurité ou effacer des données pour « faire passer » un test.
 
 Pour approfondir : [référence](REFERENCE_TECHNIQUE.md), [recette](RECETTE_ET_PUBLICATION.md) et archives datées sous `docs/`.
+## 3 novembre 2026 — UI des deux additions Connect
+
+[REPO vérifié] Le correctif final de mise en page, son diagnostic des trois couches (moteur → wrapper → Connect), les risques de faux XP, la ligne HARD initialisée à zéro et la meilleure stratégie de tests visuels sont détaillés dans [RETEX_ADDITIONS_UI_20261103.md](RETEX_ADDITIONS_UI_20261103.md). **Raccourci à réutiliser :** vérifier le DOM exécuté (Chromium) et les `swap` exacts **avant** d'ajouter des CSS ; désactiver la simulation XP dès l'entrée `?connect=1`, et déduire les verrous exclusivement de l'état officiel.

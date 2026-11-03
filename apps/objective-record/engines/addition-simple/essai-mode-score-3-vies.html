@@ -53,11 +53,16 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
  const frame=document.getElementById('game');
  window.MathasAttachNativeHubLink(frame);
  const xpPreviewMode=document.getElementById('xp-preview-mode');
+ // An approved Connect session is the ONLY source of remaining XP.
+ // The standalone preview must not insert its own duplicate "Reste ... XP".
+ const hostedByConnect=new URL(location.href).searchParams.get('connect')==='1';
+ if(hostedByConnect&&xpPreviewMode)xpPreviewMode.value='free';
  // Les chiffres ci-dessous sont des exemples visuels : ce prototype n'utilise
  // aucun compte Connect, aucun droit élève ni aucune requête de récompense XP.
  function renderConnectPreview(){
    const doc=frame.contentDocument;
    if(!doc||!xpPreviewMode)return;
+   if(hostedByConnect)xpPreviewMode.value='free';
    for(const [id,total] of [['startThreeLives',10],['startSudden',20]]){
      const meta=doc.querySelector('#'+id+' .score-mode-meta');
      if(!meta)continue;
@@ -307,7 +312,7 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
      'phrase protégée du prototype');
    game=swap(game,
      "if(suddenBtn)suddenBtn.textContent='Lancer la mort subite';",
-     "if(suddenBtn&&!window.__mathasThreeLivesDemo)suddenBtn.textContent='Lancer la mort subite';",
+     "if(suddenBtn&&!suddenBtn.querySelector('.score-mode-name'))suddenBtn.textContent='Mort subite';",
      'contenu du bouton Mort subite protégé');
    // Ouvrir Mort subite en démo, indépendamment des déblocages du vrai profil.
    game=swap(game,
@@ -318,6 +323,10 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
      "function refreshSuddenLock(p=loadProgression()){",
      "function refreshSuddenLock(p=loadProgression()){if(window.__mathasThreeLivesDemo)return;const schoolSel=document.getElementById('suddenMaxDigits');const schoolMatch=(schoolSel?.selectedOptions?.[0]?.textContent||'').match(/Niveau[ ]*([123])/i);const schoolLevel=schoolMatch?Number(schoolMatch[1]):1;const schoolLocked=!suddenUnlocked(schoolLevel,p);for(const schoolId of ['startSudden','startThreeLives']){const schoolButton=document.getElementById(schoolId);if(!schoolButton)continue;schoolButton.disabled=schoolLocked;schoolButton.classList.toggle('progress-sudden-locked',schoolLocked);schoolButton.title=schoolLocked?'Réussis au moins 8/10 ou 16/20 au niveau '+schoolLevel+' pour débloquer Objectif record.':'';}const schoolMenu=document.querySelector('#menuScreen .mode-card.sudden .score-mode-options');if(schoolMenu){let schoolHint=document.getElementById('mathas-school-record-lock');if(!schoolHint){schoolHint=document.createElement('p');schoolHint.id='mathas-school-record-lock';schoolHint.style.cssText='font:700 12px system-ui;line-height:1.3;color:#ffdc9e;text-align:center;margin:8px auto 0';schoolMenu.insertAdjacentElement('afterend',schoolHint)}schoolHint.hidden=!schoolLocked;schoolHint.textContent=schoolLocked?'🔒 Objectif record : 8/10 ou 16/20 au niveau '+schoolLevel+' pour débloquer les deux modes.':''}return;",
      'verrou Objectif record scolaire sans modifier les icônes');
+   game=swap(game,
+     "    const r=button.getBoundingClientRect();\n    const gap=-1;\n    const safeTop=8;\n    const wanted=normalHeight(menu);\n    const available=Math.max(90,Math.floor(r.top-gap-safeTop));\n    const height=Math.min(wanted,available);\n    const top=Math.max(safeTop,Math.round(r.top-gap-height));",
+     "    const r=button.getBoundingClientRect();\n    const top=Math.max(8,Math.ceil(r.bottom+5));\n    const viewport=window.visualViewport?.height??window.innerHeight;\n    const wanted=normalHeight(menu);\n    // Always open BELOW the level button, and scroll internally if needed.\n    const available=Math.max(56,Math.floor(viewport-top-8));\n    const height=Math.min(wanted,available);",
+     'menu Niveau : ouvrir sous le sélecteur');
    game=window.MathasLabV2.patch(game,'add');
    frame.srcdoc=game;
    status.remove();

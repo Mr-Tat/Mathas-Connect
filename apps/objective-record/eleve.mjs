@@ -7,7 +7,7 @@ import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
 import {createCertifiedExtendedUI} from './certified-extended-ui.mjs';
 import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs';
-import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress} from './school-official-unlocks.mjs';
+import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
@@ -235,6 +235,10 @@ function showOfficial({xp,loaded,appKey}){
 }
 function hideFictionalXp(doc){
  if(!doc?.head)return;
+ // The old LAB XP preview was sometimes injected after the initial style.
+ // Physically discard those fake markers, retaining ONLY official Connect XP.
+ doc.querySelectorAll('#menuScreen .classic-xp-remaining,#menuScreen .score-mode-detail,#menuScreen .mathas-pilot-remaining')
+  .forEach(node=>node.remove());
  let style=doc.getElementById('mathas-school-preview-no-fake-xp');
  if(!style){
   style=doc.createElement('style');
@@ -265,7 +269,10 @@ function watchGame(seq){
    }
    hideFictionalXp(doc);
    renderNativeOfficialXp(doc,activeApp,lastOfficialXp);
-   if(lastOfficialProgress)syncOfficialGameProgress(doc,lastOfficialProgress);
+   if(lastOfficialProgress){
+    syncOfficialGameProgress(doc,lastOfficialProgress);
+    syncOfficialHardSummary(doc,lastOfficialProgress);
+   }
    const activeProofUI=activeApp==='addition-ecrite-multiple'?certifiedMultiUI:certifiedUI;
    const native=inside.contentWindow?.MathasLabV2Update;
    // The menu DOM may exist before the real script has installed its update

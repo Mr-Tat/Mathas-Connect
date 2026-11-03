@@ -84,6 +84,52 @@ for(const item of examples){
     const link=inner?.contentDocument?.getElementById('mathas-game-hub-return');
     return !!link&&link.getAttribute('href')?.includes('/hub.html?class=');
    },null,{timeout:16000});
+   // Visual contract: a verified pupil never sees the LAB's duplicate
+   // "Reste XP" simulation; only one small official badge per native button.
+   await page.waitForFunction(()=>{
+    const doc=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+    return !!doc?.querySelector('.classic-count-btn[data-count="10"] .mathas-connect-official-xp');
+   },null,{timeout:16000});
+   const schoolLayout=await page.evaluate(()=>{
+    const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+    const classic=doc.querySelector('.classic-count-btn[data-count="10"]');
+    const badge=classic.querySelector('.mathas-connect-official-xp');
+    const red=doc.querySelector('#startSudden');
+    const b=badge.getBoundingClientRect(),r=classic.getBoundingClientRect();
+    return {
+     fake:doc.querySelectorAll('.classic-xp-remaining,.score-mode-detail,.mathas-pilot-remaining').length,
+     badges:classic.querySelectorAll('.mathas-connect-official-xp').length,
+     badgePosition:doc.defaultView.getComputedStyle(badge).position,
+     bottom:r.bottom-b.bottom,
+     right:r.right-b.right,
+     redName:red.querySelector('.score-mode-name')?.textContent?.trim(),
+     redText:red.textContent,
+     hardLocked:doc.documentElement.classList.contains('mathas-school-hard-locked'),
+     hardLevel3Locked:doc.documentElement.classList.contains('mathas-school-hard3-locked')
+    };
+   });
+   assert.equal(schoolLayout.fake,0,'no fake XP line from the LAB preview');
+   assert.equal(schoolLayout.badges,1,'one official XP badge per classic button');
+   assert.equal(schoolLayout.badgePosition,'absolute','XP belongs to the bottom-right corner');
+   assert.ok(schoolLayout.bottom>=-1&&schoolLayout.bottom<=18,JSON.stringify(schoolLayout));
+   assert.ok(schoolLayout.right>=-1&&schoolLayout.right<=18,JSON.stringify(schoolLayout));
+   assert.equal(schoolLayout.redName,'Mort subite');
+   assert.doesNotMatch(schoolLayout.redText,/Lancer la mort subite/i);
+   assert.equal(schoolLayout.hardLocked,item.slug==='addition-simple',
+    'HARD hidden until official progression has unlocked it');
+   // Opening the custom Niveau selector must place its portal BELOW the
+   // button, never in the header or above the window.
+   const nativeMenu=page.frameLocator('#gameFrame').frameLocator('#game');
+   await nativeMenu.locator('#menuScreen .slide-select-button').first().click();
+   await page.waitForFunction(()=>{
+    const doc=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+    const menu=doc?.querySelector('.slide-select-menu.mathas-dropdown-portal');
+    const button=doc?.querySelector('#menuScreen .slide-select-wrap.open .slide-select-button');
+    if(!menu||!button)return false;
+    return menu.getBoundingClientRect().top>=button.getBoundingClientRect().bottom;
+   },null,{timeout:12000});
+   await nativeMenu.locator('#menuScreen .slide-select-button').first().click();
+
    if(item.slug==='addition-simple'){
     // A new approved pupil cannot launch either Objectif record mode.
     await page.waitForFunction(()=>{
