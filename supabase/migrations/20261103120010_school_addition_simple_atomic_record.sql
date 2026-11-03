@@ -1,8 +1,6 @@
 -- Only callable by a validated arithmetic proof. Never expose this RPC to pupils.
--- Stage 2 TEST-only award extension: keep all existing receipts, XP and state.
--- Replace only the fixed TEST transaction function, preserving the existing
--- service_role-only GRANTs and the TEST enrollment/teacher player restrictions.
--- Native-browser scores remain NOT independently verified: NEVER open real classes.
+-- Real-school private transaction, called solely by server-grader, NEVER by a browser.
+-- Browser/native scores are excluded. Database also enforces school enrollment.
 -- The INSERT/UPDATE trigger connect_trophy_capture_v1 inserts permanent cups.
 CREATE OR REPLACE FUNCTION public.connect_objective_record_school_fixed_v1(
  p_student uuid,p_class uuid,p_app text,p_event uuid,p_expected_revision bigint,
@@ -141,3 +139,12 @@ BEGIN
  RETURN jsonb_build_object('ok',true,'duplicate',false,'revision',v_current.revision+1,
   'resetEpoch',v_current.reset_epoch,'state',v_state,'xp',v_xp);
 END $record$;
+
+-- Newly defined SCHOOL function has no inherited privileges: explicitly revoke
+-- the PostgreSQL default PUBLIC EXECUTE and grant only the trusted Edge service.
+REVOKE ALL ON FUNCTION public.connect_objective_record_school_fixed_v1(
+ uuid,uuid,text,uuid,bigint,bigint,text,integer,integer,integer)
+ FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.connect_objective_record_school_fixed_v1(
+ uuid,uuid,text,uuid,bigint,bigint,text,integer,integer,integer)
+ TO service_role;
