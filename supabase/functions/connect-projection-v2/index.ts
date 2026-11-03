@@ -134,7 +134,7 @@ Deno.serve(async(req:Request)=>{
    const memberIds=distinct(memberRows.map((m:any)=>m.student_id));
    const [profiles,badges]=await Promise.all([
     memberIds.length?records(db.from('connect_students')
-     .select('id,display_name,public_alias,projection_opt_in,archived_at')
+     .select('id,display_name,public_alias,projection_opt_in,avatar_kind,avatar_value,avatar_color,archived_at')
      .in('id',memberIds).is('archived_at',null).limit(250)):Promise.resolve([]),
     memberIds.length?db.rpc('connect_projection_player_badges_v1',{p_students:memberIds}).then((x:any)=>{
      if(x.error)throw Error('badges_unavailable');return x.data??[];
@@ -167,6 +167,9 @@ Deno.serve(async(req:Request)=>{
      // Only approved public display aliases, never private last names of non-opted students.
      const name=String(p.public_alias||p.display_name||'Élève').slice(0,80);
      return {id,name,level:bd?.level??null,trophies:bd?.trophies??0,
+      // Same consent filter as the name and scores: no avatar for an
+      // unapproved pupil, archived profile or excluded teacher player.
+      avatar:{kind:p.avatar_kind||'letter',value:p.avatar_value||null,color:p.avatar_color||'transparent'},
       isTeacher:id===teacherId,scores:best.filter((x:any)=>x.student_id===id&&membersSet.has(id))
        .map((x:any)=>({appKey:x.app_key,bestScore:x.best_score,at:x.best_event_at}))};
     }).filter(Boolean);
