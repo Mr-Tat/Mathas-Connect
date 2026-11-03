@@ -1,0 +1,31 @@
+name: Deux additions — changement de retenue pendant une partie
+on:
+  pull_request:
+    paths:
+      - 'apps/objective-record/in-game-tens-first.mjs'
+      - 'apps/objective-record/eleve.mjs'
+      - 'apps/objective-record/eleve.html'
+      - 'tests/objective-record-additions-real-keyboard.browser.mjs'
+      - '.github/workflows/additions-tens-first-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse student script and in-game control
+        run: |
+          node --check apps/objective-record/eleve.mjs
+          node --check apps/objective-record/in-game-tens-first.mjs
+      - name: Install Chromium test dependencies
+        run: |
+          npm install --no-save --no-package-lock playwright@1.58.2
+          npx playwright install chromium --with-deps
+      - name: Test both certified additions and in-game tens-first checkbox
+        run: node --test tests/objective-record-additions-real-keyboard.browser.mjs
