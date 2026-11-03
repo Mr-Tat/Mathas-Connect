@@ -44,13 +44,13 @@ export function xpStillAvailable(xp,mode,level,total=null){
  const pool=milestonePool(xp);
  if(!pool)return null;
  let awards;
- if(mode==='classic')awards=CLASSIC[total]?.map(([key,points])=>[`classic:\${level}:\${total}:\${key}`,points]);
- else awards=OTHER[mode]?.map(([n,points])=>[`\${mode}:\${level}:\${n}`,points]);
+ if(mode==='classic')awards=CLASSIC[total]?.map(([key,points])=>[`classic:${level}:${total}:${key}`,points]);
+ else awards=OTHER[mode]?.map(([n,points])=>[`${mode}:${level}:${n}`,points]);
  if(!awards)return null;
  return awards.reduce((n,[key,amount])=>n+(pool.has(key)?0:amount),0);
 }
 function applyBadge(button,amount,title){
- if(!button||amount===null||button.disabled)return;
+ if(!button||amount===null)return;
  let label=button.querySelector('.mathas-connect-official-xp');
  if(!label){
   label=button.ownerDocument.createElement('span');
