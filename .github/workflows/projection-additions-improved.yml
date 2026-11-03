@@ -1,0 +1,54 @@
+name: Deux additions — scores et projection strictement améliorée
+on:
+  pull_request:
+    paths:
+      - 'apps/objective-record/school-score-view.mjs'
+      - 'apps/objective-record/eleve.mjs'
+      - 'projection-consent.mjs'
+      - 'supabase/functions/connect-projection-v2/index.ts'
+      - 'supabase/release-candidates/20261103_projection_additions_improved_only.sql'
+      - 'tests/additions-projection-scores.test.mjs'
+      - 'tests/postgres/projection-additions-improvement-contract.sql'
+      - '.github/workflows/projection-additions-improved.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  additions-projection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: projection_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d projection_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: postgres
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGDATABASE: projection_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Scores personnels et consentement (Node)
+        run: |
+          node --check apps/objective-record/school-score-view.mjs
+          node --check apps/objective-record/eleve.mjs
+          node --test tests/additions-projection-scores.test.mjs tests/projection-consent.test.mjs
+      - name: Comparaison atomique sur données fictives (PostgreSQL 16 jetable)
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -f tests/postgres/projection-additions-improvement-contract.sql
+          echo 'Aucun élève réel ni score de production touché.'
