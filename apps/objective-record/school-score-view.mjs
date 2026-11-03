@@ -44,7 +44,7 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
   throw Error('unsupported_score_app');
  let state={},remote=null,documentRef=null,loading=null,destroyed=false;
  const select=()=>schoolScoreSnapshot(remote,state);
- const style=\`
+ const style=`
  #mathasSchoolScoreTop{box-sizing:border-box;display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
   border:1px solid #6c9fb8;border-radius:15px;padding:12px 16px;margin:9px 0;background:linear-gradient(130deg,#153a56,#1c4d66);
   color:#effaff;text-align:left;cursor:pointer;font:700 13px system-ui}
@@ -64,7 +64,7 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
  body.light #mathasSchoolScoreHistory h4,body.light-mode #mathasSchoolScoreHistory h4{color:#945f11}
  body.light #mathasSchoolScoreTop .mathas-school-hint,body.light-mode #mathasSchoolScoreTop .mathas-school-hint,
  body.light #mathasSchoolScoreHistory .mathas-school-empty,body.light-mode #mathasSchoolScoreHistory .mathas-school-empty{color:#426779}
- \`;
+ `;
  function textList(container,rows,empty){
   if(!container)return;
   container.replaceChildren();
