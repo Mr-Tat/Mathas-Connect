@@ -21,7 +21,8 @@ export function createMultipleProofUI({
  function bind(win,doc){
   const ctx=getContext();
   if(ctx.activeApp!==MULTI_PROOF_APP||!ctx.pupilId||!doc?.getElementById('menuScreen'))return;
-  panel.hidden=false;button.disabled=!!run||sending;
+  panel.hidden=false;
+  if(!modeSelect||modeSelect.value==='classic')button.disabled=!!run||sending;
   if(!win)return;
   if(run&&win.__mathasServerCertifiedMulti?.sessionId!==run.sessionId)
    win.__mathasServerCertifiedMulti={sessionId:run.sessionId,
