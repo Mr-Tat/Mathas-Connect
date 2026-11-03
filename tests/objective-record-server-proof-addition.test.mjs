@@ -51,8 +51,8 @@ test('true native engine receives issued calculations and captures first submiss
  engine.indexOf('function verifyCorrections()'));
  assert.ok(classBranch.indexOf('MathasCertifiedAttempt?.(')>=0);
  assert.ok(classBranch.indexOf('MathasCertifiedAttempt?.(')<classBranch.indexOf('s.firstTry=false;hadError=true'));
- assert.match(host,/certifiedUI\.bind\(inside\.contentWindow,doc\)/);
- assert.match(host,/certifiedUI\.onGameEvent\(event\)/);
+ assert.match(host,/activeProofUI\.bind\(inside\.contentWindow,doc\)/);
+ assert.match(host,/activeProofUI\.onGameEvent\(event\)/);
  assert.match(host,/certifiedUI\.reset\(\)/);
  assert.match(host,/certifiedUI\.hasPending\(\)/);
  assert.match(ui,/call\('start-proof-v2',\{level,total\}\)/);

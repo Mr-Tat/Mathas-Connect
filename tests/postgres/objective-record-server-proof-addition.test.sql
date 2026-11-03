@@ -74,7 +74,10 @@ BEGIN
  repeat:=public.connect_objective_record_test_finish_add_v1(st,testclass,sid,correct);
  IF repeat->>'duplicate'<>'true' OR (repeat#>>'{xp,delta}')::integer<>0
  THEN RAISE EXCEPTION 'replay_credited';END IF;
- tampered:=jsonb_set(correct,'{0,digits,0}','"0"'::jsonb,false);
+ -- Change the original digit deterministically: a randomly issued sum may
+ -- already end in 0, so replacing blindly with '0' makes this test flaky.
+ tampered:=jsonb_set(correct,'{0,digits,0}',
+  to_jsonb(CASE WHEN correct#>>'{0,digits,0}'='0' THEN '1' ELSE '0' END),false);
  BEGIN
   PERFORM public.connect_objective_record_test_finish_add_v1(st,testclass,sid,tampered);
   RAISE EXCEPTION 'proof_replay_accepted_altered_transcript';

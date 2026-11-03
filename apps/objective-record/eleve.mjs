@@ -4,6 +4,7 @@ import {ATOMIC_TEST_APP,isFixedTestApp} from './native-official-record.mjs';
 import {createAtomicTestRecorder,isWritableTestApp} from './atomic-test-recorder.mjs';
 import {MIXED_TEST_APP,isMixedTestTerminal} from './mixed-test-proof.mjs';
 import {createAdditionProofUI} from './certified-addition-ui.mjs';
+import {createMultipleProofUI} from './certified-multiple-ui.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 
 // This is the future SCHOOL launcher, not the legacy pilot XP writer.
@@ -97,7 +98,8 @@ function watchGame(seq){
     chooser.value='free';chooser.dispatchEvent(new Event('change',{bubbles:true}));
    }
    hideFictionalXp(doc);
-   certifiedUI.bind(inside.contentWindow,doc);
+   const activeProofUI=activeApp==='addition-ecrite-multiple'?certifiedMultiUI:certifiedUI;
+   activeProofUI.bind(inside.contentWindow,doc);
    const native=inside.contentWindow?.MathasLabV2Update;
    if(doc===visibleDoc||typeof native!=='function')return;
    visibleDoc=doc;
@@ -105,7 +107,7 @@ function watchGame(seq){
     inside.contentWindow.MathasLabV2Update=function(event){
      native(event);
      if(seq!==generation||!event)return;
-     if(certifiedUI.onGameEvent(event))return;
+     if(activeProofUI.onGameEvent(event))return;
      if(recorder){
       const mixed=activeApp===MIXED_TEST_APP&&isMixedTestTerminal(event);
       const observed=mixed?{...event,
@@ -145,9 +147,19 @@ const certifiedUI=createAdditionProofUI({
   if(receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);
  }
 });
+const certifiedMultiUI=createMultipleProofUI({
+ button:$('certify'),panel:$('certified-tools'),levelSelect:$('certified-level'),
+ totalSelect:$('certified-total'),frame:$('gameFrame'),
+ getContext:()=>({generation,activeApp,pupilId,classId}),
+ call:(action,payload)=>call('connect-objective-record-test',action,'addition-ecrite-multiple',payload),
+ refresh:()=>refresh(generation),notify:message,
+ onRecorded:receipt=>{
+  if(receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);
+ }
+});
 async function choose(){
  generation++;const seq=generation;
- clearInterval(watching);visibleDoc=null;recorder=null;pupilId=null;certifiedUI.reset();
+ clearInterval(watching);visibleDoc=null;recorder=null;pupilId=null;certifiedUI.reset();certifiedMultiUI.reset();
  projectionConsent?.destroy();projectionConsent=null;clear();
  const slug=$('app').value;
  if(!Object.hasOwn(GAME_URLS,slug)){message('Jeu inconnu');return;}
@@ -176,10 +188,15 @@ async function choose(){
   if(recorder?.hasPending()&&!await recorder.retry()){
    message('Résultat conservé en attente de réseau : cliquer Actualiser.');$('refresh').disabled=false;return;
   }
+  for(const [level,width] of Object.entries(activeApp==='addition-ecrite-multiple'
+    ?{1:5,2:6,3:7}:{1:3,2:5,3:7})){
+   const option=$('certified-level').querySelector('option[value="'+level+'"]');
+   if(option)option.textContent=level+' · '+width+' chiffres';
+  }
   $('gameFrame').src=GAME_URLS[slug][1];
   $('gameFrame').hidden=false;$('refresh').disabled=false;
   watchGame(seq);
-  message(recorder?'Classe TEST : les cinq calculs écrits ont leur voie XP Classique/Mort subite. Pour Mélange, les opérations terminées sont journalisées. Preuve mathématique serveur à terminer sauf Addition simple certifiée. 3 vies et HARD restent bloqués.':
+  message(recorder?'Classe TEST : les cinq calculs écrits ont leur voie XP Classique/Mort subite. Épreuves arithmétiques serveur disponibles pour Addition simple et Addition multiple. Les autres scores natifs restent à certifier avant sortie scolaire. 3 vies et HARD restent bloqués.':
    'Session Connect authentifiée · sauvegarde des parties de ce jeu encore désactivée.');
  }catch(e){
   if(seq!==generation)return;
@@ -187,7 +204,7 @@ async function choose(){
   message('⚠️ '+(e?.message||'Accès indisponible')+'. Jeu non lancé.');
  }
 }
-$('refresh').addEventListener('click',async()=>{const seq=generation;try{if(certifiedUI.hasPending())await certifiedUI.retry();else if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
+$('refresh').addEventListener('click',async()=>{const seq=generation;try{if(certifiedUI.hasPending())await certifiedUI.retry();else if(certifiedMultiUI.hasPending())await certifiedMultiUI.retry();else if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
   if(seq===generation&&!recorder?.hasPending())message('Profil officiel actualisé.');
  }catch(e){if(seq===generation)message('⚠️ '+e.message)}});
 $('app').addEventListener('change',()=>{const next=new URL(location.href);next.searchParams.set('app',$('app').value);history.replaceState(null,'',next);void choose()});
