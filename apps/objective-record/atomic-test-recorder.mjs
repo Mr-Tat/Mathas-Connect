@@ -1,10 +1,12 @@
 import {isFixedTestApp,normalizeAtomicTestCompletion,acceptNativeRecordAck} from './native-official-record.mjs';
+import {MIXED_TEST_APP,normalizeMixedTestCompletion,isMixedTestTerminal} from './mixed-test-proof.mjs';
+export const isWritableTestApp=appKey=>isFixedTestApp(appKey)||appKey===MIXED_TEST_APP;
 // TEST-class bridge to atomic official Connect RPCs (the original Addition-multiple RPC and the fixed-operation candidate).
 // Only classic/sudden. Native-browser score is not an independently verified
 // arithmetic transcript, so this gate must never be opened in real classrooms.
 export function createAtomicTestRecorder({classId,appKey,subject,storage,send,reload,notify,isCurrent,onRecorded=()=>{}}){
  const TEST='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
- if(classId!==TEST||!isFixedTestApp(appKey)||!subject
+ if(classId!==TEST||!isWritableTestApp(appKey)||!subject
    ||typeof send!=='function'||typeof reload!=='function'
    ||typeof notify!=='function'||typeof isCurrent!=='function')return null;
  const key='mathas.record-test-native.v1.'+classId+'.'+subject+'.'+appKey;
@@ -99,7 +101,7 @@ export function createAtomicTestRecorder({classId,appKey,subject,storage,send,re
  }
  function onSnapshot(event){
   if(!isCurrent()||!version||!event||pending)return;
-  if(event.phase!=='ended'){
+  if(!(appKey===MIXED_TEST_APP?isMixedTestTerminal(event):event.phase==='ended')){
    if(ended||!runId)runId=uuid();
    ended=false;return;
   }
@@ -107,7 +109,7 @@ export function createAtomicTestRecorder({classId,appKey,subject,storage,send,re
   ended=true;
   const id=runId||uuid();
   runId=null;
-  const proof=normalizeAtomicTestCompletion({appKey,event});
+  const proof=appKey===MIXED_TEST_APP?normalizeMixedTestCompletion({appKey,event}):normalizeAtomicTestCompletion({appKey,event});
   if(!proof){notify('Partie terminée : ce mode attend encore son raccordement XP officiel.');return;}
   const record={eventId:id,expectedRevision:version.revision,
    expectedResetEpoch:version.resetEpoch,appKey,classId,...proof};
