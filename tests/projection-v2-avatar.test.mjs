@@ -26,7 +26,7 @@ test('Le podium est un rang numérique et non une médaille dans la V2 et les ci
  assert.match(css,/\.entry \.projection-avatar\{/);
  assert.match(css,/\.entry \.projection-avatar\.transparent\{/);
  assert.match(css,/grid-auto-rows:minmax\(56px,auto\)/);
- assert.match(css,/html\[data-proj-da\] \.entry:is\(\.rank-1,\.rank-2,\.rank-3\) \.points/);
+ assert.match(css,/html\[data-proj-da\] \.entry:is\(\.rank-1,\.rank-2,\.rank-3\) \.primary \.points/);
  assert.match(css,/border:2px solid #b1cee5/);
 });
 test('Classement conserve avatar, score et consentement, sans modifier le rang',()=>{
