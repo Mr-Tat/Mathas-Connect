@@ -58,8 +58,9 @@ Deno.serve(async(req:Request)=>{
  try{
   // Pupil score publication is a separate, explicit opt-in. A stored
   // game result or general projection enrollment never implies submission.
-  if(b.action==='student-share-score'){
-   if(!uuid(b.eventId)||!allowKey(b.appKey))return deny('invalid_score_event',400);
+  if(b.action==='student-share-score'||b.action==='student-score-history'){
+   if(!allowKey(b.appKey)||(b.action==='student-share-score'&&!uuid(b.eventId)))
+    return deny('invalid_score_event',400);
    let studentId:string|null=null;
    if(user.is_anonymous){
     const approved=await records(db.from('connect_devices').select('student_id')
@@ -80,6 +81,32 @@ Deno.serve(async(req:Request)=>{
       .eq('student_id',studentId).eq('class_id',b.classId).is('left_at',null).limit(1));
     if(!member.length)return deny('wrong_class',403);
    }
+   // Deux additions scolaires : historique privé du joueur et records officiels,
+   // indépendamment du mode Classique / 3 vies / Mort subite / HARD.
+   const addition=['addition-ecrite-simple','addition-ecrite-multiple'].includes(b.appKey);
+   if(b.action==='student-score-history'){
+    if(!addition)return deny('unsupported_score_history',400);
+    const {data,error}=await db.rpc('connect_projection_addition_score_summary_v1',{
+     p_student:studentId,p_class:b.classId,p_app:b.appKey
+    });
+    if(error||data?.ok!==true)throw Error('score_summary_unavailable');
+    return respond(data);
+   }
+   if(addition){
+    // Le verrou sur l'élève et la comparaison des points sont atomiques en SQL.
+    // Un ancien score, un score égal ou un événement non prouvé ne passent jamais.
+    const {data,error}=await db.rpc('connect_projection_share_improved_addition_v1',{
+     p_student:studentId,p_class:b.classId,p_app:b.appKey,p_event:b.eventId
+    });
+    if(error)throw Error('score_share_unavailable');
+    if(data?.ok!==true){
+     const reason=['not_improved','score_reset','event_not_found'].includes(data?.error)
+      ?data.error:'invalid_score_event';
+     return deny(reason,reason==='event_not_found'?404:409);
+    }
+    return respond(data);
+   }
+   // Les trois autres jeux conservent leur circuit existant.
    const {error:insertError}=await db.from('connect_projection_score_consents')
      .upsert({student_id:studentId,class_id:b.classId,app_key:b.appKey,event_id:b.eventId},
        {onConflict:'student_id,app_key,event_id',ignoreDuplicates:true});
