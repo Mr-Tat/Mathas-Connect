@@ -94,7 +94,9 @@ for(const item of cases)test('Chromium genuine native advanced keyboard '+item.s
     await input.focus();await page.keyboard.press('0');
     assert.equal(await input.inputValue(),'0');
    }
-   await game.locator('#hardPrimary').click();
+   // The native HARD engine automatically verifies the fully filled row.
+   // Pressing the button again after its terminal ACK would click through the
+   // projection consent dialog, not test arithmetic.
   }else{
    await game.locator('#startSudden').click();
    await game.locator('#gameScreen:not(.hidden)').waitFor({state:'visible',timeout:20000});
