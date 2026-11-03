@@ -43,6 +43,7 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
  if(!['addition-ecrite-simple','addition-ecrite-multiple'].includes(appKey))
   throw Error('unsupported_score_app');
  let state={},remote=null,documentRef=null,loading=null,destroyed=false;
+ const autoOffered=new Set();
  const select=()=>schoolScoreSnapshot(remote,state);
  const style=`
  #mathasSchoolScoreTop{box-sizing:border-box;display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
@@ -99,9 +100,12 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
   textList(documentRef.querySelector('#mathasSchoolScoreHistory [data-score-history]'),snapshot.recent.slice(0,12),
    'Aucune partie certifiée enregistrée.');
  }
- async function load(){
+ async function load(force=false){
   if(destroyed)return false;
-  if(loading)return loading;
+  if(loading){
+   if(!force)return loading;
+   await loading; // Relire après ACK même si une ancienne lecture était en vol.
+  }
   loading=(async()=>{
    try{
     const result=await fetchHistory();
@@ -115,7 +119,7 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
  }
  async function offerBest(){
   if(destroyed)return false;
-  await load();
+  await load(true);
   const snapshot=select();
   if(!snapshot.today){notify('Aucun score certifié aujourd’hui.');return false;}
   if(!snapshot.official||!snapshot.today.eventId){
@@ -128,12 +132,15 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
  }
  async function recorded(eventId){
   if(!UUID.test(eventId)||destroyed)return false;
-  const ok=await load();
+  if(autoOffered.has(eventId))return false;
+  const ok=await load(true);
   if(!ok)return false;
   const snapshot=select();
   const row=[...snapshot.recent,...snapshot.top,snapshot.today].find(e=>e?.eventId===eventId);
   if(!row||snapshot.boardBest===null||row.points<=snapshot.boardBest)return false;
-  return !!consent()?.offer(eventId);
+  const offered=!!consent()?.offer(eventId);
+  if(offered)autoOffered.add(eventId);
+  return offered;
  }
  function mount(doc){
   if(destroyed||!doc?.getElementById('menuScreen'))return;
