@@ -13,8 +13,12 @@ function hardLevel(button){
  const match=title.match(/(?:HARD\s*)?NIV(?:EAU)?\s*([123])/i);
  return Number(button.dataset.level||match?.[1]||0);
 }
-export function classifyNativeLaunch(button,doc){
+export function classifyNativeLaunch(button,doc,appKey){
  if(!button||button.disabled)return null;
+ if(appKey==='addition-ecrite-simple'&&button.matches('.classic-count-btn[data-count]')){
+  const total=Number(button.dataset.count),level=nativeLevel(doc.getElementById('classicMaxDigits'));
+  return [4,10,20].includes(total)?{mode:'classic',level,total}:null;
+ }
  if(button.id==='startClassic'){
   const count=Number(doc.querySelector('#menuScreen .classic-count-btn.active')?.dataset.count||10);
   const level=nativeLevel(doc.getElementById('classicMaxDigits'));
@@ -110,7 +114,7 @@ export function installNativeCertifiedLaunch(doc,appKey,onLaunch){
  doc.addEventListener('click',event=>{
   if(!event.isTrusted)return;
   const button=event.target?.closest?.('button');
-  const choice=classifyNativeLaunch(button,doc);
+  const choice=classifyNativeLaunch(button,doc,appKey);
   if(!choice)return;
   event.preventDefault();
   event.stopImmediatePropagation();
