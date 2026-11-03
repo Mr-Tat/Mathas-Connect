@@ -6,6 +6,7 @@ import {MIXED_TEST_APP,isMixedTestTerminal} from './mixed-test-proof.mjs';
 import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
 import {createCertifiedExtendedUI} from './certified-extended-ui.mjs';
+import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
@@ -54,7 +55,7 @@ function message(s){
  const status=$('status');
  status.textContent=s;
  clearTimeout(statusTimer);
- const show=/^(⚠|❌|✅|Partie libre terminée|Partie terminée|Profil officiel actualisé|Résultat conservé)/.test(s);
+ const show=/^(⚠|❌|✅|🔐|Partie libre terminée|Partie terminée|Profil officiel actualisé|Résultat conservé)/.test(s);
  status.hidden=!show;
  status.classList.toggle('status-error',/^(⚠|❌)/.test(s));
  if(show)statusTimer=setTimeout(()=>{status.hidden=true},s.startsWith('⚠')?8000:4800);
@@ -260,12 +261,20 @@ function watchGame(seq){
     chooser.value='free';chooser.dispatchEvent(new Event('change',{bubbles:true}));
    }
    hideFictionalXp(doc);
+   renderNativeOfficialXp(doc,activeApp,lastOfficialXp);
    const activeProofUI=activeApp==='addition-ecrite-multiple'?certifiedMultiUI:certifiedUI;
    const native=inside.contentWindow?.MathasLabV2Update;
    // The menu DOM may exist before the real script has installed its update
    // hook. Never enable certified launch until the native engine is ready.
    if(typeof native!=='function')return;
    activeProofUI.bind(inside.contentWindow,doc);
+   installNativeCertifiedLaunch(doc,activeApp,choice=>{
+    if(seq!==generation||!pupilId)return;
+    // The familiar game buttons now enter the authenticated, server-issued
+    // proof. Never accept a native game score as an XP claim.
+    if(choice.mode==='classic')void activeProofUI.startNative(choice.level,choice.total);
+    else void extendedUI.startNative(choice.mode,choice.level);
+   });
    if(doc===visibleDoc)return;
    visibleDoc=doc;
    {
