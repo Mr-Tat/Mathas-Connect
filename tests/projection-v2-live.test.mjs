@@ -20,7 +20,11 @@ test('Projection V2 live : 14 élèves maximum, classement propre aux jeux, scor
  assert.match(js,/splitProjectedRanking/);
  assert.match(js,/const multiple=compared\.length>0/);
  assert.match(js,/classes:data\.classes,primaryClassId:classId,scoreClassIds:compared/);
- assert.match(js,/primary\.append\(name,points\)/);
+ assert.match(js,/primary\\.append\\(playerLabel,points\\)/);
+ assert.match(js,/playerLabel\\.append\\(projectedAvatar\\(p\\),name\\)/);
+ assert.match(js,/rank\\.textContent=String\\(place\\)/);
+ assert.doesNotMatch(js,/🥇|🥈|🥉/);
+ assert.match(js,/avatarGlyph,avatarColor/);
  assert.match(js,/Niveau /);
  assert.match(js,/p\.trophies/);
  assert.match(js,/secondsRemaining=options\.rotationSeconds/);
