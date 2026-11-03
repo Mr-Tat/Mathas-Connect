@@ -29,13 +29,12 @@ const params=new URL(location.href).searchParams;
 const teacher=params.get('joueur')==='prof';
 const classId=params.get('class')||'';
 // Preserve the authenticated school context when returning to the pupil HUB.
-const backLink=document.querySelector('header a[href="../../hub.html"]');
-if(backLink&&UUID_SAFE_CLASS(classId)){
- const back=new URL('../../hub.html',location.href);
+const back=new URL('../../hub.html',location.href);
+if(UUID_SAFE_CLASS(classId)){
  back.searchParams.set('class',classId);
  if(teacher)back.searchParams.set('joueur','prof');
- backLink.href=back.href;
 }
+for(const id of ['bar-home','guest-home'])$(id).href=back.href;
 function UUID_SAFE_CLASS(x){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x)}
 const session=createClient(BASE,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
  ...(teacher?{storageKey:'mathas-connect-professor-auth-v1'}:{})}});
@@ -48,12 +47,139 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 // until their respective proof contracts are implemented.
 const SERVER_PROOF_ADDITIONS=new Set(['addition-ecrite-simple','addition-ecrite-multiple']);
 const nativeRecordAllowed=appKey=>isWritableTestApp(appKey)&&!SERVER_PROOF_ADDITIONS.has(appKey);
-const message=(s)=>{$('status').textContent=s};
+
+let statusTimer=null,barTimer=null,lastOfficialXp=null;
+const bar=$('connect-bar'),handle=$('bar-handle'),xpPanel=$('xp-panel'),challengePanel=$('challenge-panel');
+function message(s){
+ const status=$('status');
+ status.textContent=s;
+ clearTimeout(statusTimer);
+ const show=/^(⚠|❌|✅|Partie libre terminée|Partie terminée|Profil officiel actualisé|Résultat conservé)/.test(s);
+ status.hidden=!show;
+ status.classList.toggle('status-error',/^(⚠|❌)/.test(s));
+ if(show)statusTimer=setTimeout(()=>{status.hidden=true},s.startsWith('⚠')?8000:4800);
+}
+const threshold=l=>l<7?Math.max(0,l)*50:300+(l-6)*100;
+function renderMeter(total,level){
+ if(!Number.isSafeInteger(total)||!Number.isSafeInteger(level)||level<1)return;
+ const start=threshold(level-1),width=threshold(level)-start;
+ const earned=Math.max(0,Math.min(width,total-start));
+ $('level-xp').textContent=earned+' / '+width+' XP';
+ $('level-fill').style.width=(width?100*earned/width:0)+'%';
+ const track=$('meter-track');
+ track.setAttribute('aria-valuenow',String(earned));
+ track.setAttribute('aria-valuemax',String(width));
+ $('connect-xp-meter').title='Niveau '+level+' · '+total+' XP au total';
+}
+function updateBarHeight(){
+ if(!bar.hidden)document.documentElement.style.setProperty('--connect-bar-height',bar.offsetHeight+'px');
+}
+const aPanelOpen=()=>!xpPanel.hidden||!challengePanel.hidden;
+function stopBarTimer(){clearTimeout(barTimer);barTimer=null}
+function retractBar(){
+ if(bar.hidden||aPanelOpen()||bar.contains(document.activeElement))return;
+ bar.classList.add('retracted');handle.hidden=false;
+}
+function scheduleBar(){
+ stopBarTimer();
+ if(!bar.hidden&&!aPanelOpen())barTimer=setTimeout(retractBar,3200);
+}
+function revealBar(){
+ if(bar.hidden)return;
+ bar.classList.remove('retracted');handle.hidden=true;
+ updateBarHeight();scheduleBar();
+}
+function closePanels(){
+ xpPanel.hidden=true;challengePanel.hidden=true;
+ $('xp-toggle').setAttribute('aria-expanded','false');
+ $('challenge-toggle').setAttribute('aria-expanded','false');
+ scheduleBar();
+}
+function showConnectedBar(profile){
+ $('connected-name').textContent=String(profile?.displayName||'Élève');
+ bar.hidden=false;$('guest-home').hidden=true;
+ revealBar();
+}
+function showPanel(which){
+ if(bar.hidden)return;
+ const target=which==='xp'?xpPanel:challengePanel;
+ const wasOpen=!target.hidden;
+ closePanels();
+ if(!wasOpen){
+  target.hidden=false;
+  $(which==='xp'?'xp-toggle':'challenge-toggle').setAttribute('aria-expanded','true');
+  stopBarTimer();revealBar();updateBarHeight();
+  if(which==='xp')void loadXpDetails();
+ }
+}
+function xpRows(){
+ const rows=[];
+ for(let l=1;l<=3;l++){
+  for(const [size,key,points] of [[4,'perfect',22],[10,'pass',30],[10,'bonus',6],[20,'pass',50],[20,'bonus',10]])
+   rows.push({key:'classic:'+l+':'+size+':'+key,label:'Classique N'+l+' · '+size+' calculs '+(key==='bonus'?'sans-faute':key==='perfect'?'4/4':'≥80 %'),points});
+  for(const n of [5,10])rows.push({key:'sudden:'+l+':'+n,label:'Mort subite N'+l+' · '+n+' réussites',points:10});
+  for(const n of [3,7])rows.push({key:'hard:'+l+':'+n,label:'HARD N'+l+' · '+n+' réussites',points:10});
+ }
+ return rows;
+}
+async function loadXpDetails(){
+ const generationAtStart=generation,appAtStart=activeApp;
+ const container=$('xp-rows'),note=$('xp-note');
+ container.replaceChildren();
+ const waiting=document.createElement('tr'),cell=document.createElement('td');
+ cell.textContent='Chargement du relevé officiel…';waiting.append(cell);container.append(waiting);
+ try{
+  const data=await call('connect-results','student-xp',appAtStart);
+  if(generationAtStart!==generation||appAtStart!==activeApp||xpPanel.hidden)return;
+  if(!Array.isArray(data.milestones)||!Array.isArray(data.currentMilestones))throw Error('Relevé détaillé momentanément indisponible');
+  const acquired=new Set(data.repeatXp?data.currentMilestones:data.milestones);
+  const rows=document.createDocumentFragment();
+  for(const entry of xpRows()){
+   const tr=document.createElement('tr'),name=document.createElement('td'),points=document.createElement('td');
+   const earned=acquired.has(entry.key);
+   if(earned)tr.className='is-earned';
+   name.textContent=(earned?'✓ ':'○ ')+entry.label;
+   points.textContent=(earned?'Acquis · ':'+')+entry.points+' XP';
+   tr.append(name,points);rows.append(tr);
+  }
+  container.replaceChildren(rows);
+  note.textContent=data.repeatXp?'Parcours '+data.parcours+' : jalons regagnables sur ce parcours.'
+   :data.parcours>1?'Parcours '+data.parcours+' : XP historiques conservés.'
+   :'Chaque récompense officielle ne se gagne qu’une fois par parcours.';
+ }catch(e){
+  if(generationAtStart===generation&&!xpPanel.hidden){
+   container.replaceChildren();
+   const row=document.createElement('tr'),cell=document.createElement('td');
+   cell.textContent='Relevé momentanément indisponible. Les XP officiels ne sont pas modifiés.';
+   row.append(cell);container.append(row);
+  }
+ }
+}
+$('xp-toggle').addEventListener('click',()=>showPanel('xp'));
+$('challenge-toggle').addEventListener('click',()=>showPanel('challenge'));
+$('xp-close').addEventListener('click',closePanels);
+$('challenge-close').addEventListener('click',closePanels);
+$('certify').addEventListener('click',()=>{if(!$('certify').disabled)closePanels()});
+handle.addEventListener('click',()=>{revealBar();bar.focus?.()});
+bar.addEventListener('pointerenter',revealBar);
+bar.addEventListener('pointerleave',scheduleBar);
+bar.addEventListener('focusin',()=>{revealBar();stopBarTimer()});
+bar.addEventListener('focusout',scheduleBar);
+document.addEventListener('pointermove',event=>{if(event.isTrusted)revealBar()},{passive:true});
+document.addEventListener('pointerdown',event=>{if(event.isTrusted)revealBar()},{passive:true});
+document.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&aPanelOpen()){closePanels();$('xp-toggle').focus();return}
+ if(event.key==='Tab'&&!bar.hidden)revealBar();
+});
+window.addEventListener('resize',updateBarHeight);
+
 const clear=()=>{
   window.MathasConnectOfficialTrophies=null;
   for(const id of ['app-xp','total-xp','level','trophies'])$(id).textContent='—';
   $('gameFrame').hidden=true;$('gameFrame').removeAttribute('src');$('refresh').disabled=true;
   $('certified-tools').hidden=true;$('certify').disabled=true;
+  bar.hidden=true;handle.hidden=true;$('guest-home').hidden=false;stopBarTimer();closePanels();
+  lastOfficialXp=null;
 };
 async function verifiedToken(){
  const {data:{session:local}}=await session.auth.getSession();
@@ -94,6 +220,7 @@ function showOfficial({xp,loaded,appKey}){
  $('total-xp').textContent=String(summary.total);
  $('level').textContent=String(summary.level);
  $('trophies').textContent=permanentTrophyCount(loaded.state?.rewards) ?? '—';
+ lastOfficialXp=xp;renderMeter(summary.total,summary.level);
  if(SERVER_PROOF_ADDITIONS.has(appKey)){
   // A null official award snapshot is 'unavailable', never a local fake zero.
   window.MathasConnectOfficialTrophies={
@@ -121,6 +248,13 @@ function watchGame(seq){
    const inside=outer?.getElementById('game');
    const doc=inside?.contentDocument;
    if(!doc?.querySelector('#menuScreen'))return;
+   for(const surface of [outer,doc]){
+    if(surface.__mathasToolbarActivity)continue;
+    surface.__mathasToolbarActivity=true;
+    surface.addEventListener('pointermove',event=>{if(event.isTrusted)revealBar()},{passive:true});
+    surface.addEventListener('pointerdown',event=>{if(event.isTrusted)revealBar()},{passive:true});
+    surface.addEventListener('keydown',revealBar);
+   }
    const chooser=outer?.getElementById('xp-preview-mode')||outer?.getElementById('xpMode');
    if(chooser&&chooser.value!=='free'){
     chooser.value='free';chooser.dispatchEvent(new Event('change',{bubbles:true}));
@@ -224,11 +358,12 @@ async function choose(){
  activeApp=GAME_URLS[slug][0];
  try{
   message('Vérification de l’identité et de la classe Connect…');
-  await approvedProfile();
+  const approved=await approvedProfile();
   if(seq!==generation)return;
   message('Lecture des XP globaux et trophées permanents officiels…');
   const initial=await refresh(seq);
   if(seq!==generation)return;
+  showConnectedBar(approved);
   // The public projection board lists a result only after explicit pupil opt-in.
   // Creating this controller does NOT authorize or publish any game result.
   projectionConsent=createProjectionConsent({
@@ -270,7 +405,15 @@ async function choose(){
  }catch(e){
   if(seq!==generation)return;
   clear();
-  message('⚠️ '+(e?.message||'Accès indisponible')+'. Jeu non lancé.');
+  // Un visitor sans profil approuvé garde le moteur natif jouable, sans
+  // aucune requête de validation XP ni privilège d'enregistrement.
+  // Le repli libre est EXPLICITE pour ne jamais faire croire à un crédit Connect.
+  if(SERVER_PROOF_ADDITIONS.has(activeApp)){
+   $('gameFrame').src=GAME_URLS[slug][1]+'?connect=1';
+   $('gameFrame').hidden=false;
+   $('guest-home').hidden=true; // le bouton HUB existe dans le moteur lui-même
+   message('⚠️ Profil Connect indisponible : mode libre sans XP officiel. '+(e?.message||''));
+  }else message('⚠️ '+(e?.message||'Accès indisponible')+'. Jeu non lancé.');
  }
 }
 $('refresh').addEventListener('click',async()=>{const seq=generation;try{if(extendedUI.hasPending())await extendedUI.retry();else if(certifiedUI.hasPending())await certifiedUI.retry();else if(certifiedMultiUI.hasPending())await certifiedMultiUI.retry();else if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
@@ -279,5 +422,5 @@ $('refresh').addEventListener('click',async()=>{const seq=generation;try{if(exte
 $('app').addEventListener('change',()=>{const next=new URL(location.href);next.searchParams.set('app',$('app').value);history.replaceState(null,'',next);void choose()});
 const requested=params.get('app');
 if(requested&&Object.hasOwn(GAME_URLS,requested))$('app').value=requested;
-window.addEventListener('pagehide',()=>{clearInterval(watching);projectionConsent?.destroy()});
+window.addEventListener('pagehide',()=>{clearInterval(watching);projectionConsent?.destroy();stopBarTimer();clearTimeout(statusTimer)});
 void choose();

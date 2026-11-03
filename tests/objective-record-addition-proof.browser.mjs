@@ -82,6 +82,7 @@ test('Chromium: 4 vraies additions émises par Connect, écritures natives et AC
   await page.goto(url+'/apps/objective-record/eleve.html?class='+classId+'&app=addition-simple',
    {waitUntil:'domcontentloaded',timeout:25000});
   await page.waitForFunction(()=>!document.getElementById('certify').disabled,{timeout:45000});
+  await page.locator('#challenge-toggle').click();
   await page.locator('#certify').click();
   try{await page.waitForFunction(()=>{
    const w=document.getElementById('gameFrame')?.contentDocument
@@ -185,6 +186,7 @@ for(const {level,total} of [{level:2,total:10},{level:3,total:20}]){
    await page.goto(url+'/apps/objective-record/eleve.html?class='+classId+'&app=addition-simple',
     {waitUntil:'domcontentloaded',timeout:25000});
    await page.waitForFunction(()=>!document.getElementById('certify').disabled,{timeout:45000});
+   await page.locator('#challenge-toggle').click();
    await page.locator('#certified-level').selectOption(String(level));
    await page.locator('#certified-total').selectOption(String(total));
    await page.locator('#certify').click();

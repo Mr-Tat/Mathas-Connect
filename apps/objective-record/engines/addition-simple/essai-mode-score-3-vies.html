@@ -45,11 +45,13 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
 <div id="state" role="alert">Préparation du jeu de démonstration…</div>
 <iframe id="game" title="Essai sur le véritable moteur Addition simple" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
 <script src="./lab-objectif-record-v2.js"></script>
+<script src="../../native-hub-link.js"></script>
 <script>
 (async function(){
  'use strict';
  const status=document.getElementById('state');
  const frame=document.getElementById('game');
+ window.MathasAttachNativeHubLink(frame);
  const xpPreviewMode=document.getElementById('xp-preview-mode');
  // Les chiffres ci-dessous sont des exemples visuels : ce prototype n'utilise
  // aucun compte Connect, aucun droit élève ni aucune requête de récompense XP.
