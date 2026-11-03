@@ -46,6 +46,8 @@ jobs:
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120000_school_certified_additions_tables.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120010_school_addition_simple_atomic_record.sql
+      - name: Complete disposable advanced-mode schema support
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-advanced-fixture.sql
       - name: Advanced private SQL tables, arithmetic, scoring and proof
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103110000_advanced_additions_proof_ledger.sql
