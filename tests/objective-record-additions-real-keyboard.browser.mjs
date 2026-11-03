@@ -100,6 +100,7 @@ for(const item of examples){
    await page.goto(url+'/apps/objective-record/eleve.html?class='+CLASS+'&app='+item.slug,
     {waitUntil:'domcontentloaded',timeout:25000});
    await page.waitForFunction(()=>!document.getElementById('certify').disabled,null,{timeout:45000});
+   await page.locator('#challenge-toggle').click();
    await page.locator('#certify').click();
    const game=page.frameLocator('#gameFrame').frameLocator('#game');
    await game.locator('#gameScreen:not(.hidden)').waitFor({state:'visible',timeout:30000});
