@@ -131,7 +131,7 @@ for(const item of examples){
    await page.waitForFunction(()=>{
     const doc=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
     const button=doc?.querySelector('.classic-count-btn[data-count="10"]');
-    return !!button&&(button.textContent.match(/Reste\\s+36\\s+XP/g)||[]).length===1;
+    return !!button&&(button.textContent.match(/Reste\s+36\s+XP/g)||[]).length===1;
    },null,{timeout:9000});
    // A late native trophy redraw must not re-add fake XP.
    await page.waitForTimeout(1050);
@@ -157,7 +157,7 @@ for(const item of examples){
       const label=button.querySelector('.mathas-connect-official-xp');
       const b=button.getBoundingClientRect(),x=label?.getBoundingClientRect();
       return {label:button.textContent,
-       count:(button.textContent.match(/Reste\\s+\\d+\\s+XP/g)||[]).length,
+       count:(button.textContent.match(/Reste\s+\d+\s+XP/g)||[]).length,
        inside:!!x&&x.top>=b.top-1&&x.bottom<=b.bottom+1&&x.left>=b.left-1&&x.right<=b.right+1};
      });
      const b=red.getBoundingClientRect(),x=xp.getBoundingClientRect(),c=cups.getBoundingClientRect();
