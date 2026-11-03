@@ -29,6 +29,12 @@ const session=createClient(BASE,KEY,{auth:{persistSession:true,autoRefreshToken:
 let generation=0,tokenOwner=null,activeApp='',visibleDoc=null,watching=null,recorder=null,pupilId=null;
 let certifiedRun=null,certifiedQueue=null,certifiedSending=false,projectionConsent=null;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+// Both additions now have an independently graded PostgreSQL proof. Never
+// silently fall back to native/browser-declared XP, even in the TEST class.
+// Native three-lives, sudden and HARD remain playable without official credits
+// until their respective proof contracts are implemented.
+const SERVER_PROOF_ADDITIONS=new Set(['addition-ecrite-simple','addition-ecrite-multiple']);
+const nativeRecordAllowed=appKey=>isWritableTestApp(appKey)&&!SERVER_PROOF_ADDITIONS.has(appKey);
 const message=(s)=>{$('status').textContent=s};
 const clear=()=>{
   for(const id of ['app-xp','total-xp','level','trophies'])$(id).textContent='—';
@@ -114,7 +120,9 @@ function watchGame(seq){
        mixedProof:inside.contentWindow.__mathasMixedTestFinished??null}:event;
       recorder.onSnapshot(observed);
      }
-     else if(event.phase==='ended')message('Partie terminée : aucun XP Connect (ce jeu n’est pas encore raccordé).');
+     else if(event.phase==='ended')message(SERVER_PROOF_ADDITIONS.has(activeApp)
+      ?'Partie libre terminée : aucun XP officiel. Lance une série vérifiée par le serveur pour enregistrer ton résultat.'
+      :'Partie terminée : aucun XP Connect (ce jeu n’est pas encore raccordé).');
     };
    }
   }catch{
@@ -176,10 +184,10 @@ async function choose(){
   projectionConsent=createProjectionConsent({
    classId,appKey:activeApp,studentKey:pupilId,getToken:verifiedToken
   });
-  if(isWritableTestApp(activeApp)){
+  if(nativeRecordAllowed(activeApp)){
    recorder=createAtomicTestRecorder({classId,appKey:activeApp,subject:pupilId,storage:localStorage,
     send:request=>call(activeApp===ATOMIC_TEST_APP||activeApp===MIXED_TEST_APP?'connect-results':'connect-objective-record-test','game-record',activeApp,{...request,expectedStudentId:pupilId}),
-    reload:()=>refresh(seq),notify:message,isCurrent:()=>seq===generation&&isWritableTestApp(activeApp),
+    reload:()=>refresh(seq),notify:message,isCurrent:()=>seq===generation&&nativeRecordAllowed(activeApp),
     onRecorded:receipt=>{
      if(seq===generation&&receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);
     }});
@@ -193,11 +201,13 @@ async function choose(){
    const option=$('certified-level').querySelector('option[value="'+level+'"]');
    if(option)option.textContent=level+' · '+width+' chiffres';
   }
-  $('gameFrame').src=GAME_URLS[slug][1];
+  $('gameFrame').src=GAME_URLS[slug][1]+(SERVER_PROOF_ADDITIONS.has(activeApp)?'?connect=1':'');
   $('gameFrame').hidden=false;$('refresh').disabled=false;
   watchGame(seq);
-  message(recorder?'Classe TEST : les cinq calculs écrits ont leur voie XP Classique/Mort subite. Épreuves arithmétiques serveur disponibles pour Addition simple et Addition multiple. Les autres scores natifs restent à certifier avant sortie scolaire. 3 vies et HARD restent bloqués.':
-   'Session Connect authentifiée · sauvegarde des parties de ce jeu encore désactivée.');
+  message(SERVER_PROOF_ADDITIONS.has(activeApp)
+   ?'Profil Connect approuvé · lance une série vérifiée pour enregistrer le score, les XP et les trophées de maîtrise. Les autres modes restent libres, sans XP.'
+   :recorder?'Classe TEST : calculs autres qu’addition en essai · scores natifs encore en cours de certification, sans ouverture scolaire.'
+   :'Session Connect authentifiée · sauvegarde des parties de ce jeu encore désactivée.');
  }catch(e){
   if(seq!==generation)return;
   clear();
