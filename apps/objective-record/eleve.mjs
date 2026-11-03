@@ -9,6 +9,7 @@ import {createCertifiedExtendedUI} from './certified-extended-ui.mjs';
 import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs?v=20261103-xp-layout-v4';
 import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
+import {createSchoolScoreView} from './school-score-view.mjs';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
 
@@ -41,7 +42,7 @@ function UUID_SAFE_CLASS(x){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[8
 const session=createClient(BASE,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
  ...(teacher?{storageKey:'mathas-connect-professor-auth-v1'}:{})}});
 let generation=0,tokenOwner=null,activeApp='',visibleDoc=null,watching=null,recorder=null,pupilId=null;
-let certifiedRun=null,certifiedQueue=null,certifiedSending=false,projectionConsent=null;
+let certifiedRun=null,certifiedQueue=null,certifiedSending=false,projectionConsent=null,schoolScoreView=null,latestState=null;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 // Both additions now have an independently graded PostgreSQL proof. Never
 // silently fall back to native/browser-declared XP, even in the TEST class.
@@ -223,6 +224,9 @@ function showOfficial({xp,loaded,appKey}){
  $('level').textContent=String(summary.level);
  $('trophies').textContent=permanentTrophyCount(loaded.state?.rewards) ?? '—';
  lastOfficialXp=xp;renderMeter(summary.total,summary.level);
+ latestState=loaded.state||{};
+ schoolScoreView?.updateState(latestState);
+ if(schoolScoreView)void schoolScoreView.load();
  lastOfficialProgress=classId===CLASS_TEST?null:schoolProgressSnapshot(appKey,loaded.state);
  window.MathasConnectOfficialSchoolProgress=lastOfficialProgress;
  if(SERVER_PROOF_ADDITIONS.has(appKey)){
@@ -269,6 +273,7 @@ function watchGame(seq){
    }
    hideFictionalXp(doc);
    renderNativeOfficialXp(doc,activeApp,lastOfficialXp);
+   schoolScoreView?.mount(doc);
    if(lastOfficialProgress){
     syncOfficialGameProgress(doc,lastOfficialProgress);
     syncOfficialHardSummary(doc,lastOfficialProgress);
@@ -334,7 +339,7 @@ const certifiedUI=createAdditionProofUI({
  call:(action,payload)=>call(classId===CLASS_TEST?'connect-objective-record-test':'connect-objective-record-school',action,'addition-ecrite-simple',payload),
  refresh:()=>refresh(generation),notify:message,
  onRecorded:receipt=>{
-  if(receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);
+  if(receipt.appKey===activeApp)void schoolScoreView?.recorded(receipt.eventId);
  }
 });
 const certifiedMultiUI=createMultipleProofUI({
@@ -344,7 +349,7 @@ const certifiedMultiUI=createMultipleProofUI({
  call:(action,payload)=>call(classId===CLASS_TEST?'connect-objective-record-test':'connect-objective-record-school',action,'addition-ecrite-multiple',payload),
  refresh:()=>refresh(generation),notify:message,
  onRecorded:receipt=>{
-  if(receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);
+  if(receipt.appKey===activeApp)void schoolScoreView?.recorded(receipt.eventId);
  }
 });
 const extendedUI=createCertifiedExtendedUI({
@@ -355,7 +360,7 @@ const extendedUI=createCertifiedExtendedUI({
  getContext:()=>({generation,activeApp,pupilId,classId,officialProgress:lastOfficialProgress}),
  call:(action,app,payload)=>call('connect-objective-record-school',action,app,payload),
  refresh:()=>refresh(generation),notify:message,
- onRecorded:receipt=>{if(receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);}
+ onRecorded:receipt=>{if(receipt.appKey===activeApp)void schoolScoreView?.recorded(receipt.eventId);}
 });
 function updateCertifiedModeControls(){
  const mode=$('certified-mode').value,classic=mode==='classic',hard=mode.startsWith('hard-');
@@ -375,7 +380,8 @@ updateCertifiedModeControls();
 async function choose(){
  generation++;const seq=generation;
  clearInterval(watching);visibleDoc=null;recorder=null;pupilId=null;certifiedUI.reset();certifiedMultiUI.reset();extendedUI.reset();
- projectionConsent?.destroy();projectionConsent=null;clear();
+ projectionConsent?.destroy();projectionConsent=null;
+ schoolScoreView?.destroy();schoolScoreView=null;latestState=null;clear();
  const slug=$('app').value;
  if(!Object.hasOwn(GAME_URLS,slug)){message('Jeu inconnu');return;}
  activeApp=GAME_URLS[slug][0];
@@ -392,6 +398,15 @@ async function choose(){
   projectionConsent=createProjectionConsent({
    classId,appKey:activeApp,studentKey:pupilId,getToken:verifiedToken
   });
+  if(SERVER_PROOF_ADDITIONS.has(activeApp)){
+   schoolScoreView=createSchoolScoreView({
+    appKey:activeApp,
+    fetchHistory:()=>call('connect-projection-v2','student-score-history',activeApp),
+    consent:()=>projectionConsent,notify:message
+   });
+   schoolScoreView.updateState(latestState||initial.loaded?.state||{});
+   void schoolScoreView.load();
+  }
   if(nativeRecordAllowed(activeApp)){
    recorder=createAtomicTestRecorder({classId,appKey:activeApp,subject:pupilId,storage:localStorage,
     send:request=>call(activeApp===ATOMIC_TEST_APP||activeApp===MIXED_TEST_APP?'connect-results':'connect-objective-record-test','game-record',activeApp,{...request,expectedStudentId:pupilId}),
