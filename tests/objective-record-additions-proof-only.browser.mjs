@@ -109,6 +109,7 @@ for(const item of [
    });
    await page.waitForTimeout(900);
    assert.equal(requests.filter(b=>b.action==='game-record').length,0);
+   await page.locator('#challenge-toggle').click();
    await page.locator('#certify').click();
    await page.waitForFunction(()=>{
     const inner=document.getElementById('gameFrame')?.contentDocument
