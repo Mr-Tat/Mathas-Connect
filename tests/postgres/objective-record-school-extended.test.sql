@@ -47,6 +47,7 @@ DECLARE
  v_issued jsonb;v_issued_again jsonb;v_ack jsonb;v_again jsonb;v_ans jsonb;
  v_session uuid;v_variants integer:=0;v_old_count integer;v_after_count integer;
 BEGIN
+ SELECT count(*) INTO v_old_count FROM public.connect_objective_record_school_receipts;
  IF has_table_privilege('anon','public.connect_objective_record_school_extended_sessions','SELECT')
   OR has_table_privilege('authenticated','public.connect_objective_record_school_extended_sessions','SELECT')
   OR has_function_privilege('anon','public.connect_objective_record_school_issue_extended_v1(uuid,uuid,text,text,integer)','EXECUTE')
@@ -90,7 +91,7 @@ BEGIN
  IF v_variants<>24 THEN RAISE EXCEPTION 'extended_24_variants_incomplete';END IF;
  IF (SELECT count(*) FROM public.connect_objective_record_school_extended_sessions)<>24
  THEN RAISE EXCEPTION 'extended_sessions_missing';END IF;
- IF (SELECT count(*) FROM public.connect_objective_record_school_receipts)<>34
+ IF (SELECT count(*) FROM public.connect_objective_record_school_receipts)<>v_old_count+24
  THEN RAISE EXCEPTION 'extended_receipts_missing';END IF;
 
  -- CLASS TEST and class spoofing are rejected by SQL, not only by Edge.
