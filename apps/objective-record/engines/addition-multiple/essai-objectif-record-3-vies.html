@@ -46,11 +46,13 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
 <iframe id="game" title="Essai sur le véritable moteur Addition multiple" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
 <script src="./certified-multiple-patch.js"></script>
 <script src="./lab-objectif-record-v2.js"></script>
+<script src="../../native-hub-link.js"></script>
 <script>
 (async function(){
  'use strict';
  const status=document.getElementById('state');
  const frame=document.getElementById('game');
+ window.MathasAttachNativeHubLink(frame);
  const xpPreviewMode=document.getElementById('xp-preview-mode');
  // Les chiffres ci-dessous sont des exemples visuels : ce prototype n'utilise
  // aucun compte Connect, aucun droit élève ni aucune requête de récompense XP.
