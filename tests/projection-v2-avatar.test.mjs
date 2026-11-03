@@ -11,7 +11,7 @@ test('Le podium est un rang numérique et non une médaille dans la V2 et les ci
   'essais/projection-v2-da-ardoise.html','essais/projection-v2-da-studio.html'];
  for(const page of pages){
   const text=read('../'+page);
-  assert.match(text,/projection-v2-avatar\.css\?v=20261103-cases-larges-v2/);
+  assert.match(text,/projection-v2-avatar\.css\?v=20261103-cartes-matin-v3/);
  }
  const live=read('../projection-v2-live.js'),demo=read('../projection-v2-demo.html');
  assert.match(live,/rank\.textContent=String\(place\)/);
