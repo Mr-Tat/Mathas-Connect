@@ -9,9 +9,9 @@ import {createProjectionConsent} from '../../projection-consent.mjs';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
 
-// This is the future SCHOOL launcher, not the legacy pilot XP writer.
-// Its current release gate is TEST-only and READ-ONLY until a verified
-// atomic challenge/session/XP/trophy transaction is deployed.
+// Canonical school/test host; the HUB rollout flag controls when real pupils
+// see this route. JWT and PostgreSQL proofs remain mandatory even by direct URL.
+// Other three written-calculation games remain on their existing school URLs.
 const CLASS_TEST='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 const SCHOOL_CLASSES=new Set(SCHOOL_CLASS_IDS);
 const BASE='https://awmhpfofacaglewammxt.supabase.co';
@@ -27,6 +27,15 @@ const $=id=>document.getElementById(id);
 const params=new URL(location.href).searchParams;
 const teacher=params.get('joueur')==='prof';
 const classId=params.get('class')||'';
+// Preserve the authenticated school context when returning to the pupil HUB.
+const backLink=document.querySelector('header a[href="../../hub.html"]');
+if(backLink&&UUID_SAFE_CLASS(classId)){
+ const back=new URL('../../hub.html',location.href);
+ back.searchParams.set('class',classId);
+ if(teacher)back.searchParams.set('joueur','prof');
+ backLink.href=back.href;
+}
+function UUID_SAFE_CLASS(x){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x)}
 const session=createClient(BASE,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
  ...(teacher?{storageKey:'mathas-connect-professor-auth-v1'}:{})}});
 let generation=0,tokenOwner=null,activeApp='',visibleDoc=null,watching=null,recorder=null,pupilId=null;
