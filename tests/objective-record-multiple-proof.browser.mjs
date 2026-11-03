@@ -93,7 +93,7 @@ test('Chromium: native multiple engine renders server terms and submits only pro
   const rendered=await page.evaluate(()=>{
    const w=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
    return {questions:w.__mathasServerCertifiedMulti.questions,
-    text:w.document.querySelector('#calculationsPair')?.innerText||''};
+    text:[...w.document.querySelectorAll('#calculationsPair .digit')].map(el=>el.textContent||'').join('')};
   });
   assert.deepEqual(rendered.questions,questions);
   assert.ok(rendered.text.includes('12345'));
