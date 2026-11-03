@@ -13,6 +13,9 @@ on:
       - 'tests/objective-record-server-proof-addition.test.mjs'
       - 'tests/objective-record-server-proof-multiple.test.mjs'
       - 'tests/objective-record-official-addition-trophies.test.mjs'
+      - 'tests/objective-record-school-contract.test.mjs'
+      - 'supabase/functions/connect-objective-record-school/**'
+      - 'supabase/migrations/202611031200*.sql'
       - 'docs/integrations/OBJECTIF_RECORD_AUDIT_CONTRAT_CANDIDAT_20261101.md'
       - '.github/workflows/objective-record-contract.yml'
   workflow_dispatch:
@@ -27,4 +30,4 @@ jobs:
         with:
           node-version: '22'
       - name: Tests contrat fail-closed et compléments (aucune connexion)
-        run: node --test tests/objective-record-contract.test.mjs tests/objective-record-proof.test.mjs tests/objective-record-release-routing.test.mjs tests/objective-record-student-host.test.mjs tests/objective-record-engine-vendor.test.mjs tests/objective-record-atomic-test.test.mjs tests/objective-record-mixed-test.test.mjs tests/objective-record-server-proof-addition.test.mjs tests/objective-record-server-proof-multiple.test.mjs tests/objective-record-official-addition-trophies.test.mjs
+        run: node --test tests/objective-record-contract.test.mjs tests/objective-record-proof.test.mjs tests/objective-record-release-routing.test.mjs tests/objective-record-student-host.test.mjs tests/objective-record-engine-vendor.test.mjs tests/objective-record-atomic-test.test.mjs tests/objective-record-mixed-test.test.mjs tests/objective-record-server-proof-addition.test.mjs tests/objective-record-server-proof-multiple.test.mjs tests/objective-record-official-addition-trophies.test.mjs tests/objective-record-school-contract.test.mjs
