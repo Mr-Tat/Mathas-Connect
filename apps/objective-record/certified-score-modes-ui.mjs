@@ -40,7 +40,7 @@ export function createCertifiedScoreModesUI({getContext,call,refresh,notify,onRe
  const innerRun=()=>run&&current(run.generation);
  function reset(){run=null;starting=false;sending=false;docSeen=null;bypass=null}
  async function finish(){
-  if(!innerRun()||!run.completed||sending)return;
+  if(!innerRun()||!run.completed||run.invalid||sending)return;
   sending=true;const active=run;
   const answers=[...active.answers].sort((a,b)=>Number(a.id.slice(1))-Number(b.id.slice(1)));
   if(answers.length<1||answers.length>64||
@@ -134,7 +134,7 @@ export function createCertifiedScoreModesUI({getContext,call,refresh,notify,onRe
   if(!win||!doc?.getElementById('menuScreen')
     ||!APPS.has(ctx.activeApp)||ctx.classId===CLASS_TEST||!ctx.pupilId)return;
   win.MathasCertifiedModeAttempt=raw=>{
-   if(!innerRun()||sending||run.completed)return;
+   if(!innerRun()||sending||run.completed||run.invalid)return;
    const n=Number(String(raw?.id||'').slice(1));
    if(!Number.isSafeInteger(n)||n<1||n>64)return;
    const q=run.questions[n-1],proof=proofAnswer(raw,q,run.width);
