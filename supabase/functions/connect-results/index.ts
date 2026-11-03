@@ -113,6 +113,13 @@ Deno.serve(async req=>{
  const raw=await req.text();if(raw.length>18000)return deny('too_large',413);
  let b:any;try{b=JSON.parse(raw)}catch{return deny('json')};
  if(!valid(b?.classId))return deny('class');
+ // The TEST classroom's two additions now have authenticated, server-issued
+ // arithmetic proofs. Stop alternate native-score writes through connect-results:
+ // this affects NO real-school classes and NO other game keys.
+ if(b.classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'
+    &&b.action==='game-record'
+    &&(b.appKey===app||b.appKey===addMulti))
+   return deny('server_proof_required',403);
  if(b.appKey===mixed&&!MIXED_SERVER_READY)return deny('integration_not_ready',403);
  if(b.appKey===mixed&&!mixedClassAllowed(b.classId))return deny('integration_not_open_for_class',403);
  const selected=appAllowed(b.appKey)?b.appKey:null;
