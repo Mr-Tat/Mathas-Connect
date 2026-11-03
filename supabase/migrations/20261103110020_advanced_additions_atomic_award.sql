@@ -1,4 +1,4 @@
-// Advanced award: invoked ONLY by a server-grading SQL function, never directly by Edge or browser.
+-- Advanced award: invoked ONLY by a server-grading SQL function, never directly by Edge or browser.
 -- Only callable by a validated arithmetic proof. Never expose this RPC to pupils.
 -- Real-school private transaction, called solely by server-grader, NEVER by a browser.
 -- Browser/native scores are excluded. Database also enforces school enrollment.
