@@ -6,6 +6,7 @@ import {MIXED_TEST_APP,isMixedTestTerminal} from './mixed-test-proof.mjs';
 import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
+import {officialAdditionRewards} from './official-addition-trophies.mjs';
 
 // This is the future SCHOOL launcher, not the legacy pilot XP writer.
 // Its current release gate is TEST-only and READ-ONLY until a verified
@@ -37,6 +38,7 @@ const SERVER_PROOF_ADDITIONS=new Set(['addition-ecrite-simple','addition-ecrite-
 const nativeRecordAllowed=appKey=>isWritableTestApp(appKey)&&!SERVER_PROOF_ADDITIONS.has(appKey);
 const message=(s)=>{$('status').textContent=s};
 const clear=()=>{
+  window.MathasConnectOfficialTrophies=null;
   for(const id of ['app-xp','total-xp','level','trophies'])$(id).textContent='—';
   $('gameFrame').hidden=true;$('gameFrame').removeAttribute('src');$('refresh').disabled=true;
   $('certified-tools').hidden=true;$('certify').disabled=true;
@@ -79,6 +81,13 @@ function showOfficial({xp,loaded,appKey}){
  $('total-xp').textContent=String(summary.total);
  $('level').textContent=String(summary.level);
  $('trophies').textContent=permanentTrophyCount(loaded.state?.rewards) ?? '—';
+ if(SERVER_PROOF_ADDITIONS.has(appKey)){
+  // A null official award snapshot is 'unavailable', never a local fake zero.
+  window.MathasConnectOfficialTrophies={
+   active:true,appKey,studentId:pupilId,
+   rewards:officialAdditionRewards(appKey,loaded.state?.rewards)
+  };
+ }
 }
 function hideFictionalXp(doc){
  if(!doc?.head)return;

@@ -36,9 +36,20 @@ function labUI(){
     if(!t)return;
     // Dans le pilote authentifie uniquement, la source des coupes est le
     // registre LAB serveur (jamais le localStorage fictif du prototype).
-    let pilot=null;
+    // The approved Connect pupil's permanent awards override ALL native
+    // localStorage trophies. The pilot remains available only for standalone
+    // demonstrations, which have no official Connect identity.
+    let official=null,pilot=null;
+    try{official=window.parent?.parent?.MathasConnectOfficialTrophies||null}catch{}
     try{pilot=window.parent?.parent?.MathasPilotState||null}catch{}
-    if(pilot?.active&&Array.isArray(pilot.trophies)){
+    if(official?.active===true){
+      if(!official.rewards){
+        document.documentElement.classList.add('mathas-connect-official-trophies-unavailable');
+        return;
+      }
+      document.documentElement.classList.remove('mathas-connect-official-trophies-unavailable');
+      t={...t,...official.rewards};
+    }else if(pilot?.active&&Array.isArray(pilot.trophies)){
       const gained=new Set(pilot.trophies);
       const mastery={4:[],10:[],20:[]};
       for(const n of [4,10,20])for(let l=1;l<=3;l++)mastery[n].push(gained.has("mastery:"+l+":"+n));
@@ -217,6 +228,8 @@ function labUI(){
    ".mlab-pair>.hard-sudden,.mlab-pair>.hard-start[data-mode='sudden']{background:linear-gradient(155deg,#a32b47,#7e253b)!important;border:1px solid #ec889a!important}",
    ".mlab-pair>button:disabled{opacity:.4;filter:grayscale(.5);cursor:not-allowed}",
    "@media(max-width:380px){.mlab-cup{width:23px;height:25px}.mlab-pair>button{font-size:.68rem}}",
+   "/* Connect : si lecture serveur impossible, masquer les anciennes coupes fictives. */",
+   "html.mathas-connect-official-trophies-unavailable #mathasTrophiesStrip,html.mathas-connect-official-trophies-unavailable .mlab-cup{display:none!important}",
    "/* LAB V5 : panneau trophées plus discret, sans transformer la surface cliquable ni le Platine. */",
    "#menuScreen #mathasTrophiesStrip:not(.is-platinum){padding-top:2px!important}",
    "#menuScreen #mathasTrophiesStrip:not(.is-platinum) .mathas-trophies-badges{gap:6px!important}",
