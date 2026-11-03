@@ -19,6 +19,9 @@ test('Le podium est un rang numérique et non une médaille dans la V2 et les ci
  assert.doesNotMatch(live,/🥇|🥈|🥉/);
  assert.doesNotMatch(demo,/🥇|🥈|🥉/);
  const css=read('../projection-v2-avatar.css');
+ assert.match(css,/\.ranking-list\.single\{[\s\S]*?max-width:550px/);
+ assert.match(css,/\.entry \.player-label\{[\s\S]*?flex:0 1 auto/);
+ assert.match(css,/\.entry \.points\{margin-left:0/);
  assert.match(css,/\.entry \.player-label\{/);
  assert.match(css,/\.entry \.projection-avatar\{/);
  assert.match(css,/\.entry \.projection-avatar\.transparent\{/);
