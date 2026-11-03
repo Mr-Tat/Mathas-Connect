@@ -75,7 +75,7 @@ test('refuse des classes reelles et toutes les apps sans chemin atomique approuv
  const args={classId:TEST,appKey:ATOMIC_TEST_APP,subject:'fictif',storage,send:async()=>null,
   reload:async()=>{},notify:noop,isCurrent:()=>true};
  assert.equal(createAtomicTestRecorder({...args,classId:'8fe170fa-9e8f-4e80-885a-b0ba68026f64'}),null);
- assert.equal(createAtomicTestRecorder({...args,appKey:'melange-calculs-ecrits'}),null);
+ assert.ok(createAtomicTestRecorder({...args,appKey:'melange-calculs-ecrits'}));
 });
 test('le client utilise la RPC scolaire actuelle, non le pilote, et la sauvegarde hors ligne',()=>{
  const host=read('apps/objective-record/eleve.mjs');
@@ -163,7 +163,7 @@ test('fin native vérifiée du moteur Addition multiple : ended, pas finished',(
 });
 
 
-test('quatre moteurs fixes ont une voie TEST identique; Mélange/HARD/3 vies restent bloqués',()=>{
+test('quatre moteurs fixes et Mélange séparé : TEST uniquement, HARD/3 vies bloqués',()=>{
  const apps=['addition-ecrite-simple','addition-ecrite-multiple','soustraction-ecrite-simple','multiplication-ecrite-simple'];
  for(const appKey of apps){
   assert.ok(normalizeAtomicTestCompletion({appKey,event:classic}),appKey);
