@@ -121,8 +121,18 @@ function labUI(){
     three?.querySelectorAll(".score-mode-foot:not(.score-mode-bonus)").forEach(node=>node.remove());
     // Quelques moteurs retirent un conteneur lors de la normalisation du menu.
     // Récréer seulement le badge XP fictif en mode Connect simulé, sans appel réseau.
-    let simulation=null;
-    try{simulation=window.parent?.document?.getElementById("xp-preview-mode")?.value||null}catch{}
+    let simulation=null,schoolConnect=false;
+    try{
+      // The HTML preview may be cached or switch after a game loads.
+      // A real Connect host must NEVER execute the old fictional XP renderer.
+      schoolConnect=new URL(window.parent.location.href).searchParams.get('connect')==='1'
+        ||window.parent?.parent?.MathasConnectOfficialTrophies?.active===true;
+      if(!schoolConnect)
+        simulation=window.parent?.document?.getElementById("xp-preview-mode")?.value||null;
+    }catch{}
+    if(schoolConnect){
+      document.querySelectorAll('#menuScreen .classic-xp-remaining,#menuScreen .score-mode-detail,#menuScreen .mathas-pilot-remaining').forEach(node=>node.remove());
+    }
     if(simulation){
       for(const [button,value] of [[three,10],[btn,20]]){
         const meta=button?.querySelector(".score-mode-meta");
