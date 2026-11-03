@@ -1,0 +1,37 @@
+name: Profils Connect — récompenses de niveaux
+on:
+  pull_request:
+    paths:
+      - 'profile-rewards.mjs'
+      - 'avatar-catalog.js'
+      - 'hub.js'
+      - 'hub.html'
+      - 'hub-profile.css'
+      - 'app.js'
+      - 'index.html'
+      - 'join-avatar.js'
+      - 'join-avatar.css'
+      - 'supabase/functions/connect-api/**'
+      - 'supabase/release-candidates/20261103_profile_rewards_initials_v1.sql'
+      - 'tests/profile-rewards*'
+      - '.github/workflows/profile-rewards.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  profiles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Contrats de niveau et sécurité côté serveur
+        run: node --test tests/profile-rewards.test.mjs
+      - name: Installer Playwright Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.58.2
+          npx playwright install chromium --with-deps
+      - name: Parcours profil complet (identité et XP factices)
+        run: node --test tests/profile-rewards.browser.mjs
