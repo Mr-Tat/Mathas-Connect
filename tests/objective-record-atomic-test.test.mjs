@@ -86,7 +86,7 @@ test('le client utilise la RPC scolaire actuelle, non le pilote, et la sauvegard
  assert.doesNotMatch(host,/connect-record-pilot/);
  const ledger=read('apps/objective-record/atomic-test-recorder.mjs');
  assert.match(ledger,/mathas\.record-test-native\.v1/);
- assert.match(ledger,/!isFixedTestApp\(appKey\)/);
+ assert.match(ledger,/!isWritableTestApp\(appKey\)/);
 });
 
 
@@ -173,7 +173,7 @@ test('quatre moteurs fixes et Mélange séparé : TEST uniquement, HARD/3 vies b
  }
  assert.equal(normalizeAtomicTestCompletion({appKey:'melange-calculs-ecrits',event:classic}),null);
  const source=read('apps/objective-record/eleve.mjs');
- assert.match(source,/isFixedTestApp\(activeApp\)/);
+ assert.match(source,/isWritableTestApp\(activeApp\)/);
  assert.match(source,/connect-objective-record-test/);
  assert.match(source,/expectedStudentId:pupilId/);
 });
