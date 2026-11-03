@@ -405,7 +405,15 @@ async function choose(){
  }catch(e){
   if(seq!==generation)return;
   clear();
-  message('⚠️ '+(e?.message||'Accès indisponible')+'. Jeu non lancé.');
+  // Un visitor sans profil approuvé garde le moteur natif jouable, sans
+  // aucune requête de validation XP ni privilège d'enregistrement.
+  // Le repli libre est EXPLICITE pour ne jamais faire croire à un crédit Connect.
+  if(SERVER_PROOF_ADDITIONS.has(activeApp)){
+   $('gameFrame').src=GAME_URLS[slug][1]+'?connect=1';
+   $('gameFrame').hidden=false;
+   $('guest-home').hidden=true; // le bouton HUB existe dans le moteur lui-même
+   message('⚠️ Profil Connect indisponible : mode libre sans XP officiel. '+(e?.message||''));
+  }else message('⚠️ '+(e?.message||'Accès indisponible')+'. Jeu non lancé.');
  }
 }
 $('refresh').addEventListener('click',async()=>{const seq=generation;try{if(extendedUI.hasPending())await extendedUI.retry();else if(certifiedUI.hasPending())await certifiedUI.retry();else if(certifiedMultiUI.hasPending())await certifiedMultiUI.retry();else if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
