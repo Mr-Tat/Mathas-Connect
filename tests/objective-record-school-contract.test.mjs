@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {schoolAdditionsLaunch,SCHOOL_ADDITIONS_ROLLOUT}
  from '../apps/objective-record/release-routing.mjs';
+import {createAdditionProofUI} from '../apps/objective-record/certified-addition-ui.mjs';
+import {createMultipleProofUI} from '../apps/objective-record/certified-multiple-ui.mjs';
+
 const read=file=>readFileSync(new URL('../'+file,import.meta.url),'utf8');
 const school='8fe170fa-9e8f-4e80-885a-b0ba68026f64';
 const pilot='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
@@ -59,4 +62,9 @@ test('School proof DB is isolated from LAB, with RLS, private RPCs, server arith
  assert.ok(!all.includes(pilot));
  assert.ok(all.includes('p_mode IS DISTINCT FROM \'classic\''));
  assert.ok(all.includes('p_app IS DISTINCT FROM \'addition-ecrite-simple\''));
+});
+
+test('Both school certification controllers are valid native JavaScript modules',()=>{
+ assert.equal(typeof createAdditionProofUI,'function');
+ assert.equal(typeof createMultipleProofUI,'function');
 });
