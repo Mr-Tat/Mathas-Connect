@@ -83,6 +83,16 @@
     "    if(session.mode==='three-lives'){\n      let right=0,lost=0;",
     advancedCapture+"\n    if(session.mode==='three-lives'){\n      let right=0,lost=0;",
     'first-attempt normal 3 lives/sudden capture');
+  // At 64 graded questions the server-defined cap finishes the run.
+  // Never create an unissued 65th operation.
+  game=change(game,
+    "  function handlePrimary(){",
+    "  function handlePrimary(){if(window.__mathasServerAdvanced?.finished){goMenu();return}",
+    'normal 64-question stop');
+  game=change(game,
+    "  function hardPrimaryAction(){",
+    "  function hardPrimaryAction(){if(window.__mathasServerAdvanced?.finished){backToHardMenu();return}",
+    'HARD 64-question stop');
   game=change(game,
     "    hardState=CFG.type==='addition'?additionState(hardSession.spec):subtractionState(hardSession.spec);",
     hardQuestion,'HARD server-authored arithmetic');
