@@ -9,6 +9,10 @@ import {avatarGlyph,avatarColor} from './avatar-catalog.js';
 const endpoint='https://awmhpfofacaglewammxt.supabase.co';
 const publishable='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const $=id=>document.getElementById(id);
+const REFRESH_INTERVAL_MS=15000;
+const clockFormatter=new Intl.DateTimeFormat('fr-BE',{hour:'2-digit',minute:'2-digit'});
+function updateClock(){const clock=$('projection-clock');if(clock)clock.textContent=clockFormatter.format(new Date())}
+updateClock();setInterval(updateClock,10000);
 const apps=[
  {key:'addition-ecrite-simple',title:'Addition écrite'},
  {key:'multiplication-ecrite-simple',title:'Multiplication écrite'},
@@ -96,7 +100,7 @@ async function refresh(){
   if(firstDisplay)secondsRemaining=options.rotationSeconds;
   for(const id of ['settings-left'])$(id).disabled=false;
   render();
-  note('Tableau de '+classLabel+' · données autorisées · '+new Intl.DateTimeFormat('fr-BE',{hour:'2-digit',minute:'2-digit'}).format(new Date()));
+  note('Actualisé à '+clockFormatter.format(new Date()));
  }catch(error){
   if(ticket!==refreshTicket)return;
   const message=error?.message||'Données indisponibles';
@@ -261,7 +265,7 @@ $('pause').onclick=()=>{paused=!paused;updateTime()};
 setInterval(()=>{if(hasLoaded&&!paused&&enabled().length>1){
  if(--secondsRemaining<=0)next(1);else updateTime();
 }},1000);
-setInterval(()=>{if(hasLoaded&&connected&&document.visibilityState==='visible'&&!$('settings').open)refresh()},30000);
+setInterval(()=>{if(hasLoaded&&connected&&document.visibilityState==='visible'&&!$('settings').open)refresh()},REFRESH_INTERVAL_MS);
 const dialog=$('settings');
 function showSettings(){
  if(!hasLoaded)return note('Clique d’abord sur Afficher / Actualiser.');
