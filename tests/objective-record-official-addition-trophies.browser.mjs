@@ -90,6 +90,7 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
 
    // The authentic REST profile changes, so the native display follows it.
    serverRewards=rewards(false);
+   await page.locator('#xp-toggle').click();
    await page.locator('#refresh').click();
    await page.waitForFunction(()=>document.getElementById('trophies')?.textContent==='0',
     null,{timeout:12000});
