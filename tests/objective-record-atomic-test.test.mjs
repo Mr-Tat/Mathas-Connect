@@ -79,7 +79,7 @@ test('refuse des classes reelles et toutes les apps sans chemin atomique approuv
 });
 test('le client utilise la RPC scolaire actuelle, non le pilote, et la sauvegarde hors ligne',()=>{
  const host=read('apps/objective-record/eleve.mjs');
- assert.match(host,/activeApp===ATOMIC_TEST_APP\?'connect-results':'connect-objective-record-test'/);
+ assert.match(host,/activeApp===ATOMIC_TEST_APP\|\|activeApp===MIXED_TEST_APP\?'connect-results':'connect-objective-record-test'/);
  assert.match(host,/activeApp===ATOMIC_TEST_APP/);
  assert.match(host,/recorder\.onSnapshot\(event\)/);
  assert.match(host,/\$\('refresh'\)\.addEventListener/);
