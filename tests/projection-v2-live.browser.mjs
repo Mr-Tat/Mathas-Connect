@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 const root=resolve(fileURLToPath(new URL('..',import.meta.url)));
 const A='1b021ed9-4846-4203-9c7b-4b5fa8d7adab',B='0d8ba828-59cc-468b-a4b8-7b2a1af10b88';
-const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.json':'application/json'};
+const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json'};
 const stub=String.raw`
 let session={user:{id:'teacher-test',is_anonymous:false},access_token:'FAKE_JWT_NEVER_ACCEPTED_BY_PRODUCTION'};
 const listeners=[];
@@ -133,6 +133,7 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   await page.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===5);
   assert.equal(await page.locator('#ranking-list .ranking-col').count(),1);
   assert.equal(await page.locator('#ranking-list.single').count(),1);
+  assert.equal(await page.locator('link[href*="projection-v2-avatar.css"]').count(),1);
   const singleGeometry=await page.locator('#ranking-list').evaluate(list=>{
    const panel=list.closest('.ranking-wrap').getBoundingClientRect();
    const listRect=list.getBoundingClientRect();
