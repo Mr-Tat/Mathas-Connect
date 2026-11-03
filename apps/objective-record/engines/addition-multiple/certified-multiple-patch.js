@@ -12,14 +12,14 @@
   const original="states=[0,1].map(()=>{const addendCount=randomAddendCount(session.level);const s=generateAddition(session.maxDigits,addendCount);s.addendCount=addendCount;return s});phase='answering';";
   const replacement=[
    "states=[0,1].map((_,i)=>{",
-   " const proof=window.__mathasServerCertifiedMulti;",
+   " const proof=window.__mathasServerCertifiedMulti||window.__mathasServerAdvanced;",
    " let s,addendCount;",
-   " if(proof?.sessionId&&session.mode==='classic'){",
-   "  if(proof.level!==session.level||proof.total!==session.totalCalculs)throw Error('proof_configuration_changed');",
+   " if(proof?.sessionId&&(session.mode==='classic'||session.mode===proof.mode)){",
+   "  if(proof.level!==session.level||(session.mode==='classic'&&proof.total!==session.totalCalculs))throw Error('proof_configuration_changed');",
    "  const q=proof.questions?.[session.completed+i];",
    "  if(!q?.addends?.length)throw Error('proof_question_missing');",
    "  addendCount=q.addends.length;",
-   "  const addends=[...q.addends],result=addends.reduce((sum,n)=>sum+n,0);",
+   "  const addends=q.addends.map(Number),result=addends.reduce((sum,n)=>sum+n,0);",
    "  const p=carryPattern(addends,session.maxDigits),answerCount=String(result).length;",
    "  s={addends,result,count:session.maxDigits,answerCount,carryExpected:p.incoming,outgoing:p.outgoing,",
    "    answerValues:Array(answerCount).fill(''),carryValues:Array(session.maxDigits).fill(''),",
