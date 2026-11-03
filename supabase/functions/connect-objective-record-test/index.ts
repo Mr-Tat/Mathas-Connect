@@ -42,12 +42,12 @@ Deno.serve(async(req:Request)=>{
  const validProofFinishV2=proofFinishV2&&b.appKey==='addition-ecrite-simple'
    &&validId(b.sessionId)&&Array.isArray(b.answers)
    &&[4,10,20].includes(b.answers.length)
-   &&Object.keys(b).sort().join(',')==='action,answers,appKey,classId';
+   &&Object.keys(b).sort().join(',')==='action,answers,appKey,classId,sessionId';
  const validProofStart=proofStart&&b.appKey==='addition-ecrite-simple'
    &&Object.keys(b).sort().join(',')==='action,appKey,classId';
  const validProofFinish=proofFinish&&b.appKey==='addition-ecrite-simple'
    &&validId(b.sessionId)&&Array.isArray(b.answers)&&b.answers.length===4
-   &&Object.keys(b).sort().join(',')==='action,answers,appKey,classId';
+   &&Object.keys(b).sort().join(',')==='action,answers,appKey,classId,sessionId';
  const record=b?.action==='game-record'&&APPS.has(b?.appKey)
    &&b.schemaVersion===1&&b.points===0&&b.rewards===null
    &&validId(b.eventId)&&validId(b.expectedStudentId)
