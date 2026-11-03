@@ -85,6 +85,19 @@ test('HUB : les cinq jalons contrôlent la personnalisation, sans colorer les in
     assert.equal(writes.at(-1).color,'transparent');
     assert.equal(writes.at(-1).kind,'animal');
    }
+   if(stage===20){
+    for(const tabIndex of [1,2,3]){
+     await tabs.nth(tabIndex).click();
+     assert.equal(await page.locator('#avatar-choices button').count(),24);
+     assert.equal(await page.locator('#avatar-choices').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length),12);
+     const rows=await page.locator('#avatar-choices button').evaluateAll(buttons=>buttons.map(el=>Math.round(el.getBoundingClientRect().top)));
+     assert.equal(new Set(rows).size,2,'exactly two desktop rows of 12');
+    }
+    assert.equal(await page.locator('#avatar-colors button').count(),20);
+    assert.equal(await page.locator('#avatar-colors').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length),10);
+    const rows=await page.locator('#avatar-colors button').evaluateAll(buttons=>buttons.map(el=>Math.round(el.getBoundingClientRect().top)));
+    assert.equal(new Set(rows).size,2,'exactly two desktop rows of 10 colors');
+   }
    if(stage===10){
     await page.locator('#profile-alias-input').fill('Capitaine');
     await page.locator('#profile-alias-save').click();
