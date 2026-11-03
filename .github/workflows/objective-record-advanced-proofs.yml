@@ -1,0 +1,56 @@
+name: Two additions — advanced-proof PostgreSQL gate
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/202611031100*.sql'
+      - 'supabase/functions/connect-objective-record-school/**'
+      - 'tests/postgres/objective-record-school-advanced-modes.test.sql'
+      - 'tests/objective-record-advanced-contract.test.mjs'
+      - '.github/workflows/objective-record-advanced-proofs.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  advanced-proof-pg16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: advanced_additions
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d advanced_additions"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/advanced_additions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Existing XP and student models (fake identities)
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-fixed-ops-setup.sql
+      - name: Existing permanent trophies
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-fixed-trophies-fixture.sql
+      - name: School class fixtures
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-school-class-fixture.sql
+      - name: Existing multiple native recorder
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/addition-multiple-atomic-rpc-candidate.sql
+      - name: Classic private SQL ledger and scoreboard
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120000_school_certified_additions_tables.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120010_school_addition_simple_atomic_record.sql
+      - name: Advanced private SQL tables, arithmetic, scoring and proof
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103110000_advanced_additions_proof_ledger.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103110010_advanced_additions_issue_v1.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103110020_advanced_additions_atomic_award.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103110030_advanced_additions_finish_v1.sql
+      - name: 24 variants plus deterministic 64-question cap and anti-forgery
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-school-advanced-modes.test.sql
