@@ -122,7 +122,8 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
      ' Storage.prototype.removeItem=function(key){values.delete(String(key))};',
      ' Storage.prototype.clear=function(){values.clear()};',
      ' window.fetch=function(){return Promise.reject(new Error("Réseau désactivé dans cet essai"))};',
-     ' window.__mathasThreeLivesDemo=true;',
+     ' let school=false;try{school=window.parent?.parent?.MathasConnectOfficialSchoolProgress?.active===true}catch{}',
+     ' window.__mathasThreeLivesDemo=!school;',
      '})();'
    ].join('\n');
    const isolateTag='<scr'+'ipt>'+isolatedCode+'<'+'/script>';
@@ -310,7 +311,7 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
    // Ouvrir Mort subite en démo, indépendamment des déblocages du vrai profil.
    game=swap(game,
      "    const locked=!suddenUnlocked(level,p);",
-     "    const locked=false; // Essai isolé : déblocages réels inchangés.",
+     "    const locked=window.__mathasThreeLivesDemo?false:!suddenUnlocked(level,p);",
      'déblocage local de l’essai');
    game=swap(game,
      "function refreshSuddenLock(p=loadProgression()){",
