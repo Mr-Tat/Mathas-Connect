@@ -1,7 +1,8 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 import {studentHostContract,permanentTrophyCount} from './student-host-contract.mjs';
 import {ATOMIC_TEST_APP,isFixedTestApp} from './native-official-record.mjs';
-import {createAtomicTestRecorder} from './atomic-test-recorder.mjs';
+import {createAtomicTestRecorder,isWritableTestApp} from './atomic-test-recorder.mjs';
+import {MIXED_TEST_APP,isMixedTestTerminal} from './mixed-test-proof.mjs';
 import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 
@@ -105,7 +106,12 @@ function watchGame(seq){
      native(event);
      if(seq!==generation||!event)return;
      if(certifiedUI.onGameEvent(event))return;
-     if(recorder)recorder.onSnapshot(event);
+     if(recorder){
+      const mixed=activeApp===MIXED_TEST_APP&&isMixedTestTerminal(event);
+      const observed=mixed?{...event,
+       mixedProof:inside.contentWindow.__mathasMixedTestFinished??null}:event;
+      recorder.onSnapshot(observed);
+     }
      else if(event.phase==='ended')message('Partie terminée : aucun XP Connect (ce jeu n’est pas encore raccordé).');
     };
    }
@@ -158,10 +164,10 @@ async function choose(){
   projectionConsent=createProjectionConsent({
    classId,appKey:activeApp,studentKey:pupilId,getToken:verifiedToken
   });
-  if(isFixedTestApp(activeApp)){
+  if(isWritableTestApp(activeApp)){
    recorder=createAtomicTestRecorder({classId,appKey:activeApp,subject:pupilId,storage:localStorage,
-    send:request=>call(activeApp===ATOMIC_TEST_APP?'connect-results':'connect-objective-record-test','game-record',activeApp,{...request,expectedStudentId:pupilId}),
-    reload:()=>refresh(seq),notify:message,isCurrent:()=>seq===generation&&isFixedTestApp(activeApp),
+    send:request=>call(activeApp===ATOMIC_TEST_APP||activeApp===MIXED_TEST_APP?'connect-results':'connect-objective-record-test','game-record',activeApp,{...request,expectedStudentId:pupilId}),
+    reload:()=>refresh(seq),notify:message,isCurrent:()=>seq===generation&&isWritableTestApp(activeApp),
     onRecorded:receipt=>{
      if(seq===generation&&receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);
     }});
@@ -173,7 +179,7 @@ async function choose(){
   $('gameFrame').src=GAME_URLS[slug][1];
   $('gameFrame').hidden=false;$('refresh').disabled=false;
   watchGame(seq);
-  message(recorder?'Classe TEST : Classique/Mort subite reliés aux XP officiels (preuves arithmétiques serveur encore à terminer). 3 vies et HARD restent bloqués.':
+  message(recorder?'Classe TEST : les cinq calculs écrits ont leur voie XP Classique/Mort subite. Pour Mélange, les opérations terminées sont journalisées. Preuve mathématique serveur à terminer sauf Addition simple certifiée. 3 vies et HARD restent bloqués.':
    'Session Connect authentifiée · sauvegarde des parties de ce jeu encore désactivée.');
  }catch(e){
   if(seq!==generation)return;
