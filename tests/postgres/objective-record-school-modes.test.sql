@@ -99,8 +99,9 @@ BEGIN
  THEN RAISE EXCEPTION 'hard_trophy_mismatch: %',first_ack;END IF;
  IF (SELECT count(*) FROM public.connect_objective_record_school_mode_sessions)<>25
  THEN RAISE EXCEPTION 'lost_mode_sessions'; END IF;
- IF (SELECT count(*) FROM public.connect_objective_record_school_receipts
-    WHERE app_key in ('addition-ecrite-simple','addition-ecrite-multiple'))<>25
+ IF (SELECT count(*) FROM public.connect_objective_record_school_receipts r
+    JOIN public.connect_objective_record_school_mode_sessions m
+      ON r.student_id=m.student_id AND r.app_key=m.app_key AND r.event_id=m.session_id)<>25
  THEN RAISE EXCEPTION 'mode_receipt_count_mismatch';END IF;
  -- Strict process ownership: no classroom leak and no untrusted SQL access.
  BEGIN
