@@ -13,10 +13,10 @@
   <link rel="stylesheet" href="./style.css?v=20261102-connect-3d-svg-v1">
   <link rel="preconnect" href="https://esm.sh" crossorigin>
   <link rel="preconnect" href="https://awmhpfofacaglewammxt.supabase.co" crossorigin>
-  <script type="module" src="./app.js?v=20261031-cinq-classes-v1"></script>
+  <script type="module" src="./app.js?v=20261103-profile-rewards-v1"></script>
 <link rel="stylesheet" href="./join-avatar.css?v=20261026avatar3">
 <link rel="stylesheet" href="./student-entry-dark.css?v=20261026go2">
-<script type="module" src="./join-avatar.js?v=20261027avatars2"></script>
+<script type="module" src="./join-avatar.js?v=20261103-profile-rewards-v1"></script>
 </head>
 <body>
   <!-- Filtres de contour INTERIEUR : sans agrandir les lettres Connect. -->
@@ -198,18 +198,19 @@
           <button type="submit">Demander l’accès</button>
         </div>
       </form>
-      <p class="hint">Une fois la demande envoyée, tu pourras choisir ton avatar pendant l’attente.</p>
+      <p class="hint">Ton avatar de départ sera la première lettre de ton prénom, sans couleur de fond. Les autres choix se débloquent avec tes niveaux Connect.</p>
       <button type="button" id="cancel-student-form" class="soft">Annuler et retourner au HUB</button>
     </section>
 
     <section class="panel" data-view="waiting" hidden>
-      <h1>Demande envoyée !</h1><p class="centered">Le professeur doit autoriser ton appareil. Tu peux choisir ton avatar pendant l’attente.</p><p class="centered">Montre ces chiffres au professeur :</p>
+      <h1>Demande envoyée !</h1><p class="centered">Le professeur doit autoriser ton appareil. Ton avatar de départ est la première lettre de ton prénom.</p><p class="centered">Montre ces chiffres au professeur :</p>
       <div id="verification-code" class="verification-code">••••</div>
-      <p class="centered">Il les voit déjà de son côté.</p><div id="waiting-avatar-editor">        <fieldset class="join-avatar-field"><legend>Choisis ton avatar</legend><p class="hint">Un animal ou une lettre majuscule, puis une couleur.</p>
-          <div id="join-avatar-choices" class="join-avatar-grid" role="group" aria-label="Animal ou lettre"></div>
-          <div id="join-avatar-colors" class="join-avatar-colors" role="group" aria-label="Couleur de l'avatar"></div>
-          <div class="join-avatar-preview" id="join-avatar-preview" aria-label="Aperçu de ton avatar">🦊</div>
-        </fieldset></div><p id="waiting-status-note" class="centered" role="status">En attente du professeur…</p><button id="finish-avatar" type="button" hidden>OK, j’ai fini de choisir</button>
+      <p class="centered">Il les voit déjà de son côté.</p><div id="waiting-avatar-editor">
+ <fieldset class="join-avatar-field"><legend>Mon initiale</legend>
+  <p class="hint">Les animaux, les couleurs et d’autres récompenses se débloquent en gagnant des niveaux.</p>
+  <div class="join-avatar-preview avatar-transparent" id="join-avatar-preview" aria-label="Mon initiale sans fond">E</div>
+ </fieldset>
+</div><p id="waiting-status-note" class="centered" role="status">En attente du professeur…</p><button id="finish-avatar" type="button" hidden>Continuer vers le HUB</button>
       <div class="button-row" id="waiting-actions">
         <button id="check-status" type="button">Vérifier</button>
         <button id="cancel-request" type="button" class="soft">Annuler</button>
@@ -217,7 +218,7 @@
       <p class="hint" id="waiting-expiry">Ce code expire après 15 minutes.</p>
     </section>
 
-    <section class="panel" data-view="account-choice" hidden><h1>Qui veut jouer ?</h1><p class="centered">Un profil est déjà autorisé sur cet appareil.</p><div class="account-existing"><div class="join-avatar-preview" id="account-avatar">🦊</div><strong id="account-name">Élève</strong></div><p id="test-profile-switch-notice" class="hint" hidden></p><div class="button-row"><button id="continue-profile" type="button">Continuer avec ce profil</button><button id="switch-profile" class="soft" type="button">Utiliser un autre compte</button></div><p class="hint">Changer de profil ne supprime aucun score ni XP. Il faudra faire autoriser de nouveau cet appareil pour revenir à ce profil.</p></section>
+    <section class="panel" data-view="account-choice" hidden><h1>Qui veut jouer ?</h1><p class="centered">Un profil est déjà autorisé sur cet appareil.</p><div class="account-existing"><div class="join-avatar-preview" id="account-avatar">E</div><strong id="account-name">Élève</strong></div><p id="test-profile-switch-notice" class="hint" hidden></p><div class="button-row"><button id="continue-profile" type="button">Continuer avec ce profil</button><button id="switch-profile" class="soft" type="button">Utiliser un autre compte</button></div><p class="hint">Changer de profil ne supprime aucun score ni XP. Il faudra faire autoriser de nouveau cet appareil pour revenir à ce profil.</p></section>
     <section class="panel" data-view="approved" hidden>
       <div class="big-check" aria-hidden="true">✓</div>
       <h1 id="result-title">Appareil autorisé</h1>
