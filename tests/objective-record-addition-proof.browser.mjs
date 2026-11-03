@@ -59,7 +59,8 @@ test('Chromium: 4 vraies additions émises par Connect, écritures natives et AC
    }else if(request.url().includes('/connect-results')){
     response=b.action==='student-load'?
      {ok:true,revision:xp?1:0,resetEpoch:0,state:{rewards},storageSubject:pupil}:
-     {ok:true,appXp:xp,total:xp,level:1};
+     {ok:true,appXp:xp,total:xp,level:1,milestones:xp?['classic:1:4:perfect']:[],
+       currentMilestones:[],parcours:1,repeatXp:false};
    }else if(request.url().includes('/connect-projection-v2')){
     response={ok:true,consentRecorded:true};
    }else if(request.url().includes('/connect-objective-record-test')){
@@ -82,8 +83,19 @@ test('Chromium: 4 vraies additions émises par Connect, écritures natives et AC
   await page.goto(url+'/apps/objective-record/eleve.html?class='+classId+'&app=addition-simple',
    {waitUntil:'domcontentloaded',timeout:25000});
   await page.waitForFunction(()=>!document.getElementById('certify').disabled,{timeout:45000});
-  await page.locator('#challenge-toggle').click();
-  await page.locator('#certify').click();
+  // A regular student earns official XP through the familiar native menu.
+  const native=page.frameLocator('#gameFrame').frameLocator('#game');
+  // The genuine game hides its base <select> under a custom level picker.
+  // Set the underlying choice, then click the VISIBLE native series button.
+  await page.evaluate(()=>{
+   const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+   const level=doc.getElementById('classicMaxDigits');level.value='3';
+   level.dispatchEvent(new Event('change',{bubbles:true}));
+  });
+  await native.locator('.classic-count-btn[data-count="4"] .mathas-connect-official-xp')
+   .waitFor({state:'visible',timeout:18000});
+  assert.match(await native.locator('.classic-count-btn[data-count="4"]').textContent(),/Reste 22 XP/);
+  await native.locator('.classic-count-btn[data-count="4"]').click();
   try{await page.waitForFunction(()=>{
    const w=document.getElementById('gameFrame')?.contentDocument
     ?.getElementById('game')?.contentWindow;

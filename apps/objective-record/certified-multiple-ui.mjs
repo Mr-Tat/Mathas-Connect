@@ -125,7 +125,12 @@ export function createMultipleProofUI({
    if(isCurrent(seq)){run=null;queue=null;notify('⚠️ '+e.message+' : aucun XP demandé.')}
   }finally{if(isCurrent(seq))button.disabled=!!run||sending}
  }
+ function startNative(level,total){
+  if(![1,2,3].includes(level)||![4,10,20].includes(total))return Promise.resolve();
+  modeSelect.value='classic';levelSelect.value=String(level);totalSelect.value=String(total);
+  return start();
+ }
  button.addEventListener('click',()=>{void start()});
- return Object.freeze({reset,bind,onGameEvent,hasPending:()=>!!run?.finished,
+ return Object.freeze({reset,bind,onGameEvent,startNative,hasPending:()=>!!run?.finished,
   retry:()=>run?.finished?finish():Promise.resolve()});
 }
