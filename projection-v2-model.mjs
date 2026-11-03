@@ -89,7 +89,7 @@ export function rankMultiClass({
    if(group.classId!==primaryClassId&&score===null)continue;
    eligible.push({id:p.id,classId:group.classId,className:group.name,
     name:String(p.name||'Élève').slice(0,80),level:numeric(p.level)?p.level:null,
-    trophies:numeric(p.trophies)?p.trophies:null,score});
+    trophies:numeric(p.trophies)?p.trophies:null,avatar:p.avatar??null,score});
   }
  }
  return eligible.sort((a,b)=>(b.score??-1)-(a.score??-1)
