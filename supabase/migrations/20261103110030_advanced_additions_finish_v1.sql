@@ -1,7 +1,7 @@
 -- Server alone grades every FIRST submitted digit/carry, then validates
 -- the exact stop rule (one mistake or three lost lives), before awarding XP.
 CREATE OR REPLACE FUNCTION public.connect_objective_record_advanced_finish_v1(
- p_student uuid,p_class uuid,p_session uuid,p_answers jsonb
+ p_student uuid,p_class uuid,p_app text,p_session uuid,p_answers jsonb
 ) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $finish$
 DECLARE
  v_session public.connect_objective_record_advanced_sessions%ROWTYPE;
@@ -13,7 +13,7 @@ DECLARE
  v_expected_digit text;v_expected_carry text;v_raw text;
  v_correct boolean;v_hard boolean;v_hash text;v_ack jsonb;
 BEGIN
- IF p_student IS NULL OR p_class IS NULL
+ IF p_student IS NULL OR p_class IS NULL OR p_app NOT IN('addition-ecrite-simple','addition-ecrite-multiple')
  OR public.connect_objective_record_school_class_allowed_v1(p_class) IS DISTINCT FROM true
  OR p_session IS NULL OR jsonb_typeof(p_answers) IS DISTINCT FROM 'array'
  THEN RAISE EXCEPTION 'invalid_advanced_proof';END IF;
@@ -23,7 +23,7 @@ BEGIN
  PERFORM 1 FROM public.connect_students WHERE id=p_student AND archived_at IS NULL FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'inactive_student';END IF;
  SELECT * INTO v_session FROM public.connect_objective_record_advanced_sessions
- WHERE session_id=p_session AND student_id=p_student AND class_id=p_class FOR UPDATE;
+ WHERE session_id=p_session AND student_id=p_student AND class_id=p_class AND app_key=p_app FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'proof_not_found';END IF;
  IF v_answer_count>v_session.question_limit
  OR v_session.mode NOT IN('three-lives','sudden','hard-three-lives','hard-sudden')
@@ -127,7 +127,7 @@ BEGIN
   'verifiedScore',v_score,'verifiedErrors',v_errors,'questionsChecked',v_answer_count,
   'mode',v_session.mode);
 END $finish$;
-REVOKE ALL ON FUNCTION public.connect_objective_record_advanced_finish_v1(uuid,uuid,uuid,jsonb)
+REVOKE ALL ON FUNCTION public.connect_objective_record_advanced_finish_v1(uuid,uuid,text,uuid,jsonb)
  FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.connect_objective_record_advanced_finish_v1(uuid,uuid,uuid,jsonb)
+GRANT EXECUTE ON FUNCTION public.connect_objective_record_advanced_finish_v1(uuid,uuid,text,uuid,jsonb)
  TO service_role;
