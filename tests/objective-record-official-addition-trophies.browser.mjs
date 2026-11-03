@@ -47,7 +47,7 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
     if(r.request().url().includes('/connect-api'))data={ok:true,status:'approved',classId:klass};
     else if(r.request().url().includes('/connect-results'))
      data=b.action==='student-load'
-      ?{ok:true,revision:0,resetEpoch:0,storageSubject:pupil,state:{rewards:serverRewards}}
+      ?{ok:true,revision:0,resetEpoch:0,storageSubject:pupil,state:{rewards:serverRewards===null?rewards(false):serverRewards}}
       :{ok:true,appXp:0,total:0,level:1};
     else throw Error('unexpected server call '+b.action);
     await r.fulfill({status:200,contentType:'application/json',
@@ -97,7 +97,23 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
    await page.waitForTimeout(1000);
    assert.match(await cup(),/à gagner/);
 
+   // SQL NULL from the verified trophy registry means no earned trophies.
+   // Connect exposes a complete 25-false snapshot in that case.
    serverRewards=null;await page.locator('#refresh').click();
+   await page.waitForFunction(()=>document.getElementById('trophies')?.textContent==='0',
+    null,{timeout:12000});
+   await page.waitForTimeout(950);
+   assert.match(await cup(),/à gagner/,'new pupils still see unearned trophies');
+   await page.setViewportSize({width:390,height:780});
+   await page.waitForTimeout(1000);
+   assert.equal(await page.evaluate(()=>{
+    const doc=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+    const el=doc?.querySelector('.mlab-mastery-under-series .mlab-cup');
+    return !!el&&getComputedStyle(el).display!=='none'&&el.getBoundingClientRect().width>0;
+   }),true,'trophy visible on a phone-width viewport');
+
+   // A malformed non-null server response still fails closed.
+   serverRewards={unavailable:true};await page.locator('#refresh').click();
    await page.waitForFunction(()=>document.getElementById('trophies')?.textContent==='—',
     null,{timeout:12000});
    await page.waitForFunction(()=>{

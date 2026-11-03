@@ -9,6 +9,17 @@ const app='addition-ecrite-simple',mul='multiplication-ecrite-simple',sub='soust
 // Audit 2026-10-29: keep the new game blocked EVEN IF the catalog is accidentally enabled.
 // Lift only after atomic real XP/RPC, scoped storage and Chromium connected E2E validation.
 const ADD_MULTI_SERVER_READY=true;
+// The trophy registry returns SQL NULL when a pupil has not yet earned
+// any trophy. That is a VERIFIED EMPTY registry, not an unavailable one.
+// Keep the 25 award placeholders visible for school written additions.
+const EMPTY_SCHOOL_ADDITION_TROPHIES=Object.freeze({
+ version:3,
+ mastery:{'4':[false,false,false],'10':[false,false,false],'20':[false,false,false]},
+ sudden:[false,false,false],
+ hardAwards:{bronze:[false,false,false],silver:[false,false,false],gold:[false,false,false]},
+ scoreOne:{bronze:false,silver:false,gold:false},
+ unlockedGold:false
+});
 // Student release authorized 2026-10-31. The catalogue still controls activation;
 // every pupil needs its approved device, class membership and bound identity.
 const MIXED_SERVER_READY=true;
@@ -484,7 +495,12 @@ Deno.serve(async req=>{
     }
     const {data:permanent,error:trophyError}=await db.rpc('connect_trophy_rewards_v1',{p_student:studentId,p_app:selected});
      if(trophyError)return deny('trophies_unavailable',503);
-     const state=permanent?{...(current?.state_data??{}),rewards:permanent}:current?.state_data||null;
+     // In the two certified written additions, "no achievement rows" is
+     // authoritative zero awards. A DB RPC error still fails closed above.
+     // Do not use a possibly stale local state_data.rewards as evidence.
+     const awards=permanent??(
+      (selected===app||selected===addMulti)?EMPTY_SCHOOL_ADDITION_TROPHIES:null);
+     const state=awards?{...(current?.state_data??{}),rewards:awards}:current?.state_data||null;
      return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,state,storageSubject:studentId,...(selected===mul?{multiplierLock}:{})});
    }
    // Les jeux réels restent en lecture seule. Écriture exclusivement pour le laboratoire.
