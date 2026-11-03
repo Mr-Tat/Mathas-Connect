@@ -107,6 +107,39 @@ for(const item of examples){
    await page.locator('#certify').click();
    const game=page.frameLocator('#gameFrame').frameLocator('#game');
    await game.locator('#gameScreen:not(.hidden)').waitFor({state:'visible',timeout:30000});
+   // Permettre de changer « dizaines d'abord » pendant une partie, pour les
+   // deux additions : un seul état sur l'accueil, le calcul et HARD.
+   const inGame=game.locator('#mathasTensFirstDuringGame-normal');
+   await inGame.waitFor({state:'visible',timeout:12000});
+   await inGame.check();
+   const enabled=await page.evaluate(()=>{
+    const w=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
+    const d=w.document;
+    return {home:d.getElementById('tensFirstToggle').checked,
+     running:d.getElementById('mathasTensFirstDuringGame-normal').checked,
+     hard:d.getElementById('mathasTensFirstDuringGame-hard')?.checked,
+     stored:w.__mathasTensFirst,
+     hint:d.getElementById('instructionText').textContent};
+   });
+   assert.equal(enabled.home,true,'l’accueil doit suivre le choix pendant le calcul');
+   assert.equal(enabled.running,true);
+   assert.equal(enabled.hard,true,'le choix doit aussi être synchronisé avec HARD');
+   assert.equal(enabled.stored,true,'le moteur doit réagir immédiatement');
+   assert.match(enabled.hint,/écris d’abord/i);
+   await inGame.uncheck();
+   const disabled=await page.evaluate(()=>{
+    const w=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
+    const d=w.document;
+    return {home:d.getElementById('tensFirstToggle').checked,
+     hard:d.getElementById('mathasTensFirstDuringGame-hard')?.checked,
+     stored:w.__mathasTensFirst,
+     hint:d.getElementById('instructionText').textContent};
+   });
+   assert.equal(disabled.home,false);
+   assert.equal(disabled.hard,false);
+   assert.equal(disabled.stored,false);
+   assert.match(disabled.hint,/écris ensuite/i);
+
 
    for(let batch=0;batch<2;batch++){
     for(let slot=0;slot<2;slot++){
