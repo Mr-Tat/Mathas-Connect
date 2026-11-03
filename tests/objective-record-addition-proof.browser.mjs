@@ -85,12 +85,17 @@ test('Chromium: 4 vraies additions émises par Connect, écritures natives et AC
   await page.waitForFunction(()=>!document.getElementById('certify').disabled,{timeout:45000});
   // A regular student earns official XP through the familiar native menu.
   const native=page.frameLocator('#gameFrame').frameLocator('#game');
-  await native.locator('#classicMaxDigits').selectOption('3'); // Niveau 1
+  // The genuine game hides its base <select> under a custom level picker.
+  // Set the underlying choice, then click the VISIBLE native series button.
+  await page.evaluate(()=>{
+   const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+   const level=doc.getElementById('classicMaxDigits');level.value='3';
+   level.dispatchEvent(new Event('change',{bubbles:true}));
+  });
   await native.locator('.classic-count-btn[data-count="4"] .mathas-connect-official-xp')
    .waitFor({state:'visible',timeout:18000});
   assert.match(await native.locator('.classic-count-btn[data-count="4"]').textContent(),/Reste 22 XP/);
   await native.locator('.classic-count-btn[data-count="4"]').click();
-  await native.locator('#startClassic').click();
   try{await page.waitForFunction(()=>{
    const w=document.getElementById('gameFrame')?.contentDocument
     ?.getElementById('game')?.contentWindow;
