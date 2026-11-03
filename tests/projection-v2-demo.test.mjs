@@ -43,7 +43,9 @@ test('projection V2 demo : 14 élèves répartis en une ou deux colonnes',()=>{
  assert.match(doc,/const cut=Math\.ceil\(rows\.length\/2\)/);
  assert.match(doc,/Niveau.*person\.level/);
  assert.match(doc,/person\.trophies/);
- assert.match(doc,/primary\.append\(name,points\)/);
+ assert.match(doc,/primary\.append\(label,points\)/);
+ assert.match(doc,/label\.append\(avatar,name\)/);
+ assert.match(doc,/rank\.textContent=String\(position\)/);
 });
 test('projection V2 demo : rotation 30 s, score et % indépendants, Monsieur T initialement masqué',()=>{
  assert.match(doc,/let selected="addition",seconds=30/);
