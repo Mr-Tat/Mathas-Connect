@@ -60,6 +60,7 @@ for(const item of examples){
    const page=await browser.newPage({viewport:{width:1440,height:900}});
    const requests=[],errors=[];let xp=0;
    page.on('pageerror',err=>errors.push(err.message));
+   page.on('console',msg=>{if(msg.type()==='error')errors.push('console: '+msg.text())});
    await page.route('**/supabase-js@2.95.0*',r=>r.fulfill({
     status:200,contentType:'text/javascript',headers:{'access-control-allow-origin':'*'},
     body:'export function createClient(){return {auth:{getSession:async()=>({data:{session:{access_token:"fake",user:{id:"'+AUTH+'",is_anonymous:true}}}}),getUser:async()=>({data:{user:{id:"'+AUTH+'",is_anonymous:true}},error:null})}}}'
@@ -102,7 +103,14 @@ for(const item of examples){
    });
    await page.goto(url+'/apps/objective-record/eleve.html?class='+CLASS+'&app='+item.slug,
     {waitUntil:'domcontentloaded',timeout:25000});
-   await page.waitForFunction(()=>!document.getElementById('certify').disabled,null,{timeout:45000});
+   try{await page.waitForFunction(()=>!document.getElementById('certify').disabled,null,{timeout:9000});}
+   catch(error){
+    const diag=await page.evaluate(()=>({title:document.title,
+     status:document.getElementById('status')?.textContent,
+     certifyDisabled:document.getElementById('certify')?.disabled,
+     module:document.querySelector('script[type="module"]')?.getAttribute('src')}));
+    throw Error('Student app bootstrap failed '+JSON.stringify({errors,diag})+' '+error);
+   }
    await page.locator('#challenge-toggle').click();
    await page.locator('#certify').click();
    const game=page.frameLocator('#gameFrame').frameLocator('#game');
