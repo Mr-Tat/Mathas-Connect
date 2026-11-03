@@ -201,7 +201,14 @@ const extendedUI=createCertifiedExtendedUI({
  onRecorded:receipt=>{if(receipt.appKey===activeApp)projectionConsent?.offer(receipt.eventId);}
 });
 function updateCertifiedModeControls(){
- const classic=$('certified-mode').value==='classic';
+ const mode=$('certified-mode').value,classic=mode==='classic',hard=mode.startsWith('hard-');
+ const widths=activeApp==='addition-ecrite-multiple'?
+   (hard?[9,12,14]:[5,6,7]):
+   (hard?[10,12,16]:[3,5,7]);
+ for(let l=1;l<=3;l++){
+  const option=$('certified-level').querySelector('option[value="'+l+'"]');
+  if(option)option.textContent=l+' · '+widths[l-1]+' chiffres';
+ }
  $('certified-count-label').hidden=!classic;
  $('certify').textContent=classic?'🔐 Lancer une série vérifiée par le serveur':
   '🔐 Lancer ce défi vérifié par le serveur';
