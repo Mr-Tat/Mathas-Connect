@@ -125,10 +125,8 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,mode
    const width=({1:3,2:5,3:7})[level];
    sharedLevel.value=String(width);nativeLevel.value=String(width);
    sharedLevel.dispatchEvent(new Event('change',{bubbles:true}));
+   // This engine's native count-button event is the direct-start control.
    launch.click();
-   const realStart=doc.getElementById('startClassic');
-   if(!realStart)throw Error('Bouton de lancement natif introuvable');
-   realStart.click();
    notify('🔐 '+total+' additions niveau '+level+' émises par Connect. Chiffres et reports vérifiés côté serveur.');
   }catch(e){
    if(isCurrent(seq)){run=null;queue=null;notify('⚠️ '+e.message+' : aucun XP demandé.');}
