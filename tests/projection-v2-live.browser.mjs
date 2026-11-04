@@ -238,7 +238,7 @@ test('V2 — les vrais taux fournis par l’API sont affichés avec leur portée
   assert.match(await page.locator('#classes').textContent(),/Global65 %/);
   assert.match(await page.locator('#classes').textContent(),/Addition écrite60 %/);
   assert.match(await page.locator('#classes').textContent(),/Multiplication écrite80 %/);
-  assert.match(await page.locator('#percentage-scope').textContent(),/parties terminées enregistrées/);
+  assert.match(await page.locator('#percentage-scope').textContent(),/parties Classique terminées enregistrées/);
   assert.match(await page.locator('#percentage-scope').textContent(),/parties abandonnées ne sont pas encore comptées/);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
