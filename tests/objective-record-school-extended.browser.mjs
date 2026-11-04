@@ -78,50 +78,49 @@ for(const item of examples){
    await page.goto(url+'/apps/objective-record/eleve.html?class='+CLASS+'&app='+item.slug,
     {waitUntil:'domcontentloaded',timeout:25000});
    await page.waitForFunction(()=>!document.getElementById('certify').disabled,null,{timeout:45000});
-   assert.equal(await page.locator('#connect-bar').isVisible(),true,'barre réservée au profil approuvé');
-   await page.waitForFunction(()=>document.getElementById('connect-bar').classList.contains('retracted'),
-    null,{timeout:8500});
-   assert.equal(await page.locator('#bar-handle').isVisible(),true,'poignée de rappel');
-   await page.locator('#bar-handle').click();
-   assert.equal(await page.locator('#connect-bar').isVisible(),true);
+   assert.equal(await page.locator('#connect-bar').isVisible(),false,
+    'la barre rétractable a disparu du rendu des deux additions');
+   assert.equal(await page.locator('#bar-handle').isVisible(),false,
+    'pas de poignée repliable');
    await page.waitForFunction(()=>{
-    const inner=document.getElementById('gameFrame')?.contentDocument?.getElementById('game');
-    const link=inner?.contentDocument?.getElementById('mathas-game-hub-return');
-    return !!link&&link.getAttribute('href')?.includes('/hub.html?class=');
-   },null,{timeout:16000});
-   // Les trois actions doivent rester sur UNE ligne SOUS la barre Connect,
-   // y compris lorsque celle-ci réapparaît après un mouvement de souris.
-   await page.waitForFunction(()=>{
-    const inner=document.getElementById('gameFrame')?.contentDocument?.getElementById('game');
-    const doc=inner?.contentDocument;
-    return !!doc?.querySelector('.theme-toggle-btn')&&
-     !!doc?.getElementById('mathas-game-hub-return')&&
-     !!doc?.getElementById('fullscreenBtn');
+    const doc=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+    return !!doc?.getElementById('mathas-game-hub-return')&&
+     !!doc?.getElementById('fullscreenBtn')&&
+     !!doc?.getElementById('mathas-native-connect-profile')&&
+     !!doc?.getElementById('mathas-native-connect-xp');
    },null,{timeout:16000});
    for(const viewportWidth of [1160,620,390,320]){
     await page.setViewportSize({width:viewportWidth,height:820});
-    await page.waitForTimeout(220);
+    await page.waitForTimeout(550);
     const layout=await page.evaluate((viewportWidth)=>{
      const outer=document.getElementById('gameFrame');
      const inner=outer.contentDocument.getElementById('game');
      const doc=inner.contentDocument;
-     const bar=document.getElementById('connect-bar').getBoundingClientRect();
      const o=outer.getBoundingClientRect(),i=inner.getBoundingClientRect();
-     const button=id=>doc.getElementById(id);
-     const nodes=[button('fullscreenBtn'),button('mathas-game-hub-return'),
+     const nodes=[doc.getElementById('fullscreenBtn'),
+      doc.getElementById('mathas-game-hub-return'),
       doc.querySelector('.mathas-top-actions>.theme-toggle-btn')];
      const points=nodes.map(el=>{
-      const r=el.getBoundingClientRect();
-      const x=o.left+i.left+r.left+r.width/2,y=o.top+i.top+r.top+r.height/2;
-      const hit=document.elementFromPoint(x,y);
-      const inside=doc.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+      const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+      const hit=document.elementFromPoint(o.left+i.left+cx,o.top+i.top+cy);
+      const inside=doc.elementFromPoint(cx,cy);
       return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,
-       globalX:x,globalY:y,hostHit:hit?.id,innerHit:inside===el||el.contains(inside),
-       visible:doc.defaultView.getComputedStyle(el).visibility,
-       href:el.getAttribute('href')};
+       globalX:o.left+i.left+cx,globalY:o.top+i.top+cy,hostHit:hit?.id,
+       innerHit:inside===el||el.contains(inside),href:el.getAttribute('href')};
      });
      const card=doc.querySelector('#menuScreen .mode-card.sudden');
-     return {viewportWidth,barBottom:bar.bottom,points,
+     const profile=doc.getElementById('mathas-native-connect-profile');
+     const xpButton=doc.getElementById('mathas-native-connect-xp');
+     const row=doc.querySelector('main.app > header .mathas-brand-row');
+     const strip=doc.getElementById('mathasTrophiesStrip');
+     const pr=profile.getBoundingClientRect(), xr=xpButton.getBoundingClientRect();
+     return {viewportWidth,points,
+      profileText:profile.textContent.trim(),profileVisible:pr.width>0&&pr.height>0,
+      profileInHeader:row.contains(profile),profileRight:pr.right,profileLeft:pr.left,
+      xpLabel:xpButton.textContent.trim(),xpVisible:xr.width>0&&xr.height>0,
+      xpAfterTrophies:Boolean(strip.parentElement===xpButton.parentElement&&
+       (strip.compareDocumentPosition(xpButton)&Node.DOCUMENT_POSITION_FOLLOWING)),
+      xpButtonAfterStrip:xr.top>=strip.getBoundingClientRect().top,
       icon:card.querySelector('.mode-icon')?.textContent?.trim(),
       title:card.querySelector('.mode-title')?.textContent?.trim(),
       description:card.querySelector('.mode-description')?.textContent?.trim(),
@@ -131,21 +130,35 @@ for(const item of examples){
     assert.equal(layout.icon,'👑',JSON.stringify(layout));
     assert.equal(layout.title,'Objectif record',JSON.stringify(layout));
     assert.equal(layout.description,'Deux façons de marquer un gros score.',JSON.stringify(layout));
-    assert.equal(layout.titleHasCup,false,'pas de coupe décorative avant le titre');
-    assert.equal(layout.skullInsideButton,true,'crâne conservé sur Mort subite');
+    assert.equal(layout.titleHasCup,false);
+    assert.equal(layout.skullInsideButton,true);
+    assert.equal(layout.profileVisible,true,'profil Connect visible dans entête : '+JSON.stringify(layout));
+    assert.equal(layout.profileInHeader,true);
+    assert.match(layout.profileText,/Connecté · .*Niveau 1.*0 \/ 50 XP/);
+    assert.equal(layout.xpVisible,true,'bouton XP visible sous les trophées : '+JSON.stringify(layout));
+    assert.equal(layout.xpAfterTrophies,true);
+    assert.equal(layout.xpButtonAfterStrip,true);
+    assert.equal(layout.xpLabel,'✨ XP à gagner');
     const [fullscreen,hub,theme]=layout.points;
-    assert.ok(fullscreen.left<hub.left&&hub.right<=theme.left+1,'Plein écran / HUB / Mode clair, dans cet ordre : '+JSON.stringify(layout));
-    assert.ok(Math.abs(fullscreen.top-theme.top)<=2&&Math.abs(hub.top-theme.top)<=2,'trois boutons sur une rangée : '+JSON.stringify(layout));
-    for(const target of layout.points){
-     assert.ok(target.globalY>=layout.barBottom+1,
-      'bouton sous la barre Connect, non recouvert : '+JSON.stringify(layout));
-     assert.ok(target.globalX>0&&target.globalX<viewportWidth,
-      'bouton dans la largeur visible : '+JSON.stringify(layout));
-     assert.equal(target.hostHit,'gameFrame','barre externe non au-dessus du bouton : '+JSON.stringify(layout));
-     assert.equal(target.innerHit,true,'bouton atteignable par clic : '+JSON.stringify(layout));
+    assert.ok(hub.left<fullscreen.left,'Retour au HUB à gauche de Plein écran : '+JSON.stringify(layout));
+    assert.ok(Math.abs(fullscreen.top-hub.top)<=2,'boutons d origine côte à côte : '+JSON.stringify(layout));
+    assert.ok(theme.top>=fullscreen.bottom-3,'Mode clair sous les deux commandes : '+JSON.stringify(layout));
+    for(const point of layout.points){
+      assert.ok(point.globalX>0&&point.globalX<viewportWidth,
+       'commande dans la largeur visible : '+JSON.stringify(layout));
+      assert.equal(point.hostHit,'gameFrame','aucun bandeau au-dessus : '+JSON.stringify(layout));
+      assert.equal(point.innerHit,true,'commande cliquable : '+JSON.stringify(layout));
     }
     assert.match(hub.href,/\/hub\.html\?class=/);
    }
+   await page.setViewportSize({width:1160,height:820});
+   const nativeXp=page.frameLocator('#gameFrame').frameLocator('#game').locator('#mathas-native-connect-xp');
+   await nativeXp.click();
+   await page.locator('#xp-panel:not([hidden])').waitFor({state:'visible',timeout:12000});
+   assert.equal(await page.locator('#connect-bar').isVisible(),false,
+    'le panneau XP n ouvre pas la barre disparue');
+   await page.locator('#xp-close').click();
+   assert.equal(await page.locator('#xp-panel').isVisible(),false);
    await page.setViewportSize({width:1160,height:820});
    const nativeTheme=page.frameLocator('#gameFrame').frameLocator('#game').locator('.theme-toggle-btn');
    await nativeTheme.click({timeout:5000});
