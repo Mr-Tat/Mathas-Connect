@@ -375,7 +375,7 @@ test('V2 — prénom en gras dans les exploits, jeu et texte normal, sans surtit
   assert.ok(results[0].content.startsWith('Addition écrite · Élève 1 gagne un nouveau trophée'));
   assert.ok(results[1].content.startsWith('Addition écrite · Élève 2 réussit une série parfaite'));
   assert.ok(results[2].content.startsWith('Soustraction écrite · Élève 3 réalise un score du Top 5'));
-  assert.ok(results.every(x=>x.initialNodeType===Node.TEXT_NODE),'Le titre du jeu reste en texte normal');
+  assert.ok(results.every(x=>x.initialNodeType===3),'Le titre du jeu reste en texte normal');
   assert.ok(results.every(x=>Number(x.nameWeight)>=700),'Les noms ressortent en gras');
   assert.ok(results.every(x=>x.remainder.startsWith(' ')),'La phrase après le prénom reste distincte');
   assert.equal(await page.locator('.ranking-card .ranking-head .over').count(),0,'Surtitre supprimé');
