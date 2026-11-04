@@ -132,6 +132,7 @@ try{
    assert.equal(await page.getByRole('button',{name:'Jouer sans synchronisation'}).count(),0,
     'pas de bouton pour contourner le mode scolaire certifié');
    const signIn=page.getByRole('link',{name:'Se connecter avec un élève fictif TEST'});
+   await signIn.waitFor({timeout:12000});
    assert.equal(await signIn.count(),1);
    assert.match(await signIn.getAttribute('href'),/lab=1/);
    assert.deepEqual(edgeCalls,[],'aucun appel XP/projection sans élève Connect');
