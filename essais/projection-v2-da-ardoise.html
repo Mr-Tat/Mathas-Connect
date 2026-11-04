@@ -11,10 +11,10 @@
 body{margin:0;min-height:100vh;background:linear-gradient(140deg,#2d4b67,#162e49);color:#f2f7ff}
 button,input{font:inherit}button{cursor:pointer;min-height:36px}
 button:focus-visible,input:focus-visible{outline:3px solid #ffe08a;outline-offset:2px}
-header{display:flex;position:relative;justify-content:space-between;align-items:center;padding:9px 18px;border-bottom:1px solid #57708a;background:#263f5b}
-.header-class{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:35%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;color:#f6fbff;font-size:clamp(17px,1.45vw,24px);font-weight:900;letter-spacing:.02em}
-header strong{font-size:25px;font-weight:950;letter-spacing:-.05em}header strong span{font-size:12px;color:#82f1d4;letter-spacing:.13em}
-header .tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+header{display:flex;position:relative;justify-content:flex-end;align-items:center;min-height:54px;padding:9px 18px;border-bottom:1px solid #57708a;background:#263f5b}
+.header-class{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:calc(100% - 180px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;color:#f6fbff;font-size:clamp(17px,1.45vw,24px);font-weight:900;letter-spacing:.02em}
+.projection-clock{margin-left:auto;flex-shrink:0;color:#e2efff;font-size:18px;font-weight:850;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.projection-demo-tools{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0}
 .demo{font-size:11px;font-weight:900;letter-spacing:.09em;color:#ffd67c}
 button{border:1px solid #7794b1;border-radius:9px;color:#f6fbff;background:#3c5771;padding:7px 11px;font-weight:700}
 button:hover{background:#4f779d}
@@ -63,7 +63,7 @@ main{display:grid;grid-template-columns:minmax(185px,1fr) minmax(450px,2.7fr) mi
 .ranking-head h1{text-align:center;margin:3px 0 0}
 
 .class-mark{display:inline-flex;margin-left:8px;padding:1px 6px;background:#4a6886;border-radius:5px;color:white;font-size:10px;font-weight:850}
-@media(max-width:850px){header{flex-wrap:wrap}.header-class{position:static;transform:none;order:3;width:100%;text-align:center}.ranking-head{padding-inline:10px}}
+@media(max-width:850px){.header-class{max-width:calc(100% - 145px)}.ranking-head{padding-inline:10px}}
 .ranking-wrap{padding:3px 12px 6px}
 
 .ranking-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
@@ -132,17 +132,17 @@ label.setting{justify-content:space-between;max-width:380px}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 </style>
 <link rel="stylesheet" href="./projection-v2-da.css?v=podium-2">
-<link rel="stylesheet" href="../projection-v2-avatar.css?v=20261103-cartes-matin-v3">
+<link rel="stylesheet" href="../projection-v2-avatar.css?v=20261103-compactes-cadres-v4">
 </head>
 <body>
 <header>
-  <strong>Math’as <span>LIVE · PROJECTION V2</span></strong>
   <div id="header-class" class="header-class" aria-label="Classe projetée">Phase 2 A</div>
-  <div class="tools"><span class="demo">● MAQUETTE · RÉSULTATS FICTIFS</span><details class="da-switch"><summary>🎨 03 · Ardoise scolaire</summary><nav aria-label="Changer de direction artistique"><a href="./projection-v2-da-neon.html" >01 · Néon auditorium</a><a href="./projection-v2-da-papier.html" >02 · Papier clair</a><a href="./projection-v2-da-ardoise.html" aria-current="page">03 · Ardoise scolaire</a><a href="./projection-v2-da-studio.html" >04 · Studio compétition</a><a href="../projection-v2-demo.html">Original V2</a></nav></details></div>
+  <time id="projection-clock" class="projection-clock" aria-label="Heure actuelle">--:--</time>
 </header>
 <div class="projection-stage">
 <main>
   <aside class="left-col" aria-label="Réussite et comparaisons">
+    <div class="projection-demo-tools"><span class="demo">● MAQUETTE · RÉSULTATS FICTIFS</span><details class="da-switch"><summary>🎨 03 · Ardoise scolaire</summary><nav aria-label="Changer de direction artistique"><a href="./projection-v2-da-neon.html" >01 · Néon auditorium</a><a href="./projection-v2-da-papier.html" >02 · Papier clair</a><a href="./projection-v2-da-ardoise.html" aria-current="page">03 · Ardoise scolaire</a><a href="./projection-v2-da-studio.html" >04 · Studio compétition</a><a href="../projection-v2-demo.html">Original V2</a></nav></details></div>
     <section class="panel left"><h2>🎯 Réussite de la classe</h2><div id="classes"></div></section>
     <section class="panel compare-panel" aria-label="Pourcentages des autres classes"><div id="comparison-results"></div></section>
     <button id="settings-left" class="settings-under" type="button">⚙ Applications</button>
@@ -169,6 +169,9 @@ label.setting{justify-content:space-between;max-width:380px}
 </dialog>
 <script>
 "use strict";
+const clockFormatter=new Intl.DateTimeFormat("fr-BE",{hour:"2-digit",minute:"2-digit"});
+function updateClock(){document.getElementById("projection-clock").textContent=clockFormatter.format(new Date())}
+updateClock();setInterval(updateClock,10000);
 // Démonstration isolée : aucune requête réseau, aucun accès à des fiches d'élèves.
 const $=id=>document.getElementById(id);
 const apps=[

@@ -38,6 +38,17 @@ test('L’initiale accentuée est conservée, le fond est transparent',()=>{
  assert.equal(unlockedProfileLevel({xp:{level:2},unlockLevel:3}),3);
 });
 
+test('Les avatars conservent un cadre visible même sans couleur de fond dans HUB et inscription',()=>{
+ const hubCss=get('hub-profile.css'),entryCss=get('join-avatar.css');
+ assert.match(hubCss,/\.identity-avatar\{[^}]*border:2px solid #9fc8e5/);
+ assert.match(hubCss,/\.avatar-preview\{[^}]*border:2px solid #9fc8e5/);
+ assert.match(hubCss,/\.identity-avatar\.avatar-transparent,\.avatar-preview\.avatar-transparent\{[\s\S]*?background:transparent!important/);
+ assert.match(entryCss,/\.join-avatar-preview\{[^}]*border:2px solid #6393ba/);
+ assert.match(entryCss,/\.join-avatar-preview\.avatar-transparent\{[^}]*background:transparent!important/);
+ assert.match(get('hub.html'),/hub-profile\.css\?v=20261103-celebrations-cadres-v2/);
+ assert.match(get('index.html'),/join-avatar\.css\?v=20261103-cadres-v4/);
+});
+
 test('Le serveur ignore les niveaux annoncés par les élèves et protège les profils',()=>{
  const api=get('supabase/functions/connect-api/index.ts');
  const edit=api.slice(api.indexOf("case 'student-avatar':{"),api.indexOf("case 'student-reward-celebrate':{"));

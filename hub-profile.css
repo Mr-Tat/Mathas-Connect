@@ -16,7 +16,7 @@
 #identity-box.identity-connected .identity-main{flex:1;justify-items:start;text-align:left}
 #identity-box.identity-connected #identity-title{font:900 clamp(23px,2.6vw,35px)/1.15 "Fredoka",sans-serif}
 #identity-level{font-weight:900;color:#a0d9fc}
-.identity-avatar{display:grid;place-items:center;width:84px;height:84px;border-radius:21px;color:#fff;font-size:48px;font-weight:900;flex:none}
+.identity-avatar{display:grid;place-items:center;width:84px;height:84px;border:2px solid #9fc8e5;border-radius:21px;color:#fff;font-size:48px;font-weight:900;flex:none}
 #identity-extra{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-start}
 #identity-extra[hidden],.avatar-dialog[hidden]{display:none!important}
 #identity-extra button{font-size:12px;padding:7px 9px}
@@ -148,7 +148,7 @@
 }
 .avatar-palette-line{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .avatar-palette-line .avatar-colors{margin:8px 0;flex:1}
-.avatar-preview{display:grid;place-items:center;width:56px;height:56px;border-radius:13px;color:#fff;font-size:36px;font-weight:900}
+.avatar-preview{display:grid;place-items:center;width:56px;height:56px;border:2px solid #9fc8e5;border-radius:13px;color:#fff;font-size:36px;font-weight:900}
 .avatar-colors button[title="Sans fond"]{border:2px dashed #c6d9e7}
 .profile-alias-panel{margin:19px 0 12px;padding:13px;background:#203d53;border:1px solid #6286a0;border-radius:12px}
 .profile-alias-panel[hidden]{display:none!important}

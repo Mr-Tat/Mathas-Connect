@@ -36,7 +36,7 @@ test('le mot Connect des HUB attend un compte approuvé, sans masquer celui du p
  assert.match(hub,/activeProfile=authorized\?profile:null;/);
  assert.match(hub,/\$\('hub-connect-suffix'\)\.hidden=!authorized;/);
  assert.match(css,/\.connect-brand img\.connect-wordmark-3d\[hidden\]\{display:none!important\}/);
- assert.match(html,/hub-profile\.css\?v=20261103-celebrations-v1/);
+ assert.match(html,/hub-profile\.css\?v=20261103-celebrations-cadres-v2/);
  assert.match(home,/<div class="teacher-logo-lockup">[^\n]*<img class="connect-wordmark-3d"[^>]*alt="Connect"/);
 });
 

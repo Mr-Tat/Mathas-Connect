@@ -84,9 +84,10 @@ export function rankMultiClass({
    if(!p||p.visible===false||p.isTeacher&&!includeTeacher)continue;
    const row=Array.isArray(p.scores)?p.scores.find(x=>x.appKey===appKey):undefined;
    const score=numeric(row?.bestScore)?row.bestScore:null;
-   // A player opting out of score publication has no public record.
-   // Keep only unplayed players from the primary class as placeholders.
-   if(group.classId!==primaryClassId&&score===null)continue;
+   // Each game has its own public leaderboard. A student with no published
+   // score for THIS app must not appear, even as an unplayed placeholder:
+   // otherwise cards from another game seem to carry over.
+   if(score===null)continue;
    eligible.push({id:p.id,classId:group.classId,className:group.name,
     name:String(p.name||'Élève').slice(0,80),level:numeric(p.level)?p.level:null,
     trophies:numeric(p.trophies)?p.trophies:null,avatar:p.avatar??null,score});

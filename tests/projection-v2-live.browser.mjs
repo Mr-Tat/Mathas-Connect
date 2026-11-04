@@ -125,6 +125,19 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   assert.equal(await page.locator('#comparison-results .compare-row').count(),0);
   assert.equal(await page.locator('#settings-left').count(),1);
   assert.equal(await page.locator('#open-settings').count(),0);
+  // Une application sans aucun score publié ne montre même pas les cartes
+  // des élèves qui ont joué à l'addition ou à la multiplication.
+  await page.locator('#app-tabs').getByRole('button',{name:'Soustraction écrite'}).click();
+  assert.equal(await page.locator('#app-name').textContent(),'Soustraction écrite');
+  assert.equal(await page.locator('#ranking-list .entry').count(),0);
+  assert.equal(await page.locator('#ranking-list .ranking-col').count(),0);
+  assert.match(await page.locator('#ranking-list').evaluate(el=>getComputedStyle(el,'::after').content),
+   /Aucun score enregistré pour cette application/);
+  await page.locator('#app-tabs').getByRole('button',{name:'Multiplication écrite'}).click();
+  assert.equal(await page.locator('.entry.rank-1 .points').textContent(),'90 pts',
+   'la multiplication ne récupère pas les 220 points de l’addition');
+  await page.locator('#app-tabs').getByRole('button',{name:'Addition écrite',exact:true}).click();
+  assert.equal(await page.locator('.entry.rank-1 .points').textContent(),'220 pts');
   // Cas de classe partiellement active : 5 élèves en une colonne, comme
   // la capture signalée. Le classement doit utiliser l'espace disponible,
   // et non se contracter autour du prénom le plus long.
@@ -143,7 +156,7 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
    return {panelWidth:panel.width,listWidth:listRect.width,
     cardWidth:first.width,listLeft:listRect.left,panelLeft:panel.left,
     panelRight:panel.right,cardLeft:first.left,
-    textRight:label.right,pointsLeft:points.left,
+    textRight:label.right,pointsLeft:points.left,cardHeight:first.height,
     color:getComputedStyle(list.querySelector('.rank-1 .projection-avatar')).color};
   });
   assert.ok(singleGeometry.cardWidth>=Math.min(520,singleGeometry.panelWidth*.75)
@@ -157,6 +170,17 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   assert.ok(singleGeometry.pointsLeft-singleGeometry.textRight<=24,
     'Comme ce matin, les points doivent rester proches du prénom');
   assert.equal(singleGeometry.color,'rgb(35, 51, 66)','La lettre reste lisible sur le podium doré');
+  assert.ok(singleGeometry.cardHeight>=54&&singleGeometry.cardHeight<=75,
+   'Cinq élèves : pas de cartes étirées verticalement : '+JSON.stringify(singleGeometry));
+  const podium=await page.locator('.entry.rank-1').evaluate(el=>{
+   const points=el.querySelector('.points'),avatar=el.querySelector('.projection-avatar');
+   return {scoreBackground:getComputedStyle(points).backgroundColor,
+    scoreColor:getComputedStyle(points).color,
+    avatarBorder:getComputedStyle(avatar).borderWidth};
+  });
+  assert.equal(podium.scoreBackground,'rgb(32, 51, 72)','Les points du podium ont un fond contrasté');
+  assert.equal(podium.scoreColor,'rgb(255, 243, 210)','Les points restent lumineux');
+  assert.equal(podium.avatarBorder,'2px','Même les initiales transparentes ont un cadre');
   // Le retour au classement complet rétablit 7+7, puis 8+8 sans effet de bord.
   visibleStudents=14;
   await page.locator('#load-real').click();
@@ -189,10 +213,10 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   assert.ok(first&&eighth&&last&&board);
   assert.ok(last.y+last.height<=768,
    'Les seize places doivent être visibles sur un écran 1366×768 sans défiler');
-  assert.ok(eighth.y+eighth.height>board.y+board.height-110,
-   'Les 8 rangs doivent occuper la hauteur utile du panneau, pas se tasser en haut');
-  assert.ok(eighth.y-first.y>400,'Les huit lignes utilisent la hauteur supplémentaire libérée');
-  assert.ok(first.height>57,'Cases élèves agrandies verticalement');
+  assert.ok(eighth.y+eighth.height<board.y+board.height-20,
+   'Les huit rangs ne remplissent plus artificiellement le panneau');
+  assert.ok(first.height>=54&&first.height<=75,'Cases compactes et lisibles');
+  assert.ok(Math.abs(eighth.height-first.height)<=3,'Hauteur de cartes régulière');
   assert.ok((await page.locator('.class-mark').allTextContents()).includes('Phase 2 B'));
   assert.equal(await page.locator('#comparison-results .compare-row').count(),0,
     'Score des autres classes au centre, jamais à gauche');
