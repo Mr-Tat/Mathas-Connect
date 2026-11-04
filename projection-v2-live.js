@@ -354,7 +354,7 @@ function renderClasses(){
  if(!principal)return;
  const percentages=principal.percentages;
  $('percentage-scope').textContent=principal.percentageStatus==='completed_games_only'
-  ?'Exercices des parties terminées enregistrées, hors Mort subite. Les parties abandonnées ne sont pas encore comptées.'
+  ?'Exercices des parties Classique terminées enregistrées. Les parties abandonnées ne sont pas encore comptées, ni les modes à arrêt anticipé.'
   :'Pas de statistiques complètes sur les exercices tentés pour le moment.';
  root.append(makeSuccessRow('Global',percentages?.global,true));
  for(const app of apps.filter(a=>options.percentageApps.includes(a.key))){
