@@ -44,19 +44,55 @@ export function multiplicationAttemptCorrect(q,raw){
  }
  return true;
 }
-export function multiplicationQueue(storage,studentId,classId){
+
+export const MULTIPLICATION_EXTENDED_MODES=Object.freeze([
+ 'sudden','three-lives','hard-sudden','hard-three-lives'
+]);
+const EXTENDED_WIDTHS=Object.freeze({normal:[3,5,7],hard:[10,12,16]});
+export function expectedMultiplicationWidth(mode,level){
+ if(!MULTIPLICATION_EXTENDED_MODES.includes(mode)||![1,2,3].includes(level))return null;
+ return EXTENDED_WIDTHS[mode.startsWith('hard-')?'hard':'normal'][level-1];
+}
+export function acceptMultiplicationExtendedChallenge(data,level,mode,multipliers){
+ const width=expectedMultiplicationWidth(mode,level),allowed=new Set(multipliers);
+ if(width===null||data?.ok!==true||!UUID.test(data.sessionId)
+  ||data.level!==level||data.mode!==mode||data.limit!==120||data.width!==width
+  ||!isInt(data.revision)||data.revision<0||!isInt(data.resetEpoch)||data.resetEpoch<0
+  ||Date.parse(data.expiresAt)<=Date.now()
+  ||!Array.isArray(data.questions)||data.questions.length!==120)return null;
+ for(const [i,q] of data.questions.entries()){
+  if(q?.id!=='q'+(i+1)||q.op!=='mul'||typeof q.a!=='string'
+   ||!/^[1-9][0-9]{1,15}$/.test(q.a)||!isInt(q.m)||!allowed.has(q.m)
+   ||q.width!==q.a.length||q.width<width-1||q.width>width)return null;
+ }
+ return Object.freeze({...data,total:120,questions:data.questions.map(q=>Object.freeze({...q}))});
+}
+export function multiplicationEndState(mode,answers,questions){
+ const classic=mode==='classic',limit=mode.endsWith('three-lives')?3:1;
+ let correct=0,wrong=0;
+ for(let i=0;i<answers.length;i++){
+  if(!classic&&wrong>=limit)return {valid:false,complete:false,correct,wrong};
+  if(multiplicationAttemptCorrect(questions[i],answers[i]))correct++;else wrong++;
+ }
+ return {valid:true,correct,wrong,
+  complete:classic?answers.length===questions.length:wrong===limit||answers.length===120,
+  lives:classic?null:Math.max(0,limit-wrong)};
+}
+
+export function multiplicationQueue(storage,studentId,classId,mode='classic',level=0){
  if(!UUID.test(studentId)||!UUID.test(classId))return null;
- const key='mathas.multi.certified-classic.v1.'+classId+'.'+studentId;
+ const key=(mode==='classic'?'mathas.multi.certified-classic.v1.':'mathas.multi.certified-extended.v1.'+mode+'.'+level+'.')+classId+'.'+studentId;
+ const cap=mode==='classic'?20:120;
  return {
   read(){try{const v=JSON.parse(storage.getItem(key));return v&&UUID.test(v.sessionId)
-    &&Array.isArray(v.answers)&&v.answers.length<=20
+    &&Array.isArray(v.answers)&&v.answers.length<=cap
     &&Date.parse(v.expiresAt)>Date.now()?v:null}catch{return null}},
   save(challenge,answers){
    try{
-    if(!CLASSIC_COUNTS.includes(challenge.total)||answers.length>challenge.total)return false;
+    if((mode==='classic'&&!CLASSIC_COUNTS.includes(challenge.total))||answers.length>cap)return false;
     storage.setItem(key,JSON.stringify({
      sessionId:challenge.sessionId,expiresAt:challenge.expiresAt,
-     level:challenge.level,total:challenge.total,answers}));return true;
+     mode,level:challenge.level,total:challenge.total,answers}));return true;
    }catch{return false}
   },
   clear(){try{storage.removeItem(key)}catch{}}
