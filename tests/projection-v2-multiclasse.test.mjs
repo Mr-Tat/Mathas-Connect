@@ -13,7 +13,9 @@ test('Projection : Score coché => classe jointe au défi, 16 meilleurs seulemen
  assert.ok(p.some(x=>x.classId==='A'));assert.equal(p[0].classId,'B');
  assert.deepEqual(splitProjectedRanking(p,true).map(x=>x.length),[8,8]);
  assert.deepEqual(splitProjectedRanking(p.slice(0,10),true).map(x=>x.length),[5,5]);
- assert.deepEqual(p.map(x=>x.position),Array.from({length:16},(_,i)=>i+1));
+ const distinct=[...new Set(p.map(x=>x.score))];
+ assert.deepEqual(p.map(x=>x.position),p.map(x=>distinct.indexOf(x.score)+1),
+  'Chaque score différent reçoit un rang, les ex aequo partagent le leur');
 });
 test('Projection : % coché seul ne doit jamais ajouter les scores des autres classes',()=>{
  const p=rankMultiClass({classes:[A,B],primaryClassId:'A',scoreClassIds:[],
@@ -51,4 +53,26 @@ test('Projection : chaque jeu n’affiche que ses vrais joueurs, sans héritage 
  assert.deepEqual(multiplication,[]);
  assert.ok(addition.every(x=>x.score!==null));
  assert.ok(subtraction.every(x=>x.score!==null));
+});
+
+test('Projection : scores égaux dans une même classe ou entre classes => même podium',()=>{
+ const classes=[
+  {classId:'A',name:'A',students:[
+   {id:'a1',name:'Amine',scores:[{appKey:'addition-ecrite-simple',bestScore:150}]},
+   {id:'a2',name:'Emma',scores:[{appKey:'addition-ecrite-simple',bestScore:130}]},
+   {id:'a3',name:'Hugo',scores:[{appKey:'addition-ecrite-simple',bestScore:110}]},
+   {id:'a4',name:'Lina',scores:[{appKey:'addition-ecrite-simple',bestScore:90}]}
+  ]},
+  {classId:'B',name:'B',students:[
+   {id:'b1',name:'Zoé',scores:[{appKey:'addition-ecrite-simple',bestScore:150}]},
+   {id:'b2',name:'Théo',scores:[{appKey:'addition-ecrite-simple',bestScore:130}]},
+   {id:'b3',name:'Yanis',scores:[{appKey:'addition-ecrite-simple',bestScore:110}]}
+  ]}
+ ];
+ const rows=rankMultiClass({classes,primaryClassId:'A',scoreClassIds:['B'],
+  appKey:'addition-ecrite-simple'});
+ assert.deepEqual(rows.map(x=>[x.score,x.position]),[
+  [150,1],[150,1],[130,2],[130,2],[110,3],[110,3],[90,4]
+ ]);
+ assert.deepEqual(rows.map(x=>x.classId),['A','B','A','B','A','B','A']);
 });
