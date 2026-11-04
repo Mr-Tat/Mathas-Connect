@@ -146,6 +146,10 @@ label.setting{justify-content:space-between;max-width:380px}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 #settings [hidden]{display:none!important}#reset-confirm input[type=password]{border:1px solid #7794b1;border-radius:7px;background:#0d263e;color:#fff;padding:9px;min-width:210px}#percentage-note{font-size:11px;color:#d5e7fa}#ranking-list:empty::after{content:"Aucun score enregistré pour cette application.";color:#d0e6fd;font-size:14px;padding:25px;text-align:center;display:block}.event.empty{color:#cce0f3}
 
+/* La source et les limites du taux restent visibles. */
+.percentage-scope{font-size:10px;line-height:1.3;color:var(--v-soft,#cee3f3);
+ margin:0 0 10px;padding:6px 7px;border-radius:7px;border:1px solid var(--v-line,#577089);
+ overflow-wrap:anywhere}
 /* Projection simultanée : chaque classement est un panneau autonome. */
 html[data-proj-da] .ranking-board .ranking-head h2{color:var(--v-text,#fff)}
 html[data-proj-da="papier"] .ranking-board .ranking-head h2{color:#fff;font-family:Georgia,"Times New Roman",serif}
@@ -302,7 +306,7 @@ html[data-proj-da="studio"] .ranking-board .ranking-head h2{font-family:Impact,"
 <div class="projection-stage">
 <main id="projection-main" class="projection-main" data-app-count="1">
   <aside class="left-col" aria-label="Réussite et comparaisons">
-    <section class="panel left"><h2>🎯 Réussite de la classe</h2><div id="classes" aria-live="polite"></div></section>
+    <section class="panel left"><h2>🎯 Réussite de la classe</h2><p id="percentage-scope" class="percentage-scope">Calcul des exercices tentés non disponible.</p><div id="classes" aria-live="polite"></div></section>
     <section class="panel compare-panel" aria-label="Pourcentages des autres classes"><div id="comparison-results"></div></section>
     <button id="settings-left" class="settings-under" type="button">⚙ Applications</button>
   </aside>
