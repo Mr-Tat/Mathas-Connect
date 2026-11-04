@@ -38,7 +38,7 @@ test('Contrat SQL : service_role uniquement, agrégation par classe et app, hors
  assert.match(sql,/SUM\(e\.game_score\)::bigint/);
  assert.match(sql,/SUM\(e\.game_total\)::bigint/);
  assert.match(sql,/e\.game_score BETWEEN 0 AND e\.game_total/);
- assert.match(sql,/lower\(e\.game_mode\) NOT IN/);
+ assert.match(sql,/lower\(e\.game_mode\) = 'classic'/);
  assert.match(sql,/m\.left_at IS NULL/);
  assert.match(sql,/SECURITY INVOKER/);
  assert.match(sql,/REVOKE ALL ON FUNCTION[\s\S]*?FROM PUBLIC, anon, authenticated/);
