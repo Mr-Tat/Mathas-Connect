@@ -1,11 +1,11 @@
-import {PROFILE_REWARDS} from './profile-rewards.mjs';
+import {PROFILE_REWARDS} from './profile-rewards.mjs?v=20261104-levels-v2';
 
 export const CELEBRATION_DETAILS=Object.freeze({
  animal:Object.freeze({icon:'🐾',preview:'🦊',title:'Un nouvel ami t’attend !',description:'Tu peux maintenant choisir un avatar animal.'}),
  color:Object.freeze({icon:'🎨',preview:'🌈',title:'À toi les couleurs !',description:'Tu peux maintenant choisir la couleur de fond de ton avatar.'}),
+ smiley:Object.freeze({icon:'😀',preview:'🤩',title:'Exprime ton humeur !',description:'Tu peux maintenant choisir un avatar smiley.'}),
  alias:Object.freeze({icon:'✏️',preview:'✍️',title:'Ton nom d’aventurier !',description:'Tu peux maintenant choisir un pseudo pour ton profil.'}),
- object:Object.freeze({icon:'⚽',preview:'🚀',title:'De nouveaux avatars !',description:'Tu peux maintenant choisir un avatar objet.'}),
- smiley:Object.freeze({icon:'😀',preview:'🤩',title:'Exprime ton humeur !',description:'Tu peux maintenant choisir un avatar smiley.'})
+ object:Object.freeze({icon:'⚽',preview:'🚀',title:'De nouveaux avatars !',description:'Tu peux maintenant choisir un avatar objet.'})
 });
 const rewardByLevel=new Map(PROFILE_REWARDS.map(reward=>[reward.level,reward]));
 
