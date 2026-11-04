@@ -1,5 +1,6 @@
 import {createClient} from 'npm:@supabase/supabase-js@2.95.0';
 import {buildProjectionExploits,EXPLOIT_WINDOW_HOURS} from './exploits.mjs';
+import {summarizeCompletedGames} from './percentages.mjs';
 
 // Teacher-only Projection V2 API. Every read and write checks verified JWT,
 // teacher status, and class-specific management permissions.
@@ -150,6 +151,18 @@ Deno.serve(async(req:Request)=>{
     if(error)throw Error('best_scores_unavailable');
     bestByClass.set(id,data??[]);
    }));
+   // Exact counts of attempted/correct exercises from COMPLETE Classique games
+   // only. Never infer incomplete sessions from unplayed question totals.
+   // SQL accepts class IDs but is executable solely by service_role; teacher
+   // ownership for all compared classes has been checked above.
+   let completedRows:any[]|null=null;
+   try{
+    const {data:rows,error}=await db.rpc('connect_projection_completed_attempt_counts_v1',
+     {p_classes:classIds});
+    if(!error&&Array.isArray(rows))completedRows=rows;
+   }catch{/* Percentage failure must not prevent scores or exploits. */}
+   const selectedPct=settingsRows.find((row:any)=>row.class_id===b.classId)?.options?.percentageApps;
+   const globalPercentApps=Array.isArray(selectedPct)?selectedPct.filter(allowKey):keys;
    const showTeacher=b.showTeacher===true;
    const classes=classRows.filter((row:any)=>classIds.includes(row.id)).map((row:any)=>{
     const members=memberRows.filter((m:any)=>m.class_id===row.id).map((m:any)=>m.student_id);
@@ -174,10 +187,12 @@ Deno.serve(async(req:Request)=>{
       isTeacher:id===teacherId,scores:best.filter((x:any)=>x.student_id===id&&membersSet.has(id))
        .map((x:any)=>({appKey:x.app_key,bestScore:x.best_score,at:x.best_event_at}))};
     }).filter(Boolean);
+    const percentages=completedRows===null?null:summarizeCompletedGames(completedRows,
+     {classId:row.id,appKeys:keys,globalKeys:globalPercentApps});
     return {classId:row.id,name:row.name,students,enrolled:members.length,totals,
      scorePeriods:periodRows.filter((p:any)=>p.class_id===row.id).map((p:any)=>({appKey:p.app_key,since:p.score_since})),
      options:settingsRows.find((p:any)=>p.class_id===row.id)?.options??null,
-     percentages:null,percentageStatus:'exercise_telemetry_not_yet_available'};
+     percentages,percentageStatus:percentages?'completed_games_only':'exercise_telemetry_not_yet_available'};
    });
    // Recent, server-confirmed exploits of the primary class, published only
    // under names allowed for that app. Failures cannot block the leaderboard.
