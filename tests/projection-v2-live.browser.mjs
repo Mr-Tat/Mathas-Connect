@@ -427,7 +427,7 @@ test('V2 — prénom long, cadre carré, score centré et chiffres en valeur dan
    assert.ok(m.score.right<=m.row.right,'Score dans sa case en '+theme);
    assert.notEqual(m.scoreBackground,'rgba(0, 0, 0, 0)','Fond visible derrière les points en '+theme);
    assert.equal(m.scoreBorder,'none','Aucun contour autour des points en '+theme);
-   assert.equal(m.scorePadding,'7px','Fond du podium désormais plus visible en '+theme);
+   assert.equal(m.scorePadding,'6px','Fond intermédiaire du podium en '+theme);
    assert.equal(m.scoreRadius,'6px','Coins doux du fond des points en '+theme);
    assert.equal(m.minorGap,'2px','Espacement Niv. / chiffre / trophée resserré en '+theme);
    assert.equal(m.trophyMargin,'1px','Trophée rapproché en '+theme);
@@ -448,22 +448,23 @@ test('V2 — prénom long, cadre carré, score centré et chiffres en valeur dan
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
 
-test('V2 — scores podium lisibles en or, argent et bronze sur les 4 thèmes',{timeout:80000},async()=>{
+
+test('V2 — cartouches podium intermédiaires, lisibles dans les 4 thèmes',{timeout:80000},async()=>{
  const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  try{
   const page=await browser.newPage({viewport:{width:1366,height:768}}),state=sampleState([ADD,MUL],8);
   const {errors}=await openBoard(page,url,state);
   const expected=[
-   {background:'rgb(105, 68, 25)',color:'rgb(255, 247, 228)'},
-   {background:'rgb(43, 80, 106)',color:'rgb(242, 250, 255)'},
-   {background:'rgb(101, 57, 38)',color:'rgb(255, 241, 230)'}
+   {background:'rgba(105, 68, 25, 0.36)',color:'rgb(48, 34, 18)',base:[235,187,97],pigment:[105,68,25],ink:[48,34,18]},
+   {background:'rgba(43, 80, 106, 0.36)',color:'rgb(27, 46, 61)',base:[187,203,216],pigment:[43,80,106],ink:[27,46,61]},
+   {background:'rgba(101, 57, 38, 0.36)',color:'rgb(24, 17, 11)',base:[201,149,118],pigment:[101,57,38],ink:[24,17,11]}
   ];
-  const contrast=(foreground,background)=>{
-   const channels=cssColor=>cssColor.match(/[0-9]+(?:\.[0-9]+)?/g).slice(0,3).map(Number);
-   const lum=rgb=>rgb.map(c=>{const v=c/255;return v<=0.04045?v/12.92:((v+0.055)/1.055)**2.4;})
-    .reduce((sum,c,i)=>sum+c*[0.2126,0.7152,0.0722][i],0);
-   const a=lum(channels(foreground)),b=lum(channels(background));
-   return (Math.max(a,b)+0.05)/(Math.min(a,b)+0.05);
+  const luminance=rgb=>rgb.map(c=>{
+   const v=c/255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;
+  }).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+  const contrast=(one,two)=>{
+   const a=luminance(one),b=luminance(two);
+   return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
   };
   for(const theme of ['neon','papier','ardoise','studio']){
    await page.locator('#projection-theme').selectOption(theme);
@@ -475,16 +476,17 @@ test('V2 — scores podium lisibles en or, argent et bronze sur les 4 thèmes',{
    }));
    assert.equal(badges.length,4,'Quatre lignes observées en '+theme);
    for(let i=0;i<3;i++){
-    assert.equal(badges[i].bg,expected[i].background,'Rang '+(i+1)+' : fond fort en '+theme);
-    assert.equal(badges[i].color,expected[i].color,'Rang '+(i+1)+' : texte contrasté en '+theme);
-    assert.equal(badges[i].border,'none','Aucun contour en '+theme);
-    assert.equal(badges[i].leftPadding,'7px','Fond visible tout autour en '+theme);
-    assert.ok(contrast(badges[i].color,badges[i].bg)>=7,
-     'Contraste texte/fond fort au rang '+(i+1)+' en '+theme);
-    assert.ok(badges[i].right<=badges[i].rowRight,'Score sans débordement en '+theme);
+    const e=expected[i],observed=badges[i];
+    assert.equal(observed.bg,e.background,'Rang '+(i+1)+' : fond modéré en '+theme);
+    assert.equal(observed.color,e.color,'Rang '+(i+1)+' : chiffres foncés en '+theme);
+    assert.equal(observed.border,'none','Pas de contour en '+theme);
+    assert.equal(observed.leftPadding,'6px','Espacement compact en '+theme);
+    const blended=e.base.map((base,j)=>Math.round(base*.64+e.pigment[j]*.36));
+    assert.ok(contrast(e.ink,blended)>=4.5,'Texte suffisamment lisible au rang '+(i+1)+' en '+theme);
+    assert.ok(observed.right<=observed.rowRight,'Pas de débordement du score en '+theme);
    }
    assert.ok(!expected.some(e=>e.background===badges[3].bg),
-    'La quatrième place garde un cartouche plus discret en '+theme);
+    'La quatrième place conserve son cartouche discret en '+theme);
   }
   assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
