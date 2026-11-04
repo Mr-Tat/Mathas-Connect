@@ -1,5 +1,7 @@
 # Passage de flambeau — [APP / SUJET] — [DATE]
 
+> Référence pédagogique : [Doctrine d’efficacité et RETEX du 04/11/2026](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md). La prochaine conversation doit reprendre **le candidat final pour les élèves**, pas reconstruire un nouveau pilote LAB.
+
 Ce fichier est **la seule synthèse de continuation**, pour ChatGPT/Codex dans une conversation neuve. Ne pas transmettre tokens, exports d'élèves ou dumps personnels.
 
 ## Références immuables
@@ -21,6 +23,10 @@ Ce fichier est **la seule synthèse de continuation**, pour ChatGPT/Codex dans u
 | Parcours, reçus, reset | CI locale / LAB authentifié | | |
 | Réglages professeur et sécurité | tests / LIVE | | |
 | Points non vérifiés | NON EXÉCUTÉ | | |
+
+## Capacités et état de livraison élève
+
+**XP / badges « Reste N XP » sur les boutons :** […] / SANS OBJET ; **trophées dans les cases d’exercice :** […] / SANS OBJET ; **score personnel :** […] / SANS OBJET ; **projection + consentement :** […] / SANS OBJET ; **HUB/professeur/Monsieur T :** […] ; **candidat final :** […] ; **vraie publication élève :** OK / ÉCHEC / NON EXÉCUTÉ. Aucun test LAB supplémentaire ne doit être créé sans besoin explicite.
 
 ## Déjà réalisé
 

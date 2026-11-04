@@ -1,5 +1,7 @@
 # Fiche d’intégration — [NOM DE L’APPLICATION]
 
+> Ouvrir avec la [doctrine d’efficacité](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md). **Concevoir la version finale élève**, pas une architecture LAB qui sera remplacée. Utiliser une seule chaîne de recette fictive du même candidat avant ouverture.
+
 **Statut :** BROUILLON / COPIE LIBRE / LOCAL VALIDÉ / PILOTE HÉBERGÉ / OUVERT — **Date :** [AAAA-MM-JJ]  
 **Responsable de la PR :** [agent/conversation] — **Branche/PR :** [liens]
 
@@ -37,6 +39,20 @@
 | Diff minimal du moteur intégré et manifest source | |
 
 ## 3. Contrat propre à cette application
+
+### Capacités pédagogiques explicites (SANS OBJET si absent)
+
+| Capacité | Décision / preuve |
+| --- | --- |
+| XP (oui/non) ; modes et barème | |
+| « Reste N XP » au bas de **chaque bouton concerné** ; 0 officiel et indisponible | |
+| Trophées (oui/non) ; total de **coupes visuelles** réellement gagnables | |
+| Trophées **à récupérer directement dans la case de l’exercice/mode**, état acquis/restant | |
+| Score (oui/non) ; meilleur jour, historique, comparaison entre modes si pertinent | |
+| Projection (sans objet/classement/exploits/% mesuré) ; consentement et classe | |
+| HUB, résultats professeur, réglages, Monsieur T et bascule finale élève | |
+
+
 
 - **Schéma événement version :** […] ; **schéma état version :** […] ; **barème version :** […].
 - **Fin admissible :** […] ; **preuve bornée :** […] ; **modes sans droit :** […].

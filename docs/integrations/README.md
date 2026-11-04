@@ -1,5 +1,7 @@
 # Guide permanent — intégrer une application dans Math’as Connect
 
+> **Priorité professeur du 4 novembre 2026 :** lire la [Doctrine d’efficacité et RETEX transversal](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) **avant** les recettes historiques. Construire dès le départ le jeu final pour les élèves (ses capacités XP, trophées, score facultatif, projection et HUB), puis valider ce même candidat avec les profils fictifs déjà disponibles ; éviter les versions tests parallèles et ne pas laisser une publication validée en brouillon. Cela ne dispense pas des tests de sécurité ni du contrôle Pages/Edge/SQL.
+
 **Version 1.0 — 31 octobre 2026.** Destiné au professeur, à ChatGPT et à Codex. **Cette page est la procédure à suivre**, pas l'historique d'un jeu. Le dépôt et les services évoluent : vérifier leurs versions à chaque mission.
 
 > **Principe : ajouter un jeu, pas réécrire Math’as Connect.** Préserver son moteur, ses modes et sa pédagogie ; brancher un adaptateur minimal au système Connect. Un outil pédagogique peut être intégré **sans XP**.
@@ -17,7 +19,9 @@
 
 Ces étapes sont des **lots de travail**, pas huit demandes d'accord : mener tous les audits, tests et PR permis en autonomie. Solliciter le professeur **seulement** pour un barème ou un choix pédagogique non tranché, une session réelle qu'aucun outil ne peut ouvrir, une permission/secret indispensable, une opération de production non autorisée ou une anomalie bloquante.
 
-## 🧪 Déployer d'abord dans le HUB du Laboratoire pour tester
+## 🧪 Recette courte du candidat final dans le HUB du Laboratoire
+
+**Clarification 04/11 :** le développement vise maintenant directement l’application scolaire définitive et ses intégrations ; le laboratoire sert à la valider avec des comptes fictifs, pas à multiplier des moteurs ou des versions destinés à être jetés. Le dispositif historique décrit ci-dessous reste utilisable comme barrière temporaire de sécurité et n’est plus le chemin de développement à prolonger indéfiniment.
 
 **Règle permanente — 1er novembre 2026, validée par le professeur.** Le Laboratoire est précisément l'espace prévu pour **déployer et essayer une nouvelle version d'un jeu avant son ouverture officielle**, avec la classe fictive « Classe démo - TEST ». Il n'est **pas nécessaire** de rendre d'abord les nouveautés visibles dans Observation, Phase 1, Phase 2 ou 2 ECO. Un essai peut être publié dans la rubrique expérimentale du HUB test, puis retiré sans toucher aux quatre HUB normaux.
 
@@ -50,6 +54,7 @@ Le moteur libre et ses variantes pédagogiques fonctionnent ; le nouveau jeu et 
 
 ## Navigation
 
+- [Doctrine d’efficacité et RETEX transversal — lignes rouges XP/trophées/score/projection et objectif de livraison élève](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md)
 - [Référence technique : architecture, XP, états, sécurité, professeur, performances](REFERENCE_TECHNIQUE.md)
 - [Contrat commun scores, XP et trophées permanents](CONTRAT_COMMUN_SCORES_XP_TROPHEES.md)
 - [Projet « Objectif record » : prototype Addition simple (01/11/2026)](PROJET_DEFIS_SCORE_3_VIES_20261101.md)
