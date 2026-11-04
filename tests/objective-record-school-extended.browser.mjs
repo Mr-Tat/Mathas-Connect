@@ -224,11 +224,16 @@ for(const item of examples){
     await native.locator('#startSudden').click();
     assert.equal(await page.locator('#certified-mode').inputValue(),'sudden');
    }else{
-    await page.locator('#challenge-toggle').click();
-    await page.locator('#certify:not([disabled])').waitFor({state:'visible',timeout:10000});
-    await page.locator('#certified-mode').selectOption(item.mode);
-    await page.locator('#certified-level').selectOption(String(item.level));
-    await page.locator('#certify').click();
+    // Contrat du contrôleur HARD : les réglages internes restent disponibles
+    // pour la certification, mais ne font plus partie de la barre élève.
+    await page.evaluate(({mode,level})=>{
+     const m=document.getElementById('certified-mode');
+     m.value=mode;m.dispatchEvent(new Event('change',{bubbles:true}));
+     document.getElementById('certified-level').value=String(level);
+     const start=document.getElementById('certify');
+     if(start.disabled)throw Error('La preuve scolaire HARD est indisponible');
+     start.click();
+    },{mode:item.mode,level:item.level});
    }
    await page.locator('#extended-certified:not([hidden])').waitFor({state:'visible',timeout:15000});
    for(let i=0;i<item.wrong;i++){
@@ -245,8 +250,10 @@ for(const item of examples){
    // Switching straight from a finished extended mode to the other addition
    // must never leave the shared certified start button disabled.
    const other=item.slug==='addition-simple'?'addition-multiple':'addition-simple';
-   await page.locator('#challenge-toggle').click();
-   await page.locator('#app').selectOption(other);
+   await page.evaluate(other=>{
+    const select=document.getElementById('app');
+    select.value=other;select.dispatchEvent(new Event('change',{bubbles:true}));
+   },other);
    await page.waitForFunction(()=>!document.getElementById('certify').disabled,
     null,{timeout:35000});
    assert.deepEqual(errors,[]);

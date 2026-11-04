@@ -102,6 +102,32 @@ for(const item of [
    assert.equal(displayed.display,'none');
    assert.equal(displayed.hasGame,true);
    assert.equal(new URL(displayed.href,url).searchParams.get('connect'),'1');
+   assert.equal(await page.locator('#challenge-toggle').count(),0,
+    'Défi Connect a disparu de la barre repliable');
+   assert.equal(await page.locator('#xp-note,#xp-summary,#total-xp,#trophies').count(),0);
+   if(await page.locator('#bar-handle').isVisible())await page.locator('#bar-handle').click();
+   await page.locator('#xp-toggle').click();
+   const panel=page.locator('#xp-panel:not([hidden])');
+   await panel.waitFor({state:'visible',timeout:10000});
+   assert.match(await panel.locator('.xp-heading').innerText(),/✨ XP acquis et à gagner/);
+   assert.match(await panel.locator('#xp-heading-total').innerText(),/Total : 0 XP/);
+   for(const width of [1280,390,320]){
+    await page.setViewportSize({width,height:800});
+    const rect=await page.evaluate(()=>{
+     const box=id=>document.getElementById(id).getBoundingClientRect();
+     const heading=document.querySelector('#xp-panel .xp-heading>strong').getBoundingClientRect();
+     return {titleRight:heading.right,totalLeft:box('xp-heading-total').left,
+      totalRight:box('xp-heading-total').right,closeLeft:box('xp-close').left,
+      panelRight:box('xp-panel').right};
+    });
+    assert.ok(rect.titleRight<=rect.totalLeft+1,
+     'Titre et compteur ne doivent pas se chevaucher à '+width+' px: '+JSON.stringify(rect));
+    assert.ok(rect.totalRight<=rect.closeLeft+1,
+     'Total et bouton fermer ne doivent pas se chevaucher à '+width+' px: '+JSON.stringify(rect));
+    assert.ok(rect.panelRight<=width+1,'Le panneau reste dans le viewport');
+   }
+   await page.locator('#xp-close').click();
+   await page.setViewportSize({width:1280,height:850});
    // Even a fabricated terminal native event is not allowed to award XP.
    await page.evaluate(()=>{
     const inner=document.getElementById('gameFrame').contentDocument
@@ -112,8 +138,9 @@ for(const item of [
    });
    await page.waitForTimeout(900);
    assert.equal(requests.filter(b=>b.action==='game-record').length,0);
-   await page.locator('#challenge-toggle').click();
-   await page.locator('#certify').click();
+   // Le choix de la série est désormais exclusivement dans le menu du jeu.
+   const native=page.frameLocator('#gameFrame').frameLocator('#game');
+   await native.locator('.classic-count-btn[data-count="4"]').click();
    await page.waitForFunction(()=>{
     const inner=document.getElementById('gameFrame')?.contentDocument
       ?.getElementById('game')?.contentWindow;

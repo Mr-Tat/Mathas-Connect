@@ -1,12 +1,12 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
-import {studentHostContract,permanentTrophyCount} from './student-host-contract.mjs';
+import {studentHostContract} from './student-host-contract.mjs';
 import {ATOMIC_TEST_APP,isFixedTestApp} from './native-official-record.mjs';
 import {createAtomicTestRecorder,isWritableTestApp} from './atomic-test-recorder.mjs';
 import {MIXED_TEST_APP,isMixedTestTerminal} from './mixed-test-proof.mjs';
 import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
 import {createCertifiedExtendedUI} from './certified-extended-ui.mjs';
-import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs?v=20261103-xp-layout-v4';
+import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs?v=20261104-additions-xp-compact-v1';
 import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 import {createSchoolScoreView} from './school-score-view.mjs?v=20261104-native-records-v1';
@@ -96,7 +96,6 @@ function revealBar(){
 function closePanels(){
  xpPanel.hidden=true;challengePanel.hidden=true;
  $('xp-toggle').setAttribute('aria-expanded','false');
- $('challenge-toggle').setAttribute('aria-expanded','false');
  scheduleBar();
 }
 function showConnectedBar(profile){
@@ -104,16 +103,15 @@ function showConnectedBar(profile){
  bar.hidden=false;$('guest-home').hidden=true;
  revealBar();
 }
-function showPanel(which){
+function showXpPanel(){
  if(bar.hidden)return;
- const target=which==='xp'?xpPanel:challengePanel;
- const wasOpen=!target.hidden;
+ const wasOpen=!xpPanel.hidden;
  closePanels();
  if(!wasOpen){
-  target.hidden=false;
-  $(which==='xp'?'xp-toggle':'challenge-toggle').setAttribute('aria-expanded','true');
+  xpPanel.hidden=false;
+  $('xp-toggle').setAttribute('aria-expanded','true');
   stopBarTimer();revealBar();updateBarHeight();
-  if(which==='xp')void loadXpDetails();
+  void loadXpDetails();
  }
 }
 function xpRows(){
@@ -128,7 +126,7 @@ function xpRows(){
 }
 async function loadXpDetails(){
  const generationAtStart=generation,appAtStart=activeApp;
- const container=$('xp-rows'),note=$('xp-note');
+ const container=$('xp-rows');
  container.replaceChildren();
  const waiting=document.createElement('tr'),cell=document.createElement('td');
  cell.textContent='Chargement du relevé officiel…';waiting.append(cell);container.append(waiting);
@@ -147,9 +145,6 @@ async function loadXpDetails(){
    tr.append(name,points);rows.append(tr);
   }
   container.replaceChildren(rows);
-  note.textContent=data.repeatXp?'Parcours '+data.parcours+' : jalons regagnables sur ce parcours.'
-   :data.parcours>1?'Parcours '+data.parcours+' : XP historiques conservés.'
-   :'Chaque récompense officielle ne se gagne qu’une fois par parcours.';
  }catch(e){
   if(generationAtStart===generation&&!xpPanel.hidden){
    container.replaceChildren();
@@ -159,8 +154,7 @@ async function loadXpDetails(){
   }
  }
 }
-$('xp-toggle').addEventListener('click',()=>showPanel('xp'));
-$('challenge-toggle').addEventListener('click',()=>showPanel('challenge'));
+$('xp-toggle').addEventListener('click',showXpPanel);
 $('xp-close').addEventListener('click',closePanels);
 $('challenge-close').addEventListener('click',closePanels);
 $('certify').addEventListener('click',()=>{if(!$('certify').disabled)closePanels()});
@@ -179,7 +173,7 @@ window.addEventListener('resize',updateBarHeight);
 
 const clear=()=>{
   window.MathasConnectOfficialTrophies=null;
-  for(const id of ['app-xp','total-xp','level','trophies'])$(id).textContent='—';
+  for(const id of ['app-xp','level'])$(id).textContent='—';
   $('gameFrame').hidden=true;$('gameFrame').removeAttribute('src');$('refresh').disabled=true;
   $('certified-tools').hidden=true;$('certify').disabled=true;
   bar.hidden=true;handle.hidden=true;$('guest-home').hidden=false;stopBarTimer();closePanels();
@@ -221,9 +215,7 @@ function showOfficial({xp,loaded,appKey}){
  const summary=studentHostContract({xp,loaded,appKey});
  if(!summary)throw Error('Réponse du profil officiel incomplète');
  $('app-xp').textContent=String(summary.appXp);
- $('total-xp').textContent=String(summary.total);
  $('level').textContent=String(summary.level);
- $('trophies').textContent=permanentTrophyCount(loaded.state?.rewards) ?? '—';
  lastOfficialXp=xp;renderMeter(summary.total,summary.level);
  latestState=loaded.state||{};
  schoolScoreView?.updateState(latestState);

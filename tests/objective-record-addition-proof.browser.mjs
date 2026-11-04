@@ -204,10 +204,16 @@ for(const {level,total} of [{level:2,total:10},{level:3,total:20}]){
    await page.goto(url+'/apps/objective-record/eleve.html?class='+classId+'&app=addition-simple',
     {waitUntil:'domcontentloaded',timeout:25000});
    await page.waitForFunction(()=>!document.getElementById('certify').disabled,{timeout:45000});
-   await page.locator('#challenge-toggle').click();
-   await page.locator('#certified-level').selectOption(String(level));
-   await page.locator('#certified-total').selectOption(String(total));
-   await page.locator('#certify').click();
+   // Le sélecteur de niveau appartient au vrai menu natif, sans Défi Connect.
+   await page.evaluate((width)=>{
+    const doc=document.getElementById('gameFrame').contentDocument
+     .getElementById('game').contentDocument;
+    const select=doc.getElementById('classicMaxDigits');
+    select.value=String(width);
+    select.dispatchEvent(new Event('change',{bubbles:true}));
+   },width);
+   await page.frameLocator('#gameFrame').frameLocator('#game')
+    .locator('.classic-count-btn[data-count="'+total+'"]').click();
    await page.waitForFunction(()=>document.getElementById('gameFrame')?.contentDocument
     ?.getElementById('game')?.contentWindow?.__mathasServerCertified?.index===2,null,{timeout:30000});
    const status=await page.evaluate(()=>{

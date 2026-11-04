@@ -72,8 +72,9 @@ test('Chromium: native multiple engine renders server terms and submits only pro
   await page.goto(url+'/apps/objective-record/eleve.html?class='+classId+'&app=addition-multiple',
    {waitUntil:'domcontentloaded',timeout:25000});
   await page.waitForFunction(()=>!document.getElementById('certify').disabled,null,{timeout:45000});
-  await page.locator('#challenge-toggle').click();
-  await page.locator('#certify').click();
+  // Les exercices se choisissent dans le menu natif, pas dans la barre Connect.
+  const native=page.frameLocator('#gameFrame').frameLocator('#game');
+  await native.locator('.classic-count-btn[data-count="4"]').click();
   try{
    await page.waitForFunction(()=>{
     const w=document.getElementById('gameFrame')?.contentDocument

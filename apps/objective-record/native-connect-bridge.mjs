@@ -15,7 +15,11 @@ function hardLevel(button){
 }
 export function classifyNativeLaunch(button,doc,appKey){
  if(!button||button.disabled)return null;
- if(appKey==='addition-ecrite-simple'&&button.matches('.classic-count-btn[data-count]')){
+ // Les deux moteurs affichent désormais 4 / 10 / 20 comme boutons de
+ // lancement. Le bouton startClassic historique de l'Addition multiple est
+ // caché : chaque clic visible doit obtenir une preuve Connect, jamais un
+ // résultat libre pris pour un résultat scolaire.
+ if(APPS.has(appKey)&&button.matches('.classic-count-btn[data-count]')){
   const total=Number(button.dataset.count),level=nativeLevel(doc.getElementById('classicMaxDigits'));
   return [4,10,20].includes(total)?{mode:'classic',level,total}:null;
  }
