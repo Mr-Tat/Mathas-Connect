@@ -272,41 +272,46 @@ export function createCertifiedMultiplicationClassic({
     verify.textContent='Réessayer la validation';verify.disabled=false;verify.hidden=false;
    }}finally{sending=false}
  }
- async function start({level,total,multipliers,method='top',tensFirst=false}){
+ async function start({mode='classic',level,total,multipliers,method='top',tensFirst=false}){
   const ctx=current();
   if(!ctx?.connected||!UUID.test(ctx.studentId)||!UUID.test(ctx.classId)
-   ||run||sending||!Object.hasOwn(WIDTHS,level)
-   ||!CLASSIC_COUNTS.includes(total))return false;
+   ||run||starting||sending||!Object.hasOwn(WIDTHS,level)
+   ||(mode==='classic'?!CLASSIC_COUNTS.includes(total):expectedMultiplicationWidth(mode,level)===null))return false;
   const selected=[...new Set(multipliers)].sort((a,b)=>a-b);
   if(!selected.length||selected.some(n=>!isInt(n)||n<2||n>9))return false;
-  root.hidden=false;verify.hidden=true;next.hidden=true;status.textContent='Création de la série Connect…';
+  root.hidden=false;verify.hidden=true;next.hidden=true;verify.textContent='Vérifier ce calcul';
+  status.textContent='Création de la série Connect…';starting=true;const seq=++requestSeq;
   try{
-   const data=await call('start-classic-v1',{level,total,multipliers:selected});
+   const data=await call(mode==='classic'?'start-classic-v1':'start-extended-v1',
+    mode==='classic'?{level,total,multipliers:selected}:{level,mode,multipliers:selected});
    const fresh=current();
-   if(ctx.studentId!==fresh.studentId||ctx.classId!==fresh.classId)throw Error('Profil remplacé');
-   const parsed=acceptMultiplicationChallenge(data,level,total,selected);
+   if(ctx.studentId!==fresh.studentId||ctx.classId!==fresh.classId||seq!==requestSeq)throw Error('Profil remplacé');
+   const parsed=mode==='classic'?acceptMultiplicationChallenge(data,level,total,selected)
+    :acceptMultiplicationExtendedChallenge(data,level,mode,selected);
    if(!parsed)throw Error('Opérations émises par le serveur invalides');
-   queue=multiplicationQueue(storage,ctx.studentId,ctx.classId);
+   queue=multiplicationQueue(storage,ctx.studentId,ctx.classId,mode,level);
    if(!queue)throw Error('Stockage de reprise indisponible');
    const previous=queue.read();
    let saved=[];
-   if(previous?.sessionId===parsed.sessionId&&previous.level===level&&previous.total===total
+   if(previous?.sessionId===parsed.sessionId&&previous.level===level&&previous.total===parsed.total
     &&previous.answers.every((a,i)=>normalizeMultiplicationAttempt(parsed.questions[i],a)))
      saved=previous.answers;
-   run={...parsed,owner:ctx.studentId,cls:ctx.classId,multipliers:selected,
+   run={...parsed,mode,owner:ctx.studentId,cls:ctx.classId,multipliers:selected,
     method,tensFirst,answers:saved,finished:false};
    if(!queue.save(run,run.answers))throw Error('Sauvegarde du défi impossible');
    mountControls();
-   if(run.answers.length===total){run.finished=true;void finish()}else render();
+   const state=multiplicationEndState(mode,run.answers,run.questions);
+   if(!state.valid)throw Error('Reprise de réponses incohérentes');
+   if(state.complete){run.finished=true;void finish()}else render();
    return true;
   }catch(e){
    show('⚠️ Série certifiée indisponible : '+e.message);
    run=null;queue=null;verify.hidden=true;next.hidden=true;return false;
-  }
+  }finally{starting=false}
  }
  verify.addEventListener('click',()=>{if(run?.finished)void finish();else validate()});
  next.addEventListener('click',()=>{if(run&&!run.finished)render()});
- close.addEventListener('click',()=>{if(sending)return;root.hidden=true;run=null;queue=null;
+ close.addEventListener('click',()=>{if(sending)return;requestSeq++;root.hidden=true;run=null;queue=null;
   verify.textContent='Vérifier ce calcul';verify.hidden=false;notify?.('Série interrompue ; reprise possible avant expiration.')});
  return Object.freeze({start,reset,isOpen:()=>!root.hidden});
 }
