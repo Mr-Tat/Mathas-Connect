@@ -24,7 +24,7 @@ const apps=[
 const allKeys=apps.map(a=>a.key);
 let client=null,classesAvailable=[],data=null,fetching=false,refreshTicket=0;
 let hasLoaded=false,connected=false,optionsLoaded=false,pendingReset=null;
-let nextRefreshAt=0;
+let nextRefreshAt=0,refreshCycleStartedAt=0,refreshPausedAt=0;
 const tracker=createOvertakeTracker(),localRises=new Map();
 const playingKeys=new Map();let animationEpoch=0;
 const scoreCompared=()=>options.comparisonDisplay.filter(c=>c.score).map(c=>c.classId);
@@ -50,12 +50,12 @@ const cardFor=key=>[...$('ranking-board').querySelectorAll('.ranking-card')].fin
 function clearBoard(message){
  cancelPlayback();tracker.clear();localRises.clear();
  refreshTicket++;data=null;connected=false;hasLoaded=false;pendingReset=null;
- nextRefreshAt=0;updateRefreshCountdown();
+ nextRefreshAt=0;refreshCycleStartedAt=0;refreshPausedAt=0;updateRefreshProgress();
  $('ranking-board').replaceChildren();$('classes').replaceChildren();
  $('exploits').replaceChildren();$('app-tabs').replaceChildren();
  $('visible-app-count').textContent='Projection masquée';
  $('reset-password').value='';
- for(const id of ['settings-left','settings-top'])$(id).disabled=true;
+ for(const id of ['settings-left'])$(id).disabled=true;
  note(message);
 }
 async function call(functionName,action,body={}){
@@ -115,19 +115,22 @@ async function refresh(){
   // A new verified score can queue an animation, but cannot play on another app.
   observeRankings(result);
   data=result;
-  const firstDisplay=!hasLoaded;
   hasLoaded=true;
-  if(firstDisplay)nextRefreshAt=Date.now()+REFRESH_INTERVAL_MS;
-  for(const id of ['settings-left','settings-top'])$(id).disabled=false;
+  for(const id of ['settings-left'])$(id).disabled=false;
   render();
   note('Actualisé à '+clockFormatter.format(new Date()));
-  updateRefreshCountdown();
+  updateRefreshProgress();
  }catch(error){
   if(ticket!==refreshTicket)return;
   const message=error?.message||'Données indisponibles';
   if(/connexion professeur|auth_required|auth$|401/i.test(message))clearBoard('Session professeur expirée : reconnecte-toi.');
   else note('Erreur : '+message);
- }finally{fetching=false;$('load-real').disabled=false}
+ }finally{
+  fetching=false;$('load-real').disabled=false;
+  // Après une lecture manuelle ou automatique, repartir de zéro pour 20 s.
+  // Après un échec, réessayer dans 20 s sans rafale de requêtes.
+  if(ticket===refreshTicket&&connected&&hasLoaded)startRefreshCycle();
+ }
 }
 function mainData(){return data?.classes?.find(c=>c.classId===classId)}
 function score(person,appKey){
@@ -316,7 +319,7 @@ function render(){
   btn.onclick=()=>cardFor(app.key)?.scrollIntoView({behavior:'smooth',block:'start'});
   tabs.append(btn);
  });
- renderExploits();renderClasses();updateRefreshCountdown();
+ renderExploits();renderClasses();updateRefreshProgress();
  for(const app of active)if(!playingKeys.has(app.key)&&tracker.pending(app.key))
   queueMicrotask(()=>{void playApp(app.key)});
 }
@@ -383,41 +386,80 @@ function renderClasses(){
   comparisons.append(hint);
  }
 }
-// Plus de rotation des applications : seule l'actualisation commune reste.
-function updateRefreshCountdown(){
- const label=$('projection-refresh-label');
- if(!connected||!hasLoaded){label.textContent='MAJ en attente';return}
- if(document.visibilityState!=='visible'||$('settings').open){
-  label.textContent='MAJ suspendue';return;
+// La barre représente l'attente avant la PROCHAINE lecture du serveur.
+// Une seule horloge : aucune simulation de chargement ni rotation de classements.
+function startRefreshCycle(){
+ const now=Date.now();
+ refreshCycleStartedAt=now;nextRefreshAt=now+REFRESH_INTERVAL_MS;
+ refreshPausedAt=(document.visibilityState!=='visible'||$('settings').open)?now:0;
+ updateRefreshProgress();
+}
+function pauseRefreshCycle(){
+ if(hasLoaded&&nextRefreshAt&&!refreshPausedAt)refreshPausedAt=Date.now();
+ updateRefreshProgress();
+}
+function resumeRefreshCycle(){
+ if(refreshPausedAt){
+  const pausedFor=Date.now()-refreshPausedAt;
+  refreshCycleStartedAt+=pausedFor;nextRefreshAt+=pausedFor;
+  refreshPausedAt=0;
  }
- const remaining=Math.max(0,Math.ceil((nextRefreshAt-Date.now())/1000));
- label.textContent='MAJ dans '+String(Math.floor(remaining/60)).padStart(2,'0')+':'+
-  String(remaining%60).padStart(2,'0');
+ // Si l'autre cause de pause est encore présente, ne pas relancer le cycle.
+ if(document.visibilityState!=='visible'||$('settings').open)pauseRefreshCycle();
+ updateRefreshProgress();
+}
+function updateRefreshProgress(){
+ const bar=$('projection-refresh-progress'),fill=$('projection-refresh-fill');
+ const active=connected&&hasLoaded&&nextRefreshAt>0;
+ bar.classList.toggle('is-inactive',!active);
+ bar.classList.toggle('is-paused',active&&Boolean(refreshPausedAt));
+ if(!active){
+  fill.style.transform='scaleX(0)';
+  bar.setAttribute('aria-valuenow','0');
+  bar.setAttribute('aria-valuetext','En attente du premier affichage');
+  bar.title='La MAJ automatique démarrera après le premier affichage.';
+  return;
+ }
+ const now=refreshPausedAt||Date.now();
+ const elapsed=Math.max(0,Math.min(REFRESH_INTERVAL_MS,now-refreshCycleStartedAt));
+ const fraction=elapsed/REFRESH_INTERVAL_MS;
+ const remaining=Math.ceil((REFRESH_INTERVAL_MS-elapsed)/1000);
+ fill.style.transform='scaleX('+fraction+')';
+ bar.setAttribute('aria-valuenow',String(Math.round(fraction*100)));
+ bar.setAttribute('aria-valuetext',refreshPausedAt
+  ?'MAJ suspendue : '+remaining+' secondes restantes'
+  :'Prochaine MAJ automatique dans '+remaining+' secondes');
+ bar.title=refreshPausedAt
+  ?'MAJ auto suspendue · '+remaining+' s restantes'
+  :'Prochaine MAJ automatique dans '+remaining+' s';
 }
 function tickProjection(){
- if(hasLoaded&&connected&&Date.now()>=nextRefreshAt){
-  const now=Date.now();
-  nextRefreshAt+=(Math.floor((now-nextRefreshAt)/REFRESH_INTERVAL_MS)+1)*REFRESH_INTERVAL_MS;
-  if(document.visibilityState==='visible'&&!$('settings').open)void refresh();
+ if(hasLoaded&&connected&&!refreshPausedAt&&nextRefreshAt&&Date.now()>=nextRefreshAt
+   &&!fetching&&document.visibilityState==='visible'&&!$('settings').open){
+  void refresh();
  }
- updateRefreshCountdown();
+ updateRefreshProgress();
 }
-setInterval(tickProjection,1000);
+setInterval(tickProjection,250);
 document.addEventListener('visibilitychange',()=>{
- if(document.visibilityState!=='visible')cancelPlayback();
- else if(hasLoaded)render();
+ if(document.visibilityState!=='visible'){
+  cancelPlayback();pauseRefreshCycle();
+ }else{
+  resumeRefreshCycle();
+  if(hasLoaded)render();
+ }
 });
-updateRefreshCountdown();
+updateRefreshProgress();
 const dialog=$('settings');
 function showSettings(){
  if(!hasLoaded)return note('Clique d’abord sur Afficher / Actualiser.');
- cancelPlayback();buildSettings();dialog.showModal();updateRefreshCountdown();
+ cancelPlayback();buildSettings();dialog.showModal();pauseRefreshCycle();
 }
 function closeSettings(){
- dialog.close();updateRefreshCountdown();$('reset-password').value='';
+ dialog.close();resumeRefreshCycle();$('reset-password').value='';
  $('reset-confirm').hidden=true;pendingReset=null;render();
 }
-for(const id of ['settings-left','settings-top'])$(id).onclick=showSettings;
+for(const id of ['settings-left'])$(id).onclick=showSettings;
 $('close-settings').onclick=closeSettings;
 dialog.addEventListener('cancel',event=>{event.preventDefault();closeSettings()});
 async function commitOptions(){
