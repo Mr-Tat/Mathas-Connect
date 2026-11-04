@@ -427,7 +427,7 @@ test('V2 — prénom long, cadre carré, score centré et chiffres en valeur dan
    assert.ok(m.score.right<=m.row.right,'Score dans sa case en '+theme);
    assert.notEqual(m.scoreBackground,'rgba(0, 0, 0, 0)','Fond visible derrière les points en '+theme);
    assert.equal(m.scoreBorder,'none','Aucun contour autour des points en '+theme);
-   assert.equal(m.scorePadding,'5px','Fond compact autour des points en '+theme);
+   assert.equal(m.scorePadding,'7px','Fond du podium désormais plus visible en '+theme);
    assert.equal(m.scoreRadius,'6px','Coins doux du fond des points en '+theme);
    assert.equal(m.minorGap,'2px','Espacement Niv. / chiffre / trophée resserré en '+theme);
    assert.equal(m.trophyMargin,'1px','Trophée rapproché en '+theme);
