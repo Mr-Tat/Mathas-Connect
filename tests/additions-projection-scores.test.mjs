@@ -68,7 +68,7 @@ test('Les additions réutilisent les cartes natives et une invitation sécurisé
   assert.match(html,/mathas-v541-cup/);
  }
  assert.match(read('apps/objective-record/eleve.mjs'),/school-score-view\.mjs\?v=20261104-native-records-v1/);
- assert.match(read('apps/objective-record/eleve.html'),/eleve\.mjs\?v=20261104-native-embedded-connect-hud/);
+ assert.match(read('apps/objective-record/eleve.html'),/eleve\.mjs\?v=20261104-additions-buttons-position-v2/);
 });
 test('Protection Edge: RPC atomique, identité élève et preuve du résultat',()=>{
  const edge=read('supabase/functions/connect-projection-v2/index.ts');
