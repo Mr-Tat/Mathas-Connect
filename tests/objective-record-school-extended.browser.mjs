@@ -118,8 +118,8 @@ for(const item of examples){
       profileText:profile.textContent.trim(),profileVisible:pr.width>0&&pr.height>0,
       profileInHeader:row.contains(profile),profileRight:pr.right,profileLeft:pr.left,
       xpLabel:xpButton.textContent.trim(),xpVisible:xr.width>0&&xr.height>0,
-      xpAfterTrophies:strip.parentElement===xpButton.parentElement&&
-       strip.compareDocumentPosition(xpButton)&Node.DOCUMENT_POSITION_FOLLOWING,
+      xpAfterTrophies:Boolean(strip.parentElement===xpButton.parentElement&&
+       (strip.compareDocumentPosition(xpButton)&Node.DOCUMENT_POSITION_FOLLOWING)),
       xpButtonAfterStrip:xr.top>=strip.getBoundingClientRect().top,
       icon:card.querySelector('.mode-icon')?.textContent?.trim(),
       title:card.querySelector('.mode-title')?.textContent?.trim(),
