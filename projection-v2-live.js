@@ -272,17 +272,15 @@ function renderExploits(){
  if(!shown.length){
   event.append(exploit('pending',data.exploitsStatus==='unavailable'
    ?'Exploits temporairement indisponibles.':'Aucun exploit confirmé récemment pour les applications affichées.'));
- }else shown.forEach(x=>event.append(exploit(x.type,appName(x.appKey)+' · '+x.message)));
+ }else shown.forEach(x=>event.append(exploit(x.type,x.message,appName(x.appKey)));
 }
 function createRankingCard(app){
  const card=document.createElement('section');
  card.className='ranking ranking-card';card.dataset.appKey=app.key;
  card.setAttribute('aria-label','Classement · '+app.title);
  const head=document.createElement('div');head.className='ranking-head';
- const over=document.createElement('div');over.className='over';
- over.textContent='🏆 MEILLEURS SCORES · PÉRIODE DE PROJECTION';
  const title=document.createElement('h2');title.textContent=app.title;
- head.append(over,title);
+ head.append(title);
  const wrap=document.createElement('div');wrap.className='ranking-wrap';
  const list=document.createElement('div');list.className='ranking-list';
  list.dataset.overtakeSteps='0';
@@ -325,13 +323,29 @@ function render(){
 }
 // Les notifications n'affirment aucun exploit sans événement serveur confirmé.
 // Types prévus : trophée, série parfaite, entrée Top 5 et, seulement après preuve serveur, remontée d'au moins 3 places avec nouveau record personnel.
-function exploit(type,message){
+function exploit(type,message,appTitle=null){
  const kinds={trophy:['🏆','trophy'],perfect:['✨','perfect'],top:['🏅','rank-up'],
   rise:['📈','rank-up'],sudden:['🔥','perfect'],pending:['◌','empty']};
  const [symbol,style]=kinds[type]||kinds.pending;
  const el=document.createElement('div');el.className='event '+style;
  const icon=document.createElement('span');icon.className='event-icon';icon.textContent=symbol;icon.setAttribute('aria-hidden','true');
- const text=document.createElement('span');text.className='event-text';text.textContent=message;
+ const text=document.createElement('span');text.className='event-text';
+ if(appTitle)text.append(document.createTextNode(appTitle+' · '));
+ // Pour ces cinq types, le nom précède un libellé serveur connu.
+ // Tout le contenu est construit avec des nœuds texte, jamais avec innerHTML.
+ const actions={
+  trophy:' gagne un nouveau trophée',
+  perfect:' réussit une série parfaite',
+  sudden:' dépasse 10 bonnes réponses en Mort subite',
+  top:' réalise un score du Top 5',
+  rise:' remonte de '
+ };
+ const marker=actions[type],split=marker?message.indexOf(marker):-1;
+ if(split>0&&split<=80){
+  const name=document.createElement('strong');name.className='event-student';
+  name.textContent=message.slice(0,split);
+  text.append(name,document.createTextNode(message.slice(split)));
+ }else text.append(document.createTextNode(message));
  el.append(icon,text);return el;
 }
 function numericPercent(value){return typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<=100?value:null}
