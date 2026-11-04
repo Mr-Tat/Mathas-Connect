@@ -16,6 +16,8 @@ const files={
  '/apps/multiplication-simple/game-original.html':['../apps/multiplication-simple/game-original.html','text/html'],
  '/apps/multiplication-simple/school-ui.mjs':['../apps/multiplication-simple/school-ui.mjs','text/javascript'],
  '/apps/multiplication-simple/certified-classic.mjs':['../apps/multiplication-simple/certified-classic.mjs','text/javascript'],
+ '/apps/multiplication-simple/native-proof-adapter.mjs':['../apps/multiplication-simple/native-proof-adapter.mjs','text/javascript'],
+ '/apps/multiplication-simple/native-certified.mjs':['../apps/multiplication-simple/native-certified.mjs','text/javascript'],
  '/apps/multiplication-simple/school-record-eligibility.mjs':['../apps/multiplication-simple/school-record-eligibility.mjs','text/javascript'],
  '/apps/objective-record/native-connect-bridge.mjs':['../apps/objective-record/native-connect-bridge.mjs','text/javascript'],
  '/apps/objective-record/school-score-view.mjs':['../apps/objective-record/school-score-view.mjs','text/javascript'],
@@ -105,19 +107,40 @@ async function connectedPage(teacher=false,failFirstFinish=false,cls=CLS){
  return context;
 }
 
+async function fillTwoNativeProducts(frame){
+ await frame.locator('#calculationsPair .calc-box').first().waitFor({timeout:13000});
+ assert.equal(await frame.locator('#calculationsPair .calc-box').count(),2,
+  'le moteur natif doit garder deux opérations côte à côte');
+ for(const calc of [0,1]){
+  for(const [col,digit] of [[0,'1'],[1,'4'],[2,'2'],[3,'2']]){
+   const input=frame.locator('#calculationsPair .calc-box[data-calc="'+calc+'"] .answer-input[data-col="'+col+'"]');
+   await input.click();
+   await frame.locator('#numpad .num-key[data-key="'+digit+'"]').click();
+  }
+ }
+ await frame.locator('#primaryBtn').click();
+}
+
+async function playFourAttemptsWithoutReceipt(page){
+ const frame=page.frameLocator('iframe');
+ await frame.locator('.classic-count-btn[data-count="4"]').click();
+ await frame.locator('#gameScreen:not(.hidden)').waitFor();
+ await fillTwoNativeProducts(frame);
+ await frame.locator('#primaryBtn').click();
+ await fillTwoNativeProducts(frame);
+}
+
 async function playFour(page){
  const frame=page.frameLocator('iframe');
  await frame.locator('.classic-count-btn[data-count="4"]').click({timeout:12000});
- const proof=page.locator('#mathasMultiCertified:not([hidden])');
- await proof.waitFor({timeout:12000});
- for(let i=0;i<4;i++){
-  for(const [col,digit] of [[0,'1'],[1,'4'],[2,'2'],[3,'2']]){
-   await proof.locator('.mul-proof-input.answer[data-col="'+col+'"]').fill(digit);
-  }
-  await proof.getByRole('button',{name:'Vérifier ce calcul'}).click();
-  if(i<3)await proof.getByRole('button',{name:'Calcul suivant'}).click();
- }
- await proof.getByText('Score vérifié par le serveur.',{exact:false}).waitFor({timeout:14000});
+ await frame.locator('#gameScreen:not(.hidden)').waitFor({timeout:13000});
+ assert.equal(await page.locator('#mathasMultiCertified').count(),0,
+  'aucun écran de multiplication de remplacement ne doit apparaître');
+ await fillTwoNativeProducts(frame);
+ await frame.locator('#primaryBtn').getByText('Calculs suivants').waitFor({timeout:12000});
+ await frame.locator('#primaryBtn').click();
+ await fillTwoNativeProducts(frame);
+ await page.getByText('Série certifiée',{exact:false}).waitFor({timeout:14000});
 }
 
 try{
@@ -219,7 +242,7 @@ try{
    assert.ok(calls.some(x=>x.action==='student-xp'));
    await page.waitForFunction(()=>
      document.getElementById('xp-earned-total')?.textContent?.includes('22'),null,{timeout:11000});
-   await page.locator('#mathasMultiCertified button').first().click().catch(()=>{});
+   await frame.locator('#menuBtn').click().catch(()=>{});
    await page.reload({waitUntil:'domcontentloaded'});
    await page.frameLocator('iframe').locator('#mathasPointsQuick [data-points="daily"]')
     .waitFor({timeout:20000});
@@ -257,23 +280,13 @@ try{
  await test('TEST student: network fails after four answers, reload resumes SAME certified session and ACK',async()=>{
   const {page,proofCalls,projectionCalls}=await connectedPage(false,true);
   try{
-   const frame=page.frameLocator('iframe');
-   await frame.locator('.classic-count-btn[data-count="4"]').click();
-   const proof=page.locator('#mathasMultiCertified:not([hidden])');
-   await proof.waitFor();
-   for(let i=0;i<4;i++){
-    for(const [col,digit] of [[0,'1'],[1,'4'],[2,'2'],[3,'2']])
-     await proof.locator('.mul-proof-input.answer[data-col="'+col+'"]').fill(digit);
-    await proof.getByRole('button',{name:'Vérifier ce calcul'}).click();
-    if(i<3)await proof.getByRole('button',{name:'Calcul suivant'}).click();
-   }
-   await proof.getByText('Preuve conservée.',{exact:false}).waitFor({timeout:15000});
+   await playFourAttemptsWithoutReceipt(page);
+   await page.getByText('Preuve sauvegardée',{exact:false}).waitFor({timeout:15000});
    assert.deepEqual(proofCalls.map(x=>x.action),['start-classic-v1','finish-classic-v1']);
    assert.equal(projectionCalls.length,0);
    await page.reload({waitUntil:'domcontentloaded'});
    await page.frameLocator('iframe').locator('.classic-count-btn[data-count="4"]').click();
-   await page.locator('#mathasMultiCertified').getByText('Score vérifié par le serveur.',{exact:false})
-    .waitFor({timeout:18000});
+   await page.getByText('Série certifiée',{exact:false}).waitFor({timeout:18000});
    assert.deepEqual(proofCalls.map(x=>x.action),[
     'start-classic-v1','finish-classic-v1','finish-classic-v1'
    ],'reprise = même sessionId, aucune émission d’un nouveau défi');
@@ -289,7 +302,7 @@ try{
    assert.equal(await page.evaluate(()=>window.MathasPilotBridge?.mode),'connected');
    assert.ok(calls.some(x=>x.action==='teacher-player'));
    await page.frameLocator('iframe').locator('.classic-count-btn[data-count="4"]').click();
-   await page.locator('#mathasMultiCertified:not([hidden])').waitFor();
+   await page.frameLocator('iframe').locator('#gameScreen:not(.hidden)').waitFor();
    assert.equal(proofCalls[0].action,'start-classic-v1');
   }finally{await page.close()}
  });
