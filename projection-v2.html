@@ -151,6 +151,54 @@ label.setting{justify-content:space-between;max-width:380px}
 body .ranking-board .ranking-head{min-height:50px;padding:7px 6px}
 body .ranking-board .ranking-head h2{margin:0;line-height:1.18}
 .event-text .event-student{font-weight:900;color:inherit}
+/* Étiquettes discrètes, valeurs et points mieux hiérarchisés.
+   Les trois éléments principaux restent alignés verticalement sur la carte. */
+.ranking-board .entry{min-height:52px}
+.ranking-board .entry-details{
+ display:flex;align-items:center;gap:clamp(3px,.45vw,8px);
+ width:100%;min-width:0;
+}
+.ranking-board .entry-details .projection-avatar{
+ flex:0 0 24px;width:24px;height:24px;
+ font-size:19px;line-height:1;box-sizing:border-box;
+}
+.ranking-board .entry-copy{
+ display:flex;flex-direction:column;justify-content:center;gap:3px;
+ min-width:0;flex:0 1 auto;
+}
+.ranking-board .entry-copy .primary{
+ display:block;min-width:0;
+}
+.ranking-board .entry-copy .player-label{
+ display:block;min-width:0;max-width:100%;
+}
+.ranking-board .entry-copy .player-label strong{
+ display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+ white-space:nowrap;line-height:1.1;
+}
+.ranking-board .entry-details .points{
+ flex:0 0 auto;align-self:center;
+ margin-left:0;white-space:nowrap;
+ font-size:clamp(17px,1.35vw,19px);line-height:1.1;
+ font-weight:950;
+}
+.ranking-board .entry-copy .minor{
+ display:flex;align-items:baseline;gap:3px;margin-top:0;
+ white-space:nowrap;line-height:1.15;font-size:9px;
+}
+.ranking-board .entry-copy .minor .meta-label{font-weight:400}
+.ranking-board .entry-copy .minor .meta-value{
+ font-size:11px;font-weight:850;line-height:1;
+}
+.ranking-board .entry-copy .minor .meta-trophy{margin-left:4px;font-size:10px}
+.ranking-board .entry-copy .minor .class-mark{margin-left:4px}
+.projection-main[data-app-count="2"] .ranking-board .entry-details{gap:3px}
+.projection-main[data-app-count="2"] .ranking-board .entry-details .points{
+ font-size:clamp(15px,1.23vw,18px);
+}
+.projection-main[data-app-count="3"] .ranking-board .entry-details .points{
+ font-size:clamp(17px,1.35vw,19px);
+}
 /* Projection simultanée : chaque classement est un panneau autonome. */
 html[data-proj-da] .ranking-board .ranking-head h2{color:var(--v-text,#fff)}
 html[data-proj-da="papier"] .ranking-board .ranking-head h2{color:#fff;font-family:Georgia,"Times New Roman",serif}
@@ -283,7 +331,7 @@ html[data-proj-da="studio"] .ranking-board .ranking-head h2{font-family:Impact,"
 <!-- Styles existants de la Projection V2, complétés uniquement par les quatre thèmes testés. -->
 <script src="./projection-v2-theme.js?v=20261101-1"></script>
 <link rel="stylesheet" href="./essais/projection-v2-da.css?v=20261101-1">
-<link rel="stylesheet" href="./projection-v2-avatar.css?v=20261104-podium-texte-v5">
+<link rel="stylesheet" href="./projection-v2-avatar.css?v=20261104-compact-avatar-v6">
 <link rel="stylesheet" href="./projection-v2-overtake.css?v=20261104-v1">
 
 <!-- Correctif d'en-tête chargé APRÈS les thèmes : ces derniers plaçaient
@@ -417,6 +465,6 @@ header.projection-header .projection-refresh-progress.is-paused{opacity:.35}
   <section class="options"><strong>Comparaison avec les autres classes</strong><p class="note">Pour chaque classe, affiche le score de l’application en cours, le pourcentage de réussite, ou les deux.</p><table class="comparison-table"><thead><tr><th>Classe</th><th>Score</th><th>%</th></tr></thead><tbody id="comparison-options"></tbody></table><label><input id="show-teacher" type="checkbox"> Afficher Monsieur T (décoché au lancement)</label></section>
   <div id="reset-confirm" class="options" hidden><strong id="reset-heading">Réinitialiser le score projeté</strong><label>Mot de passe professeur <input id="reset-password" type="password" autocomplete="current-password" maxlength="160" placeholder="Mot de passe"/></label><div class="controls"><button id="reset-apply" type="button">Confirmer uniquement ce score</button><button id="reset-cancel" type="button">Annuler</button></div></div><p class="note">Une réinitialisation n’affecte qu’une application et une classe. Jamais les %, les résultats réels, les XP, les trophées ou les parcours des élèves.</p>
 </dialog>
-<script type="module" src="./projection-v2-live.js?v=20261104-names-and-headings-v1"></script>
+<script type="module" src="./projection-v2-live.js?v=20261104-compact-scores-v1"></script>
 </body>
 </html>
