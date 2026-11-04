@@ -32,6 +32,8 @@ test('normal native launches route through the exact authenticated proof modes',
  assert.deepEqual(classifyNativeLaunch(button('startClassic'),doc,'addition-ecrite-multiple'),{mode:'classic',level:2,total:20});
  assert.deepEqual(classifyNativeLaunch(button('',{classes:['.classic-count-btn[data-count]'],dataset:{count:'4'}}),doc,'addition-ecrite-simple'),
   {mode:'classic',level:2,total:4});
+ assert.deepEqual(classifyNativeLaunch(button('',{classes:['.classic-count-btn[data-count]'],dataset:{count:'4'}}),doc,'addition-ecrite-multiple'),
+  {mode:'classic',level:2,total:4},'the visible multiple-addition button must never start an unverified local series');
  assert.deepEqual(classifyNativeLaunch(button('startThreeLives'),doc),{mode:'three-lives',level:3});
  assert.deepEqual(classifyNativeLaunch(button('startSudden'),doc),{mode:'sudden',level:3});
 });
