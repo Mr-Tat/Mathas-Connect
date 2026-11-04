@@ -146,6 +146,12 @@ label.setting{justify-content:space-between;max-width:380px}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 #settings [hidden]{display:none!important}#reset-confirm input[type=password]{border:1px solid #7794b1;border-radius:7px;background:#0d263e;color:#fff;padding:9px;min-width:210px}#percentage-note{font-size:11px;color:#d5e7fa}#ranking-list:empty::after{content:"Aucun score enregistré pour cette application.";color:#d0e6fd;font-size:14px;padding:25px;text-align:center;display:block}.event.empty{color:#cce0f3}
 
+/* Le périmètre des % est toujours lisible, sans encombrer le projecteur. */
+.percentage-scope{
+ display:block;font-size:10px;line-height:1.28;
+ color:var(--v-soft,#d0dfeb);margin:-5px 0 9px;
+ overflow-wrap:anywhere;
+}
 /* Titres sans surtitre redondant : davantage de place pour les résultats. */
 /* Plus spécifique que les règles historiques chargées plus bas. */
 body .ranking-board .ranking-head{min-height:50px;padding:7px 6px}
@@ -447,7 +453,7 @@ header.projection-header .projection-refresh-progress.is-paused{opacity:.35}
 <div class="projection-stage">
 <main id="projection-main" class="projection-main" data-app-count="1">
   <aside class="left-col" aria-label="Réussite et comparaisons">
-    <section class="panel left"><h2>🎯 Réussite de la classe</h2><div id="classes" aria-live="polite"></div></section>
+    <section class="panel left"><h2>🎯 Réussite de la classe</h2><small id="percentage-scope" class="percentage-scope">Taux calculés sur parties Classique terminées uniquement.</small><div id="classes" aria-live="polite"></div></section>
     <section class="panel compare-panel" aria-label="Pourcentages des autres classes"><div id="comparison-results"></div></section>
     <button id="settings-left" class="settings-under" type="button">⚙ Applications</button>
   </aside>
@@ -468,6 +474,6 @@ header.projection-header .projection-refresh-progress.is-paused{opacity:.35}
   <section class="options"><strong>Comparaison avec les autres classes</strong><p class="note">Pour chaque classe, affiche le score de l’application en cours, le pourcentage de réussite, ou les deux.</p><table class="comparison-table"><thead><tr><th>Classe</th><th>Score</th><th>%</th></tr></thead><tbody id="comparison-options"></tbody></table><label><input id="show-teacher" type="checkbox"> Afficher Monsieur T (décoché au lancement)</label></section>
   <div id="reset-confirm" class="options" hidden><strong id="reset-heading">Réinitialiser le score projeté</strong><label>Mot de passe professeur <input id="reset-password" type="password" autocomplete="current-password" maxlength="160" placeholder="Mot de passe"/></label><div class="controls"><button id="reset-apply" type="button">Confirmer uniquement ce score</button><button id="reset-cancel" type="button">Annuler</button></div></div><p class="note">Une réinitialisation n’affecte qu’une application et une classe. Jamais les %, les résultats réels, les XP, les trophées ou les parcours des élèves.</p>
 </dialog>
-<script type="module" src="./projection-v2-live.js?v=20261104-tied-podium-v2"></script>
+<script type="module" src="./projection-v2-live.js?v=20261104-completed-classic-pct-v3"></script>
 </body>
 </html>
