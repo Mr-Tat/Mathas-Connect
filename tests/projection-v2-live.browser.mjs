@@ -369,3 +369,53 @@ test('V2 — une remontée en Soustraction attend sa page, passe 4 élèves puis
   await browser.close();await new Promise(ok=>server.close(ok));
  }
 });
+
+
+test('V2 — 20 s sans point, puis 20 s avec point et changement de jeu (horloge simulée)',{timeout:60000},async()=>{
+ const {server,url}=await serve();
+ const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ let loads=0;
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}});
+  await page.clock.install();
+  await page.route('**/*',async route=>{
+   const target=route.request().url();
+   if(target.startsWith(url))return route.continue();
+   if(target.startsWith('https://esm.sh/'))return route.fulfill({
+    status:200,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'},body:stub
+   });
+   if(target.includes('.supabase.co/functions/v1/')){
+    const input=JSON.parse(route.request().postData()||'{}');
+    if(input.action==='teacher-dashboard')return route.fulfill({
+     status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},
+     body:JSON.stringify({ok:true,classes:[{id:A,name:'Phase 2 A'}]})
+    });
+    if(input.action==='teacher-load'){
+     loads++;
+     return route.fulfill({status:200,contentType:'application/json',
+      headers:{'access-control-allow-origin':'*'},
+      body:JSON.stringify({ok:true,classes:[{classId:A,name:'Phase 2 A',
+       options:null,students:[fakeStudent(0)],scorePeriods:[],percentages:null}],exploits:[]})});
+    }
+   }
+   return route.abort();
+  });
+  await page.goto(url+'/projection-v2.html?space=phase2',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>!document.querySelector('#load-real').disabled);
+  await page.locator('#load-real').click();
+  await page.waitForFunction(()=>document.querySelector('#app-name').textContent==='Addition écrite');
+  assert.equal(await page.locator('#projection-refresh-dot').isHidden(),true,'Départ sans point');
+  assert.match(await page.locator('#time-left').textContent(),/40 s/);
+  await page.clock.fastForward(21000);
+  await page.waitForFunction(()=>document.querySelector('#projection-refresh-dot').hidden===false);
+  assert.equal(await page.locator('#app-name').textContent(),'Addition écrite','Même jeu après la première MAJ');
+  assert.ok(loads>=2,'Nouvelle lecture serveur fictive à 20 secondes');
+  await page.clock.fastForward(20000);
+  await page.waitForFunction(()=>document.querySelector('#app-name').textContent==='Multiplication écrite');
+  assert.equal(await page.locator('#projection-refresh-dot').isHidden(),true,'Point effacé à la rotation');
+  assert.ok(loads>=3,'Seconde lecture serveur fictive au changement de jeu');
+  await page.locator('#next-app').click();
+  assert.equal(await page.locator('#projection-refresh-dot').isHidden(),true,'Changement manuel : nouveau premier cycle');
+  assert.match(await page.locator('#time-left').textContent(),/40 s/);
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
