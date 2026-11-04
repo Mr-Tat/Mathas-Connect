@@ -372,7 +372,24 @@ document.addEventListener('visibilitychange',()=>{
  if(document.visibilityState!=='visible')cancelPlayback();
  else if(hasLoaded){render()}
 });
-setInterval(()=>{if(hasLoaded&&connected&&document.visibilityState==='visible'&&!$('settings').open)refresh()},REFRESH_INTERVAL_MS);
+// Minuterie de l'actualisation (20 s), distincte de la rotation (30 s).
+function updateRefreshCountdown(){
+ const label=$('projection-refresh-countdown');
+ if(!connected||!hasLoaded){label.textContent='MAJ en attente';return}
+ if(document.visibilityState!=='visible'||$('settings').open){
+  label.textContent='MAJ suspendue';return;
+ }
+ const remaining=Math.max(0,Math.ceil((nextRefreshAt-Date.now())/1000));
+ label.textContent='MAJ dans '+String(Math.floor(remaining/60)).padStart(2,'0')+':'+
+  String(remaining%60).padStart(2,'0');
+}
+setInterval(updateRefreshCountdown,1000);
+setInterval(()=>{
+ nextRefreshAt=Date.now()+REFRESH_INTERVAL_MS;
+ if(hasLoaded&&connected&&document.visibilityState==='visible'&&!$('settings').open)refresh();
+ updateRefreshCountdown();
+},REFRESH_INTERVAL_MS);
+updateRefreshCountdown();
 const dialog=$('settings');
 function showSettings(){
  if(!hasLoaded)return note('Clique d’abord sur Afficher / Actualiser.');
