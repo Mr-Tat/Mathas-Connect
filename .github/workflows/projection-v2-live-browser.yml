@@ -32,3 +32,12 @@ jobs:
         run: node --test tests/projection-v2-avatar.test.mjs
       - name: Test de projection isolée, aucune donnée réelle
         run: node --test tests/projection-v2-live.browser.mjs
+      - name: Audit Chromium en lecture seule du site public
+        run: node tests/live-pages-browser-audit.browser.mjs
+      - name: Capturer le rendu de la projection publique
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capture-projection-publique
+          path: mathas-live-projection-audit.png
+          if-no-files-found: ignore
