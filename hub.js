@@ -1,5 +1,5 @@
 import {avatarCategories,avatarGlyph,avatarColors,avatarColor} from './avatar-catalog.js';
-import {PROFILE_REWARDS,officialInitial,unlockedProfileLevel,avatarKindUnlocked,colorUnlocked,aliasUnlocked} from './profile-rewards.mjs?v=20261104-levels-v2';
+import {PROFILE_REWARDS,AVATAR_LEVELS,officialInitial,unlockedProfileLevel,avatarKindUnlocked,colorUnlocked,aliasUnlocked} from './profile-rewards.mjs?v=20261104-levels-v2';
 import {createProfileCelebrations} from './profile-celebration.mjs?v=20261104-levels-v2';
 import { classId, classLabel, loginUrl } from './connect-context.js';
 import {rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
@@ -250,7 +250,7 @@ function openAvatarEditor(){
  tabs.replaceChildren();
  const categories=[
   {kind:'letter',label:'🔤 Mon initiale',icons:{[initial]:initial}},
-  ...avatarCategories.filter(cat=>cat.kind!=='letter')
+  ...avatarCategories.filter(cat=>cat.kind!=='letter').sort((a,b)=>AVATAR_LEVELS[a.kind]-AVATAR_LEVELS[b.kind])
  ];
  // Un choix récemment débloqué n'autorise jamais les autres catégories :
  // le serveur vérifie également les XP avant chaque sauvegarde.
