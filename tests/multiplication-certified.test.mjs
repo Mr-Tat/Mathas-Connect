@@ -129,6 +129,17 @@ test('SQL school proof only serves exact app; no direct anon or browser grade en
  assert.match(launch,/certifiedConsent\?\.offer\(receipt\.eventId\)/);
 });
 
+test('LAB Tests en ligne : Multiplication impose la vraie session Connect avant une partie',()=>{
+ const lab=repoFile('laboratoire.js');
+ const launcher=repoFile('apps/multiplication-simple/index.html');
+ assert.match(lab,/app\.app_key==='multiplication-ecrite-simple'\)url\.searchParams\.set\('requireConnect','1'\)/);
+ assert.match(launcher,/const requireConnect=query\.get\('requireConnect'\)==='1'/);
+ assert.match(launcher,/!teacherPlayer&&!requireConnect&&localStorage\.getItem/);
+ assert.match(launcher,/connectionCheckRequired\|\|teacherPlayer\|\|requireConnect/);
+ assert.match(launcher,/Se connecter avec un élève fictif TEST/);
+ assert.match(launcher,/if\(requireConnect\)\{/);
+});
+
 test('extended 120-question challenges support exact HARD 16 digits',()=>{
  const q={id:'q1',op:'mul',a:'9999999999999999',m:9,width:16};
  const data={...sample(q),mode:'hard-sudden',level:3,width:16,limit:120,
