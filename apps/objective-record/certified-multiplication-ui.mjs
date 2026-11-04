@@ -1,6 +1,7 @@
 import {MULTIPLICATION_PROOF_APP,acceptMultiplicationChallenge,
  normalizeMultiplicationAttempt,validMultipliers,createMultiplicationQueue}
  from './certified-multiplication.mjs';
+import {schoolModeAllowed,schoolModeLockReason} from './school-official-unlocks.mjs';
 
 const TEST_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 // Certification native du mode Classique. Pas de bascule automatique sur un
@@ -33,7 +34,7 @@ export function createMultiplicationProofUI({
  function bind(win,doc){
   const ctx=getContext();
   if(ctx.activeApp!==MULTIPLICATION_PROOF_APP
-   ||ctx.classId!==TEST_CLASS||!ctx.pupilId||!doc?.getElementById('menuScreen'))return;
+   ||!ctx.classId||!ctx.pupilId||!doc?.getElementById('menuScreen'))return;
   panel.hidden=false;
   if(!button.dataset.extendedBusy)button.disabled=!!run||sending;
   if(!win)return;
@@ -98,7 +99,7 @@ export function createMultiplicationProofUI({
  async function start(){
   const ctx=getContext(),seq=ctx.generation;
   if(ctx.activeApp!==MULTIPLICATION_PROOF_APP
-   ||ctx.classId!==TEST_CLASS||!ctx.pupilId||run||sending
+   ||!ctx.classId||!ctx.pupilId||run||sending
    ||modeSelect.value!=='classic')return;
   const {win,doc}=inner();
   if(!win||!doc?.getElementById('menuScreen')
@@ -108,6 +109,9 @@ export function createMultiplicationProofUI({
   const level=Number(levelSelect.value),total=Number(totalSelect.value);
   if(![1,2,3].includes(level)||![4,10,20].includes(total)){
    notify('Niveau ou série non autorisés.');return;
+  }
+  if(ctx.classId!==TEST_CLASS&&!schoolModeAllowed(ctx.officialProgress,'classic',level)){
+   notify('🔒 '+schoolModeLockReason('classic',level));return;
   }
   const multipliers=selectedMultipliers(doc);
   if(!multipliers){
