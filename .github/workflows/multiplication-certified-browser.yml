@@ -2,6 +2,11 @@ name: Multiplication certified browser smoke
 on:
   pull_request:
     paths:
+      - 'apps/multiplication-simple/index.html'
+      - 'apps/multiplication-simple/game-original.html'
+      - 'apps/multiplication-simple/school-ui.mjs'
+      - 'apps/multiplication-simple/school-record-eligibility.mjs'
+      - 'projection-consent.mjs'
       - 'apps/multiplication-simple/certified-classic.mjs'
       - 'tests/multiplication-certified-keyboard.browser.mjs'
       - 'tests/multiplication-native-presentation.browser.mjs'
