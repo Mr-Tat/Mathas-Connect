@@ -12,7 +12,7 @@ const endpoint='https://awmhpfofacaglewammxt.supabase.co';
 const publishable='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const $=id=>document.getElementById(id);
 const REFRESH_INTERVAL_MS=20000;
-const ROTATION_SECONDS=40;
+const MAX_VISIBLE_APPS=3;
 const clockFormatter=new Intl.DateTimeFormat('fr-BE',{hour:'2-digit',minute:'2-digit'});
 const apps=[
  {key:'addition-ecrite-simple',title:'Addition écrite'},
@@ -22,27 +22,22 @@ const apps=[
  {key:'melange-calculs-ecrits',title:'Mélange de calculs'}
 ];
 const allKeys=apps.map(a=>a.key);
-let client=null,classesAvailable=[],data=null,wasPaused=false,paused=false;
+let client=null,classesAvailable=[],data=null,fetching=false,refreshTicket=0;
 let hasLoaded=false,connected=false,optionsLoaded=false,pendingReset=null;
-let currentApp=allKeys[0],secondsRemaining=ROTATION_SECONDS,fetching=false,refreshTicket=0;
-let cycleStartedAt=0,nextRefreshAt=0;
-// Une seule origine temporelle pour les deux MAJ de 20 s et la rotation de 40 s.
-function startCycle(){
- cycleStartedAt=Date.now();
- nextRefreshAt=cycleStartedAt+REFRESH_INTERVAL_MS;
- secondsRemaining=ROTATION_SECONDS;
-}
+let nextRefreshAt=0;
 const tracker=createOvertakeTracker(),localRises=new Map();
-let playingKey=null,animationEpoch=0;
+const playingKeys=new Map();let animationEpoch=0;
 const scoreCompared=()=>options.comparisonDisplay.filter(c=>c.score).map(c=>c.classId);
+// Les animations sont indépendantes pour chaque panneau affiché.
 function cancelPlayback(){
- animationEpoch++;playingKey=null;
- for(const el of $('ranking-list').querySelectorAll('.entry')){
+ animationEpoch++;playingKeys.clear();
+ for(const el of document.querySelectorAll('#ranking-board .entry')){
   for(const animation of el.getAnimations())animation.cancel();
   el.style.zIndex='';
  }
 }
-let options={scoreApps:[...allKeys],percentageApps:[...allKeys],comparisons:[],comparisonDisplay:[],rotationSeconds:ROTATION_SECONDS};
+// rotationSeconds subsiste seulement pour la validation du contrat Supabase.
+let options={scoreApps:allKeys.slice(0,MAX_VISIBLE_APPS),percentageApps:[...allKeys],comparisons:[],comparisonDisplay:[],rotationSeconds:40};
 const comparedIds=()=>options.comparisonDisplay.filter(v=>v.score||v.percentage).map(v=>v.classId);
 const currentComparison=id=>options.comparisonDisplay.find(v=>v.classId===id)||{classId:id,score:false,percentage:false};
 const note=message=>{
@@ -50,16 +45,15 @@ const note=message=>{
  status.classList.toggle('is-alert',
   /erreur|refus|expir|nécessaire|indisponible|ne gères|saisis ton|ouvre cette page|clique d’abord/i.test(message));
 };
-const enabled=()=>apps.filter(a=>options.scoreApps.includes(a.key));
+const enabled=()=>apps.filter(a=>options.scoreApps.includes(a.key)).slice(0,MAX_VISIBLE_APPS);
+const cardFor=key=>[...$('ranking-board').querySelectorAll('.ranking-card')].find(card=>card.dataset.appKey===key)||null;
 function clearBoard(message){
  cancelPlayback();tracker.clear();localRises.clear();
- refreshTicket++;data=null;connected=false;hasLoaded=false;pendingReset=null;paused=true;
- cycleStartedAt=0;nextRefreshAt=0;secondsRemaining=ROTATION_SECONDS;
- updateRefreshCountdown();
- $('ranking-list').replaceChildren();$('classes').replaceChildren();
+ refreshTicket++;data=null;connected=false;hasLoaded=false;pendingReset=null;
+ nextRefreshAt=0;updateRefreshCountdown();
+ $('ranking-board').replaceChildren();$('classes').replaceChildren();
  $('exploits').replaceChildren();$('app-tabs').replaceChildren();
- $('app-name').textContent='Projection masquée';
- $('time-left').textContent='';
+ $('visible-app-count').textContent='Projection masquée';
  $('reset-password').value='';
  for(const id of ['settings-left'])$(id).disabled=true;
  note(message);
@@ -102,13 +96,13 @@ async function refresh(){
    const remote=principal.options;
    if(remote&&Array.isArray(remote.scoreApps)&&Array.isArray(remote.percentageApps)
       &&Array.isArray(remote.comparisons)&&Number.isInteger(remote.rotationSeconds)){
-    options={scoreApps:remote.scoreApps.filter(k=>allKeys.includes(k)),
+    options={scoreApps:apps.filter(app=>remote.scoreApps.includes(app.key)).map(app=>app.key).slice(0,MAX_VISIBLE_APPS),
      percentageApps:remote.percentageApps.filter(k=>allKeys.includes(k)),
      comparisons:remote.comparisons.filter(id=>classesAvailable.some(c=>c.id===id&&id!==classId)),
      comparisonDisplay:(Array.isArray(remote.comparisonDisplay)?remote.comparisonDisplay:remote.comparisons.map(id=>({classId:id,score:true,percentage:true})))
        .filter(v=>v&&classesAvailable.some(c=>c.id===v.classId&&v.classId!==classId))
        .map(v=>({classId:v.classId,score:v.score===true,percentage:v.percentage===true})),
-     rotationSeconds:ROTATION_SECONDS};
+     rotationSeconds:40};
     if(comparedIds().length){
      result=await call('connect-projection-v2','teacher-load',{
       comparisons:comparedIds(),showTeacher:$('show-teacher').checked
@@ -123,9 +117,7 @@ async function refresh(){
   data=result;
   const firstDisplay=!hasLoaded;
   hasLoaded=true;
-  if(firstDisplay)paused=false;
-  if(!enabled().some(a=>a.key===currentApp))currentApp=enabled()[0]?.key??null;
-  if(firstDisplay)startCycle();
+  if(firstDisplay)nextRefreshAt=Date.now()+REFRESH_INTERVAL_MS;
   for(const id of ['settings-left'])$(id).disabled=false;
   render();
   note('Actualisé à '+clockFormatter.format(new Date()));
@@ -172,7 +164,7 @@ function snapshotFor(appKey,result){
 function observeRankings(result){
  for(const app of enabled()){
   const observation=tracker.observe(snapshotFor(app.key,result));
-  if(observation.reset&&playingKey===app.key)cancelPlayback();
+  if(observation.reset&&playingKeys.has(app.key))cancelPlayback();
  }
 }
 function rowFor(key){
