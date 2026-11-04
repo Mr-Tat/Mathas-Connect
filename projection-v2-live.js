@@ -167,16 +167,17 @@ function observeRankings(result){
   if(observation.reset&&playingKeys.has(app.key))cancelPlayback();
  }
 }
-function rowFor(key){
- return [...$('ranking-list').querySelectorAll('.entry')].find(el=>el.dataset.entryKey===key)||null;
+function rowFor(appKey,key){
+ return [...(cardFor(appKey)?.querySelectorAll('.entry')||[])]
+  .find(el=>el.dataset.entryKey===key)||null;
 }
-// Reuse each student's DOM node between positions so FLIP computes accurate
-// coordinates, including crossings of the two ranking columns.
-function paintRanking(people){
- const root=$('ranking-list'),multiple=scoreCompared().length>0;
- const existing=new Map([...root.querySelectorAll('.entry')]
-  .map(el=>[el.dataset.entryKey,el]));
- const columns=people.length?splitProjectedRanking(people,multiple):[];
+// Chaque panneau garde ses propres cartes pour les animations FLIP.
+// À trois applications, les 16 élèves se répartissent sur une seule colonne.
+function paintRanking(appKey,people){
+ const card=cardFor(appKey);if(!card)return;
+ const root=card.querySelector('.ranking-list'),multiple=scoreCompared().length>0;
+ const existing=new Map([...root.querySelectorAll('.entry')].map(el=>[el.dataset.entryKey,el]));
+ const columns=people.length?(enabled().length===3?[people]:splitProjectedRanking(people,multiple)):[];
  root.classList.toggle('single',columns.length===1);
  root.classList.toggle('multi',multiple);
  const fragment=document.createDocumentFragment();
