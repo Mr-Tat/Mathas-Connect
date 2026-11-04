@@ -358,6 +358,52 @@ for(const item of examples){
      return doc?.getElementById('startSudden')?.disabled===false &&
       doc?.getElementById('startThreeLives')?.disabled===false;
     },null,{timeout:16000});
+    // The 3-vies button intentionally avoids the old .btn class: the legacy
+    // engine selects .btn and rewrites its label. Both score buttons must
+    // nevertheless share real 3D face, hover and pressed states in Chromium.
+    const inspect3d=()=>page.evaluate(()=>{
+     const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+     const win=doc.defaultView;
+     return Object.fromEntries(['startThreeLives','startSudden'].map(id=>{
+      const el=doc.getElementById(id),style=win.getComputedStyle(el);
+      return [id,{
+       text:el.textContent.trim(),classes:el.className,
+       hover:el.matches(':hover'),active:el.matches(':active'),
+       y:new win.DOMMatrix(style.transform).m42,
+       before:win.getComputedStyle(el,'::before').content,
+       after:win.getComputedStyle(el,'::after').content,
+       afterHeight:win.getComputedStyle(el,'::after').height,
+       shadow:style.boxShadow
+      }];
+     }));
+    });
+    const base3d=await inspect3d();
+    for(const id of ['startThreeLives','startSudden']){
+     assert.notEqual(base3d[id].before,'none','reflet 3D visible '+id);
+     assert.notEqual(base3d[id].after,'none','tranche 3D visible '+id);
+     assert.notEqual(base3d[id].shadow,'none','profondeur 3D visible '+id);
+    }
+    assert.equal(base3d.startThreeLives.classes.includes('btn'),false,
+     '3 vies ne doit pas activer les anciens scripts qui sélectionnent .btn');
+    assert.match(base3d.startThreeLives.text,/3 vies/);
+    assert.doesNotMatch(base3d.startThreeLives.text,/Moitié des XP/);
+    for(const id of ['startThreeLives','startSudden']){
+     const target=page.frameLocator('#gameFrame').frameLocator('#game').locator('#'+id);
+     await target.hover();
+     await page.waitForTimeout(220);
+     const hovered=(await inspect3d())[id];
+     assert.equal(hovered.hover,true,'vrai survol de '+id);
+     assert.ok(hovered.y<=-1,'bouton relevé au survol '+id+' : '+JSON.stringify(hovered));
+     await page.mouse.down();
+     await page.waitForTimeout(220);
+     const pressed=(await inspect3d())[id];
+     assert.equal(pressed.active,true,'vrai :active durant le clic '+id);
+     assert.ok(pressed.y>=3,'bouton physiquement enfoncé '+id+' : '+JSON.stringify(pressed));
+     assert.notEqual(pressed.afterHeight,hovered.afterHeight,
+      'la tranche devient moins profonde au clic '+id);
+     await page.mouse.move(0,0);
+     await page.mouse.up();
+    }
     // A real click on either normal score button must issue its specific school
     // proof. No separate "Défi Connect" action is necessary.
     const native=page.frameLocator('#gameFrame').frameLocator('#game');
