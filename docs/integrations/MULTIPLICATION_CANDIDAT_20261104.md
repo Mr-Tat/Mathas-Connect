@@ -1,5 +1,58 @@
 # Multiplication écrite simple — fiche de continuité du candidat 04/11/2026
 
+## État de livraison actualisé — 04/11/2026, 12 h (Europe/Brussels)
+
+**[REPO vérifié]** Ce document a commencé comme un audit pré-implémentation.
+Les constats et listes de « reste à réaliser » situés plus bas sont un
+**historique du candidat initial**, pas le statut des commits ultérieurs.
+
+**[LIVE vérifié]** Supabase `awmhpfofacaglewammxt` a désormais :
+- `connect-multiplication-school` **v2**, JWT obligatoire ;
+- `connect-results` **v47**, qui refuse les scores natifs non certifiés de
+  multiplication dans les classes scolaires ;
+- les six RPC de multiplication **réellement présentes** avec droits SQL limités
+  à `postgres` et `service_role` ;
+- les quatre migrations de certification des modes scolaires ;
+- la correction déployée **`mul_optional_carries_native_v1_20261104`**
+  (version Supabase `20261104120710`) qui aligne les reports facultatifs
+  CLASSIQUE / 3 vies / Mort subite / HARD sur le moteur V7.0.0.
+
+**[CI vérifiée]** SHA `da39dae4171b7b8d378f4ed50c057ed63f46da10` :
+- PostgreSQL 16 jetable : 9 variantes classiques, 4 étendues, erreurs de
+  reports écrits, reports vides corrects, refus de mauvais élèves, ACL et
+  idempotence des XP — succès ;
+- suite multiplication 29/29, suite générale 461 réussis, 0 échec,
+  1 ignoré ; Chromium certifié 2/2, sans Auth hébergée.
+- Le test SQL est dans
+  `tests/postgres/multiplication-school-optional-carries.test.sql` et le
+  workflow `multiplication-school-postgres.yml`.
+
+**[REPO vérifié]** Le parcours connecté comporte dorénavant :
+- épreuves serveur 4/10/20, Mort subite, 3 vies, HARD avec chiffres et reports
+  vérifiés, accusé de réception atomique, trophées, XP idempotents et
+  déblocages serveur ;
+- interrupteur « Dizaines d’abord » **durant** la partie certifiée,
+  sans vider la grille ; animation de gain uniquement après un reçu nouveau ;
+- indices de coupes et XP officiels placés sur les boutons du moteur d'origine ;
+- un pont sécurisé de conservation de résultats personnels et
+  de restauration serveur, en préservant le jeu libre V7.0.0.
+
+**[LIVE vérifié]** La multiplication reste **masquée dans les cinq presets**,
+et ces tests n'ont manipulé aucune donnée d'élève réel. La classe TEST a
+trois profils fictifs approuvés utilisables pour une recette JWT.
+
+**[À valider avant ouverture scolaire]** La nouvelle version statique doit
+encore être publiée depuis `main` et vérifiée sur Pages, puis parcourue dans
+un navigateur **réellement authentifié** avec un élève fictif TEST.
+Le clic de la carte « Top du jour » et le contrôle de preuve propre à
+Multiplication dans la projection V2 ne sont **pas équivalents** aux tests
+Chromium avec serveur simulé : ils demandent un test/durcissement spécifique
+avant l'ouverture. Ne pas toucher à la mise en page du tableau pendant cette
+intégration.
+
+---
+
+
 **Statut : candidat partiel, NON OUVERT comme nouveau parcours scolaire certifié.**
 La recette doit reprendre cette branche plutôt que reconstruire un LAB.
 
