@@ -68,9 +68,21 @@
   // Garder Mode clair à sa hauteur actuelle et placer les trois commandes sur
   // cette même rangée, avec des points de contact séparés sur GSM.
   if(/\/engines\/addition-(?:simple|multiple)\//.test(location.pathname)){
+   // La barre Connect peut prendre deux rangées sur téléphone. Toujours placer
+   // les trois commandes sous sa hauteur RÉELLE, même lorsqu'elle se replie.
+   const syncConnectOffset=()=>{
+    let height=54;
+    try{
+     const bar=parent.document.getElementById('connect-bar');
+     if(bar&&!bar.hidden)height=Math.max(height,bar.getBoundingClientRect().height);
+    }catch{}
+    doc.documentElement.style.setProperty('--mathas-connect-actions-top',Math.ceil(Math.max(56,height+8))+'px');
+   };
+   window.addEventListener('resize',syncConnectOffset);
+   syncConnectOffset();
    style.textContent+=`
      .mathas-top-cluster{
-       top:56px!important;right:12px!important;left:auto!important;
+       top:var(--mathas-connect-actions-top,56px)!important;right:12px!important;left:auto!important;
        z-index:12010!important;gap:12px!important;
      }
      .mathas-top-actions{
@@ -102,7 +114,7 @@
        }
      }
      @media(max-width:560px){
-       .mathas-top-cluster{top:55px!important;right:8px!important;gap:0!important}
+       .mathas-top-cluster{top:var(--mathas-connect-actions-top,94px)!important;right:8px!important;gap:0!important}
        .mathas-top-cluster .mathas-wordmark{display:none!important}
        .mathas-top-actions{
          grid-template-columns:100px 106px 126px!important;width:344px!important;
