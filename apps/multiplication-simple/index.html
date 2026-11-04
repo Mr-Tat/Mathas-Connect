@@ -9,6 +9,7 @@ const query=new URLSearchParams(location.search),classId=query.get('class')||'',
 const teacherPlayer=query.get('joueur')==='prof';
 // Les lancements depuis « Tests en ligne » ne sont PAS des démos sans XP.
 const requireConnect=query.get('requireConnect')==='1';
+const isTestClass=classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 const free=!teacherPlayer&&!requireConnect&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,multiplierLock=null,studentName='',connectionCheckRequired=false;
 const status=s=>document.getElementById('message').textContent=s;
 const originalPromise=fetch('./game-original.html').then(r=>{if(!r.ok)throw Error('Copie du jeu non disponible');return r.text()});
@@ -49,7 +50,9 @@ const original=await originalPromise;
 if((connectionCheckRequired||teacherPlayer||requireConnect)&&mode!=='connected'){
  const view=document.getElementById('loading');
  document.getElementById('message').textContent=requireConnect
-  ?'Connexion Connect obligatoire pour ce test en ligne : aucun élève fictif TEST approuvé n’est reconnu dans ce navigateur. Ce jeu ne démarre pas sans sauvegarde, XP et preuve serveur. Connecte-toi avec un profil fictif TEST, puis reviens essayer.'
+  ?(isTestClass
+   ?'Connexion Connect obligatoire pour ce test en ligne : aucun élève fictif TEST approuvé n’est reconnu dans ce navigateur. Ce jeu ne démarre pas sans sauvegarde, XP et preuve serveur. Connecte-toi avec un profil fictif TEST, puis reviens essayer.'
+   :'Connexion Connect obligatoire pour les résultats officiels de multiplication : aucun compte élève approuvé pour cette classe n’est reconnu dans ce navigateur. Aucun exercice ne sera lancé sans sauvegarde et preuve serveur. Connecte-toi à ta classe, puis réessaie.')
   :'Impossible de vérifier les sauvegardes du compte. Aucun résultat ne sera perdu : réessaie plus tard ou joue sans synchronisation.';
  const actions=document.createElement('div');actions.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-top:20px';
  const retry=document.createElement('button');retry.textContent='Réessayer';retry.onclick=()=>location.reload();
@@ -59,12 +62,14 @@ if((connectionCheckRequired||teacherPlayer||requireConnect)&&mode!=='connected')
  actions.append(retry);
  if(requireConnect){
   const login=document.createElement('a');
-  login.textContent='Se connecter avec un élève fictif TEST';
+  login.textContent=isTestClass?'Se connecter avec un élève fictif TEST':'Se connecter à ma classe';
   // URL est aussi le nom de la constante endpoint Supabase ci-dessus.
   const target=new window.URL('../../index.html',location.href);
   target.searchParams.set('class',classId);
-  target.searchParams.set('name','Classe démo - TEST');
-  target.searchParams.set('lab','1');
+  if(isTestClass){
+   target.searchParams.set('name','Classe démo - TEST');
+   target.searchParams.set('lab','1');
+  }
   login.href=target.href;
   login.style.cssText='padding:12px;border-radius:10px;background:#176e8d;color:white;font:600 13px system-ui;text-decoration:none';
   actions.append(login);
