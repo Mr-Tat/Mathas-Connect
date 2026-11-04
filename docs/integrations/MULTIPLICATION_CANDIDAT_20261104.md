@@ -1,5 +1,35 @@
 # Multiplication écrite simple — fiche de continuité du candidat 04/11/2026
 
+## OUVERTURE SCOLAIRE OFFICIELLE — 04/11/2026 [LIVE vérifié]
+
+**[DÉCISION professeur]** Ouverture explicite demandée dans les cinq espaces scolaires pour voir le jeu en conditions réelles. Le laboratoire TEST ne conditionne plus la visibilité du jeu, mais reste disponible pour les tests fictifs.
+
+**[REPO/CI/PAGES vérifiés]** [PR #194](https://github.com/Mr-Tat/Mathas-Connect/pull/194) fusionnée dans `main` au commit `4edc16591150f9a227d4a719587577a545df20e4`. [GitHub Pages](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41844339937) **déployé avec succès sur ce SHA** ; [régressions générales](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41844341181) et [contrôles du laboratoire](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41844340809) verts. [Chromium multiplication sur le candidat avant fusion](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41843726642) vert : vrai moteur V7.0.0, JWT/Edge **simulés à la frontière HTTP**, test d'une classe scolaire non fictive **avec données simulées**, 4 calculs, ACK, XP, records, refus/acceptation explicite du score projeté, aucun jeu Connect silencieusement local.
+
+**[LIVE Supabase, lecture/écriture ciblée vérifiées]** Projet `awmhpfofacaglewammxt` : `connect_apps` confirme app_key `multiplication-ecrite-simple`, application activée et URL canonique `https://mr-tat.github.io/Mathas-Connect/apps/multiplication-simple/`. La seule écriture de configuration de cette livraison a activé `visible=true` pour **exactement 5 lignes** `connect_hub_preset_entries` de cette app : `observation`, `phase1`, `phase2`, `phase2b`, `2eco`. Une seconde lecture montre **5 visibles, 0 cachée** ; les cinq classes sont autorisées par `connect_objective_record_school_class_allowed_v1`. Le laboratoire TEST reste visible. Aucune écriture aux résultats/élèves/XP/projection.
+
+**[LIVE Edge/SQL vérifiés]** `connect-multiplication-school` v3, `connect-results` v47, `connect-projection-v2` v6 : toutes **actives**, vérification JWT obligatoire, `index.ts` déployés identiques à GitHub. Les six RPC multiplication ont `EXECUTE` refusé pour `anon` et `authenticated` et autorisé pour `service_role`. Le lancement requiert un appareil approuvé et une inscription dans la bonne classe. Une carte masquée empêche le **début** d'une nouvelle preuve ; une série déjà en cours reste validable.
+
+**[MODE D'EMPLOI]** Depuis le HUB de la classe, lancer « Multiplication écrite simple » avec un élève Connect approuvé. En mode Connect, le jeu exige la session : aucune série 4/4 libre ne peut se présenter comme XP validés. Le mode Classique volontairement libre demeure disponible, sans XP. Première recette école : 4 calculs, « Score vérifié par le serveur », XP si jalon nouveau, coupes, rechargement et suivi professeur ; « Oui » pour la projection si le score certifié du jour s'améliore.
+
+**[NON EXÉCUTÉ]** Aucune navigation avec **vrai JWT approuvé** d'un élève fictif ou réel n'a été effectuée dans cette livraison par l'assistant. Les tests Chromium avec backend simulé **ne prouvent pas** à eux seuls le parcours hébergé navigateur → Edge → SQL. Une partie officielle doit encore être contrôlée en lecture seule après la première utilisation, sans lire de noms ou données personnelles inutilement. Le test read-only « Soustraction production smoke » a échoué sur le SHA de livraison à une assertion d'affichage d'Observation (zéro ligne, au lieu d'une) ; ce n'est **pas** une preuve d'un défaut de Multiplication et cette intervention n'a pas modifié Soustraction.
+
+**[REPLI NON DESTRUCTIF]** En cas d'incident grave, masquer uniquement le jeu, sans toucher aux scores ni XP :
+
+```sql
+UPDATE public.connect_hub_preset_entries
+SET visible=false
+WHERE app_key='multiplication-ecrite-simple'
+  AND preset_slug IN ('observation','phase1','phase2','phase2b','2eco');
+```
+
+Cela empêche les **nouvelles** parties dans les espaces réels via le HUB et l'Edge, sans effacer les sessions, résultats, trophées ou XP existants. Ne pas désactiver les autres jeux ou toucher à l'ancienne base Math'as.
+
+**Historique ci-dessous :** les sections précédentes mentionnant « cartes scolaires masquées » ou « ne pas ouvrir avant recette » sont désormais supplantées par la présente décision explicite de publication et sa vérification LIVE.
+
+---
+
+
 ## Mise à jour après la PR #190 — 04/11/2026
 
 **[GITHUB/CI/PAGES vérifiés]** La correction de reprise des preuves certifiées
