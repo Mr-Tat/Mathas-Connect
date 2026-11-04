@@ -36,6 +36,16 @@
 | Écran étroit, clavier/reports/emprunts, performance | |
 | Diff minimal du moteur intégré et manifest source | |
 
+## 2 bis. Capacités optionnelles et sortie élèves
+
+| Élément | Décision / preuve |
+| --- | --- |
+| XP pertinents ou sans XP ? | Indicateur serveur « Reste N XP » sur chaque bouton admissible, sinon sans objet |
+| Trophées réellement atteignables ? | Coupes restantes/acquises visibles dans les cases correspondantes ; total HUB exact |
+| Score pédagogique pertinent ? | Oui/non ; ne pas inventer de score ni de projection chiffrée si non |
+| Exploits sans score ? | Événements serveur et consentements nécessaires, le cas échéant |
+| Parcours de publication cible | **Une version finale élèves** ; laboratoire seulement pour la recette sécurisée du même candidat |
+
 ## 3. Contrat propre à cette application
 
 - **Schéma événement version :** […] ; **schéma état version :** […] ; **barème version :** […].
