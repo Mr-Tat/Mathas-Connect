@@ -12,7 +12,8 @@ test('unverified multiplication results never invite sharing to projection',()=>
  const launcher=source('../apps/multiplication-simple/index.html');
  assert.match(launcher,/installMultiplicationSchoolUi/);
  assert.doesNotMatch(launcher,/action:'game-record'/);
- assert.match(launcher,/certifiedConsent\?\.offer\(receipt\.eventId\)/);
+ assert.match(launcher,/certifiedScoreView\?\.recorded\(receipt\.eventId\)/);
+ assert.match(launcher,/action:'student-score-history'/);
  assert.match(launcher,/createCertifiedMultiplicationClassic/);
 });
 
