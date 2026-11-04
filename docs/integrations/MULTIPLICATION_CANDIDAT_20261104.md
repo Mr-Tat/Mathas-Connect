@@ -1,5 +1,39 @@
 # Multiplication écrite simple — fiche de continuité du candidat 04/11/2026
 
+## Mise à jour après la PR #190 — 04/11/2026
+
+**[GITHUB/CI/PAGES vérifiés]** La correction de reprise des preuves certifiées
+est fusionnée via [PR #190](https://github.com/Mr-Tat/Mathas-Connect/pull/190)
+dans `main` au commit `67c1c797048870edd0129364d75c3e77c4038f36`.
+[GitHub Pages](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41837025937)
+et [la suite de régression générale](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41837026838)
+ont réussi sur **ce SHA exact**. Les tests spécifiques de la PR sont verts :
+[Chromium vrai lanceur](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41836867081),
+[contrats d'intégration](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41836867056)
+et [suite générale](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41836867003).
+
+**[CORRECTION LIVRÉE]** Une série Connect interrompue conserve dorénavant
+le défi complet émis par le serveur (session, questions, réponses, paramètres,
+révision/époque). Après rechargement, le joueur peut continuer ou renvoyer
+**le même reçu d'épreuve** si le réseau a échoué à la fin. Le serveur reste
+autoritaire pour la note, la déduplication, les XP, les trophées et les droits ;
+aucune preuve ne peut être certifiée depuis les seules valeurs locales.
+Une vieille preuve incompatible est conservée jusqu'à expiration ou abandon
+**explicite** par l'élève, plutôt qu'écrasée par un nouveau défi.
+
+**[CI renforcée]** Le workflow Chromium du parcours certifié doit aussi être
+déclenché par les changements du lanceur, du moteur natif, des indicateurs
+XP/coupes et du consentement, et pas uniquement par l'adaptateur de preuve.
+
+**[LIMITE ACTUELLE]** La **recette sur le vrai site Pages avec un JWT réellement
+approuvé de l'un des trois profils fictifs TEST reste NON EXÉCUTÉE**.
+Une CI avec endpoints simulés n'est pas un test Auth + Edge + PostgreSQL
+hébergé. Ne pas ouvrir les cinq HUB réels avant ce contrôle ; ne pas utiliser
+les données d'élèves réels. La présentation du tableau de projection est
+un chantier indépendant et ne doit pas être modifiée ici.
+
+---
+
 ## État courant vérifié après les PR #182, #184 et #186 — 04/11/2026
 
 **[REPO + GITHUB ACTIONS vérifiés]** La multiplication écrite scolaire est intégrée
