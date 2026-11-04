@@ -44,7 +44,7 @@ test('V2 live : 4 thèmes réellement accessibles dans la page authentifiée',()
  for(const value of ['neon','papier','ardoise','studio'])
   assert.match(html,new RegExp('<option value="'+value+'">'));
  assert.match(html,/id="header-class"/);
- assert.match(html,/id="ranking-list"/);
+ assert.match(html,/id="ranking-board"/);
  assert.match(html,/✨ Nouveaux exploits/);
  assert.doesNotMatch(html,/Meilleures remontées/);
  assert.match(css,/\.projection-theme-picker select:focus-visible/);
