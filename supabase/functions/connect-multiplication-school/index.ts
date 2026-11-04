@@ -1,20 +1,14 @@
 // Authenticated pupil multiplication proof. Isolated from both Addition functions.
 // Never accepts a game score, point count, rewards or student identifier from the browser.
 import {createClient} from 'npm:@supabase/supabase-js@2.95.0';
+import {MULTIPLICATION_TEST_CLASS,MULTIPLICATION_SCHOOL_PRESETS,multiplicationSchoolPreset,mayStartMultiplicationSchoolProof} from './school-visibility.mjs';
 
 const BASE=Deno.env.get('SUPABASE_URL')!;
 const PUBLIC=Deno.env.get('SUPABASE_ANON_KEY')!;
 const SERVICE=Deno.env.get('SUPABASE_'+'SERVICE_ROLE_KEY')!;
 const db=createClient(BASE,SERVICE,{auth:{persistSession:false,autoRefreshToken:false}});
 const APP='multiplication-ecrite-simple';
-const CLASS_TEST='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
-const CLASSES=new Set([CLASS_TEST,
- '8fe170fa-9e8f-4e80-885a-b0ba68026f64',
- '71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e',
- '1b021ed9-4846-4203-9c7b-4b5fa8d7adab',
- '0d8ba828-59cc-468b-a4b8-7b2a1af10b88',
- 'a9195199-0a28-4e86-99ce-47b36dd6e646'
-]);
+const CLASSES=new Set([MULTIPLICATION_TEST_CLASS,...Object.keys(MULTIPLICATION_SCHOOL_PRESETS)]);
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const valid=(x:unknown):x is string=>typeof x==='string'&&UUID.test(x);
 const cors={'access-control-allow-origin':'*',
@@ -87,6 +81,19 @@ Deno.serve(async(req:Request)=>{
   if(!live)return deny('inactive_student',403);
   const app=await row(db.from('connect_apps').select('enabled').eq('app_key',APP));
   if(app?.enabled!==true)return deny('app_disabled',403);
+  // A hidden school card must NEVER be bypassed using the direct Pages URL.
+  // Check at the creation of a new challenge. Previously issued sessions may
+  // still finish if the professor hides the card while a pupil is working.
+  // This check follows JWT, device approval, enrollment and teacher-player
+  // verification; no public browser access to the service-role database.
+  if(start&&cls!==MULTIPLICATION_TEST_CLASS){
+   const preset=multiplicationSchoolPreset(cls);
+   if(!preset)return deny('school_class_not_allowed',403);
+   const entry=await row(db.from('connect_hub_preset_entries').select('visible')
+    .eq('preset_slug',preset).eq('app_key',APP));
+   if(!mayStartMultiplicationSchoolProof(cls,entry?.visible===true))
+    return deny('school_app_not_open_for_class',403);
+  }
   const name=classicStart?'connect_objective_record_school_mul_issue_classic_v1'
    :extendedStart?'connect_objective_record_school_mul_issue_extended_v1'
    :classicFinish?'connect_objective_record_school_mul_finish_classic_v1'
