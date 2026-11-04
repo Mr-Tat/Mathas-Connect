@@ -75,7 +75,13 @@ for(const item of examples){
     .waitFor({state:'visible',timeout:5000});
    assert.equal(await units.evaluate(el=>el.classList.contains('mathas-amber-followup')),true);
    const amber=await units.evaluate(el=>getComputedStyle(el).backgroundColor);
-   assert.match(amber,/244, 178, 65|255, 194, 83/,'ambre discret visible dans la case suivante');
+   // Plusieurs palettes natives utilisent des variantes proches du même ambre ;
+   // vérifier la teinte plutôt qu'une seule écriture CSS exacte.
+   const rgb=amber.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+   assert.ok(rgb&&Number(rgb[1])>=235&&Number(rgb[1])<=255
+    &&Number(rgb[2])>=165&&Number(rgb[2])<=200
+    &&Number(rgb[3])>=45&&Number(rgb[3])<=105,
+    'ambre discret visible dans la case suivante : '+amber);
    await page.keyboard.press('1');
    assert.equal(await lead.inputValue(),'1','la retenue sortante est réellement saisie avant les unités');
    await game.locator('.hard-answer[data-col="'+last+'"].active-entry')

@@ -63,6 +63,78 @@
       }
     }
   `;
+  // Sur les deux additions hébergées, l'ancien placement sur deux rangées
+  // mettait Plein écran / Retour HUB sous la barre Connect (première rangée).
+  // Garder Mode clair à sa hauteur actuelle et placer les trois commandes sur
+  // cette même rangée, avec des points de contact séparés sur GSM.
+  if(/\/engines\/addition-(?:simple|multiple)\//.test(location.pathname)){
+   // La barre Connect peut prendre deux rangées sur téléphone. Toujours placer
+   // les trois commandes sous sa hauteur RÉELLE, même lorsqu'elle se replie.
+   const syncConnectOffset=()=>{
+    let height=54;
+    try{
+     const bar=parent.document.getElementById('connect-bar');
+     if(bar&&!bar.hidden)height=Math.max(height,bar.getBoundingClientRect().height);
+    }catch{}
+    doc.documentElement.style.setProperty('--mathas-connect-actions-top',Math.ceil(Math.max(56,height+8))+'px');
+   };
+   window.addEventListener('resize',syncConnectOffset);
+   syncConnectOffset();
+   style.textContent+=`
+     .mathas-top-cluster{
+       top:var(--mathas-connect-actions-top,56px)!important;right:12px!important;left:auto!important;
+       z-index:12010!important;gap:12px!important;
+     }
+     .mathas-top-actions{
+       display:grid!important;grid-template-columns:126px 132px 158px!important;
+       grid-auto-rows:minmax(44px,auto)!important;
+       width:434px!important;column-gap:9px!important;row-gap:0!important;
+       align-items:stretch!important;
+     }
+     .mathas-top-actions > #fullscreenBtn,
+     .mathas-top-actions > #fullBtn{grid-column:1!important;grid-row:1!important}
+     .mathas-top-actions > #mathas-game-hub-return{grid-column:2!important;grid-row:1!important}
+     .mathas-top-actions > .theme-toggle-btn,
+     .mathas-top-actions > #themeBtn{grid-column:3!important;grid-row:1!important}
+     .mathas-top-actions > #fullscreenBtn,
+     .mathas-top-actions > #fullBtn,
+     .mathas-top-actions > #mathas-game-hub-return,
+     .mathas-top-actions > .theme-toggle-btn,
+     .mathas-top-actions > #themeBtn{
+       position:static!important;top:auto!important;right:auto!important;left:auto!important;
+       width:100%!important;min-width:0!important;max-width:none!important;
+       min-height:42px!important;height:100%!important;box-sizing:border-box!important;
+       margin:0!important;pointer-events:auto!important;
+     }
+     @media(max-width:920px){
+       .mathas-top-cluster{gap:8px!important;right:10px!important}
+       .mathas-top-actions{
+         grid-template-columns:116px 122px 142px!important;width:392px!important;
+         column-gap:6px!important
+       }
+     }
+     @media(max-width:560px){
+       .mathas-top-cluster{top:var(--mathas-connect-actions-top,94px)!important;right:8px!important;gap:0!important}
+       .mathas-top-cluster .mathas-wordmark{display:none!important}
+       .mathas-top-actions{
+         grid-template-columns:100px 106px 126px!important;width:344px!important;
+         column-gap:6px!important;grid-auto-rows:minmax(40px,auto)!important
+       }
+       .mathas-top-actions > #fullscreenBtn,
+       .mathas-top-actions > #mathas-game-hub-return,
+       .mathas-top-actions > .theme-toggle-btn{font-size:11px!important;padding:5px 4px!important}
+     }
+     @media(max-width:370px){
+       .mathas-top-actions{
+         grid-template-columns:88px 96px 110px!important;width:302px!important;
+         column-gap:4px!important
+       }
+       .mathas-top-actions > #fullscreenBtn,
+       .mathas-top-actions > #mathas-game-hub-return,
+       .mathas-top-actions > .theme-toggle-btn{font-size:10px!important;padding:4px 2px!important}
+     }
+   `;
+  }
   doc.head.append(style);
   actions.insertBefore(link,fullscreen);
  }

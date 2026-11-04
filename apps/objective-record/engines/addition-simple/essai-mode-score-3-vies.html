@@ -46,7 +46,7 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
 <div id="state" role="alert">Préparation du jeu de démonstration…</div>
 <iframe id="game" title="Essai sur le véritable moteur Addition simple" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
 <script src="./lab-objectif-record-v2.js?v=20261103-xp-layout-v4"></script>
-<script src="../../native-hub-link.js"></script>
+<script src="../../native-hub-link.js?v=20261104-additions-header-tools"></script>
 <script>
 (async function(){
  'use strict';
@@ -211,7 +211,8 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
    ].join('\n');
    game=swap(game,'</body>',visualCss+'</body>','styles de fin');
 
-   game=swap(game,'<h3 class="mode-title">Mort subite</h3>','<h3 class="mode-title"><span class="score-mode-cup" aria-hidden="true">🏆</span> Objectif record</h3>','titre de la carte');
+   game=swap(game,'<h3 class="mode-title">Mort subite</h3>','<h3 class="mode-title">Objectif record</h3>','titre de la carte');
+    game=swap(game,'<div class="mode-icon">💀</div>','<div class="mode-icon" aria-hidden="true">👑</div>','symbole de la grande carte Objectif record');
    game=swap(game,
      '<p class="mode-description">Deux additions à la fois. La première réponse fausse arrête immédiatement la partie.</p>',
      '<p class="mode-description">Deux façons de marquer un gros score.</p>',
@@ -316,7 +317,7 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
    // sans garde, elle efface les deux sous-libellés et remplace l'introduction.
    game=swap(game,
      "if(suddenDesc)suddenDesc.textContent='Continue jusqu’à la première erreur.';",
-     "if(suddenDesc&&!window.__mathasThreeLivesDemo)suddenDesc.textContent='Continue jusqu’à la première erreur.';",
+     "if(suddenDesc&&!suddenDesc.textContent.trim())suddenDesc.textContent='Deux façons de marquer un gros score.';",
      'phrase protégée du prototype');
    game=swap(game,
      "if(suddenBtn)suddenBtn.textContent='Lancer la mort subite';",
