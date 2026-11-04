@@ -1,7 +1,6 @@
 -- Multiplication : mêmes moitiés d'XP et paliers complémentaires que l'Addition.
 -- Compatibilité : aucune suppression ou reprise de jalons pleins antérieurs.
 -- Projection : seuls les événements issus de preuves scolaires consommées sont publiables.
-BEGIN;
 INSERT INTO public.connect_xp_award_rules(app_key,award_key,points,ruleset_version)
 SELECT 'multiplication-ecrite-simple',r.award_key,r.points,r.ruleset_version
 FROM public.connect_xp_award_rules r
@@ -419,4 +418,3 @@ REVOKE ALL ON FUNCTION public.connect_projection_mul_verified_summary_v1(uuid,uu
 GRANT EXECUTE ON FUNCTION public.connect_projection_mul_verified_summary_v1(uuid,uuid,text) TO service_role;
 REVOKE ALL ON FUNCTION public.connect_projection_mul_share_improved_v1(uuid,uuid,text,uuid) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.connect_projection_mul_share_improved_v1(uuid,uuid,text,uuid) TO service_role;
-COMMIT;
