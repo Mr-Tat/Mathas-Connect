@@ -105,8 +105,9 @@ for(const item of [
    assert.equal(await page.locator('#challenge-toggle').count(),0,
     'Défi Connect a disparu de la barre repliable');
    assert.equal(await page.locator('#xp-note,#xp-summary,#total-xp,#trophies').count(),0);
-   if(await page.locator('#bar-handle').isVisible())await page.locator('#bar-handle').click();
-   await page.locator('#xp-toggle').click();
+   assert.equal(await page.locator('#connect-bar').isVisible(),false);
+   await page.frameLocator('#gameFrame').frameLocator('#game')
+    .locator('#mathas-native-connect-xp').click();
    const panel=page.locator('#xp-panel:not([hidden])');
    await panel.waitFor({state:'visible',timeout:10000});
    assert.match(await panel.locator('.xp-heading').innerText(),/✨ XP acquis et à gagner/);
