@@ -112,11 +112,24 @@ for(const item of examples){
      const profile=doc.getElementById('mathas-native-connect-profile');
      const xpButton=doc.getElementById('mathas-native-connect-xp');
      const row=doc.querySelector('main.app > header .mathas-brand-row');
+     const logo=row.querySelector('.mathas-header-wordmark');
+     const originalVersion=row.querySelector(':scope > .app-version-pill');
+     const title=doc.querySelector('main.app > header .mathas-header-copy h1');
+     const titleVersion=title.querySelector('.mathas-connect-title-version');
+     const titleVersionRect=titleVersion?.getBoundingClientRect();
+     const logoRect=logo.getBoundingClientRect();
      const strip=doc.getElementById('mathasTrophiesStrip');
      const pr=profile.getBoundingClientRect(), xr=xpButton.getBoundingClientRect();
      return {viewportWidth,points,
       profileText:profile.textContent.trim(),profileVisible:pr.width>0&&pr.height>0,
       profileInHeader:row.contains(profile),profileRight:pr.right,profileLeft:pr.left,
+      profileTop:pr.top,logoRight:logoRect.right,logoTop:logoRect.top,
+      originalVersionHidden:doc.defaultView.getComputedStyle(originalVersion).display==='none',
+      titleVersionText:titleVersion?.textContent?.trim(),
+      originalVersionText:originalVersion?.textContent?.trim(),
+      titleVersionInsideTitle:title.contains(titleVersion),
+      titleVersionVisible:!!titleVersionRect&&titleVersionRect.width>0&&titleVersionRect.height>0,
+      titleVersionRight:titleVersionRect?.right,
       xpLabel:xpButton.textContent.trim(),xpVisible:xr.width>0&&xr.height>0,
       xpAfterTrophies:Boolean(strip.parentElement===xpButton.parentElement&&
        (strip.compareDocumentPosition(xpButton)&Node.DOCUMENT_POSITION_FOLLOWING)),
@@ -134,6 +147,17 @@ for(const item of examples){
     assert.equal(layout.skullInsideButton,true);
     assert.equal(layout.profileVisible,true,'profil Connect visible dans entête : '+JSON.stringify(layout));
     assert.equal(layout.profileInHeader,true);
+    assert.equal(layout.originalVersionHidden,true,'la version ne doit plus séparer le logo et le profil');
+    assert.equal(layout.titleVersionInsideTitle,true,'pastille intégrée au titre de l addition');
+    assert.equal(layout.titleVersionVisible,true,'la version doit rester lisible sur PC/GSM');
+    assert.match(layout.titleVersionText,/^V\d+(?:\.\d+)+$/,'version native conservée');
+    assert.equal(layout.titleVersionText,layout.originalVersionText,'la version affichée correspond au moteur natif');
+    if(viewportWidth>=620){
+     assert.ok(layout.logoRight<=layout.profileLeft+2,
+      'Connect est directement à droite du logo, sans version intermédiaire : '+JSON.stringify(layout));
+     assert.ok(layout.titleVersionRight<=viewportWidth+2,
+      'la version ne dépasse pas la largeur : '+JSON.stringify(layout));
+    }
     assert.match(layout.profileText,/Connecté · .*Niveau 1.*0 \/ 50 XP/);
     assert.equal(layout.xpVisible,true,'bouton XP visible sous les trophées : '+JSON.stringify(layout));
     assert.equal(layout.xpAfterTrophies,true);
