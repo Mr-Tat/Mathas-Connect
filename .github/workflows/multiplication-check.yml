@@ -4,7 +4,7 @@ on:
     branches: [integration/multiplication-simple]
     paths: ['apps/multiplication-simple/**', 'tests/multiplication-integration.test.mjs', 'tests/multiplication-connect.test.mjs', 'tests/multiplication-school-ui.test.mjs', '.github/workflows/multiplication-check.yml']
   pull_request:
-    paths: ['apps/multiplication-simple/**', 'tests/multiplication-integration.test.mjs', '.github/workflows/multiplication-check.yml']
+    paths: ['apps/multiplication-simple/**', 'tests/multiplication-integration.test.mjs', 'tests/multiplication-connect.test.mjs', 'tests/multiplication-school-ui.test.mjs', '.github/workflows/multiplication-check.yml']
 permissions:
   contents: read
 jobs:
