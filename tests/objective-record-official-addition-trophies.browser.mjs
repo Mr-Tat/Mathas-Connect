@@ -37,7 +37,9 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
    browser=await chromium.launch({headless:true,args:['--no-sandbox']});
    const page=await browser.newPage({viewport:{width:1340,height:900}});
    const errors=[];page.on('pageerror',e=>errors.push(e.message));
-   let serverRewards=rewards(true);
+   let serverRewards=rewards(true),scoreShareWrites=0;
+   const todayEvent={eventId:'aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa',
+    mode:'classic',score:4,points:20,total:4,at:new Date().toISOString()};
    await page.route('**/supabase-js@2.95.0*',r=>r.fulfill({
     status:200,contentType:'text/javascript',headers:{'access-control-allow-origin':'*'},
     body:'export function createClient(){return {auth:{getSession:async()=>({data:{session:{access_token:"x",user:{id:"'+auth+'",is_anonymous:true}}}}),getUser:async()=>({data:{user:{id:"'+auth+'",is_anonymous:true}},error:null})}}}'
@@ -50,7 +52,12 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
       ?{ok:true,revision:0,resetEpoch:0,storageSubject:pupil,state:{rewards:serverRewards===null?rewards(false):serverRewards}}
       :{ok:true,appXp:0,total:0,level:1};
     else if(r.request().url().includes('/connect-projection-v2')&&b.action==='student-score-history')
-     data={ok:true,events:[],bestThree:[],todayBest:null,boardBest:0};
+     data={ok:true,events:[todayEvent],bestThree:[todayEvent],todayBest:todayEvent,boardBest:0};
+    else if(r.request().url().includes('/connect-projection-v2')&&b.action==='student-share-score'){
+     scoreShareWrites++;
+     assert.equal(b.eventId,todayEvent.eventId,'Seule la preuve certifiée correspondante est envoyée');
+     data={ok:true,consentRecorded:true};
+    }
     else throw Error('unexpected server call '+b.action);
     await r.fulfill({status:200,contentType:'application/json',
      headers:{'access-control-allow-origin':'*'},body:JSON.stringify(data)});
@@ -60,6 +67,53 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
    await page.waitForFunction(()=>!document.getElementById('certify').disabled,
     null,{timeout:45000});
    assert.equal(await page.locator('#trophies').textContent(),'3');
+   // Le récapitulatif récent ajouté en doublon ne doit plus masquer les
+   // 2 éléments d'origine : meilleur score du jour et podium des records.
+   await page.waitForFunction(()=>{
+    const doc=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+    return !!doc?.querySelector('#mathasPointsQuick .mathas-points-quick-item--best.mathas-school-shareable')
+     &&!!doc?.getElementById('mathasPointsDetail');
+   },null,{timeout:15000});
+   const cards=await page.evaluate(()=>{
+    const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+    const top=doc.getElementById('mathasPointsQuick'),history=doc.getElementById('mathasPointsDetail');
+    return {top:getComputedStyle(top).display!=='none'&&top.getBoundingClientRect().height>0,
+     history:getComputedStyle(history).display!=='none'&&history.getBoundingClientRect().height>0,
+     originalPodium:!!history.querySelector('.mathas-v541-podium'),
+     originalTrophies:!!doc.getElementById('mathasTrophiesStrip'),
+     extra:!!doc.getElementById('mathasSchoolScoreHistory')||!!doc.getElementById('mathasSchoolScoreTop'),
+     role:top.querySelector('.mathas-points-quick-item--best')?.getAttribute('role')};
+   });
+   assert.equal(cards.top,true,'Meilleur score du jour visible');
+   assert.equal(cards.history,true,'Records historiques visibles');
+   assert.equal(cards.originalPodium,true,'Coupes historiques conservées');
+   assert.equal(cards.originalTrophies,true,'Coupes de progression conservées');
+   assert.equal(cards.extra,false,'Aucun nouveau cadre Connect en doublon');
+   assert.equal(cards.role,'button','Le score du jour est activable au clavier');
+   const clickTop=score=>page.evaluate(points=>{
+    const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+    const top=doc.querySelector('#mathasPointsQuick .mathas-points-quick-item--best');
+    top.querySelector('[data-points="daily"]').innerHTML='<span>'+String(points)+'</span><span class="mathas-points-record">RECORD</span>';
+    top.click();
+   },score);
+   await clickTop(12);
+   await page.waitForTimeout(200);
+   assert.equal(await page.locator('.mathas-projection-offer:not([hidden])').count(),0,
+    'Un chiffre local différent du résultat certifié ne peut pas être proposé');
+   assert.equal(scoreShareWrites,0);
+   await clickTop(20);
+   await page.locator('.mathas-projection-offer button.yes').waitFor({state:'visible'});
+   assert.equal(scoreShareWrites,0,'Le clic ne partage pas le score sans Oui');
+   await page.locator('.mathas-projection-offer button').first().click();
+   assert.equal(scoreShareWrites,0,'Refuser laisse le score privé');
+   await clickTop(20);
+   await page.locator('.mathas-projection-offer button.yes').waitFor({state:'visible'});
+   const posted=page.waitForResponse(res=>res.url().includes('/connect-projection-v2')
+    &&res.request().postDataJSON()?.action==='student-share-score');
+   await page.locator('.mathas-projection-offer button.yes').click();
+   await posted;
+   assert.equal(scoreShareWrites,1,'La confirmation publie exactement une preuve officielle');
+
    await page.evaluate(width=>{
     const native=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
     const select=native.getElementById('classicMaxDigits');
