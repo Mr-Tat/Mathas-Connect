@@ -176,8 +176,10 @@ function applySchoolUi(){
    if(!btn||btn.disabled)return;
    let choice=null;
    const levelFrom=id=>({3:1,5:2,7:3})[Number(doc.getElementById(id)?.value)]||0;
-   if(btn.id==='startClassic'){
-    const total=Number(doc.querySelector('#classicCountPicker .classic-count-btn.active')?.dataset.count||10);
+   if(btn.id==='startClassic'||btn.matches('#classicCountPicker .classic-count-btn[data-count]')){
+    const total=btn.matches('#classicCountPicker .classic-count-btn[data-count]')
+     ?Number(btn.dataset.count)
+     :Number(doc.querySelector('#classicCountPicker .classic-count-btn.active')?.dataset.count||10);
     choice={mode:'classic',level:levelFrom('classicMaxDigits'),total};
    }else if(btn.id==='startSudden'||btn.id==='mathasSubThreeLives'){
     choice={mode:btn.id==='startSudden'?'sudden':'three-lives',
