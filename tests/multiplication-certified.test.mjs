@@ -103,7 +103,9 @@ test('no school can award old game-record without a server-issued multiplication
  const results=repoFile('supabase/functions/connect-results/index.ts');
  const launcher=repoFile('apps/multiplication-simple/index.html');
  assert.match(results,/b\.appKey===addMulti\|\|b\.appKey===mul/);
- assert.match(launcher,/start-extended-v1/);
+ const proof=repoFile('apps/multiplication-simple/certified-classic.mjs');
+ assert.match(proof,/start-extended-v1/);
+ assert.match(launcher,/createCertifiedMultiplicationClassic/);
  assert.match(launcher,/mathasMultiThreeLives/);
  assert.match(launcher,/mathas-multi-hard-three-lives/);
 });
