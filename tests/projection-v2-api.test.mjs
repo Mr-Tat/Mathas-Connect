@@ -25,7 +25,10 @@ test('projection V2 API : remise à zéro seulement (classe,jeu), mot de passe A
 test('projection V2 API : confidentialité des noms et pourcentages non inventés',()=>{
  assert.match(src,/p\.projection_opt_in===true\|\|approvedScore/);
  assert.match(src,/showTeacher=b\.showTeacher===true/);
- assert.match(src,/percentages:null,percentageStatus:'exercise_telemetry_not_yet_available'/);
+ assert.match(src,/percentageStatus:percentages\?'completed_games_only':'exercise_telemetry_not_yet_available'/);
+ assert.match(src,/connect_projection_completed_attempt_counts_v1/);
+ assert.match(src,/summarizeCompletedGames/);
+ assert.match(src,/if\(!error&&Array\.isArray\(rows\)\)completedRows=rows/);
  assert.match(src,/cache-control':'no-store/);
  assert.match(src,/b\.action==='student-share-score'/);
  assert.match(src,/connect_projection_score_consents/);
