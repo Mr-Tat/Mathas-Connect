@@ -48,7 +48,6 @@ test('L’API professeur utilise ce contrat sous authentification, en repli sûr
  const src=readFileSync(new URL('../supabase/functions/connect-projection-v2/index.ts',import.meta.url),'utf8');
  assert.match(src,/connect_projection_completed_attempt_counts_v1/);
  assert.match(src,/summarizeCompletedGames/);
- assert.match(src,/percentageStatus:'completed_games_only'/);
- assert.match(src,/percentageStatus:'exercise_telemetry_not_yet_available'/);
+ assert.match(src,/percentageStatus:percentages\?'completed_games_only':'exercise_telemetry_not_yet_available'/);
  assert.match(src,/if\(!teacher\.length\|\|!principal\)return deny\('forbidden',403\)/);
 });
