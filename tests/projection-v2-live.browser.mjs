@@ -295,6 +295,12 @@ test('V2 — barre synchronisée : 20 secondes, clic manuel et pause des réglag
   await page.clock.fastForward(3000);
   assert.equal(state.loads,pausedLoads,'La reprise ne provoque pas de MAJ immédiate');
   await page.clock.fastForward(14000);
+  // La requête est asynchrone : attendre son retour après le battement simulé.
+  await page.waitForFunction(()=>{
+   const bar=document.querySelector('#projection-refresh-progress');
+   return bar&&!bar.classList.contains('is-paused')
+    &&Number(bar.getAttribute('aria-valuenow'))<10;
+  },null,{timeout:12000});
   assert.ok(state.loads>pausedLoads,'La MAJ reprend selon le temps restant');
   assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
