@@ -272,7 +272,7 @@ function renderExploits(){
  if(!shown.length){
   event.append(exploit('pending',data.exploitsStatus==='unavailable'
    ?'Exploits temporairement indisponibles.':'Aucun exploit confirmé récemment pour les applications affichées.'));
- }else shown.forEach(x=>event.append(exploit(x.type,x.message,appName(x.appKey)));
+ }else shown.forEach(x=>event.append(exploit(x.type,x.message,appName(x.appKey))));
 }
 function createRankingCard(app){
  const card=document.createElement('section');
