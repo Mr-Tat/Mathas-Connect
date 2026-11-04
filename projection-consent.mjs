@@ -24,12 +24,17 @@ export function createProjectionConsent({classId,appKey,studentKey,getToken,
  const status=documentRef.createElement('small');status.setAttribute('role','status');
  actions.append(no,yes);dialog.append(question,actions,status);documentRef.body.append(dialog);
  let showing=null,flushing=false;const waiting=[];
- function showNext(){if(showing||!waiting.length){dialog.hidden=true;return}
+ function showNext(){
+  // Une nouvelle proposition ne doit pas masquer la question déjà affichée.
+  if(showing)return;
+  if(!waiting.length){dialog.hidden=true;return}
   showing=waiting.shift();status.textContent='';dialog.hidden=false;yes.focus()}
  function dismiss(){showing=null;dialog.hidden=true;showNext()}
  async function flush(){
   if(flushing)return;flushing=true;
-  try{for(const eventId of read()){
+  try{for(let i=0;i<200;i++){
+   // Relire après chaque ACK : un second « Oui » peut arriver pendant la requête.
+   const eventId=read()[0];if(!eventId)break;
    const token=await getToken();
    const response=await fetchImpl(URL+'/functions/v1/connect-projection-v2',{
     method:'POST',cache:'no-store',
@@ -39,12 +44,12 @@ export function createProjectionConsent({classId,appKey,studentKey,getToken,
    if(!response.ok||body?.ok!==true){
     // Un score ancien/égal ou effacé du tableau n'est plus en attente.
     if(['not_improved','score_reset','event_not_found'].includes(body?.error)){
-     save(read().filter(v=>v!==eventId));
+     if(!save(read().filter(v=>v!==eventId)))break;
      continue;
     }
     break;
    }
-   save(read().filter(v=>v!==eventId));
+   if(!save(read().filter(v=>v!==eventId)))break;
   }}catch{ /* Offline: keep opted-in event IDs for later retransmission. */ }
   finally{flushing=false}
  }
