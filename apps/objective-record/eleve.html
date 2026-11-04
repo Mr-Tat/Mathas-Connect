@@ -38,15 +38,17 @@ button{cursor:pointer}button:disabled{opacity:.5}
 #xp-panel{width:min(500px,calc(100vw - 20px))}
 #challenge-panel{width:min(780px,calc(100vw - 20px))}
 .panel-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
-.panel-heading strong{font-size:15px;color:#ffdf98}
+.panel-heading>strong{font-size:15px;color:#ffdf98}
+#xp-panel .xp-heading{gap:clamp(7px,2.2vw,18px)}
+#xp-panel .xp-heading>strong{flex:1 1 auto;min-width:0;line-height:1.25}
+#xp-heading-total{margin-left:auto;white-space:nowrap;color:#ffe3a0;font-size:13px;font-weight:650;font-variant-numeric:tabular-nums}
+#xp-heading-total strong{color:#ffdf98;font-size:14px}
+#xp-panel .xp-heading .panel-close{flex:0 0 auto}
 .panel-close{min-width:30px;font-size:17px}
-#xp-summary{display:flex;flex-wrap:wrap;gap:9px;color:#c7e5f4;margin:5px 0 10px}
-#xp-summary strong{color:#ffe3a0}
 #xp-table{width:100%;border-collapse:collapse;font-size:12px}
 #xp-table td{padding:5px 3px;border-bottom:1px solid #30536b}
 #xp-table td:last-child{text-align:right;white-space:nowrap}
 #xp-table tr.is-earned{color:#9cedbd}
-#xp-note{font-size:12px;color:#b3d5ec}
 #certified-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 #certified-tools label{display:grid;gap:4px;font-size:12px}
 #certified-tools select{max-width:180px}
@@ -99,8 +101,7 @@ button{cursor:pointer}button:disabled{opacity:.5}
   </div>
  </div>
  <nav id="bar-actions" aria-label="Commandes Connect">
-  <button id="challenge-toggle" type="button" aria-controls="challenge-panel" aria-expanded="false">✏️ Défi Connect</button>
-  <button id="xp-toggle" type="button" aria-controls="xp-panel" aria-expanded="false">🏆 XP à gagner</button>
+  <button id="xp-toggle" type="button" aria-controls="xp-panel" aria-expanded="false">✨ XP à gagner</button>
   <a id="bar-home" href="../../hub.html">⌂ Accueil</a>
  </nav>
 </header>
@@ -108,13 +109,7 @@ button{cursor:pointer}button:disabled{opacity:.5}
 <a id="guest-home" href="../../hub.html">↩ Retour au HUB</a>
 <div id="status" role="status" aria-live="polite" hidden>Vérification de la connexion…</div>
 <section id="xp-panel" hidden aria-label="Relevé des XP officiels">
- <div class="panel-heading"><strong>🏆 XP acquis et à gagner</strong><button id="xp-close" class="panel-close" type="button" aria-label="Fermer les XP">×</button></div>
- <div id="xp-summary">
-  <span>Ce jeu : <strong id="app-xp">—</strong> XP</span>
-  <span>Total : <strong id="total-xp">—</strong> XP</span>
-  <span>Trophées : <strong id="trophies">—</strong></span>
- </div>
- <p id="xp-note">Les points et récompenses proviennent du serveur Connect.</p>
+ <div class="panel-heading xp-heading"><strong>✨ XP acquis et à gagner</strong><span id="xp-heading-total" title="Total des XP acquis dans ce jeu">Total : <strong id="app-xp">—</strong> XP</span><button id="xp-close" class="panel-close" type="button" aria-label="Fermer les XP">×</button></div>
  <table id="xp-table" aria-label="Récompenses XP"><tbody id="xp-rows"><tr><td>Ouvre ce relevé pour consulter tes XP.</td></tr></tbody></table>
  <p><button id="refresh" type="button" disabled>↻ Actualiser le profil</button></p>
 </section>
