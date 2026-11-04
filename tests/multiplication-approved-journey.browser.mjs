@@ -142,7 +142,16 @@ async function playFour(page){
  assert.equal(await page.locator('#mathasMultiCertified').count(),0,
   'aucun écran de multiplication de remplacement ne doit apparaître');
  await fillTwoNativeProducts(frame);
- await frame.locator('#primaryBtn').getByText('Calculs suivants').waitFor({timeout:12000});
+ const diagnostic=await frame.locator('#gameScreen').evaluate(el=>({
+  button:el.querySelector('#primaryBtn')?.textContent,
+  feedback:el.querySelector('#feedback')?.textContent,
+  statuses:[...el.querySelectorAll('.calc-box .calc-status')].map(x=>x.textContent),
+  answers:[...el.querySelectorAll('.calc-box')].map(b=>[...b.querySelectorAll('.answer-input')]
+   .map(x=>({col:x.dataset.col,value:x.value}))),
+  products:[...el.querySelectorAll('.calc-box .operation')].map(op=>op.textContent.slice(0,70))
+ }));
+ assert.match(diagnostic.button,/Calculs suivants/,
+  'Deux calculs natifs doivent être validés : '+JSON.stringify(diagnostic));
  await frame.locator('#primaryBtn').click();
  await fillTwoNativeProducts(frame);
  await page.getByText('Série certifiée',{exact:false}).waitFor({timeout:14000});
