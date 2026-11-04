@@ -369,7 +369,8 @@ async function proofCall(action,payload){
 function installNativeCertifiedProof(){
  const doc=iframe.contentDocument;
  if(mode!=='connected'||!certifiedClassic||!doc?.querySelector('#menuScreen')
-  ||doc.__mathasMultiCertifiedRouter)return;
+  )return;
+ if(doc.__mathasMultiCertifiedRouter)return;
  doc.__mathasMultiCertifiedRouter=true;
  doc.addEventListener('click',event=>{
   if(!event.isTrusted)return;
