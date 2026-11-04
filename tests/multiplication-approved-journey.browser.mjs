@@ -30,10 +30,10 @@ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const origin='http://127.0.0.1:'+server.address().port;
 const browser=await chromium.launch({headless:true});
 
-async function connectedPage(teacher=false){
+async function connectedPage(teacher=false,failFirstFinish=false){
  const page=await browser.newPage({viewport:{width:390,height:820}});
  const calls=[],proofCalls=[],projectionCalls=[];
- let state=null;
+ let state=null,firstFinishFails=failFirstFinish;
  let xp={ok:true,milestones:[],repeatXp:false,parcours:1,total:0,appXp:0,level:1};
  const context={get state(){return state},get xp(){return xp},calls,proofCalls,projectionCalls,page};
  await page.route('https://esm.sh/**',async route=>{
@@ -61,6 +61,12 @@ async function connectedPage(teacher=false){
      questions:Array.from({length:4},(_,i)=>({id:'q'+(i+1),op:'mul',a:'249',m:9,width:3}))};
    }else if(b.action==='finish-classic-v1'){
     assert.equal(b.answers.length,4);
+    if(firstFinishFails){
+     firstFinishFails=false;status=503;
+     response={ok:false,error:'temporary_school_network_failure'};
+     await route.fulfill({status,contentType:'application/json',body:JSON.stringify(response)});
+     return;
+    }
     state={classic:[{'4':4},{},{}],sudden:[0,0,0],hard:[0,0,0],
      progress:{},recent:[{eventId:EVENT,mode:'classic',level:1,score:4,total:4,
       points:16,at:new Date().toISOString()}],
@@ -154,6 +160,36 @@ try{
    await page.waitForTimeout(150);
    assert.equal(projectionCalls.length,1,'une reconnexion ne publie pas le score deux fois');
    assert.ok(calls.some(x=>x.action==='student-xp'));
+  }finally{await page.close()}
+ });
+
+ await test('TEST student: network fails after four answers, reload resumes SAME certified session and ACK',async()=>{
+  const {page,proofCalls,projectionCalls}=await connectedPage(false,true);
+  try{
+   const frame=page.frameLocator('iframe');
+   await frame.locator('.classic-count-btn[data-count="4"]').click();
+   const proof=page.locator('#mathasMultiCertified:not([hidden])');
+   await proof.waitFor();
+   for(let i=0;i<4;i++){
+    for(const [col,digit] of [[0,'1'],[1,'4'],[2,'2'],[3,'2']])
+     await proof.locator('.mul-proof-input.answer[data-col="'+col+'"]').fill(digit);
+    await proof.getByRole('button',{name:'Vérifier ce calcul'}).click();
+    if(i<3)await proof.getByRole('button',{name:'Calcul suivant'}).click();
+   }
+   await proof.getByText('Preuve conservée.',{exact:false}).waitFor({timeout:15000});
+   assert.deepEqual(proofCalls.map(x=>x.action),['start-classic-v1','finish-classic-v1']);
+   assert.equal(projectionCalls.length,0);
+   await page.reload({waitUntil:'domcontentloaded'});
+   await page.frameLocator('iframe').locator('.classic-count-btn[data-count="4"]').click();
+   await page.locator('#mathasMultiCertified').getByText('Score vérifié par le serveur.',{exact:false})
+    .waitFor({timeout:18000});
+   assert.deepEqual(proofCalls.map(x=>x.action),[
+    'start-classic-v1','finish-classic-v1','finish-classic-v1'
+   ],'reprise = même sessionId, aucune émission d’un nouveau défi');
+   assert.equal(proofCalls.at(-1).sessionId,EVENT);
+   assert.equal(projectionCalls.length,0,'aucune projection sans Oui après la reprise');
+   await page.waitForFunction(()=>
+    document.getElementById('xp-earned-total')?.textContent?.includes('22'),null,{timeout:11000});
   }finally{await page.close()}
  });
  await test('Monsieur T: teacher JWT scope uses the same school-certified multiplication entry',async()=>{
