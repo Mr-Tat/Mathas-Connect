@@ -45,7 +45,7 @@ test('deux additions : Objectif record garde son sous-titre et sa couronne ; com
     'nouvelle CSS réellement chargée, sans ancien cache navigateur');
  }
  assert.match(nav,/addition-\(\?:simple\|multiple\)/,'autres applications non concernées');
- assert.match(nav,/top:56px!important/,'commandes à la hauteur du bouton Mode clair');
+ assert.match(nav,/--mathas-connect-actions-top/,'commandes sous la vraie hauteur de la barre Connect');
  assert.match(nav,/grid-column:1!important;grid-row:1!important/);
  assert.match(nav,/grid-column:2!important;grid-row:1!important/);
  assert.match(nav,/grid-column:3!important;grid-row:1!important/);
