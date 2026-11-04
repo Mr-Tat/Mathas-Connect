@@ -72,7 +72,10 @@ const results=(action,data={})=>{guard();return rpc('connect-results',action,{cl
 async function run(fn){try{await fn()}catch(e){display('Laboratoire : '+(e.message||e),true)}}
 function linkFor(app,prof=false){
  const testSlug=recordSlugByApp[app.app_key];
- const href=testSlug?SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(testSlug):
+ // L'ancien lanceur « Objectif record » n'est PAS la multiplication certifiée.
+ // Tests en ligne doit ouvrir le jeu V7 intégré et sa preuve Connect dédiée.
+ const href=app.app_key==='multiplication-ecrite-simple'?'./apps/multiplication-simple/':
+   testSlug?SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(testSlug):
    app.app_key==='abaque-longueurs'?ABAQUE_ONLINE_APP.launch_url:(app.launch_url||app.url);
  if(!href)return null;
  let url;try{url=new URL(href,location.href)}catch{return null}
