@@ -153,7 +153,7 @@ body .ranking-board .ranking-head h2{margin:0;line-height:1.18}
 .event-text .event-student{font-weight:900;color:inherit}
 /* Étiquettes discrètes, valeurs et points mieux hiérarchisés.
    Les trois éléments principaux restent alignés verticalement sur la carte. */
-.ranking-board .entry{min-height:52px}
+.ranking-board .entry,.ranking-board .ranking-list.multi .entry{min-height:52px}
 .ranking-board .entry-details{
  display:flex;align-items:center;gap:clamp(3px,.45vw,8px);
  width:100%;min-width:0;
@@ -184,14 +184,17 @@ body .ranking-board .ranking-head h2{margin:0;line-height:1.18}
 }
 .ranking-board .entry-copy .minor{
  display:flex;align-items:baseline;gap:3px;margin-top:0;
- white-space:nowrap;line-height:1.15;font-size:9px;
+ white-space:nowrap;min-width:0;max-width:100%;overflow:hidden;
+ line-height:1.15;font-size:9px;
 }
 .ranking-board .entry-copy .minor .meta-label{font-weight:400}
 .ranking-board .entry-copy .minor .meta-value{
  font-size:11px;font-weight:850;line-height:1;
 }
 .ranking-board .entry-copy .minor .meta-trophy{margin-left:4px;font-size:10px}
-.ranking-board .entry-copy .minor .class-mark{margin-left:4px}
+.ranking-board .entry-copy .minor .class-mark{
+ margin-left:4px;min-width:0;overflow:hidden;text-overflow:ellipsis;
+}
 .projection-main[data-app-count="2"] .ranking-board .entry-details{gap:3px}
 .projection-main[data-app-count="2"] .ranking-board .entry-details .points{
  font-size:clamp(15px,1.23vw,18px);
