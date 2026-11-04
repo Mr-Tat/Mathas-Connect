@@ -118,7 +118,12 @@ async function fillTwoNativeProducts(frame){
    await frame.locator('#numpad .num-key[data-key="'+digit+'"]').click();
   }
  }
- await frame.locator('#primaryBtn').click();
+ // Le moteur natif valide automatiquement dès que les deux calculs sont remplis.
+ // Un clic inconditionnel ici ferait passer directement à la paire suivante.
+ await frame.locator('#primaryBtn').evaluate(async btn=>{
+  await new Promise(ok=>setTimeout(ok,350));
+  if(btn.textContent.trim()==='Valider')btn.click();
+ });
 }
 
 async function playFourAttemptsWithoutReceipt(page){
