@@ -47,6 +47,7 @@ begin
     end if;
    end if;
   end loop;
+  if p_app in ('addition-ecrite-simple','addition-ecrite-multiple') then
   -- A 3-vies proof earns 5 XP for each survival tier; a genuine
   -- Mort subite proof can complete the same tier to 10 XP total.
   -- Historical full milestones remain untouched and fully credited.
@@ -79,6 +80,25 @@ begin
     end if;
    end loop;
   end loop;
+  else
+   -- Other integrated games retain their existing survival XP rules.
+   score=coalesce((s#>>array['sudden',i::text])::int,0);
+   for n in select unnest(array[5,10]) loop
+    if score>=n then
+     k='sudden:'||(i+1)||':'||n;
+     insert into public.connect_xp_milestones(student_id,app_key,milestone_key,evidence)
+      values(p_student,p_app,k,jsonb_build_object('source','record','score',score)) on conflict do nothing;
+    end if;
+   end loop;
+   score=coalesce((s#>>array['hard',i::text])::int,0);
+   for n in select unnest(array[3,7]) loop
+    if score>=n then
+     k='hard:'||(i+1)||':'||n;
+     insert into public.connect_xp_milestones(student_id,app_key,milestone_key,evidence)
+      values(p_student,p_app,k,jsonb_build_object('source','record','score',score)) on conflict do nothing;
+    end if;
+   end loop;
+  end if;
  end loop;
  select coalesce(sum(r.points),0) into afterxp
  from public.connect_xp_milestones m join public.connect_xp_award_rules r on r.app_key=m.app_key and (
@@ -92,16 +112,22 @@ begin
   for rec in select m.milestone_key,r.points from public.connect_xp_milestones m join public.connect_xp_award_rules r
     on r.app_key=m.app_key and r.award_key=concat_ws(':',split_part(m.milestone_key,':',1),split_part(m.milestone_key,':',3),nullif(split_part(m.milestone_key,':',4),''))
    where m.student_id=p_student and m.app_key=p_app and m.achieved_at<replay_started loop
-   if split_part(rec.milestone_key,':',1) in ('sudden','hard') then continue; end if;
+   if p_app in ('addition-ecrite-simple','addition-ecrite-multiple')
+    and split_part(rec.milestone_key,':',1) in ('sudden','hard') then continue; end if;
    earned:=false;i:=split_part(rec.milestone_key,':',2)::int-1;n:=split_part(rec.milestone_key,':',3)::int;
    if split_part(rec.milestone_key,':',1)='classic' then
      score:=coalesce((s#>>array['classic',i::text,n::text])::int,-1);
      if n=4 then earned:=score=4;
      elsif n in(10,20) then earned:=case when split_part(rec.milestone_key,':',4)='bonus' then score=n else score*5>=n*4 end;end if;
+   elsif split_part(rec.milestone_key,':',1)='sudden' then
+     earned:=coalesce((s#>>array['sudden',i::text])::int,0)>=n;
+   elsif split_part(rec.milestone_key,':',1)='hard' then
+     earned:=coalesce((s#>>array['hard',i::text])::int,0)>=n;
    end if;
    if earned then insert into public.connect_parcours_xp_bonus(student_id,app_key,parcours_number,milestone_key,points)
     values(p_student,p_app,replay,rec.milestone_key,rec.points) on conflict do nothing;end if;
   end loop;
+  if p_app in ('addition-ecrite-simple','addition-ecrite-multiple') then
   -- For already known survival tiers, replay in 3-vies earns the first 5,
   -- and real sudden death the complementary 5, independent of the
   -- mode used during the original parcours.
@@ -130,6 +156,7 @@ begin
     end loop;
    end loop;
   end loop;
+  end if;
  end if;
  select coalesce(sum(points),0) into bonusxp from public.connect_parcours_xp_bonus where student_id=p_student and app_key=p_app;
  afterxp:=afterxp+bonusxp;
