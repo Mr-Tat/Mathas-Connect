@@ -61,7 +61,7 @@ BEGIN
  -- New replay: first half then top-up, but no repeat double-credit.
  UPDATE public.connect_xp_milestones SET achieved_at=now()-interval '1 day' WHERE student_id=a;
  UPDATE public.connect_parcours_current SET parcours_number=2, repeat_xp=true,started_at=now() WHERE student_id=a;
- UPDATE public.connect_states SET state_data='{"threeLives":[5,0,0]}' WHERE student_id=a;
+ UPDATE public.connect_states SET state_data='{"threeLives":[5,0,0],"sudden":[0,0,0]}' WHERE student_id=a;
  PERFORM public.connect_xp_sync_v2(a,'addition-ecrite-simple',false);
  SELECT xp_credited INTO n FROM public.connect_xp_credits WHERE student_id=a AND app_key='addition-ecrite-simple';
  IF n<>25 THEN RAISE EXCEPTION '3-vies replay half should +5: %',n;END IF;
