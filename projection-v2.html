@@ -145,6 +145,82 @@ label.setting{justify-content:space-between;max-width:380px}
 @media(max-width:690px){main{display:flex;flex-direction:column}.right{display:grid}.ranking-list{grid-template-columns:1fr}.ranking-list .ranking-col + .ranking-col{border-left:0;border-top:5px solid #e6c877;padding-left:0;padding-top:10px;margin-top:8px;box-shadow:none}.ranking-head h1{font-size:27px}.primary strong{font-size:18px}.points{font-size:18px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 #settings [hidden]{display:none!important}#reset-confirm input[type=password]{border:1px solid #7794b1;border-radius:7px;background:#0d263e;color:#fff;padding:9px;min-width:210px}#percentage-note{font-size:11px;color:#d5e7fa}#ranking-list:empty::after{content:"Aucun score enregistré pour cette application.";color:#d0e6fd;font-size:14px;padding:25px;text-align:center;display:block}.event.empty{color:#cce0f3}
+
+/* Projection simultanée : chaque classement est un panneau autonome. */
+.projection-stage{min-height:100vh}
+.projection-main{max-width:1920px;width:100%;margin:0 auto;padding:14px;display:grid;gap:16px;align-items:start;grid-template-areas:"info board exploits";grid-template-columns:minmax(190px,1fr) minmax(460px,3fr) minmax(210px,1.15fr)}
+.projection-main .left-col{grid-area:info;min-height:0;max-height:none;overflow:visible}
+.projection-main .right{grid-area:exploits;min-height:0;display:block}
+.projection-main .compare-panel{max-height:none;overflow:visible}
+.ranking-board{grid-area:board;display:grid;grid-template-columns:repeat(var(--app-columns,1),minmax(0,1fr));gap:16px;min-width:0;align-items:start}
+.ranking-board[data-app-count="1"]{--app-columns:1}
+.ranking-board[data-app-count="2"]{--app-columns:2}
+.ranking-board[data-app-count="3"]{--app-columns:3}
+.ranking-board:empty{min-height:170px;display:grid;place-items:center}
+.ranking-board:empty::after{content:"Choisis les applications à afficher dans ⚙ Applications.";color:#d0e6fd;font-weight:750;text-align:center}
+.ranking-board .ranking-card{min-height:140px;height:auto;display:flex;flex-direction:column;overflow:visible;border:3px solid #9ebfe0;border-radius:17px;background:linear-gradient(170deg,#193d65,#0a2446);box-shadow:0 5px 16px #0004,0 0 0 3px #102a44;isolation:isolate}
+.ranking-board .ranking-head{position:sticky;top:0;z-index:5;border-radius:14px 14px 0 0;min-height:65px;padding:8px 6px;background:#244b78;text-align:center}
+.ranking-board .ranking-head h2{font-size:clamp(18px,1.8vw,29px);line-height:1.12;margin:2px 0 0;overflow-wrap:anywhere;color:#fff}
+.ranking-board .ranking-head .over{font-size:10px;letter-spacing:.06em}
+.ranking-board .ranking-wrap{display:block;flex:none;min-height:0;padding:9px;overflow:visible}
+.ranking-board .ranking-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0;align-items:start}
+.ranking-board .ranking-list.single{grid-template-columns:minmax(0,1fr);max-width:none}
+.ranking-board .ranking-col{height:auto;min-height:0;display:grid;grid-template-rows:none;gap:6px;align-content:start}
+.ranking-board .ranking-col .entry{height:auto;min-height:48px;overflow:visible;align-content:center}
+.ranking-board .ranking-list.multi .entry{min-height:48px}
+.ranking-board .ranking-col + .ranking-col{border-left:4px solid #e6c877;padding-left:9px;box-shadow:-3px 0 0 #102941}
+.ranking-board .entry{grid-template-columns:24px minmax(0,1fr);gap:5px;padding:6px;min-width:0}
+.ranking-board .entry .primary{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 7px}
+.ranking-board .entry .player-label{min-width:0;max-width:100%}
+.ranking-board .entry .primary strong{font-size:clamp(13px,1.25vw,18px)}
+.ranking-board .entry .points{font-size:clamp(13px,1.25vw,18px)}
+.ranking-board .entry .minor{font-size:10px;line-height:1.25;flex-wrap:wrap;gap:2px 6px}
+.ranking-board .ranking-list:empty::after{content:"Aucun score enregistré pour cette application.";color:#d0e6fd;font-size:14px;padding:25px 10px;text-align:center;display:block;grid-column:1/-1}
+.projection-main[data-app-count="2"],.projection-main[data-app-count="3"]{grid-template-areas:"board board" "info exploits";grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.projection-main[data-app-count="2"] .left-col,.projection-main[data-app-count="3"] .left-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.projection-main[data-app-count="2"] .left-col #settings-left,.projection-main[data-app-count="3"] .left-col #settings-left{grid-column:1/-1;justify-self:start}
+.projection-main[data-app-count="2"] .left-col .panel,.projection-main[data-app-count="3"] .left-col .panel{margin:0}
+.projection-main[data-app-count="2"] .ranking-board .ranking-head h2{font-size:clamp(18px,2.3vw,30px)}
+.projection-main[data-app-count="3"] .ranking-board .ranking-list{grid-template-columns:minmax(0,1fr)}
+.projection-main[data-app-count="3"] .ranking-board .ranking-list.single{max-width:none}
+.projection-main[data-app-count="3"] .ranking-board .ranking-head h2{font-size:clamp(18px,2vw,25px)}
+.projection-main[data-app-count="3"] .ranking-board .ranking-col + .ranking-col{border:0;padding:0;box-shadow:none}
+.projection-main[data-app-count="3"] .ranking-board .entry{min-height:51px;grid-template-columns:27px minmax(0,1fr)}
+.projection-main[data-app-count="3"] .ranking-board .entry .primary strong{font-size:clamp(15px,1.35vw,20px)}
+.projection-main[data-app-count="3"] .ranking-board .entry .points{font-size:clamp(14px,1.3vw,19px)}
+.projection-main .right .panel{min-height:110px}
+.projection-main footer{grid-area:footer}
+.projection-stage footer{max-width:1920px;margin:auto;padding:8px 14px 16px;gap:12px}
+.projection-stage footer .apps{gap:8px}
+.projection-stage footer .apps button{background:#274f76;border:1px solid #91b2d4}
+#settings .note{line-height:1.45}
+@media (min-width:1101px) and (min-height:640px){
+ .projection-stage{height:auto;min-height:100vh;display:block}
+ .projection-main{height:auto;min-height:0;overflow:visible}
+ .projection-main .left-col{min-height:0;max-height:none;overflow:visible}
+ .projection-main .right{min-height:0}
+ .ranking-board .ranking-card{height:auto;min-height:140px;display:flex}
+ .ranking-board .ranking-wrap{flex:none;min-height:0;display:block}
+ .ranking-board .ranking-list{flex:none;min-height:0;align-items:start}
+ .ranking-board .ranking-col{height:auto;min-height:0;grid-template-rows:none;align-content:start}
+ .ranking-board .ranking-col .entry{height:auto;min-height:48px;overflow:visible}
+}
+@media (max-width:1100px){
+ .projection-main[data-app-count="1"]{grid-template-areas:"board board" "info exploits";grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}
+@media (max-width:810px){
+ .projection-main{display:flex;flex-direction:column}
+ .ranking-board{width:100%}
+ .projection-main .left-col,.projection-main .right{width:100%}
+ .projection-main[data-app-count="2"] .left-col,.projection-main[data-app-count="3"] .left-col{display:flex;flex-direction:column}
+}
+@media (max-width:640px){
+ .ranking-board{grid-template-columns:1fr!important}
+ .ranking-board .ranking-head{position:relative}
+ .ranking-board .ranking-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .ranking-board[data-app-count="3"] .ranking-list{grid-template-columns:1fr}
+ .projection-main{padding:10px}
+}
 </style>
 <!-- Styles existants de la Projection V2, complétés uniquement par les quatre thèmes testés. -->
 <script src="./projection-v2-theme.js?v=20261101-1"></script>
@@ -166,36 +242,33 @@ label.setting{justify-content:space-between;max-width:380px}
       </label>
       <span id="live-status" role="status" aria-live="polite">Connexion professeur requise</span>
     </div>
-    <output id="projection-refresh-countdown" class="projection-refresh-countdown" aria-label="Prochaine actualisation des scores"><span id="projection-refresh-label">MAJ en attente</span><span id="projection-refresh-dot" class="projection-refresh-dot" aria-hidden="true" hidden>●</span></output>
+    <output id="projection-refresh-countdown" class="projection-refresh-countdown" aria-label="Prochaine actualisation des scores"><span id="projection-refresh-label">MAJ en attente</span></output>
   </div>
 </header>
 <div class="projection-stage">
-<main>
+<main id="projection-main" class="projection-main" data-app-count="1">
   <aside class="left-col" aria-label="Réussite et comparaisons">
     <section class="panel left"><h2>🎯 Réussite de la classe</h2><div id="classes" aria-live="polite"></div></section>
     <section class="panel compare-panel" aria-label="Pourcentages des autres classes"><div id="comparison-results"></div></section>
     <button id="settings-left" class="settings-under" type="button">⚙ Applications</button>
   </aside>
-  <section class="ranking" aria-label="Classement par application">
-    <div class="ranking-head"><div class="over">🏆 MEILLEURS SCORES · PÉRIODE DE PROJECTION</div><h1 id="app-name"></h1></div>
-    <div class="ranking-wrap"><div id="ranking-list" class="ranking-list"></div></div>
-  </section>
+  <div id="ranking-board" class="ranking-board" aria-label="Classements des applications affichées" data-app-count="1"></div>
   <aside class="right">
     <section class="panel"><h2>✨ Nouveaux exploits</h2><div id="exploits"></div></section>
   </aside>
 </main>
 <footer>
   <div id="app-tabs" class="apps"></div>
-  <div class="controls"><button id="prev-app" type="button">◀ Appli</button><span id="rotation-label" class="rotation-status"></span><span id="time-left" class="rotation-status"></span><button id="next-app" type="button">Appli ▶</button><button id="pause" type="button">⏸ Pause</button></div>
+  <div class="controls"><span id="visible-app-count" class="rotation-status">Jusqu’à 3 classements simultanés</span></div>
 </footer>
 </div>
 <dialog id="settings" aria-label="Paramètres de projection">
   <button id="close-settings" type="button" class="close">✕ Fermer</button><h2>⚙ Applications à afficher</h2>
-  <p class="note">Réglages propres à cette classe. Seuls les noms autorisés à la projection peuvent apparaître.</p>
+  <p class="note">Réglages propres à cette classe. Choisis de 1 à 3 applications pour les classements affichés ensemble. Les % restent réglables indépendamment. Seuls les noms autorisés à la projection peuvent apparaître.</p>
   <table><thead><tr><th>Application</th><th>Score</th><th>%</th><th>Réinitialiser le score</th></tr></thead><tbody id="app-options"></tbody></table>
   <section class="options"><strong>Comparaison avec les autres classes</strong><p class="note">Pour chaque classe, affiche le score de l’application en cours, le pourcentage de réussite, ou les deux.</p><table class="comparison-table"><thead><tr><th>Classe</th><th>Score</th><th>%</th></tr></thead><tbody id="comparison-options"></tbody></table><label><input id="show-teacher" type="checkbox"> Afficher Monsieur T (décoché au lancement)</label></section>
   <div id="reset-confirm" class="options" hidden><strong id="reset-heading">Réinitialiser le score projeté</strong><label>Mot de passe professeur <input id="reset-password" type="password" autocomplete="current-password" maxlength="160" placeholder="Mot de passe"/></label><div class="controls"><button id="reset-apply" type="button">Confirmer uniquement ce score</button><button id="reset-cancel" type="button">Annuler</button></div></div><p class="note">Une réinitialisation n’affecte qu’une application et une classe. Jamais les %, les résultats réels, les XP, les trophées ou les parcours des élèves.</p>
 </dialog>
-<script type="module" src="./projection-v2-live.js?v=20261104-40s-double-cycle-v1"></script>
+<script type="module" src="./projection-v2-live.js?v=20261104-parallel-3-v1"></script>
 </body>
 </html>
