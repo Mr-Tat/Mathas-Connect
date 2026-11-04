@@ -440,12 +440,28 @@ function tickProjection(){
  }
  updateRefreshProgress();
 }
-setInterval(tickProjection,250);
+// Pas d'intervalle de lecture lorsque le tableau est masqué.
+// Au retour : reprendre au temps restant, sans rattrapage des cycles.
+let refreshTickerId=null;
+function stopRefreshTicker(){
+ if(refreshTickerId!==null){
+  clearInterval(refreshTickerId);
+  refreshTickerId=null;
+ }
+}
+function startRefreshTicker(){
+ if(refreshTickerId!==null||document.visibilityState!=='visible'||$('settings').open)return;
+ refreshTickerId=setInterval(tickProjection,250);
+ tickProjection();
+}
+startRefreshTicker();
 document.addEventListener('visibilitychange',()=>{
  if(document.visibilityState!=='visible'){
+  stopRefreshTicker();
   cancelPlayback();pauseRefreshCycle();
  }else{
   resumeRefreshCycle();
+  startRefreshTicker();
   if(hasLoaded)render();
  }
 });
@@ -453,10 +469,10 @@ updateRefreshProgress();
 const dialog=$('settings');
 function showSettings(){
  if(!hasLoaded)return note('Clique d’abord sur Afficher / Actualiser.');
- cancelPlayback();buildSettings();dialog.showModal();pauseRefreshCycle();
+ cancelPlayback();buildSettings();dialog.showModal();pauseRefreshCycle();stopRefreshTicker();
 }
 function closeSettings(){
- dialog.close();resumeRefreshCycle();$('reset-password').value='';
+ dialog.close();resumeRefreshCycle();startRefreshTicker();$('reset-password').value='';
  $('reset-confirm').hidden=true;pendingReset=null;render();
 }
 for(const id of ['settings-left'])$(id).onclick=showSettings;
@@ -548,7 +564,7 @@ $('reset-apply').onclick=async()=>{
  finally{$('reset-apply').disabled=false}
 };
 $('load-real').onclick=refresh;
-window.addEventListener('pagehide',()=>clearBoard('Projection masquée en quittant la page.'));
+window.addEventListener('pagehide',()=>{stopRefreshTicker();clearBoard('Projection masquée en quittant la page.')});
 async function initialize(){
  $('header-class').textContent=classLabel||'Classe';
  clearBoard('Vérification de la session professeur…');
