@@ -12,7 +12,7 @@ const endpoint='https://awmhpfofacaglewammxt.supabase.co';
 const publishable='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const $=id=>document.getElementById(id);
 const REFRESH_INTERVAL_MS=20000;
-const ROTATION_SECONDS=40;
+const MAX_VISIBLE_APPS=3;
 const clockFormatter=new Intl.DateTimeFormat('fr-BE',{hour:'2-digit',minute:'2-digit'});
 const apps=[
  {key:'addition-ecrite-simple',title:'Addition écrite'},
@@ -22,27 +22,22 @@ const apps=[
  {key:'melange-calculs-ecrits',title:'Mélange de calculs'}
 ];
 const allKeys=apps.map(a=>a.key);
-let client=null,classesAvailable=[],data=null,wasPaused=false,paused=false;
+let client=null,classesAvailable=[],data=null,fetching=false,refreshTicket=0;
 let hasLoaded=false,connected=false,optionsLoaded=false,pendingReset=null;
-let currentApp=allKeys[0],secondsRemaining=ROTATION_SECONDS,fetching=false,refreshTicket=0;
-let cycleStartedAt=0,nextRefreshAt=0;
-// Une seule origine temporelle pour les deux MAJ de 20 s et la rotation de 40 s.
-function startCycle(){
- cycleStartedAt=Date.now();
- nextRefreshAt=cycleStartedAt+REFRESH_INTERVAL_MS;
- secondsRemaining=ROTATION_SECONDS;
-}
+let nextRefreshAt=0;
 const tracker=createOvertakeTracker(),localRises=new Map();
-let playingKey=null,animationEpoch=0;
+const playingKeys=new Map();let animationEpoch=0;
 const scoreCompared=()=>options.comparisonDisplay.filter(c=>c.score).map(c=>c.classId);
+// Les animations sont indépendantes pour chaque panneau affiché.
 function cancelPlayback(){
- animationEpoch++;playingKey=null;
- for(const el of $('ranking-list').querySelectorAll('.entry')){
+ animationEpoch++;playingKeys.clear();
+ for(const el of document.querySelectorAll('#ranking-board .entry')){
   for(const animation of el.getAnimations())animation.cancel();
   el.style.zIndex='';
  }
 }
-let options={scoreApps:[...allKeys],percentageApps:[...allKeys],comparisons:[],comparisonDisplay:[],rotationSeconds:ROTATION_SECONDS};
+// rotationSeconds subsiste seulement pour la validation du contrat Supabase.
+let options={scoreApps:allKeys.slice(0,MAX_VISIBLE_APPS),percentageApps:[...allKeys],comparisons:[],comparisonDisplay:[],rotationSeconds:40};
 const comparedIds=()=>options.comparisonDisplay.filter(v=>v.score||v.percentage).map(v=>v.classId);
 const currentComparison=id=>options.comparisonDisplay.find(v=>v.classId===id)||{classId:id,score:false,percentage:false};
 const note=message=>{
@@ -50,18 +45,17 @@ const note=message=>{
  status.classList.toggle('is-alert',
   /erreur|refus|expir|nécessaire|indisponible|ne gères|saisis ton|ouvre cette page|clique d’abord/i.test(message));
 };
-const enabled=()=>apps.filter(a=>options.scoreApps.includes(a.key));
+const enabled=()=>apps.filter(a=>options.scoreApps.includes(a.key)).slice(0,MAX_VISIBLE_APPS);
+const cardFor=key=>[...$('ranking-board').querySelectorAll('.ranking-card')].find(card=>card.dataset.appKey===key)||null;
 function clearBoard(message){
  cancelPlayback();tracker.clear();localRises.clear();
- refreshTicket++;data=null;connected=false;hasLoaded=false;pendingReset=null;paused=true;
- cycleStartedAt=0;nextRefreshAt=0;secondsRemaining=ROTATION_SECONDS;
- updateRefreshCountdown();
- $('ranking-list').replaceChildren();$('classes').replaceChildren();
+ refreshTicket++;data=null;connected=false;hasLoaded=false;pendingReset=null;
+ nextRefreshAt=0;updateRefreshCountdown();
+ $('ranking-board').replaceChildren();$('classes').replaceChildren();
  $('exploits').replaceChildren();$('app-tabs').replaceChildren();
- $('app-name').textContent='Projection masquée';
- $('time-left').textContent='';
+ $('visible-app-count').textContent='Projection masquée';
  $('reset-password').value='';
- for(const id of ['settings-left'])$(id).disabled=true;
+ for(const id of ['settings-left','settings-top'])$(id).disabled=true;
  note(message);
 }
 async function call(functionName,action,body={}){
@@ -102,13 +96,13 @@ async function refresh(){
    const remote=principal.options;
    if(remote&&Array.isArray(remote.scoreApps)&&Array.isArray(remote.percentageApps)
       &&Array.isArray(remote.comparisons)&&Number.isInteger(remote.rotationSeconds)){
-    options={scoreApps:remote.scoreApps.filter(k=>allKeys.includes(k)),
+    options={scoreApps:apps.filter(app=>remote.scoreApps.includes(app.key)).map(app=>app.key).slice(0,MAX_VISIBLE_APPS),
      percentageApps:remote.percentageApps.filter(k=>allKeys.includes(k)),
      comparisons:remote.comparisons.filter(id=>classesAvailable.some(c=>c.id===id&&id!==classId)),
      comparisonDisplay:(Array.isArray(remote.comparisonDisplay)?remote.comparisonDisplay:remote.comparisons.map(id=>({classId:id,score:true,percentage:true})))
        .filter(v=>v&&classesAvailable.some(c=>c.id===v.classId&&v.classId!==classId))
        .map(v=>({classId:v.classId,score:v.score===true,percentage:v.percentage===true})),
-     rotationSeconds:ROTATION_SECONDS};
+     rotationSeconds:40};
     if(comparedIds().length){
      result=await call('connect-projection-v2','teacher-load',{
       comparisons:comparedIds(),showTeacher:$('show-teacher').checked
@@ -123,10 +117,8 @@ async function refresh(){
   data=result;
   const firstDisplay=!hasLoaded;
   hasLoaded=true;
-  if(firstDisplay)paused=false;
-  if(!enabled().some(a=>a.key===currentApp))currentApp=enabled()[0]?.key??null;
-  if(firstDisplay)startCycle();
-  for(const id of ['settings-left'])$(id).disabled=false;
+  if(firstDisplay)nextRefreshAt=Date.now()+REFRESH_INTERVAL_MS;
+  for(const id of ['settings-left','settings-top'])$(id).disabled=false;
   render();
   note('Actualisé à '+clockFormatter.format(new Date()));
   updateRefreshCountdown();
@@ -172,19 +164,20 @@ function snapshotFor(appKey,result){
 function observeRankings(result){
  for(const app of enabled()){
   const observation=tracker.observe(snapshotFor(app.key,result));
-  if(observation.reset&&playingKey===app.key)cancelPlayback();
+  if(observation.reset&&playingKeys.has(app.key))cancelPlayback();
  }
 }
-function rowFor(key){
- return [...$('ranking-list').querySelectorAll('.entry')].find(el=>el.dataset.entryKey===key)||null;
+function rowFor(appKey,key){
+ return [...(cardFor(appKey)?.querySelectorAll('.entry')||[])]
+  .find(el=>el.dataset.entryKey===key)||null;
 }
-// Reuse each student's DOM node between positions so FLIP computes accurate
-// coordinates, including crossings of the two ranking columns.
-function paintRanking(people){
- const root=$('ranking-list'),multiple=scoreCompared().length>0;
- const existing=new Map([...root.querySelectorAll('.entry')]
-  .map(el=>[el.dataset.entryKey,el]));
- const columns=people.length?splitProjectedRanking(people,multiple):[];
+// Chaque panneau garde ses propres cartes pour les animations FLIP.
+// À trois applications, les 16 élèves se répartissent sur une seule colonne.
+function paintRanking(appKey,people){
+ const card=cardFor(appKey);if(!card)return;
+ const root=card.querySelector('.ranking-list'),multiple=scoreCompared().length>0;
+ const existing=new Map([...root.querySelectorAll('.entry')].map(el=>[el.dataset.entryKey,el]));
+ const columns=people.length?(enabled().length===3?[people]:splitProjectedRanking(people,multiple)):[];
  root.classList.toggle('single',columns.length===1);
  root.classList.toggle('multi',multiple);
  const fragment=document.createDocumentFragment();
@@ -229,22 +222,25 @@ function addSpectacularRise(appKey,movement){
    ' places grâce à un nouveau record ('+movement.newScore+' pts) !'});
  localRises.set(appKey,history.slice(0,5));
 }
-async function playCurrentApp(){
- const appKey=currentApp;
- if(!appKey||playingKey||!hasLoaded||!connected
+async function playApp(appKey){
+ if(!appKey||playingKeys.has(appKey)||!hasLoaded||!connected
+  ||!enabled().some(a=>a.key===appKey)||!cardFor(appKey)
   ||document.visibilityState!=='visible'||$('settings').open||!tracker.pending(appKey))return;
- const token=++animationEpoch;playingKey=appKey;
- const canContinue=()=>token===animationEpoch&&currentApp===appKey
+ const token=animationEpoch;playingKeys.set(appKey,true);
+ const canContinue=()=>token===animationEpoch&&playingKeys.has(appKey)
+  &&enabled().some(a=>a.key===appKey)&&!!cardFor(appKey)
   &&document.visibilityState==='visible'&&!$('settings').open;
  try{
   while(tracker.take(appKey)&&canContinue()){
    const segment=tracker.take(appKey);
    const completed=await animateOvertakeSegment({
-    segment,paint:paintRanking,findRow:rowFor,canContinue,
+    segment,paint:rows=>paintRanking(appKey,rows),findRow:key=>rowFor(appKey,key),canContinue,
     onStep:(_actor,passed)=>{
-     const board=$('ranking-list');
-     board.dataset.overtakeSteps=String(1+Number(board.dataset.overtakeSteps||0));
-     board.dataset.lastPassed=passed;
+     const board=cardFor(appKey)?.querySelector('.ranking-list');
+     if(board){
+      board.dataset.overtakeSteps=String(1+Number(board.dataset.overtakeSteps||0));
+      board.dataset.lastPassed=passed;
+     }
     },
     onArrival:movement=>addSpectacularRise(appKey,movement)
    });
@@ -254,45 +250,75 @@ async function playCurrentApp(){
   }
  }finally{
   if(token===animationEpoch){
-   playingKey=null;
-   if(tracker.pending(appKey)&&currentApp===appKey)
-    queueMicrotask(()=>{void playCurrentApp()});
+   playingKeys.delete(appKey);
+   if(tracker.pending(appKey)&&cardFor(appKey))
+    queueMicrotask(()=>{void playApp(appKey)});
   }
  }
 }
 function renderExploits(){
  const event=$('exploits');event.replaceChildren();
  if(!data)return;
- const latest=Array.isArray(data.exploits)?data.exploits.filter(x=>x?.appKey===currentApp
+ const active=enabled(),activeKeys=new Set(active.map(a=>a.key));
+ const appName=key=>apps.find(a=>a.key===key)?.title||'Application';
+ const latest=Array.isArray(data.exploits)?data.exploits.filter(x=>activeKeys.has(x?.appKey)
   &&['trophy','perfect','sudden','top'].includes(x.type)
   &&typeof x.message==='string'&&x.message.length<=180):[];
- const rises=localRises.get(currentApp)||[];
+ const rises=active.flatMap(app=>localRises.get(app.key)||[]);
  const shown=[...rises,...latest].slice(0,5);
  if(!shown.length){
   event.append(exploit('pending',data.exploitsStatus==='unavailable'
-   ?'Exploits temporairement indisponibles.':'Aucun exploit confirmé récemment pour cette application.'));
- }else shown.forEach(x=>event.append(exploit(x.type,x.message)));
+   ?'Exploits temporairement indisponibles.':'Aucun exploit confirmé récemment pour les applications affichées.'));
+ }else shown.forEach(x=>event.append(exploit(x.type,appName(x.appKey)+' · '+x.message)));
+}
+function createRankingCard(app){
+ const card=document.createElement('section');
+ card.className='ranking ranking-card';card.dataset.appKey=app.key;
+ card.setAttribute('aria-label','Classement · '+app.title);
+ const head=document.createElement('div');head.className='ranking-head';
+ const over=document.createElement('div');over.className='over';
+ over.textContent='🏆 MEILLEURS SCORES · PÉRIODE DE PROJECTION';
+ const title=document.createElement('h2');title.textContent=app.title;
+ head.append(over,title);
+ const wrap=document.createElement('div');wrap.className='ranking-wrap';
+ const list=document.createElement('div');list.className='ranking-list';
+ list.dataset.overtakeSteps='0';
+ wrap.append(list);card.append(head,wrap);
+ return card;
 }
 function render(){
+ const active=enabled(),count=active.length;
+ const board=$('ranking-board'),main=$('projection-main');
+ board.dataset.appCount=String(count);main.dataset.appCount=String(count);
+ $('visible-app-count').textContent=count+' application'+(count>1?'s':'')+' affichée'+(count>1?'s':'')+' simultanément';
  const principal=mainData();
- const app=apps.find(a=>a.key===currentApp);
- $('app-name').textContent=app?.title||'Aucune application sélectionnée';
- if(!principal){$('ranking-list').replaceChildren();return}
- const visual=tracker.shown(currentApp)||snapshotFor(currentApp,data);
- if(playingKey!==currentApp)paintRanking(visual.rows);
+ if(!principal){board.replaceChildren();return}
+ // Réutiliser les cartes entre deux rafraîchissements préserve les animations,
+ // les classements et la position verticale du professeur.
+ const desired=new Set(active.map(a=>a.key));
+ for(const card of [...board.children]){
+  if(!desired.has(card.dataset.appKey))card.remove();
+ }
+ for(const app of active){
+  let card=cardFor(app.key);
+  if(!card){card=createRankingCard(app);board.append(card)}
+  const visual=tracker.shown(app.key)||snapshotFor(app.key,data);
+  if(!playingKeys.has(app.key))paintRanking(app.key,visual.rows);
+ }
+ for(const [index,app] of active.entries()){
+  const card=cardFor(app.key);
+  if(board.children[index]!==card)board.insertBefore(card,board.children[index]||null);
+ }
  const tabs=$('app-tabs');tabs.replaceChildren();
- enabled().forEach(a=>{
-  const btn=document.createElement('button');btn.type='button';
-  btn.textContent=a.title;btn.classList.toggle('selected',a.key===currentApp);
-  btn.onclick=()=>{
-   if(currentApp!==a.key){cancelPlayback();$('ranking-list').dataset.overtakeSteps='0'}
-   currentApp=a.key;startCycle();render();updateRefreshCountdown();
-  };
+ active.forEach(app=>{
+  const btn=document.createElement('button');btn.type='button';btn.textContent=app.title;
+  btn.setAttribute('aria-label','Voir le classement '+app.title);
+  btn.onclick=()=>cardFor(app.key)?.scrollIntoView({behavior:'smooth',block:'start'});
   tabs.append(btn);
  });
- renderExploits();renderClasses();updateTime();
- if(!playingKey&&tracker.pending(currentApp))
-  queueMicrotask(()=>{void playCurrentApp()});
+ renderExploits();renderClasses();updateRefreshCountdown();
+ for(const app of active)if(!playingKeys.has(app.key)&&tracker.pending(app.key))
+  queueMicrotask(()=>{void playApp(app.key)});
 }
 // Les notifications n'affirment aucun exploit sans événement serveur confirmé.
 // Types prévus : trophée, série parfaite, entrée Top 5 et, seulement après preuve serveur, remontée d'au moins 3 places avec nouveau record personnel.
@@ -357,64 +383,9 @@ function renderClasses(){
   comparisons.append(hint);
  }
 }
-function updateTime(){
- const active=enabled(),ix=active.findIndex(a=>a.key===currentApp);
- $('rotation-label').textContent=active.length>1?'Application '+(ix+1)+' / '+active.length:'';
- $('time-left').textContent=paused?'En pause':active.length>1?'Suivante dans '+secondsRemaining+' s':'Affichage fixe';
- $('pause').textContent=paused?'▶ Reprendre':'⏸ Pause';
-}
-function next(delta){
- const a=enabled();if(!a.length)return;
- cancelPlayback();
- const i=a.findIndex(x=>x.key===currentApp);
- currentApp=a[(i+delta+a.length)%a.length].key;
- $('ranking-list').dataset.overtakeSteps='0';
- startCycle();render();updateRefreshCountdown();
-}
-$('next-app').onclick=()=>next(1);
-$('prev-app').onclick=()=>next(-1);
-// La pause conserve le temps restant. À la reprise, les MAJ sont réalignées
-// sur les étapes 20 s et 40 s du cycle en cours.
-function pauseRotation(){
- if(!paused&&hasLoaded)
-  secondsRemaining=Math.max(0,Math.ceil((cycleStartedAt+ROTATION_SECONDS*1000-Date.now())/1000));
- paused=true;updateTime();updateRefreshCountdown();
-}
-function resumeRotation(){
- if(paused&&hasLoaded){
-  const elapsed=ROTATION_SECONDS-secondsRemaining;
-  cycleStartedAt=Date.now()-elapsed*1000;
-  nextRefreshAt=cycleStartedAt+(elapsed<20?20:40)*1000;
-  if(nextRefreshAt<=Date.now())nextRefreshAt=Date.now()+REFRESH_INTERVAL_MS;
- }
- paused=false;updateTime();updateRefreshCountdown();
-}
-$('pause').onclick=()=>{if(paused)resumeRotation();else pauseRotation()};
-document.addEventListener('visibilitychange',()=>{
- if(document.visibilityState!=='visible')cancelPlayback();
- else if(hasLoaded){render()}
-});
-// Un seul battement : MAJ à 20 s, puis MAJ + application suivante à 40 s.
-// Les échéances sont horodatées pour ne pas dériver si l'onglet est ralenti.
-function tickProjection(){
- if(!hasLoaded){updateRefreshCountdown();return}
- const now=Date.now();
- if(connected&&now>=nextRefreshAt){
-  nextRefreshAt+=(Math.floor((now-nextRefreshAt)/REFRESH_INTERVAL_MS)+1)*REFRESH_INTERVAL_MS;
-  if(document.visibilityState==='visible'&&!$('settings').open)void refresh();
- }
- if(!paused&&enabled().length>1){
-  secondsRemaining=Math.max(0,Math.ceil((cycleStartedAt+ROTATION_SECONDS*1000-now)/1000));
-  if(secondsRemaining===0&&!playingKey)next(1);
- }
- updateTime();updateRefreshCountdown();
-}
-setInterval(tickProjection,1000);
+// Plus de rotation des applications : seule l'actualisation commune reste.
 function updateRefreshCountdown(){
- const output=$('projection-refresh-countdown');
- const label=$('projection-refresh-label'),dot=$('projection-refresh-dot');
- dot.hidden=true;
- output.setAttribute('aria-label','Prochaine actualisation des scores');
+ const label=$('projection-refresh-label');
  if(!connected||!hasLoaded){label.textContent='MAJ en attente';return}
  if(document.visibilityState!=='visible'||$('settings').open){
   label.textContent='MAJ suspendue';return;
@@ -422,23 +393,31 @@ function updateRefreshCountdown(){
  const remaining=Math.max(0,Math.ceil((nextRefreshAt-Date.now())/1000));
  label.textContent='MAJ dans '+String(Math.floor(remaining/60)).padStart(2,'0')+':'+
   String(remaining%60).padStart(2,'0');
- // Le point doré identifie le DEUXIÈME cycle, jamais le premier.
- dot.hidden=paused||enabled().length<=1||Date.now()-cycleStartedAt<REFRESH_INTERVAL_MS;
- if(!dot.hidden)
-  output.setAttribute('aria-label','Deuxième cycle de 20 secondes : application suivante après cette actualisation');
 }
+function tickProjection(){
+ if(hasLoaded&&connected&&Date.now()>=nextRefreshAt){
+  const now=Date.now();
+  nextRefreshAt+=(Math.floor((now-nextRefreshAt)/REFRESH_INTERVAL_MS)+1)*REFRESH_INTERVAL_MS;
+  if(document.visibilityState==='visible'&&!$('settings').open)void refresh();
+ }
+ updateRefreshCountdown();
+}
+setInterval(tickProjection,1000);
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState!=='visible')cancelPlayback();
+ else if(hasLoaded)render();
+});
 updateRefreshCountdown();
 const dialog=$('settings');
 function showSettings(){
  if(!hasLoaded)return note('Clique d’abord sur Afficher / Actualiser.');
- cancelPlayback();
- wasPaused=paused;pauseRotation();buildSettings();dialog.showModal();updateRefreshCountdown();
+ cancelPlayback();buildSettings();dialog.showModal();updateRefreshCountdown();
 }
 function closeSettings(){
- dialog.close();if(!wasPaused)resumeRotation();else updateRefreshCountdown();$('reset-password').value='';
+ dialog.close();updateRefreshCountdown();$('reset-password').value='';
  $('reset-confirm').hidden=true;pendingReset=null;render();
 }
-for(const id of ['settings-left'])$(id).onclick=showSettings;
+for(const id of ['settings-left','settings-top'])$(id).onclick=showSettings;
 $('close-settings').onclick=closeSettings;
 dialog.addEventListener('cancel',event=>{event.preventDefault();closeSettings()});
 async function commitOptions(){
@@ -456,15 +435,18 @@ function buildSettings(){
   for(const field of ['scoreApps','percentageApps']){
    const cell=document.createElement('td');const cb=document.createElement('input');
    cb.type='checkbox';cb.checked=options[field].includes(app.key);
+   if(field==='scoreApps')cb.disabled=(cb.checked&&options.scoreApps.length<=1)
+     ||(!cb.checked&&options.scoreApps.length>=MAX_VISIBLE_APPS);
    cb.setAttribute('aria-label',app.title+' · '+(field==='scoreApps'?'Afficher score':'Afficher pourcentage'));
    cb.onchange=async()=>{
     const before=[...options[field]];
+    if(field==='scoreApps'&&((cb.checked&&before.length>=MAX_VISIBLE_APPS)
+      ||(!cb.checked&&before.length<=1))){cb.checked=!cb.checked;return}
     options[field]=cb.checked?[...options[field],app.key]:options[field].filter(k=>k!==app.key);
     if(!await commitOptions()){options[field]=before;cb.checked=!cb.checked}
     if(field==='scoreApps'){
      cancelPlayback();tracker.drop(app.key);
     }
-    if(!enabled().some(a=>a.key===currentApp))currentApp=enabled()[0]?.key??null;
     render();
     buildSettings();
    };
@@ -540,7 +522,7 @@ async function initialize(){
   const dashboard=await call('connect-api','teacher-dashboard');
   classesAvailable=(dashboard.classes||[]).filter(c=>c?.id&&typeof c.name==='string'&&!c.name.includes('TEST'));
   if(!classesAvailable.some(c=>c.id===classId))return note('Tu ne gères pas la classe demandée.');
-  connected=true;paused=true;$('load-real').disabled=false;
+  connected=true;$('load-real').disabled=false;
   note('Clique sur Afficher / Actualiser pour charger '+classLabel+'.');
  }catch(error){note('Connexion refusée : '+(error?.message||'Erreur réseau'))}
 }

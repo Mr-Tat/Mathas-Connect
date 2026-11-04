@@ -42,7 +42,7 @@ BEGIN
 END $fn$;
 
 
--- Dedicated second fictional pupil: preserves isolation from the optional-carry fixture.
+-- Dedicated fictional student: keep the complete Gold test independent of the other SQL fixture.
 INSERT INTO public.connect_students(id) VALUES ('22222222-2222-4222-8222-222222222222');
 INSERT INTO public.connect_enrollments(student_id,class_id) VALUES
  ('22222222-2222-4222-8222-222222222222','4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'),

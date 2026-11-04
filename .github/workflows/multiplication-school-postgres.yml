@@ -1,7 +1,15 @@
 name: Multiplication school PostgreSQL proof (disposable)
 on:
   push:
-    branches: [feat/multiplication-school-integration-20261104]
+    branches: [main]
+    paths:
+      - 'supabase/migrations/2026110411*.sql'
+      - 'supabase/migrations/20261104130000_mul_optional_carries_native_v1.sql'
+      - 'supabase/migrations/20261104131000_school_mul_unlocked_gold_v1.sql'
+      - 'tests/postgres/multiplication-school-fixture.sql'
+      - 'tests/postgres/multiplication-school-certified.test.sql'
+      - 'tests/postgres/multiplication-school-optional-carries.test.sql'
+      - '.github/workflows/multiplication-school-postgres.yml'
   pull_request:
     paths:
       - 'supabase/migrations/2026110411*.sql'
@@ -60,5 +68,7 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261104131000_school_mul_unlocked_gold_v1.sql
       - name: Test 9 classic, 4 extended, HARD, replay XP and ACL
         run: |
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/multiplication-school-optional-carries.test.sql
+          # Les contrôles de verrouillage doivent précéder toute partie qui débloque
+          # les niveaux : les deux scénarios utilisent le même profil fictif.
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/multiplication-school-certified.test.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/multiplication-school-optional-carries.test.sql

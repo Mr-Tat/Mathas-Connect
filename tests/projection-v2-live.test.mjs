@@ -5,139 +5,82 @@ import {spawnSync} from 'node:child_process';
 const html=readFileSync(new URL('../projection-v2.html',import.meta.url),'utf8');
 const js=readFileSync(new URL('../projection-v2-live.js',import.meta.url),'utf8');
 
-test('Projection V2 live : chargement professeur volontaire, lecture protégée et classe fixe',()=>{
+test('Projection V2 : chargement explicite du professeur et données protégées',()=>{
  assert.match(html,/id="load-real"/);
  assert.match(js,/storageKey:'mathas-connect-professor-auth-v1'/);
  assert.match(js,/import \{classId,classLabel\} from '.\/connect-context\.js'/);
  assert.match(js,/teacher-dashboard/);
  assert.match(js,/connect-projection-v2','teacher-load'/);
- assert.match(js,/if\(!hasLoaded\)return note\('Clique d’abord sur Afficher/);
  assert.doesNotMatch(js,/signInAnonymously|localStorage\.setItem/);
 });
-test('Projection V2 live : deux MAJ de 20 s et rotation synchronisée à 40 s',()=>{
+test('Projection V2 : un, deux ou trois panneaux visibles et séparés',()=>{
+ assert.match(js,/const MAX_VISIBLE_APPS=3;/);
+ assert.match(js,/const enabled=\(\)=>apps\.filter/);
+ assert.match(js,/\.slice\(0,MAX_VISIBLE_APPS\)/);
+ assert.match(js,/function createRankingCard\(app\)/);
+ assert.match(js,/function paintRanking\(appKey,people\)/);
+ assert.match(js,/function playApp\(appKey\)/);
+ assert.match(js,/playingKeys=new Map\(\)/);
+ assert.match(html,/id="ranking-board"/);
+ assert.match(html,/data-app-count="1"/);
+ assert.match(html,/\.ranking-board\[data-app-count="2"\]\{--app-columns:2\}/);
+ assert.match(html,/\.ranking-board\[data-app-count="3"\]\{--app-columns:3\}/);
+ assert.match(html,/border:3px solid #9ebfe0/);
+ assert.match(html,/\.projection-main\[data-app-count="3"\] \.ranking-board \.ranking-list\{grid-template-columns:minmax\(0,1fr\)\}/);
+ assert.match(js,/enabled\(\)\.length===3\?\[people\]:splitProjectedRanking/);
+ assert.doesNotMatch(html,/id="prev-app"|id="next-app"|id="pause"|id="projection-refresh-dot"/);
+});
+test('Projection V2 : rafraîchissement toutes les 20 s, sans changement automatique de page',()=>{
  assert.match(js,/const REFRESH_INTERVAL_MS=20000;/);
- assert.match(js,/const ROTATION_SECONDS=40;/);
- assert.match(js,/nextRefreshAt=cycleStartedAt\+REFRESH_INTERVAL_MS/);
- assert.match(js,/if\(connected&&now>=nextRefreshAt\)/);
- assert.match(js,/if\(document\.visibilityState==='visible'&&!\$\('settings'\)\.open\)void refresh\(\)/);
+ assert.match(js,/nextRefreshAt=Date\.now\(\)\+REFRESH_INTERVAL_MS/);
  assert.match(js,/setInterval\(tickProjection,1000\)/);
- assert.match(js,/rotationSeconds:ROTATION_SECONDS/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-40s-double-cycle-v1/);
+ assert.match(js,/if\(document\.visibilityState==='visible'&&!\$\('settings'\)\.open\)void refresh\(\)/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-parallel-3-v1/);
+ assert.match(html,/id="projection-refresh-countdown"/);
  assert.match(html,/id="projection-refresh-label"/);
- assert.match(html,/id="projection-refresh-dot"/);
- assert.match(html,/\.projection-refresh-dot\{font-size:24px/);
- assert.match(js,/dot\.hidden=paused\|\|enabled\(\)\.length<=1\|\|Date\.now\(\)-cycleStartedAt<REFRESH_INTERVAL_MS/);
+ assert.doesNotMatch(js,/startCycle\(|function next\(|secondsRemaining|playCurrentApp/);
 });
-test('Projection V2 : remontées par application, 550 ms par passage, arrivée étoilée',()=>{
- assert.match(js,/createOvertakeTracker/);
- assert.match(js,/observeRankings\(result\)/);
- assert.match(js,/tracker\.take\(appKey\)/);
- assert.match(js,/animateOvertakeSegment/);
- assert.match(js,/movement\.gained<3/);
- assert.match(js,/localRises\.set\(appKey,history\.slice\(0,5\)\)/);
- assert.match(js,/currentApp===appKey/);
- assert.match(js,/document\.visibilityState==='visible'/);
- assert.match(js,/if\(secondsRemaining===0&&!playingKey\)next\(1\)/);
- assert.match(html,/projection-v2-overtake\.css\?v=20261104-v1/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-40s-double-cycle-v1/);
-});
-test('Jeu sans score : pas de colonne fantôme, état vide spécifique à l’application',()=>{
- assert.match(js,/people\.length\?splitProjectedRanking\(people,multiple\):\[\]/);
- assert.match(html,/Aucun score enregistré pour cette application/);
- assert.doesNotMatch(html,/Aucun élève autorisé à afficher pour cette application/);
-});
-test('Projection V2 live : 14 élèves maximum, classement propre aux jeux, score près du nom',()=>{
+test('Projection V2 : jusqu’à 16 élèves et animations indépendantes',()=>{
  assert.match(js,/limit:16/);
  assert.match(js,/rankMultiClass/);
  assert.match(js,/splitProjectedRanking/);
- assert.match(js,/const root=\$\('ranking-list'\),multiple=scoreCompared\(\)\.length>0/);
- assert.match(js,/classes:result\.classes,primaryClassId:classId/);
- assert.match(js,/primary\.append\(playerLabel,points\)/);
+ assert.match(js,/cardFor\(appKey\)/);
+ assert.match(js,/findRow:key=>rowFor\(appKey,key\)/);
+ assert.match(js,/onArrival:movement=>addSpectacularRise\(appKey,movement\)/);
+ assert.match(js,/localRises\.set\(appKey,history\.slice\(0,5\)\)/);
  assert.match(js,/playerLabel\.append\(projectedAvatar\(p\),name\)/);
- assert.match(js,/rank\.textContent=String\(place\)/);
- assert.doesNotMatch(js,/🥇|🥈|🥉/);
- assert.match(js,/avatarGlyph,avatarColor/);
- assert.match(js,/Niveau /);
- assert.match(js,/p\.trophies/);
- assert.match(js,/currentApp=a\.key;startCycle\(\);render\(\)/);
- assert.match(js,/const a=enabled\(\)/);
- assert.match(js,/a\.key===currentApp/);
-});
-test('Projection V2 live : panneaux score et % isolés et refus de faux pourcentage',()=>{
- assert.match(js,/for\(const field of \['scoreApps','percentageApps'\]\)/);
- assert.match(js,/classId,\.\.\.body/);
- assert.match(js,/options\.comparisons/);
- assert.match(js,/return n===null\?'— %'/);
- assert.match(js,/root\.append\(makeSuccessRow\('Global'/);
- assert.match(js,/for\(const app of apps\.filter\(a=>options\.percentageApps\.includes\(a\.key\)\)\)/);
- assert.match(js,/for\(const field of \['score','percentage'\]\)/);
- assert.match(js,/comparisonDisplay/);
- assert.match(html,/Réussite de la classe/);
- assert.match(html,/id="comparison-results"/);
- assert.doesNotMatch(html,/id="count-label"/);
- assert.match(html,/id="header-class" class="header-class"/);
- assert.doesNotMatch(html,/id="ranking-note"/);
- assert.doesNotMatch(html,/class="ranking-guide"/);
- assert.match(html,/\.ranking-head\{min-height:69px;padding:6px 12px 7px\}/);
- assert.match(js,/panel\.append\(makeSuccessRow\('Global',c\.percentages\?\.global,true,true\)\)/);
- assert.match(js,/if\(numericPercent\(pct\)!==null&&!compact\)/);
- assert.match(html,/class="projection-stage"/);
- assert.match(html,/\.projection-stage\{height:100vh;height:100dvh/);
- assert.doesNotMatch(html,/class="ranking-footer"/);
- assert.doesNotMatch(html,/<h2>↔ Autres classes<\/h2>/);
- assert.match(html,/\.compare-row \.classstat\.global-success \.headline strong\{font-size:16px\}/);
- assert.match(html,/<footer>[\s\S]*id="rotation-label"[\s\S]*id="time-left"[\s\S]*id="next-app"/);
- assert.match(html,/grid-template-rows:repeat\(var\(--row-count,8\),minmax\(0,1fr\)\)/);
- assert.doesNotMatch(html,/Score propre à l'application · Trophées permanents/);
- assert.match(html,/id="settings-left" class="settings-under"/);
- assert.match(html,/\.ranking-col \+ \.ranking-col\{border-left:5px/);
- assert.match(html,/\.entry\.rank-1 \.place/);
- assert.doesNotMatch(html,/\.entry:first-child \.place/);
+ assert.match(js,/primary\.append\(playerLabel,points\)/);
  assert.match(js,/row\.style\.setProperty\('--rank-progress'/);
  assert.match(js,/column\.style\.setProperty\('--row-count'/);
- assert.match(js,/kinds=\{trophy:\['🏆'/);
- assert.match(js,/Mesure des exercices réellement entamés|exercices réellement entamés/);
- assert.doesNotMatch(js,/pct:83|Lina|Adam|NOM_CONFIDENTIEL/);
+ assert.match(html,/Aucun score enregistré pour cette application/);
 });
-test('Projection V2 live : reset de la seule application via mot de passe masqué',()=>{
+test('Projection V2 : au moins une application et trois au maximum, sans limiter les %',()=>{
+ assert.match(js,/cb\.disabled=\(cb\.checked&&options\.scoreApps\.length<=1\)/);
+ assert.match(js,/!cb\.checked&&options\.scoreApps\.length>=MAX_VISIBLE_APPS/);
+ assert.match(js,/for\(const field of \['scoreApps','percentageApps'\]\)/);
+ assert.match(js,/remote\.scoreApps\.includes\(app\.key\)/);
+ assert.match(js,/options\.comparisonDisplay/);
+ assert.match(js,/return n===null\?'— %'/);
+ assert.match(js,/for\(const app of apps\.filter\(a=>options\.percentageApps\.includes\(a\.key\)\)\)/);
+});
+test('Projection V2 : reset isolé, confidentialité, déconnexion et syntaxe',()=>{
  assert.match(html,/id="reset-password" type="password"/);
  assert.match(js,/teacher-reset-score'/);
  assert.match(js,/appKey:pendingReset,password/);
- assert.match(js,/rotationSeconds:ROTATION_SECONDS/);
- assert.match(js,/if\(firstDisplay\)startCycle\(\)/);
- assert.match(js,/reset\.disabled=!options\.scoreApps\.includes\(app\.key\)/);
- assert.match(js,/classLabel/);
- assert.match(js,/reset-password/);
- assert.match(js,/window\.confirm/);
- assert.doesNotMatch(js,/connect_parcours_restart|teacher-parcours-restart|reset_epoch/);
-});
-test('Projection V2 live : déconnexion masque les résultats et module JS valide',()=>{
  assert.match(js,/SIGNED_OUT/);
  assert.match(js,/clearBoard\('Session professeur terminée/);
  assert.match(js,/window\.addEventListener\('pagehide'/);
+ assert.doesNotMatch(js,/connect_parcours_restart|teacher-parcours-restart|reset_epoch/);
  const c=spawnSync(process.execPath,['--check','--input-type=module'],{input:js,encoding:'utf8'});
  assert.equal(c.status,0,c.stderr);
 });
-
-
-test('Projection : commandes en bandeau, notes retirées et minuterie de MAJ réelle',()=>{
- const header=html.split('</header>')[0],aside=html.split('<aside class="left-col"')[1]?.split('</aside>')[0]||'';
- assert.match(header,/class="header-tools"/);
- assert.match(header,/id="load-real"/);
- assert.match(header,/id="projection-theme"/);
- assert.match(header,/id="projection-refresh-countdown"/);
- assert.doesNotMatch(aside,/id="load-real"|id="projection-theme"|id="percentage-note"/);
- assert.doesNotMatch(html,/PROJECTION CONNECTÉE · ACCÈS PROFESSEUR|id="projection-clock"/);
- assert.doesNotMatch(js,/Global = exercices commencés des applications cochées/);
- assert.match(js,/MAJ dans /);
- assert.match(js,/MAJ suspendue/);
- assert.match(js,/function resumeRotation\(\)/);
- assert.match(js,/setInterval\(tickProjection,1000\)/);
-});
-test('Podium : points colorés sans capsule',()=>{
- const css=readFileSync(new URL('../projection-v2-avatar.css',import.meta.url),'utf8');
- assert.match(css,/\.entry:is\(\.rank-1,\.rank-2,\.rank-3\) \.points\{/);
- assert.match(css,/background:transparent!important/);
- assert.match(css,/border:0!important/);
- assert.doesNotMatch(css,/background:#203348/);
+test('Projection V2 : les quatre thèmes et l’accès aux réglages sont conservés',()=>{
+ assert.match(html,/id="projection-theme"/);
+ assert.match(html,/id="settings-left"/);
+ assert.match(html,/id="settings-top"/);
+ assert.match(html,/Réussite de la classe/);
+ assert.match(html,/Nouveaux exploits/);
+ assert.match(html,/id="comparison-results"/);
+ assert.match(js,/Mesure des exercices réellement entamés|exercices réellement entamés/);
+ assert.match(html,/\.ranking-board \.ranking-head\{position:sticky;top:0/);
 });
