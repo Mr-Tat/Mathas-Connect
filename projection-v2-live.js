@@ -222,22 +222,25 @@ function addSpectacularRise(appKey,movement){
    ' places grâce à un nouveau record ('+movement.newScore+' pts) !'});
  localRises.set(appKey,history.slice(0,5));
 }
-async function playCurrentApp(){
- const appKey=currentApp;
- if(!appKey||playingKey||!hasLoaded||!connected
+async function playApp(appKey){
+ if(!appKey||playingKeys.has(appKey)||!hasLoaded||!connected
+  ||!enabled().some(a=>a.key===appKey)||!cardFor(appKey)
   ||document.visibilityState!=='visible'||$('settings').open||!tracker.pending(appKey))return;
- const token=++animationEpoch;playingKey=appKey;
- const canContinue=()=>token===animationEpoch&&currentApp===appKey
+ const token=animationEpoch;playingKeys.set(appKey,true);
+ const canContinue=()=>token===animationEpoch&&playingKeys.has(appKey)
+  &&enabled().some(a=>a.key===appKey)&&!!cardFor(appKey)
   &&document.visibilityState==='visible'&&!$('settings').open;
  try{
   while(tracker.take(appKey)&&canContinue()){
    const segment=tracker.take(appKey);
    const completed=await animateOvertakeSegment({
-    segment,paint:paintRanking,findRow:rowFor,canContinue,
+    segment,paint:rows=>paintRanking(appKey,rows),findRow:key=>rowFor(appKey,key),canContinue,
     onStep:(_actor,passed)=>{
-     const board=$('ranking-list');
-     board.dataset.overtakeSteps=String(1+Number(board.dataset.overtakeSteps||0));
-     board.dataset.lastPassed=passed;
+     const board=cardFor(appKey)?.querySelector('.ranking-list');
+     if(board){
+      board.dataset.overtakeSteps=String(1+Number(board.dataset.overtakeSteps||0));
+      board.dataset.lastPassed=passed;
+     }
     },
     onArrival:movement=>addSpectacularRise(appKey,movement)
    });
@@ -247,45 +250,72 @@ async function playCurrentApp(){
   }
  }finally{
   if(token===animationEpoch){
-   playingKey=null;
-   if(tracker.pending(appKey)&&currentApp===appKey)
-    queueMicrotask(()=>{void playCurrentApp()});
+   playingKeys.delete(appKey);
+   if(tracker.pending(appKey)&&cardFor(appKey))
+    queueMicrotask(()=>{void playApp(appKey)});
   }
  }
 }
 function renderExploits(){
  const event=$('exploits');event.replaceChildren();
  if(!data)return;
- const latest=Array.isArray(data.exploits)?data.exploits.filter(x=>x?.appKey===currentApp
+ const active=enabled(),activeKeys=new Set(active.map(a=>a.key));
+ const appName=key=>apps.find(a=>a.key===key)?.title||'Application';
+ const latest=Array.isArray(data.exploits)?data.exploits.filter(x=>activeKeys.has(x?.appKey)
   &&['trophy','perfect','sudden','top'].includes(x.type)
   &&typeof x.message==='string'&&x.message.length<=180):[];
- const rises=localRises.get(currentApp)||[];
+ const rises=active.flatMap(app=>localRises.get(app.key)||[]);
  const shown=[...rises,...latest].slice(0,5);
  if(!shown.length){
   event.append(exploit('pending',data.exploitsStatus==='unavailable'
-   ?'Exploits temporairement indisponibles.':'Aucun exploit confirmé récemment pour cette application.'));
- }else shown.forEach(x=>event.append(exploit(x.type,x.message)));
+   ?'Exploits temporairement indisponibles.':'Aucun exploit confirmé récemment pour les applications affichées.'));
+ }else shown.forEach(x=>event.append(exploit(x.type,appName(x.appKey)+' · '+x.message)));
+}
+function createRankingCard(app){
+ const card=document.createElement('section');
+ card.className='ranking ranking-card';card.dataset.appKey=app.key;
+ card.setAttribute('aria-label','Classement · '+app.title);
+ const head=document.createElement('div');head.className='ranking-head';
+ const over=document.createElement('div');over.className='over';
+ over.textContent='🏆 MEILLEURS SCORES · PÉRIODE DE PROJECTION';
+ const title=document.createElement('h2');title.textContent=app.title;
+ head.append(over,title);
+ const wrap=document.createElement('div');wrap.className='ranking-wrap';
+ const list=document.createElement('div');list.className='ranking-list';
+ list.dataset.overtakeSteps='0';
+ wrap.append(list);card.append(head,wrap);
+ return card;
 }
 function render(){
+ const active=enabled(),count=active.length;
+ const board=$('ranking-board'),main=$('projection-main');
+ board.dataset.appCount=String(count);main.dataset.appCount=String(count);
+ $('visible-app-count').textContent=count+' application'+(count>1?'s':'')+' affichée'+(count>1?'s':'')+' simultanément';
  const principal=mainData();
- const app=apps.find(a=>a.key===currentApp);
- $('app-name').textContent=app?.title||'Aucune application sélectionnée';
- if(!principal){$('ranking-list').replaceChildren();return}
- const visual=tracker.shown(currentApp)||snapshotFor(currentApp,data);
- if(playingKey!==currentApp)paintRanking(visual.rows);
+ if(!principal){board.replaceChildren();return}
+ // Réutiliser les cartes entre deux rafraîchissements préserve les animations,
+ // les classements et la position verticale du professeur.
+ const desired=new Set(active.map(a=>a.key));
+ for(const card of [...board.children]){
+  if(!desired.has(card.dataset.appKey))card.remove();
+ }
+ for(const app of active){
+  let card=cardFor(app.key);
+  if(!card){card=createRankingCard(app);board.append(card)}
+  const visual=tracker.shown(app.key)||snapshotFor(app.key,data);
+  if(!playingKeys.has(app.key))paintRanking(app.key,visual.rows);
+ }
+ for(const app of active)board.append(cardFor(app.key));
  const tabs=$('app-tabs');tabs.replaceChildren();
- enabled().forEach(a=>{
-  const btn=document.createElement('button');btn.type='button';
-  btn.textContent=a.title;btn.classList.toggle('selected',a.key===currentApp);
-  btn.onclick=()=>{
-   if(currentApp!==a.key){cancelPlayback();$('ranking-list').dataset.overtakeSteps='0'}
-   currentApp=a.key;startCycle();render();updateRefreshCountdown();
-  };
+ active.forEach(app=>{
+  const btn=document.createElement('button');btn.type='button';btn.textContent=app.title;
+  btn.setAttribute('aria-label','Voir le classement '+app.title);
+  btn.onclick=()=>cardFor(app.key)?.scrollIntoView({behavior:'smooth',block:'start'});
   tabs.append(btn);
  });
- renderExploits();renderClasses();updateTime();
- if(!playingKey&&tracker.pending(currentApp))
-  queueMicrotask(()=>{void playCurrentApp()});
+ renderExploits();renderClasses();updateRefreshCountdown();
+ for(const app of active)if(!playingKeys.has(app.key)&&tracker.pending(app.key))
+  queueMicrotask(()=>{void playApp(app.key)});
 }
 // Les notifications n'affirment aucun exploit sans événement serveur confirmé.
 // Types prévus : trophée, série parfaite, entrée Top 5 et, seulement après preuve serveur, remontée d'au moins 3 places avec nouveau record personnel.
