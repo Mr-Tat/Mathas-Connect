@@ -370,6 +370,21 @@ function installNativeCertifiedProof(){
  const doc=iframe.contentDocument;
  if(mode!=='connected'||!certifiedClassic||!doc?.querySelector('#menuScreen')
   )return;
+ const sudden=doc.getElementById('startSudden');
+ if(sudden&&!doc.getElementById('mathasMultiThreeLives')){
+  const button=doc.createElement('button');button.type='button';
+  button.id='mathasMultiThreeLives';button.className=sudden.className;
+  button.textContent='❤️ 3 vies';button.title='Trois erreurs possibles · preuve Connect';
+  sudden.insertAdjacentElement('afterend',button);
+ }
+ for(const card of doc.querySelectorAll('#hardMenu .hard-level-card')){
+  const native=card.querySelector('.hard-sudden');
+  if(!native||card.querySelector('.mathas-multi-hard-three-lives'))continue;
+  const button=doc.createElement('button');button.type='button';
+  button.className='hard-sudden mathas-multi-hard-three-lives';
+  button.textContent='❤️ 3 vies';button.disabled=native.disabled;
+  native.insertAdjacentElement('afterend',button);
+ }
  if(doc.__mathasMultiCertifiedRouter)return;
  doc.__mathasMultiCertifiedRouter=true;
  doc.addEventListener('click',event=>{
