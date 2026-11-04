@@ -9,7 +9,7 @@ import {avatarGlyph,avatarColor} from './avatar-catalog.js';
 const endpoint='https://awmhpfofacaglewammxt.supabase.co';
 const publishable='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const $=id=>document.getElementById(id);
-const REFRESH_INTERVAL_MS=15000;
+const REFRESH_INTERVAL_MS=20000;
 const clockFormatter=new Intl.DateTimeFormat('fr-BE',{hour:'2-digit',minute:'2-digit'});
 function updateClock(){const clock=$('projection-clock');if(clock)clock.textContent=clockFormatter.format(new Date())}
 updateClock();setInterval(updateClock,10000);

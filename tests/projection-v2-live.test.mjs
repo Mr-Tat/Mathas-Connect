@@ -14,6 +14,12 @@ test('Projection V2 live : chargement professeur volontaire, lecture protégée 
  assert.match(js,/if\(!hasLoaded\)return note\('Clique d’abord sur Afficher/);
  assert.doesNotMatch(js,/signInAnonymously|localStorage\.setItem/);
 });
+test('Projection V2 live : actualisation des scores toutes les 20 s, uniquement si visible',()=>{
+ assert.match(js,/const REFRESH_INTERVAL_MS=20000;/);
+ assert.match(js,/setInterval\(\(\)=>\{if\(hasLoaded&&connected&&document\.visibilityState==='visible'&&!\$\('settings'\)\.open\)refresh\(\)\},REFRESH_INTERVAL_MS\);/);
+ assert.match(js,/rotationSeconds:30/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-refresh20-v3/);
+});
 test('Jeu sans score : pas de colonne fantôme, état vide spécifique à l’application',()=>{
  assert.match(js,/people\.length\?splitProjectedRanking\(people,multiple\):\[\]/);
  assert.match(html,/Aucun score enregistré pour cette application/);
