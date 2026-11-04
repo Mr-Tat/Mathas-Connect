@@ -353,6 +353,9 @@ function renderClasses(){
  const principal=mainData();
  if(!principal)return;
  const percentages=principal.percentages;
+ $('percentage-scope').textContent=principal.percentageStatus==='completed_games_only'
+  ?'Exercices des parties terminées enregistrées, hors Mort subite. Les parties abandonnées ne sont pas encore comptées.'
+  :'Pas de statistiques complètes sur les exercices tentés pour le moment.';
  root.append(makeSuccessRow('Global',percentages?.global,true));
  for(const app of apps.filter(a=>options.percentageApps.includes(a.key))){
   root.append(makeSuccessRow(app.title,percentages?.apps?.[app.key]));
@@ -443,10 +446,13 @@ function buildSettings(){
     if(field==='scoreApps'&&((cb.checked&&before.length>=MAX_VISIBLE_APPS)
       ||(!cb.checked&&before.length<=1))){cb.checked=!cb.checked;return}
     options[field]=cb.checked?[...options[field],app.key]:options[field].filter(k=>k!==app.key);
-    if(!await commitOptions()){options[field]=before;cb.checked=!cb.checked}
+    if(!await commitOptions()){
+     options[field]=before;cb.checked=!cb.checked;buildSettings();return;
+    }
     if(field==='scoreApps'){
      cancelPlayback();tracker.drop(app.key);
     }
+    if(field==='percentageApps')await refresh(); // Global pondéré sur les applications cochées.
     render();
     buildSettings();
    };
