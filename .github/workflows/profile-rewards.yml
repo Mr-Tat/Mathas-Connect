@@ -15,6 +15,7 @@ on:
       - 'supabase/functions/connect-api/**'
       - 'supabase/release-candidates/20261103_profile_rewards_initials_v1.sql'
       - 'supabase/release-candidates/20261103_profile_reward_celebrations_v1.sql'
+      - 'supabase/release-candidates/20261104_profile_rewards_rethreshold_5_10_15_20_25.sql'
       - 'tests/profile-rewards*'
       - '.github/workflows/profile-rewards.yml'
   workflow_dispatch:
@@ -22,7 +23,7 @@ permissions:
   contents: read
 jobs:
   profiles:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 9
     steps:
       - uses: actions/checkout@v4
