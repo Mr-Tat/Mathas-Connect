@@ -78,11 +78,16 @@ function renderXp(doc,xp){
  const classicLevel=level(doc,'classicLevel');
  for(const btn of doc.querySelectorAll('#menuScreen .classic-count-btn[data-count]'))
   putBadge(doc,btn,xpStillAvailable(xp,'classic',classicLevel,Number(btn.dataset.count)));
- putBadge(doc,doc.getElementById('startSudden'),xpStillAvailable(xp,'sudden',level(doc,'suddenLevel')));
+ const suddenXp=xpStillAvailable(xp,'sudden',level(doc,'suddenLevel'));
+ putBadge(doc,doc.getElementById('startSudden'),suddenXp);
+ putBadge(doc,doc.getElementById('mathasMultiThreeLives'),suddenXp);
  for(const card of doc.querySelectorAll('#hardMenu .hard-level-card')){
   const n=Number(card.querySelector('h3')?.textContent.match(/NIV\s*([123])/i)?.[1]);
-  const button=card.querySelector('.hard-sudden:not(:disabled)');
-  if(button)putBadge(doc,button,xpStillAvailable(xp,'hard',n));
+  const amount=xpStillAvailable(xp,'hard',n);
+  const button=card.querySelector('.hard-sudden:not(.mathas-multi-hard-three-lives):not(:disabled)');
+  const lives=card.querySelector('.mathas-multi-hard-three-lives:not(:disabled)');
+  if(button)putBadge(doc,button,amount);
+  if(lives)putBadge(doc,lives,amount);
  }
 }
 function instruction(doc,enabled){
