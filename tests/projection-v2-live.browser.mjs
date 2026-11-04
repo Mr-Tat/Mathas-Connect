@@ -176,13 +176,13 @@ test('V2 — animations de remontée indépendantes, aucun score mélangé',{tim
   const page=await browser.newPage({viewport:{width:1366,height:768}}),state=sampleState([ADD,SUB],5);
   const {errors}=await openBoard(page,url,state);
   await page.waitForFunction(()=>document.querySelectorAll('.ranking-card .entry').length===10);
-  assert.equal(await page.locator(card(SUB)+' .entry.rank-1 strong').textContent(),'Élève 1');
+  assert.equal(await page.locator(card(SUB)+' .entry.rank-1 .player-label strong').textContent(),'Élève 1');
   state.improved=true;
   await page.locator('#load-real').click();
   await page.waitForFunction(key=>Number(document.querySelector('[data-app-key="'+key+'"] .ranking-list')?.dataset.overtakeSteps||0)>=4,
    SUB,{timeout:12000});
-  assert.equal(await page.locator(card(SUB)+' .entry.rank-1 strong').textContent(),'Élève 5');
-  assert.equal(await page.locator(card(ADD)+' .entry.rank-1 strong').textContent(),'Élève 1');
+  assert.equal(await page.locator(card(SUB)+' .entry.rank-1 .player-label strong').textContent(),'Élève 5');
+  assert.equal(await page.locator(card(ADD)+' .entry.rank-1 .player-label strong').textContent(),'Élève 1');
   assert.equal(await page.locator(card(ADD)+' .ranking-list').evaluate(e=>Number(e.dataset.overtakeSteps||0)),0);
   await page.waitForFunction(()=>document.querySelector('#exploits')?.textContent?.includes('remonte de 4 places'));
   assert.match(await page.locator('#exploits').textContent(),/Soustraction écrite/);
