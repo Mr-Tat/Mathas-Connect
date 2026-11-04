@@ -60,7 +60,8 @@ if((connectionCheckRequired||teacherPlayer||requireConnect)&&mode!=='connected')
  if(requireConnect){
   const login=document.createElement('a');
   login.textContent='Se connecter avec un élève fictif TEST';
-  const target=new URL('../../index.html',location.href);
+  // URL est aussi le nom de la constante endpoint Supabase ci-dessus.
+  const target=new window.URL('../../index.html',location.href);
   target.searchParams.set('class',classId);
   target.searchParams.set('name','Classe démo - TEST');
   target.searchParams.set('lab','1');
