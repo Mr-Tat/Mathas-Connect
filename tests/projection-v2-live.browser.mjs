@@ -248,6 +248,23 @@ test('V2 — barre du haut : thème à gauche, classe centrale et MAJ/barre à d
    assert.ok(geo.button.top<geo.header.bottom&&geo.progress.bottom<=geo.header.bottom,'Commandes dans le bandeau : '+theme);
    assert.ok(Math.abs(geo.theme.top-geo.button.top)<20,'En-tête sur une ligne : '+theme);
    assert.ok(Math.abs(geo.klass.mid-geo.viewport/2)<90,'Classe bien centrée : '+theme);
+   const subtle=await page.evaluate(()=>{
+    const bar=document.querySelector('#projection-refresh-progress');
+    const wrapper=document.querySelector('.projection-auto-refresh');
+    const label=document.querySelector('.projection-auto-label');
+    const fill=document.querySelector('#projection-refresh-fill');
+    return {barHeight:bar.getBoundingClientRect().height,
+     barWidth:bar.getBoundingClientRect().width,
+     wrapWidth:wrapper.getBoundingClientRect().width,
+     labelSize:getComputedStyle(label).fontSize,
+     labelOpacity:getComputedStyle(label).opacity,
+     fillBackground:getComputedStyle(fill).backgroundColor};
+   });
+   assert.equal(subtle.barHeight,4,'Barre fine et discrète : '+theme);
+   assert.ok(subtle.wrapWidth<=110&&subtle.barWidth<=110,'Barre compacte : '+theme);
+   assert.equal(subtle.labelSize,'9px','Texte secondaire discret : '+theme);
+   assert.ok(Number(subtle.labelOpacity)<0.75,'Libellé atténué : '+theme);
+   assert.ok(subtle.fillBackground!=='transparent','La progression reste perceptible : '+theme);
    const weight=await page.locator('#header-class').evaluate(el=>getComputedStyle(el).fontWeight);
    assert.ok(Number(weight)>=900,'Titre de classe bien gras : '+theme);
   }
