@@ -1,4 +1,4 @@
-// Tableau personnel scolaire des deux additions et de Multiplication. Source : événements validés
+// Tableau personnel scolaire des deux additions et de Multiplication et Soustraction. Source : événements validés
 // côté Connect, jamais les scores libres en localStorage.
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const day=value=>{
