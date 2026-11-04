@@ -1,0 +1,21 @@
+name: Multiplication certified browser smoke
+on:
+  pull_request:
+    paths:
+      - 'apps/multiplication-simple/certified-classic.mjs'
+      - 'tests/multiplication-certified-keyboard.browser.mjs'
+      - '.github/workflows/multiplication-certified-browser.yml'
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --no-package-lock playwright@1.58.2
+      - run: npx playwright install chromium --with-deps
+      - run: node --test tests/multiplication-certified-keyboard.browser.mjs
