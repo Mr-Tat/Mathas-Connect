@@ -55,7 +55,7 @@ function clearBoard(message){
  $('exploits').replaceChildren();$('app-tabs').replaceChildren();
  $('visible-app-count').textContent='Projection masquée';
  $('reset-password').value='';
- for(const id of ['settings-left'])$(id).disabled=true;
+ for(const id of ['settings-left','settings-top'])$(id).disabled=true;
  note(message);
 }
 async function call(functionName,action,body={}){
@@ -118,7 +118,7 @@ async function refresh(){
   const firstDisplay=!hasLoaded;
   hasLoaded=true;
   if(firstDisplay)nextRefreshAt=Date.now()+REFRESH_INTERVAL_MS;
-  for(const id of ['settings-left'])$(id).disabled=false;
+  for(const id of ['settings-left','settings-top'])$(id).disabled=false;
   render();
   note('Actualisé à '+clockFormatter.format(new Date()));
   updateRefreshCountdown();
@@ -417,7 +417,7 @@ function closeSettings(){
  dialog.close();updateRefreshCountdown();$('reset-password').value='';
  $('reset-confirm').hidden=true;pendingReset=null;render();
 }
-for(const id of ['settings-left'])$(id).onclick=showSettings;
+for(const id of ['settings-left','settings-top'])$(id).onclick=showSettings;
 $('close-settings').onclick=closeSettings;
 dialog.addEventListener('cancel',event=>{event.preventDefault();closeSettings()});
 async function commitOptions(){
