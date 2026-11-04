@@ -18,6 +18,7 @@ const REWARDS={version:3,mastery:{'4':[false,false,false],'10':[false,false,fals
  scoreOne:{bronze:false,silver:false,gold:false},unlockedGold:false};
 const examples=[
  {slug:'addition-simple',app:'addition-ecrite-simple',mode:'sudden',level:1,wrong:1},
+ {slug:'addition-simple',app:'addition-ecrite-simple',mode:'three-lives',level:1,wrong:3},
  {slug:'addition-multiple',app:'addition-ecrite-multiple',mode:'hard-three-lives',level:3,wrong:3}
 ];
 for(const item of examples){
@@ -108,6 +109,9 @@ for(const item of examples){
      right:r.right-b.right,
      redName:red.querySelector('.score-mode-name')?.textContent?.trim(),
      redText:red.textContent,
+     threeName:doc.querySelector('#startThreeLives .score-mode-name')?.textContent?.trim(),
+     threeLabel:doc.querySelector('#startThreeLives .score-mode-lives-info')?.textContent?.trim(),
+     titleRows:[...doc.querySelectorAll('#startThreeLives>.score-mode-title-row,#startSudden>.score-mode-title-row')].length,
      hardLocked:doc.documentElement.classList.contains('mathas-school-hard-locked'),
      hardLevel3Locked:doc.documentElement.classList.contains('mathas-school-hard3-locked')
     };
@@ -118,6 +122,9 @@ for(const item of examples){
    assert.ok(schoolLayout.bottom>=-1&&schoolLayout.bottom<=18,JSON.stringify(schoolLayout));
    assert.ok(schoolLayout.right>=-1&&schoolLayout.right<=18,JSON.stringify(schoolLayout));
    assert.equal(schoolLayout.redName,'Mort subite');
+   assert.equal(schoolLayout.threeName,'3 vies');
+   assert.equal(schoolLayout.threeLabel,'3 erreurs possibles');
+   assert.equal(schoolLayout.titleRows,2,'normal 3 vies and Mort subite share icon/title layout');
    assert.doesNotMatch(schoolLayout.redText,/Lancer la mort subite/i);
    assert.equal(schoolLayout.hardLocked,item.slug==='addition-simple',
     'HARD hidden until official progression has unlocked it');
@@ -165,11 +172,19 @@ for(const item of examples){
        inside:!!x&&x.top>=b.top-1&&x.bottom<=b.bottom+1&&x.left>=b.left-1&&x.right<=b.right+1};
      });
      const b=red.getBoundingClientRect(),x=xp.getBoundingClientRect(),c=cups.getBoundingClientRect();
+     const three=doc.getElementById('startThreeLives');
+     const t=three.getBoundingClientRect(),heartXp=three.querySelector(':scope > .mathas-connect-official-xp')?.getBoundingClientRect();
+     const heartInfo=three.querySelector('.score-mode-lives-info')?.getBoundingClientRect();
      const intersects=x.left<c.right-1&&x.right>c.left+1&&x.top<c.bottom-1&&x.bottom>c.top+1;
      return {classic:classical,intersects,
       xpInside:x.left>=b.left-1&&x.right<=b.right+1&&x.top>=b.top-1&&x.bottom<=b.bottom+1,
       cupsInside:c.left>=b.left-1&&c.right<=b.right+1&&c.top>=b.top-1&&c.bottom<=b.bottom+1,
-      rects:{red:{w:b.width,h:b.height},xp:{x:x.x,y:x.y,w:x.width,h:x.height},
+      threeEqualWidth:Math.abs(t.width-b.width)<=2,
+      threeEqualHeight:Math.abs(t.height-b.height)<=2,
+      threeXpInside:!!heartXp&&heartXp.left>=t.left-1&&heartXp.right<=t.right+1&&heartXp.top>=t.top-1&&heartXp.bottom<=t.bottom+1,
+      threeInfoInside:!!heartInfo&&heartInfo.left>=t.left-1&&heartInfo.right<=t.right+1&&heartInfo.top>=t.top-1&&heartInfo.bottom<=t.bottom+1,
+      threeXpCount:three.querySelectorAll(':scope > .mathas-connect-official-xp').length,
+      rects:{red:{w:b.width,h:b.height},three:{w:t.width,h:t.height},xp:{x:x.x,y:x.y,w:x.width,h:x.height},
        cups:{x:c.x,y:c.y,w:c.width,h:c.height}}};
     });
     for(const b of boxes.classic){
@@ -179,6 +194,11 @@ for(const item of examples){
     assert.equal(boxes.intersects,false,'Mort subite cups must not cover XP '+viewportWidth+'px '+JSON.stringify(boxes));
     assert.equal(boxes.xpInside,true,'Mort subite XP inside the button '+viewportWidth+'px '+JSON.stringify(boxes));
     assert.equal(boxes.cupsInside,true,'Mort subite trophies inside the button '+viewportWidth+'px '+JSON.stringify(boxes));
+    assert.equal(boxes.threeEqualWidth,true,'both normal score buttons have equal width '+viewportWidth+'px '+JSON.stringify(boxes));
+    assert.equal(boxes.threeEqualHeight,true,'both normal score buttons have equal height '+viewportWidth+'px '+JSON.stringify(boxes));
+    assert.equal(boxes.threeXpCount,1,'one official XP badge on 3 vies');
+    assert.equal(boxes.threeXpInside,true,'3 vies XP inside its button '+viewportWidth+'px '+JSON.stringify(boxes));
+    assert.equal(boxes.threeInfoInside,true,'3 vies hint inside its button '+viewportWidth+'px '+JSON.stringify(boxes));
    }
    await page.setViewportSize({width:1160,height:820});
    // Opening the custom Niveau selector must place its portal BELOW the
@@ -202,6 +222,21 @@ for(const item of examples){
       doc?.getElementById('startThreeLives')?.disabled===true &&
       doc?.getElementById('mathas-school-record-lock')?.hidden===false;
     },null,{timeout:16000});
+    const lockedButtons=await page.evaluate(()=>{
+     const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+     return ['startThreeLives','startSudden'].map(id=>{
+      const button=doc.getElementById(id),style=doc.defaultView.getComputedStyle(button);
+      return {id,disabled:button.disabled,cursor:style.cursor,transform:style.transform,
+       lockClass:button.classList.contains('progress-sudden-locked')};
+     });
+    });
+    for(const button of lockedButtons){
+     assert.equal(button.disabled,true,'locked normal score option: '+JSON.stringify(button));
+     assert.equal(button.lockClass,true,'same progression lock appearance: '+JSON.stringify(button));
+     assert.equal(button.cursor,'not-allowed','disabled score card is not clickable');
+     assert.equal(button.transform,'none','locked buttons do not animate on selection');
+    }
+    assert.equal(actions.filter(a=>a.action==='start-extended-proof-v1').length,0);
     // The same pupil unlocks both modes after a server-verified 8/10.
     // Simulate only the official student-load reply, NEVER a local browser score.
     recordUnlocked=true;
@@ -211,18 +246,19 @@ for(const item of examples){
      return doc?.getElementById('startSudden')?.disabled===false &&
       doc?.getElementById('startThreeLives')?.disabled===false;
     },null,{timeout:16000});
-    // A real click on the familiar Mort subite card must issue a school proof;
-    // no separate hidden "Défi Connect" action is necessary.
+    // A real click on either normal score button must issue its specific school
+    // proof. No separate "Défi Connect" action is necessary.
     const native=page.frameLocator('#gameFrame').frameLocator('#game');
     await page.evaluate(()=>{
      const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
      const level=doc.getElementById('suddenMaxDigits');level.value='3';
      level.dispatchEvent(new Event('change',{bubbles:true}));
     });
-    await native.locator('#startSudden .mathas-connect-official-xp').waitFor({state:'visible',timeout:15000});
-    assert.match(await native.locator('#startSudden').textContent(),/Reste 20 XP/);
-    await native.locator('#startSudden').click();
-    assert.equal(await page.locator('#certified-mode').inputValue(),'sudden');
+    const modeButton=item.mode==='three-lives'?'startThreeLives':'startSudden';
+    await native.locator('#'+modeButton+' .mathas-connect-official-xp').waitFor({state:'visible',timeout:15000});
+    assert.match(await native.locator('#'+modeButton).textContent(),/Reste 20 XP/);
+    await native.locator('#'+modeButton).click();
+    assert.equal(await page.locator('#certified-mode').inputValue(),item.mode);
    }else{
     // Contrat du contrôleur HARD : les réglages internes restent disponibles
     // pour la certification, mais ne font plus partie de la barre élève.
