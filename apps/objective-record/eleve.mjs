@@ -122,6 +122,9 @@ function xpRows(){
  for(let l=1;l<=3;l++){
   for(const [size,key,points] of [[4,'perfect',22],[10,'pass',30],[10,'bonus',6],[20,'pass',50],[20,'bonus',10]])
    rows.push({key:'classic:'+l+':'+size+':'+key,label:'Classique N'+l+' · '+size+' calculs '+(key==='bonus'?'sans-faute':key==='perfect'?'4/4':'≥80 %'),points});
+  // Aucun barème de survie/HARD Multiplication ne doit être présenté
+  // comme un gain certifié avant validation des règles complémentaires.
+  if(activeApp===MULTIPLICATION_PROOF_APP)continue;
   for(const n of [5,10])rows.push({key:'sudden:'+l+':'+n,label:'3 vies / Mort subite N'+l+' · '+n+' réussites',points:10});
   for(const n of [3,7])rows.push({key:'hard:'+l+':'+n,label:'HARD N'+l+' · '+n+' réussites',points:10});
  }
