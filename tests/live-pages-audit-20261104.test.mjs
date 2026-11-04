@@ -14,21 +14,21 @@ test('LIVE réel : page Projection V2 servie avec classe/heure et commandes dép
  assert.match(html,/id="header-class"/);
  assert.match(html,/id="projection-clock"/);
  assert.match(html,/class="projection-actions"/);
- assert.match(html,/src="\.\/projection-v2-live\.js\?v=20261104-scores-isoles-v2"/);
+ assert.match(html,/src="\.\/projection-v2-live\.js\?v=20261104-refresh20-v3"/);
  const header=html.match(/<header>[\s\S]*?<\/header>/)?.[0]||'';
  assert.doesNotMatch(header,/PROJECTION CONNECTÉE|Math.as\s+<span|load-real|live-status/);
  console.log('LIVE OK: Projection V2 en-tête, heure et contrôles');
 });
-test('LIVE réel : mise à jour 15 s, pause hors onglet, scores distincts',async()=>{
+test('LIVE réel : mise à jour 20 s, pause hors onglet, scores distincts',async()=>{
  const [code,model]=await Promise.all([
   get('projection-v2-live.js').then(x=>x.text()),
   get('projection-v2-model.mjs').then(x=>x.text())
  ]);
- assert.match(code,/REFRESH_INTERVAL_MS=15000/);
+ assert.match(code,/REFRESH_INTERVAL_MS=20000/);
  assert.match(code,/document\.visibilityState==='visible'/);
  assert.match(code,/people\.length\?splitProjectedRanking\(people,multiple\):\[\]/);
  assert.match(model,/if\(score===null\)continue/);
- console.log('LIVE OK: 15 s et séparation des résultats par jeu');
+ console.log('LIVE OK: 20 s et séparation des résultats par jeu');
 });
 test('LIVE réel : cartes compactes, avatar encadré et podium lisible',async()=>{
  const css=await (await get('projection-v2-avatar.css')).text();
