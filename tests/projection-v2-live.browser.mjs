@@ -44,7 +44,8 @@ const ADD='addition-ecrite-simple',MUL='multiplication-ecrite-simple',SUB='soust
 const card=key=>'.ranking-card[data-app-key="'+key+'"]';
 function sampleOptions(keys){return {scoreApps:[...keys],percentageApps:[ADD,MUL,SUB],
  comparisons:[],comparisonDisplay:[],rotationSeconds:40}}
-function sampleState(keys,count=16){return {options:sampleOptions(keys),count,loads:0,saves:0,resets:[],improved:false}}
+function sampleState(keys,count=16){return {options:sampleOptions(keys),count,loads:0,saves:0,resets:[],improved:false,
+ percentages:null,percentageStatus:'exercise_telemetry_not_yet_available',exerciseCounts:null}}
 async function openBoard(page,url,state){
  const errors=[],unknown=[];page.on('pageerror',e=>errors.push(e.message));
  page.on('dialog',d=>d.accept());
@@ -69,8 +70,18 @@ async function openBoard(page,url,state){
      if(state.improved&&i===4)p.scores.find(x=>x.appKey===SUB).bestScore=210;
      return p;
     });
+    const counted=state.exerciseCounts;
+    const rate=(ok,total)=>total?Math.round(ok*1000/total)/10:null;
+    const keys=[ADD,MUL,SUB];
+    const appsPct=counted?Object.fromEntries(keys.map(key=>[key,
+      rate(counted[key]?.correct||0,counted[key]?.attempted||0)])):null;
+    const selected=state.options.percentageApps;
+    const total=counted?selected.reduce((sum,key)=>sum+(counted[key]?.attempted||0),0):0;
+    const correct=counted?selected.reduce((sum,key)=>sum+(counted[key]?.correct||0),0):0;
+    const pct=counted?{global:rate(correct,total),apps:appsPct}:state.percentages;
     const classes=[{classId:A,name:'Phase 2 A',enrolled:state.count,options:state.options,
-     students,scorePeriods:[],totals:[],percentages:null}];
+     students,scorePeriods:[],totals:[],percentages:pct,
+     percentageStatus:state.percentageStatus}];
     if(input.comparisons?.includes(B))classes.push({
      classId:B,name:'Phase 2 B',enrolled:0,options:null,students:[],scorePeriods:[],totals:[],percentages:null
     });
@@ -532,6 +543,32 @@ test('V2 — ex aequo : 9 ors, 2 argents, 2 bronzes et rangs identiques entre co
   await checkRanks('Trois jeux affichés');
   assert.equal(await page.locator(card(ADD)+' .ranking-col').count(),1,
    'Trois jeux : une seule colonne par jeu');
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
+
+test('V2 — les % authentiques sont affichés avec leur périmètre explicite',{timeout:60000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}}),state=sampleState([ADD,MUL],4);
+  state.exerciseCounts={[ADD]:{correct:6,attempted:10},[MUL]:{correct:8,attempted:10}};
+  state.percentageStatus='completed_games_only';
+  const {errors}=await openBoard(page,url,state);
+  await page.waitForFunction(()=>document.querySelector('#classes')?.textContent?.includes('70 %'));
+  const content=await page.locator('#classes').textContent();
+  assert.match(content,/Global70 %/);
+  assert.match(content,/Addition écrite60 %/);
+  assert.match(content,/Multiplication écrite80 %/);
+  assert.match(content,/Soustraction écrite— %/);
+  const note=await page.locator('#percentage-scope').textContent();
+  assert.match(note,/Parties Classique terminées uniquement/);
+  assert.match(note,/abandons exclus/);
+  await page.locator('#settings-left').click();
+  await page.getByRole('checkbox',{name:'Multiplication écrite · Afficher pourcentage'}).uncheck();
+  await page.waitForFunction(()=>document.querySelector('#classes')?.textContent?.includes('Global60 %'));
+  assert.equal(state.options.percentageApps.includes(MUL),false);
+  assert.match(await page.locator('#classes').textContent(),/Addition écrite60 %/);
+  assert.doesNotMatch(await page.locator('#classes').textContent(),/Multiplication écrite80 %/);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
