@@ -119,7 +119,7 @@ function xpRows(){
  for(let l=1;l<=3;l++){
   for(const [size,key,points] of [[4,'perfect',22],[10,'pass',30],[10,'bonus',6],[20,'pass',50],[20,'bonus',10]])
    rows.push({key:'classic:'+l+':'+size+':'+key,label:'Classique N'+l+' · '+size+' calculs '+(key==='bonus'?'sans-faute':key==='perfect'?'4/4':'≥80 %'),points});
-  for(const n of [5,10])rows.push({key:'sudden:'+l+':'+n,label:'Mort subite N'+l+' · '+n+' réussites',points:10});
+  for(const n of [5,10])rows.push({key:'sudden:'+l+':'+n,label:'3 vies / Mort subite N'+l+' · '+n+' réussites',points:10});
   for(const n of [3,7])rows.push({key:'hard:'+l+':'+n,label:'HARD N'+l+' · '+n+' réussites',points:10});
  }
  return rows;
@@ -138,10 +138,15 @@ async function loadXpDetails(){
   const rows=document.createDocumentFragment();
   for(const entry of xpRows()){
    const tr=document.createElement('tr'),name=document.createElement('td'),points=document.createElement('td');
-   const earned=acquired.has(entry.key);
+   const isSurvival=entry.key.startsWith('sudden:')||entry.key.startsWith('hard:');
+   const half=isSurvival&&acquired.has(entry.key+':half');
+   const full=acquired.has(entry.key)||(isSurvival&&acquired.has(entry.key+':complement'));
+   const earned=full||half;
    if(earned)tr.className='is-earned';
-   name.textContent=(earned?'✓ ':'○ ')+entry.label;
-   points.textContent=(earned?'Acquis · ':'+')+entry.points+' XP';
+   name.textContent=(full?'✓ ':half?'◐ ':'○ ')+entry.label;
+   points.textContent=full?'Acquis · '+entry.points+' XP'
+    :half?'Acquis · '+Math.floor(entry.points/2)+' / '+entry.points+' XP (3 vies)'
+    :'+'+entry.points+' XP';
    tr.append(name,points);rows.append(tr);
   }
   container.replaceChildren(rows);
@@ -432,7 +437,7 @@ async function choose(){
    for(const option of $('certified-mode').options)option.disabled=option.value!=='classic';
   }
   updateCertifiedModeControls();
-  $('gameFrame').src=GAME_URLS[slug][1]+(SERVER_PROOF_ADDITIONS.has(activeApp)?'?connect=1&ui=20261103-xp-layout-v4':'');
+  $('gameFrame').src=GAME_URLS[slug][1]+(SERVER_PROOF_ADDITIONS.has(activeApp)?'?connect=1&ui=20261104-three-lives-half-xp-v1':'');
   $('gameFrame').hidden=false;$('refresh').disabled=false;
   watchGame(seq);
   message(SERVER_PROOF_ADDITIONS.has(activeApp)
@@ -446,7 +451,7 @@ async function choose(){
   // aucune requête de validation XP ni privilège d'enregistrement.
   // Le repli libre est EXPLICITE pour ne jamais faire croire à un crédit Connect.
   if(SERVER_PROOF_ADDITIONS.has(activeApp)){
-   $('gameFrame').src=GAME_URLS[slug][1]+'?connect=1&ui=20261103-xp-layout-v4';
+   $('gameFrame').src=GAME_URLS[slug][1]+'?connect=1&ui=20261104-three-lives-half-xp-v1';
    $('gameFrame').hidden=false;
    $('guest-home').hidden=true; // le bouton HUB existe dans le moteur lui-même
    message('⚠️ Profil Connect indisponible : mode libre sans XP officiel. '+(e?.message||''));
