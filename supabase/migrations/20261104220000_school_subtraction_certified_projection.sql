@@ -420,6 +420,10 @@ END $function$;
 
 
 
+-- Seule l'Edge Function de correction peut écrire une preuve étendue.
+REVOKE ALL ON FUNCTION public.connect_objective_record_school_sub_record_extended_v1(uuid,uuid,text,uuid,bigint,bigint,text,integer,integer,integer,text,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.connect_objective_record_school_sub_record_extended_v1(uuid,uuid,text,uuid,bigint,bigint,text,integer,integer,integer,text,text) TO service_role;
+
 CREATE OR REPLACE FUNCTION public.connect_objective_record_school_sub_issue_extended_v1(
  p_student uuid,p_class uuid,p_mode text,p_level integer,p_method text
 ) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $issue$
