@@ -88,7 +88,7 @@ test('Projection V2 : les quatre thèmes et l’accès aux réglages sont conser
  assert.match(html,/Réussite de la classe/);
  assert.match(html,/Nouveaux exploits/);
  assert.match(html,/id="comparison-results"/);
- assert.match(js,/Mesure des exercices réellement entamés|exercices réellement entamés/);
+ assert.match(js,/Parties Classique terminées uniquement/);
  assert.match(html,/\.ranking-board \.ranking-head\{position:sticky;top:0/);
 });
 
