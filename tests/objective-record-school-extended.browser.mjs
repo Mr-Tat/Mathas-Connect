@@ -101,7 +101,7 @@ for(const item of examples){
    for(const viewportWidth of [1160,620,390,320]){
     await page.setViewportSize({width:viewportWidth,height:820});
     await page.waitForTimeout(220);
-    const layout=await page.evaluate(()=>{
+    const layout=await page.evaluate((viewportWidth)=>{
      const outer=document.getElementById('gameFrame');
      const inner=outer.contentDocument.getElementById('game');
      const doc=inner.contentDocument;
@@ -127,7 +127,7 @@ for(const item of examples){
       description:card.querySelector('.mode-description')?.textContent?.trim(),
       titleHasCup:!!card.querySelector('.mode-title .score-mode-cup'),
       skullInsideButton:!!card.querySelector('#startSudden .score-mode-icon')};
-    });
+    },viewportWidth);
     assert.equal(layout.icon,'👑',JSON.stringify(layout));
     assert.equal(layout.title,'Objectif record',JSON.stringify(layout));
     assert.equal(layout.description,'Deux façons de marquer un gros score.',JSON.stringify(layout));
