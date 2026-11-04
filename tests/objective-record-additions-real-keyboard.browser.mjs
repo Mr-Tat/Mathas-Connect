@@ -114,7 +114,6 @@ for(const item of examples){
    // Les deux additions lancent leurs épreuves depuis le vrai menu pédagogique.
    const nativeLaunch=page.frameLocator('#gameFrame').frameLocator('#game');
    await nativeLaunch.locator('.classic-count-btn[data-count="4"]').click();
-   if(item.slug==='addition-multiple')await nativeLaunch.locator('#startClassic').click();
    const game=page.frameLocator('#gameFrame').frameLocator('#game');
    await game.locator('#gameScreen:not(.hidden)').waitFor({state:'visible',timeout:30000});
    // Permettre de changer « dizaines d'abord » pendant une partie, pour les
