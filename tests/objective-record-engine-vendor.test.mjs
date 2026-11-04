@@ -44,8 +44,8 @@ test('deux additions : Objectif record garde son sous-titre et sa couronne ; com
    '3 vies adopte la même base 3D native que Mort subite, pour le reflet, le relief et les états hover/active');
   assert.match(source,/mode-icon" aria-hidden="true">👑/);
    assert.doesNotMatch(source,/3 erreurs possibles/,'pas de détail d’erreurs dans le bouton');
-   assert.match(source,/Moitié des XP/,'étiquette 3-vies présente');
-   assert.match(source,/score-mode-half-xp\{/,'pastille sombre 3-vies');
+   assert.doesNotMatch(source,/Moitié des XP/,'aucune mention moitié des XP dans 3 vies');
+   assert.doesNotMatch(source,/score-mode-half-xp\{/,'plus de pastille sombre redondante');
   assert.match(source,/<h3 class="mode-title">Objectif record<\/h3>/);
   assert.doesNotMatch(source,/score-mode-cup" aria-hidden="true">🏆/);
   assert.match(source,/if\(suddenDesc&&!suddenDesc\.textContent\.trim\(\)\)/,
