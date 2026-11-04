@@ -11,7 +11,7 @@ test('Le podium est un rang numérique et non une médaille dans la V2 et les ci
   'essais/projection-v2-da-ardoise.html','essais/projection-v2-da-studio.html'];
  for(const page of pages){
   const text=read('../'+page);
-  assert.match(text,/projection-v2-avatar\.css\?v=2026110(?:3-compactes-cadres-v4|4-podium-texte-v5|4-compact-avatar-v6|4-score-badge-v7)/);
+  assert.match(text,/projection-v2-avatar\.css\?v=2026110(?:3-compactes-cadres-v4|4-podium-texte-v5|4-compact-avatar-v6|4-score-badge-v7|4-podium-score-contrast-v8)/);
  }
  const live=read('../projection-v2-live.js'),demo=read('../projection-v2-demo.html');
  assert.match(live,/rank\.textContent=String\(place\)/);
@@ -66,4 +66,25 @@ test('Le score a un remplissage discret sans contour, y compris sur le podium',(
  assert.doesNotMatch(css,/\.entry:is\(\.rank-1,\.rank-2,\.rank-3\) \.points\{[\s\S]*?background:transparent!important/);
  assert.match(css,/\.ranking-board \.entry \.entry-copy \.minor\{column-gap:2px;row-gap:1px\}/);
  assert.match(css,/\.ranking-board \.entry \.entry-copy \.minor \.meta-trophy\{margin-left:1px\}/);
+});
+
+test('Podium V2 : fonds forts séparés, sans bordure, rangs suivants inchangés',()=>{
+ const css=read('../projection-v2-avatar.css');
+ const rules=[
+  ['1','#694419','#fff7e4'],
+  ['2','#2b506a','#f2faff'],
+  ['3','#653926','#fff1e6']
+ ];
+ for(const [rank,bg,ink] of rules){
+  const selector='html[data-proj-da] .ranking-board .entry.rank-'+rank+' .entry-details .points';
+  const rule=css.split(selector+'{')[1]?.split('}')[0];
+  assert.ok(rule,'Cartouche de rang '+rank+' absent');
+  assert.ok(rule.includes('background:'+bg),'Fond de rang '+rank);
+  assert.ok(rule.includes('color:'+ink+'!important'),'Encre contrastée de rang '+rank);
+  assert.ok(rule.includes('padding:3px 7px'),'Cartouche compact de rang '+rank);
+  assert.match(rule,/text-shadow:none!important/);
+  assert.doesNotMatch(rule,/border:|box-shadow:/);
+ }
+ assert.match(css,/\.ranking-board \.entry \.entry-details \.points\{[\s\S]*?border:0/);
+ assert.match(css,/background:color-mix\(in srgb,var\(--v-score,#ffdf8e\) 14%,transparent\)/);
 });
