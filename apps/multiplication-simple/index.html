@@ -458,7 +458,13 @@ if(mode==='connected'){
    home.dispatchEvent(new iframe.contentWindow.Event('change',{bubbles:true}));
    applySchoolUi();
   },
-  onVerified:receipt=>{certifiedConsent?.offer(receipt.eventId)},
+  onVerified:receipt=>{
+   const xp=receipt.ack?.xp;
+   // Animation uniquement après ACK mathématique, jamais pour un résultat déjà enregistré.
+   if(receipt.ack?.duplicate!==true&&Number.isSafeInteger(xp?.delta)&&xp.delta>0)
+    queueXpGain(xp);
+   certifiedConsent?.offer(receipt.eventId);
+  },
   notify:text=>{const sync=document.getElementById('ce-sync');if(sync)sync.title=text}
  });
 }
