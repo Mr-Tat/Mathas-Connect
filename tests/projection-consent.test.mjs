@@ -23,7 +23,8 @@ test('Consentement : multiplication ne partage que les preuves certifiées ; les
  const mixedPilot=get('apps/calculs-melanges/connect-pilot.mjs');
  assert.match(add,/consent\?\.offer\(reply\.eventId\)/);
  assert.match(mixed,/consent\?\.offer\(reply\.eventId\)/);
- assert.match(multi,/certifiedConsent\?\.offer\(receipt\.eventId\)/);
+ assert.match(multi,/certifiedScoreView\?\.recorded\(receipt\.eventId\)/);
+ assert.match(multi,/consent:\(\)=>certifiedConsent/);
  assert.doesNotMatch(multi,/consent\?\.offer\(eventId\)/,
   'Un score natif multiplication auto-déclaré ne suffit pas pour la projection');
  assert.match(sub,/consent\?\.offer\(eventId\)/);
