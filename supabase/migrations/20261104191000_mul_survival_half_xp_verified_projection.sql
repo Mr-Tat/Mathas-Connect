@@ -123,7 +123,7 @@ BEGIN
    'verifiedScore',p_score,'attempted',p_attempted,'mode',p_mode,
    'revision',v_row.revision+1,'resetEpoch',v_row.reset_epoch,
    'state',v_state,'xp',v_xp);
-END $function$
+END $function$;
 
 CREATE OR REPLACE FUNCTION public.connect_xp_sync_v2(p_student uuid, p_app text, p_force boolean DEFAULT false)
  RETURNS jsonb
@@ -283,7 +283,7 @@ begin
  values(p_student,levelnow,2,now())
  on conflict(student_id) do update set highest_level_reached=excluded.highest_level_reached,level_ruleset_version=2,updated_at=now();
  return jsonb_build_object('appXp',afterxp,'delta',afterxp-beforexp,'total',totalxp,'level',levelnow,'previousLevel',priorlevel,'next',case when levelnow<7 then levelnow*50 else 300+(levelnow-6)*100 end,'active',true,'rulesetVersion',2);
-end $function$
+end $function$;
 
 CREATE OR REPLACE FUNCTION public.connect_projection_mul_verified_summary_v1(p_student uuid, p_class uuid, p_app text)
  RETURNS jsonb
@@ -342,7 +342,7 @@ AS $function$
     'eventId',event_id,'mode',game_mode,'score',game_score,'total',game_total,
     'points',points,'at',played_at) FROM today),
   'boardBest',COALESCE((SELECT points FROM published),0));
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.connect_projection_mul_share_improved_v1(p_student uuid, p_class uuid, p_app text, p_event uuid)
  RETURNS jsonb
@@ -412,7 +412,7 @@ BEGIN
  RETURN jsonb_build_object('ok',true,'consentRecorded',true,'improved',true,
                            'boardBest',v_points);
 END;
-$function$
+$function$;
 
 REVOKE ALL ON FUNCTION public.connect_projection_mul_verified_summary_v1(uuid,uuid,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.connect_projection_mul_verified_summary_v1(uuid,uuid,text) TO service_role;
