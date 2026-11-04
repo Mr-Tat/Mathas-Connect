@@ -61,6 +61,9 @@ test('Projection V2 : au moins une application et trois au maximum, sans limiter
  assert.match(js,/remote\.scoreApps\.includes\(app\.key\)/);
  assert.match(js,/options\.comparisonDisplay/);
  assert.match(js,/return n===null\?'— %'/);
+ assert.match(html,/id="percentage-scope"/);
+ assert.match(js,/percentageStatus==='completed_games_only'/);
+ assert.match(js,/Les parties abandonnées ne sont pas encore comptées/);
  assert.match(js,/for\(const app of apps\.filter\(a=>options\.percentageApps\.includes\(a\.key\)\)\)/);
 });
 test('Projection V2 : reset isolé, confidentialité, déconnexion et syntaxe',()=>{
