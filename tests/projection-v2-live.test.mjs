@@ -154,5 +154,5 @@ test('Projection V2 : cadre 24px carré, score centré, chiffres en gras',()=>{
  assert.match(html,/\.entry-details \.points\{\s*flex:0 0 auto;align-self:center/);
  assert.match(html,/\.entry-copy \.minor \.meta-value\{[\s\S]*?font-size:11px;font-weight:850/);
  assert.match(html,/\.entry-copy \.player-label strong\{[\s\S]*?text-overflow:ellipsis/);
- assert.match(html,/projection-v2-avatar\.css\?v=20261104-podium-score-contrast-v8/);
+ assert.match(html,/projection-v2-avatar\.css\?v=20261104-podium-soft-contrast-v9/);
 });
