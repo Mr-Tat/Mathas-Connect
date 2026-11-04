@@ -287,6 +287,12 @@ const saveQueue=q=>{if(q.length>1000)throw Error('File de synchronisation satur�
 let draining=false, syncWarning='';
 function showSync(){const v=document.getElementById('ce-sync');if(v){v.textContent=mode==='connected'?(syncWarning|| (readQueue().length?'En attente : '+readQueue().length:(!navigator.onLine?'Hors ligne':'Synchronisé'))):'';v.title=syncWarning||''}}
 async function drain(){
+ // Never resend pre-certification game-record messages as official school XP.
+ // Historical pending entries are kept intact for audit, never submitted.
+ if(mode==='connected'){
+  if(readQueue().length)syncWarning='Anciens résultats non certifiés conservés : aucun XP envoyé.';
+  showSync();return;
+ }
  if(draining||mode!=='connected'||!cloud)return;
  draining=true;
  try{
