@@ -78,25 +78,25 @@
       display:block!important;height:100%!important;width:0;
       background:linear-gradient(90deg,#d9a336,#ffe18b)!important
     }
-    #menuScreen #mathas-native-connect-xp{
+    .mathas-brand-row #mathas-native-connect-xp{
       box-sizing:border-box!important;display:inline-flex!important;align-items:center!important;
       justify-content:center!important;min-height:39px!important;min-width:152px!important;
-      width:max-content!important;max-width:100%!important;margin:8px 0 6px 12px!important;
+      width:max-content!important;max-width:100%!important;margin:0!important;flex:0 0 auto!important;white-space:nowrap!important;
       padding:8px 13px!important;border:1px solid #c9a45b!important;border-radius:10px!important;
       background:linear-gradient(150deg,#685020,#4f3918)!important;color:#fff1bf!important;
       box-shadow:0 3px 11px rgba(0,0,0,.24)!important;
       font:750 12px system-ui,sans-serif!important;cursor:pointer!important
     }
-    #menuScreen #mathas-native-connect-xp:hover{filter:brightness(1.11)!important}
-    #menuScreen #mathas-native-connect-xp:focus-visible{outline:3px solid #ffe489!important;outline-offset:2px!important}
+    .mathas-brand-row #mathas-native-connect-xp:hover{filter:brightness(1.11)!important}
+    .mathas-brand-row #mathas-native-connect-xp:focus-visible{outline:3px solid #ffe489!important;outline-offset:2px!important}
     @media(max-width:700px){
       .mathas-brand-row #mathas-native-connect-profile{max-width:100%!important;gap:5px 9px!important;padding:6px 8px!important}
       #mathas-native-connect-profile .connect-identity{max-width:155px!important;font-size:11px!important}
       #mathas-native-connect-profile .connect-person{max-width:106px!important}
-      #menuScreen #mathas-native-connect-xp{min-width:140px!important;margin-left:5px!important}
+      .mathas-brand-row #mathas-native-connect-xp{min-width:130px!important;margin-left:0!important}
     }
     @media(max-width:440px){
-      .mathas-brand-row #mathas-native-connect-profile{width:100%!important}
+      .mathas-brand-row #mathas-native-connect-profile{width:auto!important;flex:1 1 auto!important;max-width:100%!important}
       #mathas-native-connect-profile .connect-meter{max-width:110px!important}
     }
     body.light-mode #mathas-native-connect-profile,body.light #mathas-native-connect-profile{
@@ -135,11 +135,11 @@
       profile.innerHTML='<span class="connect-identity"><span class="connect-presence" aria-hidden="true">●</span>Connecté · <strong class="connect-person"></strong></span><span class="connect-level">Niveau <strong></strong></span><span class="connect-meter"><span class="connect-earned"></span><span class="connect-track"><span class="connect-fill"></span></span></span>';
       row.append(profile);
     }
-    const strip=doc.getElementById('mathasTrophiesStrip');
-    if(strip&&!doc.getElementById('mathas-native-connect-xp')){
+    const profileAnchor=doc.getElementById('mathas-native-connect-profile');
+    if(profileAnchor&&!doc.getElementById('mathas-native-connect-xp')){
       const button=doc.createElement('button');
       button.type='button';button.id='mathas-native-connect-xp';
-      button.textContent='✨ XP à gagner';
+      button.textContent='✨ XP à récupérer';
       button.setAttribute('aria-label','Afficher les XP acquis et à gagner');
       button.setAttribute('aria-expanded','false');
       button.addEventListener('click',()=>{
@@ -148,7 +148,7 @@
         toggle.click();
         button.setAttribute('aria-expanded',toggle.getAttribute('aria-expanded')||'false');
       });
-      strip.insertAdjacentElement('afterend',button);
+      profileAnchor.insertAdjacentElement('afterend',button);
     }
     const profile=doc.getElementById('mathas-native-connect-profile');
     const button=doc.getElementById('mathas-native-connect-xp');
