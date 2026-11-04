@@ -147,8 +147,9 @@ label.setting{justify-content:space-between;max-width:380px}
 #settings [hidden]{display:none!important}#reset-confirm input[type=password]{border:1px solid #7794b1;border-radius:7px;background:#0d263e;color:#fff;padding:9px;min-width:210px}#percentage-note{font-size:11px;color:#d5e7fa}#ranking-list:empty::after{content:"Aucun score enregistré pour cette application.";color:#d0e6fd;font-size:14px;padding:25px;text-align:center;display:block}.event.empty{color:#cce0f3}
 
 /* Titres sans surtitre redondant : davantage de place pour les résultats. */
-.ranking-board .ranking-head{min-height:50px;padding:7px 6px}
-.ranking-board .ranking-head h2{margin:0;line-height:1.18}
+/* Plus spécifique que les règles historiques chargées plus bas. */
+body .ranking-board .ranking-head{min-height:50px;padding:7px 6px}
+body .ranking-board .ranking-head h2{margin:0;line-height:1.18}
 .event-text .event-student{font-weight:900;color:inherit}
 /* Projection simultanée : chaque classement est un panneau autonome. */
 html[data-proj-da] .ranking-board .ranking-head h2{color:var(--v-text,#fff)}
