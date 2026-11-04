@@ -356,3 +356,31 @@ test('V2 — onglet masqué : zéro MAJ, barre figée et reprise du temps restan
   assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
+
+test('V2 — prénom en gras dans les exploits, jeu et texte normal, sans surtitre',{timeout:60000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}}),state=sampleState([ADD,SUB],5);
+  const {errors}=await openBoard(page,url,state);
+  await page.waitForFunction(()=>document.querySelectorAll('#exploits .event-student').length>=3);
+  assert.deepEqual(await page.locator('#exploits .event-student').allTextContents(),
+   ['Élève 1','Élève 2','Élève 3'],'Les noms seuls sont en gras');
+  const results=await page.locator('#exploits .event-text').evaluateAll(elements=>elements.map(el=>({
+   content:el.textContent,
+   initialNodeType:el.firstChild.nodeType,
+   nameWeight:getComputedStyle(el.querySelector('strong')).fontWeight,
+   name:el.querySelector('strong').textContent,
+   remainder:el.querySelector('strong').nextSibling.textContent
+  })));
+  assert.ok(results[0].content.startsWith('Addition écrite · Élève 1 gagne un nouveau trophée'));
+  assert.ok(results[1].content.startsWith('Addition écrite · Élève 2 réussit une série parfaite'));
+  assert.ok(results[2].content.startsWith('Soustraction écrite · Élève 3 réalise un score du Top 5'));
+  assert.ok(results.every(x=>x.initialNodeType===Node.TEXT_NODE),'Le titre du jeu reste en texte normal');
+  assert.ok(results.every(x=>Number(x.nameWeight)>=700),'Les noms ressortent en gras');
+  assert.ok(results.every(x=>x.remainder.startsWith(' ')),'La phrase après le prénom reste distincte');
+  assert.equal(await page.locator('.ranking-card .ranking-head .over').count(),0,'Surtitre supprimé');
+  assert.deepEqual(await page.locator('.ranking-card .ranking-head h2').allTextContents(),
+   ['Addition écrite','Soustraction écrite']);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
