@@ -120,6 +120,7 @@ async function refresh(){
   for(const id of ['settings-left'])$(id).disabled=false;
   render();
   note('Actualisé à '+clockFormatter.format(new Date()));
+  updateRefreshCountdown();
  }catch(error){
   if(ticket!==refreshTicket)return;
   const message=error?.message||'Données indisponibles';
