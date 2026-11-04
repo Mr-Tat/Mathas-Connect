@@ -59,13 +59,18 @@ html[data-proj-da="papier"] .entry .projection-avatar.transparent{border-color:#
  .ranking-col .entry{height:auto;min-height:56px;overflow:hidden}
 }
 
-/* Les points du podium restent du TEXTE, sans cartouche.
-   Encre contrastée sur les fonds clairs or, argent et bronze. */
-.entry:is(.rank-1,.rank-2,.rank-3) .points{
- display:inline;padding:0;line-height:inherit;
- background:transparent!important;border:0!important;border-radius:0;
- box-shadow:none!important;
+/* Score légèrement détaché du fond, sans contour ni effet de bouton.
+   Le fond suit les couleurs du thème, podium compris ; la couleur du texte
+   or/argent/bronze reste gérée par les règles contrastées ci-dessous. */
+.ranking-board .entry .entry-details .points{
+ display:inline-flex;align-items:center;justify-content:center;
+ padding:2px 5px;border:0;border-radius:6px;
+ background:color-mix(in srgb,var(--v-score,#ffdf8e) 14%,transparent);
+ box-shadow:none;line-height:1.15;
 }
+/* Métadonnées rapprochées, sans toucher à la taille des chiffres. */
+.ranking-board .entry .entry-copy .minor{column-gap:2px;row-gap:1px}
+.ranking-board .entry .entry-copy .minor .meta-trophy{margin-left:1px}
 html[data-proj-da] .entry.rank-1 :is(.primary,.entry-details) .points{
  color:#754900!important;text-shadow:0 1px 0 #fff8!important;
 }
