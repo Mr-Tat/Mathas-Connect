@@ -27,7 +27,7 @@ test('Projection V2 : un, deux ou trois panneaux visibles et séparés',()=>{
  assert.match(html,/\.ranking-board\[data-app-count="3"\]\{--app-columns:3\}/);
  assert.match(html,/border:3px solid #9ebfe0/);
  assert.match(html,/\.projection-main\[data-app-count="3"\] \.ranking-board \.ranking-list\{grid-template-columns:minmax\(0,1fr\)\}/);
- assert.match(js,/enabled\(\)\.length===3\?\[people\]:splitProjectedRanking/);
+ assert.match(js,/enabled\(\)\.length===3\?\[ranked\]:splitProjectedRanking/);
  assert.doesNotMatch(html,/id="prev-app"|id="next-app"|id="pause"|id="projection-refresh-dot"/);
 });
 test('Projection V2 : rafraîchissement toutes les 20 s, sans changement automatique de page',()=>{
@@ -38,7 +38,7 @@ test('Projection V2 : rafraîchissement toutes les 20 s, sans changement automat
  assert.match(js,/if\(ticket===refreshTicket&&connected&&hasLoaded\)startRefreshCycle\(\)/);
  assert.match(js,/function pauseRefreshCycle\(\)/);
  assert.match(js,/function resumeRefreshCycle\(\)/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-compact-scores-v1/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-tied-podium-v2/);
  assert.match(html,/id="projection-refresh-progress"/);
  assert.match(html,/id="projection-refresh-fill"/);
  assert.match(html,/role="progressbar"/);
@@ -138,7 +138,7 @@ test('Projection V2 : noms mis en gras dans les événements, sans HTML injecté
  assert.doesNotMatch(js,/text\.innerHTML\s*=/);
  assert.match(html,/\.event-text \.event-student\{font-weight:900;color:inherit\}/);
  assert.doesNotMatch(js,/MEILLEURS SCORES · PÉRIODE DE PROJECTION/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-compact-scores-v1/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-tied-podium-v2/);
 });
 
 test('Projection V2 : cadre 24px carré, score centré, chiffres en gras',()=>{
@@ -155,4 +155,12 @@ test('Projection V2 : cadre 24px carré, score centré, chiffres en gras',()=>{
  assert.match(html,/\.entry-copy \.minor \.meta-value\{[\s\S]*?font-size:11px;font-weight:850/);
  assert.match(html,/\.entry-copy \.player-label strong\{[\s\S]*?text-overflow:ellipsis/);
  assert.match(html,/projection-v2-avatar\.css\?v=20261104-podium-soft-contrast-v9/);
+});
+
+test('Projection V2 : les rangs et couleurs suivent les scores, même pendant une remontée',()=>{
+ assert.match(js,/import \{rankMultiClass,splitProjectedRanking,withScoreTies\}/);
+ assert.match(js,/const ranked=withScoreTies\(people\)/);
+ assert.match(js,/const place=p\.position,key=playerKey\(p\)/);
+ assert.match(js,/row\.className='entry rank-'\+place/);
+ assert.match(js,/rank\.textContent=String\(place\)/);
 });
