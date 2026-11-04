@@ -25,7 +25,7 @@ END $fn$;
 
 DO $run$
 DECLARE
- st constant uuid:='11111111-1111-4111-8111-111111111111';
+ st constant uuid:='22222222-2222-4222-8222-222222222222';
  outside constant uuid:='99999999-9999-4999-8999-999999999999';
  test_class constant uuid:='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
  school_class constant uuid:='8fe170fa-9e8f-4e80-885a-b0ba68026f64';
