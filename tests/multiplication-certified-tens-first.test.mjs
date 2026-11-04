@@ -31,3 +31,15 @@ test('certified UI module syntax remains valid',()=>{
   cwd:new URL('../',import.meta.url),encoding:'utf8'});
  assert.equal(result.status,0,result.stderr);
 });
+
+test('XP animation is triggered by a new, server-confirmed award only',()=>{
+ const start=launcher.indexOf('onVerified:receipt=>');
+ assert.ok(start>=0);
+ const code=launcher.slice(start,launcher.indexOf('notify:text=>',start));
+ assert.match(code,/receipt\.ack\?\.duplicate!==true/);
+ assert.match(code,/Number\.isSafeInteger\(xp\?\.delta\)&&xp\.delta>0/);
+ assert.match(code,/queueXpGain\(xp\)/);
+ const proof=src('apps/multiplication-simple/certified-classic.mjs');
+ assert.match(proof,/ack\?\.proofVerified!==true/);
+ assert.match(proof,/onVerified\?\.\(\{eventId:ticket\.sessionId,ack\}\)/);
+});
