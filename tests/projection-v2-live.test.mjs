@@ -106,3 +106,15 @@ test('Projection V2 : thème à gauche, classe centrée plus visible, MAJ et bar
  assert.match(js,/aria-valuetext/);
  assert.match(js,/refreshPausedAt/);
 });
+
+test('Projection V2 : aucun timer actif si tableau non visible, reprise sans rattrapage',()=>{
+ assert.match(js,/let refreshTickerId=null/);
+ assert.match(js,/function stopRefreshTicker\(\)/);
+ assert.match(js,/clearInterval\(refreshTickerId\)/);
+ assert.match(js,/function startRefreshTicker\(\)/);
+ assert.match(js,/document\.visibilityState!=='visible'\|\|\$\('settings'\)\.open\)return/);
+ assert.match(js,/if\(document\.visibilityState!=='visible'\)\{\s*stopRefreshTicker\(\)/);
+ assert.match(js,/resumeRefreshCycle\(\);\s*startRefreshTicker\(\)/);
+ assert.match(js,/dialog\.showModal\(\);pauseRefreshCycle\(\);stopRefreshTicker\(\)/);
+ assert.match(js,/dialog\.close\(\);resumeRefreshCycle\(\);startRefreshTicker\(\)/);
+});
