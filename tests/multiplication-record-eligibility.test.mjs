@@ -31,11 +31,12 @@ test('duplicates, altered event receipts and stale days cannot produce an offer'
 });
 test('native launcher gates consent but never sends a score without yes',()=>{
  const launch=readFileSync(new URL('../apps/multiplication-simple/index.html',import.meta.url),'utf8');
- assert.match(launch,/isNewCertifiedMultiplicationDailyBest\(receipt,initial,today\)/);
- assert.match(launch,/certifiedConsent\?\.offer\(receipt\.eventId\)/);
+ assert.match(launch,/receipt\.ack\?\.proofVerified===true/);
+ assert.match(launch,/certifiedScoreView\?\.recorded\(receipt\.eventId\)/);
  const start=launch.indexOf('onVerified:receipt=>');
  const done=launch.indexOf('notify:text=>',start);
  const callback=launch.slice(start,done);
- assert.ok(callback.indexOf('isNewCertifiedMultiplicationDailyBest(')<callback.indexOf('certifiedConsent?.offer('));
+ assert.ok(callback.indexOf('receipt.ack?.proofVerified===true')<callback.indexOf('certifiedScoreView?.recorded('));
+ assert.match(launch,/consent:\(\)=>certifiedConsent/);
  assert.doesNotMatch(callback,/student-share-score/);
 });
