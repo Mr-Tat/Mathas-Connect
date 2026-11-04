@@ -36,386 +36,171 @@ function fakeStudent(i){
    i===1?{kind:'animal',value:'fox',color:'fuchsia'}:
    i===2?{kind:'object',value:'rocket',color:'electric'}:null,
   scores:[{appKey:'addition-ecrite-simple',bestScore:220-i*10},
-  {appKey:'multiplication-ecrite-simple',bestScore:90-i*3}]};
+  {appKey:'multiplication-ecrite-simple',bestScore:90-i*3},
+  {appKey:'soustraction-ecrite-simple',bestScore:120-i*5}]};
 }
-test('V2 — 14 seuls puis 16 élèves interclasses, rotation 40s, Score/% isolés et reset (Chromium)',{timeout:125000},async()=>{
- const {server,url}=await serve();
- const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
- const errors=[],unknown=[];let storedOptions=null,resetCalls=0,loads=0,visibleStudents=14;
- try{
-  const page=await browser.newPage({viewport:{width:1366,height:768}});
-  page.on('pageerror',e=>errors.push(e.message));
-  await page.route('**/*',async route=>{
-   const target=route.request().url();
-   if(target.startsWith(url))return route.continue();
-   if(target.startsWith('https://esm.sh/'))return route.fulfill({
-    status:200,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'},body:stub
-   });
-   if(target.includes('.supabase.co/functions/v1/')){
-    const input=JSON.parse(route.request().postData()||'{}');
-    if(input.action==='teacher-dashboard')return route.fulfill({
-     status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},
-     body:JSON.stringify({ok:true,classes:[{id:A,name:'Phase 2 A'},{id:B,name:'Phase 2 B'}]})
+
+const ADD='addition-ecrite-simple',MUL='multiplication-ecrite-simple',SUB='soustraction-ecrite-simple';
+const card=key=>'.ranking-card[data-app-key="'+key+'"]';
+function sampleOptions(keys){return {scoreApps:[...keys],percentageApps:[ADD,MUL,SUB],
+ comparisons:[],comparisonDisplay:[],rotationSeconds:40}}
+function sampleState(keys,count=16){return {options:sampleOptions(keys),count,loads:0,saves:0,resets:[],improved:false}}
+async function openBoard(page,url,state){
+ const errors=[],unknown=[];page.on('pageerror',e=>errors.push(e.message));
+ page.on('dialog',d=>d.accept());
+ await page.route('**/*',async route=>{
+  const target=route.request().url();
+  if(target.startsWith(url))return route.continue();
+  if(target.startsWith('https://esm.sh/'))return route.fulfill({status:200,contentType:'application/javascript',
+   headers:{'access-control-allow-origin':'*'},body:stub});
+  if(target.includes('.supabase.co/functions/v1/')){
+   const input=JSON.parse(route.request().postData()||'{}');
+   if(input.action==='teacher-dashboard')return route.fulfill({status:200,contentType:'application/json',
+    headers:{'access-control-allow-origin':'*'},
+    body:JSON.stringify({ok:true,classes:[{id:A,name:'Phase 2 A'},{id:B,name:'Phase 2 B'}]})});
+   if(input.action==='teacher-load'){
+    state.loads++;
+    const students=Array.from({length:state.count},(_,i)=>{
+     const p=fakeStudent(i);
+     if(state.improved&&i===4)p.scores.find(x=>x.appKey===SUB).bestScore=210;
+     return p;
     });
-    if(input.action==='teacher-load'){
-     loads++;
-     const classes=[{classId:A,name:'Phase 2 A',enrolled:visibleStudents,options:storedOptions,students:Array.from({length:visibleStudents},(_,i)=>fakeStudent(i)),
-       scorePeriods:[],totals:[{appKey:'addition-ecrite-simple',bestSum:1800}],percentages:null}];
-     if(input.comparisons?.includes(B))classes.push({classId:B,name:'Phase 2 B',enrolled:11,students:Array.from({length:11},(_,i)=>fakeStudent(i+14)),
-       options:null,scorePeriods:[],totals:[{appKey:'addition-ecrite-simple',bestSum:1234}],percentages:null});
-     return route.fulfill({status:200,contentType:'application/json',
-      headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:true,classes,exploits:fakeExploitEvents,exploitsStatus:'available'})});
-    }
-    if(input.action==='teacher-save-options'){
-     storedOptions=input.options;
-     assert.equal(input.classId,A,'les réglages restent attachés à la classe principale');
-     return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},
-      body:JSON.stringify({ok:true,options:storedOptions})});
-    }
-    if(input.action==='teacher-reset-score'){
-     assert.equal(input.classId,A);assert.equal(input.appKey,'addition-ecrite-simple');
-     assert.equal(input.password,'MOT-DE-PASSE-FICTIF');
-     resetCalls++;
-     return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},
-      body:JSON.stringify({ok:true,classId:A,appKey:input.appKey,scoreSince:'2026-10-31T20:00:00Z'})});
-    }
-    throw Error('Unexpected endpoint action '+input.action);
+    const classes=[{classId:A,name:'Phase 2 A',enrolled:state.count,options:state.options,
+     students,scorePeriods:[],totals:[],percentages:null}];
+    if(input.comparisons?.includes(B))classes.push({
+     classId:B,name:'Phase 2 B',enrolled:0,options:null,students:[],scorePeriods:[],totals:[],percentages:null
+    });
+    return route.fulfill({status:200,contentType:'application/json',
+     headers:{'access-control-allow-origin':'*'},
+     body:JSON.stringify({ok:true,classes,exploits:fakeExploitEvents,exploitsStatus:'available'})});
    }
-   unknown.push(target);return route.abort();
-  });
-  page.on('dialog',d=>d.accept());
-  await page.goto(url+'/projection-v2.html?space=phase2',{waitUntil:'domcontentloaded'});
-  await page.locator('#load-real').waitFor({state:'visible'});
-  await page.waitForFunction(()=>!document.querySelector('#load-real').disabled);
-  assert.equal(await page.locator('#ranking-list .entry').count(),0,'aucun élève lu sans clic');
-  await page.locator('#load-real').click();
-  await page.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===14);
-  assert.equal(await page.locator('#exploits .event').count(),2,'Deux exploits confirmés en addition');
-  assert.match(await page.locator('#exploits').textContent(),/nouveau trophée/);
-  assert.doesNotMatch(await page.locator('#exploits').textContent(),/Top 5/);
-  assert.equal(await page.locator('.ranking-col').count(),2);
-  assert.equal(await page.locator('.ranking-col').nth(0).locator('.entry').count(),7);
-  assert.equal(await page.locator('.ranking-col').nth(1).locator('.entry').count(),7);
-  assert.equal(await page.locator('.entry.rank-8').count(),1);
-  assert.equal(await page.locator('.entry.rank-1').count(),1);
-  for(const rank of [1,2,3]){
-   assert.equal(await page.locator('.entry.rank-'+rank+' .place').textContent(),String(rank),'Podium numérique');
+   if(input.action==='teacher-save-options'){
+    assert.equal(input.classId,A);
+    assert.ok(input.options.scoreApps.length>=1&&input.options.scoreApps.length<=3);
+    state.options=input.options;state.saves++;
+    return route.fulfill({status:200,contentType:'application/json',
+     headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:true,options:state.options})});
+   }
+   if(input.action==='teacher-reset-score'){
+    assert.equal(input.classId,A);assert.equal(input.password,'MOT-DE-PASSE-FICTIF');
+    state.resets.push(input.appKey);
+    return route.fulfill({status:200,contentType:'application/json',
+     headers:{'access-control-allow-origin':'*'},
+     body:JSON.stringify({ok:true,classId:A,appKey:input.appKey,scoreSince:'2026-10-31T20:00:00Z'})});
+   }
   }
-  assert.equal(await page.locator('.entry.rank-1 .projection-avatar').textContent(),'É');
-  assert.equal(await page.locator('.entry.rank-1 .projection-avatar').evaluate(el=>getComputedStyle(el).backgroundColor),
-    'rgba(0, 0, 0, 0)','Initiale sans fond comme dans le HUB');
-  assert.equal(await page.locator('.entry.rank-2 .projection-avatar').textContent(),'🦊');
-  assert.equal(await page.locator('.entry.rank-2 .projection-avatar').evaluate(el=>getComputedStyle(el).backgroundColor),
-    'rgb(243, 75, 177)','Fond choisi dans le HUB');
-  assert.equal(await page.locator('.entry.rank-3 .projection-avatar').textContent(),'🚀');
-  assert.equal(await page.locator('.entry.rank-1 .player-label strong').textContent(),'Élève 1');
-  const avatarBox=await page.locator('.entry.rank-1 .projection-avatar').boundingBox();
-  const nameBox=await page.locator('.entry.rank-1 .player-label strong').boundingBox();
-  assert.ok(avatarBox&&nameBox&&avatarBox.x+avatarBox.width<nameBox.x+3,'Avatar avant le prénom');
-  assert.equal(await page.locator('.entry.rank-8 .place').textContent(),'8');
-  assert.notEqual(await page.locator('.entry.rank-1 .place').evaluate(el=>getComputedStyle(el).backgroundColor),
-    await page.locator('.entry.rank-8 .place').evaluate(el=>getComputedStyle(el).backgroundColor));
-  assert.match(await page.locator('.ranking-col').nth(1).evaluate(el=>getComputedStyle(el).borderLeftWidth),/5px/);
-  assert.equal(await page.locator('#classes .classstat').count(),6,'Global + cinq applications');
-  assert.match(await page.locator('#classes .global-success').textContent(),/Global.*— %/);
-  assert.match(await page.locator('#time-left').textContent(),/40 s/);
-  const headerClass=page.locator('#header-class');
-  assert.equal(await headerClass.textContent(),'Phase 2 A');
-  assert.equal(await page.locator('header #load-real').count(),1,'Actualiser déplacé dans le bandeau');
-  assert.equal(await page.locator('header #projection-theme').count(),1,'Thème déplacé dans le bandeau');
-  assert.equal(await page.locator('.left-col #load-real').count(),0);
-  assert.equal(await page.locator('#percentage-note').count(),0,'Note barrée supprimée');
-  assert.equal(await page.locator('header #projection-clock').count(),0,'Horloge remplacée');
-  assert.match(await page.locator('#projection-refresh-label').textContent(),/^MAJ dans 00:\d{2}$/);
-   assert.equal(await page.locator('#projection-refresh-dot').isHidden(),true,'Premier cycle : pas de point');
-  const toolsBounds=await page.locator('.header-tools').boundingBox();
-  assert.ok(toolsBounds&&toolsBounds.x>730,'Les outils doivent rester à droite de la classe');
-  const classBounds=await headerClass.boundingBox();
-  const rankBounds=await page.locator('.ranking-head').boundingBox();
-  const titleBounds=await page.locator('#app-name').boundingBox();
-  assert.ok(classBounds&&Math.abs(classBounds.x+classBounds.width/2-683)<8,'Classe centrée dans le bandeau supérieur');
-  assert.ok(rankBounds&&rankBounds.height<90,'En-tête central compact');
-  assert.ok(titleBounds&&Math.abs(titleBounds.x+titleBounds.width/2-(rankBounds.x+rankBounds.width/2))<8,
-   'Titre du jeu centré sans cartouche latéral');
-  assert.equal(await page.locator('#ranking-note').count(),0,'Ancien cartouche supprimé');
-  assert.equal(await page.locator('.ranking-guide').count(),0,'Zone vide sous le titre supprimée');
-  assert.equal(await page.locator('#comparison-results .compare-row').count(),0);
-  assert.equal(await page.locator('#settings-left').count(),1);
-  assert.equal(await page.locator('#open-settings').count(),0);
-  // Une application sans aucun score publié ne montre même pas les cartes
-  // des élèves qui ont joué à l'addition ou à la multiplication.
-  await page.locator('#app-tabs').getByRole('button',{name:'Soustraction écrite'}).click();
-  assert.equal(await page.locator('#app-name').textContent(),'Soustraction écrite');
-  assert.match(await page.locator('#exploits').textContent(),/Top 5/);
-  assert.doesNotMatch(await page.locator('#exploits').textContent(),/nouveau trophée/);
-  assert.equal(await page.locator('#ranking-list .entry').count(),0);
-  assert.equal(await page.locator('#ranking-list .ranking-col').count(),0);
-  assert.match(await page.locator('#ranking-list').evaluate(el=>getComputedStyle(el,'::after').content),
-   /Aucun score enregistré pour cette application/);
-  await page.locator('#app-tabs').getByRole('button',{name:'Multiplication écrite'}).click();
-  assert.equal(await page.locator('.entry.rank-1 .points').textContent(),'90 pts',
-   'la multiplication ne récupère pas les 220 points de l’addition');
-  await page.locator('#app-tabs').getByRole('button',{name:'Addition écrite',exact:true}).click();
-  assert.equal(await page.locator('.entry.rank-1 .points').textContent(),'220 pts');
-  // Cas de classe partiellement active : 5 élèves en une colonne, comme
-  // la capture signalée. Le classement doit utiliser l'espace disponible,
-  // et non se contracter autour du prénom le plus long.
-  visibleStudents=5;
+  unknown.push(target);return route.abort();
+ });
+ await page.goto(url+'/projection-v2.html?space=phase2',{waitUntil:'domcontentloaded'});
+ await page.waitForFunction(()=>!document.querySelector('#load-real').disabled);
+ assert.equal(await page.locator('.ranking-card').count(),0,'Aucun élève projeté sans accord professeur');
+ await page.locator('#load-real').click();
+ await page.waitForFunction(()=>document.querySelector('.ranking-card'));
+ return {errors,unknown};
+}
+
+test('V2 — 1, 2 et 3 panneaux, colonnes, séparation, scroll et limite de sélection',{timeout:80000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}}),state=sampleState([ADD]);
+  const {errors,unknown}=await openBoard(page,url,state);
+  await page.waitForFunction(()=>document.querySelectorAll('.ranking-card .entry').length===16);
+  assert.equal(await page.locator('.ranking-card').count(),1);
+  assert.equal(await page.locator(card(ADD)+' .ranking-col').count(),2,'Seul : deux colonnes');
+  assert.equal(await page.locator(card(ADD)+' .ranking-col').first().locator('.entry').count(),8);
+  await page.locator('#settings-top').click();
+  await page.getByRole('checkbox',{name:'Multiplication écrite · Afficher score'}).check();
+  await page.waitForFunction(()=>document.querySelectorAll('.ranking-card').length===2);
+  assert.equal(await page.locator(card(MUL)+' .ranking-col').count(),2,'Deux : deux colonnes par appli');
+  assert.equal(await page.locator(card(ADD)+' .entry.rank-1 .points').textContent(),'220 pts');
+  assert.equal(await page.locator(card(MUL)+' .entry.rank-1 .points').textContent(),'90 pts');
+  await page.getByRole('checkbox',{name:'Soustraction écrite · Afficher score'}).check();
+  await page.waitForFunction(()=>document.querySelectorAll('.ranking-card').length===3);
+  assert.equal(await page.locator('#projection-main').getAttribute('data-app-count'),'3');
+  for(const key of [ADD,MUL,SUB]){
+   assert.equal(await page.locator(card(key)+' .ranking-col').count(),1,'Trois : une seule colonne');
+   assert.equal(await page.locator(card(key)+' .entry').count(),16);
+  }
+  assert.equal(await page.getByRole('checkbox',{name:'Addition multiple · Afficher score'}).isDisabled(),true,
+   'Impossible de choisir une quatrième appli');
+  assert.equal(await page.getByRole('checkbox',{name:'Addition multiple · Afficher pourcentage'}).isDisabled(),false,
+   'Les % sont indépendants des scores');
+  const boxes=await page.locator('.ranking-card').evaluateAll(cards=>cards.map(x=>{
+   const r=x.getBoundingClientRect();return {left:r.left,right:r.right,border:getComputedStyle(x).borderWidth,height:r.height}
+  }));
+  assert.ok(boxes[0].right+8<=boxes[1].left&&boxes[1].right+8<=boxes[2].left,
+   'Trois panneaux côte à côte avec gouttières visibles');
+  assert.ok(boxes.every(x=>x.border==='3px'),'Contours épais');
+  await page.locator('#close-settings').click();
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight>innerHeight+100),'Défilement de la page possible');
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+3),'Pas de scroll horizontal');
+  assert.equal(await page.locator('#projection-refresh-dot').count(),0,'Point supprimé');
+  assert.equal(await page.locator('#next-app').count(),0,'Pas de rotation automatique');
+  await page.locator('#settings-top').click();
+  await page.getByRole('checkbox',{name:'Soustraction écrite · Afficher score'}).uncheck();
+  await page.getByRole('checkbox',{name:'Multiplication écrite · Afficher score'}).uncheck();
+  await page.waitForFunction(()=>document.querySelectorAll('.ranking-card').length===1);
+  assert.equal(await page.getByRole('checkbox',{name:'Addition écrite · Afficher score'}).isDisabled(),true,
+   'Impossible de supprimer le dernier classement');
+  await page.locator('#close-settings').click();
+  await page.evaluate(()=>window.__signOut());
+  assert.equal(await page.locator('.ranking-card').count(),0,'Données masquées à la déconnexion');
+  assert.ok(state.saves>=4);assert.deepEqual(errors,[]);assert.deepEqual(unknown,[]);
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
+
+test('V2 — animations de remontée indépendantes, aucun score mélangé',{timeout:60000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}}),state=sampleState([ADD,SUB],5);
+  const {errors}=await openBoard(page,url,state);
+  await page.waitForFunction(()=>document.querySelectorAll('.ranking-card .entry').length===10);
+  assert.equal(await page.locator(card(SUB)+' .entry.rank-1 strong').textContent(),'Élève 1');
+  state.improved=true;
   await page.locator('#load-real').click();
-  await page.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===5);
-  assert.equal(await page.locator('#ranking-list .ranking-col').count(),1);
-  assert.equal(await page.locator('#ranking-list.single').count(),1);
-  assert.equal(await page.locator('link[href*="projection-v2-avatar.css"]').count(),1);
-  const singleGeometry=await page.locator('#ranking-list').evaluate(list=>{
-   const panel=list.closest('.ranking-wrap').getBoundingClientRect();
-   const listRect=list.getBoundingClientRect();
-   const first=list.querySelector('.entry').getBoundingClientRect();
-   const label=list.querySelector('.player-label').getBoundingClientRect();
-   const points=list.querySelector('.points').getBoundingClientRect();
-   return {panelWidth:panel.width,listWidth:listRect.width,
-    cardWidth:first.width,listLeft:listRect.left,panelLeft:panel.left,
-    panelRight:panel.right,cardLeft:first.left,
-    textRight:label.right,pointsLeft:points.left,cardHeight:first.height,
-    color:getComputedStyle(list.querySelector('.rank-1 .projection-avatar')).color};
-  });
-  assert.ok(singleGeometry.cardWidth>=Math.min(520,singleGeometry.panelWidth*.75)
-    &&singleGeometry.cardWidth<=552,
-    'Retrouver les cartes compactes de 550 px du matin, sans tuiles étriquées : '+JSON.stringify(singleGeometry));
-  assert.ok(singleGeometry.listLeft>=singleGeometry.panelLeft-2&&
-    singleGeometry.listLeft+singleGeometry.listWidth<=singleGeometry.panelRight+2,
-    'Le classement reste dans sa colonne');
-  assert.ok(singleGeometry.textRight<=singleGeometry.pointsLeft+2,
-    'Le prénom et les points ne se chevauchent pas');
-  assert.ok(singleGeometry.pointsLeft-singleGeometry.textRight<=24,
-    'Comme ce matin, les points doivent rester proches du prénom');
-  assert.equal(singleGeometry.color,'rgb(35, 51, 66)','La lettre reste lisible sur le podium doré');
-  assert.ok(singleGeometry.cardHeight>=54&&singleGeometry.cardHeight<=75,
-   'Cinq élèves : pas de cartes étirées verticalement : '+JSON.stringify(singleGeometry));
-  const podium=await page.locator('.entry.rank-1').evaluate(el=>{
-   const points=el.querySelector('.points'),avatar=el.querySelector('.projection-avatar');
-   return {scoreBackground:getComputedStyle(points).backgroundColor,
-    scoreColor:getComputedStyle(points).color,
-    avatarBorder:getComputedStyle(avatar).borderWidth};
-  });
-  assert.equal(podium.scoreBackground,'rgba(0, 0, 0, 0)','Les points du podium sont du texte sans fond');
-  assert.equal(podium.scoreColor,'rgb(117, 73, 0)','La couleur or foncé se détache sur le podium');
-  assert.equal(podium.avatarBorder,'2px','Même les initiales transparentes ont un cadre');
-  // Le retour au classement complet rétablit 7+7, puis 8+8 sans effet de bord.
-  visibleStudents=14;
-  await page.locator('#load-real').click();
-  await page.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===14);
-  await page.locator('#settings-left').click();
-  await page.locator('#settings').waitFor({state:'visible'});
-  assert.equal(await page.locator('#show-teacher').isChecked(),false,'Monsieur T décoché');
-  await page.getByRole('checkbox',{name:'Phase 2 B · Comparer le score'}).check();
-  await page.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===16);
-  assert.equal(await page.locator('.ranking-col').nth(0).locator('.entry').count(),8);
-  assert.equal(await page.locator('.ranking-col').nth(1).locator('.entry').count(),8);
-  // Header scrolls away; the entire remaining projector screen is the stage.
-  const stageSize=await page.locator('.projection-stage').boundingBox();
-  assert.ok(stageSize&&Math.abs(stageSize.height-768)<=2,'Le plateau occupe une hauteur complète de 768 px');
-  assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight>window.innerHeight+30),
-    'La bande de classe se masque par défilement naturel');
-  await page.evaluate(()=>window.scrollTo(0,document.querySelector('header').offsetHeight));
-  await page.waitForFunction(()=>window.scrollY>=document.querySelector('header').offsetHeight-2);
-  const stageVisible=await page.locator('.projection-stage').boundingBox();
-  assert.ok(stageVisible&&Math.abs(stageVisible.y)<3,'Le plateau commence en haut après défilement');
-  const footer=await page.locator('footer').boundingBox();
-  assert.ok(footer&&footer.y+footer.height<=769&&footer.y>675,'Les commandes restent visibles en bas');
-  assert.equal(await page.locator('.ranking-footer').count(),0,'Ancienne bande du compte à rebours supprimée');
-  assert.equal(await page.locator('footer #rotation-label').count(),1);
-  assert.equal(await page.locator('footer #time-left').count(),1);
-  const first=await page.locator('.ranking-col').first().locator('.entry').first().boundingBox();
-  const eighth=await page.locator('.ranking-col').first().locator('.entry').last().boundingBox();
-  const last=await page.locator('#ranking-list .entry').last().boundingBox();
-  const board=await page.locator('.ranking').boundingBox();
-  assert.ok(first&&eighth&&last&&board);
-  assert.ok(last.y+last.height<=768,
-   'Les seize places doivent être visibles sur un écran 1366×768 sans défiler');
-  assert.ok(eighth.y+eighth.height<board.y+board.height-20,
-   'Les huit rangs ne remplissent plus artificiellement le panneau');
-  assert.ok(first.height>=54&&first.height<=75,'Cases compactes et lisibles');
-  assert.ok(Math.abs(eighth.height-first.height)<=3,'Hauteur de cartes régulière');
-  assert.ok((await page.locator('.class-mark').allTextContents()).includes('Phase 2 B'));
-  assert.equal(await page.locator('#comparison-results .compare-row').count(),0,
-    'Score des autres classes au centre, jamais à gauche');
-  assert.doesNotMatch(await page.locator('#comparison-results').textContent(),/Réussite globale/,'score seul sans pourcentage');
-  assert.deepEqual(storedOptions.comparisonDisplay,[{classId:B,score:true,percentage:false}]);
-  await page.getByRole('checkbox',{name:'Phase 2 B · Comparer le pourcentage'}).check();
-  await page.waitForFunction(()=>document.querySelector('#comparison-results .compare-row .global-success')?.textContent?.includes('Global'));
-  assert.deepEqual(storedOptions.comparisonDisplay,[{classId:B,score:true,percentage:true}]);
-  assert.match(await page.locator('#comparison-results').textContent(),/— %/,'aucun % fictif');
-  const global=page.locator('#comparison-results .compare-row .global-success');
-  assert.equal(await global.count(),1,'Global comparatif mis en évidence');
-  assert.equal(await global.locator('.track').count(),0,'Aucune barre de progression comparative');
-  assert.equal(await page.locator('.compare-panel h2').count(),0,'Titre Autres classes supprimé');
-  const cmpFont=await global.locator('.headline strong').evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
-  const mainFont=await page.locator('#classes .global-success .headline strong').evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
-  assert.ok(cmpFont<mainFont,'Pourcentage comparatif plus petit que le pourcentage principal');
-  assert.match(await global.textContent(),/Global.*— %/);
-  assert.equal(
-   await global.evaluate(el=>getComputedStyle(el).backgroundColor),
-   await page.locator('#classes .global-success').evaluate(el=>getComputedStyle(el).backgroundColor),
-   'Le Global comparatif reprend le même fond que le Global principal');
+  await page.waitForFunction(()=>Number(document.querySelector('[data-app-key="'+SUB+'"] .ranking-list')?.dataset.overtakeSteps||0)>=4,
+   null,{timeout:12000});
+  assert.equal(await page.locator(card(SUB)+' .entry.rank-1 strong').textContent(),'Élève 5');
+  assert.equal(await page.locator(card(ADD)+' .entry.rank-1 strong').textContent(),'Élève 1');
+  assert.equal(await page.locator(card(ADD)+' .ranking-list').evaluate(e=>Number(e.dataset.overtakeSteps||0)),0);
+  await page.waitForFunction(()=>document.querySelector('#exploits')?.textContent?.includes('remonte de 4 places'));
+  assert.match(await page.locator('#exploits').textContent(),/Soustraction écrite/);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
+
+test('V2 — lecture automatique toutes les 20 s sans rotation',{timeout:60000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}}),state=sampleState([ADD,MUL,SUB],3);
+  await page.clock.install();
+  const {errors}=await openBoard(page,url,state);
+  assert.equal(state.loads,1);
+  await page.clock.fastForward(21000);
+  await new Promise(ok=>setTimeout(ok,250));
+  assert.ok(state.loads>=2,'MAJ après vingt secondes');
+  await page.clock.fastForward(21000);
+  await new Promise(ok=>setTimeout(ok,250));
+  assert.ok(state.loads>=3,'Seconde MAJ après quarante secondes');
+  assert.deepEqual(await page.locator('.ranking-head h2').allTextContents(),
+   ['Addition écrite','Multiplication écrite','Soustraction écrite']);
+  assert.equal(await page.locator('.ranking-card').count(),3);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
+
+test('V2 — reset de score toujours protégé et isolé',{timeout:60000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}}),state=sampleState([ADD,MUL],4);
+  const {errors}=await openBoard(page,url,state);
+  await page.locator('#settings-top').click();
   await page.getByRole('button',{name:'Réinitialiser uniquement le score de Addition écrite pour Phase 2 A'}).click();
   await page.locator('#reset-password').fill('MOT-DE-PASSE-FICTIF');
   await page.locator('#reset-apply').click();
   await page.waitForFunction(()=>!document.querySelector('#settings').open);
-  assert.equal(resetCalls,1);
-  // La maquette fictive affiche la même disposition sans aucun compte élève.
-  const demo=await browser.newPage({viewport:{width:1366,height:768}});
-  const demoErrors=[];demo.on('pageerror',err=>demoErrors.push(err.message));
-  await demo.goto(url+'/projection-v2-demo.html',{waitUntil:'domcontentloaded'});
-  await demo.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===16);
-  await demo.evaluate(()=>window.scrollTo(0,document.querySelector('header').offsetHeight));
-  await demo.waitForFunction(()=>window.scrollY>0);
-  const demoStage=await demo.locator('.projection-stage').boundingBox();
-  const demoFooter=await demo.locator('footer').boundingBox();
-  assert.ok(demoStage&&Math.abs(demoStage.y)<3&&Math.abs(demoStage.height-768)<3);
-  assert.ok(demoFooter&&demoFooter.y+demoFooter.height<=769);
-  assert.equal(await demo.locator('.ranking-footer').count(),0);
-  assert.equal(await demo.locator('.compare-panel h2').count(),0);
-  assert.equal(await demo.locator('.compare-panel .global-success').count(),1);
-  assert.equal(await demo.locator('.compare-panel .global-success .track').count(),0);
-  assert.equal(await demo.locator('footer #rotation-label').count(),1);
-  assert.equal(await demo.locator('footer #time-left').count(),1);
-  assert.deepEqual(demoErrors,[]);
-  await demo.close();
-  await page.evaluate(()=>window.__signOut());
-  assert.equal(await page.locator('#ranking-list .entry').count(),0,'déconnexion masque les résultats');
+  assert.deepEqual(state.resets,[ADD]);
+  assert.equal(await page.locator(card(MUL)+' .entry.rank-1 .points').textContent(),'90 pts');
   assert.deepEqual(errors,[]);
-  assert.deepEqual(unknown,[]);
-  assert.ok(loads>=3);
- }finally{await browser.close();await new Promise(ok=>server.close(ok))}
-});
-
-
-test('V2 — une remontée en Soustraction attend sa page, passe 4 élèves puis brille',{timeout:55000},async()=>{
- const {server,url}=await serve();
- const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
- let improved=false,loads=0;
- try{
-  const page=await browser.newPage({viewport:{width:1366,height:768}});
-  const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.route('**/*',async route=>{
-   const target=route.request().url();
-   if(target.startsWith(url))return route.continue();
-   if(target.startsWith('https://esm.sh/'))return route.fulfill({
-    status:200,contentType:'application/javascript',
-    headers:{'access-control-allow-origin':'*'},body:stub
-   });
-   if(target.includes('.supabase.co/functions/v1/')){
-    const input=route.request().postDataJSON()||{};
-    if(input.action==='teacher-dashboard')return route.fulfill({
-     status:200,contentType:'application/json',
-     headers:{'access-control-allow-origin':'*'},
-     body:JSON.stringify({ok:true,classes:[{id:A,name:'Phase 2 A'}]})
-    });
-    if(input.action==='teacher-load'){
-     loads++;
-     const pupils=Array.from({length:5},(_,i)=>({...fakeStudent(i),
-      scores:[{appKey:'addition-ecrite-simple',bestScore:100-i*10},
-       {appKey:'soustraction-ecrite-simple',bestScore:improved&&i===4?150:100-i*10}]
-     }));
-     return route.fulfill({
-      status:200,contentType:'application/json',
-      headers:{'access-control-allow-origin':'*'},
-      body:JSON.stringify({ok:true,classes:[{
-       classId:A,name:'Phase 2 A',enrolled:5,options:null,students:pupils,
-       scorePeriods:[],totals:[],percentages:null
-      }],exploits:[],exploitsStatus:'available'})
-     });
-    }
-    throw Error('Action inattendue : '+input.action);
-   }
-   return route.abort();
-  });
-  await page.goto(url+'/projection-v2.html?space=phase2',{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>!document.querySelector('#load-real').disabled);
-  await page.locator('#load-real').click();
-  await page.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===5);
-  assert.equal(await page.locator('#app-name').textContent(),'Addition écrite');
-  assert.equal(await page.locator('#exploits').textContent(),
-   '◌Aucun exploit confirmé récemment pour cette application.');
-  improved=true;
-  await page.locator('#load-real').click();
-  await page.waitForFunction(()=>!document.querySelector('#load-real').disabled);
-  assert.ok(loads>=2);
-  assert.equal(await page.locator('#app-name').textContent(),'Addition écrite');
-  assert.equal(await page.locator('.entry.rank-1 strong').textContent(),'Élève 1',
-   'Soustraction ne bouge pas le classement de l’addition');
-  assert.equal(await page.locator('#ranking-list').evaluate(el=>Number(el.dataset.overtakeSteps||0)),0,
-   'Aucun dépassement d’une autre application ne se joue hors page');
-  await page.locator('#app-tabs').getByRole('button',{name:'Soustraction écrite'}).click();
-  await page.waitForFunction(()=>Number(document.querySelector('#ranking-list')?.dataset.overtakeSteps||0)>=4,
-   null,{timeout:12000});
-  await page.waitForFunction(()=>/remonte de 4 places/.test(document.querySelector('#exploits')?.textContent||''),
-   null,{timeout:5000});
-  assert.equal(await page.locator('.entry.rank-1 strong').textContent(),'Élève 5');
-  assert.equal(await page.locator('.entry.rank-1 .points').textContent(),'150 pts');
-  assert.equal(await page.locator('#ranking-list').evaluate(el=>Number(el.dataset.overtakeSteps||0)),4,
-   'Quatre échanges séparés : 5e → 4e → 3e → 2e → 1re');
-  assert.ok(await page.locator('.rank-arrival-sparkles').count()>0,
-   'Petites étincelles autour de la place finale');
-  await page.locator('#app-tabs').getByRole('button',{name:'Addition écrite'}).click();
-  assert.doesNotMatch(await page.locator('#exploits').textContent(),/remonte de 4 places/);
-  await page.locator('#app-tabs').getByRole('button',{name:'Soustraction écrite'}).click();
-  await page.waitForTimeout(850);
-  assert.equal(await page.locator('#ranking-list').evaluate(el=>Number(el.dataset.overtakeSteps||0)),0,
-   'Revenir sur le même jeu ne rejoue pas l’animation');
-  assert.equal(await page.locator('.entry.rank-1 strong').textContent(),'Élève 5');
-  assert.deepEqual(errors,[]);
- }finally{
-  await browser.close();await new Promise(ok=>server.close(ok));
- }
-});
-
-
-test('V2 — 20 s sans point, puis 20 s avec point et changement de jeu (horloge simulée)',{timeout:60000},async()=>{
- const {server,url}=await serve();
- const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
- let loads=0;
- try{
-  const page=await browser.newPage({viewport:{width:1366,height:768}});
-  await page.clock.install();
-  await page.route('**/*',async route=>{
-   const target=route.request().url();
-   if(target.startsWith(url))return route.continue();
-   if(target.startsWith('https://esm.sh/'))return route.fulfill({
-    status:200,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'},body:stub
-   });
-   if(target.includes('.supabase.co/functions/v1/')){
-    const input=JSON.parse(route.request().postData()||'{}');
-    if(input.action==='teacher-dashboard')return route.fulfill({
-     status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},
-     body:JSON.stringify({ok:true,classes:[{id:A,name:'Phase 2 A'}]})
-    });
-    if(input.action==='teacher-load'){
-     loads++;
-     return route.fulfill({status:200,contentType:'application/json',
-      headers:{'access-control-allow-origin':'*'},
-      body:JSON.stringify({ok:true,classes:[{classId:A,name:'Phase 2 A',
-       options:null,students:[fakeStudent(0)],scorePeriods:[],percentages:null}],exploits:[]})});
-    }
-   }
-   return route.abort();
-  });
-  await page.goto(url+'/projection-v2.html?space=phase2',{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>!document.querySelector('#load-real').disabled);
-  await page.locator('#load-real').click();
-  await page.waitForFunction(()=>document.querySelector('#app-name').textContent==='Addition écrite');
-  assert.equal(await page.locator('#projection-refresh-dot').isHidden(),true,'Départ sans point');
-  assert.match(await page.locator('#time-left').textContent(),/40 s/);
-  await page.clock.fastForward(21000);
-  await page.waitForFunction(()=>document.querySelector('#projection-refresh-dot').hidden===false);
-  assert.equal(await page.locator('#app-name').textContent(),'Addition écrite','Même jeu après la première MAJ');
-  assert.ok(loads>=2,'Nouvelle lecture serveur fictive à 20 secondes');
-  await page.clock.fastForward(20000);
-  await page.waitForFunction(()=>document.querySelector('#app-name').textContent==='Multiplication écrite');
-  assert.equal(await page.locator('#projection-refresh-dot').isHidden(),true,'Point effacé à la rotation');
-  assert.ok(loads>=3,'Seconde lecture serveur fictive au changement de jeu');
-  await page.locator('#next-app').click();
-  assert.equal(await page.locator('#projection-refresh-dot').isHidden(),true,'Changement manuel : nouveau premier cycle');
-  assert.match(await page.locator('#time-left').textContent(),/40 s/);
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
