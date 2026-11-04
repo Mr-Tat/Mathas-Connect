@@ -38,7 +38,7 @@ function fakeStudent(i){
   scores:[{appKey:'addition-ecrite-simple',bestScore:220-i*10},
   {appKey:'multiplication-ecrite-simple',bestScore:90-i*3}]};
 }
-test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isolés et reset (Chromium)',{timeout:125000},async()=>{
+test('V2 — 14 seuls puis 16 élèves interclasses, rotation 40s, Score/% isolés et reset (Chromium)',{timeout:125000},async()=>{
  const {server,url}=await serve();
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  const errors=[],unknown=[];let storedOptions=null,resetCalls=0,loads=0,visibleStudents=14;
@@ -118,7 +118,7 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   assert.match(await page.locator('.ranking-col').nth(1).evaluate(el=>getComputedStyle(el).borderLeftWidth),/5px/);
   assert.equal(await page.locator('#classes .classstat').count(),6,'Global + cinq applications');
   assert.match(await page.locator('#classes .global-success').textContent(),/Global.*— %/);
-  assert.match(await page.locator('#time-left').textContent(),/30 s/);
+  assert.match(await page.locator('#time-left').textContent(),/40 s/);
   const headerClass=page.locator('#header-class');
   assert.equal(await headerClass.textContent(),'Phase 2 A');
   assert.equal(await page.locator('header #load-real').count(),1,'Actualiser déplacé dans le bandeau');
@@ -126,7 +126,8 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   assert.equal(await page.locator('.left-col #load-real').count(),0);
   assert.equal(await page.locator('#percentage-note').count(),0,'Note barrée supprimée');
   assert.equal(await page.locator('header #projection-clock').count(),0,'Horloge remplacée');
-  assert.match(await page.locator('#projection-refresh-countdown').textContent(),/^MAJ dans 00:\d{2}$/);
+  assert.match(await page.locator('#projection-refresh-label').textContent(),/^MAJ dans 00:\d{2}$/);
+   assert.equal(await page.locator('#projection-refresh-dot').isHidden(),true,'Premier cycle : pas de point');
   const toolsBounds=await page.locator('.header-tools').boundingBox();
   assert.ok(toolsBounds&&toolsBounds.x>730,'Les outils doivent rester à droite de la classe');
   const classBounds=await headerClass.boundingBox();
