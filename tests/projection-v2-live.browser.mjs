@@ -38,7 +38,7 @@ function fakeStudent(i){
   scores:[{appKey:'addition-ecrite-simple',bestScore:220-i*10},
   {appKey:'multiplication-ecrite-simple',bestScore:90-i*3}]};
 }
-test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isolés et reset (Chromium)',{timeout:125000},async()=>{
+test('V2 — 14 seuls puis 16 élèves interclasses, rotation 40s, Score/% isolés et reset (Chromium)',{timeout:125000},async()=>{
  const {server,url}=await serve();
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  const errors=[],unknown=[];let storedOptions=null,resetCalls=0,loads=0,visibleStudents=14;
@@ -118,9 +118,18 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   assert.match(await page.locator('.ranking-col').nth(1).evaluate(el=>getComputedStyle(el).borderLeftWidth),/5px/);
   assert.equal(await page.locator('#classes .classstat').count(),6,'Global + cinq applications');
   assert.match(await page.locator('#classes .global-success').textContent(),/Global.*— %/);
-  assert.match(await page.locator('#time-left').textContent(),/30 s/);
+  assert.match(await page.locator('#time-left').textContent(),/40 s/);
   const headerClass=page.locator('#header-class');
   assert.equal(await headerClass.textContent(),'Phase 2 A');
+  assert.equal(await page.locator('header #load-real').count(),1,'Actualiser déplacé dans le bandeau');
+  assert.equal(await page.locator('header #projection-theme').count(),1,'Thème déplacé dans le bandeau');
+  assert.equal(await page.locator('.left-col #load-real').count(),0);
+  assert.equal(await page.locator('#percentage-note').count(),0,'Note barrée supprimée');
+  assert.equal(await page.locator('header #projection-clock').count(),0,'Horloge remplacée');
+  assert.match(await page.locator('#projection-refresh-label').textContent(),/^MAJ dans 00:\d{2}$/);
+   assert.equal(await page.locator('#projection-refresh-dot').isHidden(),true,'Premier cycle : pas de point');
+  const toolsBounds=await page.locator('.header-tools').boundingBox();
+  assert.ok(toolsBounds&&toolsBounds.x>730,'Les outils doivent rester à droite de la classe');
   const classBounds=await headerClass.boundingBox();
   const rankBounds=await page.locator('.ranking-head').boundingBox();
   const titleBounds=await page.locator('#app-name').boundingBox();
@@ -188,8 +197,8 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
     scoreColor:getComputedStyle(points).color,
     avatarBorder:getComputedStyle(avatar).borderWidth};
   });
-  assert.equal(podium.scoreBackground,'rgb(32, 51, 72)','Les points du podium ont un fond contrasté');
-  assert.equal(podium.scoreColor,'rgb(255, 243, 210)','Les points restent lumineux');
+  assert.equal(podium.scoreBackground,'rgba(0, 0, 0, 0)','Les points du podium sont du texte sans fond');
+  assert.equal(podium.scoreColor,'rgb(117, 73, 0)','La couleur or foncé se détache sur le podium');
   assert.equal(podium.avatarBorder,'2px','Même les initiales transparentes ont un cadre');
   // Le retour au classement complet rétablit 7+7, puis 8+8 sans effet de bord.
   visibleStudents=14;
@@ -359,4 +368,54 @@ test('V2 — une remontée en Soustraction attend sa page, passe 4 élèves puis
  }finally{
   await browser.close();await new Promise(ok=>server.close(ok));
  }
+});
+
+
+test('V2 — 20 s sans point, puis 20 s avec point et changement de jeu (horloge simulée)',{timeout:60000},async()=>{
+ const {server,url}=await serve();
+ const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ let loads=0;
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}});
+  await page.clock.install();
+  await page.route('**/*',async route=>{
+   const target=route.request().url();
+   if(target.startsWith(url))return route.continue();
+   if(target.startsWith('https://esm.sh/'))return route.fulfill({
+    status:200,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'},body:stub
+   });
+   if(target.includes('.supabase.co/functions/v1/')){
+    const input=JSON.parse(route.request().postData()||'{}');
+    if(input.action==='teacher-dashboard')return route.fulfill({
+     status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},
+     body:JSON.stringify({ok:true,classes:[{id:A,name:'Phase 2 A'}]})
+    });
+    if(input.action==='teacher-load'){
+     loads++;
+     return route.fulfill({status:200,contentType:'application/json',
+      headers:{'access-control-allow-origin':'*'},
+      body:JSON.stringify({ok:true,classes:[{classId:A,name:'Phase 2 A',
+       options:null,students:[fakeStudent(0)],scorePeriods:[],percentages:null}],exploits:[]})});
+    }
+   }
+   return route.abort();
+  });
+  await page.goto(url+'/projection-v2.html?space=phase2',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>!document.querySelector('#load-real').disabled);
+  await page.locator('#load-real').click();
+  await page.waitForFunction(()=>document.querySelector('#app-name').textContent==='Addition écrite');
+  assert.equal(await page.locator('#projection-refresh-dot').isHidden(),true,'Départ sans point');
+  assert.match(await page.locator('#time-left').textContent(),/40 s/);
+  await page.clock.fastForward(21000);
+  await page.waitForFunction(()=>document.querySelector('#projection-refresh-dot').hidden===false);
+  assert.equal(await page.locator('#app-name').textContent(),'Addition écrite','Même jeu après la première MAJ');
+  assert.ok(loads>=2,'Nouvelle lecture serveur fictive à 20 secondes');
+  await page.clock.fastForward(20000);
+  await page.waitForFunction(()=>document.querySelector('#app-name').textContent==='Multiplication écrite');
+  assert.equal(await page.locator('#projection-refresh-dot').isHidden(),true,'Point effacé à la rotation');
+  assert.ok(loads>=3,'Seconde lecture serveur fictive au changement de jeu');
+  await page.locator('#next-app').click();
+  assert.equal(await page.locator('#projection-refresh-dot').isHidden(),true,'Changement manuel : nouveau premier cycle');
+  assert.match(await page.locator('#time-left').textContent(),/40 s/);
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });

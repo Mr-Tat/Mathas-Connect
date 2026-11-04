@@ -14,11 +14,19 @@ test('Projection V2 live : chargement professeur volontaire, lecture protégée 
  assert.match(js,/if\(!hasLoaded\)return note\('Clique d’abord sur Afficher/);
  assert.doesNotMatch(js,/signInAnonymously|localStorage\.setItem/);
 });
-test('Projection V2 live : actualisation des scores toutes les 20 s, uniquement si visible',()=>{
+test('Projection V2 live : deux MAJ de 20 s et rotation synchronisée à 40 s',()=>{
  assert.match(js,/const REFRESH_INTERVAL_MS=20000;/);
- assert.match(js,/setInterval\(\(\)=>\{if\(hasLoaded&&connected&&document\.visibilityState==='visible'&&!\$\('settings'\)\.open\)refresh\(\)\},REFRESH_INTERVAL_MS\);/);
- assert.match(js,/rotationSeconds:30/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-depassements-v5/);
+ assert.match(js,/const ROTATION_SECONDS=40;/);
+ assert.match(js,/nextRefreshAt=cycleStartedAt\+REFRESH_INTERVAL_MS/);
+ assert.match(js,/if\(connected&&now>=nextRefreshAt\)/);
+ assert.match(js,/if\(document\.visibilityState==='visible'&&!\$\('settings'\)\.open\)void refresh\(\)/);
+ assert.match(js,/setInterval\(tickProjection,1000\)/);
+ assert.match(js,/rotationSeconds:ROTATION_SECONDS/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-40s-double-cycle-v1/);
+ assert.match(html,/id="projection-refresh-label"/);
+ assert.match(html,/id="projection-refresh-dot"/);
+ assert.match(html,/\.projection-refresh-dot\{font-size:24px/);
+ assert.match(js,/dot\.hidden=paused\|\|enabled\(\)\.length<=1\|\|Date\.now\(\)-cycleStartedAt<REFRESH_INTERVAL_MS/);
 });
 test('Projection V2 : remontées par application, 550 ms par passage, arrivée étoilée',()=>{
  assert.match(js,/createOvertakeTracker/);
@@ -29,9 +37,9 @@ test('Projection V2 : remontées par application, 550 ms par passage, arrivée �
  assert.match(js,/localRises\.set\(appKey,history\.slice\(0,5\)\)/);
  assert.match(js,/currentApp===appKey/);
  assert.match(js,/document\.visibilityState==='visible'/);
- assert.match(js,/if\(playingKey\)\{updateTime\(\);return\}/);
+ assert.match(js,/if\(secondsRemaining===0&&!playingKey\)next\(1\)/);
  assert.match(html,/projection-v2-overtake\.css\?v=20261104-v1/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-depassements-v5/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-40s-double-cycle-v1/);
 });
 test('Jeu sans score : pas de colonne fantôme, état vide spécifique à l’application',()=>{
  assert.match(js,/people\.length\?splitProjectedRanking\(people,multiple\):\[\]/);
@@ -51,7 +59,7 @@ test('Projection V2 live : 14 élèves maximum, classement propre aux jeux, scor
  assert.match(js,/avatarGlyph,avatarColor/);
  assert.match(js,/Niveau /);
  assert.match(js,/p\.trophies/);
- assert.match(js,/secondsRemaining=options\.rotationSeconds/);
+ assert.match(js,/currentApp=a\.key;startCycle\(\);render\(\)/);
  assert.match(js,/const a=enabled\(\)/);
  assert.match(js,/a\.key===currentApp/);
 });
@@ -95,8 +103,8 @@ test('Projection V2 live : reset de la seule application via mot de passe masqu�
  assert.match(html,/id="reset-password" type="password"/);
  assert.match(js,/teacher-reset-score'/);
  assert.match(js,/appKey:pendingReset,password/);
- assert.match(js,/rotationSeconds:30/);
- assert.match(js,/if\(firstDisplay\)secondsRemaining=options\.rotationSeconds/);
+ assert.match(js,/rotationSeconds:ROTATION_SECONDS/);
+ assert.match(js,/if\(firstDisplay\)startCycle\(\)/);
  assert.match(js,/reset\.disabled=!options\.scoreApps\.includes\(app\.key\)/);
  assert.match(js,/classLabel/);
  assert.match(js,/reset-password/);
@@ -109,4 +117,27 @@ test('Projection V2 live : déconnexion masque les résultats et module JS valid
  assert.match(js,/window\.addEventListener\('pagehide'/);
  const c=spawnSync(process.execPath,['--check','--input-type=module'],{input:js,encoding:'utf8'});
  assert.equal(c.status,0,c.stderr);
+});
+
+
+test('Projection : commandes en bandeau, notes retirées et minuterie de MAJ réelle',()=>{
+ const header=html.split('</header>')[0],aside=html.split('<aside class="left-col"')[1]?.split('</aside>')[0]||'';
+ assert.match(header,/class="header-tools"/);
+ assert.match(header,/id="load-real"/);
+ assert.match(header,/id="projection-theme"/);
+ assert.match(header,/id="projection-refresh-countdown"/);
+ assert.doesNotMatch(aside,/id="load-real"|id="projection-theme"|id="percentage-note"/);
+ assert.doesNotMatch(html,/PROJECTION CONNECTÉE · ACCÈS PROFESSEUR|id="projection-clock"/);
+ assert.doesNotMatch(js,/Global = exercices commencés des applications cochées/);
+ assert.match(js,/MAJ dans /);
+ assert.match(js,/MAJ suspendue/);
+ assert.match(js,/function resumeRotation\(\)/);
+ assert.match(js,/setInterval\(tickProjection,1000\)/);
+});
+test('Podium : points colorés sans capsule',()=>{
+ const css=readFileSync(new URL('../projection-v2-avatar.css',import.meta.url),'utf8');
+ assert.match(css,/\.entry:is\(\.rank-1,\.rank-2,\.rank-3\) \.points\{/);
+ assert.match(css,/background:transparent!important/);
+ assert.match(css,/border:0!important/);
+ assert.doesNotMatch(css,/background:#203348/);
 });

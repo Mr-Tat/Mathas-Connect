@@ -69,7 +69,7 @@ test('le laboratoire professeur affiche les mêmes démos après contrôle et co
 
 test('le guide explique l’essai sans XP, puis le pilote Connect authentifié',()=>{
   const guide=read('docs/integrations/README.md');
-  assert.match(guide,/Concevoir une seule version finale/);
+  assert.match(guide,/court sas de recette authentifiée du même candidat/);
   assert.match(guide,/Démonstration visuelle ou de moteur, isolée/);
   assert.match(guide,/Pilote authentifié Connect/);
   assert.match(guide,/les URL GitHub Pages|Les URL GitHub Pages/);
