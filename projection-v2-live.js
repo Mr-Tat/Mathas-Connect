@@ -205,6 +205,7 @@ function paintRanking(appKey,people){
    const points=document.createElement('span');points.className='points';
    points.textContent=Number.isFinite(p.score)?p.score+' pts':'—';
    const minor=document.createElement('div');minor.className='minor';
+   minor.setAttribute('aria-label','Niveau '+(p.level??'non renseigné')+', '+(p.trophies??0)+' trophées');
    const levelLabel=document.createElement('span');levelLabel.className='meta-label';
    levelLabel.textContent='Niv.';
    const levelValue=document.createElement('strong');levelValue.className='meta-value';
