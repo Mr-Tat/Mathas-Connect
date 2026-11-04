@@ -1,10 +1,12 @@
 <!doctype html><html lang="fr"><head>
 <link rel="icon" type="image/png" href="../../assets/brand/favicon.png"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Math’as · Multiplication écrite simple</title><style>body{font-family:system-ui;background:#0c2235;color:white;margin:0;padding:25px}#loading{max-width:620px;margin:12vh auto;padding:25px;border:1px solid #628ba7;border-radius:16px}a{color:#8ce7fc}</style></head><body><main id="loading"><h1>Math’as · Multiplication écrite simple</h1><p id="message">Chargement du jeu…</p><p><a href="https://mr-tat.github.io/Mathas-Connect/">Retour aux jeux</a></p></main><script type="module">
+import {installMultiplicationSchoolUi} from './school-ui.mjs';
+import {createCertifiedMultiplicationClassic} from './certified-classic.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM',APP='multiplication-ecrite-simple';
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
-const free=!teacherPlayer&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,multiplierLock=null,studentName='',connectionCheckRequired=false,consent=null;
+const free=!teacherPlayer&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,multiplierLock=null,studentName='',connectionCheckRequired=false;
 const status=s=>document.getElementById('message').textContent=s;
 const originalPromise=fetch('./game-original.html').then(r=>{if(!r.ok)throw Error('Copie du jeu non disponible');return r.text()});
 // Un visiteur sans profil approuvé ouvre directement le jeu classique.
@@ -68,7 +70,26 @@ function apply(state){
  const hard={};(state.hard||[]).forEach((v,i)=>{if(Number.isInteger(v))hard[String(i+1)]=v});put('multi1_hard_sudden_v1',hard);
  const five={};(state.hardThree||[]).forEach((v,i)=>{if(Number.isInteger(v))five[String(i+1)]=v});put('multi1_hard_three_v1',five);
  put('mathas_progression_multiplication_simple_v1',state.progress||{});
- put('mathas_points_v1_multiplication-simple',{version:1,day:new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels'}).format(new Date()),top:[],bestOne:state.bestPoints==null?null:{points:state.bestPoints},bestThree:(state.topThree||[]).map(points=>({points}))});
+ // Le moteur natif n'affiche le Top du jour que si `top` est renseigné.
+ // Utiliser exclusivement les points conservés par Connect, jamais un score libre.
+ const day=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels'}).format(new Date());
+ const daily=state.todayBest?.day===day&&Number.isSafeInteger(state.todayBest?.points)
+  ?state.todayBest.points:null;
+ const records=[...(Array.isArray(state.topThree)?state.topThree:[]),
+  ...(Array.isArray(state.recent)?state.recent:[])].filter(x=>
+   x&&Number.isSafeInteger(x.points)&&x.points>=0);
+ if(Number.isSafeInteger(state.bestPoints)&&state.bestPoints>=0
+   &&!records.some(x=>x.points===state.bestPoints))
+  records.push({points:state.bestPoints,at:'',label:'Meilleur Connect'});
+ records.sort((a,b)=>b.points-a.points||String(b.at||'').localeCompare(String(a.at||'')));
+ const distinct=records.filter((x,i,items)=>items.findIndex(y=>
+  x.eventId&&y.eventId?x.eventId===y.eventId:
+   x.points===y.points&&String(x.at||'')===String(y.at||'')&&String(x.label||'')===String(y.label||''))===i);
+ put('mathas_points_v1_multiplication-simple',{version:1,day,
+  top:daily===null?[]:[{points:daily,at:day,label:'Meilleur certifié du jour'}],
+  bestOne:state.bestPoints==null?null:{points:state.bestPoints},
+  bestThree:distinct.slice(0,3)});
+
 }
 function clearConnectedScoreCache(){
  for(const name of ['multi1_classic_v1','multi1_sudden_v1','multi1_hard_sudden_v1','multi1_hard_three_v1','multi1_last_work',
@@ -113,8 +134,15 @@ let html=original.replaceAll('./logo-m.png','https://mr-tat.github.io/Mathas-Con
 html=html.replace('<head>','<head>'+scopedBootstrap+multiplierBootstrap).replace('</body>',bridge+'</body>');
 // The child frame uses the same origin and isolated storage keys. No public classic game is changed.
 const iframe=document.createElement('iframe');iframe.title='Multiplication écrite simple V7.0.0';iframe.style.cssText='border:0;width:100%;height:calc(100dvh - var(--ce-toolbar-height,46px));display:block';iframe.setAttribute('allow','fullscreen');
+// Présentation additionnelle du moteur natif sans muter ses points ni reports.
+function applySchoolUi(){
+ try{installMultiplicationSchoolUi(iframe.contentDocument,{connected:mode==='connected',xp:lastXp,rewards:initial?.rewards});installNativeCertifiedProof()}
+ catch(error){console.warn('Affichage scolaire multiplication indisponible',error)}
+}
+iframe.addEventListener('load',applySchoolUi);
 // XP Connect : overlay non bloquant et consultation permanente des jalons.
 let lastXp=null,xpUiVersion=0,xpVisualQueue=Promise.resolve(),xpVisualPending=0;
+let certifiedClassic=null,certifiedConsent=null;
 function showEarnedXp(value){
  const label=document.getElementById('xp-earned-total');
  if(label&&Number.isFinite(Number(value)))label.textContent='🏆 XP acquis : '+Math.max(0,Math.round(Number(value)));
@@ -253,7 +281,7 @@ async function loadXp(){
  const readVersion=xpUiVersion;
  const auth=(await cloud.auth.getSession()).data.session;if(!auth)return null;
  const res=await fetch(URL+'/functions/v1/connect-results',{method:'POST',headers:{apikey:KEY,authorization:'Bearer '+auth.access_token,'content-type':'application/json'},body:JSON.stringify({action:'student-xp',classId,appKey:APP})});
- const data=await res.json();if(res.ok&&data.ok){lastXp=data;if(xpUiVersion===readVersion&&xpVisualPending===0){showEarnedXp(data.appXp);renderXpMeter(data.total,data.level,true)}return data}return null;
+ const data=await res.json();if(res.ok&&data.ok){lastXp=data;applySchoolUi();if(xpUiVersion===readVersion&&xpVisualPending===0){showEarnedXp(data.appXp);renderXpMeter(data.total,data.level,true)}return data}return null;
 }
 async function toggleXpDetails(){
  let panel=document.getElementById('xp-details');
@@ -278,6 +306,12 @@ const saveQueue=q=>{if(q.length>1000)throw Error('File de synchronisation satur�
 let draining=false, syncWarning='';
 function showSync(){const v=document.getElementById('ce-sync');if(v){v.textContent=mode==='connected'?(syncWarning|| (readQueue().length?'En attente : '+readQueue().length:(!navigator.onLine?'Hors ligne':'Synchronisé'))):'';v.title=syncWarning||''}}
 async function drain(){
+ // Never resend pre-certification game-record messages as official school XP.
+ // Historical pending entries are kept intact for audit, never submitted.
+ if(mode==='connected'){
+  if(readQueue().length)syncWarning='Anciens résultats non certifiés conservés : aucun XP envoyé.';
+  showSync();return;
+ }
  if(draining||mode!=='connected'||!cloud)return;
  draining=true;
  try{
@@ -306,20 +340,10 @@ window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='v
 window.MathasPilotBridge={mode,openTeacherParcours:()=>{
  window.open('https://mr-tat.github.io/Mathas-Connect/index.html?portail=prof&profClass='+encodeURIComponent(classId),'_blank','noopener');
 },completed:async item=>{
- if(mode!=='connected'||!cloud)return;
- const label=item.label||'',match=label.match(/(?:Niveau|NIV|Hard)\s*([123])/i);if(!match)return;
- const level=Number(match[1]),hard=/HARD/i.test(label),sudden=/Mort subite/i.test(label);
- const scoreText=String(item.score||'');const result=scoreText.match(/^(\d+)(?:\s*[/]\s*(\d+))?$/);if(!result)return;
- const score=Number(result[1]),total=result[2]?Number(result[2]):null;
- const hardChallenge=hard&&!sudden&&total===5;
- if(!sudden&&!hardChallenge&&![4,10,20].includes(total))return;
- const modeKey=hardChallenge?'hard-challenge':hard?'hard':sudden?'sudden':'classic';
- const points=hardChallenge?0:Math.max(0,Math.round(window.MathasPilotBridge.points(item)));
- const eventId=crypto.randomUUID();
- const body={action:'game-record',classId,appKey:APP,eventId,expectedRevision:revision,expectedResetEpoch:resetEpoch,mode:modeKey,level,score,total:hardChallenge?5:sudden?null:total,points};
- const awards=currentRewards();if(awards?.version===3)body.rewards=awards;
- try{const pending=readQueue();pending.push(body);saveQueue(pending);syncWarning='';showSync();consent?.offer(eventId);await drain()}catch(error){syncWarning='ATTENTION : sauvegarde locale impossible. Préviens ton professeur.';showSync();console.error('Résultat non mis en attente',error)}
-},points:item=>{const m=String(item.score||'').match(/^(\d+)(?:\s*[/]\s*(\d+))?$/);if(!m)return 0;const hard=/HARD/i.test(item.label),sudden=/Mort subite/i.test(item.label),n=Number(m[1]),total=m[2]?Number(m[2]):0;const level=Number((String(item.label).match(/(?:Niveau|NIV|Hard)\s*([123])/i)||[])[1]||1);const ml=[1,1.2,1.4,1.6,1.8,2][hard?level+2:level-1],mf=sudden?1.6:total===20?1.6:total===10?1.3:1;let weighted=n;if(sudden){weighted=0;for(let i=0;i<n;i++)weighted+=Math.min(4,Math.pow(1.035,i))}return 5*ml*mf*weighted*(item.allTables?1.15:1)}};
+  // Browser/native results are practice only. Awarding requires a
+  // server-issued arithmetic challenge and atomic mathematical receipt.
+  return;
+ },points:item=>{const m=String(item.score||'').match(/^(\d+)(?:\s*[/]\s*(\d+))?$/);if(!m)return 0;const hard=/HARD/i.test(item.label),sudden=/Mort subite/i.test(item.label),n=Number(m[1]),total=m[2]?Number(m[2]):0;const level=Number((String(item.label).match(/(?:Niveau|NIV|Hard)\s*([123])/i)||[])[1]||1);const ml=[1,1.2,1.4,1.6,1.8,2][hard?level+2:level-1],mf=sudden?1.6:total===20?1.6:total===10?1.3:1;let weighted=n;if(sudden){weighted=0;for(let i=0;i<n;i++)weighted+=Math.min(4,Math.pow(1.035,i))}return 5*ml*mf*weighted*(item.allTables?1.15:1)}};
 iframe.srcdoc=html;
 const toolbar=document.createElement('header');toolbar.id='ce-toolbar';
 toolbar.style.cssText='box-sizing:border-box;width:100%;min-height:46px;height:var(--ce-toolbar-height,46px);padding:0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#102f46;color:#fff;font:600 13px system-ui;border-bottom:1px solid #286180';
@@ -356,13 +380,115 @@ if(mode==='connected'){
  toolbar.append(globalInfo,appInfo);
 }else toolbar.append(hubLink);
 document.body.replaceChildren(toolbar,iframe);
- if(mode==='connected'&&cloud&&session) {
-   consent=createProjectionConsent({classId,appKey:APP,studentKey:session.user.id,getToken:async()=>{
-     const current=(await cloud.auth.getSession()).data.session;
-     if(current?.user?.id!==session.user.id||!current?.access_token)throw Error('connect_session_changed');
-     return current.access_token;
-   }});
+async function proofCall(action,payload){
+ if(mode!=='connected'||!cloud||!session)throw Error('Session Connect requise');
+ const current=(await cloud.auth.getSession()).data.session;
+ if(!current?.access_token||current.user?.id!==session.user.id)throw Error('Session changée');
+ const res=await fetch(URL+'/functions/v1/connect-multiplication-school',{
+  method:'POST',headers:{apikey:KEY,authorization:'Bearer '+current.access_token,
+  'content-type':'application/json'},body:JSON.stringify({action,classId,...payload})});
+ const data=await res.json().catch(()=>null);
+ if(!res.ok||data?.ok!==true)throw Error(data?.error||'proof_unavailable');
+ return data;
+}
+function installNativeCertifiedProof(){
+ const doc=iframe.contentDocument;
+ if(mode!=='connected'||!certifiedClassic||!doc?.querySelector('#menuScreen')
+  )return;
+ const sudden=doc.getElementById('startSudden');
+ if(sudden&&!doc.getElementById('mathasMultiThreeLives')){
+  const button=doc.createElement('button');button.type='button';
+  button.id='mathasMultiThreeLives';button.className=sudden.className;
+  button.textContent='❤️ 3 vies';button.title='Trois erreurs possibles · preuve Connect';
+  sudden.insertAdjacentElement('afterend',button);
  }
+ for(const card of doc.querySelectorAll('#hardMenu .hard-level-card')){
+  const native=card.querySelector('.hard-sudden');
+  if(!native||card.querySelector('.mathas-multi-hard-three-lives'))continue;
+  const button=doc.createElement('button');button.type='button';
+  button.className='hard-sudden mathas-multi-hard-three-lives';
+  button.textContent='❤️ 3 vies';button.disabled=native.disabled;
+  native.insertAdjacentElement('afterend',button);
+ }
+ if(doc.__mathasMultiCertifiedRouter)return;
+ doc.__mathasMultiCertifiedRouter=true;
+ doc.addEventListener('click',event=>{
+  if(!event.isTrusted)return;
+  const btn=event.target?.closest?.('button');
+  if(!btn||btn.disabled)return;
+  let choice=null;
+  if(btn.matches('.classic-count-btn[data-count]')||btn.id==='startClassic'){
+   const total=btn.matches('.classic-count-btn[data-count]')
+    ?Number(btn.dataset.count)
+    :Number(doc.querySelector('.classic-count-btn.active')?.dataset.count||10);
+   choice={mode:'classic',total,level:Number(doc.getElementById('classicLevel')?.value)};
+  }else if(btn.id==='startSudden'||btn.id==='mathasMultiThreeLives'){
+   choice={mode:btn.id==='startSudden'?'sudden':'three-lives',
+    level:Number(doc.getElementById('suddenLevel')?.value)};
+  }else if(btn.matches('#hardMenu .hard-sudden')){
+   const level=Number(btn.closest('.hard-level-card')?.querySelector('h3')?.textContent.match(/NIV\s*([123])/i)?.[1]);
+   choice={mode:btn.classList.contains('mathas-multi-hard-three-lives')?'hard-three-lives':'hard-sudden',
+    level};
+  }
+  if(!choice||![1,2,3].includes(choice.level)
+   ||(choice.mode==='classic'&&![4,10,20].includes(choice.total)))return;
+  event.preventDefault();event.stopImmediatePropagation();
+  const selected=[...doc.querySelectorAll('#multiplierPicker [data-mult].active')]
+   .map(x=>Number(x.dataset.mult)).filter(x=>Number.isInteger(x)&&x>=2&&x<=9);
+  const multipliers=choice.mode.startsWith('hard-')?[2,3,4,5,6,7,8,9]
+   :selected.length?selected:Array.isArray(multiplierLock)?multiplierLock:[2,3,4,5,6,7,8,9];
+  const method=doc.querySelector('input[name="carryMethod"]:checked')?.value||'top';
+  const tensFirst=!!doc.getElementById('tensFirstToggle')?.checked;
+  void certifiedClassic.start({...choice,multipliers,method,tensFirst});
+ },true);
+}
+if(mode==='connected'){
+ certifiedConsent=createProjectionConsent({classId,appKey:APP,studentKey:session.user.id,
+  getToken:async()=>{
+   const current=(await cloud.auth.getSession()).data.session;
+   if(!current?.access_token||current.user?.id!==session.user.id)throw Error('connect_session_changed');
+   return current.access_token;
+  }});
+ certifiedClassic=createCertifiedMultiplicationClassic({
+  documentRef:document,storage:localStorage,
+  getContext:()=>({connected:mode==='connected',classId,studentId:session.user.id}),
+  call:proofCall,refresh:async()=>{
+   const xp=await loadXp();
+   const auth=(await cloud.auth.getSession()).data.session;
+   if(!auth?.access_token||auth.user?.id!==session.user.id)throw Error('Session Connect remplacée');
+   const response=await fetch(URL+'/functions/v1/connect-results',{
+    method:'POST',
+    headers:{apikey:KEY,authorization:'Bearer '+auth.access_token,'content-type':'application/json'},
+    body:JSON.stringify({action:'student-load',classId,appKey:APP})
+   });
+   const updated=await response.json().catch(()=>null);
+   if(!response.ok||updated?.ok!==true)throw Error('Résultats Connect indisponibles');
+   revision=updated.revision;resetEpoch=updated.resetEpoch??resetEpoch;initial=updated.state;
+   apply(initial);
+   if(initial?.rewards)localStorage.setItem('mathas_trophies_v3_multiplication-simple',JSON.stringify(initial.rewards));
+   iframe.contentWindow?.MathasPoints?.render?.();
+   applySchoolUi();
+   return xp;
+  },
+  onTensFirstChanged:enabled=>{
+   const home=iframe.contentDocument?.getElementById('tensFirstToggle');
+   if(!home)return;
+   home.checked=!!enabled;
+   home.dispatchEvent(new iframe.contentWindow.Event('change',{bubbles:true}));
+   applySchoolUi();
+  },
+  onVerified:receipt=>{
+   const xp=receipt.ack?.xp;
+   // Animation uniquement après ACK mathématique, jamais pour un résultat déjà enregistré.
+   if(receipt.ack?.duplicate!==true&&Number.isSafeInteger(xp?.delta)&&xp.delta>0)
+    queueXpGain(xp);
+   certifiedConsent?.offer(receipt.eventId);
+  },
+  notify:text=>{const sync=document.getElementById('ce-sync');if(sync)sync.title=text}
+ });
+}
+// HARD et les boutons natifs peuvent être reconstruits après chargement.
+window.setInterval(()=>{if(document.visibilityState==='visible')applySchoolUi()},1100);
 document.body.style.cssText='margin:0;padding:0;background:#071e2a;overflow:hidden';
 
 showSync();if(mode==='connected'){loadXp().catch(()=>{xpEarned.textContent='XP acquis : indisponible'});drain();}

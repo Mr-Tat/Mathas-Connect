@@ -137,7 +137,7 @@ Deno.serve(async req=>{
   'a9195199-0a28-4e86-99ce-47b36dd6e646'
  ]);
  if(b.action==='game-record'&&proofOnlyAddClasses.has(b.classId)
-    &&(b.appKey===app||b.appKey===addMulti))
+    &&(b.appKey===app||b.appKey===addMulti||b.appKey===mul))
    return deny('server_proof_required',403);
  if(b.appKey===mixed&&!MIXED_SERVER_READY)return deny('integration_not_ready',403);
  if(b.appKey===mixed&&!mixedClassAllowed(b.classId))return deny('integration_not_open_for_class',403);

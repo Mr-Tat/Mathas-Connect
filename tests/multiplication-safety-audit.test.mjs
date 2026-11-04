@@ -19,13 +19,17 @@ test('The pedagogical guide and carry selectors are preserved',()=>{
  assert.match(game,/#hardOperationCard/);
  assert.match(game,/\.side-carry-input:not\(:disabled\)/);
 });
-test('Results include an event ID and a reset epoch; queue is durable locally',()=>{
- assert.match(launcher,/const eventId=crypto\.randomUUID\(\)/);
- assert.match(launcher,/expectedResetEpoch:resetEpoch/);
- assert.match(launcher,/localStorage\.setItem\(queueKey,JSON\.stringify\(q\)\)/);
- assert.match(launcher,/e\.expectedResetEpoch!==resetEpoch/);
- assert.match(launcher,/stale_reset_epoch/);
- assert.match(launcher,/revision_conflict/);
+test('Certified result uses an issued session ID and a durable per-student queue',()=>{
+ const certified=read('../apps/multiplication-simple/certified-classic.mjs');
+ const edge=read('../supabase/functions/connect-multiplication-school/index.ts');
+ assert.match(certified,/sessionId:challenge\.sessionId/);
+ assert.match(certified,/resetEpoch/);
+ assert.match(certified,/storage\.setItem\(key,JSON\.stringify/);
+ assert.match(certified,/createCertifiedMultiplicationClassic/);
+ assert.match(launcher,/finish-classic-v1|createCertifiedMultiplicationClassic/);
+ assert.match(edge,/stale_reset_epoch/);
+ assert.match(edge,/revision_conflict/);
+ assert.doesNotMatch(launcher,/action:'game-record'/);
 });
 test('Server accepts both apps but keeps each state app-specific',()=>{
  assert.match(backend,/mul='multiplication-ecrite-simple'/);
@@ -45,11 +49,14 @@ test('Known follow-up risks remain explicitly visible until resolved',()=>{
  assert.match(launcher,/if\(q\.length>1000\)throw Error/);
 });
 
-test('Synchronization failures are shown and do not silently stop the queue',()=>{
- assert.match(launcher,/syncWarning='Synchronisation interrompue/);
- assert.match(launcher,/syncWarning='ATTENTION : sauvegarde locale impossible/);
- assert.match(launcher,/catch\(error\)\{syncWarning=/);
- assert.match(launcher,/window\.addEventListener\('online',\(\)=>/);
+test('Certified failures keep answers for an explicit retry, without client-generated XP',()=>{
+ const certified=read('../apps/multiplication-simple/certified-classic.mjs');
+ assert.match(certified,/queue\?\.save\(run,answers\)/);
+ assert.match(certified,/Preuve conservée\. Clique/);
+ assert.match(certified,/run\.finished=true/);
+ assert.match(certified,/\?\s*'finish-classic-v1'\s*:\s*'finish-extended-v1'/);
+ assert.match(launcher,/Anciens résultats non certifiés conservés/);
+ assert.match(launcher,/student-load/);
 });
 
 test('Multiplication notifies Connect at most once, including page exit',()=>{

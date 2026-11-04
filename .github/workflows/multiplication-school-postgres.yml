@@ -1,0 +1,62 @@
+name: Multiplication school PostgreSQL proof (disposable)
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/2026110411*.sql'
+      - 'supabase/migrations/20261104130000_mul_optional_carries_native_v1.sql'
+      - 'supabase/migrations/20261104131000_school_mul_unlocked_gold_v1.sql'
+      - 'tests/postgres/multiplication-school-fixture.sql'
+      - 'tests/postgres/multiplication-school-certified.test.sql'
+      - 'tests/postgres/multiplication-school-optional-carries.test.sql'
+      - 'supabase/functions/connect-multiplication-school/**'
+      - '.github/workflows/multiplication-school-postgres.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  grade-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mathas_mul_disposable
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d mathas_mul_disposable"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/mathas_mul_disposable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Init fictional Connect SQL fixture
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-fixed-ops-setup.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-fixed-trophies-fixture.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-school-class-fixture.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "INSERT INTO public.connect_classes(id) VALUES ('4bf3400d-a315-4ea4-a2f3-afaca24dc9b9')"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE TABLE public.connect_multiplier_locks(class_id uuid,scope_key text,multipliers integer[])"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/multiplication-school-fixture.sql
+      - name: Add school proof ledgers
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120000_school_certified_additions_tables.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103130000_school_extended_sessions.sql
+      - name: Install certified Multiplication RPCs, level locks and optional carries
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261104110000_school_multiplication_classic_certified_v1.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261104110100_mul_required_tables_school_fix_v1.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261104110200_school_mul_extended_certified_v1.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261104110300_mul_server_level_unlock_guards_v1.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261104130000_mul_optional_carries_native_v1.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261104131000_school_mul_unlocked_gold_v1.sql
+      - name: Test 9 classic, 4 extended, HARD, replay XP and ACL
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/multiplication-school-optional-carries.test.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/multiplication-school-certified.test.sql

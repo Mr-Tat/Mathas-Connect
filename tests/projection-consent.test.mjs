@@ -16,14 +16,16 @@ test('Consentement : question à chaque résultat, refus sans écriture et confi
  const result=spawnSync(process.execPath,['--check','--input-type=module'],{input:s,encoding:'utf8'});
  assert.equal(result.status,0,result.stderr);
 });
-test('Consentement : les cinq jeux connectés déclenchent la question sur eventId lié à la sauvegarde',()=>{
+test('Consentement : multiplication ne partage que les preuves certifiées ; les autres jeux gardent leur contrat',()=>{
  const add=get('apps/addition-plusieurs/index.html'),mixed=get('apps/calculs-melanges/index.html');
  const multi=get('apps/multiplication-simple/index.html'),sub=get('apps/soustraction-simple/index.html');
  const addPilot=get('apps/addition-plusieurs/connect-pilot.mjs');
  const mixedPilot=get('apps/calculs-melanges/connect-pilot.mjs');
  assert.match(add,/consent\?\.offer\(reply\.eventId\)/);
  assert.match(mixed,/consent\?\.offer\(reply\.eventId\)/);
- assert.match(multi,/consent\?\.offer\(eventId\)/);
+ assert.match(multi,/certifiedConsent\?\.offer\(receipt\.eventId\)/);
+ assert.doesNotMatch(multi,/consent\?\.offer\(eventId\)/,
+  'Un score natif multiplication auto-déclaré ne suffit pas pour la projection');
  assert.match(sub,/consent\?\.offer\(eventId\)/);
  assert.match(addPilot,/onStatus\('pending',\{eventId:record\.eventId\}\)/);
  assert.match(mixedPilot,/onStatus\('pending',\{eventId:e\.eventId\}\)/);
