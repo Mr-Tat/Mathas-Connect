@@ -433,7 +433,24 @@ if(mode==='connected'){
  certifiedClassic=createCertifiedMultiplicationClassic({
   documentRef:document,storage:localStorage,
   getContext:()=>({connected:mode==='connected',classId,studentId:session.user.id}),
-  call:proofCall,refresh:loadXp,
+  call:proofCall,refresh:async()=>{
+   const xp=await loadXp();
+   const auth=(await cloud.auth.getSession()).data.session;
+   if(!auth?.access_token||auth.user?.id!==session.user.id)throw Error('Session Connect remplacée');
+   const response=await fetch(URL+'/functions/v1/connect-results',{
+    method:'POST',
+    headers:{apikey:KEY,authorization:'Bearer '+auth.access_token,'content-type':'application/json'},
+    body:JSON.stringify({action:'student-load',classId,appKey:APP})
+   });
+   const updated=await response.json().catch(()=>null);
+   if(!response.ok||updated?.ok!==true)throw Error('Résultats Connect indisponibles');
+   revision=updated.revision;resetEpoch=updated.resetEpoch??resetEpoch;initial=updated.state;
+   apply(initial);
+   if(initial?.rewards)localStorage.setItem('mathas_trophies_v3_multiplication-simple',JSON.stringify(initial.rewards));
+   iframe.contentWindow?.MathasPoints?.render?.();
+   applySchoolUi();
+   return xp;
+  },
   onVerified:receipt=>{certifiedConsent?.offer(receipt.eventId)},
   notify:text=>{const sync=document.getElementById('ce-sync');if(sync)sync.title=text}
  });
