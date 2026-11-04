@@ -45,4 +45,5 @@ END $fn$;
 -- Dedicated second fictional pupil: preserves isolation from the optional-carry fixture.
 INSERT INTO public.connect_students(id) VALUES ('22222222-2222-4222-8222-222222222222');
 INSERT INTO public.connect_enrollments(student_id,class_id) VALUES
- ('22222222-2222-4222-8222-222222222222','4bf3400d-a315-4ea4-a2f3-afaca24dc9b9');
+ ('22222222-2222-4222-8222-222222222222','4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'),
+ ('22222222-2222-4222-8222-222222222222','8fe170fa-9e8f-4e80-885a-b0ba68026f64');
