@@ -18,7 +18,7 @@ test('Projection V2 live : actualisation des scores toutes les 20 s, uniquement 
  assert.match(js,/const REFRESH_INTERVAL_MS=20000;/);
  assert.match(js,/setInterval\(\(\)=>\{if\(hasLoaded&&connected&&document\.visibilityState==='visible'&&!\$\('settings'\)\.open\)refresh\(\)\},REFRESH_INTERVAL_MS\);/);
  assert.match(js,/rotationSeconds:30/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-exploits-confirmes-v4/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-depassements-v5/);
 });
 test('Projection V2 : remontées par application, 550 ms par passage, arrivée étoilée',()=>{
  assert.match(js,/createOvertakeTracker/);
