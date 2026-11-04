@@ -1,4 +1,4 @@
-/* Projection V2 : avatars encadrés, scores de podium contrastés et lignes compactes.
+/* Projection V2 : avatars encadrés, points de podium sans cartouche et lignes compactes.
    Présentation uniquement : aucun changement aux scores, rangs ni autorisations. */
 .entry .player-label{
  display:inline-flex;align-items:center;gap:6px;flex:0 1 auto;min-width:0;overflow:hidden;
@@ -59,14 +59,19 @@ html[data-proj-da="papier"] .entry .projection-avatar.transparent{border-color:#
  .ranking-col .entry{height:auto;min-height:56px;overflow:hidden}
 }
 
-/* Sur or, argent et bronze, les points ont un cartouche foncé très lisible.
-   Le score reste accolé au prénom sans changer sa valeur. */
+/* Les points du podium restent du TEXTE, sans cartouche.
+   Encre contrastée sur les fonds clairs or, argent et bronze. */
 .entry:is(.rank-1,.rank-2,.rank-3) .points{
- display:inline-block;padding:3px 9px;line-height:1.2;
- background:#203348;color:#fff3d2;
- border:1px solid #cbd7e3;border-radius:7px;
- box-shadow:0 1px 3px #13202e40;
+ display:inline;padding:0;line-height:inherit;
+ background:transparent!important;border:0!important;border-radius:0;
+ box-shadow:none!important;
 }
-html[data-proj-da] .entry:is(.rank-1,.rank-2,.rank-3) .primary .points{
- color:#fff3d2!important;text-shadow:none!important;
+html[data-proj-da] .entry.rank-1 .primary .points{
+ color:#754900!important;text-shadow:0 1px 0 #fff8!important;
+}
+html[data-proj-da] .entry.rank-2 .primary .points{
+ color:#1c4e70!important;text-shadow:0 1px 0 #fff8!important;
+}
+html[data-proj-da] .entry.rank-3 .primary .points{
+ color:#753823!important;text-shadow:0 1px 0 #fff8!important;
 }

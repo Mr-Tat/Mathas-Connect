@@ -13,8 +13,6 @@ const publishable='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const $=id=>document.getElementById(id);
 const REFRESH_INTERVAL_MS=20000;
 const clockFormatter=new Intl.DateTimeFormat('fr-BE',{hour:'2-digit',minute:'2-digit'});
-function updateClock(){const clock=$('projection-clock');if(clock)clock.textContent=clockFormatter.format(new Date())}
-updateClock();setInterval(updateClock,10000);
 const apps=[
  {key:'addition-ecrite-simple',title:'Addition écrite'},
  {key:'multiplication-ecrite-simple',title:'Multiplication écrite'},
@@ -26,6 +24,7 @@ const allKeys=apps.map(a=>a.key);
 let client=null,classesAvailable=[],data=null,wasPaused=false,paused=false;
 let hasLoaded=false,connected=false,optionsLoaded=false,pendingReset=null;
 let currentApp=allKeys[0],secondsRemaining=30,fetching=false,refreshTicket=0;
+let nextRefreshAt=Date.now()+REFRESH_INTERVAL_MS;
 const tracker=createOvertakeTracker(),localRises=new Map();
 let playingKey=null,animationEpoch=0;
 const scoreCompared=()=>options.comparisonDisplay.filter(c=>c.score).map(c=>c.classId);
@@ -39,7 +38,11 @@ function cancelPlayback(){
 let options={scoreApps:[...allKeys],percentageApps:[...allKeys],comparisons:[],comparisonDisplay:[],rotationSeconds:30};
 const comparedIds=()=>options.comparisonDisplay.filter(v=>v.score||v.percentage).map(v=>v.classId);
 const currentComparison=id=>options.comparisonDisplay.find(v=>v.classId===id)||{classId:id,score:false,percentage:false};
-const note=message=>{$('live-status').textContent=message};
+const note=message=>{
+ const status=$('live-status');status.textContent=message;
+ status.classList.toggle('is-alert',
+  /erreur|refus|expir|nécessaire|indisponible|ne gères|saisis ton|ouvre cette page|clique d’abord/i.test(message));
+};
 const enabled=()=>apps.filter(a=>options.scoreApps.includes(a.key));
 function clearBoard(message){
  cancelPlayback();tracker.clear();localRises.clear();
@@ -117,6 +120,7 @@ async function refresh(){
   for(const id of ['settings-left'])$(id).disabled=false;
   render();
   note('Actualisé à '+clockFormatter.format(new Date()));
+  updateRefreshCountdown();
  }catch(error){
   if(ticket!==refreshTicket)return;
   const message=error?.message||'Données indisponibles';
@@ -318,9 +322,7 @@ function renderClasses(){
  for(const app of apps.filter(a=>options.percentageApps.includes(a.key))){
   root.append(makeSuccessRow(app.title,percentages?.apps?.[app.key]));
  }
- $('percentage-note').textContent=options.percentageApps.length
-  ?'Global = exercices commencés des applications cochées ; Mort subite exclue. « — » = mesure non disponible.'
-  :'Aucune application cochée en « % ».';
+
  let shown=0;
  for(const display of options.comparisonDisplay.filter(v=>v.percentage)){
   const c=data.classes.find(v=>v.classId===display.classId);
@@ -371,7 +373,24 @@ document.addEventListener('visibilitychange',()=>{
  if(document.visibilityState!=='visible')cancelPlayback();
  else if(hasLoaded){render()}
 });
-setInterval(()=>{if(hasLoaded&&connected&&document.visibilityState==='visible'&&!$('settings').open)refresh()},REFRESH_INTERVAL_MS);
+// Minuterie de l'actualisation (20 s), distincte de la rotation (30 s).
+function updateRefreshCountdown(){
+ const label=$('projection-refresh-countdown');
+ if(!connected||!hasLoaded){label.textContent='MAJ en attente';return}
+ if(document.visibilityState!=='visible'||$('settings').open){
+  label.textContent='MAJ suspendue';return;
+ }
+ const remaining=Math.max(0,Math.ceil((nextRefreshAt-Date.now())/1000));
+ label.textContent='MAJ dans '+String(Math.floor(remaining/60)).padStart(2,'0')+':'+
+  String(remaining%60).padStart(2,'0');
+}
+setInterval(updateRefreshCountdown,1000);
+setInterval(()=>{
+ nextRefreshAt=Date.now()+REFRESH_INTERVAL_MS;
+ if(hasLoaded&&connected&&document.visibilityState==='visible'&&!$('settings').open)refresh();
+ updateRefreshCountdown();
+},REFRESH_INTERVAL_MS);
+updateRefreshCountdown();
 const dialog=$('settings');
 function showSettings(){
  if(!hasLoaded)return note('Clique d’abord sur Afficher / Actualiser.');
