@@ -9,8 +9,8 @@
 }
 .entry .projection-avatar{
  display:inline-flex;align-items:center;justify-content:center;
- flex:0 0 26px;width:26px;height:26px;line-height:1;
- font-size:22px;font-weight:900;border-radius:7px;
+ flex:0 0 24px;width:24px;height:24px;line-height:1;
+ font-size:19px;font-weight:900;border-radius:7px;
  border:2px solid #b1cee5;color:var(--v-text,#f5faff);
  text-shadow:0 1px 2px #12203965;
 }
@@ -36,11 +36,11 @@ html[data-proj-da] .entry:is(.rank-1,.rank-2,.rank-3) .projection-avatar.transpa
 }
 @media(max-width:1000px){
  .entry .player-label{gap:5px}
- .entry .projection-avatar{flex-basis:24px;width:24px;height:24px;font-size:20px;border-radius:6px}
+ .entry .projection-avatar{flex-basis:24px;width:24px;height:24px;font-size:19px;border-radius:6px}
 }
 @media(max-width:690px){
  .ranking-list.single{max-width:100%}
- .entry .projection-avatar{flex-basis:25px;width:25px;height:25px;font-size:21px}
+ .entry .projection-avatar{flex-basis:24px;width:24px;height:24px;font-size:19px}
 }
 
 
@@ -66,12 +66,12 @@ html[data-proj-da="papier"] .entry .projection-avatar.transparent{border-color:#
  background:transparent!important;border:0!important;border-radius:0;
  box-shadow:none!important;
 }
-html[data-proj-da] .entry.rank-1 .primary .points{
+html[data-proj-da] .entry.rank-1 :is(.primary,.entry-details) .points{
  color:#754900!important;text-shadow:0 1px 0 #fff8!important;
 }
-html[data-proj-da] .entry.rank-2 .primary .points{
+html[data-proj-da] .entry.rank-2 :is(.primary,.entry-details) .points{
  color:#1c4e70!important;text-shadow:0 1px 0 #fff8!important;
 }
-html[data-proj-da] .entry.rank-3 .primary .points{
+html[data-proj-da] .entry.rank-3 :is(.primary,.entry-details) .points{
  color:#753823!important;text-shadow:0 1px 0 #fff8!important;
 }

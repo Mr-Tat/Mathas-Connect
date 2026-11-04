@@ -195,20 +195,32 @@ function paintRanking(appKey,people){
    row.className='entry rank-'+place;
    row.style.setProperty('--rank-progress',String((place-1)/15));
    const rank=document.createElement('span');rank.className='place';rank.textContent=String(place);
-   const detail=document.createElement('div');
+   const detail=document.createElement('div');detail.className='entry-details';
+   const avatar=projectedAvatar(p);
+   const copy=document.createElement('div');copy.className='entry-copy';
    const primary=document.createElement('div');primary.className='primary';
    const name=document.createElement('strong');name.textContent=p.name;
    const playerLabel=document.createElement('span');playerLabel.className='player-label';
-   playerLabel.append(projectedAvatar(p),name);
+   playerLabel.append(name);
    const points=document.createElement('span');points.className='points';
    points.textContent=Number.isFinite(p.score)?p.score+' pts':'—';
    const minor=document.createElement('div');minor.className='minor';
-   minor.append(document.createTextNode('Niveau '+(p.level??'—')+'   🏆 '+(p.trophies??0)));
+   minor.setAttribute('aria-label','Niveau '+(p.level??'non renseigné')+', '+(p.trophies??0)+' trophées');
+   const levelLabel=document.createElement('span');levelLabel.className='meta-label';
+   levelLabel.textContent='Niv.';
+   const levelValue=document.createElement('strong');levelValue.className='meta-value';
+   levelValue.textContent=String(p.level??'—');
+   const trophiesIcon=document.createElement('span');trophiesIcon.className='meta-trophy';
+   trophiesIcon.textContent='🏆';trophiesIcon.setAttribute('aria-label','Trophées');
+   const trophiesValue=document.createElement('strong');trophiesValue.className='meta-value';
+   trophiesValue.textContent=String(p.trophies??0);
+   minor.append(levelLabel,levelValue,trophiesIcon,trophiesValue);
    if(multiple){
     const classMark=document.createElement('span');classMark.className='class-mark';
     classMark.textContent=p.className;minor.append(classMark);
    }
-   primary.append(playerLabel,points);detail.append(primary,minor);
+   primary.append(playerLabel);copy.append(primary,minor);
+   detail.append(avatar,copy,points);
    row.replaceChildren(rank,detail);column.append(row);
   });
   fragment.append(column);
