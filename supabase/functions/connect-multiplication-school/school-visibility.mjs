@@ -9,11 +9,11 @@ export const MULTIPLICATION_SCHOOL_PRESETS=Object.freeze({
  '0d8ba828-59cc-468b-a4b8-7b2a1af10b88':'phase2b',
  'a9195199-0a28-4e86-99ce-47b36dd6e646':'2eco'
 });
-export function multiplicationSchoolPreset(classId){{
+export function multiplicationSchoolPreset(classId){
  return Object.hasOwn(MULTIPLICATION_SCHOOL_PRESETS,classId)
   ? MULTIPLICATION_SCHOOL_PRESETS[classId]:null;
 }
-export function mayStartMultiplicationSchoolProof(classId,visible){{
+export function mayStartMultiplicationSchoolProof(classId,visible){
  return classId===MULTIPLICATION_TEST_CLASS
   ||(multiplicationSchoolPreset(classId)!==null&&visible===true);
 }
