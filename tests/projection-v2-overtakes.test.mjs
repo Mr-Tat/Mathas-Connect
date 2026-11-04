@@ -77,3 +77,19 @@ test('Une animation achevée ne se rejoue pas au retour sur sa page',()=>{
  assert.equal(tracker.observe(changed()).reset,true);
  assert.equal(tracker.pending('soustraction-ecrite-simple'),0);
 });
+
+test('Une égalité ne fabrique pas une remontée spectaculaire fictive',()=>{
+ const before=snapshot('addition-ecrite-simple',[150,140,140,140,140,120]);
+ const challenger=before.rows.find(p=>p.id==='F');
+ challenger.name='Aardvark';
+ const after={...before,rows:before.rows.map(p=>({...p,
+  score:p.id==='F'?140:p.score})).sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name,'fr'))};
+ const moves=detectOvertakes(before,after);
+ assert.equal(moves.length,1);
+ assert.equal(moves[0].fromIndex,5);
+ assert.equal(moves[0].toIndex,1);
+ assert.equal(moves[0].fromRank,3);
+ assert.equal(moves[0].toRank,2);
+ assert.equal(moves[0].gained,1,'Il gagne un rang distinct, pas quatre rangs imaginaires');
+ assert.equal(moves[0].newScore,140);
+});
