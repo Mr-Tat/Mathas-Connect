@@ -25,6 +25,11 @@ async function serve(){
  await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
  return {server,url:'http://127.0.0.1:'+server.address().port};
 }
+const fakeExploitEvents=[
+ {appKey:'addition-ecrite-simple',type:'trophy',message:'Élève 1 gagne un nouveau trophée !',at:'2026-11-04T00:00:00Z'},
+ {appKey:'addition-ecrite-simple',type:'perfect',message:'Élève 2 réussit une série parfaite !',at:'2026-11-04T00:01:00Z'},
+ {appKey:'soustraction-ecrite-simple',type:'top',message:'Élève 3 réalise un score du Top 5 !',at:'2026-11-04T00:02:00Z'}
+];
 function fakeStudent(i){
  return {id:'fake-student-'+i,name:'Élève '+(i+1),level:4,trophies:i%4,
   avatar:i===0?{kind:'letter',value:'É',color:'transparent'}:
@@ -59,7 +64,7 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
      if(input.comparisons?.includes(B))classes.push({classId:B,name:'Phase 2 B',enrolled:11,students:Array.from({length:11},(_,i)=>fakeStudent(i+14)),
        options:null,scorePeriods:[],totals:[{appKey:'addition-ecrite-simple',bestSum:1234}],percentages:null});
      return route.fulfill({status:200,contentType:'application/json',
-      headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:true,classes})});
+      headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:true,classes,exploits:fakeExploitEvents,exploitsStatus:'available'})});
     }
     if(input.action==='teacher-save-options'){
      storedOptions=input.options;
@@ -85,6 +90,9 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   assert.equal(await page.locator('#ranking-list .entry').count(),0,'aucun élève lu sans clic');
   await page.locator('#load-real').click();
   await page.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===14);
+  assert.equal(await page.locator('#exploits .event').count(),2,'Deux exploits confirmés en addition');
+  assert.match(await page.locator('#exploits').textContent(),/nouveau trophée/);
+  assert.doesNotMatch(await page.locator('#exploits').textContent(),/Top 5/);
   assert.equal(await page.locator('.ranking-col').count(),2);
   assert.equal(await page.locator('.ranking-col').nth(0).locator('.entry').count(),7);
   assert.equal(await page.locator('.ranking-col').nth(1).locator('.entry').count(),7);
@@ -129,6 +137,8 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   // des élèves qui ont joué à l'addition ou à la multiplication.
   await page.locator('#app-tabs').getByRole('button',{name:'Soustraction écrite'}).click();
   assert.equal(await page.locator('#app-name').textContent(),'Soustraction écrite');
+  assert.match(await page.locator('#exploits').textContent(),/Top 5/);
+  assert.doesNotMatch(await page.locator('#exploits').textContent(),/nouveau trophée/);
   assert.equal(await page.locator('#ranking-list .entry').count(),0);
   assert.equal(await page.locator('#ranking-list .ranking-col').count(),0);
   assert.match(await page.locator('#ranking-list').evaluate(el=>getComputedStyle(el,'::after').content),
