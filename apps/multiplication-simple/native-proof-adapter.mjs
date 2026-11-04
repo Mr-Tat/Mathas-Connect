@@ -1,7 +1,7 @@
 // Adaptateur non destructif : toutes les grilles, saisies et animations restent
 // celles du moteur V7. Seuls les opérandes émis et les premiers essais sont
 // reliés à une preuve SQL. N'est injecté QUE dans une session Connect.
-const ENTRY=String.raw\`
+const ENTRY=String.raw`
   // Adaptateur scolaire injecté dans la fermeture du moteur natif.
   function mathasProofCapture(s){
     if(!proofFeed?.active||!s?.__schoolProofId||s.__schoolProofCaptured)return true;
@@ -84,7 +84,7 @@ const ENTRY=String.raw\`
     active:()=>!!proofFeed?.active,
     abandonView(){if(proofFeed){proofFeed.active=false;proofFeed=null}}
   });
-\`;
+`;
 export function injectNativeMultiplicationProof(html){
  if(typeof html!=='string')throw Error('native_game_missing');
  const changes=[
@@ -100,8 +100,8 @@ export function injectNativeMultiplicationProof(html){
    "    if(session.mode==='sudden'){\n      let newly=0;\n      for(const i of candidates){\n        if(!mathasProofCapture(states[i])){setFeedback('Sauvegarde de la preuve impossible. Réessaie.','bad');return}\n        if(ev[i].correct){"],
   ["        }else{\n          markErrors(i);\n          endSudden(i);\n          return\n        }\n      }\n      updateBar();",
    "        }else{\n          if(proofFeed?.run.mode==='three-lives'&&!proofFeed.done){\n            markErrors(i);lockCalc(i);status(i,'Erreur · une vie perdue','bad');\n            session.completed++;continue;\n          }\n          markErrors(i);\n          endSudden(i);\n          return\n        }\n      }\n      updateBar();"],
-  ["        setFeedback(\`Parfait : +\${newly}. Score : \${session.score}.\`,'ok');",
-   "        setFeedback(proofFeed?.run.mode==='three-lives'?('3 vies · Score : '+session.score):\`Parfait : +\${newly}. Score : \${session.score}.\`,'ok');"],
+  ["        setFeedback(`Parfait : +\${newly}. Score : \${session.score}.`,'ok');",
+   "        setFeedback(proofFeed?.run.mode==='three-lives'?('3 vies · Score : '+session.score):`Parfait : +\${newly}. Score : \${session.score}.`,'ok');"],
   ["    let hadWrong=false;\n    for(const i of candidates){\n      if(ev[i].correct){",
    "    let hadWrong=false;\n    for(const i of candidates){\n      if(!mathasProofCapture(states[i])){setFeedback('Sauvegarde de la preuve impossible. Réessaie.','bad');return}\n      if(ev[i].correct){"],
   ["  function handlePrimary(){if(phase==='answering')verifyPair();else if(phase==='review'){makePair()}else if(phase==='finished'||phase==='ended')goMenu()}",
