@@ -181,14 +181,23 @@ function render(){
   tabs.append(btn);
  });
  const event=$('exploits');event.replaceChildren();
- event.append(exploit('pending','Pas encore de nouvel exploit confirmé pour cette application.'));
+ const latest=Array.isArray(data.exploits)?data.exploits.filter(x=>x?.appKey===currentApp
+  &&['trophy','perfect','sudden','top','rise'].includes(x.type)
+  &&typeof x.message==='string'&&x.message.length<=180):[];
+ if(data.exploitsStatus==='unavailable'){
+  event.append(exploit('pending','Exploits temporairement indisponibles.'));
+ }else if(!latest.length){
+  event.append(exploit('pending','Aucun exploit confirmé récemment pour cette application.'));
+ }else{
+  latest.slice(0,5).forEach(x=>event.append(exploit(x.type,x.message)));
+ }
  renderClasses();updateTime();
 }
 // Les notifications n'affirment aucun exploit sans événement serveur confirmé.
 // Types prévus : trophée, série parfaite, entrée Top 5 et, seulement après preuve serveur, remontée d'au moins 3 places avec nouveau record personnel.
 function exploit(type,message){
  const kinds={trophy:['🏆','trophy'],perfect:['✨','perfect'],top:['🏅','rank-up'],
-  rise:['📈','rank-up'],pending:['◌','empty']};
+  rise:['📈','rank-up'],sudden:['🔥','perfect'],pending:['◌','empty']};
  const [symbol,style]=kinds[type]||kinds.pending;
  const el=document.createElement('div');el.className='event '+style;
  const icon=document.createElement('span');icon.className='event-icon';icon.textContent=symbol;icon.setAttribute('aria-hidden','true');

@@ -1,4 +1,5 @@
 import {createClient} from 'npm:@supabase/supabase-js@2.95.0';
+import {buildProjectionExploits,EXPLOIT_WINDOW_HOURS} from './exploits.mjs';
 
 // Teacher-only Projection V2 API. Every read and write checks verified JWT,
 // teacher status, and class-specific management permissions.
@@ -178,7 +179,36 @@ Deno.serve(async(req:Request)=>{
      options:settingsRows.find((p:any)=>p.class_id===row.id)?.options??null,
      percentages:null,percentageStatus:'exercise_telemetry_not_yet_available'};
    });
-   return respond({ok:true,classes,appKeys:keys});
+   // Recent, server-confirmed exploits of the primary class, published only
+   // under names allowed for that app. Failures cannot block the leaderboard.
+   let exploits:any[]=[];
+   let exploitsStatus='available';
+   const primaryMembers=distinct(memberRows.filter((m:any)=>m.class_id===b.classId)
+     .map((m:any)=>m.student_id));
+   if(primaryMembers.length){
+    try{
+     const since=new Date(Date.now()-EXPLOIT_WINDOW_HOURS*3600000).toISOString();
+     const [trophies,scoreEvents]=await Promise.all([
+      records(db.from('connect_trophy_achievements')
+       .select('student_id,app_key,trophy_key,achieved_at')
+       .in('student_id',primaryMembers).in('app_key',keys)
+       .gte('achieved_at',since).order('achieved_at',{ascending:false}).limit(120)),
+      records(db.from('connect_projection_score_events')
+       .select('student_id,class_id,app_key,event_id,game_mode,game_score,game_total,game_points,played_at,captured_at')
+       .eq('class_id',b.classId).in('student_id',primaryMembers).in('app_key',keys)
+       .gte('played_at',since).order('played_at',{ascending:false}).limit(140))
+     ]);
+     const consents=scoreEvents.length?await records(db.from('connect_projection_score_consents')
+      .select('student_id,class_id,app_key,event_id')
+      .eq('class_id',b.classId).in('event_id',distinct(scoreEvents.map((e:any)=>e.event_id)))
+      .limit(140)):[];
+     const roster=(classes.find((c:any)=>c.classId===b.classId)?.students||[])
+      .map((s:any)=>({...s,projectionOptIn:(profileMap.get(s.id) as any)?.projection_opt_in===true}));
+     exploits=buildProjectionExploits({classId:b.classId,roster,trophies,
+      scoreEvents,consents,scorePeriods:periodRows,nowMs:Date.now()});
+    }catch{exploitsStatus='unavailable';}
+   }
+   return respond({ok:true,classes,appKeys:keys,exploits,exploitsStatus});
   }
   if(b.action==='teacher-save-options'){
    if(!classOptions(b.options))return deny('invalid_options',400);
