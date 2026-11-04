@@ -66,7 +66,18 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
     {waitUntil:'domcontentloaded',timeout:25000});
    await page.waitForFunction(()=>!document.getElementById('certify').disabled,
     null,{timeout:45000});
-   assert.equal(await page.locator('#trophies').textContent(),'3');
+   // Les coupes officielles restent dans les cases du jeu ; leur ancien
+   // compteur textuel est volontairement retiré du panneau XP.
+   assert.equal(await page.locator('#trophies').count(),0);
+   const officialTrophies=()=>page.evaluate(()=>{
+    const r=window.MathasConnectOfficialTrophies?.rewards;
+    if(!r)return null;
+    return Object.values(r.mastery).flat().filter(Boolean).length+
+     Object.values(r.hardAwards).flat().filter(Boolean).length+
+     r.sudden.filter(Boolean).length+Object.values(r.scoreOne).filter(Boolean).length+
+     Number(r.unlockedGold);
+   });
+   assert.equal(await officialTrophies(),3,'three genuine server-approved trophies');
    // Le récapitulatif récent ajouté en doublon ne doit plus masquer les
    // 2 éléments d'origine : meilleur score du jour et podium des records.
    await page.waitForFunction(()=>{
@@ -148,16 +159,18 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
    serverRewards=rewards(false);
    await page.locator('#xp-toggle').click();
    await page.locator('#refresh').click();
-   await page.waitForFunction(()=>document.getElementById('trophies')?.textContent==='0',
-    null,{timeout:12000});
+   await page.waitForFunction(()=>window.MathasConnectOfficialTrophies?.rewards
+     ?.mastery?.['4']?.[0]===false,null,{timeout:12000});
+   assert.equal(await officialTrophies(),0);
    await page.waitForTimeout(1000);
    assert.match(await cup(),/à gagner/);
 
    // SQL NULL from the verified trophy registry means no earned trophies.
    // Connect exposes a complete 25-false snapshot in that case.
    serverRewards=null;await page.locator('#refresh').click();
-   await page.waitForFunction(()=>document.getElementById('trophies')?.textContent==='0',
-    null,{timeout:12000});
+   await page.waitForFunction(()=>window.MathasConnectOfficialTrophies?.rewards
+     ?.mastery?.['4']?.[0]===false,null,{timeout:12000});
+   assert.equal(await officialTrophies(),0);
    await page.waitForTimeout(950);
    assert.match(await cup(),/à gagner/,'new pupils still see unearned trophies');
    await page.setViewportSize({width:390,height:780});
@@ -170,8 +183,9 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
 
    // A malformed non-null server response still fails closed.
    serverRewards={unavailable:true};await page.locator('#refresh').click();
-   await page.waitForFunction(()=>document.getElementById('trophies')?.textContent==='—',
-    null,{timeout:12000});
+   await page.waitForFunction(()=>window.MathasConnectOfficialTrophies?.active===true
+    &&window.MathasConnectOfficialTrophies.rewards===null,null,{timeout:12000});
+   assert.equal(await officialTrophies(),null);
    await page.waitForFunction(()=>{
     const native=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
     return native?.documentElement.classList.contains('mathas-connect-official-trophies-unavailable');
