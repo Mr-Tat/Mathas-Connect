@@ -37,7 +37,7 @@ test('deux additions : Objectif record garde son sous-titre et sa couronne ; com
   const source=read(file);
   assert.match(source,/Deux façons de marquer un gros score\./);
   assert.match(source,/mode-icon" aria-hidden="true">👑/);
-  assert.match(source,/<h3 class=\\"mode-title\\">Objectif record<\/h3>/);
+  assert.match(source,/<h3 class="mode-title">Objectif record<\/h3>/);
   assert.doesNotMatch(source,/score-mode-cup" aria-hidden="true">🏆/);
   assert.match(source,/if\(suddenDesc&&!suddenDesc\.textContent\.trim\(\)\)/,
     'le script moteur ne doit plus écraser le sous-titre après le chargement');
