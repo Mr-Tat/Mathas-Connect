@@ -1,3 +1,5 @@
+import {withScoreTies} from './projection-v2-model.mjs';
+
 // Projection V2 — deterministic per-application movement queue.
 // Uses only the already-published, professor-authorized leaderboard snapshots.
 export const playerKey=p=>String(p?.classId||'')+'|'+String(p?.id||'');
@@ -17,16 +19,20 @@ export function detectOvertakes(before,after){
  if(!before?.rows||!after?.rows||before.context!==after.context
   ||!sameSet(before.rows,after.rows))return [];
  const oldPositions=new Map(before.rows.map((p,i)=>[playerKey(p),{index:i,person:p}]));
+ const oldRanks=new Map(withScoreTies(before.rows).map(p=>[playerKey(p),p.position]));
+ const newRanks=new Map(withScoreTies(after.rows).map(p=>[playerKey(p),p.position]));
  return after.rows.flatMap((person,to)=>{
   const previous=oldPositions.get(playerKey(person));
   if(!previous||previous.index<=to
    ||safeRankScore(person)===null||safeRankScore(previous.person)===null
    ||person.score<=previous.person.score)return [];
-  return [{key:playerKey(person),appKey:after.appKey,
-   name:person.name,fromRank:previous.index+1,toRank:to+1,
+  // Animation: indices physiques. Exploit: rangs des scores distincts.
+  const key=playerKey(person),fromRank=oldRanks.get(key),toRank=newRanks.get(key);
+  return [{key,appKey:after.appKey,name:person.name,
+   fromRank,toRank,fromIndex:previous.index,toIndex:to,
    oldScore:previous.person.score,newScore:person.score,
-   gained:previous.index-to}];
- }).sort((a,b)=>a.toRank-b.toRank||b.fromRank-a.fromRank||a.key.localeCompare(b.key));
+   gained:Math.max(0,fromRank-toRank)}];
+ }).sort((a,b)=>a.toIndex-b.toIndex||b.fromIndex-a.fromIndex||a.key.localeCompare(b.key));
 }
 export function createOvertakeTracker(){
  const seen=new Map(),shown=new Map(),queued=new Map();
