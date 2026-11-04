@@ -4,7 +4,7 @@ import {createProfileCelebrations} from './profile-celebration.mjs';
 import { classId, classLabel, loginUrl } from './connect-context.js';
 import {rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
 import {objectiveRecordLabPreviews} from './objective-record-lab-previews.mjs';
-import {schoolRecordLaunch,schoolAdditionsLaunch,SCHOOL_RECORD_APPS,SCHOOL_RECORD_LAUNCHER} from './apps/objective-record/release-routing.mjs';
+import {schoolRecordLaunch,schoolAdditionsLaunch,SCHOOL_RECORD_APPS,SCHOOL_RECORD_LAUNCHER,SCHOOL_CLASS_IDS} from './apps/objective-record/release-routing.mjs';
 
 const url = 'https://awmhpfofacaglewammxt.supabase.co';
 const key = 'sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
@@ -60,14 +60,20 @@ function card(app) {
   // En TEST, Multiplication utilise déjà son vrai moteur V7 certifié :
   // ne pas la renvoyer vers l'ancien hôte Objectif record des autres jeux.
   const testMultiplication=classId===LAB_CLASS&&app.app_key==='multiplication-ecrite-simple';
+  const schoolMultiplication=SCHOOL_CLASS_IDS.includes(classId)&&app.app_key==='multiplication-ecrite-simple';
   const testSlug=classId===LAB_CLASS&&!testMultiplication?recordSlugByApp[app.app_key]:null;
   const target = new URL(testMultiplication?'./apps/multiplication-simple/':
+    schoolMultiplication?'./apps/multiplication-simple/':
     testSlug?SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(testSlug):
     schoolAdditionsLaunch({classId,appKey:app.app_key,legacyUrl:
       schoolRecordLaunch({classId,appKey:app.app_key,legacyUrl:app.launch_url})}),location.href);
   // Le HUB fournit la classe au jeu Connect ; les autorisations restent vérifiées côté serveur.
   if (classId && target.origin === location.origin) target.searchParams.set('class', classId);
   if(testMultiplication && target.origin===location.origin)target.searchParams.set('requireConnect','1');
+  // En mode Connect scolaire, une carte officielle ne doit jamais ouvrir
+  // silencieusement un 4/4 sans preuve et sans XP. Le mode Classique reste libre.
+  if(schoolMultiplication && !inFreeMode() && target.origin===location.origin)
+    target.searchParams.set('requireConnect','1');
    if (playingAsTeacher && ['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
   node.href = target.href;
   if(testSlug)node.dataset.labSchool=testSlug;
