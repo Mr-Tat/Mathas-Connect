@@ -16,9 +16,12 @@ test('Projection V2 live : chargement professeur volontaire, lecture protégée 
 });
 test('Projection V2 live : actualisation des scores toutes les 20 s, uniquement si visible',()=>{
  assert.match(js,/const REFRESH_INTERVAL_MS=20000;/);
- assert.match(js,/setInterval\(\(\)=>\{if\(hasLoaded&&connected&&document\.visibilityState==='visible'&&!\$\('settings'\)\.open\)refresh\(\)\},REFRESH_INTERVAL_MS\);/);
+ assert.match(js,/nextRefreshAt=Date\.now\(\)\+REFRESH_INTERVAL_MS/);
+ assert.match(js,/if\(hasLoaded&&connected&&document\.visibilityState==='visible'&&!\$\('settings'\)\.open\)refresh\(\)/);
+ assert.match(js,/},REFRESH_INTERVAL_MS\);/);
+ assert.match(js,/setInterval\(updateRefreshCountdown,1000\)/);
  assert.match(js,/rotationSeconds:30/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-depassements-v5/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-entete-maj-v6/);
 });
 test('Projection V2 : remontées par application, 550 ms par passage, arrivée étoilée',()=>{
  assert.match(js,/createOvertakeTracker/);
@@ -31,7 +34,7 @@ test('Projection V2 : remontées par application, 550 ms par passage, arrivée �
  assert.match(js,/document\.visibilityState==='visible'/);
  assert.match(js,/if\(playingKey\)\{updateTime\(\);return\}/);
  assert.match(html,/projection-v2-overtake\.css\?v=20261104-v1/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-depassements-v5/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-entete-maj-v6/);
 });
 test('Jeu sans score : pas de colonne fantôme, état vide spécifique à l’application',()=>{
  assert.match(js,/people\.length\?splitProjectedRanking\(people,multiple\):\[\]/);
@@ -109,4 +112,26 @@ test('Projection V2 live : déconnexion masque les résultats et module JS valid
  assert.match(js,/window\.addEventListener\('pagehide'/);
  const c=spawnSync(process.execPath,['--check','--input-type=module'],{input:js,encoding:'utf8'});
  assert.equal(c.status,0,c.stderr);
+});
+
+
+test('Projection : commandes en bandeau, notes retirées et minuterie de MAJ réelle',()=>{
+ const header=html.split('</header>')[0],aside=html.split('<aside class="left-col"')[1]?.split('</aside>')[0]||'';
+ assert.match(header,/class="header-tools"/);
+ assert.match(header,/id="load-real"/);
+ assert.match(header,/id="projection-theme"/);
+ assert.match(header,/id="projection-refresh-countdown"/);
+ assert.doesNotMatch(aside,/id="load-real"|id="projection-theme"|id="percentage-note"/);
+ assert.doesNotMatch(html,/PROJECTION CONNECTÉE · ACCÈS PROFESSEUR|id="projection-clock"/);
+ assert.doesNotMatch(js,/Global = exercices commencés des applications cochées/);
+ assert.match(js,/MAJ dans /);
+ assert.match(js,/MAJ suspendue/);
+ assert.match(js,/setInterval\(updateRefreshCountdown,1000\)/);
+});
+test('Podium : points colorés sans capsule',()=>{
+ const css=readFileSync(new URL('../projection-v2-avatar.css',import.meta.url),'utf8');
+ assert.match(css,/\.entry:is\(\.rank-1,\.rank-2,\.rank-3\) \.points\{/);
+ assert.match(css,/background:transparent!important/);
+ assert.match(css,/border:0!important/);
+ assert.doesNotMatch(css,/background:#203348/);
 });
