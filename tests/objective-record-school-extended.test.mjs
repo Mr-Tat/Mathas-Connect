@@ -95,3 +95,23 @@ test('School Edge is proof-only, does not receive client score/XP or allow TEST'
  assert.ok(host.includes('createCertifiedExtendedUI'));
  assert.ok(host.includes('extendedUI.hasPending()'));
 });
+
+test('school 3-vies XP is a genuine half-credit, later topped up by Mort subite only',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+ const migration=read('supabase/migrations/20261104143000_school_three_lives_half_xp.sql');
+ assert.match(migration,/award_key\|\|':'\|\|half\.suffix/);
+ assert.match(migration,/\('half'\),\('complement'\)/);
+ assert.match(migration,/floor\(base\.points\/2\.0\)/);
+ assert.match(migration,/milestone_half:=milestone_full\|\|':half'/);
+ assert.match(migration,/milestone_extra:=milestone_full\|\|':complement'/);
+ assert.match(migration,/m\.achieved_at<replay_started/,'no duplicate replay rewards for newly earned tiers');
+ assert.match(migration,/IF p_mode='sudden' AND p_score>=25/,'real sudden only for its trophy');
+ assert.doesNotMatch(migration,/IF v_shared<>v_mode_key THEN/,'3-vies must not forge a genuine sudden score');
+ assert.match(migration,/Other integrated games retain their existing survival XP rules/);
+ for(const path of ['apps/objective-record/engines/addition-simple/essai-mode-score-3-vies.html',
+  'apps/objective-record/engines/addition-multiple/essai-objectif-record-3-vies.html']){
+  const html=read(path);
+  assert.match(html,/Moitié des XP/);
+  assert.match(html,/score-mode-half-xp\{.*background:rgba\(17,8,30,\.60\)/);
+ }
+});
