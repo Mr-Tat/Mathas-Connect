@@ -133,6 +133,10 @@ test('LAB Tests en ligne : Multiplication impose la vraie session Connect avant 
  const lab=repoFile('laboratoire.js');
  const launcher=repoFile('apps/multiplication-simple/index.html');
  assert.match(lab,/app\.app_key==='multiplication-ecrite-simple'\)url\.searchParams\.set\('requireConnect','1'\)/);
+ assert.match(lab,/const href=app\.app_key==='multiplication-ecrite-simple'\?'\.\/apps\/multiplication-simple\/'/,
+  'Le LAB doit lancer le moteur V7 certifié, pas l ancien hôte Objectif record');
+ assert.match(lab,/SCHOOL_RECORD_LAUNCHER/,
+  'les autres applications conservent leur routage existant');
  assert.match(launcher,/const requireConnect=query\.get\('requireConnect'\)==='1'/);
  assert.match(launcher,/!teacherPlayer&&!requireConnect&&localStorage\.getItem/);
  assert.match(launcher,/connectionCheckRequired\|\|teacherPlayer\|\|requireConnect/);
