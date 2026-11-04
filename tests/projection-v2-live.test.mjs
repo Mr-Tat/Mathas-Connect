@@ -38,7 +38,7 @@ test('Projection V2 : rafraîchissement toutes les 20 s, sans changement automat
  assert.match(js,/if\(ticket===refreshTicket&&connected&&hasLoaded\)startRefreshCycle\(\)/);
  assert.match(js,/function pauseRefreshCycle\(\)/);
  assert.match(js,/function resumeRefreshCycle\(\)/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-tied-podium-v2/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-completed-classic-pct-v3/);
  assert.match(html,/id="projection-refresh-progress"/);
  assert.match(html,/id="projection-refresh-fill"/);
  assert.match(html,/role="progressbar"/);
@@ -88,7 +88,7 @@ test('Projection V2 : les quatre thèmes et l’accès aux réglages sont conser
  assert.match(html,/Réussite de la classe/);
  assert.match(html,/Nouveaux exploits/);
  assert.match(html,/id="comparison-results"/);
- assert.match(js,/Mesure des exercices réellement entamés|exercices réellement entamés/);
+ assert.match(js,/Parties Classique terminées uniquement/);
  assert.match(html,/\.ranking-board \.ranking-head\{position:sticky;top:0/);
 });
 
@@ -138,7 +138,7 @@ test('Projection V2 : noms mis en gras dans les événements, sans HTML injecté
  assert.doesNotMatch(js,/text\.innerHTML\s*=/);
  assert.match(html,/\.event-text \.event-student\{font-weight:900;color:inherit\}/);
  assert.doesNotMatch(js,/MEILLEURS SCORES · PÉRIODE DE PROJECTION/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-tied-podium-v2/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-completed-classic-pct-v3/);
 });
 
 test('Projection V2 : cadre 24px carré, score centré, chiffres en gras',()=>{
@@ -163,4 +163,13 @@ test('Projection V2 : les rangs et couleurs suivent les scores, même pendant un
  assert.match(js,/const place=p\.position,key=playerKey\(p\)/);
  assert.match(js,/row\.className='entry rank-'\+place/);
  assert.match(js,/rank\.textContent=String\(place\)/);
+});
+
+test('Projection V2 : % pondérés, source limitée aux parties Classique et rafraîchissement des options',()=>{
+ assert.match(html,/id="percentage-scope"/);
+ assert.match(js,/percentageStatus==='completed_games_only'/);
+ assert.match(js,/Parties Classique terminées uniquement/);
+ assert.match(js,/abandons exclus/);
+ assert.match(js,/if\(field==='percentageApps'\)await refresh\(\)/);
+ assert.match(js,/options\[field\]=before;cb\.checked=!cb\.checked;buildSettings\(\);return/);
 });

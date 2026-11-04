@@ -6,8 +6,9 @@ import {animateOvertakeSegment} from './projection-v2-overtake-animation.mjs';
 
 // Projection V2: écran séparé de la projection collective historique.
 // Les scores proviennent uniquement de l'Edge Function professeur sécurisée.
-// Le % reste INDISPONIBLE tant que les exercices réellement entamés ne sont
-// pas journalisés par chaque application. Jamais de chiffres fictifs en ligne.
+// Les pourcentages disponibles utilisent uniquement les parties Classique
+// terminées enregistrées. Les sessions abandonnées restent explicitement
+// exclues, faute de télémétrie d'exercices individuels. Jamais de taux inventé.
 const endpoint='https://awmhpfofacaglewammxt.supabase.co';
 const publishable='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const $=id=>document.getElementById(id);
@@ -384,6 +385,13 @@ function renderClasses(){
  const principal=mainData();
  if(!principal)return;
  const percentages=principal.percentages;
+ const scope=$('percentage-scope');
+ scope.textContent=principal.percentageStatus==='completed_games_only'
+  ?'Parties Classique terminées uniquement · abandons exclus'
+  :'Taux indisponibles : aucune statistique fiable pour le moment';
+ scope.title=principal.percentageStatus==='completed_games_only'
+  ?'Taux exacts des exercices réussis parmi ceux des parties Classique entièrement terminées et enregistrées. Les modes à arrêt anticipé et les parties interrompues ne sont pas comptés.'
+  :'Les exercices des parties interrompues ne sont pas encore journalisés. Aucun pourcentage approximatif n’est affiché.';
  root.append(makeSuccessRow('Global',percentages?.global,true));
  for(const app of apps.filter(a=>options.percentageApps.includes(a.key))){
   root.append(makeSuccessRow(app.title,percentages?.apps?.[app.key]));
@@ -529,10 +537,13 @@ function buildSettings(){
     if(field==='scoreApps'&&((cb.checked&&before.length>=MAX_VISIBLE_APPS)
       ||(!cb.checked&&before.length<=1))){cb.checked=!cb.checked;return}
     options[field]=cb.checked?[...options[field],app.key]:options[field].filter(k=>k!==app.key);
-    if(!await commitOptions()){options[field]=before;cb.checked=!cb.checked}
+    if(!await commitOptions()){
+     options[field]=before;cb.checked=!cb.checked;buildSettings();return;
+    }
     if(field==='scoreApps'){
      cancelPlayback();tracker.drop(app.key);
     }
+    if(field==='percentageApps')await refresh(); // Recalcul serveur du global pondéré.
     render();
     buildSettings();
    };
