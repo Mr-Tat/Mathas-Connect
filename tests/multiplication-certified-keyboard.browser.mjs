@@ -66,7 +66,7 @@ async function answer(page){
 }
 
 try{
- test('classic top: changing tens-first mid-calculation preserves digits and correct carries',async()=>{
+ await test('classic top: changing tens-first mid-calculation preserves digits and correct carries',async()=>{
   const page=await browser.newPage();
   try{
    await setup(page);
@@ -93,7 +93,7 @@ try{
    assert.equal(result.verified,1);
   }finally{await page.close()}
  });
- test('side carry method: carry inputs stay editable and follow the same proof schema',async()=>{
+ await test('side carry method: carry inputs stay editable and follow the same proof schema',async()=>{
   const page=await browser.newPage();
   try{
    await setup(page,{method:'side',tensFirst:true});
