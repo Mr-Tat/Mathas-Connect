@@ -97,16 +97,21 @@ test('secours Edge limité au GET de la classe TEST, sans fausse activation Conn
   assert.doesNotMatch(edge,/\.from\('connect_xp_credits'\)/);
 });
 
-test('les cinq cartes TEST ouvrent le lanceur scolaire commun; les autres classes gardent leurs URLs',()=>{
+test('le LAB et le HUB TEST ouvrent la multiplication V7 certifiée; les autres jeux gardent leur lanceur commun',()=>{
  const hub=read('hub.js'),lab=read('laboratoire.js');
  const release=read('apps/objective-record/release-routing.mjs');
  const home=read('hub.html'),catalog=read('hub-catalog.json');
- assert.match(hub,/testSlug=classId===LAB_CLASS\?recordSlugByApp\[app\.app_key\]:null/);
+ assert.match(hub,/testMultiplication=classId===LAB_CLASS&&app\.app_key==='multiplication-ecrite-simple'/);
+ assert.match(hub,/testSlug=classId===LAB_CLASS&&!testMultiplication\?recordSlugByApp\[app\.app_key\]:null/);
+ assert.match(hub,/testMultiplication\?'\.\/apps\/multiplication-simple\/'/);
+ assert.match(hub,/if\(testMultiplication\)target\.searchParams\.set\('requireConnect','1'\)/);
  assert.match(hub,/if\(testSlug\)node\.dataset\.labSchool=testSlug/);
  assert.match(hub,/SCHOOL_RECORD_LAUNCHER\+'\?app='\+encodeURIComponent\(testSlug\)/);
  assert.doesNotMatch(hub,/essais\/objectif-record-pilote\.html/);
  assert.match(lab,/testSlug=recordSlugByApp\[app\.app_key\]/);
- assert.match(lab,/const href=testSlug\?SCHOOL_RECORD_LAUNCHER\+'\?app='/);
+ assert.match(lab,/const href=app\.app_key==='multiplication-ecrite-simple'\?'\.\/apps\/multiplication-simple\/'/);
+ assert.match(lab,/testSlug\?SCHOOL_RECORD_LAUNCHER\+'\?app='/);
+ assert.match(lab,/if\(app\.app_key==='multiplication-ecrite-simple'\)url\.searchParams\.set\('requireConnect','1'\)/);
  assert.match(lab,/labCatalog\('set',\{appKey:app\.app_key,visible:wanted\}\)/);
  assert.match(lab,/student\.href=linkFor\(app\)/);
  assert.match(lab,/const href=linkFor\(app,true\)/);
