@@ -99,10 +99,10 @@ function applyBadge(button,amount,title){
   ['pointer-events','none'],['white-space','nowrap']
  ])label.style.setProperty(property,value,'important');
  // The wrapper sets an inline !important padding shorthand. Reserve the
- // lower strip for official XP; keep 4/10/20 words in the actual button label.
+ // lower strip for official XP; lower the 4/10/20 label slightly toward center.
  if(button.matches('#menuScreen .classic-count-btn[data-count]')){
   button.style.setProperty('position','relative','important');
-  button.style.setProperty('padding','5px 5px 24px','important');
+  button.style.setProperty('padding','14px 5px 24px','important');
   button.style.setProperty('min-height','59px','important');
   button.style.setProperty('box-sizing','border-box','important');
  }
