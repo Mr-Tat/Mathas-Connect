@@ -111,7 +111,8 @@ test('school 3-vies XP is a genuine half-credit, later topped up by Mort subite 
  for(const path of ['apps/objective-record/engines/addition-simple/essai-mode-score-3-vies.html',
   'apps/objective-record/engines/addition-multiple/essai-objectif-record-3-vies.html']){
   const html=read(path);
-  assert.match(html,/Moitié des XP/);
-  assert.match(html,/score-mode-half-xp\{.*background:rgba\(17,8,30,\.60\)/);
+  assert.doesNotMatch(html,/Moitié des XP/,'XP chiffrés en bas du bouton suffisent');
+  assert.doesNotMatch(html,/score-mode-half-xp\{/,'pas de pastille sombre de moitié des XP');
+  assert.match(html,/mathas-pressable-3d/,'3 vies conserve le traitement 3D sans .btn');
  }
 });
