@@ -5,6 +5,10 @@ const rate=(correct,attempted)=>attempted>0?Math.round(correct*1000/attempted)/1
 
 // Les entrées proviennent d'un SQL GROUP BY classe/application, pas d'un
 // classement de scores, ni du nombre de trophées ou d'XP.
+/**
+ * @param {Array<{class_id:string,app_key:string,correct:number|string,attempted:number|string}>} rows
+ * @param {{classId?:string,appKeys?:string[],globalKeys?:string[]}} [config]
+ */
 export function summarizeCompletedGames(rows,{classId,appKeys=[],globalKeys=appKeys}={}){
  const keys=[...new Set(appKeys.filter(k=>typeof k==='string'))];
  const map=new Map(keys.map(k=>[k,{correct:0,attempted:0}]));
