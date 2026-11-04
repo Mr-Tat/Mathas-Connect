@@ -177,7 +177,7 @@ test('no school can award old game-record without a server-issued multiplication
  assert.match(results,/b\.appKey===addMulti\|\|b\.appKey===mul/);
  const proof=repoFile('apps/multiplication-simple/certified-classic.mjs');
  assert.match(proof,/start-extended-v1/);
- assert.match(launcher,/createCertifiedMultiplicationClassic/);
+ assert.match(launcher,/createNativeCertifiedMultiplication/);
  assert.match(launcher,/mathasMultiThreeLives/);
  assert.match(launcher,/mathas-multi-hard-three-lives/);
 });

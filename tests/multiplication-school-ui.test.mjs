@@ -14,7 +14,7 @@ test('unverified multiplication results never invite sharing to projection',()=>
  assert.doesNotMatch(launcher,/action:'game-record'/);
  assert.match(launcher,/certifiedScoreView\?\.recorded\(receipt\.eventId\)/);
  assert.match(launcher,/action:'student-score-history'/);
- assert.match(launcher,/createCertifiedMultiplicationClassic/);
+ assert.match(launcher,/createNativeCertifiedMultiplication/);
 });
 
 test('correct per-app XP pools: no invented credits for a session',()=>{

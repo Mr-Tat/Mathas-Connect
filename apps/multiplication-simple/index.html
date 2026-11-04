@@ -1,7 +1,8 @@
 <!doctype html><html lang="fr"><head>
 <link rel="icon" type="image/png" href="../../assets/brand/favicon.png"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Math’as · Multiplication écrite simple</title><style>body{font-family:system-ui;background:#0c2235;color:white;margin:0;padding:25px}#loading{max-width:620px;margin:12vh auto;padding:25px;border:1px solid #628ba7;border-radius:16px}a{color:#8ce7fc}</style></head><body><main id="loading"><h1>Math’as · Multiplication écrite simple</h1><p id="message">Chargement du jeu…</p><p><a href="https://mr-tat.github.io/Mathas-Connect/">Retour aux jeux</a></p></main><script type="module">
 import {installMultiplicationSchoolUi} from './school-ui.mjs';
-import {createCertifiedMultiplicationClassic} from './certified-classic.mjs';
+import {createNativeCertifiedMultiplication} from './native-certified.mjs';
+import {injectNativeMultiplicationProof} from './native-proof-adapter.mjs';
 import {isNewCertifiedMultiplicationDailyBest} from './school-record-eligibility.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 import {createSchoolScoreView} from '../objective-record/school-score-view.mjs';
@@ -157,6 +158,10 @@ const scopedBootstrap=`<script>(function(){var ns=${JSON.stringify(ns)};var p=St
 // rétablir un record Classique effacé dans le compte Connecté.
 let html=original.replaceAll('./logo-m.png','https://mr-tat.github.io/Mathas-Connect/apps/multiplication-simple/logo-m.png').replaceAll('./logo-mot.webp','https://mr-tat.github.io/Mathas-Connect/apps/multiplication-simple/logo-mot.webp').replaceAll('./illustration.webp','https://mr-tat.github.io/Mathas-Connect/apps/multiplication-simple/illustration.webp');
 html=html.replace('<head>','<head>'+scopedBootstrap+multiplierBootstrap).replace('</body>',bridge+'</body>');
+// Connect : les calculs sont désormais montrés dans la vraie interface V7.
+// Aucun panneau de saisie parallèle ; seule la génération native et le suivi
+// des premières réponses sont reliés aux preuves délivrées par SQL.
+if(mode==='connected')html=injectNativeMultiplicationProof(html);
 // The child frame uses the same origin and isolated storage keys. No public classic game is changed.
 const iframe=document.createElement('iframe');iframe.title='Multiplication écrite simple V7.0.0';iframe.style.cssText='border:0;width:100%;height:calc(100dvh - var(--ce-toolbar-height,46px));display:block';iframe.setAttribute('allow','fullscreen');
 // Présentation additionnelle du moteur natif sans muter ses points ni reports.
@@ -512,8 +517,8 @@ if(mode==='connected'){
  });
  certifiedScoreView.updateState(initial||{});
  void certifiedScoreView.load();
- certifiedClassic=createCertifiedMultiplicationClassic({
-  documentRef:document,storage:localStorage,
+ certifiedClassic=createNativeCertifiedMultiplication({
+  documentRef:document,storage:localStorage,getFrame:()=>iframe,
   getContext:()=>({connected:mode==='connected',classId,studentId:session.user.id}),
   call:proofCall,refresh:async()=>{
    const xp=await loadXp();

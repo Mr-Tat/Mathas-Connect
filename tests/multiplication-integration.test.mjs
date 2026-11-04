@@ -18,7 +18,7 @@ test('connected launcher isolates Multiplication from Addition',()=>{
  assert.ok(launcher.includes("APP='multiplication-ecrite-simple'"));
  const certified=read('../apps/multiplication-simple/certified-classic.mjs');
  assert.ok(certified.includes("'start-classic-v1'"));
- assert.ok(launcher.includes('createCertifiedMultiplicationClassic'));
+ assert.ok(launcher.includes('createNativeCertifiedMultiplication'));
  assert.ok(!launcher.includes("action:'game-record'"),'le score natif ne donne plus d XP');
 });
 test('guide layout remains present and arrow navigation is installed',()=>{

@@ -26,7 +26,8 @@ test('Certified result uses an issued session ID and a durable per-student queue
  assert.match(certified,/resetEpoch/);
  assert.match(certified,/storage\.setItem\(key,JSON\.stringify/);
  assert.match(certified,/createCertifiedMultiplicationClassic/);
- assert.match(launcher,/finish-classic-v1|createCertifiedMultiplicationClassic/);
+ assert.match(launcher,/createNativeCertifiedMultiplication/);
+ assert.match(read('../apps/multiplication-simple/native-certified.mjs'),/finish-classic-v1/);
  assert.match(edge,/stale_reset_epoch/);
  assert.match(edge,/revision_conflict/);
  assert.doesNotMatch(launcher,/action:'game-record'/);
