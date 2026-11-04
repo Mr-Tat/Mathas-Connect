@@ -66,10 +66,8 @@ function card(app) {
     schoolAdditionsLaunch({classId,appKey:app.app_key,legacyUrl:
       schoolRecordLaunch({classId,appKey:app.app_key,legacyUrl:app.launch_url})}),location.href);
   // Le HUB fournit la classe au jeu Connect ; les autorisations restent vérifiées côté serveur.
-  if (classId && target.origin === location.origin){
-    target.searchParams.set('class', classId);
-    if(testMultiplication)target.searchParams.set('requireConnect','1');
-  }
+  if (classId && target.origin === location.origin) target.searchParams.set('class', classId);
+  if(testMultiplication && target.origin===location.origin)target.searchParams.set('requireConnect','1');
    if (playingAsTeacher && ['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
   node.href = target.href;
   if(testSlug)node.dataset.labSchool=testSlug;
