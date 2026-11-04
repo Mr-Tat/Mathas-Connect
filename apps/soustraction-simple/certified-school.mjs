@@ -83,7 +83,7 @@ function restore(snapshot,mode,level,method){
  if(!subtractionEndState(mode,snapshot.answers,snapshot.questions))return null;
  return snapshot;
 }
-const CSS=String.raw\`
+const CSS=String.raw`
 .mathas-sub-proof{position:fixed;inset:46px 0 0;z-index:100000;background:rgba(5,22,34,.98);color:#e9f6fb;overflow:auto;padding:clamp(8px,3vw,24px);box-sizing:border-box;font:600 14px/1.4 system-ui}
 .mathas-sub-proof[hidden]{display:none!important}
 .mathas-sub-proof-inner{max-width:750px;margin:auto;border-radius:18px;border:2px solid #547c91;background:#123348;box-shadow:0 16px 50px #0008;padding:clamp(14px,3vw,24px)}
@@ -101,7 +101,7 @@ const CSS=String.raw\`
 .mathas-sub-proof .mathas-sub-status{color:#fff0be;text-align:center;min-height:25px}
 .mathas-sub-proof .mathas-sub-pad{max-width:300px;margin:10px auto;display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 .mathas-sub-proof .mathas-sub-pad button{font:800 19px system-ui;padding:9px}
-\`;
+`;
 export function createCertifiedSubtraction({
  documentRef=document,storage=localStorage,getContext,call,refresh,onVerified,notify=()=>{}
 }={}){
@@ -190,9 +190,9 @@ export function createCertifiedSubtraction({
    const action=run.mode==='classic'?'finish-classic-v1':'finish-extended-v1';
    const receipt=await call(action,{sessionId:snapshot.sessionId,answers:snapshot.answers});
    if(receipt?.proofVerified!==true||receipt.verifiedScore!==stats.correct)throw Error('score_proof_mismatch');
-   store?.clear();
    await refresh();
    await onVerified?.({eventId:snapshot.sessionId,ack:receipt});
+   store?.clear();
    inner.replaceChildren(
     node('h2','','Série vérifiée ✓'),
     node('div','mathas-sub-proof-meta',
