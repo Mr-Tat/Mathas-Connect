@@ -50,14 +50,23 @@ test('lancement TEST ou deux additions scolaires : JWT approuvé, classe stricte
  assert.match(code,/hideFictionalXp\(doc\)/);
  assert.match(code,/const chooser=outer\?\.getElementById\('xp-preview-mode'\)/);
  assert.match(html,/id="xp-panel"/);
- assert.match(html,/id="total-xp"/);
+
+ assert.match(html,/id="app-xp"/);
+ assert.match(html,/id="xp-heading-total"/);
+ assert.match(html,/✨ XP acquis et à gagner/);
+ assert.match(html,/Total : <strong id="app-xp">/);
+ assert.doesNotMatch(html,/id="total-xp"/);
+ assert.doesNotMatch(html,/id="trophies"/);
+ assert.doesNotMatch(html,/id="xp-note"/);
+ assert.doesNotMatch(code,/Parcours '\+data\.parcours/);
  assert.match(html,/id="connect-bar"/);
  assert.match(html,/id="bar-handle"/);
  assert.match(html,/option value="classic"/i);
  assert.match(html,/option value="three-lives"/i);
  assert.match(html,/option value="hard-sudden"/i);
  assert.match(html,/id="challenge-panel"/);
- assert.match(html,/Défi Connect/i);
+ assert.doesNotMatch(html,/<button id="challenge-toggle"/);
+ assert.match(html,/id="certified-tools"/,'the native proof controller keeps its internal selectors');
  assert.match(code,/showConnectedBar\(approved\)/);
   assert.match(code,/SCHOOL_CLASSES\.has\(classId\)/);
   assert.match(code,/classId===CLASS_TEST\?'connect-objective-record-test':'connect-objective-record-school'/);
