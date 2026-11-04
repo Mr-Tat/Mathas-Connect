@@ -279,3 +279,84 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   assert.ok(loads>=3);
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
+
+
+test('V2 — une remontée en Soustraction attend sa page, passe 4 élèves puis brille',{timeout:55000},async()=>{
+ const {server,url}=await serve();
+ const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ let improved=false,loads=0;
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}});
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.route('**/*',async route=>{
+   const target=route.request().url();
+   if(target.startsWith(url))return route.continue();
+   if(target.startsWith('https://esm.sh/'))return route.fulfill({
+    status:200,contentType:'application/javascript',
+    headers:{'access-control-allow-origin':'*'},body:stub
+   });
+   if(target.includes('.supabase.co/functions/v1/')){
+    const input=route.request().postDataJSON()||{};
+    if(input.action==='teacher-dashboard')return route.fulfill({
+     status:200,contentType:'application/json',
+     headers:{'access-control-allow-origin':'*'},
+     body:JSON.stringify({ok:true,classes:[{id:A,name:'Phase 2 A'}]})
+    });
+    if(input.action==='teacher-load'){
+     loads++;
+     const pupils=Array.from({length:5},(_,i)=>({...fakeStudent(i),
+      scores:[{appKey:'addition-ecrite-simple',bestScore:100-i*10},
+       {appKey:'soustraction-ecrite-simple',bestScore:improved&&i===4?150:100-i*10}]
+     }));
+     return route.fulfill({
+      status:200,contentType:'application/json',
+      headers:{'access-control-allow-origin':'*'},
+      body:JSON.stringify({ok:true,classes:[{
+       classId:A,name:'Phase 2 A',enrolled:5,options:null,students:pupils,
+       scorePeriods:[],totals:[],percentages:null
+      }],exploits:[],exploitsStatus:'available'})
+     });
+    }
+    throw Error('Action inattendue : '+input.action);
+   }
+   return route.abort();
+  });
+  await page.goto(url+'/projection-v2.html?space=phase2',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>!document.querySelector('#load-real').disabled);
+  await page.locator('#load-real').click();
+  await page.waitForFunction(()=>document.querySelectorAll('#ranking-list .entry').length===5);
+  assert.equal(await page.locator('#app-name').textContent(),'Addition écrite');
+  assert.equal(await page.locator('#exploits').textContent(),
+   '◌Aucun exploit confirmé récemment pour cette application.');
+  improved=true;
+  await page.locator('#load-real').click();
+  await page.waitForFunction(()=>!document.querySelector('#load-real').disabled);
+  assert.ok(loads>=2);
+  assert.equal(await page.locator('#app-name').textContent(),'Addition écrite');
+  assert.equal(await page.locator('.entry.rank-1 strong').textContent(),'Élève 1',
+   'Soustraction ne bouge pas le classement de l’addition');
+  assert.equal(await page.locator('#ranking-list').evaluate(el=>Number(el.dataset.overtakeSteps||0)),0,
+   'Aucun dépassement d’une autre application ne se joue hors page');
+  await page.locator('#app-tabs').getByRole('button',{name:'Soustraction écrite'}).click();
+  await page.waitForFunction(()=>Number(document.querySelector('#ranking-list')?.dataset.overtakeSteps||0)>=4,
+   null,{timeout:12000});
+  await page.waitForFunction(()=>/remonte de 4 places/.test(document.querySelector('#exploits')?.textContent||''),
+   null,{timeout:5000});
+  assert.equal(await page.locator('.entry.rank-1 strong').textContent(),'Élève 5');
+  assert.equal(await page.locator('.entry.rank-1 .points').textContent(),'150 pts');
+  assert.equal(await page.locator('#ranking-list').evaluate(el=>Number(el.dataset.overtakeSteps||0)),4,
+   'Quatre échanges séparés : 5e → 4e → 3e → 2e → 1re');
+  assert.ok(await page.locator('.rank-arrival-sparkles').count()>0,
+   'Petites étincelles autour de la place finale');
+  await page.locator('#app-tabs').getByRole('button',{name:'Addition écrite'}).click();
+  assert.doesNotMatch(await page.locator('#exploits').textContent(),/remonte de 4 places/);
+  await page.locator('#app-tabs').getByRole('button',{name:'Soustraction écrite'}).click();
+  await page.waitForTimeout(850);
+  assert.equal(await page.locator('#ranking-list').evaluate(el=>Number(el.dataset.overtakeSteps||0)),0,
+   'Revenir sur le même jeu ne rejoue pas l’animation');
+  assert.equal(await page.locator('.entry.rank-1 strong').textContent(),'Élève 5');
+  assert.deepEqual(errors,[]);
+ }finally{
+  await browser.close();await new Promise(ok=>server.close(ok));
+ }
+});

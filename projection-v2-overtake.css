@@ -1,0 +1,21 @@
+/* Projection: cartes au premier plan durant les vrais dépassements. */
+#ranking-list .entry{position:relative;transform-origin:center center;will-change:auto}
+#ranking-list .entry.rank-overtaking{z-index:8}
+#ranking-list .rank-arrival-sparkles{
+ position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:12;
+}
+#ranking-list .rank-arrival-sparkles i{
+ display:block;position:absolute;left:50%;top:44%;
+ color:#ffe7a3;font-style:normal;font-size:19px;line-height:1;
+ text-shadow:0 0 7px #ffc35c,0 0 16px #a3e4ff;
+ opacity:0;animation:mathas-arrival-spark 850ms cubic-bezier(.18,.6,.27,1) both;
+}
+@keyframes mathas-arrival-spark{
+ 0%{transform:translate(-50%,-50%) scale(.35) rotate(-25deg);opacity:0}
+ 18%{opacity:1}
+ 75%{opacity:.9}
+ 100%{transform:translate(calc(-50% + var(--spark-x)),calc(-50% + var(--spark-y))) scale(.25) rotate(50deg);opacity:0}
+}
+@media(prefers-reduced-motion:reduce){
+ #ranking-list .rank-arrival-sparkles{display:none!important}
+}

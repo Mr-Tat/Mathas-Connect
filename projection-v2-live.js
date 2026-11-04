@@ -1,6 +1,8 @@
 import {classId,classLabel} from './connect-context.js';
 import {rankMultiClass,splitProjectedRanking} from './projection-v2-model.mjs';
 import {avatarGlyph,avatarColor} from './avatar-catalog.js';
+import {createOvertakeTracker,playerKey} from './projection-v2-overtakes.mjs';
+import {animateOvertakeSegment} from './projection-v2-overtake-animation.mjs';
 
 // Projection V2: écran séparé de la projection collective historique.
 // Les scores proviennent uniquement de l'Edge Function professeur sécurisée.
@@ -24,12 +26,23 @@ const allKeys=apps.map(a=>a.key);
 let client=null,classesAvailable=[],data=null,wasPaused=false,paused=false;
 let hasLoaded=false,connected=false,optionsLoaded=false,pendingReset=null;
 let currentApp=allKeys[0],secondsRemaining=30,fetching=false,refreshTicket=0;
+const tracker=createOvertakeTracker(),localRises=new Map();
+let playingKey=null,animationEpoch=0;
+const scoreCompared=()=>options.comparisonDisplay.filter(c=>c.score).map(c=>c.classId);
+function cancelPlayback(){
+ animationEpoch++;playingKey=null;
+ for(const el of $('ranking-list').querySelectorAll('.entry')){
+  for(const animation of el.getAnimations())animation.cancel();
+  el.style.zIndex='';
+ }
+}
 let options={scoreApps:[...allKeys],percentageApps:[...allKeys],comparisons:[],comparisonDisplay:[],rotationSeconds:30};
 const comparedIds=()=>options.comparisonDisplay.filter(v=>v.score||v.percentage).map(v=>v.classId);
 const currentComparison=id=>options.comparisonDisplay.find(v=>v.classId===id)||{classId:id,score:false,percentage:false};
 const note=message=>{$('live-status').textContent=message};
 const enabled=()=>apps.filter(a=>options.scoreApps.includes(a.key));
 function clearBoard(message){
+ cancelPlayback();tracker.clear();localRises.clear();
  refreshTicket++;data=null;connected=false;hasLoaded=false;pendingReset=null;paused=true;
  $('ranking-list').replaceChildren();$('classes').replaceChildren();
  $('exploits').replaceChildren();$('app-tabs').replaceChildren();
@@ -92,6 +105,9 @@ async function refresh(){
     }
    }
   }
+  // Observe every enabled app, including those not currently on screen.
+  // A new verified score can queue an animation, but cannot play on another app.
+  observeRankings(result);
   data=result;
   const firstDisplay=!hasLoaded;
   hasLoaded=true;
@@ -129,69 +145,141 @@ function projectedAvatar(person){
  symbol.classList.toggle('transparent',background==='transparent');
  return symbol;
 }
-function render(){
- const principal=mainData();
- const app=apps.find(a=>a.key===currentApp);
- $('app-name').textContent=app?.title||'Aucune application sélectionnée';
- $('ranking-list').replaceChildren();
- if(!principal)return;
- const compared=options.comparisonDisplay.filter(c=>c.score).map(c=>c.classId);
- const people=rankMultiClass({
-  classes:data.classes,primaryClassId:classId,scoreClassIds:compared,
-  appKey:currentApp,limit:16,includeTeacher:$('show-teacher').checked
+function snapshotFor(appKey,result){
+ const compared=scoreCompared();
+ const classIds=[classId,...compared].sort();
+ const periodStates=classIds.map(id=>{
+  const c=result.classes.find(x=>x.classId===id);
+  return [id,c?.scorePeriods?.find(p=>p.appKey===appKey)?.since||''];
  });
- const multiple=compared.length>0;
- // Keep the list truly empty when nobody has a published score for this app.
- // splitProjectedRanking([]) returns [[]], which would block the :empty notice.
+ return {appKey,context:JSON.stringify({classIds,periodStates,teacher:$('show-teacher').checked}),
+  rows:rankMultiClass({classes:result.classes,primaryClassId:classId,
+   scoreClassIds:compared,appKey,limit:16,includeTeacher:$('show-teacher').checked})};
+}
+function observeRankings(result){
+ for(const app of enabled()){
+  const observation=tracker.observe(snapshotFor(app.key,result));
+  if(observation.reset&&playingKey===app.key)cancelPlayback();
+ }
+}
+function rowFor(key){
+ return [...$('ranking-list').querySelectorAll('.entry')].find(el=>el.dataset.entryKey===key)||null;
+}
+// Reuse each student's DOM node between positions so FLIP computes accurate
+// coordinates, including crossings of the two ranking columns.
+function paintRanking(people){
+ const root=$('ranking-list'),multiple=scoreCompared().length>0;
+ const existing=new Map([...root.querySelectorAll('.entry')]
+  .map(el=>[el.dataset.entryKey,el]));
  const columns=people.length?splitProjectedRanking(people,multiple):[];
- $('ranking-list').classList.toggle('single',columns.length===1);
- $('ranking-list').classList.toggle('multi',multiple);
+ root.classList.toggle('single',columns.length===1);
+ root.classList.toggle('multi',multiple);
+ const fragment=document.createDocumentFragment();
  let position=0;
  columns.forEach(group=>{
   const column=document.createElement('div');column.className='ranking-col';
   column.style.setProperty('--row-count',String(group.length));
   group.forEach(p=>{
-   const place=++position;
-   const row=document.createElement('div');row.className='entry rank-'+place+(p.score===null?' unplayed':'');
+   const place=++position,key=playerKey(p);
+   const row=existing.get(key)||document.createElement('div');
+   row.dataset.entryKey=key;
+   row.className='entry rank-'+place;
    row.style.setProperty('--rank-progress',String((place-1)/15));
-   const rank=document.createElement('span');rank.className='place';
-   rank.textContent=String(place);
+   const rank=document.createElement('span');rank.className='place';rank.textContent=String(place);
    const detail=document.createElement('div');
    const primary=document.createElement('div');primary.className='primary';
    const name=document.createElement('strong');name.textContent=p.name;
    const playerLabel=document.createElement('span');playerLabel.className='player-label';
    playerLabel.append(projectedAvatar(p),name);
    const points=document.createElement('span');points.className='points';
-   points.textContent=p.score===null?'—':p.score+' pts';
+   points.textContent=Number.isFinite(p.score)?p.score+' pts':'—';
    const minor=document.createElement('div');minor.className='minor';
-   const classMark=document.createElement('span');classMark.className='class-mark';
-   classMark.textContent=p.className;
    minor.append(document.createTextNode('Niveau '+(p.level??'—')+'   🏆 '+(p.trophies??0)));
-   if(multiple)minor.append(classMark);
+   if(multiple){
+    const classMark=document.createElement('span');classMark.className='class-mark';
+    classMark.textContent=p.className;minor.append(classMark);
+   }
    primary.append(playerLabel,points);detail.append(primary,minor);
-   row.append(rank,detail);column.append(row);
+   row.replaceChildren(rank,detail);column.append(row);
   });
-  $('ranking-list').append(column);
+  fragment.append(column);
  });
+ root.replaceChildren(fragment);
+}
+function addSpectacularRise(appKey,movement){
+ if(movement.gained<3)return;
+ const history=localRises.get(appKey)||[];
+ const id=movement.key+':'+movement.newScore;
+ if(history.some(entry=>entry.id===id))return;
+ history.unshift({id,appKey,type:'rise',at:new Date().toISOString(),
+  message:movement.name+' remonte de '+movement.gained+
+   ' places grâce à un nouveau record ('+movement.newScore+' pts) !'});
+ localRises.set(appKey,history.slice(0,5));
+}
+async function playCurrentApp(){
+ const appKey=currentApp;
+ if(!appKey||playingKey||!hasLoaded||!connected
+  ||document.visibilityState!=='visible'||$('settings').open||!tracker.pending(appKey))return;
+ const token=++animationEpoch;playingKey=appKey;
+ const canContinue=()=>token===animationEpoch&&currentApp===appKey
+  &&document.visibilityState==='visible'&&!$('settings').open;
+ try{
+  while(tracker.take(appKey)&&canContinue()){
+   const segment=tracker.take(appKey);
+   const completed=await animateOvertakeSegment({
+    segment,paint:paintRanking,findRow:rowFor,canContinue,
+    onStep:(_actor,passed)=>{
+     const board=$('ranking-list');
+     board.dataset.overtakeSteps=String(1+Number(board.dataset.overtakeSteps||0));
+     board.dataset.lastPassed=passed;
+    },
+    onArrival:movement=>addSpectacularRise(appKey,movement)
+   });
+   if(!completed||!canContinue())break;
+   tracker.finish(appKey,segment);
+   renderExploits();
+  }
+ }finally{
+  if(token===animationEpoch){
+   playingKey=null;
+   if(tracker.pending(appKey)&&currentApp===appKey)
+    queueMicrotask(()=>{void playCurrentApp()});
+  }
+ }
+}
+function renderExploits(){
+ const event=$('exploits');event.replaceChildren();
+ if(!data)return;
+ const latest=Array.isArray(data.exploits)?data.exploits.filter(x=>x?.appKey===currentApp
+  &&['trophy','perfect','sudden','top'].includes(x.type)
+  &&typeof x.message==='string'&&x.message.length<=180):[];
+ const rises=localRises.get(currentApp)||[];
+ const shown=[...rises,...latest].slice(0,5);
+ if(!shown.length){
+  event.append(exploit('pending',data.exploitsStatus==='unavailable'
+   ?'Exploits temporairement indisponibles.':'Aucun exploit confirmé récemment pour cette application.'));
+ }else shown.forEach(x=>event.append(exploit(x.type,x.message)));
+}
+function render(){
+ const principal=mainData();
+ const app=apps.find(a=>a.key===currentApp);
+ $('app-name').textContent=app?.title||'Aucune application sélectionnée';
+ if(!principal){$('ranking-list').replaceChildren();return}
+ const visual=tracker.shown(currentApp)||snapshotFor(currentApp,data);
+ if(playingKey!==currentApp)paintRanking(visual.rows);
  const tabs=$('app-tabs');tabs.replaceChildren();
  enabled().forEach(a=>{
   const btn=document.createElement('button');btn.type='button';
   btn.textContent=a.title;btn.classList.toggle('selected',a.key===currentApp);
-  btn.onclick=()=>{currentApp=a.key;secondsRemaining=options.rotationSeconds;render()};
+  btn.onclick=()=>{
+   if(currentApp!==a.key){cancelPlayback();$('ranking-list').dataset.overtakeSteps='0'}
+   currentApp=a.key;secondsRemaining=options.rotationSeconds;render();
+  };
   tabs.append(btn);
  });
- const event=$('exploits');event.replaceChildren();
- const latest=Array.isArray(data.exploits)?data.exploits.filter(x=>x?.appKey===currentApp
-  &&['trophy','perfect','sudden','top','rise'].includes(x.type)
-  &&typeof x.message==='string'&&x.message.length<=180):[];
- if(data.exploitsStatus==='unavailable'){
-  event.append(exploit('pending','Exploits temporairement indisponibles.'));
- }else if(!latest.length){
-  event.append(exploit('pending','Aucun exploit confirmé récemment pour cette application.'));
- }else{
-  latest.slice(0,5).forEach(x=>event.append(exploit(x.type,x.message)));
- }
- renderClasses();updateTime();
+ renderExploits();renderClasses();updateTime();
+ if(!playingKey&&tracker.pending(currentApp))
+  queueMicrotask(()=>{void playCurrentApp()});
 }
 // Les notifications n'affirment aucun exploit sans événement serveur confirmé.
 // Types prévus : trophée, série parfaite, entrée Top 5 et, seulement après preuve serveur, remontée d'au moins 3 places avec nouveau record personnel.
@@ -266,25 +354,33 @@ function updateTime(){
 }
 function next(delta){
  const a=enabled();if(!a.length)return;
+ cancelPlayback();
  const i=a.findIndex(x=>x.key===currentApp);
  currentApp=a[(i+delta+a.length)%a.length].key;
+ $('ranking-list').dataset.overtakeSteps='0';
  secondsRemaining=options.rotationSeconds;render();
 }
 $('next-app').onclick=()=>next(1);
 $('prev-app').onclick=()=>next(-1);
 $('pause').onclick=()=>{paused=!paused;updateTime()};
 setInterval(()=>{if(hasLoaded&&!paused&&enabled().length>1){
+ if(playingKey){updateTime();return}
  if(--secondsRemaining<=0)next(1);else updateTime();
 }},1000);
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState!=='visible')cancelPlayback();
+ else if(hasLoaded){render()}
+});
 setInterval(()=>{if(hasLoaded&&connected&&document.visibilityState==='visible'&&!$('settings').open)refresh()},REFRESH_INTERVAL_MS);
 const dialog=$('settings');
 function showSettings(){
  if(!hasLoaded)return note('Clique d’abord sur Afficher / Actualiser.');
+ cancelPlayback();
  wasPaused=paused;paused=true;buildSettings();dialog.showModal();updateTime();
 }
 function closeSettings(){
  dialog.close();paused=wasPaused;$('reset-password').value='';
- $('reset-confirm').hidden=true;pendingReset=null;updateTime();
+ $('reset-confirm').hidden=true;pendingReset=null;render();
 }
 for(const id of ['settings-left'])$(id).onclick=showSettings;
 $('close-settings').onclick=closeSettings;
@@ -309,6 +405,9 @@ function buildSettings(){
     const before=[...options[field]];
     options[field]=cb.checked?[...options[field],app.key]:options[field].filter(k=>k!==app.key);
     if(!await commitOptions()){options[field]=before;cb.checked=!cb.checked}
+    if(field==='scoreApps'){
+     cancelPlayback();tracker.drop(app.key);
+    }
     if(!enabled().some(a=>a.key===currentApp))currentApp=enabled()[0]?.key??null;
     render();
     buildSettings();
