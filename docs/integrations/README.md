@@ -2,13 +2,13 @@
 
 > **Priorité professeur du 4 novembre 2026 :** lire la [Doctrine d’efficacité et RETEX transversal](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) **avant** les recettes historiques. Construire dès le départ le jeu final pour les élèves (ses capacités XP, trophées, score facultatif, projection et HUB), puis valider ce même candidat avec les profils fictifs déjà disponibles ; éviter les versions tests parallèles et ne pas laisser une publication validée en brouillon. Cela ne dispense pas des tests de sécurité ni du contrôle Pages/Edge/SQL.
 
-**Version 1.0 — 31 octobre 2026.** Destiné au professeur, à ChatGPT et à Codex. **Cette page est la procédure à suivre**, pas l'historique d'un jeu. Le dépôt et les services évoluent : vérifier leurs versions à chaque mission.
+**Guide initial du 31 octobre 2026, priorité de sortie élève actualisée le 4 novembre 2026.** Destiné au professeur, à ChatGPT et à Codex. **Cette page est la procédure à suivre**, pas l'historique d'un jeu. Le dépôt et les services évoluent : vérifier leurs versions à chaque mission.
 
 > **Principe : ajouter un jeu, pas réécrire Math’as Connect.** Préserver son moteur, ses modes et sa pédagogie ; brancher un adaptateur minimal au système Connect. Un outil pédagogique peut être intégré **sans XP**.
 
 ## Priorité du 4 novembre 2026 : construire directement pour les élèves
 
-Le [guide d’efficacité et d’intégration finale](DOCTRINE_EFFICACITE_INTEGRATION_20261104.md) rassemble la ligne pédagogique, XP visibles sur les boutons, coupes restantes, scores facultatifs, projection, problèmes résolus et raccourcis. Concevoir une seule version finale ; utiliser le Laboratoire avec un profil fictif lorsqu’un contrôle authentifié est indispensable, sans multiplier les variantes.
+Le [rapport complet de référence](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) rassemble la ligne pédagogique, les XP visibles sur les boutons, les coupes restantes dans les exercices, les scores facultatifs, la projection, les problèmes résolus et les raccourcis. Pour démarrer rapidement, utiliser la [fiche express](DOCTRINE_EFFICACITE_INTEGRATION_20261104.md), qui **résume** ce rapport et ne constitue pas une doctrine concurrente. Concevoir une seule version finale ; utiliser le Laboratoire avec un profil fictif lorsqu’un contrôle authentifié est indispensable, sans multiplier les variantes.
 
 ## Démarrage rapide : huit étapes, trois véritables portes
 
@@ -27,7 +27,7 @@ Ces étapes sont des **lots de travail**, pas huit demandes d'accord : mener tou
 
 **Clarification 04/11 :** le développement vise maintenant directement l’application scolaire définitive et ses intégrations ; le laboratoire sert à la valider avec des comptes fictifs, pas à multiplier des moteurs ou des versions destinés à être jetés. Le dispositif historique décrit ci-dessous reste utilisable comme barrière temporaire de sécurité et n’est plus le chemin de développement à prolonger indéfiniment.
 
-**Règle permanente — 1er novembre 2026, validée par le professeur.** Le Laboratoire est précisément l'espace prévu pour **déployer et essayer une nouvelle version d'un jeu avant son ouverture officielle**, avec la classe fictive « Classe démo - TEST ». Il n'est **pas nécessaire** de rendre d'abord les nouveautés visibles dans Observation, Phase 1, Phase 2 ou 2 ECO. Un essai peut être publié dans la rubrique expérimentale du HUB test, puis retiré sans toucher aux quatre HUB normaux.
+**Règle historique du 1er novembre 2026, précisée par la décision du 4 novembre :** construire **directement le candidat final destiné aux élèves**, puis utiliser le Laboratoire comme **court sas de recette authentifiée du même candidat**, si le risque le nécessite ; ne pas créer une nouvelle application de test. Le Laboratoire est l'espace prévu pour **déployer et essayer ce candidat avant son ouverture officielle**, avec la classe fictive « Classe démo - TEST ». Il n'est **pas nécessaire** de rendre d'abord les nouveautés visibles dans Observation, Phase 1, Phase 2 ou 2 ECO. Un essai peut être publié dans la rubrique expérimentale du HUB test, puis retiré sans toucher aux quatre HUB normaux.
 
 **Deux niveaux de test, à distinguer dans chaque compte rendu :**
 
