@@ -18,6 +18,7 @@ const files={
  '/apps/multiplication-simple/certified-classic.mjs':['../apps/multiplication-simple/certified-classic.mjs','text/javascript'],
  '/apps/multiplication-simple/school-record-eligibility.mjs':['../apps/multiplication-simple/school-record-eligibility.mjs','text/javascript'],
  '/apps/objective-record/native-connect-bridge.mjs':['../apps/objective-record/native-connect-bridge.mjs','text/javascript'],
+ '/apps/objective-record/school-score-view.mjs':['../apps/objective-record/school-score-view.mjs','text/javascript'],
  '/projection-consent.mjs':['../projection-consent.mjs','text/javascript']
 };
 const server=createServer((req,res)=>{
@@ -33,7 +34,7 @@ const browser=await chromium.launch({headless:true});
 async function connectedPage(teacher=false,failFirstFinish=false,cls=CLS){
  const page=await browser.newPage({viewport:{width:390,height:820}});
  const calls=[],proofCalls=[],projectionCalls=[];
- let state=null,firstFinishFails=failFirstFinish;
+ let state=null,firstFinishFails=failFirstFinish,projectionPublished=false;
  let xp={ok:true,milestones:[],repeatXp:false,parcours:1,total:0,appXp:0,level:1};
  const context={get state(){return state},get xp(){return xp},calls,proofCalls,projectionCalls,page};
  await page.route('https://esm.sh/**',async route=>{
@@ -46,7 +47,7 @@ async function connectedPage(teacher=false,failFirstFinish=false,cls=CLS){
   const b=route.request().postDataJSON();
   calls.push({url:url.split('/').at(-1),action:b?.action});
   if(['student-me','teacher-player','student-load','student-xp',
-   'start-classic-v1','finish-classic-v1','student-share-score'].includes(b?.action))
+   'start-classic-v1','finish-classic-v1','student-score-history','student-share-score'].includes(b?.action))
    assert.equal(b.classId,cls,'La classe est liée au contexte Connect.');
   let response={ok:false,error:'unexpected_action'},status=200;
   if(url.endsWith('/connect-api')){
@@ -83,9 +84,16 @@ async function connectedPage(teacher=false,failFirstFinish=false,cls=CLS){
      xp:{delta:22,appXp:22,total:22,level:1}};
    }
   }else if(url.endsWith('/connect-projection-v2')){
-   assert.equal(b.action,'student-share-score');
-   projectionCalls.push(b);
-   response={ok:true,consentRecorded:true};
+   if(b.action==='student-score-history'){
+    const record=state?.recent?.[0];
+    const item=record?{eventId:EVENT,mode:'classic',score:4,total:4,
+     points:16,at:record.at}:null;
+    response={ok:true,events:item?[item]:[],bestThree:item?[item]:[],
+     todayBest:item,boardBest:projectionPublished?16:0};
+   }else if(b.action==='student-share-score'){
+    projectionCalls.push(b);projectionPublished=true;
+    response={ok:true,consentRecorded:true,improved:true,boardBest:16};
+   }
   }
   await route.fulfill({status,contentType:'application/json',body:JSON.stringify(response)});
  });
