@@ -75,7 +75,6 @@ test('Chromium: native multiple engine renders server terms and submits only pro
   // Les exercices se choisissent dans le menu natif, pas dans la barre Connect.
   const native=page.frameLocator('#gameFrame').frameLocator('#game');
   await native.locator('.classic-count-btn[data-count="4"]').click();
-  await native.locator('#startClassic').click();
   try{
    await page.waitForFunction(()=>{
     const w=document.getElementById('gameFrame')?.contentDocument
