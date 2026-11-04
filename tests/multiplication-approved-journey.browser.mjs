@@ -32,10 +32,10 @@ const browser=await chromium.launch({headless:true});
 
 async function connectedPage(teacher=false){
  const page=await browser.newPage({viewport:{width:390,height:820}});
- const calls=[],proofCalls=[];
+ const calls=[],proofCalls=[],projectionCalls=[];
  let state=null;
  let xp={ok:true,milestones:[],repeatXp:false,parcours:1,total:0,appXp:0,level:1};
- const context={get state(){return state},get xp(){return xp},calls,proofCalls,page};
+ const context={get state(){return state},get xp(){return xp},calls,proofCalls,projectionCalls,page};
  await page.route('https://esm.sh/**',async route=>{
   const session={user:{id:AUTH,is_anonymous:!teacher},access_token:'jwt-fixture-only'};
   const js='export function createClient(){return {auth:{getSession:async()=>({data:{session:'+JSON.stringify(session)+'}})}}}';
@@ -74,8 +74,9 @@ async function connectedPage(teacher=false){
      xp:{delta:22,appXp:22,total:22,level:1}};
    }
   }else if(url.endsWith('/connect-projection-v2')){
-   // Aucune soumission ne doit avoir lieu sans clic explicite « Oui ».
-   throw Error('Projection unexpectedly posted in browser smoke test');
+   assert.equal(b.action,'student-share-score');
+   projectionCalls.push(b);
+   response={ok:true,consentRecorded:true};
   }
   await route.fulfill({status,contentType:'application/json',body:JSON.stringify(response)});
  });
@@ -104,12 +105,19 @@ async function playFour(page){
 
 try{
  await test('TEST student: native button -> challenge -> server receipt -> XP & reload',async()=>{
-  const {page,proofCalls,calls}=await connectedPage();
+  const {page,proofCalls,projectionCalls,calls}=await connectedPage();
   try{
    assert.equal(await page.evaluate(()=>window.MathasPilotBridge?.mode),'connected');
    const frame=page.frameLocator('iframe');
    assert.equal(await frame.locator('#menuScreen .classic-count-btn[data-count="4"]').count(),1);
    await playFour(page);
+   // Même après un meilleur score certifié, aucune publication automatique.
+   const consent=page.locator('.mathas-projection-offer:not([hidden])');
+   await consent.waitFor({timeout:9000});
+   assert.equal(projectionCalls.length,0,'un résultat certifié seul ne partage aucun score');
+   await consent.getByRole('button',{name:'Non, merci'}).click();
+   assert.equal(projectionCalls.length,0,'refuser ne transmet aucune donnée');
+   assert.equal(await page.locator('.mathas-projection-offer:not([hidden])').count(),0);
    assert.deepEqual(proofCalls.map(x=>x.action),['start-classic-v1','finish-classic-v1']);
    assert.ok(calls.some(x=>x.action==='student-xp'));
    await page.waitForFunction(()=>
@@ -121,6 +129,31 @@ try{
    const score=await page.frameLocator('iframe').locator('#mathasPointsQuick [data-points="daily"]').innerText();
    assert.match(score,/16/,'native Top du jour reads certified 16 points after reloading');
    assert.equal(await page.evaluate(()=>window.MathasPilotBridge?.mode),'connected');
+  }finally{await page.close()}
+ });
+
+ await test('TEST student: certified score requires Yes before projection and is sent only once',async()=>{
+  const {page,projectionCalls,proofCalls,calls}=await connectedPage();
+  try{
+   await playFour(page);
+   const consent=page.locator('.mathas-projection-offer:not([hidden])');
+   await consent.waitFor({timeout:9000});
+   assert.equal(projectionCalls.length,0,'aucune projection sans choix de l’élève');
+   await consent.getByRole('button',{name:'Oui, envoyer'}).click();
+   await page.waitForFunction(()=>!document.querySelector('.mathas-projection-offer:not([hidden])'),
+    null,{timeout:9000});
+   await page.waitForFunction(()=>window.localStorage.getItem('mathas.projection-consents.'+
+    '4bf3400d-a315-4ea4-a2f3-afaca24dc9b9.multiplication-ecrite-simple.'+
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.v1')==='[]',null,{timeout:9000});
+   assert.equal(proofCalls.filter(x=>x.action==='finish-classic-v1').length,1);
+   assert.equal(projectionCalls.length,1,'une seule requête après Oui');
+   assert.deepEqual(projectionCalls[0],{
+    action:'student-share-score',classId:CLS,appKey:'multiplication-ecrite-simple',eventId:EVENT
+   },'seule la preuve certifiée du jeu et de la classe est envoyée');
+   await page.evaluate(()=>window.dispatchEvent(new Event('online')));
+   await page.waitForTimeout(150);
+   assert.equal(projectionCalls.length,1,'une reconnexion ne publie pas le score deux fois');
+   assert.ok(calls.some(x=>x.action==='student-xp'));
   }finally{await page.close()}
  });
  await test('Monsieur T: teacher JWT scope uses the same school-certified multiplication entry',async()=>{
