@@ -16,7 +16,9 @@ test('connected launcher isolates Multiplication from Addition',()=>{
  assert.ok(launcher.includes('mathas.ce-multiplication.connect.'));
  assert.ok(launcher.includes('/^(multi1_|mathas_)/'));
  assert.ok(launcher.includes("APP='multiplication-ecrite-simple'"));
- assert.ok(launcher.includes("'start-classic-v1'"));
+ const certified=read('../apps/multiplication-simple/certified-classic.mjs');
+ assert.ok(certified.includes("'start-classic-v1'"));
+ assert.ok(launcher.includes('createCertifiedMultiplicationClassic'));
  assert.ok(!launcher.includes("action:'game-record'"),'le score natif ne donne plus d XP');
 });
 test('guide layout remains present and arrow navigation is installed',()=>{
