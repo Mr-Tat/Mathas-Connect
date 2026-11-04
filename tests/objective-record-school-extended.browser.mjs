@@ -118,7 +118,6 @@ for(const item of examples){
      const titleVersion=title.querySelector('.mathas-connect-title-version');
      const titleVersionRect=titleVersion?.getBoundingClientRect();
      const logoRect=logo.getBoundingClientRect();
-     const strip=doc.getElementById('mathasTrophiesStrip');
      const pr=profile.getBoundingClientRect(), xr=xpButton.getBoundingClientRect();
      return {viewportWidth,points,
       profileText:profile.textContent.trim(),profileVisible:pr.width>0&&pr.height>0,
@@ -131,9 +130,8 @@ for(const item of examples){
       titleVersionVisible:!!titleVersionRect&&titleVersionRect.width>0&&titleVersionRect.height>0,
       titleVersionRight:titleVersionRect?.right,
       xpLabel:xpButton.textContent.trim(),xpVisible:xr.width>0&&xr.height>0,
-      xpAfterTrophies:Boolean(strip.parentElement===xpButton.parentElement&&
-       (strip.compareDocumentPosition(xpButton)&Node.DOCUMENT_POSITION_FOLLOWING)),
-      xpButtonAfterStrip:xr.top>=strip.getBoundingClientRect().top,
+      xpBesideProfile:profile.nextElementSibling===xpButton&&profile.parentElement===xpButton.parentElement,
+      xpToRight:xr.left>=pr.right-2,
       icon:card.querySelector('.mode-icon')?.textContent?.trim(),
       title:card.querySelector('.mode-title')?.textContent?.trim(),
       description:card.querySelector('.mode-description')?.textContent?.trim(),
@@ -142,7 +140,7 @@ for(const item of examples){
     },viewportWidth);
     assert.equal(layout.icon,'👑',JSON.stringify(layout));
     assert.equal(layout.title,'Objectif record',JSON.stringify(layout));
-    assert.equal(layout.description,'Deux façons de marquer un gros score.',JSON.stringify(layout));
+    assert.equal(layout.description,'Pour marquer un plus gros score !',JSON.stringify(layout));
     assert.equal(layout.titleHasCup,false);
     assert.equal(layout.skullInsideButton,true);
     assert.equal(layout.profileVisible,true,'profil Connect visible dans entête : '+JSON.stringify(layout));
@@ -155,14 +153,14 @@ for(const item of examples){
     if(viewportWidth>=950){
      assert.ok(layout.logoRight<=layout.profileLeft+2,
       'Connect est directement à droite du logo, sans version intermédiaire : '+JSON.stringify(layout));
+     assert.equal(layout.xpToRight,true,'XP à droite du cadre Connecté : '+JSON.stringify(layout));
      assert.ok(layout.titleVersionRight<=viewportWidth+2,
       'la version ne dépasse pas la largeur : '+JSON.stringify(layout));
     }
     assert.match(layout.profileText,/Connecté · .*Niveau 1.*0 \/ 50 XP/);
-    assert.equal(layout.xpVisible,true,'bouton XP visible sous les trophées : '+JSON.stringify(layout));
-    assert.equal(layout.xpAfterTrophies,true);
-    assert.equal(layout.xpButtonAfterStrip,true);
-    assert.equal(layout.xpLabel,'✨ XP à gagner');
+    assert.equal(layout.xpVisible,true,'bouton XP visible près du profil : '+JSON.stringify(layout));
+    assert.equal(layout.xpBesideProfile,true,'bouton XP immédiatement après le profil Connect');
+    assert.equal(layout.xpLabel,'✨ XP à récupérer');
     const [fullscreen,hub,theme]=layout.points;
     assert.ok(hub.left<fullscreen.left,'Retour au HUB à gauche de Plein écran : '+JSON.stringify(layout));
     assert.ok(Math.abs(fullscreen.top-hub.top)<=2,'boutons d origine côte à côte : '+JSON.stringify(layout));
@@ -268,13 +266,14 @@ for(const item of examples){
       const label=button.querySelector('.mathas-connect-official-xp');
       const b=button.getBoundingClientRect(),x=label?.getBoundingClientRect();
       return {label:button.textContent,
+       paddingTop:parseFloat(doc.defaultView.getComputedStyle(button).paddingTop),
        count:(button.textContent.match(/Reste\s+\d+\s+XP/g)||[]).length,
        inside:!!x&&x.top>=b.top-1&&x.bottom<=b.bottom+1&&x.left>=b.left-1&&x.right<=b.right+1};
      });
      const b=red.getBoundingClientRect(),x=xp.getBoundingClientRect(),c=cups.getBoundingClientRect();
      const three=doc.getElementById('startThreeLives');
      const t=three.getBoundingClientRect(),heartXp=three.querySelector(':scope > .mathas-connect-official-xp')?.getBoundingClientRect();
-     const heartInfo=three.querySelector('.score-mode-lives-info')?.getBoundingClientRect();
+     const heartInfo=three.querySelector('.score-mode-lives-info');
      const intersects=x.left<c.right-1&&x.right>c.left+1&&x.top<c.bottom-1&&x.bottom>c.top+1;
      return {classic:classical,intersects,
       xpInside:x.left>=b.left-1&&x.right<=b.right+1&&x.top>=b.top-1&&x.bottom<=b.bottom+1,
@@ -282,13 +281,14 @@ for(const item of examples){
       threeEqualWidth:Math.abs(t.width-b.width)<=2,
       threeEqualHeight:Math.abs(t.height-b.height)<=2,
       threeXpInside:!!heartXp&&heartXp.left>=t.left-1&&heartXp.right<=t.right+1&&heartXp.top>=t.top-1&&heartXp.bottom<=t.bottom+1,
-      threeInfoInside:!!heartInfo&&heartInfo.left>=t.left-1&&heartInfo.right<=t.right+1&&heartInfo.top>=t.top-1&&heartInfo.bottom<=t.bottom+1,
+      threeInfoAbsent:!heartInfo&&!three.textContent.includes('3 erreurs possibles'),
       threeXpCount:three.querySelectorAll(':scope > .mathas-connect-official-xp').length,
       rects:{red:{w:b.width,h:b.height},three:{w:t.width,h:t.height},xp:{x:x.x,y:x.y,w:x.width,h:x.height},
        cups:{x:c.x,y:c.y,w:c.width,h:c.height}}};
     });
     for(const b of boxes.classic){
      assert.equal(b.count,1,'only ONE XP indication in '+viewportWidth+'px '+JSON.stringify(b));
+      assert.ok(b.paddingTop>=12,'libellés 4/10/20 légèrement descendus : '+JSON.stringify(b));
      assert.equal(b.inside,true,'classic badge stays INSIDE its button '+viewportWidth+'px '+JSON.stringify(b));
     }
     assert.equal(boxes.intersects,false,'Mort subite cups must not cover XP '+viewportWidth+'px '+JSON.stringify(boxes));
@@ -298,7 +298,7 @@ for(const item of examples){
     assert.equal(boxes.threeEqualHeight,true,'both normal score buttons have equal height '+viewportWidth+'px '+JSON.stringify(boxes));
     assert.equal(boxes.threeXpCount,1,'one official XP badge on 3 vies');
     assert.equal(boxes.threeXpInside,true,'3 vies XP inside its button '+viewportWidth+'px '+JSON.stringify(boxes));
-    assert.equal(boxes.threeInfoInside,true,'3 vies hint inside its button '+viewportWidth+'px '+JSON.stringify(boxes));
+    assert.equal(boxes.threeInfoAbsent,true,'aucune mention 3 erreurs possibles dans le bouton '+viewportWidth+'px '+JSON.stringify(boxes));
    }
    await page.setViewportSize({width:1160,height:820});
    // Opening the custom Niveau selector must place its portal BELOW the
