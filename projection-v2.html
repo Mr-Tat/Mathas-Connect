@@ -280,23 +280,114 @@ html[data-proj-da="studio"] .ranking-board .ranking-head h2{font-family:Impact,"
 <link rel="stylesheet" href="./essais/projection-v2-da.css?v=20261101-1">
 <link rel="stylesheet" href="./projection-v2-avatar.css?v=20261104-podium-texte-v5">
 <link rel="stylesheet" href="./projection-v2-overtake.css?v=20261104-v1">
+
+<!-- Correctif d'en-tête chargé APRÈS les thèmes : ces derniers plaçaient
+     la classe sur une deuxième ligne dès 1480 px. -->
+<style>
+html[data-proj-da] header.projection-header,
+header.projection-header{
+ display:grid;grid-template-columns:minmax(210px,1fr) minmax(210px,1.15fr) minmax(340px,1fr);
+ grid-template-areas:"theme class refresh";align-items:center;gap:14px;
+ padding:9px 16px;min-height:65px;
+}
+header.projection-header .projection-theme-picker{
+ grid-area:theme;display:flex;align-items:center;justify-self:start;gap:8px;
+ min-width:0;white-space:nowrap;font-size:13px;font-weight:850;
+ color:var(--v-text,#f6fbff)
+}
+header.projection-header .projection-theme-picker select{
+ width:clamp(135px,13vw,190px);max-width:100%;min-width:0;min-height:38px;
+ border:1px solid var(--v-button-line,#7794b1);border-radius:9px;
+ padding:6px 9px;background:var(--v-button,#304c66);
+ color:var(--v-button-ink,#f6fbff);font-size:13px
+}
+html[data-proj-da] header.projection-header .header-class,
+header.projection-header .header-class{
+ grid-area:class;position:static;left:auto;top:auto;transform:none;order:0;
+ margin:0;max-width:100%;width:auto;flex:initial;min-width:0;
+ justify-self:center;text-align:center;
+ font-size:clamp(22px,2.1vw,31px);font-weight:950;line-height:1.14;
+ letter-spacing:.015em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+ color:var(--v-text,#f6fbff)
+}
+header.projection-header .header-tools{
+ grid-area:refresh;display:flex;align-items:center;justify-content:flex-end;
+ justify-self:stretch;gap:9px;margin:0;min-width:0;max-width:none;
+}
+header.projection-header #load-real{
+ flex:0 0 auto;min-width:150px;min-height:38px;
+ padding:6px 9px;white-space:nowrap;font-size:12px
+}
+header.projection-header .projection-auto-refresh{
+ display:flex;flex:0 0 145px;min-width:130px;
+ flex-direction:column;gap:5px;align-items:stretch;
+}
+header.projection-header .projection-auto-label{
+ color:var(--v-text,#d4e7f8);font-size:11px;font-weight:850;
+ letter-spacing:.035em;white-space:nowrap;
+}
+header.projection-header .projection-refresh-progress{
+ display:block;height:11px;width:100%;
+ border:1px solid var(--v-button-line,#7794b1);
+ background:color-mix(in srgb,var(--v-header,#263f5b) 72%,#000 28%);
+ border-radius:999px;overflow:hidden;position:relative;
+}
+header.projection-header .projection-refresh-fill{
+ display:block;width:100%;height:100%;
+ background:var(--v-accent,#ffdc81);
+ border-radius:inherit;transform:scaleX(0);transform-origin:left center;
+ transition:transform .25s linear;
+}
+header.projection-header .projection-refresh-progress.is-inactive{opacity:.45}
+header.projection-header .projection-refresh-progress.is-paused{
+ border-style:dashed;
+}
+@media(max-width:950px){
+ html[data-proj-da] header.projection-header,header.projection-header{
+  grid-template-columns:minmax(170px,1fr) minmax(320px,1fr);
+  grid-template-areas:"theme refresh" "class class";row-gap:7px
+ }
+ html[data-proj-da] header.projection-header .header-class,
+ header.projection-header .header-class{
+  justify-self:center;max-width:100%;font-size:clamp(22px,3vw,28px)
+ }
+}
+@media(max-width:570px){
+ html[data-proj-da] header.projection-header,header.projection-header{
+  grid-template-columns:minmax(0,1fr);
+  grid-template-areas:"theme" "class" "refresh";
+  justify-items:center;gap:8px;padding:9px 10px
+ }
+ header.projection-header .projection-theme-picker{justify-self:center}
+ header.projection-header .header-tools{justify-self:center;max-width:100%;gap:8px}
+ header.projection-header #load-real{min-width:0}
+ header.projection-header .projection-auto-refresh{flex-basis:118px;min-width:100px}
+}
+@media(prefers-reduced-motion:reduce){
+ header.projection-header .projection-refresh-fill{transition:none}
+}
+</style>
 </head>
 <body>
-<header>
+<header class="projection-header">
+  <label class="projection-theme-picker" for="projection-theme"><span aria-hidden="true">🎨</span> Thème
+    <select id="projection-theme" aria-label="Choisir le thème de la projection">
+      <option value="neon">Néon auditorium</option><option value="papier">Papier clair</option>
+      <option value="ardoise">Ardoise scolaire</option><option value="studio">Studio compétition</option>
+    </select>
+  </label>
   <div id="header-class" class="header-class" aria-label="Classe projetée">Classe</div>
-  <div class="header-tools">
-    <div class="projection-actions" aria-label="Commandes de projection">
-      <button id="load-real" type="button">Afficher / Actualiser</button>
-      <button id="settings-top" class="settings-under" type="button" disabled>⚙ Applications</button>
-      <label class="projection-theme-picker" for="projection-theme"><span aria-hidden="true">🎨</span> Thème
-        <select id="projection-theme" aria-label="Choisir le thème de la projection">
-          <option value="neon">Néon auditorium</option><option value="papier">Papier clair</option>
-          <option value="ardoise">Ardoise scolaire</option><option value="studio">Studio compétition</option>
-        </select>
-      </label>
-      <span id="live-status" role="status" aria-live="polite">Connexion professeur requise</span>
+  <div class="header-tools" aria-label="Actualisation des classements">
+    <button id="load-real" type="button">Afficher / Actualiser</button>
+    <div class="projection-auto-refresh" aria-label="Actualisation automatique toutes les 20 secondes">
+      <span class="projection-auto-label">MAJ auto</span>
+      <div id="projection-refresh-progress" class="projection-refresh-progress is-inactive"
+        role="progressbar" aria-label="Temps écoulé avant la prochaine actualisation"
+        aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="En attente">
+        <span id="projection-refresh-fill" class="projection-refresh-fill"></span>
+      </div>
     </div>
-    <output id="projection-refresh-countdown" class="projection-refresh-countdown" aria-label="Prochaine actualisation des scores"><span id="projection-refresh-label">MAJ en attente</span></output>
+    <span id="live-status" role="status" aria-live="polite">Connexion professeur requise</span>
   </div>
 </header>
 <div class="projection-stage">
@@ -323,6 +414,6 @@ html[data-proj-da="studio"] .ranking-board .ranking-head h2{font-family:Impact,"
   <section class="options"><strong>Comparaison avec les autres classes</strong><p class="note">Pour chaque classe, affiche le score de l’application en cours, le pourcentage de réussite, ou les deux.</p><table class="comparison-table"><thead><tr><th>Classe</th><th>Score</th><th>%</th></tr></thead><tbody id="comparison-options"></tbody></table><label><input id="show-teacher" type="checkbox"> Afficher Monsieur T (décoché au lancement)</label></section>
   <div id="reset-confirm" class="options" hidden><strong id="reset-heading">Réinitialiser le score projeté</strong><label>Mot de passe professeur <input id="reset-password" type="password" autocomplete="current-password" maxlength="160" placeholder="Mot de passe"/></label><div class="controls"><button id="reset-apply" type="button">Confirmer uniquement ce score</button><button id="reset-cancel" type="button">Annuler</button></div></div><p class="note">Une réinitialisation n’affecte qu’une application et une classe. Jamais les %, les résultats réels, les XP, les trophées ou les parcours des élèves.</p>
 </dialog>
-<script type="module" src="./projection-v2-live.js?v=20261104-parallel-3-v1"></script>
+<script type="module" src="./projection-v2-live.js?v=20261104-header-auto-progress-v1"></script>
 </body>
 </html>

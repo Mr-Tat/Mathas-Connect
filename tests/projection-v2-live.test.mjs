@@ -32,12 +32,17 @@ test('Projection V2 : un, deux ou trois panneaux visibles et séparés',()=>{
 });
 test('Projection V2 : rafraîchissement toutes les 20 s, sans changement automatique de page',()=>{
  assert.match(js,/const REFRESH_INTERVAL_MS=20000;/);
- assert.match(js,/nextRefreshAt=Date\.now\(\)\+REFRESH_INTERVAL_MS/);
- assert.match(js,/setInterval\(tickProjection,1000\)/);
- assert.match(js,/if\(document\.visibilityState==='visible'&&!\$\('settings'\)\.open\)void refresh\(\)/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-parallel-3-v1/);
- assert.match(html,/id="projection-refresh-countdown"/);
- assert.match(html,/id="projection-refresh-label"/);
+ assert.match(js,/refreshCycleStartedAt=now;nextRefreshAt=now\+REFRESH_INTERVAL_MS/);
+ assert.match(js,/setInterval\(tickProjection,250\)/);
+ assert.match(js,/Date\.now\(\)>=nextRefreshAt/);
+ assert.match(js,/if\(ticket===refreshTicket&&connected&&hasLoaded\)startRefreshCycle\(\)/);
+ assert.match(js,/function pauseRefreshCycle\(\)/);
+ assert.match(js,/function resumeRefreshCycle\(\)/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-header-auto-progress-v1/);
+ assert.match(html,/id="projection-refresh-progress"/);
+ assert.match(html,/id="projection-refresh-fill"/);
+ assert.match(html,/role="progressbar"/);
+ assert.doesNotMatch(html,/id="projection-refresh-countdown"|id="projection-refresh-label"/);
  assert.doesNotMatch(js,/startCycle\(|function next\(|secondsRemaining|playCurrentApp/);
 });
 test('Projection V2 : jusqu’à 16 élèves et animations indépendantes',()=>{
@@ -77,10 +82,27 @@ test('Projection V2 : reset isolé, confidentialité, déconnexion et syntaxe',(
 test('Projection V2 : les quatre thèmes et l’accès aux réglages sont conservés',()=>{
  assert.match(html,/id="projection-theme"/);
  assert.match(html,/id="settings-left"/);
- assert.match(html,/id="settings-top"/);
+ assert.doesNotMatch(html,/id="settings-top"/);
+ assert.match(html,/id="load-real"/);
  assert.match(html,/Réussite de la classe/);
  assert.match(html,/Nouveaux exploits/);
  assert.match(html,/id="comparison-results"/);
  assert.match(js,/Mesure des exercices réellement entamés|exercices réellement entamés/);
  assert.match(html,/\.ranking-board \.ranking-head\{position:sticky;top:0/);
+});
+
+test('Projection V2 : thème à gauche, classe centrée plus visible, MAJ et barre côte à côte',()=>{
+ assert.match(html,/<header class="projection-header">/);
+ const header=html.match(/<header class="projection-header">[\s\S]*?<\/header>/)?.[0];
+ assert.ok(header,'En-tête absent');
+ assert.ok(header.indexOf('id="projection-theme"')<header.indexOf('id="header-class"'));
+ assert.ok(header.indexOf('id="header-class"')<header.indexOf('id="load-real"'));
+ assert.ok(header.indexOf('id="load-real"')<header.indexOf('id="projection-refresh-progress"'));
+ assert.doesNotMatch(header,/settings-top|⚙ Applications/);
+ assert.match(html,/grid-template-areas:"theme class refresh"/);
+ assert.match(html,/font-size:clamp\(22px,2\.1vw,31px\);font-weight:950/);
+ assert.match(html,/MAJ auto/);
+ assert.match(js,/fill\.style\.transform='scaleX\('\+fraction\+'\)'/);
+ assert.match(js,/aria-valuetext/);
+ assert.match(js,/refreshPausedAt/);
 });
