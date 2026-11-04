@@ -43,8 +43,8 @@ test('fail closed if the certified native engine changes its insertion anchors',
 });
 test('proof progress cannot earn points on invalid attempts or double credit three lives',()=>{
  const q=[{id:'q1',a:'31',m:8},{id:'q2',a:'31',m:8}];
- const right=(id)=>({id,digits:['8','4','2'],carries:['','2']});
- const wrong=(id)=>({id,digits:['7','4','2'],carries:['','2']});
+ const right=(id)=>({id,digits:['8','4','2'],carries:['','']});
+ const wrong=(id)=>({id,digits:['7','4','2'],carries:['','']});
  const classic=multiplicationEndState('classic',[right('q1'),wrong('q2')],q);
  assert.equal(classic.correct,1);
  assert.equal(classic.complete,true);
