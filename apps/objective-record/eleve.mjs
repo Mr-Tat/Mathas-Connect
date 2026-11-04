@@ -380,6 +380,10 @@ async function choose(){
  const slug=$('app').value;
  if(!Object.hasOwn(GAME_URLS,slug)){message('Jeu inconnu');return;}
  activeApp=GAME_URLS[slug][0];
+ // Le bandeau rétractable est remplacé, dans les deux additions seulement,
+ // par une identité compacte et un bouton XP dans les véritables cartes du jeu.
+ document.documentElement.classList.toggle('mathas-native-connect-hud',
+  SERVER_PROOF_ADDITIONS.has(activeApp));
  try{
   message('Vérification de l’identité et de la classe Connect…');
   const approved=await approvedProfile();
