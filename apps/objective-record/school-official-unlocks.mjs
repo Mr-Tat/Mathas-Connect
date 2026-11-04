@@ -1,7 +1,7 @@
 // Authoritative student progress originates from the authenticated Connect
 // student-load response. Never read the standalone game's localStorage
 // to decide whether a school reward or difficulty is unlocked.
-const APPS=new Set(['addition-ecrite-simple','addition-ecrite-multiple']);
+const APPS=new Set(['addition-ecrite-simple','addition-ecrite-multiple','multiplication-ecrite-simple']);
 const allowedLevels=[1,2,3];
 const validScore=(s,n)=>Number.isInteger(s)&&s>=0&&s<=n;
 const safeArray=v=>Array.isArray(v)?v:[];
@@ -70,9 +70,11 @@ export function syncOfficialGameProgress(doc,profile){
  if(!doc?.defaultView||!profile?.active)return false;
  const w=doc.defaultView,appKey=profile.appKey;
  const progressKey=appKey==='addition-ecrite-simple'?'mathas_progression_addition_simple_v1'
-  :appKey==='addition-ecrite-multiple'?'mathas_progression_addition_plusieurs_v1':null;
+  :appKey==='addition-ecrite-multiple'?'mathas_progression_addition_plusieurs_v1'
+  :appKey==='multiplication-ecrite-simple'?'mathas_progression_multiplication_simple_v1':null;
  const hardKey=appKey==='addition-ecrite-simple'?'addition1_hard_sudden_v1'
-  :appKey==='addition-ecrite-multiple'?'addition2_hard_sudden_v3':null;
+  :appKey==='addition-ecrite-multiple'?'addition2_hard_sudden_v3'
+  :appKey==='multiplication-ecrite-simple'?'multi1_hard_sudden_v1':null;
  if(!progressKey||!hardKey)return false;
  const serial=JSON.stringify([profile.progress,profile.hardRecords]);
  if(doc.__mathasSchoolOfficialProgressSignature===serial)return true;
