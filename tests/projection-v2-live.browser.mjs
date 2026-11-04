@@ -305,3 +305,37 @@ test('V2 — barre synchronisée : 20 secondes, clic manuel et pause des réglag
   assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
+
+test('V2 — onglet masqué : zéro MAJ, barre figée et reprise du temps restant',{timeout:65000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}}),state=sampleState([ADD,MUL],5);
+  await page.clock.install();
+  const {errors}=await openBoard(page,url,state);
+  const value=()=>page.locator('#projection-refresh-progress').getAttribute('aria-valuenow').then(Number);
+  assert.equal(state.loads,1);
+  await page.clock.fastForward(8000);
+  const beforeHide=await value();
+  assert.ok(beforeHide>=30,'La barre a avancé avant masquage');
+  await page.evaluate(()=>{
+   Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});
+   document.dispatchEvent(new Event('visibilitychange'));
+  });
+  assert.match(await page.locator('#projection-refresh-progress').getAttribute('aria-valuetext'),/suspendue/);
+  await page.clock.fastForward(90000);
+  assert.equal(state.loads,1,'Aucune requête réseau pendant les 90 secondes masquées');
+  assert.equal(await value(),beforeHide,'La progression est restée figée');
+  await page.evaluate(()=>{
+   Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});
+   document.dispatchEvent(new Event('visibilitychange'));
+  });
+  assert.equal(state.loads,1,'Le retour visible ne déclenche pas de rattrapage');
+  await page.clock.fastForward(9000);
+  assert.equal(state.loads,1,'Le temps restant est conservé');
+  await page.clock.fastForward(5000);
+  await page.waitForFunction(()=>document.querySelector('#projection-refresh-progress')?.getAttribute('aria-valuenow')==='0',
+   null,{timeout:12000});
+  assert.equal(state.loads,2,'Une seule nouvelle lecture après les secondes restantes');
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
