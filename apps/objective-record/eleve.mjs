@@ -6,6 +6,7 @@ import {MIXED_TEST_APP,isMixedTestTerminal} from './mixed-test-proof.mjs';
 import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
 import {createMultiplicationProofUI} from './certified-multiplication-ui.mjs';
+import {createMultiplicationExtendedUI} from './certified-multiplication-extended-ui.mjs';
 import {createCertifiedExtendedUI} from './certified-extended-ui.mjs';
 import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs?v=20261104-three-lives-half-xp-v1';
 import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs';
@@ -217,7 +218,7 @@ async function call(endpoint,action,appKey,payload={}){
 }
 async function approvedProfile(){
  if(classId!==CLASS_TEST&&!SCHOOL_CLASSES.has(classId))throw Error('Classe non autorisée pour ces calculs');
- if(classId!==CLASS_TEST&&!SERVER_PROOF_ADDITIONS.has(activeApp))throw Error('Ce calcul écrit n’est pas encore ouvert aux classes scolaires');
+ if(classId!==CLASS_TEST&&!SERVER_PROOF_APPS.has(activeApp))throw Error('Ce calcul écrit n’est pas encore ouvert aux classes scolaires');
  const profile=await call('connect-api',teacher?'teacher-player':'student-me');
  if(profile.status!=='approved'||profile.classId!==classId)throw Error('Profil Connect non approuvé dans cette classe');
  return profile;
@@ -304,6 +305,7 @@ function watchGame(seq){
     // The familiar game buttons now enter the authenticated, server-issued
     // proof. Never accept a native game score as an XP claim.
     if(choice.mode==='classic')void activeProofUI.startNative(choice.level,choice.total);
+    else if(activeApp===MULTIPLICATION_PROOF_APP)void mulExtendedUI.startNative(choice.mode,choice.level);
     else void extendedUI.startNative(choice.mode,choice.level);
    });
    if(doc===visibleDoc)return;
@@ -319,7 +321,7 @@ function watchGame(seq){
        mixedProof:inside.contentWindow.__mathasMixedTestFinished??null}:event;
       recorder.onSnapshot(observed);
      }
-     else if(event.phase==='ended')message(SERVER_PROOF_ADDITIONS.has(activeApp)
+     else if(event.phase==='ended')message(SERVER_PROOF_APPS.has(activeApp)
       ?'Partie libre terminée : aucun XP officiel. Lance une série vérifiée par le serveur pour enregistrer ton résultat.'
       :'Partie terminée : aucun XP Connect (ce jeu n’est pas encore raccordé).');
     };
@@ -369,11 +371,21 @@ const certifiedMulUI=createMultiplicationProofUI({
  button:$('certify'),panel:$('certified-tools'),
  levelSelect:$('certified-level'),totalSelect:$('certified-total'),
  modeSelect:$('certified-mode'),frame:$('gameFrame'),
- getContext:()=>({generation,activeApp,pupilId,classId}),
+ getContext:()=>({generation,activeApp,pupilId,classId,officialProgress:lastOfficialProgress}),
  call:(action,payload)=>call('connect-multiplication-school',action,null,payload),
- refresh:()=>refresh(generation),notify:message
+ refresh:()=>refresh(generation),notify:message,
+ onRecorded:receipt=>{if(receipt.appKey===activeApp)void schoolScoreView?.recorded(receipt.eventId);}
 });
-// Séries classiques certifiées uniquement ; survie et HARD restent non officiels.
+const mulExtendedUI=createMultiplicationExtendedUI({
+ button:$('certify'),modeSelect:$('certified-mode'),levelSelect:$('certified-level'),
+ frame:$('gameFrame'),root:$('extended-certified'),title:$('extended-title'),
+ status:$('extended-status'),grid:$('extended-grid'),
+ verifyButton:$('extended-verify'),nextButton:$('extended-next'),exitButton:$('extended-exit'),
+ getContext:()=>({generation,activeApp,pupilId,classId,officialProgress:lastOfficialProgress}),
+ call:(action,payload)=>call('connect-multiplication-school',action,null,payload),
+ refresh:()=>refresh(generation),notify:message,
+ onRecorded:receipt=>{if(receipt.appKey===activeApp)void schoolScoreView?.recorded(receipt.eventId);}
+});
 const extendedUI=createCertifiedExtendedUI({
  button:$('certify'),modeSelect:$('certified-mode'),levelSelect:$('certified-level'),
  frame:$('gameFrame'),root:$('extended-certified'),title:$('extended-title'),
@@ -401,7 +413,7 @@ $('certified-mode').addEventListener('change',updateCertifiedModeControls);
 updateCertifiedModeControls();
 async function choose(){
  generation++;const seq=generation;
- clearInterval(watching);visibleDoc=null;recorder=null;pupilId=null;certifiedUI.reset();certifiedMultiUI.reset();certifiedMulUI.reset();extendedUI.reset();
+ clearInterval(watching);visibleDoc=null;recorder=null;pupilId=null;certifiedUI.reset();certifiedMultiUI.reset();certifiedMulUI.reset();extendedUI.reset();mulExtendedUI.reset();
  projectionConsent?.destroy();projectionConsent=null;
  schoolScoreView?.destroy();schoolScoreView=null;latestState=null;clear();
  const slug=$('app').value;
@@ -424,7 +436,7 @@ async function choose(){
   projectionConsent=createProjectionConsent({
    classId,appKey:activeApp,studentKey:pupilId,getToken:verifiedToken
   });
-  if(SERVER_PROOF_ADDITIONS.has(activeApp)){
+  if(SERVER_PROOF_APPS.has(activeApp)){
    schoolScoreView=createSchoolScoreView({
     appKey:activeApp,
     fetchHistory:()=>call('connect-projection-v2','student-score-history',activeApp),
@@ -463,7 +475,7 @@ async function choose(){
   $('gameFrame').hidden=false;$('refresh').disabled=false;
   watchGame(seq);
   message(activeApp===MULTIPLICATION_PROOF_APP
-   ?'Classe TEST : séries classiques Multiplication certifiées par Connect. Les modes 3 vies, Mort subite et HARD restent libres, sans XP officiel.'
+   ?'Multiplication : séries, 3 vies, Mort subite et HARD certifiés par Connect, selon les déblocages officiels.'
    :SERVER_PROOF_ADDITIONS.has(activeApp)
    ?'Profil Connect approuvé · choisis Classique, 3 vies, Mort subite ou HARD puis lance le défi certifié. Les parties natives libres restent sans XP.'
    :recorder?'Classe TEST : calculs autres qu’addition en essai · scores natifs encore en cours de certification, sans ouverture scolaire.'
@@ -482,7 +494,7 @@ async function choose(){
   }else message('⚠️ '+(e?.message||'Accès indisponible')+'. Jeu non lancé.');
  }
 }
-$('refresh').addEventListener('click',async()=>{const seq=generation;try{if(extendedUI.hasPending())await extendedUI.retry();else if(certifiedUI.hasPending())await certifiedUI.retry();else if(certifiedMultiUI.hasPending())await certifiedMultiUI.retry();else if(certifiedMulUI.hasPending())await certifiedMulUI.retry();else if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
+$('refresh').addEventListener('click',async()=>{const seq=generation;try{if(mulExtendedUI.hasPending())await mulExtendedUI.retry();else if(extendedUI.hasPending())await extendedUI.retry();else if(certifiedUI.hasPending())await certifiedUI.retry();else if(certifiedMultiUI.hasPending())await certifiedMultiUI.retry();else if(certifiedMulUI.hasPending())await certifiedMulUI.retry();else if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
   if(seq===generation&&!recorder?.hasPending())message('Profil officiel actualisé.');
  }catch(e){if(seq===generation)message('⚠️ '+e.message)}});
 $('app').addEventListener('change',()=>{const next=new URL(location.href);next.searchParams.set('app',$('app').value);history.replaceState(null,'',next);void choose()});
