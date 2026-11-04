@@ -114,6 +114,25 @@ test('V2 — 1, 2 et 3 panneaux, colonnes, séparation, scroll et limite de sél
   assert.equal(await page.locator(card(MUL)+' .ranking-col').count(),2,'Deux : deux colonnes par appli');
   assert.equal(await page.locator(card(ADD)+' .entry.rank-1 .points').textContent(),'220 pts');
   assert.equal(await page.locator(card(MUL)+' .entry.rank-1 .points').textContent(),'90 pts');
+  // La réussite reste à GAUCHE et les exploits à DROITE, jamais en dessous.
+  const verifySidebars=async count=>{
+   const rects=await page.evaluate(()=>{
+    const get=selector=>{
+     const r=document.querySelector(selector).getBoundingClientRect();
+     return {x:r.left,right:r.right,top:r.top,width:r.width};
+    };
+    return {left:get('.left-col'),board:get('#ranking-board'),right:get('.right')};
+   });
+   assert.ok(rects.left.right+5<=rects.board.x,
+    'Mode '+count+' : bloc Réussite à gauche, non placé en dessous');
+   assert.ok(rects.board.right+5<=rects.right.x,
+    'Mode '+count+' : bloc Exploits à droite, non placé en dessous');
+   assert.ok(Math.abs(rects.left.top-rects.board.top)<16&&Math.abs(rects.right.top-rects.board.top)<16,
+    'Mode '+count+' : panneaux latéraux alignés en haut');
+   assert.ok(rects.left.width>=150&&rects.right.width>=150,
+    'Mode '+count+' : panneaux latéraux assez larges pour les intitulés');
+  };
+  await verifySidebars(2);
   await page.getByRole('checkbox',{name:'Soustraction écrite · Afficher score'}).check();
   await page.waitForFunction(()=>document.querySelectorAll('.ranking-card').length===3);
   assert.equal(await page.locator('#projection-main').getAttribute('data-app-count'),'3');
@@ -121,6 +140,7 @@ test('V2 — 1, 2 et 3 panneaux, colonnes, séparation, scroll et limite de sél
    assert.equal(await page.locator(card(key)+' .ranking-col').count(),1,'Trois : une seule colonne');
    assert.equal(await page.locator(card(key)+' .entry').count(),16);
   }
+  await verifySidebars(3);
   assert.equal(await page.getByRole('checkbox',{name:'Addition multiple · Afficher score'}).isDisabled(),true,
    'Impossible de choisir une quatrième appli');
   assert.equal(await page.getByRole('checkbox',{name:'Addition multiple · Afficher pourcentage'}).isDisabled(),false,
