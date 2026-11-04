@@ -1,5 +1,7 @@
 name: Multiplication school PostgreSQL proof (disposable)
 on:
+  push:
+    branches: [feat/multiplication-school-integration-20261104]
   pull_request:
     paths:
       - 'supabase/migrations/2026110411*.sql'
