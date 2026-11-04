@@ -41,10 +41,14 @@ test('deux additions : Objectif record garde son sous-titre et sa couronne ; com
   assert.doesNotMatch(source,/score-mode-cup" aria-hidden="true">🏆/);
   assert.match(source,/if\(suddenDesc&&!suddenDesc\.textContent\.trim\(\)\)/,
     'le script moteur ne doit plus écraser le sous-titre après le chargement');
-  assert.match(source,/native-hub-link\.js\?v=20261104-native-embedded-connect-hud/,
+  assert.match(source,/native-hub-link\.js\?v=20261104-version-next-to-title/,
     'le nouvel emplacement natif charge le fichier actualisé');
  }
  assert.match(nav,/function installEmbeddedConnectHud\(frame\)/);
+ assert.match(nav,/nativeTitle\.append\(titleVersion\)/,'la version suit le titre');
+ assert.match(nav,/nativeVersion\.cloneNode\(true\)/,'aucune version figée en dur');
+ assert.match(nav,/mathas-brand-row > \.app-version-pill/,'ancienne version masquée à côté du logo');
+ assert.match(nav,/\.mathas-connect-title-version/,'nouvelle pastille près du titre');
  assert.match(nav,/getElementById\('mathasTrophiesStrip'\)/);
  assert.match(nav,/insertAdjacentElement\('afterend',button\)/);
  assert.match(nav,/querySelector\('main\.app > header \.mathas-brand-row'\)/);

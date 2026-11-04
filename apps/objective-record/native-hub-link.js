@@ -32,6 +32,29 @@
       color:#e8f5ff!important;box-shadow:0 4px 13px rgba(0,0,0,.20)!important;
       font:700 12px system-ui,sans-serif!important;line-height:1.2!important
     }
+    /* L'identité Connect accompagne le logo; la version appartient au titre. */
+    main.app > header.mathas-illustrated-header .mathas-brand-row > .app-version-pill{
+      display:none!important
+    }
+    main.app > header.mathas-illustrated-header .mathas-brand-row{
+      display:flex!important;align-items:center!important;justify-content:flex-start!important;
+      flex-wrap:wrap!important;column-gap:clamp(8px,1.4vw,14px)!important;
+      row-gap:6px!important;min-width:0!important
+    }
+    main.app > header.mathas-illustrated-header .mathas-header-copy h1 .mathas-connect-title-version{
+      display:inline-flex!important;vertical-align:middle!important;
+      align-items:center!important;justify-content:center!important;
+      white-space:nowrap!important;box-sizing:border-box!important;
+      margin:0 0 0 clamp(8px,1.4vw,16px)!important;
+      padding:4px 9px!important;line-height:1.15!important;
+      font-size:clamp(10px,1.12vw,13px)!important;font-weight:800!important;
+      letter-spacing:0!important;transform:none!important
+    }
+    @media(max-width:700px){
+      main.app > header.mathas-illustrated-header .mathas-header-copy h1 .mathas-connect-title-version{
+        margin-left:8px!important;padding:3px 7px!important;font-size:10px!important
+      }
+    }
     #mathas-native-connect-profile[hidden],#mathas-native-connect-xp[hidden]{display:none!important}
     #mathas-native-connect-profile .connect-identity{
       display:inline-flex!important;gap:5px!important;align-items:center!important;
@@ -89,6 +112,22 @@
   const update=()=>{
     if(frame.contentDocument!==doc){clearInterval(ticker);return}
     const row=doc.querySelector('main.app > header .mathas-brand-row');
+    const nativeTitle=doc.querySelector('main.app > header .mathas-header-copy h1');
+    const nativeVersion=row?.querySelector(':scope > .app-version-pill');
+    if(nativeTitle&&nativeVersion){
+      // L'ancien script génère et actualise sa version dans brandRow. La
+      // copie visible suit cette source (sans toucher à son calcul de version),
+      // et le badge d'origine reste caché pour éviter un doublon.
+      let titleVersion=nativeTitle.querySelector('.mathas-connect-title-version');
+      if(!titleVersion){
+        titleVersion=nativeVersion.cloneNode(true);
+        titleVersion.classList.add('mathas-connect-title-version');
+        nativeTitle.append(titleVersion);
+      }else if(titleVersion.textContent!==nativeVersion.textContent){
+        titleVersion.replaceChildren(...Array.from(nativeVersion.childNodes,
+          node=>node.cloneNode(true)));
+      }
+    }
     if(row&&!doc.getElementById('mathas-native-connect-profile')){
       const profile=doc.createElement('div');
       profile.id='mathas-native-connect-profile';
