@@ -7,7 +7,9 @@ const doc=readFileSync(new URL('../projection-v2-demo.html',import.meta.url),'ut
 test('projection V2 demo : 14 élèves répartis en une ou deux colonnes',()=>{
  assert.match(doc,/const names=\[.*"Nathan"\]/);
  assert.match(doc,/slice\(0,16\)/);
- assert.match(doc,/seconds=30/);
+ assert.match(doc,/seconds=ROTATION_SECONDS/);
+ assert.match(doc,/const ROTATION_SECONDS=40/);
+ assert.match(doc,/id="projection-refresh-dot"/);
  assert.match(doc,/split=rows\.length>7/);
  assert.match(doc,/rank-"\+position/);
  assert.match(doc,/\.ranking-col \+ \.ranking-col\{border-left:5px/);
@@ -47,9 +49,11 @@ test('projection V2 demo : 14 élèves répartis en une ou deux colonnes',()=>{
  assert.match(doc,/label\.append\(avatar,name\)/);
  assert.match(doc,/rank\.textContent=String\(position\)/);
 });
-test('projection V2 demo : rotation 30 s, score et % indépendants, Monsieur T initialement masqué',()=>{
- assert.match(doc,/let selected="addition",seconds=30/);
- assert.match(doc,/if\(--seconds<=0\)go\(1\)/);
+test('projection V2 demo : rotation 40 s, MAJ toutes les 20 s et point au second cycle',()=>{
+ assert.match(doc,/let selected="addition",seconds=ROTATION_SECONDS/);
+ assert.match(doc,/if\(seconds===0\)go\(1\)/);
+ assert.match(doc,/nextRefreshAt=cycleStartedAt\+REFRESH_INTERVAL_MS/);
+ assert.match(doc,/dot\.hidden=paused\|\|selectedApps\(\)\.length<=1\|\|Date\.now\(\)-cycleStartedAt<REFRESH_INTERVAL_MS/);
  assert.match(doc,/for\(const field of \["score","pct"\]\)/);
  assert.match(doc,/\$\("show-teacher"\)\.checked=false/);
  assert.match(doc,/Aucune donnée n.est modifiée ici/);
