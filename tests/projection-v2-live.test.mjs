@@ -38,7 +38,7 @@ test('Projection V2 : rafraîchissement toutes les 20 s, sans changement automat
  assert.match(js,/if\(ticket===refreshTicket&&connected&&hasLoaded\)startRefreshCycle\(\)/);
  assert.match(js,/function pauseRefreshCycle\(\)/);
  assert.match(js,/function resumeRefreshCycle\(\)/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-header-auto-progress-v1/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-names-and-headings-v1/);
  assert.match(html,/id="projection-refresh-progress"/);
  assert.match(html,/id="projection-refresh-fill"/);
  assert.match(html,/role="progressbar"/);
@@ -122,4 +122,20 @@ test('Projection V2 : aucun timer actif si tableau non visible, reprise sans rat
  assert.match(js,/resumeRefreshCycle\(\);\s*startRefreshTicker\(\)/);
  assert.match(js,/dialog\.showModal\(\);pauseRefreshCycle\(\);stopRefreshTicker\(\)/);
  assert.match(js,/dialog\.close\(\);resumeRefreshCycle\(\);startRefreshTicker\(\)/);
+});
+
+test('Projection V2 : noms mis en gras dans les événements, sans HTML injecté',()=>{
+ assert.match(js,/function exploit\(type,message,appTitle=null\)/);
+ assert.match(js,/name\.className='event-student'/);
+ assert.match(js,/name\.textContent=message\.slice\(0,split\)/);
+ assert.match(js,/text\.append\(name,document\.createTextNode\(message\.slice\(split\)\)\)/);
+ assert.match(js,/trophy:' gagne un nouveau trophée'/);
+ assert.match(js,/perfect:' réussit une série parfaite'/);
+ assert.match(js,/sudden:' dépasse 10 bonnes réponses en Mort subite'/);
+ assert.match(js,/top:' réalise un score du Top 5'/);
+ assert.match(js,/rise:' remonte de '/);
+ assert.doesNotMatch(js,/text\.innerHTML\s*=/);
+ assert.match(html,/\.event-text \.event-student\{font-weight:900;color:inherit\}/);
+ assert.doesNotMatch(js,/MEILLEURS SCORES · PÉRIODE DE PROJECTION/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-names-and-headings-v1/);
 });
