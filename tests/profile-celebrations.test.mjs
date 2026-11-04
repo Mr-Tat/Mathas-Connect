@@ -33,9 +33,9 @@ test('La géométrie fait réellement deux lignes sur écran large, avec repli m
  assert.match(css,/@media\(max-width:435px\)/);
 });
 test('La file des célébrations est triée, dédoublonnée et limitée aux vrais paliers atteints',()=>{
- assert.deepEqual(eligibleCelebrations([20,3,10,6,15,3,999,-1,2,'3',null],20),[3,6,10,15,20]);
- assert.deepEqual(eligibleCelebrations([20,3,15,6,10],6),[3,6]);
- assert.deepEqual(eligibleCelebrations([3,6,10],2),[]);
+ assert.deepEqual(eligibleCelebrations([25,5,15,10,20,5,999,-1,2,'5',null],25),[5,10,15,20,25]);
+ assert.deepEqual(eligibleCelebrations([25,5,20,10,15],10),[5,10]);
+ assert.deepEqual(eligibleCelebrations([5,10,15],4),[]);
  assert.deepEqual(eligibleCelebrations(null,20),[]);
  assert.deepEqual(Object.keys(CELEBRATION_DETAILS),PROFILE_REWARDS.map(r=>r.key));
 });
@@ -73,4 +73,11 @@ test('Modules Javascript syntaxically correct',()=>{
   const r=spawnSync(process.execPath,['--check','--input-type=module'],{input:get(path),encoding:'utf8'});
   assert.equal(r.status,0,path+': '+r.stderr);
  }
+});
+
+test('La contrainte SQL de célébration ne reçoit que les paliers du nouveau barème',()=>{
+ const sql=get('supabase/release-candidates/20261104_profile_rewards_rethreshold_5_10_15_20_25.sql');
+ assert.match(sql,/CHECK \(reward_level IN \(5,10,15,20,25\)\)/);
+ assert.match(sql,/legacy_reward_ack_present_migration_requires_review/);
+ assert.doesNotMatch(sql,/DELETE FROM|UPDATE public\.connect_students|UPDATE public\.connect_xp|TRUNCATE/);
 });

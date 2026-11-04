@@ -59,7 +59,7 @@ test('HUB : les cinq jalons contrôlent la personnalisation, sans colorer les in
    }else throw Error('Unexpected action '+b.action);
    await r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(result)});
   });
-  for(const stage of [1,2,3,5,6,9,10,14,15,19,20]){
+  for(const stage of [1,2,3,4,5,9,10,14,15,19,20,24,25]){
    level=stage;alias='Élodie.M';
    await page.goto(url+'/hub.html?class='+CLASS,{waitUntil:'domcontentloaded',timeout:30000});
    await page.waitForFunction(n=>document.getElementById('identity-level-number')?.textContent===String(n),stage,{timeout:15000});
@@ -71,12 +71,12 @@ test('HUB : les cinq jalons contrôlent la personnalisation, sans colorer les in
    await page.locator('#avatar-dialog:not([hidden])').waitFor({state:'visible'});
    const tabs=page.locator('#hub-avatar-tabs button');
    assert.equal(await tabs.count(),4);
-   assert.equal(await tabs.nth(1).isDisabled(),stage<3,'animal niv.3');
-   assert.equal(await tabs.nth(2).isDisabled(),stage<15,'objet niv.15');
-   assert.equal(await tabs.nth(3).isDisabled(),stage<20,'smiley niv.20');
-   assert.equal(await page.locator('#avatar-colors button[title="Couleur ocean"]').isDisabled(),stage<6,'fond niv.6');
-   assert.equal(await page.locator('#profile-alias-panel').isHidden(),stage<10,'pseudo niv.10');
-   if(stage===3){
+   assert.equal(await tabs.nth(1).isDisabled(),stage<5,'animal niv.5');
+   assert.equal(await tabs.nth(2).isDisabled(),stage<15,'smiley niv.15');
+   assert.equal(await tabs.nth(3).isDisabled(),stage<25,'objet niv.25');
+   assert.equal(await page.locator('#avatar-colors button[title="Couleur ocean"]').isDisabled(),stage<10,'fond niv.10');
+   assert.equal(await page.locator('#profile-alias-panel').isHidden(),stage<20,'pseudo niv.20');
+   if(stage===5){
     await tabs.nth(1).click();
     await page.locator('#avatar-choices button').first().click();
     await page.locator('#avatar-save').click();
@@ -85,7 +85,7 @@ test('HUB : les cinq jalons contrôlent la personnalisation, sans colorer les in
     assert.equal(writes.at(-1).color,'transparent');
     assert.equal(writes.at(-1).kind,'animal');
    }
-   if(stage===20){
+   if(stage===25){
     for(const tabIndex of [1,2,3]){
      await tabs.nth(tabIndex).click();
      assert.equal(await page.locator('#avatar-choices button').count(),24);
@@ -98,7 +98,7 @@ test('HUB : les cinq jalons contrôlent la personnalisation, sans colorer les in
     const rows=await page.locator('#avatar-colors button').evaluateAll(buttons=>buttons.map(el=>Math.round(el.getBoundingClientRect().top)));
     assert.equal(new Set(rows).size,2,'exactly two desktop rows of 10 colors');
    }
-   if(stage===10){
+   if(stage===20){
     await page.locator('#profile-alias-input').fill('Capitaine');
     await page.locator('#profile-alias-save').click();
     await page.waitForFunction(()=>document.getElementById('identity-title')?.textContent==='Capitaine',null,{timeout:8000});

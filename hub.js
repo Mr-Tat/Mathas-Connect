@@ -1,6 +1,6 @@
 import {avatarCategories,avatarGlyph,avatarColors,avatarColor} from './avatar-catalog.js';
-import {PROFILE_REWARDS,officialInitial,unlockedProfileLevel,avatarKindUnlocked,colorUnlocked,aliasUnlocked} from './profile-rewards.mjs';
-import {createProfileCelebrations} from './profile-celebration.mjs';
+import {PROFILE_REWARDS,AVATAR_LEVELS,officialInitial,unlockedProfileLevel,avatarKindUnlocked,colorUnlocked,aliasUnlocked} from './profile-rewards.mjs?v=20261104-levels-v2';
+import {createProfileCelebrations} from './profile-celebration.mjs?v=20261104-levels-v2';
 import { classId, classLabel, loginUrl } from './connect-context.js';
 import {rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
 import {objectiveRecordLabPreviews} from './objective-record-lab-previews.mjs';
@@ -207,7 +207,7 @@ function paintAvatar(node,avatar){
  node.classList.toggle('avatar-transparent',v.color==='transparent');
 }
 function profileLevel(){
- return playingAsTeacher?20:unlockedProfileLevel(activeProfile);
+ return playingAsTeacher?25:unlockedProfileLevel(activeProfile);
 }
 function profileError(code){
  const errors={
@@ -250,7 +250,7 @@ function openAvatarEditor(){
  tabs.replaceChildren();
  const categories=[
   {kind:'letter',label:'🔤 Mon initiale',icons:{[initial]:initial}},
-  ...avatarCategories.filter(cat=>cat.kind!=='letter')
+  ...avatarCategories.filter(cat=>cat.kind!=='letter').sort((a,b)=>AVATAR_LEVELS[a.kind]-AVATAR_LEVELS[b.kind])
  ];
  // Un choix récemment débloqué n'autorise jamais les autres catégories :
  // le serveur vérifie également les XP avant chaque sauvegarde.
@@ -260,7 +260,7 @@ function openAvatarEditor(){
  if(!colorUnlocked(level))avatarChoice.color='transparent';
  for(const category of categories){
   const unlocked=playingAsTeacher||avatarKindUnlocked(category.kind,level);
-  const need=category.kind==='letter'?1:category.kind==='animal'?3:category.kind==='object'?15:20;
+  const need=category.kind==='letter'?1:category.kind==='animal'?5:category.kind==='object'?25:15;
   const tab=document.createElement('button');tab.type='button';
   tab.textContent=category.label+(unlocked?'':' · Niv. '+need+' 🔒');
   tab.disabled=!unlocked;tab.title=unlocked?category.label:'Se débloque au niveau '+need;
@@ -284,7 +284,7 @@ function openAvatarEditor(){
  const colorInfo=$('avatar-color-note');
  colorInfo.textContent=colorUnlocked(level)||playingAsTeacher
   ?'Choisis un fond coloré ou transparent.'
-  :'🔒 Les couleurs de fond se débloquent au niveau 6. Pour le moment, ton avatar est transparent.';
+  :'🔒 Les couleurs de fond se débloquent au niveau 10. Pour le moment, ton avatar est transparent.';
  for(const [name,hex] of Object.entries(avatarColors)){
   const button=document.createElement('button');button.type='button';
   button.className=avatarChoice.color===name?'selected':'';
@@ -300,14 +300,14 @@ function openAvatarEditor(){
  const mayAlias=aliasUnlocked(level)&&!playingAsTeacher;
  aliasPanel.hidden=!mayAlias;
  $('profile-alias-locked').hidden=mayAlias;
- $('profile-alias-locked').textContent='🔒 Le choix du pseudo se débloque au niveau 10.';
+ $('profile-alias-locked').textContent='🔒 Le choix du pseudo se débloque au niveau 20.';
  if(mayAlias){
   const current=String(activeProfile.publicAlias||'');
   $('profile-alias-input').value=current===activeProfile.displayName?'':current;
  }
  $('avatar-feedback').textContent='';
- $('avatar-save').disabled=!playingAsTeacher&&level<3;
- $('avatar-save').textContent=level<3&&!playingAsTeacher?'Débloqué au niveau 3':'Enregistrer l’avatar';
+ $('avatar-save').disabled=!playingAsTeacher&&level<5;
+ $('avatar-save').textContent=level<5&&!playingAsTeacher?'Débloqué au niveau 5':'Enregistrer l’avatar';
 }
 $('avatar-cancel').onclick=()=>$('avatar-dialog').hidden=true;
 $('edit-avatar').onclick=()=>{
@@ -369,7 +369,7 @@ function drawIdentity(profile) {
     rememberRecentAvatar(classId,profile.displayName,profile.avatar);
   }
   $('identity-box').className=authorized?'identity-connected':'identity-classic';
-  const shownName=authorized&&!playingAsTeacher&&unlockedProfileLevel(profile)>=10&&profile.publicAlias&&profile.publicAlias!==profile.displayName
+  const shownName=authorized&&!playingAsTeacher&&aliasUnlocked(unlockedProfileLevel(profile))&&profile.publicAlias&&profile.publicAlias!==profile.displayName
     ?profile.publicAlias:profile?.displayName;
   $('identity-title').textContent=authorized?String(shownName||'Élève').replace(/\.\s*(?=[\p{L}]$)/u,' '):'Mode Classique';
   const oldBar=$('connect-xp-bar');if(oldBar)oldBar.remove();

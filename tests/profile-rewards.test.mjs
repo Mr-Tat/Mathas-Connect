@@ -9,24 +9,24 @@ import {avatarColor,avatarGlyph} from '../avatar-catalog.js';
 const root=new URL('../',import.meta.url);
 const get=path=>readFileSync(new URL(path,root),'utf8');
 
-test('Les cinq récompenses se débloquent strictement aux niveaux 3, 6, 10, 15 et 20',()=>{
+test('Les cinq récompenses se débloquent aux niveaux 5, 10, 15, 20 et 25',()=>{
  assert.deepEqual(PROFILE_REWARDS.map(x=>[x.level,x.key]),[
-  [3,'animal'],[6,'color'],[10,'alias'],[15,'object'],[20,'smiley']]);
+  [5,'animal'],[10,'color'],[15,'smiley'],[20,'alias'],[25,'object']]);
  assert.equal(AVATAR_LEVELS.letter,1);
- for(const level of [1,2]){
+ for(const level of [1,2,3,4]){
   assert.equal(avatarKindUnlocked('animal',level),false);
   assert.equal(colorUnlocked(level),false);
   assert.equal(aliasUnlocked(level),false);
  }
- assert.equal(avatarKindUnlocked('animal',3),true);
- assert.equal(colorUnlocked(5),false);
- assert.equal(colorUnlocked(6),true);
- assert.equal(aliasUnlocked(9),false);
- assert.equal(aliasUnlocked(10),true);
- assert.equal(avatarKindUnlocked('object',14),false);
- assert.equal(avatarKindUnlocked('object',15),true);
- assert.equal(avatarKindUnlocked('smiley',19),false);
- assert.equal(avatarKindUnlocked('smiley',20),true);
+ assert.equal(avatarKindUnlocked('animal',5),true);
+ assert.equal(colorUnlocked(9),false);
+ assert.equal(colorUnlocked(10),true);
+ assert.equal(aliasUnlocked(19),false);
+ assert.equal(aliasUnlocked(20),true);
+ assert.equal(avatarKindUnlocked('object',24),false);
+ assert.equal(avatarKindUnlocked('object',25),true);
+ assert.equal(avatarKindUnlocked('smiley',14),false);
+ assert.equal(avatarKindUnlocked('smiley',15),true);
 });
 
 test('L’initiale accentuée est conservée, le fond est transparent',()=>{
@@ -52,13 +52,13 @@ test('Les avatars conservent un cadre visible même sans couleur de fond dans HU
 test('Le serveur ignore les niveaux annoncés par les élèves et protège les profils',()=>{
  const api=get('supabase/functions/connect-api/index.ts');
  const edit=api.slice(api.indexOf("case 'student-avatar':{"),api.indexOf("case 'student-reward-celebrate':{"));
- assert.match(api,/const avatarMinLevel:Record<string,number>=\{letter:1,animal:3,object:15,smiley:20\}/);
+ assert.match(api,/const avatarMinLevel:Record<string,number>=\{letter:1,animal:5,smiley:15,object:25\}/);
  assert.match(api,/db\.rpc\('connect_xp_read_v2'/);
  assert.match(api,/connect_level_profiles/);
  assert.match(edit,/level<avatarMinLevel\[kind\]/);
- assert.match(edit,/level<6&&color!=='transparent'/);
+ assert.match(edit,/level<10&&color!=='transparent'/);
  assert.match(edit,/initialFromName\(student\.display_name\)/);
- assert.match(edit,/if\(await readProfileUnlockLevel\(device\.student_id\)<10\)/);
+ assert.match(edit,/if\(await readProfileUnlockLevel\(device\.student_id\)<20\)/);
  assert.match(edit,/public_alias:alias/);
  assert.match(edit,/eq\('auth_user_id',user\.id\)\.eq\('state','approved'\)/);
  assert.doesNotMatch(edit,/b\.level|b\.xp|b\.unlockLevel/);
@@ -89,4 +89,14 @@ test('Syntaxe des interfaces JS ES modules',()=>{
   const res=spawnSync(process.execPath,['--check','--input-type=module'],{input:get(path),encoding:'utf8'});
   assert.equal(res.status,0,path+': '+res.stderr);
  }
+});
+
+test('Les niveaux de célébration côté serveur concordent avec le calendrier',()=>{
+ const api=get('supabase/functions/connect-api/index.ts');
+ const hub=get('hub.js'),html=get('hub.html');
+ assert.match(api,/const profileRewardLevels=\[5,10,15,20,25\]/);
+ assert.match(api,/unlockLevel>=5/);
+ assert.match(hub,/aliasUnlocked\(unlockedProfileLevel\(profile\)\)/);
+ assert.match(html,/Mon pseudo \(niveau 20\)/);
+ assert.match(hub,/AVATAR_LEVELS\[a\.kind\]-AVATAR_LEVELS\[b\.kind\]/);
 });

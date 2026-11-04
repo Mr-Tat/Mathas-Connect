@@ -51,7 +51,7 @@ test('Célébrations : retour HUB, ACK inter-appareils, 5 paliers en ordre, repo
       unlockLevel:level,avatar:{kind:'letter',value:'E',color:'transparent'},
       xp:{active:true,total:level*50,level,next:level*50+50,apps:[]},
       progress:{apps:[],totalTrophies:0},
-      pendingProfileRewards:[3,6,10,15,20].filter(n=>n<=level&&!seen.has(n))};
+      pendingProfileRewards:[5,10,15,20,25].filter(n=>n<=level&&!seen.has(n))};
     }else if(b.action==='student-reward-celebrate'){
      acks.push({...b});if(!online){status=503;payload={ok:false,error:'celebration_unavailable'}}
      else if(b.level>level){status=403;payload={ok:false,error:'reward_locked'}}
@@ -68,10 +68,10 @@ test('Célébrations : retour HUB, ACK inter-appareils, 5 paliers en ordre, repo
   assert.equal(await p.locator('#reward-celebration').isHidden(),true);
   await p.close();
 
-  // Pas de célébration pendant le jeu ; dès retour sur le HUB à N3.
-  level=3;p=await page();await p.goto(urlHub,{waitUntil:'domcontentloaded'});
+  // Pas de célébration pendant le jeu ; dès retour sur le HUB à N5.
+  level=5;p=await page();await p.goto(urlHub,{waitUntil:'domcontentloaded'});
   await p.locator('#reward-celebration:not([hidden])').waitFor({state:'visible'});
-  assert.match(await p.locator('#reward-level').textContent(),/Niveau 3 atteint/);
+  assert.match(await p.locator('#reward-level').textContent(),/Niveau 5 atteint/);
   assert.match(await p.locator('#reward-detail-text').textContent(),/avatar animal/);
   const dims=await p.locator('#reward-celebration').evaluate(node=>{const r=node.getBoundingClientRect();return {width:r.width,height:r.height}});
   assert.equal(dims.width,1280);
@@ -92,36 +92,36 @@ test('Célébrations : retour HUB, ACK inter-appareils, 5 paliers en ordre, repo
   assert.equal(seen.size,0,'a network error must not dismiss or acknowledge');
   online=true;await p.locator('#reward-continue').click();
   await p.locator('#reward-celebration').waitFor({state:'hidden'});
-  assert.deepEqual([...seen],[3]);
+  assert.deepEqual([...seen],[5]);
   await p.close();
 
-  // N6 : affiche uniquement le palier non encore célébré.
-  level=6;p=await page();await p.goto(urlHub,{waitUntil:'domcontentloaded'});
+  // N10 : affiche uniquement le palier non encore célébré.
+  level=10;p=await page();await p.goto(urlHub,{waitUntil:'domcontentloaded'});
   await p.locator('#reward-celebration:not([hidden])').waitFor({state:'visible'});
-  assert.match(await p.locator('#reward-level').textContent(),/Niveau 6 atteint/);
+  assert.match(await p.locator('#reward-level').textContent(),/Niveau 10 atteint/);
   await p.locator('#reward-continue').click();
   await p.locator('#reward-celebration').waitFor({state:'hidden'});
-  assert.deepEqual([...seen],[3,6]);
+  assert.deepEqual([...seen],[5,10]);
   await p.close();
 
   // Une grosse progression donne trois cartes successives et une seule ACK chacune.
-  level=20;p=await page();await p.goto(urlHub,{waitUntil:'domcontentloaded'});
-  for(const expected of [10,15,20]){
+  level=25;p=await page();await p.goto(urlHub,{waitUntil:'domcontentloaded'});
+  for(const expected of [15,20,25]){
    await p.locator('#reward-celebration:not([hidden])').waitFor({state:'visible'});
    assert.match(await p.locator('#reward-level').textContent(),new RegExp('Niveau '+expected+' atteint'));
    await p.locator('#reward-continue').click();
    await p.waitForFunction(e=>document.getElementById('reward-celebration')?.hidden || document.getElementById('reward-level')?.textContent!==('Niveau '+e+' atteint !'),expected);
   }
   await p.locator('#reward-celebration').waitFor({state:'hidden'});
-  assert.deepEqual([...seen],[3,6,10,15,20]);
+  assert.deepEqual([...seen],[5,10,15,20,25]);
   await p.close();
 
   // Actualisation / second appareil : pas de répétition.
   p=await page();await p.goto(urlHub,{waitUntil:'domcontentloaded'});
-  await p.waitForFunction(()=>document.getElementById('identity-level-number')?.textContent==='20');
+  await p.waitForFunction(()=>document.getElementById('identity-level-number')?.textContent==='25');
   assert.equal(await p.locator('#reward-celebration').isHidden(),true);
   await p.close();
-  assert.deepEqual(acks.filter(x=>online&&x.level!==3).map(x=>x.level),[6,10,15,20]);
+  assert.deepEqual(acks.filter(x=>online&&x.level!==5).map(x=>x.level),[10,15,20,25]);
   assert.deepEqual(errors,[]);
  }finally{await browser?.close();await new Promise(resolve=>server.close(resolve))}
 });
