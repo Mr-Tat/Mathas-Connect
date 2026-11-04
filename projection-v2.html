@@ -20,7 +20,9 @@ header{display:flex;position:relative;justify-content:flex-end;align-items:cente
 .projection-actions .projection-theme-picker{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap;font-size:12px;color:var(--v-text,#f6fbff)}
 .projection-actions .projection-theme-picker select{width:150px;max-width:100%;min-width:0;min-height:36px;padding:5px 7px;border-radius:8px;border:1px solid var(--v-button-line,#7794b1);background:var(--v-button,#304c66);color:var(--v-button-ink,#f6fbff);font-size:12px}
 .projection-actions .projection-theme-picker select:focus-visible{outline:3px solid #ffe08a;outline-offset:2px}
-.projection-refresh-countdown{display:inline-flex;align-items:center;justify-content:center;min-width:122px;flex-shrink:0;color:var(--v-accent,#ffdc81);font-size:13px;font-weight:850;letter-spacing:.015em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.projection-refresh-countdown{display:inline-flex;align-items:center;justify-content:center;min-width:147px;flex-shrink:0;color:var(--v-accent,#ffdc81);font-size:13px;font-weight:850;letter-spacing:.015em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.projection-refresh-dot{font-size:24px;line-height:1;margin-left:7px;color:#ffdc81;text-shadow:0 0 3px #0004}
+.projection-refresh-dot[hidden]{display:none}
 #live-status{position:absolute;left:12px;top:calc(100% + 5px);z-index:30;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 #live-status.is-alert{width:auto;height:auto;max-width:min(490px,calc(100vw - 24px));padding:8px 10px;border:1px solid #ffc888;border-radius:8px;background:#512b31;color:#fff0d7;clip-path:none;white-space:normal;font-size:12px;box-shadow:0 4px 12px #0005}
 @media(max-width:1180px){header{flex-wrap:wrap;justify-content:center;row-gap:7px}.header-class{position:static;transform:none;max-width:100%;width:100%}.header-tools{margin-left:0;max-width:100%;justify-content:center}}
@@ -164,7 +166,7 @@ label.setting{justify-content:space-between;max-width:380px}
       </label>
       <span id="live-status" role="status" aria-live="polite">Connexion professeur requise</span>
     </div>
-    <output id="projection-refresh-countdown" class="projection-refresh-countdown" aria-label="Prochaine actualisation des scores">MAJ en attente</output>
+    <output id="projection-refresh-countdown" class="projection-refresh-countdown" aria-label="Prochaine actualisation des scores"><span id="projection-refresh-label">MAJ en attente</span><span id="projection-refresh-dot" class="projection-refresh-dot" aria-hidden="true" hidden>●</span></output>
   </div>
 </header>
 <div class="projection-stage">
@@ -194,6 +196,6 @@ label.setting{justify-content:space-between;max-width:380px}
   <section class="options"><strong>Comparaison avec les autres classes</strong><p class="note">Pour chaque classe, affiche le score de l’application en cours, le pourcentage de réussite, ou les deux.</p><table class="comparison-table"><thead><tr><th>Classe</th><th>Score</th><th>%</th></tr></thead><tbody id="comparison-options"></tbody></table><label><input id="show-teacher" type="checkbox"> Afficher Monsieur T (décoché au lancement)</label></section>
   <div id="reset-confirm" class="options" hidden><strong id="reset-heading">Réinitialiser le score projeté</strong><label>Mot de passe professeur <input id="reset-password" type="password" autocomplete="current-password" maxlength="160" placeholder="Mot de passe"/></label><div class="controls"><button id="reset-apply" type="button">Confirmer uniquement ce score</button><button id="reset-cancel" type="button">Annuler</button></div></div><p class="note">Une réinitialisation n’affecte qu’une application et une classe. Jamais les %, les résultats réels, les XP, les trophées ou les parcours des élèves.</p>
 </dialog>
-<script type="module" src="./projection-v2-live.js?v=20261104-entete-maj-v6"></script>
+<script type="module" src="./projection-v2-live.js?v=20261104-40s-double-cycle-v1"></script>
 </body>
 </html>
