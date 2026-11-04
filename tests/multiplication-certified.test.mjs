@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
- acceptMultiplicationChallenge,normalizeMultiplicationAttempt,
+ acceptMultiplicationChallenge,acceptMultiplicationExtendedChallenge,
+ expectedMultiplicationWidth,multiplicationEndState,normalizeMultiplicationAttempt,
  multiplicationAttemptCorrect,multiplicationQueue
 } from '../apps/multiplication-simple/certified-classic.mjs';
 
@@ -70,4 +71,39 @@ test('SQL school proof only serves exact app; no direct anon or browser grade en
  assert.match(launch,/event\.stopImmediatePropagation\(\)/);
  assert.doesNotMatch(launch,/action:'game-record'/);
  assert.match(launch,/certifiedConsent\?\.offer\(receipt\.eventId\)/);
+});
+
+test('extended 120-question challenges support exact HARD 16 digits',()=>{
+ const q={id:'q1',op:'mul',a:'9999999999999999',m:9,width:16};
+ const data={...sample(q),mode:'hard-sudden',level:3,width:16,limit:120,
+  questions:Array.from({length:120},(_,i)=>({...q,id:'q'+(i+1)}))};
+ assert.equal(expectedMultiplicationWidth('hard-sudden',3),16);
+ assert.equal(expectedMultiplicationWidth('three-lives',1),3);
+ const accepted=acceptMultiplicationExtendedChallenge(data,3,'hard-sudden',[2,3,4,5,6,7,8,9]);
+ assert.ok(accepted);
+ const product=BigInt(q.a)*BigInt(q.m),digits=product.toString().split('').reverse();
+ const carries=Array.from({length:16},(_,j)=>j===0?'':String(
+  (BigInt(q.a)%(10n**BigInt(j))*BigInt(q.m))/(10n**BigInt(j))));
+ const response={id:'q1',digits,carries};
+ assert.equal(multiplicationAttemptCorrect(q,response),true);
+ assert.equal(product.toString(),'89999999999999991');
+ assert.equal(multiplicationEndState('hard-sudden',[response],data.questions).complete,false);
+});
+test('an error ends sudden immediately, but three-lives requires three errors',()=>{
+ const q={id:'q1',op:'mul',a:'249',m:9,width:3};
+ const questions=Array.from({length:120},(_,i)=>({...q,id:'q'+(i+1)}));
+ const wrong=i=>({id:'q'+(i+1),digits:['0','0','0','0'],carries:['','','']});
+ assert.deepEqual(multiplicationEndState('sudden',[wrong(0)],questions),{
+  valid:true,complete:true,correct:0,wrong:1,lives:0});
+ assert.equal(multiplicationEndState('three-lives',[wrong(0),wrong(1)],questions).complete,false);
+ assert.equal(multiplicationEndState('three-lives',[wrong(0),wrong(1),wrong(2)],questions).complete,true);
+ assert.equal(multiplicationEndState('hard-sudden',[wrong(0),wrong(1)],questions).valid,false);
+});
+test('no school can award old game-record without a server-issued multiplication proof',()=>{
+ const results=repoFile('supabase/functions/connect-results/index.ts');
+ const launcher=repoFile('apps/multiplication-simple/index.html');
+ assert.match(results,/b\.appKey===addMulti\|\|b\.appKey===mul/);
+ assert.match(launcher,/start-extended-v1/);
+ assert.match(launcher,/mathasMultiThreeLives/);
+ assert.match(launcher,/mathas-multi-hard-three-lives/);
 });
