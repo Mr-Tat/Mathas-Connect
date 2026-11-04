@@ -47,7 +47,7 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
 <iframe id="game" title="Essai sur le véritable moteur Addition multiple" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
 <script src="./certified-multiple-patch.js"></script>
 <script src="./lab-objectif-record-v2.js?v=20261103-xp-layout-v4"></script>
-<script src="../../native-hub-link.js?v=20261104-version-next-to-title"></script>
+<script src="../../native-hub-link.js?v=20261104-xp-right-of-profile"></script>
 <script>
 (async function(){
  'use strict';
@@ -215,11 +215,11 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
     game=swap(game,'<div class="mode-icon">💀</div>','<div class="mode-icon" aria-hidden="true">👑</div>','symbole de la grande carte Objectif record');
    game=swap(game,
      '<p class="mode-description">Deux additions à la fois. La première erreur arrête la partie.</p>',
-     '<p class="mode-description">Deux façons de marquer un gros score.</p>',
+     '<p class="mode-description">Pour marquer un plus gros score !</p>',
      'description de la carte');
    game=swap(game,
      '<button class="btn btn-gold" id="startSudden" type="button">Lancer la mort subite</button>',
-     '<div class="score-mode-options" role="group" aria-label="Objectif record"><button id="startThreeLives" type="button" aria-label="3 vies : trois erreurs possibles"><span class="score-mode-title-row"><span class="score-mode-icon score-mode-hearts" aria-hidden="true">❤️❤️❤️</span><span class="score-mode-name">3 vies</span></span><span class="score-mode-meta"><span class="score-mode-foot score-mode-bonus score-mode-lives-info">3 erreurs possibles</span></span></button><button class="btn btn-gold" id="startSudden" type="button" aria-label="Mort subite : une erreur élimine, bonus de 20 % des points"><span class="mathas-lock-target" aria-hidden="true" hidden>Mort subite</span><span class="score-mode-title-row"><span class="score-mode-icon" aria-hidden="true">💀</span><span class="score-mode-name">Mort subite</span></span><span class="score-mode-meta"><span class="score-mode-foot score-mode-bonus">+20 % de points</span></span></button></div>',
+     '<div class="score-mode-options" role="group" aria-label="Objectif record"><button id="startThreeLives" type="button" aria-label="3 vies"><span class="score-mode-title-row"><span class="score-mode-icon score-mode-hearts" aria-hidden="true">❤️❤️❤️</span><span class="score-mode-name">3 vies</span></span></button><button class="btn btn-gold" id="startSudden" type="button" aria-label="Mort subite : une erreur élimine, bonus de 20 % des points"><span class="mathas-lock-target" aria-hidden="true" hidden>Mort subite</span><span class="score-mode-title-row"><span class="score-mode-icon" aria-hidden="true">💀</span><span class="score-mode-name">Mort subite</span></span><span class="score-mode-meta"><span class="score-mode-foot score-mode-bonus">+20 % de points</span></span></button></div>',
      'boutons Défis de score');
    game=swap(game,
      '<div class="session-pill" id="sessionScore">Score : 0 / 10</div>',
@@ -317,7 +317,7 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
    // sans garde, elle efface les deux sous-libellés et remplace l'introduction.
    game=swap(game,
      "if(suddenDesc)suddenDesc.textContent='Continue jusqu’à la première erreur.';",
-     "if(suddenDesc&&!suddenDesc.textContent.trim())suddenDesc.textContent='Deux façons de marquer un gros score.';",
+     "if(suddenDesc&&!suddenDesc.textContent.trim())suddenDesc.textContent='Pour marquer un plus gros score !';",
      'phrase protégée du prototype');
    // Cette version du moteur ne réécrit pas le contenu de startSudden :
    // inutile de modifier un hook absent (contrat de patch fail-closed).
