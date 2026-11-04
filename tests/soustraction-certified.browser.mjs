@@ -199,7 +199,8 @@ test('Chromium scolaire: interruption puis reprise même élève, preuve soumise
  const ctx=await setup();
  try{
   const first=await ctx.page();
-  await clickAndAnswer(first.page,first.frame);
+  await clickAndAnswer(first.page,first.frame,{method:'takeTop'});
+  assert.equal(ctx.fixture.issued[0]?.total,4,'épreuve de 4 calculs avant interruption');
   const q=ctx.fixture.issued[0].questions;
   for(let i=0;i<2;i++){
    await first.page.locator('.mathas-sub-proof:not([hidden]) .mathas-sub-answer')
@@ -209,7 +210,7 @@ test('Chromium scolaire: interruption puis reprise même élève, preuve soumise
   assert.equal(ctx.fixture.checks.length,0);
   await first.page.close();
   const second=await ctx.page();
-  await clickAndAnswer(second.page,second.frame);
+  await clickAndAnswer(second.page,second.frame,{method:'takeTop'});
   assert.equal(ctx.fixture.issued.length,1,'reprise locale, aucun nouveau défi requis');
   assert.equal(ctx.fixture.issued[0]?.total,4,'reprise sur série de 4');
   for(let i=2;i<4;i++){
