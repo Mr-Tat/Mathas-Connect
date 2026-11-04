@@ -147,6 +147,12 @@ label.setting{justify-content:space-between;max-width:380px}
 #settings [hidden]{display:none!important}#reset-confirm input[type=password]{border:1px solid #7794b1;border-radius:7px;background:#0d263e;color:#fff;padding:9px;min-width:210px}#percentage-note{font-size:11px;color:#d5e7fa}#ranking-list:empty::after{content:"Aucun score enregistré pour cette application.";color:#d0e6fd;font-size:14px;padding:25px;text-align:center;display:block}.event.empty{color:#cce0f3}
 
 /* Projection simultanée : chaque classement est un panneau autonome. */
+html[data-proj-da] .ranking-board .ranking-head h2{color:var(--v-text,#fff)}
+html[data-proj-da="papier"] .ranking-board .ranking-head h2{color:#fff;font-family:Georgia,"Times New Roman",serif}
+html[data-proj-da="neon"] .ranking-board .ranking-head h2{font-family:"Arial Rounded MT Bold","Trebuchet MS",Verdana,sans-serif;text-shadow:0 2px 16px #5dd7ff5c}
+html[data-proj-da="ardoise"] .ranking-board .ranking-head h2{font-family:"Trebuchet MS","Gill Sans",Verdana,sans-serif;letter-spacing:.02em}
+html[data-proj-da="studio"] .ranking-board .ranking-head h2{font-family:Impact,"Arial Black",sans-serif;text-transform:uppercase;font-style:italic}
+
 .projection-stage{min-height:100vh}
 .projection-main{max-width:1920px;width:100%;margin:0 auto;padding:14px;display:grid;gap:16px;align-items:start;grid-template-areas:"info board exploits";grid-template-columns:minmax(190px,1fr) minmax(460px,3fr) minmax(210px,1.15fr)}
 .projection-main .left-col{grid-area:info;min-height:0;max-height:none;overflow:visible}
@@ -234,6 +240,7 @@ label.setting{justify-content:space-between;max-width:380px}
   <div class="header-tools">
     <div class="projection-actions" aria-label="Commandes de projection">
       <button id="load-real" type="button">Afficher / Actualiser</button>
+      <button id="settings-top" class="settings-under" type="button" disabled>⚙ Applications</button>
       <label class="projection-theme-picker" for="projection-theme"><span aria-hidden="true">🎨</span> Thème
         <select id="projection-theme" aria-label="Choisir le thème de la projection">
           <option value="neon">Néon auditorium</option><option value="papier">Papier clair</option>
