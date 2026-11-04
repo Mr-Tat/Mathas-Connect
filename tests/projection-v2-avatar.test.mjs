@@ -11,7 +11,7 @@ test('Le podium est un rang numérique et non une médaille dans la V2 et les ci
   'essais/projection-v2-da-ardoise.html','essais/projection-v2-da-studio.html'];
  for(const page of pages){
   const text=read('../'+page);
-  assert.match(text,/projection-v2-avatar\.css\?v=2026110(?:3-compactes-cadres-v4|4-podium-texte-v5|4-compact-avatar-v6)/);
+  assert.match(text,/projection-v2-avatar\.css\?v=2026110(?:3-compactes-cadres-v4|4-podium-texte-v5|4-compact-avatar-v6|4-score-badge-v7)/);
  }
  const live=read('../projection-v2-live.js'),demo=read('../projection-v2-demo.html');
  assert.match(live,/rank\.textContent=String\(place\)/);
@@ -56,4 +56,14 @@ test('L’API ne divulgue les avatars que si la projection du prénom est autori
  assert.match(edge,/avatar:\{kind:p\.avatar_kind\|\|'letter',value:p\.avatar_value\|\|null,color:p\.avatar_color\|\|'transparent'\}/);
  assert.match(edge,/if\(!await ownClasses\(user\.id,classIds\)\)return deny\('forbidden',403\)/);
  assert.doesNotMatch(edge,/Math\.random\(\)|public\.connect_students.*update\(/);
+});
+
+test('Le score a un remplissage discret sans contour, y compris sur le podium',()=>{
+ const css=read('../projection-v2-avatar.css');
+ assert.match(css,/\.ranking-board \.entry \.entry-details \.points\{/);
+ assert.match(css,/padding:2px 5px;border:0;border-radius:6px/);
+ assert.match(css,/background:color-mix\(in srgb,var\(--v-score,#ffdf8e\) 14%,transparent\)/);
+ assert.doesNotMatch(css,/\.entry:is\(\.rank-1,\.rank-2,\.rank-3\) \.points\{[\s\S]*?background:transparent!important/);
+ assert.match(css,/\.ranking-board \.entry \.entry-copy \.minor\{column-gap:2px;row-gap:1px\}/);
+ assert.match(css,/\.ranking-board \.entry \.entry-copy \.minor \.meta-trophy\{margin-left:1px\}/);
 });

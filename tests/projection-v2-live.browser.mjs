@@ -408,7 +408,13 @@ test('V2 — prénom long, cadre carré, score centré et chiffres en valeur dan
     labelWeight:Number(getComputedStyle(minor.querySelector('.meta-label')).fontWeight),
     numbers:values.map(el=>el.textContent),
     accessible:minor.getAttribute('aria-label'),
-    nameOverflow:getComputedStyle(name).textOverflow
+    nameOverflow:getComputedStyle(name).textOverflow,
+    scoreBackground:getComputedStyle(score).backgroundColor,
+    scoreBorder:getComputedStyle(score).borderStyle,
+    scorePadding:getComputedStyle(score).paddingLeft,
+    scoreRadius:getComputedStyle(score).borderRadius,
+    minorGap:getComputedStyle(minor).columnGap,
+    trophyMargin:getComputedStyle(minor.querySelector('.meta-trophy')).marginLeft
    };
   });
   for(const theme of ['neon','papier','ardoise','studio']){
@@ -419,6 +425,12 @@ test('V2 — prénom long, cadre carré, score centré et chiffres en valeur dan
    assert.ok(Math.abs(m.score.midY-m.copy.midY)<=2,'Points centrés sur nom + niveau en '+theme);
    assert.ok(m.score.left>=m.copy.right+2,'Espace sans chevauchement en '+theme);
    assert.ok(m.score.right<=m.row.right,'Score dans sa case en '+theme);
+   assert.notEqual(m.scoreBackground,'rgba(0, 0, 0, 0)','Fond visible derrière les points en '+theme);
+   assert.equal(m.scoreBorder,'none','Aucun contour autour des points en '+theme);
+   assert.equal(m.scorePadding,'5px','Fond compact autour des points en '+theme);
+   assert.equal(m.scoreRadius,'6px','Coins doux du fond des points en '+theme);
+   assert.equal(m.minorGap,'2px','Espacement Niv. / chiffre / trophée resserré en '+theme);
+   assert.equal(m.trophyMargin,'1px','Trophée rapproché en '+theme);
    assert.ok(m.weights.every(w=>w>=800)&&m.labelWeight<700,'Niv. discret, chiffres gras en '+theme);
    assert.deepEqual(m.numbers,['4','0']);
    assert.equal(m.nameOverflow,'ellipsis');
