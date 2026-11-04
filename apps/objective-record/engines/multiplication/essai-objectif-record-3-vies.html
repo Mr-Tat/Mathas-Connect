@@ -116,7 +116,8 @@ iframe{display:block;flex:1 1 auto;width:100%;height:auto;min-height:0;border:0;
      ' Storage.prototype.removeItem=function(key){values.delete(String(key))};',
      ' Storage.prototype.clear=function(){values.clear()};',
      ' window.fetch=function(){return Promise.reject(new Error("Réseau désactivé dans cet essai"))};',
-     ' window.__mathasThreeLivesDemo=true;',
+     ' window.__mathasThreeLivesDemo='+(!embeddedConnect)+';',
+     ' window.__mathasConnectEmbedded='+embeddedConnect+';',
      '})();'
    ].join('\n');
    const isolateTag='<scr'+'ipt>'+isolatedCode+'<'+'/script>';
@@ -284,7 +285,9 @@ iframe{display:block;flex:1 1 auto;width:100%;height:auto;min-height:0;border:0;
      "startSudden.onclick=()=>startSession('sudden');$('startThreeLives').onclick=()=>startSession('three-lives');",
      'démarrage');
    game=swap(game,'    const locked=!suddenUnlocked(level,p);',
-     '    const locked=false; // Déverrouillage seulement dans cet essai isolé.',
+     embeddedConnect
+      ?'    const locked=!suddenUnlocked(level,p); // Progression Connect certifiée uniquement.'
+      :'    const locked=false; // Déverrouillage seulement dans cet essai isolé.',
      'déverrouillage de l’essai');
    // Le moteur Multiplication gère son propre bouton soudain : ne pas copier les
    // réécritures de texte ni le sélecteur suddenMaxDigits d'Addition simple.
