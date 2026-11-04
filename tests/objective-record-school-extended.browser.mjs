@@ -356,7 +356,7 @@ for(const item of examples){
     });
     const modeButton=item.mode==='three-lives'?'startThreeLives':'startSudden';
     await native.locator('#'+modeButton+' .mathas-connect-official-xp').waitFor({state:'visible',timeout:15000});
-    assert.match(await native.locator('#'+modeButton).textContent(),/Reste 20 XP/);
+    assert.match(await native.locator('#'+modeButton).textContent(),item.mode==='three-lives'?/Reste 10 XP/:/Reste 20 XP/);
     await native.locator('#'+modeButton).click();
     assert.equal(await page.locator('#certified-mode').inputValue(),item.mode);
    }else{
