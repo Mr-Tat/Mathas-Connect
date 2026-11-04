@@ -12,6 +12,7 @@ const endpoint='https://awmhpfofacaglewammxt.supabase.co';
 const publishable='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const $=id=>document.getElementById(id);
 const REFRESH_INTERVAL_MS=20000;
+const ROTATION_SECONDS=40;
 const clockFormatter=new Intl.DateTimeFormat('fr-BE',{hour:'2-digit',minute:'2-digit'});
 const apps=[
  {key:'addition-ecrite-simple',title:'Addition écrite'},
@@ -23,8 +24,14 @@ const apps=[
 const allKeys=apps.map(a=>a.key);
 let client=null,classesAvailable=[],data=null,wasPaused=false,paused=false;
 let hasLoaded=false,connected=false,optionsLoaded=false,pendingReset=null;
-let currentApp=allKeys[0],secondsRemaining=30,fetching=false,refreshTicket=0;
-let nextRefreshAt=Date.now()+REFRESH_INTERVAL_MS;
+let currentApp=allKeys[0],secondsRemaining=ROTATION_SECONDS,fetching=false,refreshTicket=0;
+let cycleStartedAt=0,nextRefreshAt=0;
+// Une seule origine temporelle pour les deux MAJ de 20 s et la rotation de 40 s.
+function startCycle(){
+ cycleStartedAt=Date.now();
+ nextRefreshAt=cycleStartedAt+REFRESH_INTERVAL_MS;
+ secondsRemaining=ROTATION_SECONDS;
+}
 const tracker=createOvertakeTracker(),localRises=new Map();
 let playingKey=null,animationEpoch=0;
 const scoreCompared=()=>options.comparisonDisplay.filter(c=>c.score).map(c=>c.classId);
@@ -35,7 +42,7 @@ function cancelPlayback(){
   el.style.zIndex='';
  }
 }
-let options={scoreApps:[...allKeys],percentageApps:[...allKeys],comparisons:[],comparisonDisplay:[],rotationSeconds:30};
+let options={scoreApps:[...allKeys],percentageApps:[...allKeys],comparisons:[],comparisonDisplay:[],rotationSeconds:ROTATION_SECONDS};
 const comparedIds=()=>options.comparisonDisplay.filter(v=>v.score||v.percentage).map(v=>v.classId);
 const currentComparison=id=>options.comparisonDisplay.find(v=>v.classId===id)||{classId:id,score:false,percentage:false};
 const note=message=>{
@@ -47,6 +54,8 @@ const enabled=()=>apps.filter(a=>options.scoreApps.includes(a.key));
 function clearBoard(message){
  cancelPlayback();tracker.clear();localRises.clear();
  refreshTicket++;data=null;connected=false;hasLoaded=false;pendingReset=null;paused=true;
+ cycleStartedAt=0;nextRefreshAt=0;secondsRemaining=ROTATION_SECONDS;
+ updateRefreshCountdown();
  $('ranking-list').replaceChildren();$('classes').replaceChildren();
  $('exploits').replaceChildren();$('app-tabs').replaceChildren();
  $('app-name').textContent='Projection masquée';
@@ -99,7 +108,7 @@ async function refresh(){
      comparisonDisplay:(Array.isArray(remote.comparisonDisplay)?remote.comparisonDisplay:remote.comparisons.map(id=>({classId:id,score:true,percentage:true})))
        .filter(v=>v&&classesAvailable.some(c=>c.id===v.classId&&v.classId!==classId))
        .map(v=>({classId:v.classId,score:v.score===true,percentage:v.percentage===true})),
-     rotationSeconds:30};
+     rotationSeconds:ROTATION_SECONDS};
     if(comparedIds().length){
      result=await call('connect-projection-v2','teacher-load',{
       comparisons:comparedIds(),showTeacher:$('show-teacher').checked
@@ -116,7 +125,7 @@ async function refresh(){
   hasLoaded=true;
   if(firstDisplay)paused=false;
   if(!enabled().some(a=>a.key===currentApp))currentApp=enabled()[0]?.key??null;
-  if(firstDisplay)secondsRemaining=options.rotationSeconds;
+  if(firstDisplay)startCycle();
   for(const id of ['settings-left'])$(id).disabled=false;
   render();
   note('Actualisé à '+clockFormatter.format(new Date()));
@@ -277,7 +286,7 @@ function render(){
   btn.textContent=a.title;btn.classList.toggle('selected',a.key===currentApp);
   btn.onclick=()=>{
    if(currentApp!==a.key){cancelPlayback();$('ranking-list').dataset.overtakeSteps='0'}
-   currentApp=a.key;secondsRemaining=options.rotationSeconds;render();
+   currentApp=a.key;startCycle();render();updateRefreshCountdown();
   };
   tabs.append(btn);
  });
@@ -360,22 +369,52 @@ function next(delta){
  const i=a.findIndex(x=>x.key===currentApp);
  currentApp=a[(i+delta+a.length)%a.length].key;
  $('ranking-list').dataset.overtakeSteps='0';
- secondsRemaining=options.rotationSeconds;render();
+ startCycle();render();updateRefreshCountdown();
 }
 $('next-app').onclick=()=>next(1);
 $('prev-app').onclick=()=>next(-1);
-$('pause').onclick=()=>{paused=!paused;updateTime()};
-setInterval(()=>{if(hasLoaded&&!paused&&enabled().length>1){
- if(playingKey){updateTime();return}
- if(--secondsRemaining<=0)next(1);else updateTime();
-}},1000);
+// La pause conserve le temps restant. À la reprise, les MAJ sont réalignées
+// sur les étapes 20 s et 40 s du cycle en cours.
+function pauseRotation(){
+ if(!paused&&hasLoaded)
+  secondsRemaining=Math.max(0,Math.ceil((cycleStartedAt+ROTATION_SECONDS*1000-Date.now())/1000));
+ paused=true;updateTime();updateRefreshCountdown();
+}
+function resumeRotation(){
+ if(paused&&hasLoaded){
+  const elapsed=ROTATION_SECONDS-secondsRemaining;
+  cycleStartedAt=Date.now()-elapsed*1000;
+  nextRefreshAt=cycleStartedAt+(elapsed<20?20:40)*1000;
+  if(nextRefreshAt<=Date.now())nextRefreshAt=Date.now()+REFRESH_INTERVAL_MS;
+ }
+ paused=false;updateTime();updateRefreshCountdown();
+}
+$('pause').onclick=()=>{if(paused)resumeRotation();else pauseRotation()};
 document.addEventListener('visibilitychange',()=>{
  if(document.visibilityState!=='visible')cancelPlayback();
  else if(hasLoaded){render()}
 });
-// Minuterie de l'actualisation (20 s), distincte de la rotation (30 s).
+// Un seul battement : MAJ à 20 s, puis MAJ + application suivante à 40 s.
+// Les échéances sont horodatées pour ne pas dériver si l'onglet est ralenti.
+function tickProjection(){
+ if(!hasLoaded){updateRefreshCountdown();return}
+ const now=Date.now();
+ if(connected&&now>=nextRefreshAt){
+  nextRefreshAt+=(Math.floor((now-nextRefreshAt)/REFRESH_INTERVAL_MS)+1)*REFRESH_INTERVAL_MS;
+  if(document.visibilityState==='visible'&&!$('settings').open)void refresh();
+ }
+ if(!paused&&enabled().length>1){
+  secondsRemaining=Math.max(0,Math.ceil((cycleStartedAt+ROTATION_SECONDS*1000-now)/1000));
+  if(secondsRemaining===0&&!playingKey)next(1);
+ }
+ updateTime();updateRefreshCountdown();
+}
+setInterval(tickProjection,1000);
 function updateRefreshCountdown(){
- const label=$('projection-refresh-countdown');
+ const output=$('projection-refresh-countdown');
+ const label=$('projection-refresh-label'),dot=$('projection-refresh-dot');
+ dot.hidden=true;
+ output.setAttribute('aria-label','Prochaine actualisation des scores');
  if(!connected||!hasLoaded){label.textContent='MAJ en attente';return}
  if(document.visibilityState!=='visible'||$('settings').open){
   label.textContent='MAJ suspendue';return;
@@ -383,22 +422,20 @@ function updateRefreshCountdown(){
  const remaining=Math.max(0,Math.ceil((nextRefreshAt-Date.now())/1000));
  label.textContent='MAJ dans '+String(Math.floor(remaining/60)).padStart(2,'0')+':'+
   String(remaining%60).padStart(2,'0');
+ // Le point doré identifie le DEUXIÈME cycle, jamais le premier.
+ dot.hidden=paused||enabled().length<=1||Date.now()-cycleStartedAt<REFRESH_INTERVAL_MS;
+ if(!dot.hidden)
+  output.setAttribute('aria-label','Deuxième cycle de 20 secondes : application suivante après cette actualisation');
 }
-setInterval(updateRefreshCountdown,1000);
-setInterval(()=>{
- nextRefreshAt=Date.now()+REFRESH_INTERVAL_MS;
- if(hasLoaded&&connected&&document.visibilityState==='visible'&&!$('settings').open)refresh();
- updateRefreshCountdown();
-},REFRESH_INTERVAL_MS);
 updateRefreshCountdown();
 const dialog=$('settings');
 function showSettings(){
  if(!hasLoaded)return note('Clique d’abord sur Afficher / Actualiser.');
  cancelPlayback();
- wasPaused=paused;paused=true;buildSettings();dialog.showModal();updateTime();
+ wasPaused=paused;pauseRotation();buildSettings();dialog.showModal();updateRefreshCountdown();
 }
 function closeSettings(){
- dialog.close();paused=wasPaused;$('reset-password').value='';
+ dialog.close();if(!wasPaused)resumeRotation();else updateRefreshCountdown();$('reset-password').value='';
  $('reset-confirm').hidden=true;pendingReset=null;render();
 }
 for(const id of ['settings-left'])$(id).onclick=showSettings;
