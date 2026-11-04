@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {
  acceptMultiplicationChallenge,acceptMultiplicationExtendedChallenge,
  expectedMultiplicationWidth,multiplicationEndState,normalizeMultiplicationAttempt,
- multiplicationAttemptCorrect,multiplicationQueue
+ multiplicationAttemptCorrect,multiplicationQueue,restoreMultiplicationTranscript
 } from '../apps/multiplication-simple/certified-classic.mjs';
 
 const repoFile=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
@@ -57,6 +57,59 @@ test('session transcript queue is isolated by class and account; duplicate not s
  assert.equal(multiplicationQueue(store,'invalid',CLS),null);
  queue.clear();assert.equal(queue.read(),null);
 });
+
+test('interrupted certified multiplication restores the ORIGINAL issued challenge, not a new one',()=>{
+ const memory=new Map(),store={getItem:k=>memory.get(k)||null,
+  setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k)};
+ const challenge={...sample(),multipliers:[9],method:'side',tensFirst:true};
+ const q=multiplicationQueue(store,STUDENT,CLS);
+ const answer={id:'q1',digits:['1','4','2','2'],carries:['','8','4']};
+ assert.equal(q.save(challenge,[answer]),true);
+ const saved=q.read();
+ assert.equal(saved.questions.length,4,'les questions serveur sont conservées');
+ assert.equal(saved.sessionId,SESSION,'le défi original est préservé');
+ const restored=restoreMultiplicationTranscript(saved,'classic');
+ assert.ok(restored);
+ assert.equal(restored.sessionId,SESSION);
+ assert.equal(restored.answers.length,1);
+ assert.equal(restored.method,'side');
+ assert.equal(restored.tensFirst,true);
+ assert.equal(restored.finished,false);
+ assert.equal(multiplicationQueue(store,STUDENT,'11111111-1111-4111-8111-111111111111').read(),null);
+ assert.equal(multiplicationQueue(store,'cccccccc-cccc-4ccc-8ccc-cccccccccccc',CLS).read(),null);
+});
+
+test('completed but unacknowledged proof remains re-sendable; invalid and old queues cannot masquerade as certified',()=>{
+ const memory=new Map(),store={getItem:k=>memory.get(k)||null,
+  setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k)};
+ const q=multiplicationQueue(store,STUDENT,CLS),challenge={...sample(),multipliers:[9]};
+ const answers=challenge.questions.map((x)=>({id:x.id,digits:['1','4','2','2'],carries:['','','']}));
+ assert.equal(q.save(challenge,answers),true);
+ assert.equal(restoreMultiplicationTranscript(q.read(),'classic')?.finished,true);
+ const corrupt={...q.read(),questions:[{id:'q1',op:'mul',a:'17',m:2,width:2}]};
+ assert.equal(restoreMultiplicationTranscript(corrupt,'classic'),null);
+ const tampered={...q.read(),answers:[{...answers[0],digits:['?',...answers[0].digits.slice(1)]}]};
+ assert.equal(restoreMultiplicationTranscript(tampered,'classic'),null);
+ const old={sessionId:SESSION,expiresAt:challenge.expiresAt,level:1,total:4,mode:'classic',answers};
+ assert.equal(restoreMultiplicationTranscript(old,'classic'),null,'ne pas inventer les questions d’une vieille preuve');
+ assert.equal(q.read()?.answers.length,4,'une tentative invalide ne détruit pas le reçu conservé');
+});
+
+test('an interrupted HARD session can be restored with the exact 120-question server envelope',()=>{
+ const memory=new Map(),store={getItem:k=>memory.get(k)||null,
+  setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k)};
+ const challenge={...sample(),mode:'hard-sudden',level:3,width:16,total:120,limit:120,
+  questions:Array.from({length:120},(_,i)=>({id:'q'+(i+1),op:'mul',a:'9999999999999999',m:9,width:16})),
+  multipliers:[9]};
+ const q=multiplicationQueue(store,STUDENT,CLS,'hard-sudden',3);
+ const answer={id:'q1',digits:(BigInt(challenge.questions[0].a)*9n).toString().split('').reverse(),
+  carries:Array(16).fill('')};
+ assert.equal(q.save(challenge,[answer]),true);
+ assert.ok(restoreMultiplicationTranscript(q.read(),'hard-sudden'));
+ assert.equal(restoreMultiplicationTranscript(q.read(),'three-lives'),null);
+ assert.equal(restoreMultiplicationTranscript(q.read(),'hard-sudden').finished,false);
+});
+
 test('SQL school proof only serves exact app; no direct anon or browser grade endpoint',()=>{
  const sql=repoFile('supabase/migrations/20261104110000_school_multiplication_classic_certified_v1.sql');
  const edge=repoFile('supabase/functions/connect-multiplication-school/index.ts');

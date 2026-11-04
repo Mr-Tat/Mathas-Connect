@@ -81,20 +81,52 @@ export function multiplicationEndState(mode,answers,questions){
   lives:classic?null:Math.max(0,limit-wrong)};
 }
 
+// Une preuve interrompue doit reprendre le défi original émis par le serveur.
+ // Une copie locale n'autorise JAMAIS de nouveaux XP : finish est vérifié côté Edge/SQL.
+export function restoreMultiplicationTranscript(snapshot,mode){
+ if(!snapshot||snapshot.mode!==mode||!Array.isArray(snapshot.multipliers)
+  ||!snapshot.multipliers.length||new Set(snapshot.multipliers).size!==snapshot.multipliers.length
+  ||snapshot.multipliers.some(m=>!isInt(m)||m<2||m>9))return null;
+ const allowed=snapshot.multipliers;
+ const parsed=mode==='classic'
+  ?acceptMultiplicationChallenge(snapshot,snapshot.level,snapshot.total,allowed)
+  :acceptMultiplicationExtendedChallenge(snapshot,snapshot.level,mode,allowed);
+ if(!parsed||!Array.isArray(snapshot.answers)||snapshot.answers.length>parsed.total)return null;
+ const answers=snapshot.answers.map((a,i)=>normalizeMultiplicationAttempt(parsed.questions[i],a));
+ if(answers.some(a=>!a))return null;
+ const state=multiplicationEndState(mode,answers,parsed.questions);
+ if(!state.valid)return null;
+ return {...parsed,mode,answers,multipliers:[...allowed],
+  method:snapshot.method==='side'?'side':'top',
+  tensFirst:snapshot.tensFirst===true,finished:state.complete};
+}
 export function multiplicationQueue(storage,studentId,classId,mode='classic',level=0){
  if(!UUID.test(studentId)||!UUID.test(classId))return null;
  const key=(mode==='classic'?'mathas.multi.certified-classic.v1.':'mathas.multi.certified-extended.v1.'+mode+'.'+level+'.')+classId+'.'+studentId;
  const cap=mode==='classic'?20:120;
  return {
-  read(){try{const v=JSON.parse(storage.getItem(key));return v&&UUID.test(v.sessionId)
-    &&Array.isArray(v.answers)&&v.answers.length<=cap
-    &&Date.parse(v.expiresAt)>Date.now()?v:null}catch{return null}},
+  read(){try{
+   const raw=storage.getItem(key);
+   if(!raw||raw.length>52000)return null;
+   const v=JSON.parse(raw);
+   return v&&UUID.test(v.sessionId)&&Array.isArray(v.answers)
+    &&v.answers.length<=cap&&Date.parse(v.expiresAt)>Date.now()?v:null;
+  }catch{return null}},
   save(challenge,answers){
    try{
-    if((mode==='classic'&&!CLASSIC_COUNTS.includes(challenge.total))||answers.length>cap)return false;
+    if(!Array.isArray(challenge.questions)||!Array.isArray(answers)
+     ||(mode==='classic'&&!CLASSIC_COUNTS.includes(challenge.total))||answers.length>cap)return false;
+    const multipliers=Array.isArray(challenge.multipliers)?challenge.multipliers:
+     [...new Set(challenge.questions.map(q=>q.m))];
+    // Conserver les questions/paramètres du même sessionId ; sinon un rechargement
+    // lancerait un autre défi et laisserait la preuve originale sans ACK.
     storage.setItem(key,JSON.stringify({
-     sessionId:challenge.sessionId,expiresAt:challenge.expiresAt,
-     mode,level:challenge.level,total:challenge.total,answers}));return true;
+     ok:true,sessionId:challenge.sessionId,expiresAt:challenge.expiresAt,
+     revision:challenge.revision,resetEpoch:challenge.resetEpoch,
+     mode,level:challenge.level,total:challenge.total,width:challenge.width,limit:challenge.limit,
+     questions:challenge.questions,multipliers,
+     method:challenge.method==='side'?'side':'top',tensFirst:challenge.tensFirst===true,answers
+    }));return true;
    }catch{return false}
   },
   clear(){try{storage.removeItem(key)}catch{}}
@@ -162,7 +194,9 @@ export function createCertifiedMultiplicationClassic({
  const verify=doc.createElement('button');verify.type='button';verify.id='mulProofVerify';
  verify.textContent='Vérifier ce calcul';
  const next=doc.createElement('button');next.type='button';next.textContent='Calcul suivant';next.hidden=true;
- actions.append(verify,next);root.append(header,label,board,pad,status,actions);
+ const discard=doc.createElement('button');discard.type='button';
+ discard.textContent='Abandonner cette série conservée';discard.hidden=true;
+ actions.append(verify,next,discard);root.append(header,label,board,pad,status,actions);
  if(!doc.getElementById('mathasMultiCertifiedStyle')){
   const style=doc.createElement('style');style.id='mathasMultiCertifiedStyle';
   style.textContent=CSS;doc.head.append(style);
@@ -173,7 +207,7 @@ export function createCertifiedMultiplicationClassic({
  const show=s=>{status.textContent=s;notify?.(s)};
  function reset(){
   requestSeq++;run=null;queue=null;sending=false;starting=false;root.hidden=true;board.replaceChildren();
-  tensInput.checked=false;
+  discard.hidden=true;tensInput.checked=false;
  }
  function mountControls(){
   pad.replaceChildren();
@@ -320,7 +354,27 @@ export function createCertifiedMultiplicationClassic({
    ||(mode==='classic'?!CLASSIC_COUNTS.includes(total):expectedMultiplicationWidth(mode,level)===null))return false;
   const selected=[...new Set(multipliers)].sort((a,b)=>a-b);
   if(!selected.length||selected.some(n=>!isInt(n)||n<2||n>9))return false;
-  root.hidden=false;verify.hidden=true;next.hidden=true;verify.textContent='Vérifier ce calcul';
+  queue=multiplicationQueue(storage,ctx.studentId,ctx.classId,mode,level);
+  if(!queue)return false;
+  const previous=queue.read();
+  const restored=restoreMultiplicationTranscript(previous,mode);
+  root.hidden=false;verify.hidden=true;next.hidden=true;discard.hidden=true;
+  verify.textContent='Vérifier ce calcul';
+  // Ne jamais écraser silencieusement une preuve (même créée par une ancienne version).
+  if(previous?.answers?.length&&!restored){
+   discard.hidden=false;
+   show('⚠️ Une ancienne preuve est conservée, mais son défi complet manque. '+
+    'Tu peux attendre son expiration ou abandonner explicitement cette série.');
+   return false;
+  }
+  if(restored){
+   run={...restored,owner:ctx.studentId,cls:ctx.classId};
+   discard.hidden=false;mountControls();
+   if(run.finished)void finish();
+   else{render();show('Série interrompue retrouvée : '+run.answers.length+
+    ' calcul(s) déjà validé(s), même défi serveur.');}
+   return true;
+  }
   status.textContent='Création de la série Connect…';starting=true;const seq=++requestSeq;
   try{
    const data=await call(mode==='classic'?'start-classic-v1':'start-extended-v1',
@@ -330,15 +384,8 @@ export function createCertifiedMultiplicationClassic({
    const parsed=mode==='classic'?acceptMultiplicationChallenge(data,level,total,selected)
     :acceptMultiplicationExtendedChallenge(data,level,mode,selected);
    if(!parsed)throw Error('Opérations émises par le serveur invalides');
-   queue=multiplicationQueue(storage,ctx.studentId,ctx.classId,mode,level);
-   if(!queue)throw Error('Stockage de reprise indisponible');
-   const previous=queue.read();
-   let saved=[];
-   if(previous?.sessionId===parsed.sessionId&&previous.level===level&&previous.total===parsed.total
-    &&previous.answers.every((a,i)=>normalizeMultiplicationAttempt(parsed.questions[i],a)))
-     saved=previous.answers;
    run={...parsed,mode,owner:ctx.studentId,cls:ctx.classId,multipliers:selected,
-    method,tensFirst,answers:saved,finished:false};
+    method,tensFirst,answers:[],finished:false};
    tensInput.checked=!!tensFirst;
    if(!queue.save(run,run.answers))throw Error('Sauvegarde du défi impossible');
    mountControls();
@@ -362,7 +409,13 @@ export function createCertifiedMultiplicationClassic({
  });
  verify.addEventListener('click',()=>{if(run?.finished)void finish();else validate()});
  next.addEventListener('click',()=>{if(run&&!run.finished)render()});
+ discard.addEventListener('click',()=>{
+  if(sending||!queue)return;
+  queue.clear();requestSeq++;root.hidden=true;run=null;queue=null;
+  discard.hidden=true;notify?.('Série locale abandonnée sans crédit XP.');
+ });
  close.addEventListener('click',()=>{if(sending)return;requestSeq++;root.hidden=true;run=null;queue=null;
-  verify.textContent='Vérifier ce calcul';verify.hidden=false;notify?.('Série interrompue ; reprise possible avant expiration.')});
+  discard.hidden=true;verify.textContent='Vérifier ce calcul';verify.hidden=false;
+  notify?.('Série interrompue ; reprise possible avant expiration.')});
  return Object.freeze({start,reset,isOpen:()=>!root.hidden});
 }
