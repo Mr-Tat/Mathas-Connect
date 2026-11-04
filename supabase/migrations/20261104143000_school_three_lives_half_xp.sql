@@ -144,7 +144,7 @@ begin
  values(p_student,levelnow,2,now())
  on conflict(student_id) do update set highest_level_reached=excluded.highest_level_reached,level_ruleset_version=2,updated_at=now();
  return jsonb_build_object('appXp',afterxp,'delta',afterxp-beforexp,'total',totalxp,'level',levelnow,'previousLevel',priorlevel,'next',case when levelnow<7 then levelnow*50 else 300+(levelnow-6)*100 end,'active',true,'rulesetVersion',2);
-end $function$
+end $function$;
 
 
 CREATE OR REPLACE FUNCTION public.connect_xp_read_v2(p_student uuid, p_app text, p_include_milestones boolean DEFAULT false)
@@ -184,7 +184,7 @@ BEGIN
  END IF;
  RETURN jsonb_build_object('active',true,'total',total_points,'appXp',points,'level',lvl,
  'next',CASE WHEN lvl<7 THEN lvl*50 ELSE 300+(lvl-6)*100 END,'apps',apps,'milestones',earned,'currentMilestones',replay_earned,'parcours',parcours,'repeatXp',can_repeat,'max',474);
-END $function$
+END $function$;
 
 
 CREATE OR REPLACE FUNCTION public.connect_objective_record_school_record_extended_v1(p_student uuid, p_class uuid, p_app text, p_event uuid, p_expected_revision bigint, p_reset_epoch bigint, p_mode text, p_level integer, p_score integer, p_attempted integer, p_hash text)
@@ -297,6 +297,6 @@ BEGIN
    'verifiedScore',p_score,'attempted',p_attempted,'mode',p_mode,
    'revision',v_row.revision+1,'resetEpoch',v_row.reset_epoch,
    'state',v_state,'xp',v_xp);
-END $function$
+END $function$;
 
 COMMIT;
