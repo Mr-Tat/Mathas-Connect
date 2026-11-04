@@ -1,9 +1,6 @@
 -- Disposable PostgreSQL 16 test fixture only; NEVER execute on hosted Supabase.
 -- The shared school fixtures have already created student, class, ledgers and trophy trigger.
-CREATE TABLE public.connect_multiplier_locks(
- class_id uuid NOT NULL,scope_key text NOT NULL,multipliers integer[] NOT NULL,
- PRIMARY KEY(class_id,scope_key)
-);
+-- The pre-existing multiplication-school-postgres workflow supplies the multiplier locks table.
 CREATE OR REPLACE FUNCTION public.test_capture_trophies() RETURNS trigger LANGUAGE plpgsql AS $fn$
 DECLARE k text;i int;
 BEGIN
