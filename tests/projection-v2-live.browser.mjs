@@ -447,3 +447,45 @@ test('V2 — prénom long, cadre carré, score centré et chiffres en valeur dan
   assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
+
+test('V2 — scores podium lisibles en or, argent et bronze sur les 4 thèmes',{timeout:80000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}}),state=sampleState([ADD,MUL],8);
+  const {errors}=await openBoard(page,url,state);
+  const expected=[
+   {background:'rgb(105, 68, 25)',color:'rgb(255, 247, 228)'},
+   {background:'rgb(43, 80, 106)',color:'rgb(242, 250, 255)'},
+   {background:'rgb(101, 57, 38)',color:'rgb(255, 241, 230)'}
+  ];
+  const contrast=(foreground,background)=>{
+   const channels=cssColor=>cssColor.match(/[0-9]+(?:\.[0-9]+)?/g).slice(0,3).map(Number);
+   const lum=rgb=>rgb.map(c=>{const v=c/255;return v<=0.04045?v/12.92:((v+0.055)/1.055)**2.4;})
+    .reduce((sum,c,i)=>sum+c*[0.2126,0.7152,0.0722][i],0);
+   const a=lum(channels(foreground)),b=lum(channels(background));
+   return (Math.max(a,b)+0.05)/(Math.min(a,b)+0.05);
+  };
+  for(const theme of ['neon','papier','ardoise','studio']){
+   await page.locator('#projection-theme').selectOption(theme);
+   const badges=await page.locator(card(ADD)+' .entry .points').evaluateAll(elements=>elements.slice(0,4).map(el=>{
+    const style=getComputedStyle(el),rect=el.getBoundingClientRect(),
+     row=el.closest('.entry').getBoundingClientRect();
+    return {bg:style.backgroundColor,color:style.color,border:style.borderStyle,
+     leftPadding:style.paddingLeft,right:rect.right,rowRight:row.right};
+   }));
+   assert.equal(badges.length,4,'Quatre lignes observées en '+theme);
+   for(let i=0;i<3;i++){
+    assert.equal(badges[i].bg,expected[i].background,'Rang '+(i+1)+' : fond fort en '+theme);
+    assert.equal(badges[i].color,expected[i].color,'Rang '+(i+1)+' : texte contrasté en '+theme);
+    assert.equal(badges[i].border,'none','Aucun contour en '+theme);
+    assert.equal(badges[i].leftPadding,'7px','Fond visible tout autour en '+theme);
+    assert.ok(contrast(badges[i].color,badges[i].bg)>=7,
+     'Contraste texte/fond fort au rang '+(i+1)+' en '+theme);
+    assert.ok(badges[i].right<=badges[i].rowRight,'Score sans débordement en '+theme);
+   }
+   assert.ok(!expected.some(e=>e.background===badges[3].bg),
+    'La quatrième place garde un cartouche plus discret en '+theme);
+  }
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
