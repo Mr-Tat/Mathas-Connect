@@ -32,6 +32,7 @@
       color:#e8f5ff!important;box-shadow:0 4px 13px rgba(0,0,0,.20)!important;
       font:700 12px system-ui,sans-serif!important;line-height:1.2!important
     }
+    #mathas-native-connect-profile[hidden],#mathas-native-connect-xp[hidden]{display:none!important}
     #mathas-native-connect-profile .connect-identity{
       display:inline-flex!important;gap:5px!important;align-items:center!important;
       max-width:190px!important;min-width:0!important;white-space:nowrap!important
