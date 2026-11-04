@@ -66,7 +66,7 @@ BEGIN
  SELECT xp_credited INTO n FROM public.connect_xp_credits WHERE student_id=a AND app_key='addition-ecrite-simple';
  IF n<>25 THEN RAISE EXCEPTION '3-vies replay half should +5: %',n;END IF;
  j:=public.connect_xp_read_v2(a,'addition-ecrite-simple',true);
- IF NOT j->'currentMilestones' ? 'sudden:1:5:half' THEN RAISE EXCEPTION 'replay XP panel not showing half'; END IF;
+ IF NOT (j->'currentMilestones' ? 'sudden:1:5:half') THEN RAISE EXCEPTION 'replay XP panel not showing half'; END IF;
  UPDATE public.connect_states SET state_data=jsonb_set(state_data,'{sudden,0}','5') WHERE student_id=a;
  PERFORM public.connect_xp_sync_v2(a,'addition-ecrite-simple',false);
  SELECT xp_credited INTO n FROM public.connect_xp_credits WHERE student_id=a AND app_key='addition-ecrite-simple';
