@@ -122,6 +122,8 @@ const CSS=[
  '#mathasMultiCertified button:disabled{opacity:.5;cursor:wait}',
  '#mathasMultiCertified .mul-proof-pad button{min-width:38px}',
  '#mathasMultiCertified .mul-proof-status{min-height:24px;font-weight:750;text-align:center;color:#fff0b8}',
+ '#mathasMultiCertified .mul-proof-side-carries{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}',
+ '#mathasMultiCertified .mul-proof-side-carries label{display:flex;align-items:center;gap:5px;font:700 12px system-ui;color:#ffdf9e}',
  '#mathasMultiCertified .mul-proof-actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}',
  '#mathasMultiCertified #mulProofVerify{background:#1b7157}',
  '@media(max-width:500px){#mathasMultiCertified{inset:2vh 2vw;padding:9px}',
@@ -213,7 +215,9 @@ export function createCertifiedMultiplicationClassic({
   fields=Array(cols).fill(null);carries=Array(q.a.length).fill(null);
   rows.append(cell('↗'));
   for(let j=cols-1;j>=0;j--){
-   if(j===0||j>=q.a.length){rows.append(cell(''));continue}
+   if(j===0||j>=q.a.length||run.method==='side'){
+    rows.append(cell(''));continue;
+   }
    const input=digitInput('carry',j);carries[j]=input;rows.append(input);
   }
   rows.append(cell(''));
@@ -230,7 +234,15 @@ export function createCertifiedMultiplicationClassic({
   const carryOnTop=run.method==='top';
   top.textContent=carryOnTop?'Report au-dessus':'Report à côté : entre les retenues dans les petites cases.';
   top.className='mul-proof-note';
-  board.replaceChildren(top,rows);
+  const side=doc.createElement('div');side.className='mul-proof-side-carries';
+  if(run.method==='side'){
+   side.setAttribute('aria-label','Reports placés à côté de la multiplication');
+   for(let j=1;j<q.a.length;j++){
+    const item=doc.createElement('label');item.textContent='Report vers '+(j+1)+' : ';
+    const input=digitInput('carry',j);carries[j]=input;item.append(input);side.append(item);
+   }
+  }
+  board.replaceChildren(top,rows,...(run.method==='side'?[side]:[]));
   const modeLabel=run.mode==='classic'?'Classique':run.mode==='three-lives'?'❤️ 3 vies':run.mode==='sudden'?'💀 Mort subite':run.mode==='hard-three-lives'?'🔥 HARD · 3 vies':'🔥 HARD · Mort subite';
   const state=multiplicationEndState(run.mode,run.answers,run.questions);
   title.textContent='✖ Multiplication · '+modeLabel+' · niveau '+run.level;
