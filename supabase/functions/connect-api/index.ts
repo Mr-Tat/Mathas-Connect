@@ -30,12 +30,12 @@ async function optionalProfileUnlockLevel(studentId:string,knownLevel?:number|nu
  catch{return Number.isSafeInteger(knownLevel)&&knownLevel!>=1?knownLevel!:1}
 }
 const initialFromName=(name:string)=>Array.from(name.trim())[0]?.toLocaleUpperCase('fr')||'E';
-const avatarMinLevel:Record<string,number>={letter:1,animal:3,object:15,smiley:20};
-const profileRewardLevels=[3,6,10,15,20] as const;
+const avatarMinLevel:Record<string,number>={letter:1,animal:5,smiley:15,object:25};
+const profileRewardLevels=[5,10,15,20,25] as const;
 // Lecture facultative pour ne pas bloquer le HUB si le service XP est indisponible.
 // Aucun niveau déclaré par le navigateur n'entre dans le calcul.
 async function pendingProfileRewardLevels(studentId:string,level:number):Promise<number[]>{
- if(!Number.isSafeInteger(level)||level<3)return [];
+ if(!Number.isSafeInteger(level)||level<5)return [];
  const {data,error}=await db.from('connect_profile_reward_celebrations')
   .select('reward_level').eq('student_id',studentId);
  if(error)throw Error('reward_read_failed');
@@ -129,7 +129,7 @@ async function handle(req:Request){
    if(!student)return fail('profile_archived',403);
    if(!teacherPlayer){
      const level=await readProfileUnlockLevel(studentId);
-     if(level<avatarMinLevel[kind]||(level<6&&color!=='transparent'))return fail('reward_locked',403);
+     if(level<avatarMinLevel[kind]||(level<10&&color!=='transparent'))return fail('reward_locked',403);
      if(kind==='letter'&&value!==initialFromName(student.display_name))return fail('initial_only',403);
    }
    const updated=await db.from('connect_students').update({avatar_kind:kind,avatar_value:value,avatar_color:color})
@@ -149,7 +149,7 @@ async function handle(req:Request){
    if(!device?.student_id)return fail('forbidden',403);
    const student=await one(db.from('connect_students').select('display_name').eq('id',device.student_id).is('archived_at',null));
    if(!student)return fail('profile_archived',403);
-   if(await readProfileUnlockLevel(device.student_id)<10)return fail('reward_locked',403);
+   if(await readProfileUnlockLevel(device.student_id)<20)return fail('reward_locked',403);
    const alias=candidate===null?student.display_name:candidate;
    const others=await db.from('connect_students').select('id,public_alias').neq('id',device.student_id)
      .is('archived_at',null).limit(2000);
@@ -216,9 +216,9 @@ async function handle(req:Request){
      const progress=b.includeXp===true?await optionalProgress(d.student_id):undefined;
      const unlockLevel=await optionalProfileUnlockLevel(d.student_id,xp?.level);
      // Ne jamais créer d'animation sur la foi d'un profil XP incomplet.
-     // Cette lecture additionnelle est limitée aux profils déjà de niveau 3.
+     // Cette lecture additionnelle est limitée aux profils déjà de niveau 5.
      let pendingProfileRewards:number[]=[];
-     if(b.includeXp===true&&xp?.active===true&&unlockLevel>=3){
+     if(b.includeXp===true&&xp?.active===true&&unlockLevel>=5){
        try{pendingProfileRewards=await pendingProfileRewardLevels(d.student_id,unlockLevel)}
        catch{ /* Les jeux restent accessibles, aucune célébration n'est marquée vue. */ }
      }
