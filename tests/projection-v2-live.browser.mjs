@@ -62,6 +62,9 @@ async function openBoard(page,url,state){
     state.loads++;
     const students=Array.from({length:state.count},(_,i)=>{
      const p=fakeStudent(i);
+     if(Array.isArray(state.tieScores)){
+      p.scores.find(x=>x.appKey===ADD).bestScore=state.tieScores[i]??220-i*10;
+     }
      if(state.longName&&i===0)p.name=state.longName;
      if(state.improved&&i===4)p.scores.find(x=>x.appKey===SUB).bestScore=210;
      return p;
@@ -488,6 +491,47 @@ test('V2 — cartouches podium intermédiaires, lisibles dans les 4 thèmes',{ti
    assert.ok(!expected.some(e=>e.background===badges[3].bg),
     'La quatrième place conserve son cartouche discret en '+theme);
   }
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
+
+test('V2 — ex aequo : 9 ors, 2 argents, 2 bronzes et rangs identiques entre colonnes',{timeout:80000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}});
+  const state=sampleState([ADD,MUL],16);
+  state.tieScores=[...Array(9).fill(220),200,200,180,180,160,140,120];
+  const {errors}=await openBoard(page,url,state);
+  const ranks=async()=>page.locator(card(ADD)+' .entry').evaluateAll(rows=>rows.map(el=>({
+   rank:el.querySelector('.place')?.textContent,
+   score:el.querySelector('.points')?.textContent,
+   className:el.className
+  })));
+  const expected=[...Array(9).fill('1'),...Array(2).fill('2'),...Array(2).fill('3'),'4','5','6'];
+  const checkRanks=async label=>{
+   const entries=await ranks();
+   assert.deepEqual(entries.map(e=>e.rank),expected,label+' : tous les scores identiques partagent le rang');
+   for(let i=0;i<entries.length;i++){
+    assert.ok(entries[i].className.split(' ').includes('rank-'+expected[i]),
+     label+' : couleur du rang '+expected[i]+' identique pour tous les ex aequo');
+   }
+   assert.deepEqual(entries.slice(0,9).map(e=>e.score),Array(9).fill('220 pts'));
+  };
+  await checkRanks('Deux jeux affichés');
+  assert.equal(await page.locator(card(ADD)+' .ranking-col').count(),2,'Deux colonnes dans le jeu');
+  assert.equal(await page.locator(card(ADD)+' .ranking-col').first().locator('.entry.rank-1').count(),8,
+   'Huit cases or dans la première colonne');
+  assert.equal(await page.locator(card(ADD)+' .ranking-col').last().locator('.entry.rank-1').count(),1,
+   'Une neuvième case or dans la deuxième colonne');
+  assert.equal(await page.locator(card(MUL)+' .entry.rank-1').count(),1,
+   'Les égalités de l’addition ne changent pas la multiplication');
+  await page.locator('#settings-left').click();
+  await page.getByRole('checkbox',{name:'Soustraction écrite · Afficher score'}).check();
+  await page.locator('#close-settings').click();
+  await page.waitForFunction(()=>document.querySelector('#projection-main').dataset.appCount==='3');
+  await checkRanks('Trois jeux affichés');
+  assert.equal(await page.locator(card(ADD)+' .ranking-col').count(),1,
+   'Trois jeux : une seule colonne par jeu');
   assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });

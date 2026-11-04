@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {rankApplication,splitRanking,classScore,summarizeStartedExercises,resetScorePeriod} from '../projection-v2-model.mjs';
+import {rankApplication,splitRanking,classScore,summarizeStartedExercises,resetScorePeriod,withScoreTies} from '../projection-v2-model.mjs';
 
 const students=Array.from({length:14},(_,i)=>({id:'id'+i,classId:'A',publicName:'Élève '+i,level:3,trophies:2}));
 const events=[
@@ -52,4 +52,25 @@ test('projection : Monsieur T masqué par défaut, niveaux et trophées sans mut
  assert.equal(hidden.length,14);assert.equal(shown.length,15);
  assert.equal(shown.find(x=>x.id==='teacher').level,5);
  assert.equal(shown.find(x=>x.id==='teacher').trophies,9);
+});
+
+test('Projection : rangs denses avec égalités, trois couleurs même avec six élèves',()=>{
+ const rows=[
+  {name:'Alice',score:150},{name:'Bob',score:150},
+  {name:'Camille',score:130},{name:'Dina',score:130},
+  {name:'Émilie',score:110},{name:'Félix',score:110},
+  {name:'Gabin',score:90}
+ ];
+ const original=structuredClone(rows);
+ assert.deepEqual(withScoreTies(rows).map(x=>x.position),[1,1,2,2,3,3,4]);
+ assert.deepEqual(rows,original,'Aucune mutation des scores ou de leur ordre');
+ assert.deepEqual(withScoreTies(rows.slice(0,4).reverse()).map(x=>x.position),[2,2,1,1],
+  'Un panneau peut être animé sans changer les rangs attribués aux scores');
+ assert.deepEqual(withScoreTies([]),[]);
+ assert.deepEqual(withScoreTies([{score:0},{score:0},{score:null}]).map(x=>x.position),[1,1,3]);
+});
+test('Projection : deux records égaux portent bien le même numéro',()=>{
+ const tiedEvents=[...events,{classId:'A',appKey:'addition',studentId:'id1',value:30,at:'2026-10-15T12:00:00Z'}];
+ const result=rankApplication({students,events:tiedEvents,classId:'A',appKey:'addition',since:'2026-09-01T00:00:00Z'});
+ assert.deepEqual(result.slice(0,3).map(x=>[x.score,x.position]),[[30,1],[30,1],[null,3]]);
 });

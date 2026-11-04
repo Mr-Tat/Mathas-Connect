@@ -213,12 +213,17 @@ function render(){
  list.classList.toggle("single",!split);list.classList.toggle("multi",multi);
  const cut=Math.ceil(rows.length/2);
  const cols=split?[rows.slice(0,cut),rows.slice(cut)]:[rows];
+ // Podium partagé : 1,1,2,3 pour les trois meilleurs scores distincts.
+ const scoreValues=[...new Set(rows.filter(p=>Number.isFinite(p.score)).map(p=>p.score))]
+  .sort((a,b)=>b-a);
+ const scoreRanks=new Map(scoreValues.map((value,i)=>[value,i+1]));
  let positionIndex=0;
  cols.forEach((group,ci)=>{
   const column=document.createElement("div");column.className="ranking-col";
   column.style.setProperty("--row-count",String(group.length));
   group.forEach((person,index)=>{
-   const position=++positionIndex;
+   const physicalIndex=++positionIndex;
+   const position=scoreRanks.get(person.score)??physicalIndex;
    const el=document.createElement("div");el.className="entry rank-"+position+(person.score===null?" unplayed":"");
    el.style.setProperty("--rank-progress",String((position-1)/15));
    const rank=document.createElement("span");rank.className="place";rank.textContent=String(position);

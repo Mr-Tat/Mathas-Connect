@@ -97,3 +97,8 @@ test('projection V2 demo : script inline valide en Node',()=>{
  const result=spawnSync(process.execPath,['--check','--input-type=commonjs'],{input:js,encoding:'utf8'});
  assert.equal(result.status,0,result.stderr);
 });
+test('projection V2 demo : les ex aequo obtiennent leur scoreRank commun',()=>{
+ assert.match(doc,/const scoreValues=\[\.\.\.new Set\(rows\.filter/);
+ assert.match(doc,/const scoreRanks=new Map\(scoreValues\.map/);
+ assert.match(doc,/const position=scoreRanks\.get\(person\.score\)\?\?physicalIndex/);
+});

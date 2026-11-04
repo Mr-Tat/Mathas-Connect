@@ -52,7 +52,7 @@ export async function animateOvertakeSegment({segment,paint,findRow,canContinue,
  paint(order);
  for(const movement of segment.moves){
   let i=order.findIndex(p=>playerKey(p)===movement.key);
-  const dest=movement.toRank-1;
+  const dest=movement.toIndex??movement.toRank-1;
   if(i<0||i<=dest)continue;
   while(i>dest){
    if(!canContinue())return false;

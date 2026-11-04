@@ -6,6 +6,17 @@ const time=x=>{const n=Date.parse(x||'');return Number.isFinite(n)?n:null};
 const validClass=x=>typeof x==='string'&&x.length>0;
 const validApp=x=>typeof x==='string'&&x.length>0;
 
+// Un rang par score distinct, même pour les élèves séparés en deux colonnes.
+// Exemple : scores 150, 150, 130, 110 => rangs 1, 1, 2, 3.
+export function withScoreTies(rows=[]){
+ const list=Array.isArray(rows)?rows:[];
+ const values=[...new Set(list.filter(p=>numeric(p?.score)).map(p=>p.score))]
+  .sort((a,b)=>b-a);
+ const ranks=new Map(values.map((score,i)=>[score,i+1]));
+ return list.map((person,index)=>({...person,
+  position:numeric(person?.score)?ranks.get(person.score):index+1}));
+}
+
 export function rankApplication({students=[],events=[],classId,appKey,since,includeTeacher=false}={}){
  if(!validClass(classId)||!validApp(appKey))return [];
  const started=time(since);
@@ -18,11 +29,11 @@ export function rankApplication({students=[],events=[],classId,appKey,since,incl
   if(previous===undefined||e.value>previous)best.set(e.studentId,e.value);
  }
  const eligible=Array.isArray(students)?students:[];
- return eligible.filter(s=>s&&s.classId===classId&&(!s.isTeacher||includeTeacher)&&s.visible!==false)
+ const sorted=eligible.filter(s=>s&&s.classId===classId&&(!s.isTeacher||includeTeacher)&&s.visible!==false)
   .map(s=>({id:s.id,name:String(s.publicName||'Élève').slice(0,80),level:numeric(s.level)?s.level:null,
    trophies:numeric(s.trophies)?s.trophies:null,score:best.get(s.id)??null}))
-  .sort((a,b)=>(b.score??-1)-(a.score??-1)||a.name.localeCompare(b.name,'fr')||a.id.localeCompare(b.id))
-  .map((s,i)=>({...s,position:i+1}));
+  .sort((a,b)=>(b.score??-1)-(a.score??-1)||a.name.localeCompare(b.name,'fr')||a.id.localeCompare(b.id));
+ return withScoreTies(sorted);
 }
 
 export function splitRanking(rows=[]){
@@ -93,11 +104,11 @@ export function rankMultiClass({
     trophies:numeric(p.trophies)?p.trophies:null,avatar:p.avatar??null,score});
   }
  }
- return eligible.sort((a,b)=>(b.score??-1)-(a.score??-1)
+ const sorted=eligible.sort((a,b)=>(b.score??-1)-(a.score??-1)
   ||a.name.localeCompare(b.name,'fr')||a.className.localeCompare(b.className,'fr')
   ||String(a.id).localeCompare(String(b.id)))
-  .slice(0,Math.min(Math.max(0,Number(limit)||16),16))
-  .map((p,i)=>({...p,position:i+1}));
+  .slice(0,Math.min(Math.max(0,Number(limit)||16),16));
+ return withScoreTies(sorted);
 }
 export function splitProjectedRanking(rows=[],multiClass=false){
  const data=(Array.isArray(rows)?rows:[]).slice(0,16);
