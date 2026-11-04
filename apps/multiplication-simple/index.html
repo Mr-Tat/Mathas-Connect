@@ -391,18 +391,30 @@ function installNativeCertifiedProof(){
   if(!event.isTrusted)return;
   const btn=event.target?.closest?.('button');
   if(!btn||btn.disabled)return;
-  const total=btn.matches('.classic-count-btn[data-count]')
-   ?Number(btn.dataset.count):btn.id==='startClassic'
-   ?Number(doc.querySelector('.classic-count-btn.active')?.dataset.count||10):0;
-  if(![4,10,20].includes(total))return;
+  let choice=null;
+  if(btn.matches('.classic-count-btn[data-count]')||btn.id==='startClassic'){
+   const total=btn.matches('.classic-count-btn[data-count]')
+    ?Number(btn.dataset.count)
+    :Number(doc.querySelector('.classic-count-btn.active')?.dataset.count||10);
+   choice={mode:'classic',total,level:Number(doc.getElementById('classicLevel')?.value)};
+  }else if(btn.id==='startSudden'||btn.id==='mathasMultiThreeLives'){
+   choice={mode:btn.id==='startSudden'?'sudden':'three-lives',
+    level:Number(doc.getElementById('suddenLevel')?.value)};
+  }else if(btn.matches('#hardMenu .hard-sudden')){
+   const level=Number(btn.closest('.hard-level-card')?.querySelector('h3')?.textContent.match(/NIV\s*([123])/i)?.[1]);
+   choice={mode:btn.classList.contains('mathas-multi-hard-three-lives')?'hard-three-lives':'hard-sudden',
+    level};
+  }
+  if(!choice||![1,2,3].includes(choice.level)
+   ||(choice.mode==='classic'&&![4,10,20].includes(choice.total)))return;
   event.preventDefault();event.stopImmediatePropagation();
-  const level=Number(doc.getElementById('classicLevel')?.value);
   const selected=[...doc.querySelectorAll('#multiplierPicker [data-mult].active')]
    .map(x=>Number(x.dataset.mult)).filter(x=>Number.isInteger(x)&&x>=2&&x<=9);
-  const multipliers=selected.length?selected:Array.isArray(multiplierLock)?multiplierLock:[2,3,4,5,6,7,8,9];
+  const multipliers=choice.mode.startsWith('hard-')?[2,3,4,5,6,7,8,9]
+   :selected.length?selected:Array.isArray(multiplierLock)?multiplierLock:[2,3,4,5,6,7,8,9];
   const method=doc.querySelector('input[name="carryMethod"]:checked')?.value||'top';
   const tensFirst=!!doc.getElementById('tensFirstToggle')?.checked;
-  void certifiedClassic.start({level,total,multipliers,method,tensFirst});
+  void certifiedClassic.start({...choice,multipliers,method,tensFirst});
  },true);
 }
 if(mode==='connected'){
