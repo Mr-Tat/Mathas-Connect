@@ -53,9 +53,19 @@ export function xpStillAvailable(xp,mode,level,total=null){
  if(!pool)return null;
  let awards;
  if(mode==='classic')awards=CLASSIC[total]?.map(([key,points])=>[`classic:${level}:${total}:${key}`,points]);
- else awards=OTHER[mode]?.map(([n,points])=>[`${mode}:${level}:${n}`,points]);
+ else {
+  const hard=mode==='hard'||mode==='hard-sudden'||mode==='hard-three-lives';
+  const normal=mode==='sudden'||mode==='three-lives';
+  const key=hard?'hard':normal?'sudden':null;
+  awards=key?OTHER[key].map(([n,points])=>[`${key}:${level}:${n}`,points]):null;
+ }
  if(!awards)return null;
- return awards.reduce((n,[key,amount])=>n+(pool.has(key)?0:amount),0);
+ const three=mode==='three-lives'||mode==='hard-three-lives';
+ return awards.reduce((remaining,[key,amount])=>{
+  const full=pool.has(key),half=pool.has(key+':half'),complement=pool.has(key+':complement');
+  if(three)return remaining+(full||half||complement?0:Math.floor(amount/2));
+  return remaining+(full||complement?0:(half?Math.ceil(amount/2):amount));
+ },0);
 }
 // Some native scripts rebuild a button from its textContent. An XP label
 // present during that rewrite becomes an unstyled PLAIN text node next to
@@ -165,14 +175,16 @@ export function renderNativeOfficialXp(doc,appKey,xp){
    'XP officiels encore accessibles pour cette série');
  }
  const lifeLevel=nativeLevel(doc.getElementById('suddenMaxDigits'));
- const lifeXp=xpStillAvailable(xp,'sudden',lifeLevel);
- for(const id of ['startThreeLives','startSudden'])
-  applyBadge(doc.getElementById(id),lifeXp,'Récompenses XP communes aux modes 3 vies et Mort subite');
+ applyBadge(doc.getElementById('startThreeLives'),xpStillAvailable(xp,'three-lives',lifeLevel),
+  '3 vies : jusqu’à la moitié des XP des paliers 5 et 10 réussites');
+ applyBadge(doc.getElementById('startSudden'),xpStillAvailable(xp,'sudden',lifeLevel),
+  'Mort subite : jusqu’aux XP complets, déduction faite des XP déjà obtenus en 3 vies');
  positionSuddenXp(doc.getElementById('startSudden'));
  for(const button of doc.querySelectorAll('#hardMenu .hard-start,#hardMenu .mlab-three,#hardMenu .hard-sudden')){
   const level=hardLevel(button);
-  applyBadge(button,xpStillAvailable(xp,'hard',level),
-   'Récompenses XP communes aux modes HARD 3 vies et Mort subite');
+  const three=button.dataset.mode==='three-lives'||button.matches('.mlab-three,.hard-three');
+  applyBadge(button,xpStillAvailable(xp,three?'hard-three-lives':'hard-sudden',level),
+   three?'HARD 3 vies : moitié des XP':'HARD Mort subite : XP complets après déduction des XP 3 vies');
  }
 }
 export function installNativeCertifiedLaunch(doc,appKey,onLaunch){
