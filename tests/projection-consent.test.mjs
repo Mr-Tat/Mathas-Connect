@@ -88,3 +88,52 @@ test('Consentement : refuser ne transmet rien ; accepter transmet exactement son
  assert.equal(events[0].classId,'11111111-1111-4111-8111-111111111111');
  assert.equal(tool.pending(),0);
 });
+test('Consentement : offres simultanées visibles, chaque Oui envoyé sans attendre un nouvel événement réseau',async()=>{
+ const {createProjectionConsent}=await import('../projection-consent.mjs');
+ const elements=[],store=new Map(),submitted=[];
+ let finishFirst;
+ const firstRequest=new Promise(resolve=>{finishFirst=resolve});
+ const documentRef={
+  head:{append(){}},body:{append(){}},
+  createElement(tag){
+   const el={tag,children:[],hidden:false,textContent:'',onclick:null,
+    append(...children){this.children.push(...children)},
+    setAttribute(name,value){this[name]=value},focus(){}};
+   elements.push(el);return el;
+  }
+ };
+ const tool=createProjectionConsent({
+  classId:'11111111-1111-4111-8111-111111111111',
+  appKey:'multiplication-ecrite-simple',
+  studentKey:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  getToken:async()=> 'FAKE_JWT_TEST_ONLY',
+  documentRef,windowRef:{addEventListener(){}},
+  storage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},
+  fetchImpl:async(_url,opts)=>{
+   submitted.push(JSON.parse(opts.body));
+   if(submitted.length===1)return firstRequest; // Réseau volontairement lent.
+   return {ok:true,json:async()=>({ok:true})};
+  }
+ });
+ const dialog=elements.find(e=>e.className==='mathas-projection-offer');
+ const yes=elements.find(e=>e.textContent==='Oui, envoyer');
+ const first='aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa';
+ const second='aaaaaaaa-2222-4222-8222-aaaaaaaaaaaa';
+ assert.equal(tool.offer(first),true);
+ assert.equal(dialog.hidden,false,'la première proposition est visible');
+ assert.equal(tool.offer(second),true);
+ assert.equal(dialog.hidden,false,'la seconde proposition ne doit pas masquer la première');
+ assert.equal(submitted.length,0,'aucun envoi avant consentement');
+ yes.onclick();
+ assert.equal(dialog.hidden,false,'la deuxième question apparaît après le premier Oui');
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.deepEqual(submitted.map(x=>x.eventId),[first]);
+ yes.onclick(); // Acceptation pendant que la première requête HTTP attend encore.
+ assert.equal(dialog.hidden,true);
+ assert.deepEqual(submitted.map(x=>x.eventId),[first]);
+ finishFirst({ok:true,json:async()=>({ok:true})});
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.deepEqual(submitted.map(x=>x.eventId),[first,second],
+  'le second Oui est transmis dès la fin de la première requête');
+ assert.equal(tool.pending(),0,'aucun consentement accepté ne reste bloqué');
+});
