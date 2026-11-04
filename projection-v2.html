@@ -319,29 +319,27 @@ header.projection-header #load-real{
  padding:6px 9px;white-space:nowrap;font-size:12px
 }
 header.projection-header .projection-auto-refresh{
- display:flex;flex:0 0 145px;min-width:130px;
- flex-direction:column;gap:5px;align-items:stretch;
+ display:flex;flex:0 0 104px;min-width:94px;
+ flex-direction:column;gap:4px;align-items:stretch;
 }
 header.projection-header .projection-auto-label{
- color:var(--v-text,#d4e7f8);font-size:11px;font-weight:850;
- letter-spacing:.035em;white-space:nowrap;
+ color:var(--v-soft,#d4e7f8);font-size:9px;font-weight:600;
+ letter-spacing:.015em;white-space:nowrap;opacity:.66;
 }
 header.projection-header .projection-refresh-progress{
- display:block;height:11px;width:100%;
- border:1px solid var(--v-button-line,#7794b1);
- background:color-mix(in srgb,var(--v-header,#263f5b) 72%,#000 28%);
+ display:block;height:4px;width:100%;
+ border:0;
+ background:color-mix(in srgb,var(--v-text,#d4e7f8) 13%,transparent);
  border-radius:999px;overflow:hidden;position:relative;
 }
 header.projection-header .projection-refresh-fill{
  display:block;width:100%;height:100%;
- background:var(--v-accent,#ffdc81);
+ background:color-mix(in srgb,var(--v-soft,#c8deed) 49%,transparent);
  border-radius:inherit;transform:scaleX(0);transform-origin:left center;
- transition:transform .25s linear;
+ transition:transform .45s linear;
 }
-header.projection-header .projection-refresh-progress.is-inactive{opacity:.45}
-header.projection-header .projection-refresh-progress.is-paused{
- border-style:dashed;
-}
+header.projection-header .projection-refresh-progress.is-inactive{opacity:.26}
+header.projection-header .projection-refresh-progress.is-paused{opacity:.35}
 @media(max-width:950px){
  html[data-proj-da] header.projection-header,header.projection-header{
   grid-template-columns:minmax(170px,1fr) minmax(320px,1fr);
@@ -361,7 +359,7 @@ header.projection-header .projection-refresh-progress.is-paused{
  header.projection-header .projection-theme-picker{justify-self:center}
  header.projection-header .header-tools{justify-self:center;max-width:100%;gap:8px}
  header.projection-header #load-real{min-width:0}
- header.projection-header .projection-auto-refresh{flex-basis:118px;min-width:100px}
+ header.projection-header .projection-auto-refresh{flex-basis:104px;min-width:94px}
 }
 @media(prefers-reduced-motion:reduce){
  header.projection-header .projection-refresh-fill{transition:none}
