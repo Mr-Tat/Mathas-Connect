@@ -44,7 +44,8 @@ const ADD='addition-ecrite-simple',MUL='multiplication-ecrite-simple',SUB='soust
 const card=key=>'.ranking-card[data-app-key="'+key+'"]';
 function sampleOptions(keys){return {scoreApps:[...keys],percentageApps:[ADD,MUL,SUB],
  comparisons:[],comparisonDisplay:[],rotationSeconds:40}}
-function sampleState(keys,count=16){return {options:sampleOptions(keys),count,loads:0,saves:0,resets:[],improved:false}}
+function sampleState(keys,count=16){return {options:sampleOptions(keys),count,loads:0,saves:0,resets:[],improved:false,
+ percentages:null,percentageStatus:'exercise_telemetry_not_yet_available'}}
 async function openBoard(page,url,state){
  const errors=[],unknown=[];page.on('pageerror',e=>errors.push(e.message));
  page.on('dialog',d=>d.accept());
@@ -66,7 +67,8 @@ async function openBoard(page,url,state){
      return p;
     });
     const classes=[{classId:A,name:'Phase 2 A',enrolled:state.count,options:state.options,
-     students,scorePeriods:[],totals:[],percentages:null}];
+     students,scorePeriods:[],totals:[],percentages:state.percentages??null,
+     percentageStatus:state.percentageStatus??'exercise_telemetry_not_yet_available'}];
     if(input.comparisons?.includes(B))classes.push({
      classId:B,name:'Phase 2 B',enrolled:0,options:null,students:[],scorePeriods:[],totals:[],percentages:null
     });
@@ -221,6 +223,23 @@ test('V2 — reset de score toujours protégé et isolé',{timeout:60000},async(
   await page.waitForFunction(()=>!document.querySelector('#settings').open);
   assert.deepEqual(state.resets,[ADD]);
   assert.equal(await page.locator(card(MUL)+' .entry.rank-1 .points').textContent(),'90 pts');
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
+
+test('V2 — les vrais taux fournis par l’API sont affichés avec leur portée explicite',{timeout:60000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}}),state=sampleState([ADD,MUL],4);
+  state.percentages={global:65,apps:{[ADD]:60,[MUL]:80,[SUB]:null}};
+  state.percentageStatus='completed_games_only';
+  const {errors}=await openBoard(page,url,state);
+  await page.waitForFunction(()=>document.querySelector('#classes')?.textContent?.includes('65 %'));
+  assert.match(await page.locator('#classes').textContent(),/Global65 %/);
+  assert.match(await page.locator('#classes').textContent(),/Addition écrite60 %/);
+  assert.match(await page.locator('#classes').textContent(),/Multiplication écrite80 %/);
+  assert.match(await page.locator('#percentage-scope').textContent(),/parties terminées enregistrées/);
+  assert.match(await page.locator('#percentage-scope').textContent(),/parties abandonnées ne sont pas encore comptées/);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
