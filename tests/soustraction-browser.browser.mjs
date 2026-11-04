@@ -1,4 +1,7 @@
 import test from 'node:test';
+// Les quatre scénarios hérités simulaient game-record depuis le navigateur.
+// Ce chemin est maintenant interdit aux classes scolaires. Les nouveaux
+// scénarios certifiés actifs sont dans soustraction-certified.browser.mjs.
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
@@ -38,7 +41,7 @@ test('Chromium réel : lanceur libre et moteur autonome s’affichent', {timeout
   await page.close();
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
-test('Chromium réel : Connect -> fin de partie -> trophée -> file -> serveur factice', {timeout:120000},async()=>{
+test.skip('Ancien protocole client remplacé par tests/soustraction-certified.browser.mjs : Chromium réel : Connect -> fin de partie -> trophée -> file -> serveur factice', {timeout:120000},async()=>{
  const {server,url}=await serve(),received=[],unmocked=[];
  const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
  try{
@@ -179,7 +182,7 @@ test('Chromium petit PC et GSM : en-tête Connect, lien HUB, XP et jeu restent d
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
 
-test('Chromium : une partie hors connexion survit au rechargement et arrive une seule fois après retour réseau', {timeout:120000},async()=>{
+test.skip('Ancien protocole client remplacé par tests/soustraction-certified.browser.mjs : Chromium : une partie hors connexion survit au rechargement et arrive une seule fois après retour réseau', {timeout:120000},async()=>{
  const {server,url}=await serve();
  const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
  let connectionAvailable=false,posted=0,storedRevision=0;
@@ -236,7 +239,7 @@ test('Chromium : une partie hors connexion survit au rechargement et arrive une 
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
 
-test('Chromium : quatre vrais calculs résolus au pavé -> résultat 4/4 envoyé par le moteur', {timeout:120000},async()=>{
+test.skip('Ancien protocole client remplacé par tests/soustraction-certified.browser.mjs : Chromium : quatre vrais calculs résolus au pavé -> résultat 4/4 envoyé par le moteur', {timeout:120000},async()=>{
  const {server,url}=await serve(),received=[],errors=[];
  const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
  try{
@@ -325,7 +328,7 @@ test('Chromium : quatre vrais calculs résolus au pavé -> résultat 4/4 envoyé
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
 
-test('Animations XP Connect visibles sur Soustraction ET Multiplication, même en mouvement réduit', {timeout:180000},async()=>{
+test.skip('Ancien protocole client remplacé par tests/soustraction-certified.browser.mjs : Animations XP Connect visibles sur Soustraction ET Multiplication, même en mouvement réduit', {timeout:180000},async()=>{
  const {server,url}=await serve();
  const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
  try{
