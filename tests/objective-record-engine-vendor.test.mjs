@@ -40,10 +40,18 @@ test('deux additions : Objectif record garde son sous-titre et sa couronne ; com
     'la marge vide de 72px entre les cartes et Écrire les dizaines d abord disparaît sur PC');
   assert.match(source,/@media\(max-width:980px\)\{html body #menuScreen\.menu-panel > \.mathas-menu-zone-launch\{margin-bottom:8px!important\}\}/,
     'aucun grand vide entre les cartes et le réglage sur mobile');
+  assert.match(source,/<button class="mathas-pressable-3d" id="startThreeLives" type="button" aria-label="3 vies">/,
+   '3 vies doit avoir un style 3D sans classe .btn, laquelle déclenche un ancien script de réécriture');
+  assert.match(source,/\.score-mode-options > button::before\{/,'reflet 3D pour les deux modes');
+  assert.match(source,/\.score-mode-options > button::after\{/,'tranche 3D pour les deux modes');
+  assert.match(source,/\.score-mode-options > button:not\(:disabled\):not\(\.progress-sudden-locked\):active::after\{/,
+   'la tranche se rétracte quand on enfonce le bouton');
+  assert.match(source,/translateY\(calc\(var\(--mathas-btn-depth\) - 1px\)\)/,
+   'déplacement en profondeur 3D au clic');
   assert.match(source,/mode-icon" aria-hidden="true">👑/);
    assert.doesNotMatch(source,/3 erreurs possibles/,'pas de détail d’erreurs dans le bouton');
-   assert.match(source,/Moitié des XP/,'étiquette 3-vies présente');
-   assert.match(source,/score-mode-half-xp\{/,'pastille sombre 3-vies');
+   assert.doesNotMatch(source,/Moitié des XP/,'aucune mention moitié des XP dans 3 vies');
+   assert.doesNotMatch(source,/score-mode-half-xp\{/,'plus de pastille sombre redondante');
   assert.match(source,/<h3 class="mode-title">Objectif record<\/h3>/);
   assert.doesNotMatch(source,/score-mode-cup" aria-hidden="true">🏆/);
   assert.match(source,/if\(suddenDesc&&!suddenDesc\.textContent\.trim\(\)\)/,
