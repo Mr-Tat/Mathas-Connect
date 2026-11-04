@@ -53,7 +53,7 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 const SERVER_PROOF_ADDITIONS=new Set(['addition-ecrite-simple','addition-ecrite-multiple']);
 const MULTIPLICATION_PROOF_APP='multiplication-ecrite-simple';
 const SERVER_PROOF_APPS=new Set([...SERVER_PROOF_ADDITIONS,MULTIPLICATION_PROOF_APP]);
-const nativeRecordAllowed=appKey=>isWritableTestApp(appKey)&&!SERVER_PROOF_APPS.has(appKey);
+const nativeRecordAllowed=appKey=>isWritableTestApp(appKey)&&!SERVER_PROOF_ADDITIONS.has(appKey)&&appKey!==MULTIPLICATION_PROOF_APP;
 
 let statusTimer=null,barTimer=null,lastOfficialXp=null,lastOfficialProgress=null;
 const bar=$('connect-bar'),handle=$('bar-handle'),xpPanel=$('xp-panel'),challengePanel=$('challenge-panel');
@@ -232,11 +232,16 @@ function showOfficial({xp,loaded,appKey}){
  if(schoolScoreView)void schoolScoreView.load();
  lastOfficialProgress=classId===CLASS_TEST?null:schoolProgressSnapshot(appKey,loaded.state);
  window.MathasConnectOfficialSchoolProgress=lastOfficialProgress;
- if(SERVER_PROOF_APPS.has(appKey)){
-  // A null official award snapshot is 'unavailable', never a local fake zero.
+ if(SERVER_PROOF_ADDITIONS.has(appKey)){
+  // Preserve the additions' already certified trophy validation contract.
   window.MathasConnectOfficialTrophies={
    active:true,appKey,studentId:pupilId,
-   rewards:appKey===MULTIPLICATION_PROOF_APP ?loaded.state?.rewards??null:officialAdditionRewards(appKey,loaded.state?.rewards)
+   rewards:officialAdditionRewards(appKey,loaded.state?.rewards)
+  };
+ }else if(appKey===MULTIPLICATION_PROOF_APP){
+  window.MathasConnectOfficialTrophies={
+   active:true,appKey,studentId:pupilId,
+   rewards:loaded.state?.rewards??null
   };
  }
 }
