@@ -4,6 +4,9 @@ on:
     paths:
       - 'supabase/migrations/2026110411*.sql'
       - 'supabase/migrations/20261104130000_mul_optional_carries_native_v1.sql'
+      - 'supabase/migrations/20261104131000_school_mul_unlocked_gold_v1.sql'
+      - 'tests/postgres/multiplication-school-fixture.sql'
+      - 'tests/postgres/multiplication-school-certified.test.sql'
       - 'tests/postgres/multiplication-school-optional-carries.test.sql'
       - 'supabase/functions/connect-multiplication-school/**'
       - '.github/workflows/multiplication-school-postgres.yml'
@@ -40,6 +43,7 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/objective-record-school-class-fixture.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "INSERT INTO public.connect_classes(id) VALUES ('4bf3400d-a315-4ea4-a2f3-afaca24dc9b9')"
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE TABLE public.connect_multiplier_locks(class_id uuid,scope_key text,multipliers integer[])"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/multiplication-school-fixture.sql
       - name: Add school proof ledgers
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120000_school_certified_additions_tables.sql
@@ -51,5 +55,8 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261104110200_school_mul_extended_certified_v1.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261104110300_mul_server_level_unlock_guards_v1.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261104130000_mul_optional_carries_native_v1.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261104131000_school_mul_unlocked_gold_v1.sql
       - name: Test 9 classic, 4 extended, HARD, replay XP and ACL
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/multiplication-school-optional-carries.test.sql
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/multiplication-school-optional-carries.test.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/multiplication-school-certified.test.sql
