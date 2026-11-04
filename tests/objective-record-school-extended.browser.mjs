@@ -222,6 +222,21 @@ for(const item of examples){
       doc?.getElementById('startThreeLives')?.disabled===true &&
       doc?.getElementById('mathas-school-record-lock')?.hidden===false;
     },null,{timeout:16000});
+    const lockedButtons=await page.evaluate(()=>{
+     const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+     return ['startThreeLives','startSudden'].map(id=>{
+      const button=doc.getElementById(id),style=doc.defaultView.getComputedStyle(button);
+      return {id,disabled:button.disabled,cursor:style.cursor,transform:style.transform,
+       lockClass:button.classList.contains('progress-sudden-locked')};
+     });
+    });
+    for(const button of lockedButtons){
+     assert.equal(button.disabled,true,'locked normal score option: '+JSON.stringify(button));
+     assert.equal(button.lockClass,true,'same progression lock appearance: '+JSON.stringify(button));
+     assert.equal(button.cursor,'not-allowed','disabled score card is not clickable');
+     assert.equal(button.transform,'none','locked buttons do not animate on selection');
+    }
+    assert.equal(actions.filter(a=>a.action==='start-extended-proof-v1').length,0);
     // The same pupil unlocks both modes after a server-verified 8/10.
     // Simulate only the official student-load reply, NEVER a local browser score.
     recordUnlocked=true;
