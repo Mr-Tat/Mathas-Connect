@@ -21,8 +21,10 @@ AS $fn$
     -- Une partie achevée produit un event_id unique, jamais doublé.
     AND e.game_total BETWEEN 1 AND 100
     AND e.game_score BETWEEN 0 AND e.game_total
-    -- Mort subite : son total peut représenter des questions NON tentées.
-    AND lower(e.game_mode) NOT IN ('sudden', 'mort-subite', 'mort_subite', 'sudden-death')
+    -- Seul le mode Classique terminé certifie ici un dénominateur intégral.
+    -- Les modes avec arrêt anticipé (3 vies, Mort subite) sont exclus,
+    -- car game_total peut inclure des questions jamais tentées.
+    AND lower(e.game_mode) = 'classic'
     -- Les agrégats représentent les élèves actuellement inscrits.
     AND EXISTS (
       SELECT 1 FROM public.connect_enrollments AS m
