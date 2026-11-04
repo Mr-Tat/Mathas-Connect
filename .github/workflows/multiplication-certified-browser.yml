@@ -8,6 +8,8 @@ on:
       - 'apps/multiplication-simple/school-record-eligibility.mjs'
       - 'projection-consent.mjs'
       - 'apps/multiplication-simple/certified-classic.mjs'
+      - 'apps/multiplication-simple/native-certified.mjs'
+      - 'apps/multiplication-simple/native-proof-adapter.mjs'
       - 'tests/multiplication-certified-keyboard.browser.mjs'
       - 'tests/multiplication-native-presentation.browser.mjs'
       - 'tests/multiplication-approved-journey.browser.mjs'
