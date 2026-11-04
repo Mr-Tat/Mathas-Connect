@@ -102,6 +102,11 @@ test('Projection V2 : thème à gauche, classe centrée plus visible, MAJ et bar
  assert.match(html,/grid-template-areas:"theme class refresh"/);
  assert.match(html,/font-size:clamp\(22px,2\.1vw,31px\);font-weight:950/);
  assert.match(html,/MAJ auto/);
+ assert.match(html,/\.projection-auto-refresh\{\s*display:flex;flex:0 0 104px/);
+ assert.match(html,/\.projection-auto-label\{[\s\S]*?font-size:9px;font-weight:600/);
+ assert.match(html,/\.projection-refresh-progress\{\s*display:block;height:4px/);
+ assert.match(html,/background:color-mix\(in srgb,var\(--v-soft,#c8deed\) 49%,transparent\)/);
+ assert.doesNotMatch(html,/background:var\(--v-accent,#ffdc81\);\s*border-radius:inherit;transform:scaleX\(0\)/);
  assert.match(js,/fill\.style\.transform='scaleX\('\+fraction\+'\)'/);
  assert.match(js,/aria-valuetext/);
  assert.match(js,/refreshPausedAt/);
