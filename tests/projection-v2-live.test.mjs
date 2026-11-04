@@ -38,7 +38,7 @@ test('Projection V2 : rafraîchissement toutes les 20 s, sans changement automat
  assert.match(js,/if\(ticket===refreshTicket&&connected&&hasLoaded\)startRefreshCycle\(\)/);
  assert.match(js,/function pauseRefreshCycle\(\)/);
  assert.match(js,/function resumeRefreshCycle\(\)/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-names-and-headings-v1/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-compact-scores-v1/);
  assert.match(html,/id="projection-refresh-progress"/);
  assert.match(html,/id="projection-refresh-fill"/);
  assert.match(html,/role="progressbar"/);
@@ -53,8 +53,9 @@ test('Projection V2 : jusqu’à 16 élèves et animations indépendantes',()=>{
  assert.match(js,/findRow:key=>rowFor\(appKey,key\)/);
  assert.match(js,/onArrival:movement=>addSpectacularRise\(appKey,movement\)/);
  assert.match(js,/localRises\.set\(appKey,history\.slice\(0,5\)\)/);
- assert.match(js,/playerLabel\.append\(projectedAvatar\(p\),name\)/);
- assert.match(js,/primary\.append\(playerLabel,points\)/);
+ assert.match(js,/const avatar=projectedAvatar\(p\)/);
+ assert.match(js,/playerLabel\.append\(name\)/);
+ assert.match(js,/detail\.append\(avatar,copy,points\)/);
  assert.match(js,/row\.style\.setProperty\('--rank-progress'/);
  assert.match(js,/column\.style\.setProperty\('--row-count'/);
  assert.match(html,/Aucun score enregistré pour cette application/);
@@ -137,5 +138,21 @@ test('Projection V2 : noms mis en gras dans les événements, sans HTML injecté
  assert.doesNotMatch(js,/text\.innerHTML\s*=/);
  assert.match(html,/\.event-text \.event-student\{font-weight:900;color:inherit\}/);
  assert.doesNotMatch(js,/MEILLEURS SCORES · PÉRIODE DE PROJECTION/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-names-and-headings-v1/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-compact-scores-v1/);
+});
+
+test('Projection V2 : cadre 24px carré, score centré, chiffres en gras',()=>{
+ assert.match(js,/detail\.className='entry-details'/);
+ assert.match(js,/copy\.className='entry-copy'/);
+ assert.match(js,/detail\.append\(avatar,copy,points\)/);
+ assert.match(js,/levelLabel\.textContent='Niv\.'/);
+ assert.match(js,/levelValue\.className='meta-value'/);
+ assert.match(js,/trophiesValue\.className='meta-value'/);
+ assert.match(js,/minor\.setAttribute\('aria-label','Niveau '/);
+ assert.match(html,/\.entry-details\{\s*display:flex;align-items:center/);
+ assert.match(html,/\.entry-details \.projection-avatar\{\s*flex:0 0 24px;width:24px;height:24px/);
+ assert.match(html,/\.entry-details \.points\{\s*flex:0 0 auto;align-self:center/);
+ assert.match(html,/\.entry-copy \.minor \.meta-value\{[\s\S]*?font-size:11px;font-weight:850/);
+ assert.match(html,/\.entry-copy \.player-label strong\{[\s\S]*?text-overflow:ellipsis/);
+ assert.match(html,/projection-v2-avatar\.css\?v=20261104-compact-avatar-v6/);
 });
