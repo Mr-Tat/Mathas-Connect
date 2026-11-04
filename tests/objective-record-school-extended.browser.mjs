@@ -89,6 +89,69 @@ for(const item of examples){
     const link=inner?.contentDocument?.getElementById('mathas-game-hub-return');
     return !!link&&link.getAttribute('href')?.includes('/hub.html?class=');
    },null,{timeout:16000});
+   // Les trois actions doivent rester sur UNE ligne SOUS la barre Connect,
+   // y compris lorsque celle-ci réapparaît après un mouvement de souris.
+   await page.waitForFunction(()=>{
+    const inner=document.getElementById('gameFrame')?.contentDocument?.getElementById('game');
+    const doc=inner?.contentDocument;
+    return !!doc?.querySelector('.theme-toggle-btn')&&
+     !!doc?.getElementById('mathas-game-hub-return')&&
+     !!doc?.getElementById('fullscreenBtn');
+   },null,{timeout:16000});
+   for(const viewportWidth of [1160,620,390,320]){
+    await page.setViewportSize({width:viewportWidth,height:820});
+    await page.waitForTimeout(220);
+    const layout=await page.evaluate(()=>{
+     const outer=document.getElementById('gameFrame');
+     const inner=outer.contentDocument.getElementById('game');
+     const doc=inner.contentDocument;
+     const bar=document.getElementById('connect-bar').getBoundingClientRect();
+     const o=outer.getBoundingClientRect(),i=inner.getBoundingClientRect();
+     const button=id=>doc.getElementById(id);
+     const nodes=[button('fullscreenBtn'),button('mathas-game-hub-return'),
+      doc.querySelector('.mathas-top-actions>.theme-toggle-btn')];
+     const points=nodes.map(el=>{
+      const r=el.getBoundingClientRect();
+      const x=o.left+i.left+r.left+r.width/2,y=o.top+i.top+r.top+r.height/2;
+      const hit=document.elementFromPoint(x,y);
+      const inside=doc.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+      return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,
+       globalX:x,globalY:y,hostHit:hit?.id,innerHit:inside===el||el.contains(inside),
+       visible:doc.defaultView.getComputedStyle(el).visibility,
+       href:el.getAttribute('href')};
+     });
+     const card=doc.querySelector('#menuScreen .mode-card.sudden');
+     return {viewportWidth,barBottom:bar.bottom,points,
+      icon:card.querySelector('.mode-icon')?.textContent?.trim(),
+      title:card.querySelector('.mode-title')?.textContent?.trim(),
+      description:card.querySelector('.mode-description')?.textContent?.trim(),
+      titleHasCup:!!card.querySelector('.mode-title .score-mode-cup'),
+      skullInsideButton:!!card.querySelector('#startSudden .score-mode-icon')};
+    });
+    assert.equal(layout.icon,'👑',JSON.stringify(layout));
+    assert.equal(layout.title,'Objectif record',JSON.stringify(layout));
+    assert.equal(layout.description,'Deux façons de marquer un gros score.',JSON.stringify(layout));
+    assert.equal(layout.titleHasCup,false,'pas de coupe décorative avant le titre');
+    assert.equal(layout.skullInsideButton,true,'crâne conservé sur Mort subite');
+    const [fullscreen,hub,theme]=layout.points;
+    assert.ok(fullscreen.left<hub.left&&hub.right<=theme.left+1,'Plein écran / HUB / Mode clair, dans cet ordre : '+JSON.stringify(layout));
+    assert.ok(Math.abs(fullscreen.top-theme.top)<=2&&Math.abs(hub.top-theme.top)<=2,'trois boutons sur une rangée : '+JSON.stringify(layout));
+    for(const target of layout.points){
+     assert.ok(target.globalY>=layout.barBottom+1,
+      'bouton sous la barre Connect, non recouvert : '+JSON.stringify(layout));
+     assert.ok(target.globalX>0&&target.globalX<viewportWidth,
+      'bouton dans la largeur visible : '+JSON.stringify(layout));
+     assert.equal(target.hostHit,'gameFrame','barre externe non au-dessus du bouton : '+JSON.stringify(layout));
+     assert.equal(target.innerHit,true,'bouton atteignable par clic : '+JSON.stringify(layout));
+    }
+    assert.match(hub.href,/\/hub\.html\?class=/);
+   }
+   await page.setViewportSize({width:1160,height:820});
+   const nativeTheme=page.frameLocator('#gameFrame').frameLocator('#game').locator('.theme-toggle-btn');
+   await nativeTheme.click({timeout:5000});
+   assert.equal(await page.evaluate(()=>document.getElementById('gameFrame').contentDocument
+    .getElementById('game').contentDocument.body.classList.contains('light-mode')),true);
+   await nativeTheme.click({timeout:5000});
    // Visual contract: a verified pupil never sees the LAB's duplicate
    // "Reste XP" simulation; only one small official badge per native button.
    await page.waitForFunction(()=>{
