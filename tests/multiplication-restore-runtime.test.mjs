@@ -31,3 +31,26 @@ test('Empty new parcours creates no phantom classic records',()=>{
  const c=restore({classic:[{},{},{}],progress:{}}).get('multi1_classic_v1');
  assert.deepEqual(Object.keys(c),[]);
 });
+
+
+test('Multiplication renders the native Top du jour from certified server points',()=>{
+ const day=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels'}).format(new Date());
+ const state={bestPoints:230,todayBest:{day,points:135},
+  recent:[
+   {eventId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',points:135,at:day+'T10:00:00Z',mode:'classic'},
+   {eventId:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',points:230,at:day+'T09:00:00Z',mode:'sudden'},
+   {eventId:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',points:90,at:day+'T08:00:00Z',mode:'classic'}
+  ]};
+ const m=restore(state);
+ const points=m.get('mathas_points_v1_multiplication-simple');
+ assert.equal(points.day,day);
+ assert.equal(points.top[0].points,135);
+ assert.deepEqual(Array.from(points.bestThree,x=>x.points),[230,135,90]);
+ assert.equal(points.bestOne.points,230);
+});
+test('Multiplication does not display a previous-day score as todays top',()=>{
+ const points=restore({bestPoints:500,todayBest:{day:'2020-01-01',points:500}})
+  .get('mathas_points_v1_multiplication-simple');
+ assert.equal(points.top.length,0);
+ assert.equal(points.bestOne.points,500);
+});
