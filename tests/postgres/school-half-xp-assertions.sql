@@ -38,16 +38,16 @@ BEGIN
  UPDATE public.connect_states SET state_data=jsonb_set(state_data,'{threeLives,0}','10') WHERE student_id=b;
  PERFORM public.connect_xp_sync_v2(b,'addition-ecrite-multiple',false);
  SELECT xp_credited INTO n FROM public.connect_xp_credits WHERE student_id=b AND app_key='addition-ecrite-multiple';
- IF n<>10 THEN RAISE EXCEPTION 'sudden-first full credit then 3-vies must not stack: %',n;END IF;
+ IF n<>15 THEN RAISE EXCEPTION 'sudden-first tier fully earned, 3-vies unlocks only the next half tier: %',n;END IF;
 
  UPDATE public.connect_states SET state_data=jsonb_set(state_data,'{hardThree,0}','3') WHERE student_id=b;
  PERFORM public.connect_xp_sync_v2(b,'addition-ecrite-multiple',false);
  SELECT xp_credited INTO n FROM public.connect_xp_credits WHERE student_id=b AND app_key='addition-ecrite-multiple';
- IF n<>15 THEN RAISE EXCEPTION 'HARD 3-vies half credit: %',n;END IF;
+ IF n<>20 THEN RAISE EXCEPTION 'HARD 3-vies half credit: %',n;END IF;
  UPDATE public.connect_states SET state_data=jsonb_set(state_data,'{hard,0}','7') WHERE student_id=b;
  PERFORM public.connect_xp_sync_v2(b,'addition-ecrite-multiple',false);
  SELECT xp_credited INTO n FROM public.connect_xp_credits WHERE student_id=b AND app_key='addition-ecrite-multiple';
- IF n<>30 THEN RAISE EXCEPTION 'HARD complete top-up: %',n;END IF;
+ IF n<>35 THEN RAISE EXCEPTION 'HARD complete top-up: %',n;END IF;
 
  -- Other applications cannot earn the new 3-vies half milestone.
  PERFORM public.connect_xp_sync_v2(c,'multiplication-ecrite-simple',false);
