@@ -43,19 +43,24 @@ Deno.serve(async(req:Request)=>{
  if(!b||typeof b!=='object'||Array.isArray(b))return deny('invalid_request');
  const cls=typeof b.classId==='string'?b.classId.toLowerCase():'';
  if(!CLASSES.has(cls))return deny('school_class_not_allowed',403);
- const start=b.action==='start-classic-v1';
- const finish=b.action==='finish-classic-v1';
+ const classicStart=b.action==='start-classic-v1';
+ const classicFinish=b.action==='finish-classic-v1';
+ const extendedStart=b.action==='start-extended-v1';
+ const extendedFinish=b.action==='finish-extended-v1';
+ const start=classicStart||extendedStart,finish=classicFinish||extendedFinish;
  if(!start&&!finish)return deny('proof_only',403);
  const keys=Object.keys(b).sort().join(',');
  if(start){
-  if(keys!=='action,classId,level,multipliers,total'
-   ||![1,2,3].includes(b.level)||![4,10,20].includes(b.total)
+  if(keys!==(classicStart?'action,classId,level,multipliers,total':'action,classId,level,mode,multipliers')
+   ||![1,2,3].includes(b.level)
+   ||(classicStart?![4,10,20].includes(b.total):!['sudden','three-lives','hard-sudden','hard-three-lives'].includes(b.mode))
    ||!Array.isArray(b.multipliers)||b.multipliers.length<1||b.multipliers.length>8
    ||new Set(b.multipliers).size!==b.multipliers.length
    ||b.multipliers.some((n:unknown)=>!Number.isInteger(n)||(n as number)<2||(n as number)>9))
     return deny('invalid_configuration');
  }else if(keys!=='action,answers,classId,sessionId'||!valid(b.sessionId)
-   ||!Array.isArray(b.answers)||![4,10,20].includes(b.answers.length))
+   ||!Array.isArray(b.answers)||
+     (classicFinish?![4,10,20].includes(b.answers.length):b.answers.length<1||b.answers.length>120))
    return deny('invalid_answers');
  try{
   let student:string|null=null;
@@ -82,27 +87,34 @@ Deno.serve(async(req:Request)=>{
   if(!live)return deny('inactive_student',403);
   const app=await row(db.from('connect_apps').select('enabled').eq('app_key',APP));
   if(app?.enabled!==true)return deny('app_disabled',403);
-  const name=start?'connect_objective_record_school_mul_issue_classic_v1':
-   'connect_objective_record_school_mul_finish_classic_v1';
-  const args=start
+  const name=classicStart?'connect_objective_record_school_mul_issue_classic_v1'
+   :extendedStart?'connect_objective_record_school_mul_issue_extended_v1'
+   :classicFinish?'connect_objective_record_school_mul_finish_classic_v1'
+   :'connect_objective_record_school_mul_finish_extended_v1';
+  const args=classicStart
    ?{p_student:student,p_class:cls,p_level:b.level,p_total:b.total,p_multipliers:b.multipliers}
+   :extendedStart
+   ?{p_student:student,p_class:cls,p_mode:b.mode,p_level:b.level,p_multipliers:b.multipliers}
    :{p_student:student,p_class:cls,p_session:b.sessionId,p_answers:b.answers};
   const {data,error:rpcError}=await db.rpc(name,args);
   if(rpcError){
    const known=new Set(['school_class_not_allowed','invalid_proof_configuration','not_school_subject',
     'multipliers_not_allowed','proof_expired','proof_not_found','proof_replay_collision',
-    'stale_reset_epoch','revision_conflict','invalid_proof_answers','inactive_student']);
+    'stale_reset_epoch','revision_conflict','invalid_proof_answers','inactive_student',
+    'school_mode_locked','proof_continued_after_end','proof_incomplete_game']);
    const problem=known.has(rpcError.message)?rpcError.message:'proof_unavailable';
    if(!known.has(rpcError.message))console.error('multiplication_proof_rpc_failed',rpcError.code);
    const status=['proof_replay_collision','stale_reset_epoch','revision_conflict'].includes(problem)?409
     :problem==='proof_expired'?410:problem==='proof_not_found'?404
-    :['school_class_not_allowed','not_school_subject','inactive_student','multipliers_not_allowed'].includes(problem)?403
-    :['invalid_proof_answers','invalid_proof_configuration'].includes(problem)?400:503;
+    :['school_class_not_allowed','not_school_subject','inactive_student','multipliers_not_allowed','school_mode_locked'].includes(problem)?403
+    :['invalid_proof_answers','invalid_proof_configuration','proof_incomplete_game','proof_continued_after_end'].includes(problem)?400:503;
    return deny(problem,status);
   }
   if(start){
    if(data?.ok!==true||!valid(data.sessionId)||data.level!==b.level
-    ||data.total!==b.total||!Array.isArray(data.questions)||data.questions.length!==b.total)
+    ||!Array.isArray(data.questions)
+    ||(classicStart?data.total!==b.total||data.questions.length!==b.total
+      :data.mode!==b.mode||data.limit!==120||data.questions.length!==120))
     return deny('invalid_proof_response',503);
   }else if(data?.ok!==true||data.proofVerified!==true
    ||!Number.isSafeInteger(data.verifiedScore)||data.verifiedScore<0
