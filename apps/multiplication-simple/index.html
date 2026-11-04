@@ -117,7 +117,7 @@ html=html.replace('<head>','<head>'+scopedBootstrap+multiplierBootstrap).replace
 const iframe=document.createElement('iframe');iframe.title='Multiplication écrite simple V7.0.0';iframe.style.cssText='border:0;width:100%;height:calc(100dvh - var(--ce-toolbar-height,46px));display:block';iframe.setAttribute('allow','fullscreen');
 // Présentation additionnelle du moteur natif sans muter ses points ni reports.
 function applySchoolUi(){
- try{installMultiplicationSchoolUi(iframe.contentDocument,{connected:mode==='connected',xp:lastXp});installNativeCertifiedProof()}
+ try{installMultiplicationSchoolUi(iframe.contentDocument,{connected:mode==='connected',xp:lastXp,rewards:initial?.rewards});installNativeCertifiedProof()}
  catch(error){console.warn('Affichage scolaire multiplication indisponible',error)}
 }
 iframe.addEventListener('load',applySchoolUi);
