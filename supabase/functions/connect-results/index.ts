@@ -125,8 +125,8 @@ Deno.serve(async req=>{
  let b:any;try{b=JSON.parse(raw)}catch{return deny('json')};
  if(!valid(b?.classId))return deny('class');
  // Activation switch: every school class with server-issued arithmetic
- // proofs must stop the legacy browser-declared score path. Only these two
- // additions are affected; other three calculation games remain untouched.
+ // proofs must stop the legacy browser-declared score path. These four
+ // school games require server-issued arithmetic proofs.
  // Deploy this Edge version BEFORE enabling SCHOOL_ADDITIONS_ROLLOUT in Pages.
  const proofOnlyAddClasses=new Set([
   '4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',
