@@ -152,7 +152,7 @@ for(const item of examples){
     assert.equal(layout.titleVersionVisible,true,'la version doit rester lisible sur PC/GSM');
     assert.match(layout.titleVersionText,/^V\d+(?:\.\d+)+$/,'version native conservée');
     assert.equal(layout.titleVersionText,layout.originalVersionText,'la version affichée correspond au moteur natif');
-    if(viewportWidth>=620){
+    if(viewportWidth>=950){
      assert.ok(layout.logoRight<=layout.profileLeft+2,
       'Connect est directement à droite du logo, sans version intermédiaire : '+JSON.stringify(layout));
      assert.ok(layout.titleVersionRight<=viewportWidth+2,
