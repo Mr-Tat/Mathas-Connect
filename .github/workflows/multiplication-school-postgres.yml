@@ -1,5 +1,15 @@
 name: Multiplication school PostgreSQL proof (disposable)
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/2026110411*.sql'
+      - 'supabase/migrations/20261104130000_mul_optional_carries_native_v1.sql'
+      - 'supabase/migrations/20261104131000_school_mul_unlocked_gold_v1.sql'
+      - 'tests/postgres/multiplication-school-fixture.sql'
+      - 'tests/postgres/multiplication-school-certified.test.sql'
+      - 'tests/postgres/multiplication-school-optional-carries.test.sql'
+      - '.github/workflows/multiplication-school-postgres.yml'
   pull_request:
     paths:
       - 'supabase/migrations/2026110411*.sql'
