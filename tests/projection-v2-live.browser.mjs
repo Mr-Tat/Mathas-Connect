@@ -62,6 +62,7 @@ async function openBoard(page,url,state){
     state.loads++;
     const students=Array.from({length:state.count},(_,i)=>{
      const p=fakeStudent(i);
+     if(state.longName&&i===0)p.name=state.longName;
      if(state.improved&&i===4)p.scores.find(x=>x.appKey===SUB).bestScore=210;
      return p;
     });
@@ -381,6 +382,56 @@ test('V2 — prénom en gras dans les exploits, jeu et texte normal, sans surtit
   assert.equal(await page.locator('.ranking-card .ranking-head .over').count(),0,'Surtitre supprimé');
   assert.deepEqual(await page.locator('.ranking-card .ranking-head h2').allTextContents(),
    ['Addition écrite','Soustraction écrite']);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
+
+
+test('V2 — prénom long, cadre carré, score centré et chiffres en valeur dans les thèmes',{timeout:80000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}});
+  const state=sampleState([ADD,MUL],5);
+  state.longName='Élève au prénom vraiment très long pour vérifier la place du score';
+  const {errors}=await openBoard(page,url,state);
+  const measure=()=>page.locator(card(ADD)+' .entry.rank-1').evaluate(row=>{
+   const rect=el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width,height:r.height,midY:r.y+r.height/2}};
+   const avatar=row.querySelector('.projection-avatar');
+   const name=row.querySelector('.player-label strong');
+   const copy=row.querySelector('.entry-copy');
+   const score=row.querySelector('.entry-details .points');
+   const minor=row.querySelector('.minor');
+   const values=[...minor.querySelectorAll('.meta-value')];
+   return {
+    avatar:rect(avatar),name:rect(name),copy:rect(copy),score:rect(score),row:rect(row),
+    weights:values.map(el=>Number(getComputedStyle(el).fontWeight)),
+    labelWeight:Number(getComputedStyle(minor.querySelector('.meta-label')).fontWeight),
+    numbers:values.map(el=>el.textContent),
+    accessible:minor.getAttribute('aria-label'),
+    nameOverflow:getComputedStyle(name).textOverflow
+   };
+  });
+  for(const theme of ['neon','papier','ardoise','studio']){
+   await page.locator('#projection-theme').selectOption(theme);
+   const m=await measure();
+   assert.equal(m.avatar.width,24,'Cadre compact carré en '+theme);
+   assert.equal(m.avatar.height,24,'Hauteur réduite en '+theme);
+   assert.ok(Math.abs(m.score.midY-m.copy.midY)<=2,'Points centrés sur nom + niveau en '+theme);
+   assert.ok(m.score.left>=m.copy.right+2,'Espace sans chevauchement en '+theme);
+   assert.ok(m.score.right<=m.row.right,'Score dans sa case en '+theme);
+   assert.ok(m.weights.every(w=>w>=800)&&m.labelWeight<700,'Niv. discret, chiffres gras en '+theme);
+   assert.deepEqual(m.numbers,['4','0']);
+   assert.equal(m.nameOverflow,'ellipsis');
+   assert.match(m.accessible,/Niveau 4, 0 trophées/);
+  }
+  await page.locator('#settings-left').click();
+  await page.getByRole('checkbox',{name:'Soustraction écrite · Afficher score'}).check();
+  await page.locator('#close-settings').click();
+  await page.waitForFunction(()=>document.querySelector('#projection-main').dataset.appCount==='3');
+  const m3=await measure();
+  assert.equal(m3.avatar.width,24);
+  assert.ok(Math.abs(m3.score.midY-m3.copy.midY)<=2,'En mode 3, score centré');
+  assert.ok(m3.score.right<=m3.row.right,'En mode 3, pas de dépassement');
   assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
