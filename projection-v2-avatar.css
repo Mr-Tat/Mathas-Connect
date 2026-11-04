@@ -1,4 +1,4 @@
-/* Projection V2 : avatars encadrés, points de podium sans cartouche et lignes compactes.
+/* Projection V2 : avatars encadrés, scores contrastés et lignes compactes.
    Présentation uniquement : aucun changement aux scores, rangs ni autorisations. */
 .entry .player-label{
  display:inline-flex;align-items:center;gap:6px;flex:0 1 auto;min-width:0;overflow:hidden;
@@ -80,3 +80,22 @@ html[data-proj-da] .entry.rank-2 :is(.primary,.entry-details) .points{
 html[data-proj-da] .entry.rank-3 :is(.primary,.entry-details) .points{
  color:#753823!important;text-shadow:0 1px 0 #fff8!important;
 }
+
+/* 1re, 2e et 3e places : les cartes podium sont claires.
+   Un fond franchement plus sombre (or, bleu ardoise, bronze)
+   rend le score immédiatement visible, sans bordure ni ombre.
+   La règle plus spécifique prime sur l'ancienne encre foncée
+   du podium ; les rangs 4 à 16 gardent leur fond discret. */
+html[data-proj-da] .ranking-board .entry.rank-1 .entry-details .points{
+ background:#694419;color:#fff7e4!important;
+ padding:3px 7px;text-shadow:none!important;
+}
+html[data-proj-da] .ranking-board .entry.rank-2 .entry-details .points{
+ background:#2b506a;color:#f2faff!important;
+ padding:3px 7px;text-shadow:none!important;
+}
+html[data-proj-da] .ranking-board .entry.rank-3 .entry-details .points{
+ background:#653926;color:#fff1e6!important;
+ padding:3px 7px;text-shadow:none!important;
+}
+
