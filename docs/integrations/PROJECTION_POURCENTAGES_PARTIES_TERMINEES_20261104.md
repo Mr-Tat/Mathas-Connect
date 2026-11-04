@@ -11,7 +11,7 @@ Chaque événement contient un `game_score` (exercices justes) et un `game_total
 - Global : même quotient, en sommant les applications cochées dans les réglages de % du professeur, **sans moyenne naïve**.
 - `— %` lorsqu'aucun dénominateur fiable n'est disponible. Aucune extrapolation ni pourcentage inventé.
 
-Le SQL exclut la Mort subite (dont le total peut contenir des exercices jamais présentés), les événements aberrants, les élèves qui ont quitté la classe et le profil professeur. Les résultats restent anonymes, agrégés par classe et application. Aucun XP, score individuel ou consentement de publication n'est modifié.
+Le SQL ne retient que les parties **Classique** entièrement terminées, pour lesquelles le total correspond aux exercices du jeu. Il exclut les modes à arrêt anticipé (3 vies, Mort subite), dont le total peut contenir des exercices jamais présentés, les événements aberrants, les élèves qui ont quitté la classe et le profil professeur. Les résultats restent anonymes, agrégés par classe et application. Aucun XP, score individuel ou consentement de publication n'est modifié.
 
 ## Limite importante : parties interrompues
 
