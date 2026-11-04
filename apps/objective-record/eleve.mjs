@@ -5,6 +5,7 @@ import {createAtomicTestRecorder,isWritableTestApp} from './atomic-test-recorder
 import {MIXED_TEST_APP,isMixedTestTerminal} from './mixed-test-proof.mjs';
 import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
+import {createMultiplicationProofUI} from './certified-multiplication-ui.mjs';
 import {createCertifiedExtendedUI} from './certified-extended-ui.mjs';
 import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs?v=20261104-three-lives-half-xp-v1';
 import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs';
@@ -50,7 +51,9 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 // Native three-lives, sudden and HARD remain playable without official credits
 // until their respective proof contracts are implemented.
 const SERVER_PROOF_ADDITIONS=new Set(['addition-ecrite-simple','addition-ecrite-multiple']);
-const nativeRecordAllowed=appKey=>isWritableTestApp(appKey)&&!SERVER_PROOF_ADDITIONS.has(appKey);
+const MULTIPLICATION_PROOF_APP='multiplication-ecrite-simple';
+const SERVER_PROOF_APPS=new Set([...SERVER_PROOF_ADDITIONS,MULTIPLICATION_PROOF_APP]);
+const nativeRecordAllowed=appKey=>isWritableTestApp(appKey)&&!SERVER_PROOF_APPS.has(appKey);
 
 let statusTimer=null,barTimer=null,lastOfficialXp=null,lastOfficialProgress=null;
 const bar=$('connect-bar'),handle=$('bar-handle'),xpPanel=$('xp-panel'),challengePanel=$('challenge-panel');
@@ -177,7 +180,7 @@ document.addEventListener('keydown',event=>{
 window.addEventListener('resize',updateBarHeight);
 
 const clear=()=>{
-  window.MathasConnectOfficialTrophies=null;
+  window.MathasConnectOfficialTrophies=null;window.MathasConnectOfficialState=null;
   for(const id of ['app-xp','level'])$(id).textContent='—';
   $('gameFrame').hidden=true;$('gameFrame').removeAttribute('src');$('refresh').disabled=true;
   $('certified-tools').hidden=true;$('certify').disabled=true;
@@ -223,15 +226,17 @@ function showOfficial({xp,loaded,appKey}){
  $('level').textContent=String(summary.level);
  lastOfficialXp=xp;renderMeter(summary.total,summary.level);
  latestState=loaded.state||{};
+ window.MathasConnectOfficialState=appKey===MULTIPLICATION_PROOF_APP
+  ?{active:true,appKey,state:latestState}:null;
  schoolScoreView?.updateState(latestState);
  if(schoolScoreView)void schoolScoreView.load();
  lastOfficialProgress=classId===CLASS_TEST?null:schoolProgressSnapshot(appKey,loaded.state);
  window.MathasConnectOfficialSchoolProgress=lastOfficialProgress;
- if(SERVER_PROOF_ADDITIONS.has(appKey)){
+ if(SERVER_PROOF_APPS.has(appKey)){
   // A null official award snapshot is 'unavailable', never a local fake zero.
   window.MathasConnectOfficialTrophies={
    active:true,appKey,studentId:pupilId,
-   rewards:officialAdditionRewards(appKey,loaded.state?.rewards)
+   rewards:appKey===MULTIPLICATION_PROOF_APP ?loaded.state?.rewards??null:officialAdditionRewards(appKey,loaded.state?.rewards)
   };
  }
 }
@@ -277,7 +282,7 @@ function watchGame(seq){
     syncOfficialGameProgress(doc,lastOfficialProgress);
     syncOfficialHardSummary(doc,lastOfficialProgress);
    }
-   const activeProofUI=activeApp==='addition-ecrite-multiple'?certifiedMultiUI:certifiedUI;
+   const activeProofUI=activeApp===MULTIPLICATION_PROOF_APP?certifiedMulUI:activeApp==='addition-ecrite-multiple'?certifiedMultiUI:certifiedUI;
    const native=inside.contentWindow?.MathasLabV2Update;
    // The menu DOM may exist before the real script has installed its update
    // hook. Never enable certified launch until the native engine is ready.
@@ -352,6 +357,15 @@ const certifiedMultiUI=createMultipleProofUI({
   if(receipt.appKey===activeApp)void schoolScoreView?.recorded(receipt.eventId);
  }
 });
+const certifiedMulUI=createMultiplicationProofUI({
+ button:$('certify'),panel:$('certified-tools'),
+ levelSelect:$('certified-level'),totalSelect:$('certified-total'),
+ modeSelect:$('certified-mode'),frame:$('gameFrame'),
+ getContext:()=>({generation,activeApp,pupilId,classId}),
+ call:(action,payload)=>call('connect-multiplication-school',action,null,payload),
+ refresh:()=>refresh(generation),notify:message
+});
+// Séries classiques certifiées uniquement ; survie et HARD restent non officiels.
 const extendedUI=createCertifiedExtendedUI({
  button:$('certify'),modeSelect:$('certified-mode'),levelSelect:$('certified-level'),
  frame:$('gameFrame'),root:$('extended-certified'),title:$('extended-title'),
@@ -379,7 +393,7 @@ $('certified-mode').addEventListener('change',updateCertifiedModeControls);
 updateCertifiedModeControls();
 async function choose(){
  generation++;const seq=generation;
- clearInterval(watching);visibleDoc=null;recorder=null;pupilId=null;certifiedUI.reset();certifiedMultiUI.reset();extendedUI.reset();
+ clearInterval(watching);visibleDoc=null;recorder=null;pupilId=null;certifiedUI.reset();certifiedMultiUI.reset();certifiedMulUI.reset();extendedUI.reset();
  projectionConsent?.destroy();projectionConsent=null;
  schoolScoreView?.destroy();schoolScoreView=null;latestState=null;clear();
  const slug=$('app').value;
@@ -437,10 +451,12 @@ async function choose(){
    for(const option of $('certified-mode').options)option.disabled=option.value!=='classic';
   }
   updateCertifiedModeControls();
-  $('gameFrame').src=GAME_URLS[slug][1]+(SERVER_PROOF_ADDITIONS.has(activeApp)?'?connect=1&ui=20261104-three-lives-half-xp-v1':'');
+  $('gameFrame').src=GAME_URLS[slug][1]+(SERVER_PROOF_APPS.has(activeApp)?'?connect=1&ui=20261104-multiplication-certified-test-v1':'');
   $('gameFrame').hidden=false;$('refresh').disabled=false;
   watchGame(seq);
-  message(SERVER_PROOF_ADDITIONS.has(activeApp)
+  message(activeApp===MULTIPLICATION_PROOF_APP
+   ?'Classe TEST : séries classiques Multiplication certifiées par Connect. Les modes 3 vies, Mort subite et HARD restent libres, sans XP officiel.'
+   :SERVER_PROOF_ADDITIONS.has(activeApp)
    ?'Profil Connect approuvé · choisis Classique, 3 vies, Mort subite ou HARD puis lance le défi certifié. Les parties natives libres restent sans XP.'
    :recorder?'Classe TEST : calculs autres qu’addition en essai · scores natifs encore en cours de certification, sans ouverture scolaire.'
    :'Session Connect authentifiée · sauvegarde des parties de ce jeu encore désactivée.');
@@ -458,7 +474,7 @@ async function choose(){
   }else message('⚠️ '+(e?.message||'Accès indisponible')+'. Jeu non lancé.');
  }
 }
-$('refresh').addEventListener('click',async()=>{const seq=generation;try{if(extendedUI.hasPending())await extendedUI.retry();else if(certifiedUI.hasPending())await certifiedUI.retry();else if(certifiedMultiUI.hasPending())await certifiedMultiUI.retry();else if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
+$('refresh').addEventListener('click',async()=>{const seq=generation;try{if(extendedUI.hasPending())await extendedUI.retry();else if(certifiedUI.hasPending())await certifiedUI.retry();else if(certifiedMultiUI.hasPending())await certifiedMultiUI.retry();else if(certifiedMulUI.hasPending())await certifiedMulUI.retry();else if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
   if(seq===generation&&!recorder?.hasPending())message('Profil officiel actualisé.');
  }catch(e){if(seq===generation)message('⚠️ '+e.message)}});
 $('app').addEventListener('change',()=>{const next=new URL(location.href);next.searchParams.set('app',$('app').value);history.replaceState(null,'',next);void choose()});
