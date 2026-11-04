@@ -380,64 +380,9 @@ function renderClasses(){
   comparisons.append(hint);
  }
 }
-function updateTime(){
- const active=enabled(),ix=active.findIndex(a=>a.key===currentApp);
- $('rotation-label').textContent=active.length>1?'Application '+(ix+1)+' / '+active.length:'';
- $('time-left').textContent=paused?'En pause':active.length>1?'Suivante dans '+secondsRemaining+' s':'Affichage fixe';
- $('pause').textContent=paused?'▶ Reprendre':'⏸ Pause';
-}
-function next(delta){
- const a=enabled();if(!a.length)return;
- cancelPlayback();
- const i=a.findIndex(x=>x.key===currentApp);
- currentApp=a[(i+delta+a.length)%a.length].key;
- $('ranking-list').dataset.overtakeSteps='0';
- startCycle();render();updateRefreshCountdown();
-}
-$('next-app').onclick=()=>next(1);
-$('prev-app').onclick=()=>next(-1);
-// La pause conserve le temps restant. À la reprise, les MAJ sont réalignées
-// sur les étapes 20 s et 40 s du cycle en cours.
-function pauseRotation(){
- if(!paused&&hasLoaded)
-  secondsRemaining=Math.max(0,Math.ceil((cycleStartedAt+ROTATION_SECONDS*1000-Date.now())/1000));
- paused=true;updateTime();updateRefreshCountdown();
-}
-function resumeRotation(){
- if(paused&&hasLoaded){
-  const elapsed=ROTATION_SECONDS-secondsRemaining;
-  cycleStartedAt=Date.now()-elapsed*1000;
-  nextRefreshAt=cycleStartedAt+(elapsed<20?20:40)*1000;
-  if(nextRefreshAt<=Date.now())nextRefreshAt=Date.now()+REFRESH_INTERVAL_MS;
- }
- paused=false;updateTime();updateRefreshCountdown();
-}
-$('pause').onclick=()=>{if(paused)resumeRotation();else pauseRotation()};
-document.addEventListener('visibilitychange',()=>{
- if(document.visibilityState!=='visible')cancelPlayback();
- else if(hasLoaded){render()}
-});
-// Un seul battement : MAJ à 20 s, puis MAJ + application suivante à 40 s.
-// Les échéances sont horodatées pour ne pas dériver si l'onglet est ralenti.
-function tickProjection(){
- if(!hasLoaded){updateRefreshCountdown();return}
- const now=Date.now();
- if(connected&&now>=nextRefreshAt){
-  nextRefreshAt+=(Math.floor((now-nextRefreshAt)/REFRESH_INTERVAL_MS)+1)*REFRESH_INTERVAL_MS;
-  if(document.visibilityState==='visible'&&!$('settings').open)void refresh();
- }
- if(!paused&&enabled().length>1){
-  secondsRemaining=Math.max(0,Math.ceil((cycleStartedAt+ROTATION_SECONDS*1000-now)/1000));
-  if(secondsRemaining===0&&!playingKey)next(1);
- }
- updateTime();updateRefreshCountdown();
-}
-setInterval(tickProjection,1000);
+// Plus de rotation des applications : seule l'actualisation commune reste.
 function updateRefreshCountdown(){
- const output=$('projection-refresh-countdown');
- const label=$('projection-refresh-label'),dot=$('projection-refresh-dot');
- dot.hidden=true;
- output.setAttribute('aria-label','Prochaine actualisation des scores');
+ const label=$('projection-refresh-label');
  if(!connected||!hasLoaded){label.textContent='MAJ en attente';return}
  if(document.visibilityState!=='visible'||$('settings').open){
   label.textContent='MAJ suspendue';return;
@@ -445,20 +390,28 @@ function updateRefreshCountdown(){
  const remaining=Math.max(0,Math.ceil((nextRefreshAt-Date.now())/1000));
  label.textContent='MAJ dans '+String(Math.floor(remaining/60)).padStart(2,'0')+':'+
   String(remaining%60).padStart(2,'0');
- // Le point doré identifie le DEUXIÈME cycle, jamais le premier.
- dot.hidden=paused||enabled().length<=1||Date.now()-cycleStartedAt<REFRESH_INTERVAL_MS;
- if(!dot.hidden)
-  output.setAttribute('aria-label','Deuxième cycle de 20 secondes : application suivante après cette actualisation');
 }
+function tickProjection(){
+ if(hasLoaded&&connected&&Date.now()>=nextRefreshAt){
+  const now=Date.now();
+  nextRefreshAt+=(Math.floor((now-nextRefreshAt)/REFRESH_INTERVAL_MS)+1)*REFRESH_INTERVAL_MS;
+  if(document.visibilityState==='visible'&&!$('settings').open)void refresh();
+ }
+ updateRefreshCountdown();
+}
+setInterval(tickProjection,1000);
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState!=='visible')cancelPlayback();
+ else if(hasLoaded)render();
+});
 updateRefreshCountdown();
 const dialog=$('settings');
 function showSettings(){
  if(!hasLoaded)return note('Clique d’abord sur Afficher / Actualiser.');
- cancelPlayback();
- wasPaused=paused;pauseRotation();buildSettings();dialog.showModal();updateRefreshCountdown();
+ cancelPlayback();buildSettings();dialog.showModal();updateRefreshCountdown();
 }
 function closeSettings(){
- dialog.close();if(!wasPaused)resumeRotation();else updateRefreshCountdown();$('reset-password').value='';
+ dialog.close();updateRefreshCountdown();$('reset-password').value='';
  $('reset-confirm').hidden=true;pendingReset=null;render();
 }
 for(const id of ['settings-left'])$(id).onclick=showSettings;
@@ -479,15 +432,18 @@ function buildSettings(){
   for(const field of ['scoreApps','percentageApps']){
    const cell=document.createElement('td');const cb=document.createElement('input');
    cb.type='checkbox';cb.checked=options[field].includes(app.key);
+   if(field==='scoreApps')cb.disabled=(cb.checked&&options.scoreApps.length<=1)
+     ||(!cb.checked&&options.scoreApps.length>=MAX_VISIBLE_APPS);
    cb.setAttribute('aria-label',app.title+' · '+(field==='scoreApps'?'Afficher score':'Afficher pourcentage'));
    cb.onchange=async()=>{
     const before=[...options[field]];
+    if(field==='scoreApps'&&((cb.checked&&before.length>=MAX_VISIBLE_APPS)
+      ||(!cb.checked&&before.length<=1))){cb.checked=!cb.checked;return}
     options[field]=cb.checked?[...options[field],app.key]:options[field].filter(k=>k!==app.key);
     if(!await commitOptions()){options[field]=before;cb.checked=!cb.checked}
     if(field==='scoreApps'){
      cancelPlayback();tracker.drop(app.key);
     }
-    if(!enabled().some(a=>a.key===currentApp))currentApp=enabled()[0]?.key??null;
     render();
     buildSettings();
    };
