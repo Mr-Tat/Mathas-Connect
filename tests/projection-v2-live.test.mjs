@@ -35,7 +35,7 @@ test('Projection V2 : rafraîchissement toutes les 20 s, sans changement automat
  assert.match(js,/nextRefreshAt=Date\.now\(\)\+REFRESH_INTERVAL_MS/);
  assert.match(js,/setInterval\(tickProjection,1000\)/);
  assert.match(js,/if\(document\.visibilityState==='visible'&&!\$\('settings'\)\.open\)void refresh\(\)/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-parallel-3-v1/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-validated-percent-v1/);
  assert.match(html,/id="projection-refresh-countdown"/);
  assert.match(html,/id="projection-refresh-label"/);
  assert.doesNotMatch(js,/startCycle\(|function next\(|secondsRemaining|playCurrentApp/);
