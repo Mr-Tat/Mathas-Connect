@@ -31,11 +31,14 @@ test('249 × 9: carries are 8 then 4, and digits are little-endian',()=>{
  assert.equal(multiplicationAttemptCorrect(q,{...raw,carries:['','8','3']}),false);
  assert.equal(multiplicationAttemptCorrect(q,{...raw,digits:['1','4','2','1']}),false);
 });
-test('a missing carry is an incorrect first attempt, not an invalid transcript',()=>{
+test('native optional carry: empty is accepted, but an entered wrong carry is an error',()=>{
  const q={id:'q1',op:'mul',a:'249',m:9,width:3};
  const v=normalizeMultiplicationAttempt(q,{id:'q1',digits:['1','4','2','2'],carries:['','','4']});
  assert.ok(v);
- assert.equal(multiplicationAttemptCorrect(q,v),false);
+ assert.equal(multiplicationAttemptCorrect(q,v),true,'no penalty for optional unwritten carry');
+ assert.equal(multiplicationAttemptCorrect(q,{...v,carries:['','0','4']}),false);
+ assert.equal(multiplicationAttemptCorrect(q,{...v,carries:['','7','4']}),false);
+ assert.equal(multiplicationAttemptCorrect(q,{...v,digits:['1','4','2','1']}),false);
  assert.equal(normalizeMultiplicationAttempt(q,{...v,carries:['','','10']}),null);
 });
 test('no carry: empty and zero are equivalent for correct computation',()=>{
