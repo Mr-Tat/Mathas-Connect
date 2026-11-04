@@ -108,6 +108,17 @@ function ensureStyle(doc){
  '.mathas-multi-school-cup .mathas-multi-school-cup-art svg{width:100%!important;height:100%!important}',
  '.mathas-multi-school-cup.locked{opacity:.38;filter:grayscale(1)}',
  '.mathas-multi-school-cup.earned{opacity:1;filter:drop-shadow(0 1px 3px #f4d48a77)}',
+ '/* Les fonds et couleurs natifs restent inchangés : disposition et relief seulement. */',
+ '#menuScreen .mathas-multi-survival-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(7px,1.1vw,13px);width:100%;min-width:0;align-items:stretch}',
+ '#menuScreen .mathas-multi-survival-options>.big-mode-choice{min-width:0;width:100%;min-height:88px;margin:0!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;white-space:normal;text-align:center}',
+ '#hardMenu .hard-actions:has(.mathas-multi-hard-three-lives){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}',
+ '#hardMenu .hard-actions:has(.mathas-multi-hard-three-lives)>.hard-train{grid-column:1/-1}',
+ '#hardMenu .hard-actions:has(.mathas-multi-hard-three-lives)>.hard-sudden{min-width:0;min-height:54px;padding:9px 5px}',
+ '#menuScreen .mathas-multi-survival-options>button,#hardMenu .hard-actions:has(.mathas-multi-hard-three-lives)>button{transition:transform .14s ease,filter .14s ease}',
+ '@media(hover:hover) and (pointer:fine){#menuScreen .mathas-multi-survival-options>button:not(:disabled):hover,#hardMenu .hard-actions>button:not(:disabled):hover{transform:translateY(-2px);filter:brightness(1.08)}}',
+ '#menuScreen .mathas-multi-survival-options>button:not(:disabled):active,#hardMenu .hard-actions>button:not(:disabled):active{transform:translateY(2px);filter:brightness(.94)}',
+ '@media(prefers-reduced-motion:reduce){#menuScreen .mathas-multi-survival-options>button,#hardMenu .hard-actions>button{transition:none}}',
+ '@media(max-width:420px){#menuScreen .mathas-multi-survival-options>.big-mode-choice{font-size:clamp(.72rem,2.6vw,.96rem)!important;padding:9px 4px}}',
  '@media(max-width:650px){.mathas-multi-tens-control{font-size:10px;padding:4px 6px;gap:4px}#gameScreen .session-bar,#hardGame .hard-session-bar{flex-wrap:wrap}.mathas-multi-official-xp{font-size:9px!important}}'
  ].join('\n');
  doc.head.append(el);
@@ -132,16 +143,17 @@ function renderXp(doc,xp){
  const classicLevel=level(doc,'classicLevel');
  for(const btn of doc.querySelectorAll('#menuScreen .classic-count-btn[data-count]'))
   putBadge(doc,btn,xpStillAvailable(xp,'classic',classicLevel,Number(btn.dataset.count)));
- const suddenXp=xpStillAvailable(xp,'sudden',level(doc,'suddenLevel'));
- putBadge(doc,doc.getElementById('startSudden'),suddenXp);
- putBadge(doc,doc.getElementById('mathasMultiThreeLives'),suddenXp);
+ const lifeLevel=level(doc,'suddenLevel');
+ putBadge(doc,doc.getElementById('startSudden'),
+  xpStillAvailable(xp,'sudden',lifeLevel));
+ putBadge(doc,doc.getElementById('mathasMultiThreeLives'),
+  xpStillAvailable(xp,'three-lives',lifeLevel));
  for(const card of doc.querySelectorAll('#hardMenu .hard-level-card')){
   const n=Number(card.querySelector('h3')?.textContent.match(/NIV\s*([123])/i)?.[1]);
-  const amount=xpStillAvailable(xp,'hard',n);
   const button=card.querySelector('.hard-sudden:not(.mathas-multi-hard-three-lives):not(:disabled)');
   const lives=card.querySelector('.mathas-multi-hard-three-lives:not(:disabled)');
-  if(button)putBadge(doc,button,amount);
-  if(lives)putBadge(doc,lives,amount);
+  if(button)putBadge(doc,button,xpStillAvailable(xp,'hard-sudden',n));
+  if(lives)putBadge(doc,lives,xpStillAvailable(xp,'hard-three-lives',n));
  }
 }
 function renderCups(doc,rewards){
