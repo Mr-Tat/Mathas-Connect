@@ -40,7 +40,9 @@ export function multiplicationAttemptCorrect(q,raw){
  for(let c=1;c<q.a.length;c++){
   const power=10n**BigInt(c);
   const carry=(BigInt(q.a)%power*BigInt(q.m))/power;
-  if((a.carries[c]==='0'?'':a.carries[c])!==(carry===0n?'':carry.toString()))return false;
+  // Native rule: writing a carry is optional, but a written wrong carry is an error.
+  const actual=a.carries[c];
+  if(actual!==''&&(actual==='0'?'':actual)!==(carry===0n?'':carry.toString()))return false;
  }
  return true;
 }
@@ -258,7 +260,7 @@ export function createCertifiedMultiplicationClassic({
   title.textContent='✖ Multiplication · '+modeLabel+' · niveau '+run.level;
   label.textContent='Calcul '+(index+1)+'/'+run.total+(run.mode==='classic'?'':' · Réussites : '+state.correct+' · Vies : '+state.lives)+
    ' · Tables '+run.multipliers.join(', ')+
-   '. Écris tous les chiffres (de droite à gauche) et les retenues.';
+   '. Écris tous les chiffres (de droite à gauche) ; les reports sont facultatifs mais vérifiés si écrits.';
   status.textContent='Premier essai : toutes les cases comptent dans la vérification.';
   tensInput.checked=!!run.tensFirst;
   verify.disabled=false;verify.hidden=false;next.hidden=true;
