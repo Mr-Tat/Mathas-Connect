@@ -41,13 +41,22 @@ test('deux additions : Objectif record garde son sous-titre et sa couronne ; com
   assert.doesNotMatch(source,/score-mode-cup" aria-hidden="true">🏆/);
   assert.match(source,/if\(suddenDesc&&!suddenDesc\.textContent\.trim\(\)\)/,
     'le script moteur ne doit plus écraser le sous-titre après le chargement');
-  assert.match(source,/native-hub-link\.js\?v=20261104-additions-header-tools/,
-    'nouvelle CSS réellement chargée, sans ancien cache navigateur');
+  assert.match(source,/native-hub-link\.js\?v=20261104-native-embedded-connect-hud/,
+    'le nouvel emplacement natif charge le fichier actualisé');
  }
- assert.match(nav,/addition-\(\?:simple\|multiple\)/,'autres applications non concernées');
- assert.match(nav,/--mathas-connect-actions-top/,'commandes sous la vraie hauteur de la barre Connect');
+ assert.match(nav,/function installEmbeddedConnectHud\(frame\)/);
+ assert.match(nav,/getElementById\('mathasTrophiesStrip'\)/);
+ assert.match(nav,/insertAdjacentElement\('afterend',button\)/);
+ assert.match(nav,/querySelector\('main\.app > header \.mathas-brand-row'\)/);
+ assert.match(nav,/id='mathas-native-connect-profile'/);
+ assert.match(nav,/id='mathas-native-connect-xp'/);
  assert.match(nav,/grid-column:1!important;grid-row:1!important/);
  assert.match(nav,/grid-column:2!important;grid-row:1!important/);
- assert.match(nav,/grid-column:3!important;grid-row:1!important/);
- assert.match(nav,/max-width:370px/,'contrat pour les petits téléphones');
+ assert.match(nav,/grid-column:2!important;grid-row:2!important/);
+ assert.doesNotMatch(nav,/--mathas-connect-actions-top/,'les boutons reviennent à leur placement natif');
+ const html=read('apps/objective-record/eleve.html');
+ const host=read('apps/objective-record/eleve.mjs');
+ assert.match(html,/html\.mathas-native-connect-hud #connect-bar/);
+ assert.match(html,/html\.mathas-native-connect-hud #bar-handle/);
+ assert.match(host,/document\.documentElement\.classList\.toggle\('mathas-native-connect-hud'/);
 });
