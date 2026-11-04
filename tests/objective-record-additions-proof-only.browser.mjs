@@ -112,8 +112,12 @@ for(const item of [
    });
    await page.waitForTimeout(900);
    assert.equal(requests.filter(b=>b.action==='game-record').length,0);
-   await page.locator('#challenge-toggle').click();
-   await page.locator('#certify').click();
+   // Le choix de la série est désormais exclusivement dans le menu du jeu.
+   const native=page.frameLocator('#gameFrame').frameLocator('#game');
+   if(item.slug==='addition-multiple'){
+    await native.locator('.classic-count-btn[data-count="4"]').click();
+    await native.locator('#startClassic').click();
+   }else await native.locator('.classic-count-btn[data-count="4"]').click();
    await page.waitForFunction(()=>{
     const inner=document.getElementById('gameFrame')?.contentDocument
       ?.getElementById('game')?.contentWindow;
