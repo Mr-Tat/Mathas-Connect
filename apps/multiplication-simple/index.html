@@ -2,6 +2,7 @@
 <link rel="icon" type="image/png" href="../../assets/brand/favicon.png"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Math’as · Multiplication écrite simple</title><style>body{font-family:system-ui;background:#0c2235;color:white;margin:0;padding:25px}#loading{max-width:620px;margin:12vh auto;padding:25px;border:1px solid #628ba7;border-radius:16px}a{color:#8ce7fc}</style></head><body><main id="loading"><h1>Math’as · Multiplication écrite simple</h1><p id="message">Chargement du jeu…</p><p><a href="https://mr-tat.github.io/Mathas-Connect/">Retour aux jeux</a></p></main><script type="module">
 import {installMultiplicationSchoolUi} from './school-ui.mjs';
 import {createCertifiedMultiplicationClassic} from './certified-classic.mjs';
+import {isNewCertifiedMultiplicationDailyBest} from './school-record-eligibility.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM',APP='multiplication-ecrite-simple';
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
@@ -76,8 +77,9 @@ function apply(state){
  const daily=state.todayBest?.day===day&&Number.isSafeInteger(state.todayBest?.points)
   ?state.todayBest.points:null;
  const records=[...(Array.isArray(state.topThree)?state.topThree:[]),
-  ...(Array.isArray(state.recent)?state.recent:[])].filter(x=>
-   x&&Number.isSafeInteger(x.points)&&x.points>=0);
+  ...(Array.isArray(state.recent)?state.recent:[])]
+  .map(x=>Number.isSafeInteger(x)?{points:x,at:'',label:'Record historique Connect'}:x)
+  .filter(x=>x&&Number.isSafeInteger(x.points)&&x.points>=0);
  if(Number.isSafeInteger(state.bestPoints)&&state.bestPoints>=0
    &&!records.some(x=>x.points===state.bestPoints))
   records.push({points:state.bestPoints,at:'',label:'Meilleur Connect'});
@@ -482,7 +484,9 @@ if(mode==='connected'){
    // Animation uniquement après ACK mathématique, jamais pour un résultat déjà enregistré.
    if(receipt.ack?.duplicate!==true&&Number.isSafeInteger(xp?.delta)&&xp.delta>0)
     queueXpGain(xp);
-   certifiedConsent?.offer(receipt.eventId);
+   const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels'}).format(new Date());
+   if(isNewCertifiedMultiplicationDailyBest(receipt,initial,today))
+    certifiedConsent?.offer(receipt.eventId);
   },
   notify:text=>{const sync=document.getElementById('ce-sync');if(sync)sync.title=text}
  });

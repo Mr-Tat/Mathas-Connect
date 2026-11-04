@@ -54,3 +54,10 @@ test('Multiplication does not display a previous-day score as todays top',()=>{
  assert.equal(points.top.length,0);
  assert.equal(points.bestOne.points,500);
 });
+
+test('Multiplication retains three historic numeric personal records, even without recent events',()=>{
+ const points=restore({bestPoints:510,topThree:[510,320,250],recent:[]})
+  .get('mathas_points_v1_multiplication-simple');
+ assert.deepEqual(Array.from(points.bestThree,x=>x.points),[510,320,250]);
+ assert.equal(points.bestOne.points,510);
+});
