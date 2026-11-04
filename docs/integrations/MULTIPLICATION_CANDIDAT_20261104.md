@@ -1,5 +1,53 @@
 # Multiplication écrite simple — fiche de continuité du candidat 04/11/2026
 
+## État courant vérifié après les PR #182, #184 et #186 — 04/11/2026
+
+**[REPO + GITHUB ACTIONS vérifiés]** La multiplication écrite scolaire est intégrée
+dans `main` au commit `ca6c482d06b97e2ee7b29221733c195ca43bfc8a`, et le workflow **pages build and deployment**
+de ce SHA a réussi : [run Pages](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41835202832).
+Le moteur V7.0.0 et ses règles pédagogiques restent inchangés.
+La PR #182 teste le vrai lanceur avec Auth/Edge simulés ; la PR #184 répare
+la file de consentements successifs ; la PR #186 corrige la superposition
+qui empêchait de cliquer sur « Oui » ou « Non » après une série certifiée.
+Son test Chromium exécute les quatre calculs et vérifie absence d'envoi,
+refus, acceptation unique et absence de doublon à la reconnexion :
+[CI navigateur réussie](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41834963236).
+La [régression générale sur le commit de publication](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/41835203292) est verte.
+
+**[LIVE vérifié, lecture seule]** Sur Supabase Math'as Connect
+`awmhpfofacaglewammxt`, l'Edge `connect-multiplication-school` est
+**v3, ACTIVE, verify_jwt=true** ; ses fichiers `index.ts` et
+`school-visibility.mjs` sont identiques à ceux de la version dépôt examinée.
+`connect-results` est **v47** et `connect-projection-v2` **v6**.
+Les six RPC de certification multiplication existent ; seuls les rôles
+serveur peuvent les exécuter, pas les rôles web `anon` et
+`authenticated`. Aucune migration ni Edge n'a été redéployée pour
+les PR #182, #184, #186.
+
+**[LIVE vérifié, lecture seule]** L'application est activée au catalogue
+`connect_apps` ; sa case du HUB laboratoire TEST est visible, avec
+**3 profils fictifs actifs et 3 appareils approuvés**. Elle reste
+**masquée dans les cinq presets scolaires**
+(`observation`, `phase1`, `phase2`, `phase2b`, `2eco`).
+Les réglages du tableau de projection et les données d'élèves n'ont pas été modifiés.
+
+**[NON EXÉCUTÉ] La recette réellement authentifiée sur GitHub Pages**
+avec l'un de ces profils fictifs TEST n'a pas été attestée.
+Les tests Chromium avec Supabase simulé **ne constituent pas** une
+preuve d'un JWT hébergé ni du parcours réel navigateur → Edge → SQL.
+Avant l'ouverture scolaire : jouer une série certifiée en session
+TEST effectivement approuvée, constater XP/trophées/records après
+rechargement, valider le partage Oui/Non et le flux professeur/Monsieur T,
+puis vérifier la projection de multiplication sans toucher à sa mise en page.
+Aucune classe réelle ne doit être ouverte sur la seule base des CI.
+
+**Historique ci-dessous :** les sections de 12 h et celles du candidat
+initial restent conservées à titre de traçabilité ; les indications
+« publication non encore réalisée » qui y figurent sont supplantées par
+la présente section. L'absence de recette Pages authentifiée reste actuelle.
+
+---
+
 ## État de livraison actualisé — 04/11/2026, 12 h (Europe/Brussels)
 
 **[REPO vérifié]** Ce document a commencé comme un audit pré-implémentation.
