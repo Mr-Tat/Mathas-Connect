@@ -4,6 +4,10 @@
 
 > **Principe : ajouter un jeu, pas réécrire Math’as Connect.** Préserver son moteur, ses modes et sa pédagogie ; brancher un adaptateur minimal au système Connect. Un outil pédagogique peut être intégré **sans XP**.
 
+## Priorité du 4 novembre 2026 : construire directement pour les élèves
+
+Le [guide d’efficacité et d’intégration finale](DOCTRINE_EFFICACITE_INTEGRATION_20261104.md) rassemble la ligne pédagogique, XP visibles sur les boutons, coupes restantes, scores facultatifs, projection, problèmes résolus et raccourcis. Concevoir une seule version finale ; utiliser le Laboratoire avec un profil fictif lorsqu’un contrôle authentifié est indispensable, sans multiplier les variantes.
+
 ## Démarrage rapide : huit étapes, trois véritables portes
 
 1. **Lire l'état réel et fixer les capacités.** Identifier `main`, PR concurrentes, repo moteur, sa version/empreinte, état serveur de la nouvelle `app_key`, Git push/PR, lecture Supabase, écriture Supabase, navigateur local et navigateur **hébergé authentifié**. Tester l'accès existant avant de réclamer un token. Aucune écriture pour cet audit. Remplir la [fiche d'application](TEMPLATE_FICHE_APPLICATION.md).
