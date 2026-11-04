@@ -252,6 +252,8 @@ test('Edge local: game-record client refusé pour un élève en classe scolaire 
   await db.query("INSERT INTO public.connect_devices(auth_user_id,student_id,state) VALUES($1,$2,'approved')",[AUTH,STUDENT]);
   const call=makeEdge();
   const result=await call('game-record',{
+   // Classe de test certifiée : preuve obligatoire même si un ancien client insiste.
+   classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',
    eventId:uuid(1),expectedRevision:0,expectedResetEpoch:0,
    mode:'classic',level:1,score:4,total:4,points:20});
   assert.equal(result.status,403,JSON.stringify(result));
