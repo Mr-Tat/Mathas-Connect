@@ -451,6 +451,13 @@ if(mode==='connected'){
    applySchoolUi();
    return xp;
   },
+  onTensFirstChanged:enabled=>{
+   const home=iframe.contentDocument?.getElementById('tensFirstToggle');
+   if(!home)return;
+   home.checked=!!enabled;
+   home.dispatchEvent(new iframe.contentWindow.Event('change',{bubbles:true}));
+   applySchoolUi();
+  },
   onVerified:receipt=>{certifiedConsent?.offer(receipt.eventId)},
   notify:text=>{const sync=document.getElementById('ce-sync');if(sync)sync.title=text}
  });
