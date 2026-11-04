@@ -1,7 +1,7 @@
 // Authenticated pupil multiplication proof. Isolated from both Addition functions.
 // Never accepts a game score, point count, rewards or student identifier from the browser.
 import {createClient} from 'npm:@supabase/supabase-js@2.95.0';
-import {MULTIPLICATION_TEST_CLASS,MULTIPLICATION_SCHOOL_PRESETS,multiplicationSchoolPreset,mayStartMultiplicationSchoolProof} from './school-visibility.ts';
+import {MULTIPLICATION_TEST_CLASS,MULTIPLICATION_SCHOOL_PRESETS,multiplicationSchoolPreset,mayStartMultiplicationSchoolProof} from './school-visibility.mjs';
 
 const BASE=Deno.env.get('SUPABASE_URL')!;
 const PUBLIC=Deno.env.get('SUPABASE_ANON_KEY')!;
