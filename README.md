@@ -1,4 +1,4 @@
-# Math’as Connect — état de référence (29 octobre 2026)
+# Math’as Connect — documentation, applications et intégrations
 
 > 📘 **PROCHAINES INTÉGRATIONS — À LIRE EN PRIORITÉ (04/11/2026)**  
 > **[Fiche express : 1 minute pour démarrer](docs/integrations/DOCTRINE_EFFICACITE_INTEGRATION_20261104.md)** · **[Rapport complet : doctrine, incidents, solutions et raccourcis](docs/integrations/DOCTRINE_EFFICACITE_ET_RETEX_20261104.md)** · **[Guide et contrats](docs/integrations/README.md)**  
