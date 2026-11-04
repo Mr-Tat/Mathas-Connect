@@ -121,6 +121,14 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
   assert.match(await page.locator('#time-left').textContent(),/30 s/);
   const headerClass=page.locator('#header-class');
   assert.equal(await headerClass.textContent(),'Phase 2 A');
+  assert.equal(await page.locator('header #load-real').count(),1,'Actualiser déplacé dans le bandeau');
+  assert.equal(await page.locator('header #projection-theme').count(),1,'Thème déplacé dans le bandeau');
+  assert.equal(await page.locator('.left-col #load-real').count(),0);
+  assert.equal(await page.locator('#percentage-note').count(),0,'Note barrée supprimée');
+  assert.equal(await page.locator('header #projection-clock').count(),0,'Horloge remplacée');
+  assert.match(await page.locator('#projection-refresh-countdown').textContent(),/^MAJ dans 00:\d{2}$/);
+  const toolsBounds=await page.locator('.header-tools').boundingBox();
+  assert.ok(toolsBounds&&toolsBounds.x>730,'Les outils doivent rester à droite de la classe');
   const classBounds=await headerClass.boundingBox();
   const rankBounds=await page.locator('.ranking-head').boundingBox();
   const titleBounds=await page.locator('#app-name').boundingBox();
@@ -188,8 +196,8 @@ test('V2 — 14 seuls puis 16 élèves interclasses, rotation 30s, Score/% isol�
     scoreColor:getComputedStyle(points).color,
     avatarBorder:getComputedStyle(avatar).borderWidth};
   });
-  assert.equal(podium.scoreBackground,'rgb(32, 51, 72)','Les points du podium ont un fond contrasté');
-  assert.equal(podium.scoreColor,'rgb(255, 243, 210)','Les points restent lumineux');
+  assert.equal(podium.scoreBackground,'rgba(0, 0, 0, 0)','Les points du podium sont du texte sans fond');
+  assert.equal(podium.scoreColor,'rgb(117, 73, 0)','La couleur or foncé se détache sur le podium');
   assert.equal(podium.avatarBorder,'2px','Même les initiales transparentes ont un cadre');
   // Le retour au classement complet rétablit 7+7, puis 8+8 sans effet de bord.
   visibleStudents=14;
