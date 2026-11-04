@@ -1,5 +1,5 @@
 import {classId,classLabel} from './connect-context.js';
-import {rankMultiClass,splitProjectedRanking} from './projection-v2-model.mjs';
+import {rankMultiClass,splitProjectedRanking,withScoreTies} from './projection-v2-model.mjs';
 import {avatarGlyph,avatarColor} from './avatar-catalog.js';
 import {createOvertakeTracker,playerKey} from './projection-v2-overtakes.mjs';
 import {animateOvertakeSegment} from './projection-v2-overtake-animation.mjs';
@@ -180,16 +180,18 @@ function paintRanking(appKey,people){
  const card=cardFor(appKey);if(!card)return;
  const root=card.querySelector('.ranking-list'),multiple=scoreCompared().length>0;
  const existing=new Map([...root.querySelectorAll('.entry')].map(el=>[el.dataset.entryKey,el]));
- const columns=people.length?(enabled().length===3?[people]:splitProjectedRanking(people,multiple)):[];
+ // Les animations modifient temporairement l'ordre : attribuer le rang à
+ // chaque score, pas à la position physique dans la colonne.
+ const ranked=withScoreTies(people);
+ const columns=ranked.length?(enabled().length===3?[ranked]:splitProjectedRanking(ranked,multiple)):[];
  root.classList.toggle('single',columns.length===1);
  root.classList.toggle('multi',multiple);
  const fragment=document.createDocumentFragment();
- let position=0;
  columns.forEach(group=>{
   const column=document.createElement('div');column.className='ranking-col';
   column.style.setProperty('--row-count',String(group.length));
   group.forEach(p=>{
-   const place=++position,key=playerKey(p);
+   const place=p.position,key=playerKey(p);
    const row=existing.get(key)||document.createElement('div');
    row.dataset.entryKey=key;
    row.className='entry rank-'+place;
