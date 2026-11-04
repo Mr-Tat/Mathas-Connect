@@ -1,0 +1,37 @@
+name: Additions 3-vies half XP — disposable PostgreSQL
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261104143000_school_three_lives_half_xp.sql'
+      - 'tests/postgres/school-half-xp-*.sql'
+      - '.github/workflows/additions-three-lives-half-xp.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  school-half-xp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: school_halves
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d school_halves"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/school_halves
+    steps:
+      - uses: actions/checkout@v4
+      - name: Disposable pupils, rules and state only
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/school-half-xp-fixture.sql
+      - name: Run the ACTUAL production SQL migration in an isolated database
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261104143000_school_three_lives_half_xp.sql
+      - name: XP arithmetic, historical rights, repeats and other apps
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/school-half-xp-assertions.sql

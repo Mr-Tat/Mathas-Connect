@@ -9,6 +9,20 @@ test('native buttons expose only milestones actually remaining in official Conne
  assert.equal(xpStillAvailable(xp,'classic',2,10),36);
  assert.equal(xpStillAvailable(xp,'classic',3,20),60);
  assert.equal(xpStillAvailable(xp,'sudden',1),20);
+ assert.equal(xpStillAvailable(xp,'three-lives',1),10,'3-vies can earn only half the two 10-XP milestones');
+ assert.equal(xpStillAvailable(xp,'hard-three-lives',1),10);
+ assert.equal(xpStillAvailable(xp,'hard-sudden',1),20);
+ const earned5={...xp,milestones:['sudden:1:5:half']};
+ assert.equal(xpStillAvailable(earned5,'three-lives',1),5,'only the second 3-vies half remains');
+ assert.equal(xpStillAvailable(earned5,'sudden',1),15,'sudden offers the unearned 5-XP complement plus second 10-XP tier');
+ const earned10={...xp,milestones:['sudden:1:5:half','sudden:1:10:half']};
+ assert.equal(xpStillAvailable(earned10,'three-lives',1),0);
+ assert.equal(xpStillAvailable(earned10,'sudden',1),10);
+ const toppedUp={...xp,milestones:['sudden:1:5:half','sudden:1:5:complement','sudden:1:10:half']};
+ assert.equal(xpStillAvailable(toppedUp,'sudden',1),5,'the complementary five is offered once');
+ assert.equal(xpStillAvailable({...xp,milestones:['sudden:1:5','sudden:1:10']},'three-lives',1),0,'old full awards remain valid');
+ assert.equal(xpStillAvailable({...xp,repeatXp:true,parcours:2,currentMilestones:['sudden:1:5:half']},'sudden',1),15);
+
  assert.equal(xpStillAvailable(xp,'hard',3),20);
  assert.equal(xpStillAvailable({...xp,milestones:['classic:2:10:pass','sudden:1:5','hard:3:7']},'classic',2,10),6);
  assert.equal(xpStillAvailable({...xp,milestones:['sudden:1:5']},'sudden',1),10);
