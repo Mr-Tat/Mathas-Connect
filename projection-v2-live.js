@@ -228,6 +228,11 @@ async function playCurrentApp(){
    const segment=tracker.take(appKey);
    const completed=await animateOvertakeSegment({
     segment,paint:paintRanking,findRow:rowFor,canContinue,
+    onStep:(_actor,passed)=>{
+     const board=$('ranking-list');
+     board.dataset.overtakeSteps=String(1+Number(board.dataset.overtakeSteps||0));
+     board.dataset.lastPassed=passed;
+    },
     onArrival:movement=>addSpectacularRise(appKey,movement)
    });
    if(!completed||!canContinue())break;
@@ -266,7 +271,10 @@ function render(){
  enabled().forEach(a=>{
   const btn=document.createElement('button');btn.type='button';
   btn.textContent=a.title;btn.classList.toggle('selected',a.key===currentApp);
-  btn.onclick=()=>{if(currentApp!==a.key)cancelPlayback();currentApp=a.key;secondsRemaining=options.rotationSeconds;render()};
+  btn.onclick=()=>{
+   if(currentApp!==a.key){cancelPlayback();$('ranking-list').dataset.overtakeSteps='0'}
+   currentApp=a.key;secondsRemaining=options.rotationSeconds;render();
+  };
   tabs.append(btn);
  });
  renderExploits();renderClasses();updateTime();
@@ -349,6 +357,7 @@ function next(delta){
  cancelPlayback();
  const i=a.findIndex(x=>x.key===currentApp);
  currentApp=a[(i+delta+a.length)%a.length].key;
+ $('ranking-list').dataset.overtakeSteps='0';
  secondsRemaining=options.rotationSeconds;render();
 }
 $('next-app').onclick=()=>next(1);
@@ -396,6 +405,9 @@ function buildSettings(){
     const before=[...options[field]];
     options[field]=cb.checked?[...options[field],app.key]:options[field].filter(k=>k!==app.key);
     if(!await commitOptions()){options[field]=before;cb.checked=!cb.checked}
+    if(field==='scoreApps'){
+     cancelPlayback();tracker.drop(app.key);
+    }
     if(!enabled().some(a=>a.key===currentApp))currentApp=enabled()[0]?.key??null;
     render();
     buildSettings();

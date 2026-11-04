@@ -42,7 +42,7 @@ export function sprinkleArrival(row){
  row.append(halo);
  setTimeout(()=>halo.remove(),SPARKLE_DURATION+260);
 }
-export async function animateOvertakeSegment({segment,paint,findRow,canContinue,onArrival}){
+export async function animateOvertakeSegment({segment,paint,findRow,canContinue,onStep,onArrival}){
  if(!canContinue())return false;
  let order=segment.from.rows.map(p=>{
   const updated=segment.to.rows.find(next=>playerKey(next)===playerKey(p));
@@ -67,6 +67,7 @@ export async function animateOvertakeSegment({segment,paint,findRow,canContinue,
      beforePassed:passedBefore,canContinue});
     if(!ok)return false;
    }
+   onStep?.(actorKey,passedKey);
    i--;
   }
  }

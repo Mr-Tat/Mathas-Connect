@@ -60,6 +60,7 @@ export function createOvertakeTracker(){
   shown:key=>shown.get(key)||null,
   pending:key=>(queued.get(key)||[]).length,
   clear(){seen.clear();shown.clear();queued.clear()},
+  drop:key=>{seen.delete(key);shown.delete(key);queued.delete(key)},
   keys:()=>[...seen.keys()]
  };
 }
