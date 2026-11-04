@@ -64,7 +64,7 @@ function validate(s:any){
  const classic=Array.from({length:3},(_,i)=>{const x=s.classic?.[i]??{};if(typeof x!=='object'||Array.isArray(x))throw Error('classic');const y:any={};for(const count of [4,10,20])if(x[count]!=null){if(!int(x[count],0,count))throw Error('classic');y[count]=x[count]}return y});
  const sequence=(k:string)=>Array.from({length:3},(_,i)=>{const v=s[k]?.[i];if(v==null)return null;if(!int(v,0,100000))throw Error(k);return v});
  const recent=(s.recent??[]);if(!Array.isArray(recent)||recent.length>3)throw Error('recent');
- const runs=recent.map((v:any)=>{if(!v||!['classic','sudden','hard','hard-challenge'].includes(v.mode)||!int(v.level,1,3)||!int(v.score,0,100000)||!/^\d{4}-\d{2}-\d{2}T/.test(v.at||''))throw Error('recent');if(v.total!=null&&(![4,5,10,20].includes(v.total)||v.score>v.total))throw Error('recent');return {mode:v.mode,level:v.level,score:v.score,total:v.total??null,points:int(v.points,0,10000000)?v.points:0,eventId:valid(v.eventId)?v.eventId:null,at:String(v.at).slice(0,32),...(v.mode==='sudden'&&['addBottom','takeTop'].includes(v.method)?{method:v.method}:{})}});
+ const runs=recent.map((v:any)=>{if(!v||!['classic','sudden','three-lives','hard','hard-challenge','hard-sudden','hard-three-lives'].includes(v.mode)||!int(v.level,1,3)||!int(v.score,0,100000)||!/^\d{4}-\d{2}-\d{2}T/.test(v.at||''))throw Error('recent');if(v.total!=null&&(![4,5,10,20].includes(v.total)||v.score>v.total))throw Error('recent');return {mode:v.mode,level:v.level,score:v.score,total:v.total??null,points:int(v.points,0,10000000)?v.points:0,eventId:valid(v.eventId)?v.eventId:null,at:String(v.at).slice(0,32),...(v.mode==='sudden'&&['addBottom','takeTop'].includes(v.method)?{method:v.method}:{})}});
  const best=s.bestPoints??null;if(best!==null&&!int(best,0,10000000))throw Error('best');
  const today=s.todayBest??null;if(today!==null&&(!/^\d{4}-\d{2}-\d{2}$/.test(today.day||'')||!int(today.points,0,10000000)))throw Error('today');
  const prog:any={};for(const k of ['level2','level3','sudden1','sudden2','sudden3','perfect1','perfect2','perfect3','hard']){if(s.progress?.[k]!=null){if(typeof s.progress[k]!=='boolean')throw Error('progress');prog[k]=s.progress[k]}}
@@ -72,7 +72,8 @@ function validate(s:any){
  const topThree=Array.isArray(s.topThree)?s.topThree.filter((v:any)=>int(v,0,10000000)).slice(0,3):[];
  const hardThree=Array.from({length:3},(_,i)=>{const value=s.hardThree?.[i];if(value==null)return null;if(!int(value,0,5))throw Error('hardThree');return value});
  const suddenMethods:any={};for(const method of ['addBottom','takeTop'])suddenMethods[method]=Array.from({length:3},(_,i)=>{const v=s.suddenMethods?.[method]?.[i];if(v==null)return null;if(!int(v,0,100000))throw Error('suddenMethods');return v});
- return {classic,sudden:sequence('sudden'),suddenMethods,hard:sequence('hard'),recent:runs,bestPoints:best,todayBest:today,progress:prog,ids,topThree,hardThree,rewards:normalizeRewards(s.rewards)};
+ return {classic,sudden:sequence('sudden'),threeLives:sequence('threeLives'),suddenMethods,
+  hard:sequence('hard'),hardThreeLives:sequence('hardThreeLives'),recent:runs,bestPoints:best,todayBest:today,progress:prog,ids,topThree,hardThree,rewards:normalizeRewards(s.rewards)};
 }
 function mergeHistorical(current:any,old:any){
  if(!old||typeof old!=='object'||Array.isArray(old))throw Error('invalid_import');
@@ -80,7 +81,7 @@ function mergeHistorical(current:any,old:any){
  for(let i=0;i<3;i++){
   for(const method of ['addBottom','takeTop']){const v=old.suddenMethods?.[method]?.[i];if(v!=null){if(!int(v,0,100000))throw Error('invalid_import');next.suddenMethods[method][i]=Math.max(next.suddenMethods[method][i]??0,v)}}
   for(const n of [4,10,20]){const value=old.classic?.[i]?.[n];if(value!=null){if(!int(value,0,n))throw Error('invalid_import');next.classic[i][n]=Math.max(next.classic[i][n]??0,value)}}
-  for(const group of ['sudden','hard']){const value=old[group]?.[i];if(value!=null){if(!int(value,0,100000))throw Error('invalid_import');next[group][i]=Math.max(next[group][i]??0,value)}}
+  for(const group of ['sudden','threeLives','hard','hardThreeLives']){const value=old[group]?.[i];if(value!=null){if(!int(value,0,100000))throw Error('invalid_import');next[group][i]=Math.max(next[group][i]??0,value)}}
   const hardThree=old.hardThree?.[i];if(hardThree!=null){if(!int(hardThree,0,5))throw Error('invalid_import');next.hardThree[i]=Math.max(next.hardThree[i]??0,hardThree)}
  }
  for(const key of ['level2','level3','sudden1','sudden2','sudden3','perfect1','perfect2','perfect3','hard']){
