@@ -6,6 +6,53 @@ const STYLE='mathas-multi-school-style';
 const BADGE='mathas-multi-official-xp';
 const TOGGLE='mathas-multi-tens-control';
 const AMBER='mathas-multi-amber-next-unit';
+const CUPS='mathas-multi-school-cups';
+
+// Une maîtrise classique est UNE coupe visuelle (4/4, 10/10 ET 20/20),
+// pas trois trophées. Les conditions distinctes restent celles du moteur.
+export function officialMultiplicationCups(rewards,mode,level){
+ if(!rewards||rewards.version!==3||![1,2,3].includes(level))return null;
+ const i=level-1,color=['bronze','silver','gold'][i];
+ if(mode==='classic'){
+  const m=rewards.mastery;
+  if(!m||![4,10,20].every(n=>Array.isArray(m[n])&&typeof m[n][i]==='boolean'))return null;
+  return [{key:'mastery:'+level,color,earned:[4,10,20].every(n=>m[n][i]),
+   title:'Maîtrise niveau '+level+' : 4/4, 10/10 et 20/20'}];
+ }
+ if(mode==='sudden'){
+  if(!Array.isArray(rewards.sudden)||typeof rewards.sudden[i]!=='boolean')return null;
+  return [{key:'sudden:'+level,color,earned:rewards.sudden[i],
+   title:'Mort subite niveau '+level+' : 25 réussites'}];
+ }
+ if(mode==='hard-sudden'){
+  const a=rewards.hardAwards;
+  if(!a||!['bronze','silver','gold'].every(c=>Array.isArray(a[c])&&typeof a[c][i]==='boolean'))return null;
+  return ['bronze','silver','gold'].map((c,j)=>({key:'hard:'+c+':'+level,color:c,
+   earned:a[c][i],title:'Mort subite HARD niveau '+level+' : '+[3,5,10][j]+' réussites'}));
+ }
+ return null;
+}
+function putCups(doc,button,specs){
+ if(!button||!specs)return;
+ let row=button.querySelector(':scope > .'+CUPS);
+ if(!row){row=doc.createElement('span');row.className=CUPS;button.append(row)}
+ const signature=specs.map(x=>x.key+':'+(x.earned?'1':'0')).join('|');
+ if(row.dataset.signature===signature)return;
+ row.dataset.signature=signature;row.replaceChildren();
+ for(const spec of specs){
+  const slot=doc.createElement('span');slot.className='mathas-multi-school-cup '+(spec.earned?'earned':'locked');
+  slot.title=spec.title+(spec.earned?' · Coupe acquise':' · Coupe à gagner');
+  slot.setAttribute('aria-label',slot.title);
+  const native=doc.querySelector('.mathas-v602-trophy-cup[data-trophy-color="'+spec.color+'"]');
+  const cup=native?.cloneNode(true)||doc.createElement('span');
+  if(!native)cup.textContent='🏆';
+  cup.classList.add('mathas-multi-school-cup-art');
+  slot.append(cup);row.append(slot);
+ }
+ button.style.setProperty('position','relative','important');
+ button.style.setProperty('padding-top','19px','important');
+}
+
 
 export function multiplicationAmberFollower(active,doc){
  if(!active?.matches||!doc?.querySelector)return null;
@@ -54,6 +101,12 @@ function ensureStyle(doc){
  '#startSudden>.mathas-multi-official-xp,#hardMenu .hard-sudden>.mathas-multi-official-xp{left:6px!important;right:auto!important}',
  'body.light .mathas-multi-official-xp,body.light-mode .mathas-multi-official-xp{color:#523107!important}',
  '.mathas-multi-instruction-note{font:700 12px/1.4 system-ui;color:#f7cb76;margin-top:5px}',
+ '.mathas-multi-school-cups{position:absolute!important;top:2px!important;right:6px!important;display:inline-flex!important;gap:3px!important;align-items:center!important;pointer-events:none!important;z-index:3}',
+ '.mathas-multi-school-cup{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:15px;min-height:16px}',
+ '.mathas-multi-school-cup .mathas-multi-school-cup-art{display:inline-flex!important;width:16px!important;height:17px!important;font-size:15px!important}',
+ '.mathas-multi-school-cup .mathas-multi-school-cup-art svg{width:100%!important;height:100%!important}',
+ '.mathas-multi-school-cup.locked{opacity:.38;filter:grayscale(1)}',
+ '.mathas-multi-school-cup.earned{opacity:1;filter:drop-shadow(0 1px 3px #f4d48a77)}',
  '@media(max-width:650px){.mathas-multi-tens-control{font-size:10px;padding:4px 6px;gap:4px}#gameScreen .session-bar,#hardGame .hard-session-bar{flex-wrap:wrap}.mathas-multi-official-xp{font-size:9px!important}}'
  ].join('\n');
  doc.head.append(el);
@@ -90,6 +143,18 @@ function renderXp(doc,xp){
   if(lives)putBadge(doc,lives,amount);
  }
 }
+function renderCups(doc,rewards){
+ for(const button of doc.querySelectorAll('#menuScreen .classic-count-btn[data-count]')){
+  const n=level(doc,'classicLevel');putCups(doc,button,officialMultiplicationCups(rewards,'classic',n));
+ }
+ putCups(doc,doc.getElementById('startSudden'),
+  officialMultiplicationCups(rewards,'sudden',level(doc,'suddenLevel')));
+ for(const card of doc.querySelectorAll('#hardMenu .hard-level-card')){
+  const n=Number(card.querySelector('h3')?.textContent.match(/NIV\s*([123])/i)?.[1]);
+  const button=card.querySelector('.hard-sudden:not(.mathas-multi-hard-three-lives):not(:disabled)');
+  if(button)putCups(doc,button,officialMultiplicationCups(rewards,'hard-sudden',n));
+ }
+}
 function instruction(doc,enabled){
  const root=doc.getElementById('instructionText');
  if(!root)return;
@@ -100,7 +165,7 @@ function instruction(doc,enabled){
   ?'Dizaines d’abord : note le report '+loc+' avant le chiffre des unités.'
   :'Unités d’abord : écris les unités avant de noter le report '+loc+'.';
 }
-export function installMultiplicationSchoolUi(doc,{connected=false,xp=null}={}){
+export function installMultiplicationSchoolUi(doc,{connected=false,xp=null,rewards=null}={}){
  const home=doc?.getElementById?.('tensFirstToggle');
  if(!home||!doc.querySelector('#menuScreen'))return false;
  ensureStyle(doc);
@@ -136,5 +201,7 @@ export function installMultiplicationSchoolUi(doc,{connected=false,xp=null}={}){
  sync();
  if(connected&&xp)renderXp(doc,xp);
  else doc.querySelectorAll('.'+BADGE).forEach(x=>x.remove());
+ if(connected&&rewards)renderCups(doc,rewards);
+ else doc.querySelectorAll('.'+CUPS).forEach(x=>x.remove());
  return true;
 }
