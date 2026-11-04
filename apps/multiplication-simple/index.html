@@ -70,7 +70,26 @@ function apply(state){
  const hard={};(state.hard||[]).forEach((v,i)=>{if(Number.isInteger(v))hard[String(i+1)]=v});put('multi1_hard_sudden_v1',hard);
  const five={};(state.hardThree||[]).forEach((v,i)=>{if(Number.isInteger(v))five[String(i+1)]=v});put('multi1_hard_three_v1',five);
  put('mathas_progression_multiplication_simple_v1',state.progress||{});
- put('mathas_points_v1_multiplication-simple',{version:1,day:new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels'}).format(new Date()),top:[],bestOne:state.bestPoints==null?null:{points:state.bestPoints},bestThree:(state.topThree||[]).map(points=>({points}))});
+ // Le moteur natif n'affiche le Top du jour que si `top` est renseigné.
+ // Utiliser exclusivement les points conservés par Connect, jamais un score libre.
+ const day=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels'}).format(new Date());
+ const daily=state.todayBest?.day===day&&Number.isSafeInteger(state.todayBest?.points)
+  ?state.todayBest.points:null;
+ const records=[...(Array.isArray(state.topThree)?state.topThree:[]),
+  ...(Array.isArray(state.recent)?state.recent:[])].filter(x=>
+   x&&Number.isSafeInteger(x.points)&&x.points>=0);
+ if(Number.isSafeInteger(state.bestPoints)&&state.bestPoints>=0
+   &&!records.some(x=>x.points===state.bestPoints))
+  records.push({points:state.bestPoints,at:'',label:'Meilleur Connect'});
+ records.sort((a,b)=>b.points-a.points||String(b.at||'').localeCompare(String(a.at||'')));
+ const distinct=records.filter((x,i,items)=>items.findIndex(y=>
+  x.eventId&&y.eventId?x.eventId===y.eventId:
+   x.points===y.points&&String(x.at||'')===String(y.at||'')&&String(x.label||'')===String(y.label||''))===i);
+ put('mathas_points_v1_multiplication-simple',{version:1,day,
+  top:daily===null?[]:[{points:daily,at:day,label:'Meilleur certifié du jour'}],
+  bestOne:state.bestPoints==null?null:{points:state.bestPoints},
+  bestThree:distinct.slice(0,3)});
+
 }
 function clearConnectedScoreCache(){
  for(const name of ['multi1_classic_v1','multi1_sudden_v1','multi1_hard_sudden_v1','multi1_hard_three_v1','multi1_last_work',
