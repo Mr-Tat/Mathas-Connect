@@ -305,7 +305,10 @@ function render(){
   const visual=tracker.shown(app.key)||snapshotFor(app.key,data);
   if(!playingKeys.has(app.key))paintRanking(app.key,visual.rows);
  }
- for(const app of active)board.append(cardFor(app.key));
+ for(const [index,app] of active.entries()){
+  const card=cardFor(app.key);
+  if(board.children[index]!==card)board.insertBefore(card,board.children[index]||null);
+ }
  const tabs=$('app-tabs');tabs.replaceChildren();
  active.forEach(app=>{
   const btn=document.createElement('button');btn.type='button';btn.textContent=app.title;
@@ -519,7 +522,7 @@ async function initialize(){
   const dashboard=await call('connect-api','teacher-dashboard');
   classesAvailable=(dashboard.classes||[]).filter(c=>c?.id&&typeof c.name==='string'&&!c.name.includes('TEST'));
   if(!classesAvailable.some(c=>c.id===classId))return note('Tu ne gères pas la classe demandée.');
-  connected=true;paused=true;$('load-real').disabled=false;
+  connected=true;$('load-real').disabled=false;
   note('Clique sur Afficher / Actualiser pour charger '+classLabel+'.');
  }catch(error){note('Connexion refusée : '+(error?.message||'Erreur réseau'))}
 }
