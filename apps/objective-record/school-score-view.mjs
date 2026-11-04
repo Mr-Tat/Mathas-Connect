@@ -1,4 +1,4 @@
-// Tableau personnel des deux additions scolaires. Source : événements validés
+// Tableau personnel scolaire des deux additions et de Multiplication. Source : événements validés
 // côté Connect, jamais les scores libres en localStorage.
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const day=value=>{
@@ -51,7 +51,7 @@ export function nativeDayPoints(top){
 // Réutilise les cartes natives : Top du jour, coupes et podium historique.
 // Le clic ne propose que l'envoi volontaire d'un score certifié Connect.
 export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
- if(!['addition-ecrite-simple','addition-ecrite-multiple'].includes(appKey))
+ if(!['addition-ecrite-simple','addition-ecrite-multiple','multiplication-ecrite-simple'].includes(appKey))
   throw Error('unsupported_score_app');
  let state={},remote=null,documentRef=null,loading=null,destroyed=false,clickTarget=null;
  const autoOffered=new Set();

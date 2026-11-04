@@ -86,18 +86,25 @@ Deno.serve(async(req:Request)=>{
    // Deux additions scolaires : historique privé du joueur et records officiels,
    // indépendamment du mode Classique / 3 vies / Mort subite / HARD.
    const addition=['addition-ecrite-simple','addition-ecrite-multiple'].includes(b.appKey);
+   const multiplication=b.appKey==='multiplication-ecrite-simple';
+   const certified=addition||multiplication;
    if(b.action==='student-score-history'){
-    if(!addition)return deny('unsupported_score_history',400);
-    const {data,error}=await db.rpc('connect_projection_addition_score_summary_v1',{
+    if(!certified)return deny('unsupported_score_history',400);
+    const {data,error}=await db.rpc(multiplication
+     ?'connect_projection_mul_verified_summary_v1'
+     :'connect_projection_addition_score_summary_v1',{
      p_student:studentId,p_class:b.classId,p_app:b.appKey
     });
     if(error||data?.ok!==true)throw Error('score_summary_unavailable');
     return respond(data);
    }
-   if(addition){
+   if(certified){
+    // Multiplication n'accepte QUE des événements issus de preuves consommées.
     // Le verrou sur l'élève et la comparaison des points sont atomiques en SQL.
     // Un ancien score, un score égal ou un événement non prouvé ne passent jamais.
-    const {data,error}=await db.rpc('connect_projection_share_improved_addition_v1',{
+    const {data,error}=await db.rpc(multiplication
+     ?'connect_projection_mul_share_improved_v1'
+     :'connect_projection_share_improved_addition_v1',{
      p_student:studentId,p_class:b.classId,p_app:b.appKey,p_event:b.eventId
     });
     if(error)throw Error('score_share_unavailable');

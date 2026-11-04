@@ -4,6 +4,7 @@ import {installMultiplicationSchoolUi} from './school-ui.mjs';
 import {createCertifiedMultiplicationClassic} from './certified-classic.mjs';
 import {isNewCertifiedMultiplicationDailyBest} from './school-record-eligibility.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
+import {createSchoolScoreView} from '../objective-record/school-score-view.mjs';
 const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM',APP='multiplication-ecrite-simple';
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
@@ -160,13 +161,16 @@ html=html.replace('<head>','<head>'+scopedBootstrap+multiplierBootstrap).replace
 const iframe=document.createElement('iframe');iframe.title='Multiplication écrite simple V7.0.0';iframe.style.cssText='border:0;width:100%;height:calc(100dvh - var(--ce-toolbar-height,46px));display:block';iframe.setAttribute('allow','fullscreen');
 // Présentation additionnelle du moteur natif sans muter ses points ni reports.
 function applySchoolUi(){
- try{installMultiplicationSchoolUi(iframe.contentDocument,{connected:mode==='connected',xp:lastXp,rewards:initial?.rewards});installNativeCertifiedProof()}
+ try{
+  installMultiplicationSchoolUi(iframe.contentDocument,{connected:mode==='connected',xp:lastXp,rewards:initial?.rewards});
+  installNativeCertifiedProof();certifiedScoreView?.mount(iframe.contentDocument);
+ }
  catch(error){console.warn('Affichage scolaire multiplication indisponible',error)}
 }
 iframe.addEventListener('load',applySchoolUi);
 // XP Connect : overlay non bloquant et consultation permanente des jalons.
 let lastXp=null,xpUiVersion=0,xpVisualQueue=Promise.resolve(),xpVisualPending=0;
-let certifiedClassic=null,certifiedConsent=null;
+let certifiedClassic=null,certifiedConsent=null,certifiedScoreView=null;
 function showEarnedXp(value){
  const label=document.getElementById('xp-earned-total');
  if(label&&Number.isFinite(Number(value)))label.textContent='🏆 XP acquis : '+Math.max(0,Math.round(Number(value)));
@@ -297,8 +301,8 @@ document.head.append(xpCss);
 function xpElement(){let el=document.getElementById('xp-toast');if(!el){el=document.createElement('div');el.id='xp-toast';el.setAttribute('aria-live','polite');document.body.append(el)}return el}
 const xpRows=()=>{const rows=[];for(let l=1;l<=3;l++){
  for(const [size,key,pts] of [[4,'perfect',22],[10,'pass',30],[10,'bonus',6],[20,'pass',50],[20,'bonus',10]])rows.push({key:'classic:'+l+':'+size+':'+key,label:'Classique N'+l+' · '+size+' calculs '+(key==='bonus'?'sans-faute':key==='perfect'?'4/4':'≥80 %'),pts});
- for(const n of [5,10])rows.push({key:'sudden:'+l+':'+n,label:'Mort subite N'+l+' · '+n+' réussites',pts:10});
- for(const n of [3,7])rows.push({key:'hard:'+l+':'+n,label:'HARD N'+l+' · '+n+' réussites',pts:10});
+ for(const n of [5,10])rows.push({key:'sudden:'+l+':'+n,label:'3 vies / Mort subite N'+l+' · '+n+' réussites',pts:10});
+ for(const n of [3,7])rows.push({key:'hard:'+l+':'+n,label:'HARD 3 vies / Mort subite N'+l+' · '+n+' réussites',pts:10});
 }return rows};
 async function loadXp(){
  if(mode!=='connected'||!cloud)return null;
@@ -317,7 +321,18 @@ async function toggleXpDetails(){
  const title=document.createElement('strong');title.textContent='XP acquis dans ce jeu : '+data.appXp+' · Connect N'+data.level+' ('+data.total+' XP au total)';
  const close=document.createElement('button');close.textContent='Fermer';close.onclick=()=>panel.hidden=true;head.append(title,close);
  const table=document.createElement('table'),owned=new Set(data.repeatXp?data.currentMilestones:data.milestones);
- for(const entry of xpRows()){const tr=document.createElement('tr'),name=document.createElement('td'),points=document.createElement('td');name.textContent=(owned.has(entry.key)?'✓ ':'○ ')+entry.label;points.textContent=(owned.has(entry.key)?'Acquis · ':'+')+entry.pts+' XP';tr.append(name,points);table.append(tr)}
+ for(const entry of xpRows()){
+  const tr=document.createElement('tr'),name=document.createElement('td'),points=document.createElement('td');
+  const survival=entry.key.startsWith('sudden:')||entry.key.startsWith('hard:');
+  const half=survival&&owned.has(entry.key+':half');
+  const full=owned.has(entry.key)||(survival&&owned.has(entry.key+':complement'));
+  if(full||half)tr.className='is-earned';
+  name.textContent=(full?'✓ ':half?'◐ ':'○ ')+entry.label;
+  points.textContent=full?'Acquis · '+entry.pts+' XP':
+   half?'Acquis · '+Math.floor(entry.pts/2)+' / '+entry.pts+' XP (3 vies)':
+   '+'+entry.pts+' XP';
+  tr.append(name,points);table.append(tr)
+ }
  const hint=document.createElement('p');hint.style.cssText='font-size:12px;color:#c5e5f4';
  hint.textContent=data.repeatXp?'Parcours '+data.parcours+' : les récompenses peuvent être regagnées une fois sur ce parcours.':data.parcours>1?'Parcours '+data.parcours+' : XP historiques conservés, mais non regagnables.':'Chaque récompense se gagne une fois.';
  panel.replaceChildren(head,hint,table)
@@ -426,6 +441,12 @@ function installNativeCertifiedProof(){
   button.textContent='❤️ 3 vies';button.title='Trois erreurs possibles · preuve Connect';
   sudden.insertAdjacentElement('afterend',button);
  }
+ const lives=doc.getElementById('mathasMultiThreeLives');
+ if(sudden&&lives&&!sudden.closest('.mathas-multi-survival-options')){
+  const group=doc.createElement('div');group.className='mathas-multi-survival-options';
+  sudden.parentElement.insertBefore(group,sudden);
+  group.append(lives,sudden);
+ }
  for(const card of doc.querySelectorAll('#hardMenu .hard-level-card')){
   const native=card.querySelector('.hard-sudden');
   if(!native||card.querySelector('.mathas-multi-hard-three-lives'))continue;
@@ -467,12 +488,30 @@ function installNativeCertifiedProof(){
  },true);
 }
 if(mode==='connected'){
+ async function verifiedScoreHistory(){
+  const auth=(await cloud.auth.getSession()).data.session;
+  if(!auth?.access_token||auth.user?.id!==session.user.id)throw Error('connect_session_changed');
+  const response=await fetch(URL+'/functions/v1/connect-projection-v2',{
+   method:'POST',
+   headers:{apikey:KEY,authorization:'Bearer '+auth.access_token,'content-type':'application/json'},
+   body:JSON.stringify({action:'student-score-history',classId,appKey:APP})
+  });
+  const answer=await response.json().catch(()=>null);
+  if(!response.ok||answer?.ok!==true)throw Error(answer?.error||'projection_unavailable');
+  return answer;
+ }
  certifiedConsent=createProjectionConsent({classId,appKey:APP,studentKey:session.user.id,
   getToken:async()=>{
    const current=(await cloud.auth.getSession()).data.session;
    if(!current?.access_token||current.user?.id!==session.user.id)throw Error('connect_session_changed');
    return current.access_token;
   }});
+ certifiedScoreView=createSchoolScoreView({
+  appKey:APP,fetchHistory:verifiedScoreHistory,consent:()=>certifiedConsent,
+  notify:text=>{const sync=document.getElementById('ce-sync');if(sync)sync.title=text}
+ });
+ certifiedScoreView.updateState(initial||{});
+ void certifiedScoreView.load();
  certifiedClassic=createCertifiedMultiplicationClassic({
   documentRef:document,storage:localStorage,
   getContext:()=>({connected:mode==='connected',classId,studentId:session.user.id}),
@@ -488,6 +527,8 @@ if(mode==='connected'){
    const updated=await response.json().catch(()=>null);
    if(!response.ok||updated?.ok!==true)throw Error('Résultats Connect indisponibles');
    revision=updated.revision;resetEpoch=updated.resetEpoch??resetEpoch;initial=updated.state;
+   certifiedScoreView?.updateState(initial||{});
+   void certifiedScoreView?.load(true);
    apply(initial);
    if(initial?.rewards)localStorage.setItem('mathas_trophies_v3_multiplication-simple',JSON.stringify(initial.rewards));
    iframe.contentWindow?.MathasPoints?.render?.();
@@ -506,9 +547,10 @@ if(mode==='connected'){
    // Animation uniquement après ACK mathématique, jamais pour un résultat déjà enregistré.
    if(receipt.ack?.duplicate!==true&&Number.isSafeInteger(xp?.delta)&&xp.delta>0)
     queueXpGain(xp);
-   const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels'}).format(new Date());
-   if(isNewCertifiedMultiplicationDailyBest(receipt,initial,today))
-    certifiedConsent?.offer(receipt.eventId);
+   // Même règle que l'Addition : aucun envoi automatique.
+   // recorded() contrôle la preuve, le record public et propose Oui/Non.
+   if(receipt.ack?.proofVerified===true&&receipt.ack?.duplicate!==true)
+    void certifiedScoreView?.recorded(receipt.eventId);
   },
   notify:text=>{const sync=document.getElementById('ce-sync');if(sync)sync.title=text}
  });

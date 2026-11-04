@@ -126,7 +126,8 @@ test('SQL school proof only serves exact app; no direct anon or browser grade en
  assert.doesNotMatch(edge,/b\.score|b\.points|b\.rewards/);
  assert.match(launch,/event\.stopImmediatePropagation\(\)/);
  assert.doesNotMatch(launch,/action:'game-record'/);
- assert.match(launch,/certifiedConsent\?\.offer\(receipt\.eventId\)/);
+ assert.match(launch,/certifiedScoreView\?\.recorded\(receipt\.eventId\)/);
+  assert.match(launch,/action:'student-score-history'/);
 });
 
 test('LAB Tests en ligne : Multiplication impose la vraie session Connect avant une partie',()=>{
