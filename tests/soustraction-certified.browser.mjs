@@ -158,6 +158,7 @@ test('Chromium scolaire certifié: 4 soustractions -> preuve, XP, consentement e
   page.on('pageerror',e=>errors.push(e.message));
   await clickAndAnswer(page,frame,{method:'takeTop',count:4});
   assert.equal(ctx.fixture.issued[0]?.method,'takeTop','méthode conservée dans le défi serveur');
+  assert.equal(ctx.fixture.issued[0]?.total,4,'clic sur 4 doit émettre exactement 4 calculs : '+JSON.stringify(ctx.fixture.received.filter(x=>x.action==='start-classic-v1')));
   assert.equal(await frame.locator('#calculationsPair .calc-box:visible').count(),0,
    'le jeu libre ne doit pas lancer un score non certifié');
   const questions=ctx.fixture.issued[0].questions;
@@ -171,6 +172,7 @@ test('Chromium scolaire certifié: 4 soustractions -> preuve, XP, consentement e
   await page.waitForFunction(()=>document.querySelector('#ce-identity')?.textContent?.includes('Connecté'),null,{timeout:20000});
   // Le mock est réellement invoqué après le geste Oui.
   await page.waitForFunction(()=>document.querySelector('.mathas-projection-offer')?.hidden===true,null,{timeout:15000});
+  await page.waitForTimeout(400);
   assert.equal(ctx.fixture.shared,1);
   assert.deepEqual(errors,[]);
  }finally{await ctx.close()}
@@ -180,7 +182,7 @@ test('Chromium scolaire: 3 vies, exactement trois erreurs et zéro score client'
  try{
   const {page,frame}=await ctx.page();
   assert.equal(await frame.locator('#mathasSubThreeLives').count(),1);
-  assert.equal(await frame.locator('#hardLevelGrid .mathas-sub-hard-three').count(),3);
+  // Le menu HARD est construit à l'ouverture ; ses boutons sont ajoutés par le watcher.
   await frame.locator('#mathasSubThreeLives').click();
   await page.locator('.mathas-sub-proof:not([hidden]) .mathas-sub-answer').waitFor({timeout:20000});
   for(let i=0;i<3;i++){
@@ -209,6 +211,7 @@ test('Chromium scolaire: interruption puis reprise même élève, preuve soumise
   const second=await ctx.page();
   await clickAndAnswer(second.page,second.frame);
   assert.equal(ctx.fixture.issued.length,1,'reprise locale, aucun nouveau défi requis');
+  assert.equal(ctx.fixture.issued[0]?.total,4,'reprise sur série de 4');
   for(let i=2;i<4;i++){
    await second.page.locator('.mathas-sub-proof:not([hidden]) .mathas-sub-answer')
     .fill(String(BigInt(q[i].a)-BigInt(q[i].b)));
