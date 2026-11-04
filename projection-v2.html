@@ -182,10 +182,49 @@ html[data-proj-da="studio"] .ranking-board .ranking-head h2{font-family:Impact,"
 .ranking-board .entry .points{font-size:clamp(13px,1.25vw,18px)}
 .ranking-board .entry .minor{font-size:10px;line-height:1.25;flex-wrap:wrap;gap:2px 6px}
 .ranking-board .ranking-list:empty::after{content:"Aucun score enregistré pour cette application.";color:#d0e6fd;font-size:14px;padding:25px 10px;text-align:center;display:block;grid-column:1/-1}
-.projection-main[data-app-count="2"],.projection-main[data-app-count="3"]{grid-template-areas:"board board" "info exploits";grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-.projection-main[data-app-count="2"] .left-col,.projection-main[data-app-count="3"] .left-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.projection-main[data-app-count="2"] .left-col #settings-left,.projection-main[data-app-count="3"] .left-col #settings-left{grid-column:1/-1;justify-self:start}
-.projection-main[data-app-count="2"] .left-col .panel,.projection-main[data-app-count="3"] .left-col .panel{margin:0}
+/* En mode 2 ou 3, les panneaux secondaires restent toujours sur les CÔTÉS :
+   ils sont plus étroits, le centre prend le reste, sans changer de ligne. */
+.projection-main[data-app-count="2"],.projection-main[data-app-count="3"]{
+ grid-template-areas:"info board exploits";
+ grid-template-columns:clamp(158px,15vw,210px) minmax(0,1fr) clamp(158px,15vw,210px);
+ gap:11px;
+ padding:10px
+}
+.projection-main[data-app-count="2"] .left-col,.projection-main[data-app-count="3"] .left-col{
+ display:flex;flex-direction:column;gap:9px;
+ position:sticky;top:9px;align-self:start;max-height:calc(100dvh - 18px);
+ overflow-y:auto;scrollbar-width:thin
+}
+.projection-main[data-app-count="2"] .right,.projection-main[data-app-count="3"] .right{
+ position:sticky;top:9px;align-self:start;max-height:calc(100dvh - 18px);
+ overflow-y:auto;scrollbar-width:thin
+}
+.projection-main[data-app-count="2"] :is(.left-col .panel,.right .panel),
+.projection-main[data-app-count="3"] :is(.left-col .panel,.right .panel){margin:0;padding:9px 8px}
+.projection-main[data-app-count="2"] .left-col h2,.projection-main[data-app-count="3"] .left-col h2,
+.projection-main[data-app-count="2"] .right h2,.projection-main[data-app-count="3"] .right h2{font-size:clamp(13px,1.1vw,16px);margin-bottom:7px}
+.projection-main[data-app-count="2"] .classstat .headline,
+.projection-main[data-app-count="3"] .classstat .headline{gap:5px;flex-wrap:wrap;font-size:11px}
+.projection-main[data-app-count="2"] .classstat .headline strong,
+.projection-main[data-app-count="3"] .classstat .headline strong{font-size:14px}
+.projection-main[data-app-count="2"] .classstat.global-success .headline strong,
+.projection-main[data-app-count="3"] .classstat.global-success .headline strong{font-size:20px}
+.projection-main[data-app-count="2"] .right .event,
+.projection-main[data-app-count="3"] .right .event{padding:8px 5px;gap:6px;font-size:11px;overflow-wrap:anywhere}
+.projection-main[data-app-count="2"] .right .event-icon,
+.projection-main[data-app-count="3"] .right .event-icon{min-width:23px;width:23px;height:26px;font-size:17px}
+.projection-main[data-app-count="2"] .ranking-board,
+.projection-main[data-app-count="3"] .ranking-board{gap:11px}
+.projection-main[data-app-count="2"] .ranking-board .ranking-wrap,
+.projection-main[data-app-count="3"] .ranking-board .ranking-wrap{padding:6px}
+.projection-main[data-app-count="2"] .ranking-board .ranking-list{gap:4px}
+.projection-main[data-app-count="2"] .ranking-board .ranking-col + .ranking-col{padding-left:5px;border-left-width:3px}
+.projection-main[data-app-count="2"] .ranking-board .entry{padding:5px 4px;gap:4px;grid-template-columns:22px minmax(0,1fr)}
+.projection-main[data-app-count="2"] .ranking-board .entry .primary strong{font-size:clamp(12px,1.08vw,16px)}
+.projection-main[data-app-count="2"] .ranking-board .entry .points{font-size:clamp(12px,1.02vw,16px)}
+.projection-main[data-app-count="3"] .ranking-board .entry{padding:5px}
+.projection-main[data-app-count="3"] .ranking-board .entry .primary strong{font-size:clamp(13px,1.14vw,17px)}
+.projection-main[data-app-count="3"] .ranking-board .entry .points{font-size:clamp(12px,1.06vw,16px)}
 .projection-main[data-app-count="2"] .ranking-board .ranking-head h2{font-size:clamp(18px,2.3vw,30px)}
 .projection-main[data-app-count="3"] .ranking-board .ranking-list{grid-template-columns:minmax(0,1fr)}
 .projection-main[data-app-count="3"] .ranking-board .ranking-list.single{max-width:none}
@@ -214,14 +253,22 @@ html[data-proj-da="studio"] .ranking-board .ranking-head h2{font-family:Impact,"
 @media (max-width:1100px){
  .projection-main[data-app-count="1"]{grid-template-areas:"board board" "info exploits";grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 }
+/* Sous 810 px, les trois panneaux peuvent défiler horizontalement plutôt
+   que de faire disparaître les informations sur les côtés. */
 @media (max-width:810px){
- .projection-main{display:flex;flex-direction:column}
- .ranking-board{width:100%}
- .projection-main .left-col,.projection-main .right{width:100%}
- .projection-main[data-app-count="2"] .left-col,.projection-main[data-app-count="3"] .left-col{display:flex;flex-direction:column}
+ .projection-main[data-app-count="1"]{display:flex;flex-direction:column}
+ .projection-main[data-app-count="1"] .ranking-board{width:100%}
+ .projection-main[data-app-count="1"] .left-col,.projection-main[data-app-count="1"] .right{width:100%}
+ .projection-main[data-app-count="2"],.projection-main[data-app-count="3"]{
+  grid-template-columns:142px minmax(500px,1fr) 142px;
+  min-width:806px
+ }
+ .projection-main[data-app-count="2"] .left-col,.projection-main[data-app-count="3"] .left-col{
+  display:flex;flex-direction:column
+ }
 }
 @media (max-width:640px){
- .ranking-board{grid-template-columns:1fr!important}
+ .projection-main[data-app-count="1"] .ranking-board{grid-template-columns:1fr!important}
  .ranking-board .ranking-head{position:relative}
  .ranking-board .ranking-list{grid-template-columns:repeat(2,minmax(0,1fr))}
  .ranking-board[data-app-count="3"] .ranking-list{grid-template-columns:1fr}
