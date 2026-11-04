@@ -36,7 +36,8 @@ function putCups(doc,button,specs){
  if(!button||!specs)return;
  let row=button.querySelector(':scope > .'+CUPS);
  if(!row){row=doc.createElement('span');row.className=CUPS;button.append(row)}
- const signature=specs.map(x=>x.key+':'+(x.earned?'1':'0')).join('|');
+ const nativeArtReady=!!doc.querySelector('.mathas-v602-trophy-cup[data-trophy-color]');
+ const signature=specs.map(x=>x.key+':'+(x.earned?'1':'0')).join('|')+(nativeArtReady?'|native':'|fallback');
  if(row.dataset.signature===signature)return;
  row.dataset.signature=signature;row.replaceChildren();
  for(const spec of specs){
