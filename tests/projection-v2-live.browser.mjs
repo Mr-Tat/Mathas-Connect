@@ -108,7 +108,7 @@ test('V2 — 1, 2 et 3 panneaux, colonnes, séparation, scroll et limite de sél
   assert.equal(await page.locator('.ranking-card').count(),1);
   assert.equal(await page.locator(card(ADD)+' .ranking-col').count(),2,'Seul : deux colonnes');
   assert.equal(await page.locator(card(ADD)+' .ranking-col').first().locator('.entry').count(),8);
-  await page.locator('#settings-top').click();
+  await page.locator('#settings-left').click();
   await page.getByRole('checkbox',{name:'Multiplication écrite · Afficher score'}).check();
   await page.waitForFunction(()=>document.querySelectorAll('.ranking-card').length===2);
   assert.equal(await page.locator(card(MUL)+' .ranking-col').count(),2,'Deux : deux colonnes par appli');
@@ -156,7 +156,7 @@ test('V2 — 1, 2 et 3 panneaux, colonnes, séparation, scroll et limite de sél
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+3),'Pas de scroll horizontal');
   assert.equal(await page.locator('#projection-refresh-dot').count(),0,'Point supprimé');
   assert.equal(await page.locator('#next-app').count(),0,'Pas de rotation automatique');
-  await page.locator('#settings-top').click();
+  await page.locator('#settings-left').click();
   await page.getByRole('checkbox',{name:'Soustraction écrite · Afficher score'}).uncheck();
   await page.getByRole('checkbox',{name:'Multiplication écrite · Afficher score'}).uncheck();
   await page.waitForFunction(()=>document.querySelectorAll('.ranking-card').length===1);
@@ -214,13 +214,88 @@ test('V2 — reset de score toujours protégé et isolé',{timeout:60000},async(
  try{
   const page=await browser.newPage({viewport:{width:1366,height:768}}),state=sampleState([ADD,MUL],4);
   const {errors}=await openBoard(page,url,state);
-  await page.locator('#settings-top').click();
+  await page.locator('#settings-left').click();
   await page.getByRole('button',{name:'Réinitialiser uniquement le score de Addition écrite pour Phase 2 A'}).click();
   await page.locator('#reset-password').fill('MOT-DE-PASSE-FICTIF');
   await page.locator('#reset-apply').click();
   await page.waitForFunction(()=>!document.querySelector('#settings').open);
   assert.deepEqual(state.resets,[ADD]);
   assert.equal(await page.locator(card(MUL)+' .entry.rank-1 .points').textContent(),'90 pts');
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
+
+test('V2 — barre du haut : thème à gauche, classe centrale et MAJ/barre à droite',{timeout:65000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}}),state=sampleState([ADD,MUL],5);
+  const {errors}=await openBoard(page,url,state);
+  assert.equal(await page.locator('#settings-top').count(),0,'Le bouton Applications du haut a disparu');
+  assert.equal(await page.locator('#settings-left').count(),1,'Celui de gauche reste accessible');
+  assert.equal(await page.locator('#projection-refresh-countdown').count(),0,'Plus de texte chrono');
+  assert.equal(await page.locator('#projection-refresh-progress[role="progressbar"]').count(),1);
+  for(const theme of ['neon','papier','ardoise','studio']){
+   await page.locator('#projection-theme').selectOption(theme);
+   const geo=await page.evaluate(()=>{
+    const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();
+     return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,mid:(r.left+r.right)/2}};
+    return {header:rect('header'),theme:rect('#projection-theme'),klass:rect('#header-class'),
+     button:rect('#load-real'),progress:rect('#projection-refresh-progress'),viewport:innerWidth};
+   });
+   assert.ok(geo.theme.right+12<geo.klass.left,'Thème à gauche de la classe : '+theme);
+   assert.ok(geo.klass.right+12<geo.button.left,'Classe au centre, boutons à droite : '+theme);
+   assert.ok(geo.button.right+5<geo.progress.left,'Actualiser collé à la barre : '+theme);
+   assert.ok(geo.button.top<geo.header.bottom&&geo.progress.bottom<=geo.header.bottom,'Commandes dans le bandeau : '+theme);
+   assert.ok(Math.abs(geo.theme.top-geo.button.top)<20,'En-tête sur une ligne : '+theme);
+   assert.ok(Math.abs(geo.klass.mid-geo.viewport/2)<90,'Classe bien centrée : '+theme);
+   const weight=await page.locator('#header-class').evaluate(el=>getComputedStyle(el).fontWeight);
+   assert.ok(Number(weight)>=900,'Titre de classe bien gras : '+theme);
+  }
+  await page.setViewportSize({width:780,height:780});
+  const compact=await page.evaluate(()=>{
+   const header=document.querySelector('header').getBoundingClientRect();
+   const theme=document.querySelector('#projection-theme').getBoundingClientRect();
+   const klass=document.querySelector('#header-class').getBoundingClientRect();
+   const button=document.querySelector('#load-real').getBoundingClientRect();
+   return {headerHeight:header.height,themeBottom:theme.bottom,classTop:klass.top,buttonTop:button.top,
+     scrollWidth:document.documentElement.scrollWidth};
+  });
+  assert.ok(compact.headerHeight>=70&&compact.classTop>=compact.themeBottom-4,'Repli responsive lisible');
+  assert.ok(compact.buttonTop<compact.classTop,'Actualisation reste dans la rangée des commandes');
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
+
+test('V2 — barre synchronisée : 20 secondes, clic manuel et pause des réglages',{timeout:65000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}}),state=sampleState([ADD,MUL],5);
+  await page.clock.install();
+  const {errors}=await openBoard(page,url,state);
+  const value=()=>page.locator('#projection-refresh-progress').getAttribute('aria-valuenow').then(Number);
+  assert.equal(state.loads,1);
+  assert.ok(await value()<=5,'Après le chargement, la barre redémarre vide');
+  await page.clock.fastForward(10500);
+  assert.ok((await value())>=45,'À mi-cycle, la barre est remplie à moitié');
+  assert.equal(state.loads,1,'Aucun appel avant 20 secondes');
+  await page.locator('#load-real').click();
+  await page.waitForFunction(()=>document.querySelector('#projection-refresh-progress').getAttribute('aria-valuenow')==='0');
+  assert.equal(state.loads,2,'Clic manuel fait une vraie lecture');
+  await page.clock.fastForward(21000);
+  await page.waitForFunction(()=>document.querySelector('#projection-refresh-progress').getAttribute('aria-valuenow')==='0');
+  assert.ok(state.loads>=3,'À 20 s, une lecture automatique est faite');
+  await page.clock.fastForward(7000);
+  const atPause=await value();
+  await page.locator('#settings-left').click();
+  assert.match(await page.locator('#projection-refresh-progress').getAttribute('aria-valuetext'),/suspendue/);
+  await page.clock.fastForward(30000);
+  assert.equal(await value(),atPause,'La barre conserve son avancement pendant le dialogue');
+  const pausedLoads=state.loads;
+  await page.locator('#close-settings').click();
+  await page.clock.fastForward(3000);
+  assert.equal(state.loads,pausedLoads,'La reprise ne provoque pas de MAJ immédiate');
+  await page.clock.fastForward(14000);
+  assert.ok(state.loads>pausedLoads,'La MAJ reprend selon le temps restant');
   assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
