@@ -42,6 +42,12 @@ iframe{display:block;flex:1 1 auto;width:100%;height:auto;min-height:0;border:0;
  const status=document.getElementById('state');
  const frame=document.getElementById('game');
  const xpPreviewMode=document.getElementById('xp-preview-mode');
+ const embeddedConnect=new URLSearchParams(location.search).get('connect')==='1';
+ if(embeddedConnect){
+   // Le bandeau du laboratoire et les XP fictifs sont absents dans Connect.
+   xpPreviewMode.value='free';
+   document.querySelector('body > header')?.remove();
+ }
  // Les chiffres ci-dessous sont des exemples visuels : ce prototype n'utilise
  // aucun compte Connect, aucun droit élève ni aucune requête de récompense XP.
  function renderConnectPreview(){
@@ -184,7 +190,18 @@ iframe{display:block;flex:1 1 auto;width:100%;height:auto;min-height:0;border:0;
      "}",
      "</style>",
    ].join('\n');
-   game=swap(game,'</body>',visualCss+'</body>','styles de fin');
+   const buttonRelief=[
+    '<style id="multiplication-controls-relief">',
+    '/* Effets uniquement : conserver strictement les fonds et dégradés du moteur. */',
+    '#menuScreen .classic-count-btn[data-count],#menuScreen #startTraining,#menuScreen #startSudden,#menuScreen #startThreeLives,#hardMenu .mlab-pair>button{position:relative!important;isolation:isolate;transition:transform .13s ease,filter .16s ease,box-shadow .16s ease!important;transform:translateY(0)}',
+    '#menuScreen .classic-count-btn[data-count]::before,#menuScreen #startTraining::before,#menuScreen #startSudden::before,#menuScreen #startThreeLives::before,#hardMenu .mlab-pair>button::before{content:"";position:absolute;left:8%;right:8%;top:5%;height:24%;border-radius:inherit;background:linear-gradient(180deg,rgba(255,255,255,.20),rgba(255,255,255,0));pointer-events:none;z-index:1}',
+    '@media(hover:hover) and (pointer:fine){#menuScreen .classic-count-btn[data-count]:not(:disabled):hover,#menuScreen #startTraining:not(:disabled):hover,#menuScreen #startSudden:not(:disabled):hover,#menuScreen #startThreeLives:not(:disabled):hover,#hardMenu .mlab-pair>button:not(:disabled):hover{transform:translateY(-2px)!important;filter:brightness(1.08) drop-shadow(0 5px 7px rgba(0,0,0,.25))!important}}',
+    '#menuScreen .classic-count-btn[data-count]:not(:disabled):active,#menuScreen #startTraining:not(:disabled):active,#menuScreen #startSudden:not(:disabled):active,#menuScreen #startThreeLives:not(:disabled):active,#hardMenu .mlab-pair>button:not(:disabled):active{transform:translateY(3px)!important;filter:brightness(.94)!important}',
+    '#menuScreen .classic-count-btn:disabled,#menuScreen #startSudden:disabled,#menuScreen #startThreeLives:disabled,#hardMenu .mlab-pair>button:disabled{cursor:not-allowed!important;filter:saturate(.5)!important;opacity:.48!important}',
+    '@media(prefers-reduced-motion:reduce){#menuScreen .classic-count-btn[data-count],#menuScreen #startTraining,#menuScreen #startSudden,#menuScreen #startThreeLives,#hardMenu .mlab-pair>button{transition:none!important}}',
+    '</style>'
+   ].join('\n');
+   game=swap(game,'</body>',visualCss+buttonRelief+'</body>','styles de fin');
 
    // Multiplication : patchs distincts du moteur Addition simple.
    game=swap(game,'<h3 class="mode-title">Mort subite</h3>',
