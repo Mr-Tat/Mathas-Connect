@@ -4,6 +4,7 @@ on:
     paths:
       - 'apps/multiplication-simple/certified-classic.mjs'
       - 'tests/multiplication-certified-keyboard.browser.mjs'
+      - 'tests/multiplication-native-presentation.browser.mjs'
       - '.github/workflows/multiplication-certified-browser.yml'
 permissions:
   contents: read
@@ -18,4 +19,4 @@ jobs:
           node-version: '22'
       - run: npm install --no-save --no-package-lock playwright@1.58.2
       - run: npx playwright install chromium --with-deps
-      - run: node --test tests/multiplication-certified-keyboard.browser.mjs
+      - run: node --test --test-concurrency=1 tests/multiplication-certified-keyboard.browser.mjs tests/multiplication-native-presentation.browser.mjs
