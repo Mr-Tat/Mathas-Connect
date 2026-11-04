@@ -38,7 +38,7 @@ test('Projection V2 : rafraîchissement toutes les 20 s, sans changement automat
  assert.match(js,/if\(ticket===refreshTicket&&connected&&hasLoaded\)startRefreshCycle\(\)/);
  assert.match(js,/function pauseRefreshCycle\(\)/);
  assert.match(js,/function resumeRefreshCycle\(\)/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-header-auto-progress-v1/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-names-and-headings-v1/);
  assert.match(html,/id="projection-refresh-progress"/);
  assert.match(html,/id="projection-refresh-fill"/);
  assert.match(html,/role="progressbar"/);
