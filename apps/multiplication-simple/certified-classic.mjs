@@ -134,7 +134,7 @@ export function createCertifiedMultiplicationClassic({
  documentRef=document,storage=localStorage,getContext,call,refresh,onVerified,notify
 }){
  const doc=documentRef;
- let run=null,queue=null,sending=false,activeInput=null,fields=[],carries=[];
+ let run=null,queue=null,sending=false,starting=false,requestSeq=0,activeInput=null,fields=[],carries=[];
  const root=doc.createElement('section');root.id='mathasMultiCertified';root.hidden=true;
  root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
  root.setAttribute('aria-label','Multiplication écrite certifiée');
@@ -159,7 +159,7 @@ export function createCertifiedMultiplicationClassic({
  const live=()=>run&&run.owner===current().studentId&&run.cls===current().classId;
  const show=s=>{status.textContent=s;notify?.(s)};
  function reset(){
-  run=null;queue=null;sending=false;root.hidden=true;board.replaceChildren();
+  requestSeq++;run=null;queue=null;sending=false;starting=false;root.hidden=true;board.replaceChildren();
  }
  function mountControls(){
   pad.replaceChildren();
@@ -215,8 +215,10 @@ export function createCertifiedMultiplicationClassic({
   top.textContent=carryOnTop?'Report au-dessus':'Report à côté : entre les retenues dans les petites cases.';
   top.className='mul-proof-note';
   board.replaceChildren(top,rows);
-  title.textContent='✖ Multiplication · Classique niveau '+run.level;
-  label.textContent='Calcul '+(index+1)+'/'+run.total+
+  const modeLabel=run.mode==='classic'?'Classique':run.mode==='three-lives'?'❤️ 3 vies':run.mode==='sudden'?'💀 Mort subite':run.mode==='hard-three-lives'?'🔥 HARD · 3 vies':'🔥 HARD · Mort subite';
+  const state=multiplicationEndState(run.mode,run.answers,run.questions);
+  title.textContent='✖ Multiplication · '+modeLabel+' · niveau '+run.level;
+  label.textContent='Calcul '+(index+1)+'/'+run.total+(run.mode==='classic'?'':' · Réussites : '+state.correct+' · Vies : '+state.lives)+
    ' · Tables '+run.multipliers.join(', ')+
    '. Écris tous les chiffres (de droite à gauche) et les retenues.';
   status.textContent='Premier essai : toutes les cases comptent dans la vérification.';
@@ -242,26 +244,29 @@ export function createCertifiedMultiplicationClassic({
   const correct=multiplicationAttemptCorrect(run.questions[answers.length-1],answer);
   const expected=(BigInt(run.questions[answers.length-1].a)*BigInt(run.questions[answers.length-1].m)).toString();
   show(correct?'✅ Calcul juste.':'❌ Première réponse incorrecte. Produit attendu : '+expected);
-  if(run.answers.length===run.total){run.finished=true;void finish();return}
+  const end=multiplicationEndState(run.mode,run.answers,run.questions);
+  if(!end.valid){show('⚠️ Preuve incohérente, aucun XP demandé.');return}
+  if(end.complete){run.finished=true;void finish();return}
   next.hidden=false;
  }
  async function finish(){
-  if(!live()||sending||!run||run.answers.length!==run.total)return;
+  if(!live()||sending||!run||!multiplicationEndState(run.mode,run.answers,run.questions).complete)return;
   const ticket=run;sending=true;verify.disabled=true;next.hidden=true;
   show('Validation des premières réponses et des reports par Connect…');
   try{
-   const ack=await call('finish-classic-v1',{sessionId:ticket.sessionId,answers:ticket.answers});
+   const ack=await call(ticket.mode==='classic'?'finish-classic-v1':'finish-extended-v1',
+    {sessionId:ticket.sessionId,answers:ticket.answers});
    if(!live()||run!==ticket)return;
-   const local=ticket.answers.filter((a,i)=>multiplicationAttemptCorrect(ticket.questions[i],a)).length;
+   const local=multiplicationEndState(ticket.mode,ticket.answers,ticket.questions).correct;
    if(ack?.proofVerified!==true||!isInt(ack.verifiedScore)||ack.verifiedScore!==local
     ||!isInt(ack.xp?.delta))throw Error('La certification du score ne correspond pas');
    queue?.clear();run=null;queue=null;board.replaceChildren();pad.replaceChildren();
    verify.hidden=true;next.hidden=true;
-   label.textContent='Série certifiée · '+local+'/'+ticket.total+
+   label.textContent='Série certifiée · '+local+'/'+ticket.answers.length+
     ' · '+(ack.duplicate?'Réception précédente confirmée':('+'+ack.xp.delta+' XP Connect'));
    show('✅ Score vérifié par le serveur. Tu peux fermer cette fenêtre.');
-   try{await refresh()}catch{show('✅ Résultat certifié ; réactualise les XP quand le réseau revient.')}
    try{onVerified?.({eventId:ticket.sessionId,ack})}catch{/* optional consent */}
+   try{await refresh()}catch{show('✅ Résultat certifié ; réactualise les XP quand le réseau revient.')}
   }catch(e){if(run===ticket){run.finished=true;
     show('⚠️ Preuve conservée. Clique « Réessayer la validation » : '+e.message);
     verify.textContent='Réessayer la validation';verify.disabled=false;verify.hidden=false;
