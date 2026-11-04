@@ -11,9 +11,9 @@ const source=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 test('unverified multiplication results never invite sharing to projection',()=>{
  const launcher=source('../apps/multiplication-simple/index.html');
  assert.match(launcher,/installMultiplicationSchoolUi/);
- assert.match(launcher,/action:'game-record'/);
- assert.doesNotMatch(launcher,/consent\?\.offer\(/);
- assert.doesNotMatch(launcher,/createProjectionConsent/);
+ assert.doesNotMatch(launcher,/action:'game-record'/);
+ assert.match(launcher,/certifiedConsent\?\.offer\(receipt\.eventId\)/);
+ assert.match(launcher,/createCertifiedMultiplicationClassic/);
 });
 
 test('correct per-app XP pools: no invented credits for a session',()=>{
