@@ -203,7 +203,7 @@ Deno.serve(async(req:Request)=>{
       .eq('class_id',b.classId).in('event_id',distinct(scoreEvents.map((e:any)=>e.event_id)))
       .limit(140)):[];
      const roster=(classes.find((c:any)=>c.classId===b.classId)?.students||[])
-      .map((s:any)=>({...s,projectionOptIn:profileMap.get(s.id)?.projection_opt_in===true}));
+      .map((s:any)=>({...s,projectionOptIn:(profileMap.get(s.id) as any)?.projection_opt_in===true}));
      exploits=buildProjectionExploits({classId:b.classId,roster,trophies,
       scoreEvents,consents,scorePeriods:periodRows,nowMs:Date.now()});
     }catch{exploitsStatus='unavailable';}
