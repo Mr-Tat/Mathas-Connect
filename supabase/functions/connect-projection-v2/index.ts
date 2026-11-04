@@ -87,11 +87,13 @@ Deno.serve(async(req:Request)=>{
    // indépendamment du mode Classique / 3 vies / Mort subite / HARD.
    const addition=['addition-ecrite-simple','addition-ecrite-multiple'].includes(b.appKey);
    const multiplication=b.appKey==='multiplication-ecrite-simple';
-   const certified=addition||multiplication;
+   const subtraction=b.appKey==='soustraction-ecrite-simple';
+   const certified=addition||multiplication||subtraction;
    if(b.action==='student-score-history'){
     if(!certified)return deny('unsupported_score_history',400);
     const {data,error}=await db.rpc(multiplication
      ?'connect_projection_mul_verified_summary_v1'
+     :subtraction?'connect_projection_sub_verified_summary_v1'
      :'connect_projection_addition_score_summary_v1',{
      p_student:studentId,p_class:b.classId,p_app:b.appKey
     });
@@ -104,6 +106,7 @@ Deno.serve(async(req:Request)=>{
     // Un ancien score, un score égal ou un événement non prouvé ne passent jamais.
     const {data,error}=await db.rpc(multiplication
      ?'connect_projection_mul_share_improved_v1'
+     :subtraction?'connect_projection_sub_share_improved_v1'
      :'connect_projection_share_improved_addition_v1',{
      p_student:studentId,p_class:b.classId,p_app:b.appKey,p_event:b.eventId
     });
