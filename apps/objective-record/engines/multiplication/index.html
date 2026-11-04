@@ -9589,7 +9589,24 @@ function countTrophyArrival(color){
 }
 
 function freshTrophies(){return {version:3,mastery:{4:[false,false,false],10:[false,false,false],20:[false,false,false]},sudden:[false,false,false],hardAwards:{bronze:[false,false,false],silver:[false,false,false],gold:[false,false,false]},scoreOne:{bronze:false,silver:false,gold:false},unlockedGold:false}}
+function certifiedConnect(){
+  try{const c=window.parent?.parent?.MathasConnectOfficialTrophies;
+    return c?.active&&c.appKey==='multiplication-ecrite-simple'?c:null;
+  }catch{return null}
+}
 function read(){
+  const connect=certifiedConnect();
+  if(connect){
+    let state={};try{state=window.parent.parent.MathasConnectOfficialState?.state||{}}catch{}
+    const currentDay=day(),today=state.todayBest?.day===currentDay?Number(state.todayBest.points):0;
+    const points=Number.isFinite(today)&&today>0?today:0;
+    const entry=points?{points,label:'Connect · score certifié',at:currentDay}:null;
+    const absolute=Number(state.bestPoints);
+    const bestOne=Number.isFinite(absolute)&&absolute>0
+      ?{points:absolute,label:'Connect · meilleur score',at:currentDay}:null;
+    return {day:currentDay,top:entry?[entry]:[],bestOne,
+      bestThree:bestOne?[bestOne]:[]};
+  }
   const raw=get(KEY);if(!raw||typeof raw!=='object'||raw.version!==1)return fresh();
   const obj={day:String(raw.day||''),top:Array.isArray(raw.top)?raw.top.slice(0,3):[],bestOne:raw.bestOne||null,bestThree:Array.isArray(raw.bestThree)?raw.bestThree.slice(0,3):[]};
   // Migration douce : record absolu déjà acquis ; anciens résultats du jour seulement.
@@ -9600,6 +9617,12 @@ function read(){
   return obj;
 }
 function readTrophies(){
+  const connect=certifiedConnect();
+  if(connect){
+    const valid=connect.rewards?.version===3&&Array.isArray(connect.rewards?.sudden);
+    document.documentElement.classList.toggle('mathas-connect-trophies-pending',!valid);
+    return valid?connect.rewards:freshTrophies();
+  }
   const base=freshTrophies();
   // Reprend les parties parfaites déjà réussies : pour chaque longueur, chaque niveau.
   const raw=get(TROPHY_KEY)||get(PREVIOUS_TROPHY_KEY)||get(LEGACY_TROPHY_KEY);
@@ -9897,6 +9920,8 @@ function updateTrophies(points,obj,trophiesBefore,allowScoreAwards=true){
   return gained;
 }
 function record(item){
+  // Aucun score natif ne peut créer une coupe ou une animation officielle.
+  if(certifiedConnect()){render();return}
   const scoring=scoresOn(),awards=trophiesOn();
   if(!scoring&&!awards)return;
   const points=parse(item);if(!points)return;
@@ -9936,7 +9961,7 @@ function record(item){
 // Un déblocage peut se produire après le résultat ou lors d'une migration de version.
 // On le détecte sans passer par les records de parties et sans dépendre du mode Master.
 function syncUnlockGold(){
-  if(!trophiesOn()||!allModesUnlocked())return;
+  if(certifiedConnect()||!trophiesOn()||!allModesUnlocked())return;
   const before=readTrophies();if(before.unlockedGold)return;
   const counts=trophyDisplayCounts(before),oldTotal=trophyTotal(before);
   before.unlockedGold=true;put(TROPHY_KEY,before);
@@ -10043,6 +10068,25 @@ makeUI();render();syncUnlockGold();setInterval(watch,650);document.addEventListe
  const rowClassic=Array.from({length:3},()=>({}));
  const rowSudden=Array(3).fill(null);
  function records(){
+   let connect=null;try{connect=window.parent?.parent?.MathasConnectOfficialState}catch{}
+   if(connect?.active&&connect.appKey==='multiplication-ecrite-simple'){
+     const state=connect.state||{},progress=state.progress||{};
+     const classics=Array.from({length:3},(_,i)=>{
+       const entry=state.classic?.[i]||{},row={};
+       for(const total of counts){const n=Number(entry[String(total)]);
+         if(entry[String(total)]!=null&&Number.isInteger(n)&&n>=0&&n<=total)row[total]=n;}
+       return row;
+     });
+     const suddens=Array.from({length:3},(_,i)=>{
+       const value=state.sudden?.[i],n=Number(value);
+       return value!=null&&Number.isInteger(n)&&n>=0?n:null;
+     });
+     const hardRows=Array.from({length:3},(_,i)=>({level:i+1,
+       score:Number(state.hard?.[i])})).filter(x=>Number.isInteger(x.score)&&x.score>0);
+     return {classics,suddens,hardRows,
+       visibleLevels:[true,!!(progress.level2||progress.level3),!!progress.level3],
+       hardUnlocked:!!(progress.hard||hardRows.length)};
+   }
    const classic=read(classKey)||{},sudden=read(suddenKey)||{},hard=read(hardKey)||{};
    const master=read(trophyKey)||read('mathas_trophies_v2_'+appId)||read('mathas_trophies_v1_'+appId)||{};
    const classics=Array.from({length:3},()=>({})),suddens=Array(3).fill(null),hardRows=[];
@@ -12401,3 +12445,5 @@ html.mathas-handheld-portrait #menuScreen .mode-card.sudden .mode-desc {
   line-height:1.32!important;
 }
 </style>
+
+<style id="mathas-connect-trophy-pending-style">html.mathas-connect-trophies-pending #mathasTrophiesStrip,html.mathas-connect-trophies-pending #mathasTrophiesPopover{display:none!important}</style>
