@@ -1,6 +1,7 @@
 // Production addition games: the native menu is the entry point to the
 // SAME server-issued arithmetic proofs. This module never grants XP itself.
-const APPS=new Set(['addition-ecrite-simple','addition-ecrite-multiple']);
+const MULTIPLICATION_APP='multiplication-ecrite-simple';
+const APPS=new Set(['addition-ecrite-simple','addition-ecrite-multiple',MULTIPLICATION_APP]);
 const CLASSIC={4:[['perfect',22]],10:[['pass',30],['bonus',6]],20:[['pass',50],['bonus',10]]};
 const OTHER={sudden:[[5,10],[10,10]],hard:[[3,10],[7,10]]};
 function nativeLevel(select,fallback=1){
@@ -20,9 +21,13 @@ export function classifyNativeLaunch(button,doc,appKey){
  // caché : chaque clic visible doit obtenir une preuve Connect, jamais un
  // résultat libre pris pour un résultat scolaire.
  if(APPS.has(appKey)&&button.matches('.classic-count-btn[data-count]')){
-  const total=Number(button.dataset.count),level=nativeLevel(doc.getElementById('classicMaxDigits'));
+  const total=Number(button.dataset.count),level=nativeLevel(doc.getElementById(
+   appKey===MULTIPLICATION_APP?'classicLevel':'classicMaxDigits'));
   return [4,10,20].includes(total)?{mode:'classic',level,total}:null;
  }
+ // Les autres modes Multiplication restent libres tant que leur barème
+ // complémentaire 3 vies / Mort subite n'est pas certifié de bout en bout.
+ if(appKey===MULTIPLICATION_APP)return null;
  if(button.id==='startClassic'){
   const count=Number(doc.querySelector('#menuScreen .classic-count-btn.active')?.dataset.count||10);
   const level=nativeLevel(doc.getElementById('classicMaxDigits'));
@@ -168,12 +173,13 @@ export function renderNativeOfficialXp(doc,appKey,xp){
   `;
   doc.head.append(css);
  }
- const classicLevel=nativeLevel(doc.getElementById('classicMaxDigits'));
+ const classicLevel=nativeLevel(doc.getElementById(appKey===MULTIPLICATION_APP?'classicLevel':'classicMaxDigits'));
  for(const button of doc.querySelectorAll('#menuScreen .classic-count-btn[data-count]')){
   const total=Number(button.dataset.count);
   applyBadge(button,xpStillAvailable(xp,'classic',classicLevel,total),
    'XP officiels encore accessibles pour cette série');
  }
+ if(appKey===MULTIPLICATION_APP)return; // Ne pas afficher d'XP de survie fictifs.
  const lifeLevel=nativeLevel(doc.getElementById('suddenMaxDigits'));
  applyBadge(doc.getElementById('startThreeLives'),xpStillAvailable(xp,'three-lives',lifeLevel),
   '3 vies : jusqu’à la moitié des XP des paliers 5 et 10 réussites');
