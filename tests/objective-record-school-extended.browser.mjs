@@ -108,6 +108,10 @@ for(const item of examples){
        globalX:o.left+i.left+cx,globalY:o.top+i.top+cy,hostHit:hit?.id,
        innerHit:inside===el||el.contains(inside),href:el.getAttribute('href')};
      });
+     const launch=doc.querySelector('#menuScreen > .mathas-menu-zone-launch');
+     const tensOption=doc.querySelector('#menuScreen > .mathas-addition-secondary-setting');
+     const launchRect=launch.getBoundingClientRect(),tensRect=tensOption.getBoundingClientRect();
+     const launchMargin=parseFloat(doc.defaultView.getComputedStyle(launch).marginBottom);
      const card=doc.querySelector('#menuScreen .mode-card.sudden');
      const profile=doc.getElementById('mathas-native-connect-profile');
      const xpButton=doc.getElementById('mathas-native-connect-xp');
@@ -120,6 +124,8 @@ for(const item of examples){
      const logoRect=logo.getBoundingClientRect();
      const pr=profile.getBoundingClientRect(), xr=xpButton.getBoundingClientRect();
      return {viewportWidth,points,
+      launchBottomMargin:launchMargin,launchToTensGap:tensRect.top-launchRect.bottom,
+      tensOptionVisible:tensRect.width>0&&tensRect.height>0,
       profileText:profile.textContent.trim(),profileVisible:pr.width>0&&pr.height>0,
       profileInHeader:row.contains(profile),profileRight:pr.right,profileLeft:pr.left,
       profileTop:pr.top,logoRight:logoRect.right,logoTop:logoRect.top,
@@ -138,6 +144,12 @@ for(const item of examples){
       titleHasCup:!!card.querySelector('.mode-title .score-mode-cup'),
       skullInsideButton:!!card.querySelector('#startSudden .score-mode-icon')};
     },viewportWidth);
+    assert.ok(layout.launchBottomMargin<=12,
+     'l ancienne marge de 72/52px est supprimée : '+JSON.stringify(layout));
+    assert.ok(layout.launchToTensGap>=-1&&layout.launchToTensGap<=20,
+     'pas de bande vide entre Lance-toi et le réglage dizaines : '+JSON.stringify(layout));
+    assert.equal(layout.tensOptionVisible,true,
+     'le réglage pédagogique dizaines reste présent : '+JSON.stringify(layout));
     assert.equal(layout.icon,'👑',JSON.stringify(layout));
     assert.equal(layout.title,'Objectif record',JSON.stringify(layout));
     assert.equal(layout.description,'Pour marquer un plus gros score !',JSON.stringify(layout));

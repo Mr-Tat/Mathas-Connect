@@ -36,6 +36,10 @@ test('deux additions : Objectif record garde son sous-titre et sa couronne ; com
    'apps/objective-record/engines/addition-multiple/essai-objectif-record-3-vies.html']){
   const source=read(file);
   assert.match(source,/Pour marquer un plus gros score !/);
+  assert.match(source,/html body #menuScreen\.menu-panel > \.mathas-menu-zone-launch\{margin-bottom:10px!important\}/,
+    'la marge vide de 72px entre les cartes et Écrire les dizaines d abord disparaît sur PC');
+  assert.match(source,/@media\(max-width:980px\)\{html body #menuScreen\.menu-panel > \.mathas-menu-zone-launch\{margin-bottom:8px!important\}\}/,
+    'aucun grand vide entre les cartes et le réglage sur mobile');
   assert.match(source,/mode-icon" aria-hidden="true">👑/);
    assert.doesNotMatch(source,/3 erreurs possibles/,'pas de détail d’erreurs dans le bouton');
    assert.match(source,/Moitié des XP/,'étiquette 3-vies présente');
