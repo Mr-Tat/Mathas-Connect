@@ -125,6 +125,8 @@ const CSS=[
  '#mathasMultiCertified .mul-proof-side-carries{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}',
  '#mathasMultiCertified .mul-proof-side-carries label{display:flex;align-items:center;gap:5px;font:700 12px system-ui;color:#ffdf9e}',
  '#mathasMultiCertified .mul-proof-actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}',
+ '#mathasMultiCertified .mul-proof-tens-switch{display:inline-flex;align-items:center;gap:6px;border:1px solid #6a91a6;border-radius:9px;padding:6px 9px;font:700 12px system-ui;cursor:pointer}',
+ '#mathasMultiCertified .mul-proof-tens-switch input{width:17px;height:17px;accent-color:#168ada}',
  '#mathasMultiCertified #mulProofVerify{background:#1b7157}',
  '@media(max-width:500px){#mathasMultiCertified{inset:2vh 2vw;padding:9px}',
  '#mathasMultiCertified .mul-proof-grid{gap:2px}',
@@ -133,7 +135,8 @@ const CSS=[
 ].join('\n');
 
 export function createCertifiedMultiplicationClassic({
- documentRef=document,storage=localStorage,getContext,call,refresh,onVerified,notify
+ documentRef=document,storage=localStorage,getContext,call,refresh,onVerified,notify,
+ onTensFirstChanged=()=>{}
 }){
  const doc=documentRef;
  let run=null,queue=null,sending=false,starting=false,requestSeq=0,activeInput=null,fields=[],carries=[];
@@ -147,7 +150,13 @@ export function createCertifiedMultiplicationClassic({
  actions.className='mul-proof-actions';board.className='mul-proof-board';
  const header=doc.createElement('div');header.className='mul-proof-bar';
  const close=doc.createElement('button');close.type='button';close.textContent='Fermer';
- header.append(title,close);
+ const tensLabel=doc.createElement('label');tensLabel.className='mul-proof-tens-switch';
+ const tensInput=doc.createElement('input');tensInput.type='checkbox';
+ tensInput.id='mathasMultiCertifiedTensFirst';
+ tensInput.setAttribute('aria-label','Écrire les dizaines avant les unités pendant la partie certifiée');
+ const tensText=doc.createElement('span');tensText.textContent='Dizaines d’abord';
+ tensLabel.htmlFor=tensInput.id;tensLabel.append(tensInput,tensText);
+ header.append(title,tensLabel,close);
  const verify=doc.createElement('button');verify.type='button';verify.id='mulProofVerify';
  verify.textContent='Vérifier ce calcul';
  const next=doc.createElement('button');next.type='button';next.textContent='Calcul suivant';next.hidden=true;
@@ -162,6 +171,7 @@ export function createCertifiedMultiplicationClassic({
  const show=s=>{status.textContent=s;notify?.(s)};
  function reset(){
   requestSeq++;run=null;queue=null;sending=false;starting=false;root.hidden=true;board.replaceChildren();
+  tensInput.checked=false;
  }
  function mountControls(){
   pad.replaceChildren();
@@ -250,6 +260,7 @@ export function createCertifiedMultiplicationClassic({
    ' · Tables '+run.multipliers.join(', ')+
    '. Écris tous les chiffres (de droite à gauche) et les retenues.';
   status.textContent='Premier essai : toutes les cases comptent dans la vérification.';
+  tensInput.checked=!!run.tensFirst;
   verify.disabled=false;verify.hidden=false;next.hidden=true;
   const power=10n;
   const needsCarry=Number((BigInt(q.a)%power*BigInt(q.m))/power)>0;
@@ -326,6 +337,7 @@ export function createCertifiedMultiplicationClassic({
      saved=previous.answers;
    run={...parsed,mode,owner:ctx.studentId,cls:ctx.classId,multipliers:selected,
     method,tensFirst,answers:saved,finished:false};
+   tensInput.checked=!!tensFirst;
    if(!queue.save(run,run.answers))throw Error('Sauvegarde du défi impossible');
    mountControls();
    const state=multiplicationEndState(mode,run.answers,run.questions);
@@ -337,6 +349,15 @@ export function createCertifiedMultiplicationClassic({
    run=null;queue=null;verify.hidden=true;next.hidden=true;return false;
   }finally{starting=false}
  }
+ tensInput.addEventListener('change',()=>{
+  if(!live()||run.finished||sending||starting){tensInput.checked=!!run?.tensFirst;return}
+  // Seule la navigation des prochaines entrées change. Ne pas rendre à nouveau
+  // la grille ni effacer les chiffres/reports de la multiplication en cours.
+  run.tensFirst=!!tensInput.checked;
+  onTensFirstChanged(run.tensFirst);
+  const note=run.tensFirst?'Report d’abord, puis unités.':'Unités d’abord, puis report.';
+  show('Ordre de saisie modifié : '+note+' Réponses conservées.');
+ });
  verify.addEventListener('click',()=>{if(run?.finished)void finish();else validate()});
  next.addEventListener('click',()=>{if(run&&!run.finished)render()});
  close.addEventListener('click',()=>{if(sending)return;requestSeq++;root.hidden=true;run=null;queue=null;
