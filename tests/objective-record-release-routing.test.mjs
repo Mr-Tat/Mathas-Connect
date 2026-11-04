@@ -21,10 +21,13 @@ test('three independent conditions must be true before future student launch',()
  for(const gate of Object.keys(all))
   assert.equal(schoolRecordLaunch({classId:c,appKey:a,legacyUrl:'old',rollout:{...all,[gate]:false}}),'old');
 });
-test('school HUB uses guarded links; TEST uses the canonical school host',()=>{
+test('school HUB uses guarded links; TEST multiplication uses certified V7 while others keep common host',()=>{
  const hub=readFileSync(new URL('../hub.js',import.meta.url),'utf8');
  assert.match(hub,/schoolRecordLaunch\(\{classId,appKey:app\.app_key,legacyUrl:app\.launch_url\}\)/);
- assert.match(hub,/testSlug=classId===LAB_CLASS\?recordSlugByApp\[app\.app_key\]:null/);
+ assert.match(hub,/testMultiplication=classId===LAB_CLASS&&app\.app_key==='multiplication-ecrite-simple'/);
+ assert.match(hub,/testSlug=classId===LAB_CLASS&&!testMultiplication\?recordSlugByApp\[app\.app_key\]:null/);
+ assert.match(hub,/testMultiplication\?'\.\/apps\/multiplication-simple\/'/);
+ assert.match(hub,/target\.searchParams\.set\('requireConnect','1'\)/);
  assert.match(hub,/testSlug\?SCHOOL_RECORD_LAUNCHER/);
  assert.doesNotMatch(hub,/essais\/objectif-record-pilote\.html/);
 });

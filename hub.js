@@ -57,12 +57,17 @@ function refreshCardProgress(){
 }
 function card(app) {
   const node = $('appTemplate').content.firstElementChild.cloneNode(true);
-  const testSlug=classId===LAB_CLASS?recordSlugByApp[app.app_key]:null;
-  const target = new URL(testSlug?SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(testSlug):
+  // En TEST, Multiplication utilise déjà son vrai moteur V7 certifié :
+  // ne pas la renvoyer vers l'ancien hôte Objectif record des autres jeux.
+  const testMultiplication=classId===LAB_CLASS&&app.app_key==='multiplication-ecrite-simple';
+  const testSlug=classId===LAB_CLASS&&!testMultiplication?recordSlugByApp[app.app_key]:null;
+  const target = new URL(testMultiplication?'./apps/multiplication-simple/':
+    testSlug?SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(testSlug):
     schoolAdditionsLaunch({classId,appKey:app.app_key,legacyUrl:
       schoolRecordLaunch({classId,appKey:app.app_key,legacyUrl:app.launch_url})}),location.href);
   // Le HUB fournit la classe au jeu Connect ; les autorisations restent vérifiées côté serveur.
   if (classId && target.origin === location.origin) target.searchParams.set('class', classId);
+  if(testMultiplication && target.origin===location.origin)target.searchParams.set('requireConnect','1');
    if (playingAsTeacher && ['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
   node.href = target.href;
   if(testSlug)node.dataset.labSchool=testSlug;
@@ -71,7 +76,8 @@ function card(app) {
   node.rel = 'noopener noreferrer';
   node.querySelector('.app-name').textContent = app.title;
   node.querySelector('.app-initial').textContent = app.title.charAt(0).toUpperCase();
-  node.querySelector('.app-scores').textContent = testSlug?(app.app_key==='addition-ecrite-multiple'?'🧪 TEST · XP Connect en Classique / Mort subite':'🧪 TEST · nouveaux modes XP en préparation'):progressText(app.app_key);
+  node.querySelector('.app-scores').textContent = testMultiplication?'🧪 TEST · vrais XP et trophées Connect (connexion obligatoire)':
+    testSlug?(app.app_key==='addition-ecrite-multiple'?'🧪 TEST · XP Connect en Classique / Mort subite':'🧪 TEST · nouveaux modes XP en préparation'):progressText(app.app_key);
   if (app.image_url && !app.image_url.includes('jftzuslpelgzbdrftszw')) {
     const img = document.createElement('img');
     // Un numéro de version uniquement pour les deux miniatures approuvées évite

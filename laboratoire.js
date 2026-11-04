@@ -72,13 +72,19 @@ const results=(action,data={})=>{guard();return rpc('connect-results',action,{cl
 async function run(fn){try{await fn()}catch(e){display('Laboratoire : '+(e.message||e),true)}}
 function linkFor(app,prof=false){
  const testSlug=recordSlugByApp[app.app_key];
- const href=testSlug?SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(testSlug):
+ // L'ancien lanceur « Objectif record » n'est PAS la multiplication certifiée.
+ // Tests en ligne doit ouvrir le jeu V7 intégré et sa preuve Connect dédiée.
+ const href=app.app_key==='multiplication-ecrite-simple'?'./apps/multiplication-simple/':
+   testSlug?SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(testSlug):
    app.app_key==='abaque-longueurs'?ABAQUE_ONLINE_APP.launch_url:(app.launch_url||app.url);
  if(!href)return null;
  let url;try{url=new URL(href,location.href)}catch{return null}
  if(url.protocol!=='https:'&&url.protocol!=='http:')return null;
  if(url.origin===location.origin){
    url.searchParams.set('class',TEST_CLASS);
+   // Le test en ligne Multiplication exige une vraie session Connect fictive.
+   // Sans elle, ne jamais montrer un 4/4 libre comme s'il apportait des XP.
+   if(app.app_key==='multiplication-ecrite-simple')url.searchParams.set('requireConnect','1');
    if(prof&&teacherGameKeys.includes(app.app_key))url.searchParams.set('joueur','prof');
  }
  return url.href;
@@ -251,6 +257,9 @@ async function loadApps(){
        finally{checkbox.disabled=false}
      });
      card.append(el('p',recordSlugByApp[app.app_key]?(app.app_key==='addition-ecrite-multiple'?'Nouvelle version · vrais XP Connect en Classique et Mort subite (TEST uniquement).':'Nouvelle version · vrais XP du profil consultables ; attribution pour les nouveaux modes encore en préparation.'):'Application Connect · affichage limité à la classe TEST.','muted tiny'));
+   }
+   if(app.app_key==='multiplication-ecrite-simple'){
+     card.append(el('p','Pour obtenir de vrais XP et proposer un score au tableau : ouvre d’abord « Se connecter avec ce profil » sur un appareil élève fictif TEST approuvé, puis lance ce test dans le même navigateur. Sinon, le jeu refusera de démarrer en mode libre.','muted tiny'));
    }
    const buttons=el('div','','actions');
    // Garder les boutons de test existants ; seule la case Afficher dépend

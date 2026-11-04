@@ -87,7 +87,7 @@ async function connectedPage(teacher=false,failFirstFinish=false){
   await route.fulfill({status,contentType:'application/json',body:JSON.stringify(response)});
  });
  page.on('pageerror',error=>{context.error=String(error.message)});
- const suffix='?class='+CLS+(teacher?'&joueur=prof':'');
+ const suffix='?class='+CLS+'&requireConnect=1'+(teacher?'&joueur=prof':'');
  await page.goto(origin+'/apps/multiplication-simple/'+suffix,{waitUntil:'domcontentloaded'});
  await page.locator('iframe').waitFor({state:'attached',timeout:18000});
  await page.frameLocator('iframe').locator('#menuScreen').waitFor({state:'attached'});
@@ -110,6 +110,34 @@ async function playFour(page){
 }
 
 try{
+ await test('TEST en ligne: refuse a silently free 4/4 without approved Connect session, including legacy free-mode flag',async()=>{
+  const page=await browser.newPage({viewport:{width:390,height:820}});
+  const edgeCalls=[];
+  try{
+   await page.addInitScript(()=>localStorage.setItem('mathas.connect.mode-libre.v1','1'));
+   await page.route('https://esm.sh/**',route=>route.fulfill({
+    status:200,contentType:'application/javascript',
+    body:'export function createClient(){return {auth:{getSession:async()=>({data:{session:null}})}}}'
+   }));
+   await page.route('https://awmhpfofacaglewammxt.supabase.co/functions/v1/**',route=>{
+    edgeCalls.push(route.request().url());
+    return route.fulfill({status:401,contentType:'application/json',
+     body:JSON.stringify({ok:false,error:'auth_required'})});
+   });
+   await page.goto(origin+'/apps/multiplication-simple/?class='+CLS+'&requireConnect=1',
+    {waitUntil:'domcontentloaded'});
+   await page.getByText('Connexion Connect obligatoire pour ce test en ligne',{exact:false})
+    .waitFor({timeout:12000});
+   assert.equal(await page.locator('iframe').count(),0,'aucune partie libre ne peut démarrer');
+   assert.equal(await page.getByRole('button',{name:'Jouer sans synchronisation'}).count(),0,
+    'pas de bouton pour contourner le mode scolaire certifié');
+   const signIn=page.getByRole('link',{name:'Se connecter avec un élève fictif TEST'});
+   await signIn.waitFor({timeout:12000});
+   assert.equal(await signIn.count(),1);
+   assert.match(await signIn.getAttribute('href'),/lab=1/);
+   assert.deepEqual(edgeCalls,[],'aucun appel XP/projection sans élève Connect');
+  }finally{await page.close()}
+ });
  await test('TEST student: native button -> challenge -> server receipt -> XP & reload',async()=>{
   const {page,proofCalls,projectionCalls,calls}=await connectedPage();
   try{
