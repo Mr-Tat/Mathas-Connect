@@ -221,7 +221,7 @@ for(const item of examples){
    assert.ok(schoolLayout.right>=-1&&schoolLayout.right<=18,JSON.stringify(schoolLayout));
    assert.equal(schoolLayout.redName,'Mort subite');
    assert.equal(schoolLayout.threeName,'3 vies');
-   assert.equal(schoolLayout.threeLabel,'3 erreurs possibles');
+   assert.equal(schoolLayout.threeLabel,undefined,'aucun sous-libellé 3 erreurs possibles');
    assert.equal(schoolLayout.titleRows,2,'normal 3 vies and Mort subite share icon/title layout');
    assert.doesNotMatch(schoolLayout.redText,/Lancer la mort subite/i);
    assert.equal(schoolLayout.hardLocked,item.slug==='addition-simple',
