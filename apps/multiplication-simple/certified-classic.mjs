@@ -183,7 +183,23 @@ export function createCertifiedMultiplicationClassic({
   input.setAttribute('aria-label',kind==='carry'?'Report vers la colonne '+(col+1)
    :'Chiffre du produit, colonne '+(col+1));
   input.addEventListener('focus',()=>{activeInput=input});
-  input.addEventListener('input',()=>{input.value=input.value.replace(/[^0-9]/g,'').slice(-1)});
+  input.addEventListener('input',()=>{
+   input.value=input.value.replace(/[^0-9]/g,'').slice(-1);
+   if(!input.value||!live())return;
+   const q=run.questions[run.answers.length];
+   const carryExpected=j=>j>0&&j<q.a.length
+    &&(BigInt(q.a)%(10n**BigInt(j))*BigInt(q.m))/(10n**BigInt(j))>0n;
+   let target=null;
+   if(kind==='carry')target=run.tensFirst?fields[col-1]:fields[col];
+   else if(run.tensFirst){
+    const next=col+2;
+    target=carryExpected(next)&&!carries[next]?.value?carries[next]:fields[col+1];
+   }else{
+    const next=col+1;
+    target=carryExpected(next)&&!carries[next]?.value?carries[next]:fields[next];
+   }
+   if(target&&!target.disabled)target.focus({preventScroll:true});
+  });
   input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();verify.click()}});
   return input;
  }
