@@ -25,9 +25,20 @@ export function classifyNativeLaunch(button,doc,appKey){
    appKey===MULTIPLICATION_APP?'classicLevel':'classicMaxDigits'));
   return [4,10,20].includes(total)?{mode:'classic',level,total}:null;
  }
- // Les autres modes Multiplication restent libres tant que leur barème
- // complémentaire 3 vies / Mort subite n'est pas certifié de bout en bout.
- if(appKey===MULTIPLICATION_APP)return null;
+ // Multiplication utilise exactement les commandes originales de son jeu,
+ // plus les commandes '3 vies' ajoutées dans l'intégration native.
+ if(appKey===MULTIPLICATION_APP){
+  if(button.id==='startThreeLives'||button.id==='startSudden')
+   return {mode:button.id==='startThreeLives'?'three-lives':'sudden',
+    level:nativeLevel(doc.getElementById('suddenLevel'))};
+  if(button.closest('#hardMenu')&&button.matches('.mlab-three,.hard-start,.hard-sudden,.hard-three')){
+   const raw=button.dataset.mode||(button.matches('.mlab-three,.hard-three')?'three-lives':'sudden');
+   const level=hardLevel(button);
+   return [1,2,3].includes(level)&&['sudden','three-lives'].includes(raw)
+    ?{mode:'hard-'+raw,level}:null;
+  }
+  return null;
+ }
  if(button.id==='startClassic'){
   const count=Number(doc.querySelector('#menuScreen .classic-count-btn.active')?.dataset.count||10);
   const level=nativeLevel(doc.getElementById('classicMaxDigits'));
@@ -179,8 +190,7 @@ export function renderNativeOfficialXp(doc,appKey,xp){
   applyBadge(button,xpStillAvailable(xp,'classic',classicLevel,total),
    'XP officiels encore accessibles pour cette série');
  }
- if(appKey===MULTIPLICATION_APP)return; // Ne pas afficher d'XP de survie fictifs.
- const lifeLevel=nativeLevel(doc.getElementById('suddenMaxDigits'));
+ const lifeLevel=nativeLevel(doc.getElementById(appKey===MULTIPLICATION_APP?'suddenLevel':'suddenMaxDigits'));
  applyBadge(doc.getElementById('startThreeLives'),xpStillAvailable(xp,'three-lives',lifeLevel),
   '3 vies : jusqu’à la moitié des XP des paliers 5 et 10 réussites');
  applyBadge(doc.getElementById('startSudden'),xpStillAvailable(xp,'sudden',lifeLevel),
