@@ -48,3 +48,20 @@ test('school hide during a session prevents new challenges but not proven finish
  assert.match(edge,/const start=classicStart\|\|extendedStart,finish=classicFinish\|\|extendedFinish/);
  assert.match(edge,/if\(start&&cls!==MULTIPLICATION_TEST_CLASS\)/);
 });
+
+
+test('official school Multiplication links use certified native launcher, with explicit Connect in school mode',()=>{
+ const hub=readFileSync(new URL('../hub.js',import.meta.url),'utf8');
+ const launcher=readFileSync(new URL('../apps/multiplication-simple/index.html',import.meta.url),'utf8');
+ assert.match(hub,/SCHOOL_CLASS_IDS\.includes\(classId\)&&app\.app_key==='multiplication-ecrite-simple'/);
+ assert.match(hub,/schoolMultiplication\?'\.\/apps\/multiplication-simple\/'/);
+ assert.match(hub,/schoolMultiplication && !inFreeMode\(\) && target\.origin===location\.origin/);
+ assert.match(hub,/if\(testMultiplication && target\.origin===location\.origin\)/);
+ assert.match(hub,/target\.searchParams\.set\('requireConnect','1'\)/);
+ assert.match(launcher,/const isTestClass=classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'/);
+ assert.match(launcher,/Connexion Connect obligatoire pour les résultats officiels de multiplication/);
+ assert.match(launcher,/Se connecter à ma classe/);
+ assert.match(launcher,/if\(isTestClass\)\{/);
+ assert.match(launcher,/target\.searchParams\.set\('lab','1'\)/);
+ assert.match(launcher,/connectionCheckRequired\|\|teacherPlayer\|\|requireConnect/);
+});

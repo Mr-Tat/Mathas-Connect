@@ -30,7 +30,7 @@ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const origin='http://127.0.0.1:'+server.address().port;
 const browser=await chromium.launch({headless:true});
 
-async function connectedPage(teacher=false,failFirstFinish=false){
+async function connectedPage(teacher=false,failFirstFinish=false,cls=CLS){
  const page=await browser.newPage({viewport:{width:390,height:820}});
  const calls=[],proofCalls=[],projectionCalls=[];
  let state=null,firstFinishFails=failFirstFinish;
@@ -45,10 +45,13 @@ async function connectedPage(teacher=false,failFirstFinish=false){
   const url=route.request().url();
   const b=route.request().postDataJSON();
   calls.push({url:url.split('/').at(-1),action:b?.action});
+  if(['student-me','teacher-player','student-load','student-xp',
+   'start-classic-v1','finish-classic-v1','student-share-score'].includes(b?.action))
+   assert.equal(b.classId,cls,'La classe est liée au contexte Connect.');
   let response={ok:false,error:'unexpected_action'},status=200;
   if(url.endsWith('/connect-api')){
    assert.equal(b.action,teacher?'teacher-player':'student-me');
-   response={ok:true,status:'approved',classId:CLS,displayName:teacher?'Monsieur T · TEST':'Élève fictif · TEST'};
+   response={ok:true,status:'approved',classId:cls,displayName:teacher?'Monsieur T · navigateur':'Élève fictif · navigateur'};
   }else if(url.endsWith('/connect-results')){
    if(b.action==='student-load')
     response={ok:true,revision:state?1:0,resetEpoch:0,state,multiplierLock:[9]};
@@ -87,7 +90,7 @@ async function connectedPage(teacher=false,failFirstFinish=false){
   await route.fulfill({status,contentType:'application/json',body:JSON.stringify(response)});
  });
  page.on('pageerror',error=>{context.error=String(error.message)});
- const suffix='?class='+CLS+'&requireConnect=1'+(teacher?'&joueur=prof':'');
+ const suffix='?class='+cls+'&requireConnect=1'+(teacher?'&joueur=prof':'');
  await page.goto(origin+'/apps/multiplication-simple/'+suffix,{waitUntil:'domcontentloaded'});
  await page.locator('iframe').waitFor({state:'attached',timeout:18000});
  await page.frameLocator('iframe').locator('#menuScreen').waitFor({state:'attached'});
@@ -138,6 +141,58 @@ try{
    assert.deepEqual(edgeCalls,[],'aucun appel XP/projection sans élève Connect');
   }finally{await page.close()}
  });
+
+ await test('OFFICIEL: an unapproved school pupil sees a real-class login, never a fictitious TEST link or free 4/4',async()=>{
+  const school='71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e';
+  const page=await browser.newPage({viewport:{width:390,height:820}});
+  try{
+   await page.addInitScript(()=>localStorage.setItem('mathas.connect.mode-libre.v1','1'));
+   await page.route('https://esm.sh/**',route=>route.fulfill({
+    status:200,contentType:'application/javascript',
+    body:'export function createClient(){return {auth:{getSession:async()=>({data:{session:null}})}}}'
+   }));
+   await page.goto(origin+'/apps/multiplication-simple/?class='+school+'&requireConnect=1',
+    {waitUntil:'domcontentloaded'});
+   await page.getByText('Connexion Connect obligatoire pour les résultats officiels de multiplication',{exact:false})
+    .waitFor({timeout:15000});
+   assert.equal(await page.locator('iframe').count(),0,'no pupil can earn an unverified school score');
+   const login=page.getByRole('link',{name:'Se connecter à ma classe'});
+   await login.waitFor();
+   const href=new URL(await login.getAttribute('href'));
+   assert.equal(href.searchParams.get('class'),school);
+   assert.equal(href.searchParams.has('lab'),false,'school pupils are never sent into the fictitious LAB');
+   assert.equal(href.searchParams.has('name'),false,'a school launch never calls itself TEST');
+   assert.equal(await page.getByRole('button',{name:'Jouer sans synchronisation'}).count(),0);
+  }finally{await page.close()}
+ });
+ await test('OFFICIEL: actual school launcher -> four products -> certified receipt -> XP and opt-in projection',async()=>{
+  const school='71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e';
+  const {page,proofCalls,projectionCalls,calls}=await connectedPage(false,false,school);
+  try{
+   assert.equal(await page.evaluate(()=>window.MathasPilotBridge?.mode),'connected');
+   await playFour(page);
+   assert.deepEqual(proofCalls.map(x=>x.action),['start-classic-v1','finish-classic-v1']);
+   assert.ok(calls.some(x=>x.action==='student-xp'));
+   await page.waitForFunction(()=>
+    document.getElementById('xp-earned-total')?.textContent?.includes('22'),null,{timeout:11000});
+   const consent=page.locator('.mathas-projection-offer:not([hidden])');
+   await consent.waitFor({timeout:9000});
+   assert.equal(projectionCalls.length,0);
+   await consent.getByRole('button',{name:'Oui, envoyer'}).click();
+   await page.waitForFunction((school)=>window.localStorage.getItem(
+    'mathas.projection-consents.'+school+'.multiplication-ecrite-simple.'+
+     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.v1')==='[]',school,{timeout:9000});
+   assert.equal(projectionCalls.length,1);
+   assert.equal(projectionCalls[0].classId,school);
+   assert.equal(projectionCalls[0].eventId,EVENT);
+   assert.equal(projectionCalls[0].appKey,'multiplication-ecrite-simple');
+   await page.reload({waitUntil:'domcontentloaded'});
+   const scores=page.frameLocator('iframe').locator('#mathasPointsQuick [data-points="daily"]');
+   await scores.waitFor({timeout:20000});
+   assert.match(await scores.innerText(),/16/,'the certified daily record is restored by Connect');
+  }finally{await page.close()}
+ });
+
  await test('TEST student: native button -> challenge -> server receipt -> XP & reload',async()=>{
   const {page,proofCalls,projectionCalls,calls}=await connectedPage();
   try{
