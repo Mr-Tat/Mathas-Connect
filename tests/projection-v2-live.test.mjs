@@ -20,6 +20,19 @@ test('Projection V2 live : actualisation des scores toutes les 20 s, uniquement 
  assert.match(js,/rotationSeconds:30/);
  assert.match(html,/projection-v2-live\.js\?v=20261104-exploits-confirmes-v4/);
 });
+test('Projection V2 : remontées par application, 550 ms par passage, arrivée étoilée',()=>{
+ assert.match(js,/createOvertakeTracker/);
+ assert.match(js,/observeRankings\(result\)/);
+ assert.match(js,/tracker\.take\(appKey\)/);
+ assert.match(js,/animateOvertakeSegment/);
+ assert.match(js,/movement\.gained<3/);
+ assert.match(js,/localRises\.set\(appKey,history\.slice\(0,5\)\)/);
+ assert.match(js,/currentApp===appKey/);
+ assert.match(js,/document\.visibilityState==='visible'/);
+ assert.match(js,/if\(playingKey\)\{updateTime\(\);return\}/);
+ assert.match(html,/projection-v2-overtake\.css\?v=20261104-v1/);
+ assert.match(html,/projection-v2-live\.js\?v=20261104-depassements-v5/);
+});
 test('Jeu sans score : pas de colonne fantôme, état vide spécifique à l’application',()=>{
  assert.match(js,/people\.length\?splitProjectedRanking\(people,multiple\):\[\]/);
  assert.match(html,/Aucun score enregistré pour cette application/);
@@ -29,8 +42,8 @@ test('Projection V2 live : 14 élèves maximum, classement propre aux jeux, scor
  assert.match(js,/limit:16/);
  assert.match(js,/rankMultiClass/);
  assert.match(js,/splitProjectedRanking/);
- assert.match(js,/const multiple=compared\.length>0/);
- assert.match(js,/classes:data\.classes,primaryClassId:classId,scoreClassIds:compared/);
+ assert.match(js,/const root=\$\('ranking-list'\),multiple=scoreCompared\(\)\.length>0/);
+ assert.match(js,/classes:result\.classes,primaryClassId:classId/);
  assert.match(js,/primary\.append\(playerLabel,points\)/);
  assert.match(js,/playerLabel\.append\(projectedAvatar\(p\),name\)/);
  assert.match(js,/rank\.textContent=String\(place\)/);
