@@ -1,0 +1,31 @@
+name: Contrat HUB Toutes
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'hub.html'
+      - 'hub.js'
+      - 'app.js'
+      - 'laboratoire.html'
+      - 'supabase/functions/connect-lab-catalog/index.ts'
+      - 'supabase/migrations/*connect_hub_toutes*'
+      - 'tests/hub-toutes-contract.test.mjs'
+      - '.github/workflows/hub-toutes-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe JavaScript
+        run: |
+          node --input-type=module --check < hub.js
+          node --input-type=module --check < app.js
+          node --input-type=module --check < laboratoire.js
+      - name: Contrats de navigation et catalogue
+        run: node --test tests/hub-toutes-contract.test.mjs
