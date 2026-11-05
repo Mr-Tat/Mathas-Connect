@@ -101,6 +101,33 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
    assert.equal(cards.originalTrophies,true,'Coupes de progression conservées');
    assert.equal(cards.extra,false,'Aucun nouveau cadre Connect en doublon');
    assert.equal(cards.role,'button','Le score du jour est activable au clavier');
+   const discreet=await page.evaluate(()=>{
+    const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+    const score=doc.querySelector('#mathasPointsQuick .mathas-points-quick-item--best');
+    const share=score.querySelector('.mathas-school-share-hint');
+    const strip=doc.getElementById('mathasTrophiesStrip');
+    const challenge=strip.querySelector('.mathas-trophies-hint');
+    return {
+     shareText:share?.textContent,
+     sharePointer:getComputedStyle(share).pointerEvents,
+     shareBorder:getComputedStyle(share).borderTopWidth,
+     shareHeight:share.getBoundingClientRect().height,
+     clickArea:score.getBoundingClientRect().width,
+     trophyText:challenge?.textContent?.trim(),
+     trophyBorder:getComputedStyle(challenge).borderTopWidth,
+     trophyPointer:getComputedStyle(challenge).pointerEvents,
+     stripTag:strip.tagName
+    };
+   });
+   assert.equal(discreet.shareText,'Proposer ce score à la projection');
+   assert.equal(discreet.sharePointer,'none','l encadré partage la zone clic du TOP DU JOUR');
+   assert.equal(discreet.shareBorder,'1px');
+   assert.ok(discreet.shareHeight<35,'contour de projection discret');
+   assert.ok(discreet.clickArea>150,'la carte complète reste la zone cliquable');
+   assert.equal(discreet.trophyText,'Voir les défis');
+   assert.equal(discreet.trophyBorder,'1px');
+   assert.equal(discreet.trophyPointer,'none','le bouton reste la bande de trophées entière');
+   assert.equal(discreet.stripTag,'BUTTON');
    const clickTop=score=>page.evaluate(points=>{
     const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
     const top=doc.querySelector('#mathasPointsQuick .mathas-points-quick-item--best');
