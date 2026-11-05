@@ -112,7 +112,7 @@ function makeEdge(){
   return {status:response.status,body:await response.json()};
  };
 }
-test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et reprise isolée', {skip:!pg?'Nécessite pg dans la CI PostgreSQL':false},async()=>{
+test.skip('Ancien game-record Soustraction interdit : remplacé par épreuve serveur dédiée', {skip:true},async()=>{
  await db.connect();
  try{
   await db.query("CREATE TABLE IF NOT EXISTS public.connect_devices(auth_user_id uuid,student_id uuid,state text)");
@@ -238,5 +238,31 @@ test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et repr
    await new Promise(ok=>http.close(ok));
   }
 
+ }finally{await db.end()}
+});
+
+
+test('Edge local: game-record client refusé pour un élève en classe scolaire Soustraction',
+ {skip:!pg?'Nécessite pg en CI PostgreSQL':false},async()=>{
+ await db.connect();
+ try{
+  await db.query("CREATE TABLE IF NOT EXISTS public.connect_devices(auth_user_id uuid,student_id uuid,state text)");
+  await db.query("INSERT INTO public.connect_students(id,display_name) VALUES($1,'Élève fictif Edge+SQL') ON CONFLICT DO NOTHING",[STUDENT]);
+  await db.query("INSERT INTO public.connect_enrollments(class_id,student_id) VALUES($1,$2)",[CLASS,STUDENT]);
+  await db.query("INSERT INTO public.connect_devices(auth_user_id,student_id,state) VALUES($1,$2,'approved')",[AUTH,STUDENT]);
+  const call=makeEdge();
+  const result=await call('game-record',{
+   // Classe de test certifiée : preuve obligatoire même si un ancien client insiste.
+   classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',
+   eventId:uuid(1),expectedRevision:0,expectedResetEpoch:0,
+   mode:'classic',level:1,score:4,total:4,points:20});
+  assert.equal(result.status,403,JSON.stringify(result));
+  assert.equal(result.body.error,'server_proof_required');
+  const state=await db.query('SELECT revision FROM public.connect_states WHERE student_id=$1 AND app_key=$2',[STUDENT,SUB]);
+  assert.equal(state.rowCount,0,'aucun score non prouvé enregistré en base');
+  const read=await call('student-load');
+  assert.equal(read.status,200,JSON.stringify(read));
+  assert.equal(read.body.state,null);
+  assert.equal(read.body.revision,0);
  }finally{await db.end()}
 });

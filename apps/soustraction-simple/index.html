@@ -1,6 +1,9 @@
 <!doctype html><html lang="fr"><head>
 <link rel="icon" type="image/png" href="../../assets/brand/favicon.png"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Math’as · Soustraction écrite</title><style>body{font-family:system-ui;background:#0c2235;color:white;margin:0;padding:25px}#loading{max-width:620px;margin:12vh auto;padding:25px;border:1px solid #628ba7;border-radius:16px}a{color:#8ce7fc}</style></head><body><main id="loading"><h1>Math’as · Soustraction écrite</h1><p id="message">Chargement du jeu…</p><p><a href="https://mr-tat.github.io/Mathas-Connect/">Retour aux jeux</a></p></main><script type="module">
 import {createProjectionConsent} from '../../projection-consent.mjs';
+import {createSchoolScoreView} from '../objective-record/school-score-view.mjs';
+import {installSubtractionSchoolUi} from './school-ui.mjs';
+import {createCertifiedSubtraction} from './certified-school.mjs';
 const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM',APP='soustraction-ecrite-simple';
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
@@ -77,7 +80,17 @@ function apply(state){
  put('soustraction_hard_sudden_v1',hard);
  put('soustraction_hard_three_v1',hardThree);
  put('mathas_progression_soustraction_ecrite_v1',state.progress||{});
- put('mathas_points_v1_soustraction-ecrite',{version:1,day:new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels'}).format(new Date()),top:[],bestOne:state.bestPoints==null?null:{points:state.bestPoints},bestThree:(state.topThree||[]).map(points=>({points}))});
+ const day=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels'}).format(new Date());
+ const daily=state.todayBest?.day===day&&Number.isSafeInteger(state.todayBest?.points)
+  ?state.todayBest.points:null;
+ const records=[...(Array.isArray(state.topThree)?state.topThree:[]),...(Array.isArray(state.recent)?state.recent:[])]
+  .map(v=>Number.isSafeInteger(v)?{points:v}:v).filter(v=>v&&Number.isSafeInteger(v.points)&&v.points>=0);
+ if(Number.isSafeInteger(state.bestPoints)&&state.bestPoints>=0
+    &&!records.some(v=>v.points===state.bestPoints))records.push({points:state.bestPoints});
+ records.sort((a,b)=>b.points-a.points);
+ put('mathas_points_v1_soustraction-ecrite',{version:1,day,
+  top:daily===null?[]:[{points:daily,at:day,label:'Meilleur certifié du jour'}],
+  bestOne:state.bestPoints==null?null:{points:state.bestPoints},bestThree:records.slice(0,3)});
 }
 function clearConnectedScoreCache(){
  for(const name of ['soustraction_classic20_v6','soustraction_sudden_v6','soustraction_hard_sudden_v1','soustraction_hard_three_v1','soustraction_last_work','mathas_progression_soustraction_ecrite_v1','mathas_points_v1_soustraction-ecrite','mathas_recent_two_scores_v1_soustraction-ecrite','mathas_trophies_v3_soustraction-ecrite'])localStorage.removeItem(name);
@@ -146,6 +159,44 @@ html=html.replace(flushAnchor,'window.__mathasConnectFlushRewards=watch;'+flushA
 html=html.replace('<head>','<head>'+scopedBootstrap).replace('</body>',bridge+'</body>');
 // The child frame uses the same origin and isolated storage keys. No public classic game is changed.
 const iframe=document.createElement('iframe');iframe.title='Soustraction écrite V6.0.2';iframe.style.cssText='border:0;width:100%;height:calc(100dvh - var(--ce-toolbar-height,46px));display:block';iframe.setAttribute('allow','fullscreen');
+let certified=null,certifiedScoreView=null;
+// Les boutons du moteur libre continuent à dessiner leurs fonds natifs.
+// Seul un clic humain sur un lancement scolaire déclenche le correcteur serveur.
+function applySchoolUi(){
+ try{
+  const doc=iframe.contentDocument;
+  if(!doc||!doc.getElementById('menuScreen'))return;
+  installSubtractionSchoolUi(doc,{connected:mode==='connected',xp:lastXp,rewards:initial?.rewards});
+  certifiedScoreView?.mount(doc);
+  if(mode!=='connected'||!certified||doc.__mathasSubCertifiedRouter)return;
+  doc.__mathasSubCertifiedRouter=true;
+  doc.addEventListener('click',event=>{
+   if(!event.isTrusted)return;
+   const btn=event.target?.closest?.('button');
+   if(!btn||btn.disabled)return;
+   let choice=null;
+   const levelFrom=id=>({3:1,5:2,7:3})[Number(doc.getElementById(id)?.value)]||0;
+   if(btn.id==='startClassic'||btn.matches('#classicCountPicker .classic-count-btn[data-count]')){
+    const total=btn.matches('#classicCountPicker .classic-count-btn[data-count]')
+     ?Number(btn.dataset.count)
+     :Number(doc.querySelector('#classicCountPicker .classic-count-btn.active')?.dataset.count||10);
+    choice={mode:'classic',level:levelFrom('classicMaxDigits'),total};
+   }else if(btn.id==='startSudden'||btn.id==='mathasSubThreeLives'){
+    choice={mode:btn.id==='startSudden'?'sudden':'three-lives',
+     level:levelFrom('suddenMaxDigits')};
+   }else if(btn.matches('#hardLevelGrid .hard-start[data-mode="sudden"],#hardLevelGrid .hard-start[data-mode="three-lives"]')){
+    choice={mode:btn.dataset.mode==='sudden'?'hard-sudden':'hard-three-lives',
+      level:Number(btn.dataset.level)};
+   }
+   if(!choice||![1,2,3].includes(choice.level)||
+     (choice.mode==='classic'&&![4,10,20].includes(choice.total)))return;
+   event.preventDefault();event.stopImmediatePropagation();
+   const method=doc.querySelector('input[name="borrowMethod"]:checked')?.value==='takeTop'?'takeTop':'addBottom';
+   void certified.start({...choice,method});
+  },true);
+ }catch(error){console.warn('Habillage scolaire Soustraction momentanément indisponible.',error)}
+}
+iframe.addEventListener('load',applySchoolUi);
 // XP Connect : overlay non bloquant et consultation permanente des jalons.
 let lastXp=null,xpUiVersion=0,xpVisualQueue=Promise.resolve(),xpVisualPending=0;
 function showEarnedXp(value){
@@ -278,15 +329,21 @@ document.head.append(xpCss);
 function xpElement(){let el=document.getElementById('xp-toast');if(!el){el=document.createElement('div');el.id='xp-toast';el.setAttribute('aria-live','polite');document.body.append(el)}return el}
 const xpRows=()=>{const rows=[];for(let l=1;l<=3;l++){
  for(const [size,key,pts] of [[4,'perfect',22],[10,'pass',30],[10,'bonus',6],[20,'pass',50],[20,'bonus',10]])rows.push({key:'classic:'+l+':'+size+':'+key,label:'Classique N'+l+' · '+size+' calculs '+(key==='bonus'?'sans-faute':key==='perfect'?'4/4':'≥80 %'),pts});
- for(const n of [5,10])rows.push({key:'sudden:'+l+':'+n,label:'Mort subite N'+l+' · '+n+' réussites',pts:10});
- for(const n of [3,7])rows.push({key:'hard:'+l+':'+n,label:'HARD N'+l+' · '+n+' réussites',pts:10});
+ for(const n of [5,10]){
+  rows.push({key:'sudden:'+l+':'+n+':half',label:'3 vies N'+l+' · '+n+' réussites',pts:5});
+  rows.push({key:'sudden:'+l+':'+n+':complement',label:'Mort subite N'+l+' · complément '+n+' réussites',pts:5});
+ }
+ for(const n of [3,7]){
+  rows.push({key:'hard:'+l+':'+n+':half',label:'HARD · 3 vies N'+l+' · '+n+' réussites',pts:5});
+  rows.push({key:'hard:'+l+':'+n+':complement',label:'HARD · Mort subite N'+l+' · complément '+n+' réussites',pts:5});
+ }
 }return rows};
 async function loadXp(){
  if(mode!=='connected'||!cloud)return null;
  const readVersion=xpUiVersion;
  const auth=(await cloud.auth.getSession()).data.session;if(!auth)return null;
  const res=await fetch(URL+'/functions/v1/connect-results',{method:'POST',headers:{apikey:KEY,authorization:'Bearer '+auth.access_token,'content-type':'application/json'},body:JSON.stringify({action:'student-xp',classId,appKey:APP})});
- const data=await res.json();if(res.ok&&data.ok){lastXp=data;if(xpUiVersion===readVersion&&xpVisualPending===0){showEarnedXp(data.appXp);renderXpMeter(data.total,data.level,true)}return data}return null;
+ const data=await res.json();if(res.ok&&data.ok){lastXp=data;if(xpUiVersion===readVersion&&xpVisualPending===0){showEarnedXp(data.appXp);renderXpMeter(data.total,data.level,true)}applySchoolUi();return data}return null;
 }
 async function toggleXpDetails(){
  let panel=document.getElementById('xp-details');
@@ -335,6 +392,13 @@ function staleCount(){try{return staleQueue().length}catch{return 1}}
 let draining=false, syncWarning='';
 function showSync(){const v=document.getElementById('ce-sync');if(!v)return;let pending=0;try{pending=readQueue().length}catch{syncWarning='File locale illisible : prévenir le professeur.'}const stale=staleCount();v.textContent=mode==='connected'?(syncWarning||(stale?'À vérifier : '+stale+' ancien(s) résultat(s)':pending?'En attente : '+pending:(!navigator.onLine?'Hors ligne':'Synchronisé'))):'';v.title=syncWarning||(stale?'Résultats archivés d’un parcours précédent : prévenir le professeur.':'')}
 async function drain(){
+ // Ne jamais transmettre au serveur les anciennes parties déclarées par le navigateur.
+ // La file historique est conservée pour expertise, mais ne donne aucun XP certifié.
+ if(mode==='connected'){
+  try{if(readQueue().length)syncWarning='Anciens scores non certifiés conservés sans envoi.'}
+  catch{syncWarning='Anciens résultats locaux illisibles : prévenir le professeur.'}
+  showSync();return;
+ }
  if(draining||mode!=='connected'||!cloud)return;
  draining=true;
  try{
@@ -370,6 +434,9 @@ window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='v
 window.MathasPilotBridge={mode,openTeacherParcours:()=>{
  window.open('https://mr-tat.github.io/Mathas-Connect/index.html?portail=prof&profClass='+encodeURIComponent(classId),'_blank','noopener');
 },completed:(item,options={})=>{
+ // Toutes les activités Connect notées passent exclusivement par la preuve SQL.
+ // Le moteur natif ne peut plus attribuer de récompenses avec un simple score client.
+ return null;
  if(mode!=='connected'||!cloud)return;
  const label=item.label||'',match=label.match(/(?:Niveau|NIV|Hard)\s*([123])/i);if(!match)return;
  const level=Number(match[1]),hard=/HARD/i.test(label),sudden=/Mort subite/i.test(label);
@@ -439,12 +506,71 @@ if(mode==='connected'){
  toolbar.append(globalInfo,appInfo);
 }else toolbar.append(hubLink);
 document.body.replaceChildren(toolbar,iframe);
+async function proofCall(action,payload){
+ if(mode!=='connected'||!cloud||!session)throw Error('Session Connect requise');
+ const current=(await cloud.auth.getSession()).data.session;
+ if(!current?.access_token||current.user?.id!==session.user.id)throw Error('Session Connect remplacée');
+ const res=await fetch(URL+'/functions/v1/connect-soustraction-school',{
+  method:'POST',headers:{apikey:KEY,authorization:'Bearer '+current.access_token,'content-type':'application/json'},
+  body:JSON.stringify({action,classId,...payload})});
+ const data=await res.json().catch(()=>null);
+ if(!res.ok||data?.ok!==true)throw Error(data?.error||'proof_unavailable');
+ return data;
+}
  if(mode==='connected'&&cloud&&session) {
    consent=createProjectionConsent({classId,appKey:APP,studentKey:session.user.id,getToken:async()=>{
      const current=(await cloud.auth.getSession()).data.session;
      if(current?.user?.id!==session.user.id||!current?.access_token)throw Error('connect_session_changed');
      return current.access_token;
    }});
+   certifiedScoreView=createSchoolScoreView({
+    appKey:APP,
+    fetchHistory:async()=>{
+     const auth=(await cloud.auth.getSession()).data.session;
+     if(!auth?.access_token||auth.user?.id!==session.user.id)throw Error('connect_session_changed');
+     const response=await fetch(URL+'/functions/v1/connect-projection-v2',{
+      method:'POST',headers:{apikey:KEY,authorization:'Bearer '+auth.access_token,'content-type':'application/json'},
+      body:JSON.stringify({action:'student-score-history',classId,appKey:APP})});
+     const data=await response.json().catch(()=>null);
+     if(!response.ok||data?.ok!==true)throw Error(data?.error||'score_history_unavailable');
+     return data;
+    },
+    consent:()=>consent,notify:text=>{const badge=document.getElementById('ce-sync');if(badge)badge.title=text}
+   });
+   certifiedScoreView.updateState(initial||{});
+   void certifiedScoreView.load();
+   certified=createCertifiedSubtraction({
+    documentRef:document,storage:localStorage,
+    getContext:()=>({connected:mode==='connected',classId,studentId:session.user.id}),
+    call:proofCall,
+    refresh:async()=>{
+     const auth=(await cloud.auth.getSession()).data.session;
+     if(!auth?.access_token||auth.user?.id!==session.user.id)throw Error('Session Connect remplacée');
+     const response=await fetch(URL+'/functions/v1/connect-results',{
+      method:'POST',headers:{apikey:KEY,authorization:'Bearer '+auth.access_token,'content-type':'application/json'},
+      body:JSON.stringify({action:'student-load',classId,appKey:APP})});
+     const updated=await response.json().catch(()=>null);
+     if(!response.ok||updated?.ok!==true)throw Error('Sauvegarde scolaire indisponible');
+     revision=updated.revision;resetEpoch=updated.resetEpoch??0;initial=updated.state;
+     apply(initial);
+     if(initial?.rewards)localStorage.setItem('mathas_trophies_v3_soustraction-ecrite',JSON.stringify(initial.rewards));
+     certifiedScoreView?.updateState(initial||{});
+     void certifiedScoreView?.load(true);
+     iframe.contentWindow?.MathasPoints?.render?.();
+     applySchoolUi();
+     return await loadXp();
+    },
+    onVerified:async receipt=>{
+     const xp=receipt.ack?.xp;
+     if(receipt.ack?.duplicate!==true&&Number.isSafeInteger(xp?.delta)&&xp.delta>0)
+      queueXpGain(xp);
+     if(receipt.ack?.proofVerified===true&&receipt.ack?.duplicate!==true)
+      await certifiedScoreView?.recorded(receipt.eventId);
+    },
+    notify:text=>{const badge=document.getElementById('ce-sync');if(badge)badge.title=text}
+   });
+   applySchoolUi();
+   window.setInterval(()=>{if(document.visibilityState==='visible')applySchoolUi()},1100);
  }
 document.body.style.cssText='margin:0;padding:0;background:#071e2a;overflow:hidden';
 
