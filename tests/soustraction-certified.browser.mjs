@@ -242,7 +242,27 @@ test('Chromium scolaire natif : reprise du même calcul après interruption', {t
   await second.frame.locator('#primaryBtn').click();
   await second.frame.locator('#primaryBtn').click();
   await solvePair(second.frame,q.slice(2,4));
-  await second.page.getByRole('heading',{name:'Série vérifiée ✓'}).waitFor({timeout:25000});
+  try{
+  await second.page.getByRole('heading',{name:'Série vérifiée ✓'}).waitFor({timeout:13000});
+ }catch(error){
+  const state=await second.frame.locator('body').evaluate(body=>({
+   phase:body.querySelector('#gameScreen')?.className,
+   primary:body.querySelector('#primaryBtn')?.textContent,
+   feedback:body.querySelector('#feedback')?.textContent,
+   calculations:[...body.querySelectorAll('#calculationsPair .calc-box')].map(x=>({
+    answers:[...x.querySelectorAll('.answer-input')].map(n=>n.value),
+    statuses:[...x.querySelectorAll('.calc-status')].map(n=>n.textContent)
+   }))
+  }));
+  const transcript=await second.page.evaluate(()=>{
+   const key=Object.keys(localStorage).find(k=>k.startsWith('mathas.sub-certified.'));
+   return key?JSON.parse(localStorage.getItem(key)):null;
+  });
+  throw Error('Reprise non terminée : '+JSON.stringify({
+   issued:ctx.fixture.issued.length,checks:ctx.fixture.checks,events:ctx.fixture.received.slice(-5),
+   state,answers:transcript?.answers,total:transcript?.total
+  })+' '+error.message);
+ }
   assert.equal(ctx.fixture.checks.length,1);
   assert.equal(ctx.fixture.checks[0].correct,4);
  }finally{await ctx.close()}
