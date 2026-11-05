@@ -194,6 +194,7 @@ function mountNativeConnectHeader(){
   main.app > header .mathas-brand-row>.app-version-pill{display:none!important}
   .mathas-sous-connect-dock{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:0!important;min-width:0;position:relative;z-index:4;font:700 12px system-ui;color:#e7faff}
   .mathas-sous-connect-person{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;padding:8px 11px;border:1px solid rgba(80,200,213,.43);border-radius:12px;background:rgba(19,65,80,.87)}
+  .mathas-sous-connect-identity::before{content:'●';color:#70e3ae;margin-right:5px}
   .mathas-sous-connect-identity{max-width:210px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
   .mathas-sous-connect-level{color:#ffe3a4;white-space:nowrap}
   .mathas-sous-connect-progress{display:grid;gap:3px;min-width:85px}
@@ -252,7 +253,7 @@ function mountNativeConnectHeader(){
   link.textContent='↩ Retour au HUB';link.href=document.getElementById('ce-hub-link')?.href||'../../hub.html';actions.prepend(link);
  }
  if(mode==='connected'){
-  doc.getElementById('mathas-sous-connect-identity').textContent=document.getElementById('ce-identity')?.textContent||'● Connecté';
+  doc.getElementById('mathas-sous-connect-identity').textContent=document.getElementById('ce-identity')?.textContent||'Compte élève';
   doc.getElementById('mathas-sous-connect-level').textContent='Niveau '+(document.getElementById('ce-xp-level-number')?.textContent||'…');
   doc.getElementById('mathas-sous-connect-count').textContent=document.getElementById('ce-xp-meter-count')?.textContent||'… / 50 XP';
   const total=doc.getElementById('mathas-sous-connect-total');
@@ -395,6 +396,7 @@ xpCss.textContent+=meterCss+'#ce-toolbar{display:none!important}'+
  '#ce-toolbar{font-family:system-ui}#ce-global-info{display:flex;align-items:center;gap:10px;min-width:0;flex:1 1 auto}'+
  '#ce-application-info{display:flex;align-items:center;gap:10px;flex:0 0 auto;min-width:0}'+
  '#ce-identity{flex:0 1 auto;max-width:40%;min-width:70px}'+
+ '#ce-identity::before{content:"●";color:#70e3ae;margin-right:5px}'+
  '#ce-global-info #ce-xp-meter{flex:0 0 auto}'+
  '@media(max-width:960px){#ce-application-info{gap:7px}#ce-global-info{gap:7px}}'+
  '@media(max-width:720px){#ce-identity{max-width:calc(100% - 175px);flex:0 1 auto}#ce-application-info{gap:8px}}';
@@ -543,7 +545,7 @@ toolbar.style.cssText='display:none!important';
 const syncText=document.createElement('span');syncText.id='ce-sync';syncText.style.cssText='font:500 11px system-ui;color:#c0e6ec';
 const statusLabel=document.createElement('span');statusLabel.id='ce-identity';
 statusLabel.style.cssText='flex:0 1 auto;min-width:0;max-width:clamp(85px,28vw,300px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
-statusLabel.textContent='● Connecté · '+(studentName||'Compte élève')+(initial?'':' · Nouvelle progression Connect');
+statusLabel.textContent=studentName||'Compte élève';
 statusLabel.title=statusLabel.textContent;
 const hubLink=document.createElement('a');hubLink.id='ce-hub-link';
 hubLink.href='https://mr-tat.github.io/Mathas-Connect/hub.html'+(UUID.test(classId)?'?class='+encodeURIComponent(classId)+(teacherPlayer?'&joueur=prof':''):'');
