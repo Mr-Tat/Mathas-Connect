@@ -46,7 +46,7 @@ const CHANGES=[
  ],
  [
   "    if(r.correct){\n      markAllGood();",
-  "\n    if(hardProofFeed?.active&&!hardState.__mathasProofCaptured){\n     const q=hardProofFeed.run.questions[hardProofFeed.run.answers.length];\n     const digits=hardState.answers.slice(0,hardState.resultLength).reverse().join('');\n     if(!q||hardState.__mathasProofId!==q.id||!/^\\d+$/.test(digits)\n      ||!hardProofFeed.receiver.record({id:q.id,answer:digits})){\n      setFeedback('La première tentative n’a pas été sauvegardée. Réessaie.','bad');return;\n     }\n     hardState.__mathasProofCaptured=true;\n    }\n    if(r.correct){\n      markAllGood();"
+  "\n    if(hardProofFeed?.active&&!hardState.__mathasProofCaptured){\n     const id=hardState.__mathasProofId;\n     const digits=hardState.answers.slice(0,hardState.resultLength).reverse().join('');\n     if(!id||!/^\\d+$/.test(digits)\n      ||!hardProofFeed.receiver.record({id,answer:digits})){\n      setFeedback('La première tentative n’a pas été sauvegardée. Réessaie.','bad');return;\n     }\n     hardState.__mathasProofCaptured=true;\n    }\n    if(r.correct){\n      markAllGood();"
  ],
  [
   "    markHardErrors();\n    if(hardSession.mode==='sudden'){",
