@@ -64,6 +64,22 @@ for(const item of [
    browser=await chromium.launch({headless:true,args:['--no-sandbox']});
    const page=await browser.newPage({viewport:{width:1280,height:850}});
    const requests=[],errors=[];let starts=0;
+   // Regarder chaque image rendue : une barre apparue seulement une fraction
+   // de seconde peut échapper à une simple assertion après chargement.
+   await page.addInitScript(()=>{
+    window.__legacyBarVisibleFrames=0;
+    window.__legacyBarSampledFrames=0;
+    function sample(){
+     const bar=document.getElementById('connect-bar');
+     if(bar){
+      window.__legacyBarSampledFrames++;
+      if(getComputedStyle(bar).display!=='none'&&bar.getBoundingClientRect().height>0)
+       window.__legacyBarVisibleFrames++;
+     }
+     requestAnimationFrame(sample);
+    }
+    requestAnimationFrame(sample);
+   });
    page.on('pageerror',e=>errors.push(e.message));
    await page.route('**/supabase-js@2.95.0*',r=>r.fulfill({
     status:200,contentType:'text/javascript',headers:{'access-control-allow-origin':'*'},
@@ -92,7 +108,16 @@ for(const item of [
    });
    await page.goto(url+'/apps/objective-record/eleve.html?class='+CLASS+'&app='+item.slug,
     {waitUntil:'domcontentloaded',timeout:25000});
+   assert.equal(await page.evaluate(()=>
+    document.documentElement.classList.contains('mathas-native-connect-hud')),true,
+    'HUD natif activé avant le chargement asynchrone du moteur');
    await page.waitForFunction(()=>!document.getElementById('certify').disabled,null,{timeout:35000});
+   const barPaint=await page.evaluate(()=>({
+    visible:window.__legacyBarVisibleFrames,
+    sampled:window.__legacyBarSampledFrames
+   }));
+   assert.ok(barPaint.sampled>0,'au moins une image mesurée pendant le chargement');
+   assert.equal(barPaint.visible,0,'aucune image ne doit afficher la barre rétractable : '+JSON.stringify(barPaint));
    const displayed=await page.evaluate(()=>{
     const outer=document.getElementById('gameFrame').contentDocument;
     const inner=outer?.getElementById('game')?.contentWindow;
