@@ -184,6 +184,7 @@ function mountNativeConnectHeader(doc){
   .mathas-brand-row>.mathas-header-wordmark{flex:none!important}
   .mathas-multi-connect-dock{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:0!important;position:relative;z-index:4;font:700 12px system-ui;color:#e7faff}
   .mathas-multi-connect-person{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;background:rgba(19,65,80,.87);border:1px solid rgba(80,200,213,.43);border-radius:13px;padding:8px 11px}
+  .mathas-multi-connect-identity::before{content:'●';color:#70e3ae;margin-right:5px}
   .mathas-multi-connect-identity{max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .mathas-multi-connect-level{color:#ffe3a4;white-space:nowrap}
   .mathas-multi-connect-progress{display:grid;gap:3px;min-width:84px}
@@ -237,7 +238,7 @@ function mountNativeConnectHeader(doc){
   link.href=document.getElementById('ce-hub-link')?.href||'../../hub.html';
   actions.prepend(link);
  }
- doc.getElementById('mathas-multi-connect-identity').textContent=document.getElementById('ce-identity')?.textContent||'● Connecté';
+ doc.getElementById('mathas-multi-connect-identity').textContent=document.getElementById('ce-identity')?.textContent||'Compte élève';
  doc.getElementById('mathas-multi-connect-level').textContent='Niveau '+(document.getElementById('ce-xp-level-number')?.textContent||'…');
  doc.getElementById('mathas-multi-connect-count').textContent=document.getElementById('ce-xp-meter-count')?.textContent||'… / 50 XP';
  const originalTrack=document.getElementById('ce-xp-meter-track');
@@ -409,6 +410,7 @@ xpCss.textContent+=meterCss+
  '#ce-toolbar{font-family:system-ui}#ce-global-info{display:flex;align-items:center;gap:10px;min-width:0;flex:1 1 auto}'+
  '#ce-application-info{display:flex;align-items:center;gap:10px;flex:0 0 auto;min-width:0}'+
  '#ce-identity{flex:0 1 auto;max-width:40%;min-width:70px}'+
+ '#ce-identity::before{content:"●";color:#70e3ae;margin-right:5px}'+
  '#ce-global-info #ce-xp-meter{flex:0 0 auto}'+
  '@media(max-width:960px){#ce-application-info{gap:7px}#ce-global-info{gap:7px}}'+
  '@media(max-width:720px){#ce-identity{max-width:calc(100% - 175px);flex:0 1 auto}#ce-application-info{gap:8px}}';
@@ -509,7 +511,7 @@ const statusLabel=document.createElement('span');statusLabel.id='ce-identity';
 statusLabel.style.cssText='flex:0 1 auto;min-width:0;max-width:clamp(85px,28vw,300px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
 // L'identité du joueur ne doit pas accueillir un message de progression :
 // le relevé XP porte déjà les informations sur le parcours Connect.
-statusLabel.textContent='● Connecté · '+(studentName||'Compte élève');
+statusLabel.textContent=studentName||'Compte élève';
 statusLabel.title=statusLabel.textContent;
 const hubLink=document.createElement('a');hubLink.id='ce-hub-link';
 hubLink.href='https://mr-tat.github.io/Mathas-Connect/hub.html'+(isTestClass?'?class='+encodeURIComponent(classId)+'&name=Toutes&toutes=1':UUID.test(classId)?'?class='+encodeURIComponent(classId)+(teacherPlayer?'&joueur=prof':''):'');
