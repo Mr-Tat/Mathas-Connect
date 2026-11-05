@@ -117,6 +117,13 @@ function ensureStyle(doc){
  '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice:disabled{cursor:not-allowed!important;opacity:.56!important;filter:grayscale(.42)!important}',
  '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice>.mathas-multi-official-xp{left:auto!important;right:8px!important;bottom:7px!important}',
  '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice>.mathas-multi-school-cups{right:8px!important;bottom:22px!important}',
+ '/* La disposition du moteur reste intacte ; uniquement la carte de sélection est harmonisée. */',
+ '#menuScreen .mode-card.sudden>.mode-description,#menuScreen .mode-card.sudden>.mathas-multi-unlock-note{grid-column:1/-1!important;width:100%!important}',
+ '#menuScreen .mode-card.sudden>.mathas-multi-unlock-note{font:750 12px/1.45 system-ui;color:#ffdfa1;text-align:center;padding:2px 4px;box-sizing:border-box}',
+ '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice:not(:disabled){box-shadow:inset 0 2px 0 #ffffff25,inset 0 -4px 0 #0004,0 5px 0 #0005,0 11px 19px #0004!important}',
+ '@media(hover:hover) and (pointer:fine){#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice:not(:disabled):hover{transform:translateY(-3px)!important;filter:brightness(1.12)!important}}',
+ '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice:not(:disabled):active{transform:translateY(3px)!important;box-shadow:inset 0 2px 5px #0005,0 2px 0 #0005!important}',
+ '@media(max-width:570px){#menuScreen .mode-card.sudden>.mathas-multi-survival-options{gap:7px!important}#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice{min-height:115px!important;font-size:.88rem!important;padding:10px 5px 30px!important}}',
  '#menuScreen .mathas-multi-survival-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(7px,1.1vw,13px);width:100%;min-width:0;align-items:stretch}',
  '#menuScreen .mathas-multi-survival-options>.big-mode-choice{min-width:0;width:100%;min-height:88px;margin:0!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;white-space:normal;text-align:center}',
  '#hardMenu .hard-actions:has(.mathas-multi-hard-three-lives){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}',
@@ -178,6 +185,40 @@ function renderCups(doc,rewards){
   if(button)putCups(doc,button,officialMultiplicationCups(rewards,'hard-sudden',n));
  }
 }
+function polishSurvivalMenu(doc){
+ const card=doc.querySelector('#menuScreen .mode-card.sudden');
+ if(!card)return;
+ const title=card.querySelector('.mode-title');
+ if(title&&title.textContent!=='Objectif record')title.textContent='Objectif record';
+ const icon=card.querySelector('.mode-icon');
+ if(icon&&icon.textContent!=='👑')icon.textContent='👑';
+ const description=card.querySelector('.mode-description');
+ if(description&&description.textContent!=='Pour marquer un plus gros score !')
+  description.textContent='Pour marquer un plus gros score !';
+ const lives=doc.getElementById('mathasMultiThreeLives');
+ const sudden=doc.getElementById('startSudden');
+ if(lives&&!lives.dataset.mathasMenuLabel){
+  lives.dataset.mathasMenuLabel='1';
+  const label=doc.createElement('span');
+  label.textContent='❤️ ❤️ ❤️';
+  const name=doc.createElement('strong');
+  name.textContent='3 vies';
+  lives.replaceChildren(label,name,...[...lives.children].filter(x=>x.classList.contains(BADGE)));
+  lives.setAttribute('aria-label','Mode 3 vies');
+ }
+ if(sudden&&!sudden.dataset.mathasMenuLabel){
+  sudden.dataset.mathasMenuLabel='1';
+  const symbol=doc.createElement('span');symbol.textContent='💀';
+  const name=doc.createElement('strong');name.textContent='Mort subite';
+  sudden.replaceChildren(symbol,name,...[...sudden.children].filter(x=>x.classList.contains(BADGE)||x.classList.contains(CUPS)));
+  sudden.setAttribute('aria-label','Mode Mort subite');
+ }
+ // Ne jamais inventer une condition de déblocage : reprendre l'état natif des boutons.
+ let note=card.querySelector(':scope > .mathas-multi-unlock-note');
+ if(!note){note=doc.createElement('div');note.className='mathas-multi-unlock-note';card.append(note)}
+ const locked=!!(lives?.disabled||sudden?.disabled);
+ note.textContent=locked?'🔒 Modes record : réussis 8/10 ou 16/20 au niveau choisi pour les débloquer.':'Deux moyens de battre ton record !';
+}
 function instruction(doc,enabled){
  const root=doc.getElementById('instructionText');
  if(!root)return;
@@ -192,6 +233,7 @@ export function installMultiplicationSchoolUi(doc,{connected=false,xp=null,rewar
  const home=doc?.getElementById?.('tensFirstToggle');
  if(!home||!doc.querySelector('#menuScreen'))return false;
  ensureStyle(doc);
+ polishSurvivalMenu(doc);
  const sync=()=>{
   doc.querySelectorAll('.'+TOGGLE+' input').forEach(x=>{x.checked=!!home.checked});
   updateMultiplicationAmber(doc,home.checked);
