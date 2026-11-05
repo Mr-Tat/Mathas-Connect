@@ -189,10 +189,14 @@ export function createCertifiedSubtraction({
   try{
    const action=run.mode==='classic'?'finish-classic-v1':'finish-extended-v1';
    const receipt=await call(action,{sessionId:snapshot.sessionId,answers:snapshot.answers});
-   if(receipt?.proofVerified!==true||receipt.verifiedScore!==stats.correct)throw Error('score_proof_mismatch');
-   await refresh();
-   await onVerified?.({eventId:snapshot.sessionId,ack:receipt});
+   if(receipt?.proofVerified!==true||receipt.verifiedScore!==stats.correct
+    ||!Number.isSafeInteger(receipt?.xp?.delta))throw Error('score_proof_mismatch');
+   // Le serveur a déjà validé atomiquement l'épreuve : ne jamais refaire
+   // une écriture XP à cause d'une panne de rafraîchissement ou de projection.
    store?.clear();
+   try{await refresh()}catch(error){notify('✅ XP certifiés, actualisation du profil à retenter.')}
+   try{await onVerified?.({eventId:snapshot.sessionId,ack:receipt})}
+   catch{notify('✅ XP certifiés, projection à consulter plus tard.')}
    inner.replaceChildren(
     node('h2','','Série vérifiée ✓'),
     node('div','mathas-sub-proof-meta',
