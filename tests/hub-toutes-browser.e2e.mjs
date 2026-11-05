@@ -160,3 +160,21 @@ test('Sans session professeur, ni profils fictifs ni contrôle des demandes ne s
    assert.equal(f.getApprovals().length,0);
  }finally{await close(f)}
 });
+
+test('Côté élève, seul le retour vers Monsieur T est proposé ; approbations cachées', {timeout:60000},async()=>{
+ const f=await fixture(true);
+ try{
+   await f.page.goto(f.base+'/hub.html?toutes=1&class='+testClass+'&name=Toutes',{waitUntil:'domcontentloaded'});
+   await f.page.locator('#toutes-switch:not([disabled])').waitFor({timeout:20000});
+   assert.equal(await f.page.locator('#toutes-switch').textContent(),'Se connecter avec Monsieur T');
+   assert.equal(await f.page.locator('#toutes-connect-student').isVisible(),false);
+   assert.equal(await f.page.locator('#toutes-requests-open').isVisible(),false);
+   assert.equal(await f.page.locator('#levels .app-card').count(),6);
+   await f.page.locator('#toutes-switch').click();
+   await f.page.waitForURL(/joueur=prof/);
+   const u=new URL(f.page.url());
+   assert.equal(u.searchParams.get('class'),testClass);
+   assert.equal(u.searchParams.get('toutes'),'1');
+   assert.equal(u.searchParams.get('joueur'),'prof');
+ }finally{await close(f)}
+});
