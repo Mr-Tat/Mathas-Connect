@@ -7,22 +7,36 @@ const BADGE='mathas-multi-official-xp';
 const TOGGLE='mathas-multi-tens-control';
 const AMBER='mathas-multi-amber-next-unit';
 const CUPS='mathas-multi-school-cups';
+const SCORE_X2='mathas-multi-score-x2';
+// Dessin des coupes identique au modèle natif, sans dépendre du popover Trophées
+// (qui peut être construit après le menu et n'est pas une source fiable de clone).
+const CUP_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 50" aria-hidden="true"><path d="M12 5h24v12c0 11-5 18-12 18S12 28 12 17V5Z" fill="var(--cup)" stroke="var(--cup-dark)" stroke-width="2"/><path d="M13 10H5v6c0 10 6 13 12 13M35 10h8v6c0 10-6 13-12 13" stroke="var(--cup-dark)" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M18 9h4v18c-4-2-6-9-4-18Z" fill="var(--cup-gloss)" opacity=".83"/><path d="M22 33h4v8h-4Z" fill="var(--cup-dark)"/><path d="M14 44h20v4H14Z" fill="var(--cup)" stroke="var(--cup-dark)" stroke-width="2"/></svg>';
 
 // Une maîtrise classique est UNE coupe visuelle (4/4, 10/10 ET 20/20),
 // pas trois trophées. Les conditions distinctes restent celles du moteur.
 export function officialMultiplicationCups(rewards,mode,level){
- if(!rewards||rewards.version!==3||![1,2,3].includes(level))return null;
- const i=level-1,color=['bronze','silver','gold'][i];
+ if(!rewards||rewards.version!==3)return null;
+ const colors=['bronze','silver','gold'];
+ // Mort subite a TROIS coupes indicatrices (niveaux 1, 2 et 3)
+ // indépendantes du niveau actuellement sélectionné, comme dans Addition.
+ if(mode==='sudden'){
+  if(!Array.isArray(rewards.sudden)||![0,1,2].every(i=>typeof rewards.sudden[i]==='boolean'))return null;
+  return colors.map((color,i)=>({key:'sudden:'+(i+1),color,earned:rewards.sudden[i],
+   title:'Mort subite niveau '+(i+1)+' : 25 réussites'}));
+ }
+ // Les défis du meilleur score ont eux aussi trois coupes : 200, 400, 600.
+ if(mode==='score'){
+  if(!colors.every(color=>typeof rewards.scoreOne?.[color]==='boolean'))return null;
+  return colors.map((color,i)=>({key:'score:'+color,color,earned:rewards.scoreOne[color],
+   title:'Défi de score : '+[200,400,600][i]+' points sur une partie'}));
+ }
+ if(![1,2,3].includes(level))return null;
+ const i=level-1,color=colors[i];
  if(mode==='classic'){
   const m=rewards.mastery;
   if(!m||![4,10,20].every(n=>Array.isArray(m[n])&&typeof m[n][i]==='boolean'))return null;
   return [{key:'mastery:'+level,color,earned:[4,10,20].every(n=>m[n][i]),
    title:'Maîtrise niveau '+level+' : 4/4, 10/10 et 20/20'}];
- }
- if(mode==='sudden'){
-  if(!Array.isArray(rewards.sudden)||typeof rewards.sudden[i]!=='boolean')return null;
-  return [{key:'sudden:'+level,color,earned:rewards.sudden[i],
-   title:'Mort subite niveau '+level+' : 25 réussites'}];
  }
  if(mode==='hard-sudden'){
   const a=rewards.hardAwards;
@@ -36,18 +50,18 @@ function putCups(doc,button,specs){
  if(!button||!specs)return;
  let row=button.querySelector(':scope > .'+CUPS);
  if(!row){row=doc.createElement('span');row.className=CUPS;button.append(row)}
- const nativeArtReady=!!doc.querySelector('.mathas-v602-trophy-cup[data-trophy-color]');
- const signature=specs.map(x=>x.key+':'+(x.earned?'1':'0')).join('|')+(nativeArtReady?'|native':'|fallback');
+ const signature=specs.map(x=>x.key+':'+(x.earned?'1':'0')).join('|');
  if(row.dataset.signature===signature)return;
  row.dataset.signature=signature;row.replaceChildren();
  for(const spec of specs){
   const slot=doc.createElement('span');slot.className='mathas-multi-school-cup '+(spec.earned?'earned':'locked');
   slot.title=spec.title+(spec.earned?' · Coupe acquise':' · Coupe à gagner');
   slot.setAttribute('aria-label',slot.title);
-  const native=doc.querySelector('.mathas-v602-trophy-cup[data-trophy-color="'+spec.color+'"]');
-  const cup=native?.cloneNode(true)||doc.createElement('span');
-  if(!native)cup.textContent='🏆';
-  cup.classList.add('mathas-multi-school-cup-art');
+  const cup=doc.createElement('span');
+  cup.className='mathas-v602-trophy-cup mathas-multi-school-cup-art';
+  cup.dataset.trophyColor=spec.color;
+  cup.setAttribute('aria-hidden','true');
+  cup.innerHTML=CUP_SVG;
   slot.append(cup);row.append(slot);
  }
  button.style.setProperty('position','relative','important');
@@ -110,6 +124,10 @@ function ensureStyle(doc){
  '.mathas-multi-school-cup .mathas-multi-school-cup-art svg{width:100%!important;height:100%!important}',
  '.mathas-multi-school-cup.locked{opacity:.38;filter:grayscale(1)}',
  '.mathas-multi-school-cup.earned{opacity:1;filter:drop-shadow(0 1px 3px #f4d48a77)}',
+ '/* Le bonus est lisible dans Mort subite comme dans Addition, sans se confondre avec les XP. */',
+ '#menuScreen .mathas-multi-survival-options>#startSudden>.mathas-multi-score-x2{display:block!important;position:static!important;flex:none!important;align-self:center!important;width:max-content!important;max-width:100%!important;margin:0!important;padding:2px 8px!important;border:1px solid rgba(247,209,126,.45)!important;border-radius:7px!important;background:rgba(67,32,38,.28)!important;color:#ffe7a2!important;font:850 clamp(10px,.9vw,12px)/1.2 system-ui!important;white-space:nowrap!important;pointer-events:none!important}',
+ '#menuScreen #mathasPointsQuick .mathas-points-quick-item--best{position:relative!important}',
+ '#menuScreen #mathasPointsQuick .mathas-points-quick-item--best>.mathas-multi-school-cups{right:8px!important;bottom:7px!important}',
  '/* Les fonds et couleurs natifs restent inchangés : disposition et relief seulement. */',
  '/* Le groupe de survie doit couvrir les deux colonnes de la grille icône/titre du moteur V7. */',
  '#menuScreen .mode-card.sudden>.mathas-multi-survival-options{grid-column:1/-1!important;grid-row:auto!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:clamp(8px,1vw,14px)!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;align-items:stretch!important;justify-self:stretch!important}',
@@ -187,6 +205,8 @@ function renderCups(doc,rewards){
  putCups(doc,classicCard,officialMultiplicationCups(rewards,'classic',level(doc,'classicLevel')));
  putCups(doc,doc.getElementById('startSudden'),
   officialMultiplicationCups(rewards,'sudden',level(doc,'suddenLevel')));
+ const scoreCard=doc.querySelector('#menuScreen #mathasPointsQuick .mathas-points-quick-item--best');
+ putCups(doc,scoreCard,officialMultiplicationCups(rewards,'score'));
  for(const card of doc.querySelectorAll('#hardMenu .hard-level-card')){
   const n=Number(card.querySelector('h3')?.textContent.match(/NIV\s*([123])/i)?.[1]);
   const button=card.querySelector('.hard-sudden:not(.mathas-multi-hard-three-lives):not(:disabled)');
@@ -211,7 +231,7 @@ function polishSurvivalMenu(doc){
   if(!button)return;
   const rendered=button.querySelector(':scope > .mathas-multi-choice-name');
   if(rendered?.textContent===name)return;
-  const extras=[...button.children].filter(x=>x.classList.contains(BADGE)||x.classList.contains(CUPS));
+  const extras=[...button.children].filter(x=>x.classList.contains(BADGE)||x.classList.contains(CUPS)||x.classList.contains(SCORE_X2));
   const symbol=doc.createElement('span');
   symbol.className='mathas-multi-choice-icon';symbol.textContent=emoji;
   const text=doc.createElement('strong');
@@ -220,7 +240,13 @@ function polishSurvivalMenu(doc){
   button.setAttribute('aria-label',aria);
  }
  label(lives,'❤️ ❤️ ❤️','3 vies','Mode 3 vies');
- label(sudden,'💀','Mort subite','Mode Mort subite');
+ label(sudden,'💀','Mort subite','Mode Mort subite · Score ×2');
+ if(sudden){
+  let bonus=sudden.querySelector(':scope > .'+SCORE_X2);
+  if(!bonus){bonus=doc.createElement('span');bonus.className=SCORE_X2;sudden.append(bonus)}
+  if(bonus.textContent!=='Score ×2')bonus.textContent='Score ×2';
+  sudden.setAttribute('aria-label','Mode Mort subite · Score ×2');
+ }
  let note=card.querySelector(':scope > .mathas-multi-unlock-note');
  if(!note){note=doc.createElement('div');note.className='mathas-multi-unlock-note';card.append(note)}
  const locked=!!(lives?.disabled||sudden?.disabled);
