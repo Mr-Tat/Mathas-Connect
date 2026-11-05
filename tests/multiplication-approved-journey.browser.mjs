@@ -198,6 +198,20 @@ try{
    assert.equal(profile.text.includes('Connecté'),false,'nom sans mention redondante');
    assert.ok(profile.bullet.includes('●'),'point de connexion présent');
    assert.equal(profile.color,'rgb(112, 227, 174)','point de connexion vert');
+   const badge=await page.frameLocator('iframe').locator('#mathas-multi-connect-level').evaluate(el=>{
+    const css=getComputedStyle(el),digit=el.querySelector('strong'),numberCss=getComputedStyle(digit);
+    return {text:el.textContent,number:digit.textContent,color:css.borderTopColor,
+     background:css.backgroundImage,font:parseFloat(numberCss.fontSize),
+     weight:numberCss.fontWeight,width:el.getBoundingClientRect().width,
+     viewport:innerWidth,right:el.getBoundingClientRect().right};
+   });
+   assert.match(badge.text,/Niveau\s*1/,'niveau réel conservé');
+   assert.equal(badge.number,'1');
+   assert.equal(badge.color,'rgb(239, 197, 106)','contour doré du badge');
+   assert.match(badge.background,/linear-gradient/,'fond bleu dégradé');
+   assert.ok(badge.font>=23&&Number(badge.weight)===900,'chiffre dominant');
+   assert.ok(badge.width>=75&&badge.right<=badge.viewport+2,
+    'le badge Niveau ne déborde pas sur téléphone : '+JSON.stringify(badge));
   }finally{await page.close()}
  });
  await test('TEST en ligne: refuse a silently free 4/4 without approved Connect session, including legacy free-mode flag',async()=>{
