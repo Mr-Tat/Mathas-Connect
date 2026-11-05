@@ -103,17 +103,18 @@ const CSS=String.raw`
 .mathas-sub-proof .mathas-sub-pad button{font:800 19px system-ui;padding:9px}
 `;
 export function createCertifiedSubtraction({
- documentRef=document,storage=localStorage,getContext,call,refresh,onVerified,notify=()=>{}
+ documentRef=document,storage=localStorage,getContext,getFrame=()=>null,call,refresh,onVerified,notify=()=>{}
 }={}){
  const d=documentRef,style=d.createElement('style');style.textContent=CSS;d.head.append(style);
  const root=d.createElement('section');root.className='mathas-sub-proof';root.hidden=true;
  root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
  root.setAttribute('aria-label','Soustraction scolaire certifiée');
  const inner=d.createElement('div');inner.className='mathas-sub-proof-inner';root.append(inner);d.body.append(root);
- let run=null,store=null,sending=false,finishing=false;
+ let run=null,store=null,sending=false,finishing=false,nativeRunning=false;
+ const native=()=>getFrame()?.contentWindow?.MathasSubtractionNativeProof||null;
  const live=()=>getContext?.().connected===true;
  function show(message){const el=inner.querySelector('.mathas-sub-status');if(el)el.textContent=message;notify(message)}
- function close(){if(sending||finishing)return;root.hidden=true;inner.replaceChildren();run=null;store=null}
+ function close(){if(sending||finishing)return;root.hidden=true;inner.replaceChildren();run=null;store=null;nativeRunning=false}
  function node(tag,className,textContent){
   const el=d.createElement(tag);if(className)el.className=className;
   if(textContent!==undefined)el.textContent=textContent;return el;
@@ -154,6 +155,36 @@ export function createCertifiedSubtraction({
   }else inner.append(node('div','mathas-sub-status',''));
   if(!inner.querySelector('.mathas-sub-status'))inner.append(node('div','mathas-sub-status',''));
  }
+
+ const receiver=Object.freeze({
+  progress:()=>run?subtractionEndState(run.mode,run.answers,run.questions):null,
+  record(entry){
+   if(!live()||!run||!store||sending||finishing)return false;
+   const q=run.questions[run.answers.length];
+   if(!q||entry?.id!==q.id||!digits(entry.answer))return false;
+   const next={...run,answers:[...run.answers,{id:q.id,answer:entry.answer}]};
+   const state=subtractionEndState(run.mode,next.answers,next.questions);
+   if(!state||!store.save(next))return false;
+   run=next;
+   if(state.complete){
+    native()?.completed();
+    queueMicrotask(()=>{void finish()});
+   }
+   return true;
+  },
+  suspended(){
+   if(sending||finishing)return;
+   run=null;store=null;nativeRunning=false;
+   notify('Défi conservé : reprends la même série depuis le menu.');
+  },
+  problem(message){notify(message)}
+ });
+ function showNative(){
+  const adapter=native();
+  if(!adapter?.launch(run,receiver))throw Error('Moteur des emprunts certifiés indisponible');
+  nativeRunning=true;
+  root.hidden=true;
+ }
  function render(){
   if(!run)return;
   const state=subtractionEndState(run.mode,run.answers,run.questions);
@@ -184,6 +215,7 @@ export function createCertifiedSubtraction({
   if(!run||sending||!live()||!subtractionEndState(run.mode,run.answers,run.questions)?.complete)return;
   sending=true;finishing=true;
   const snapshot=run,stats=subtractionEndState(run.mode,run.answers,run.questions);
+  root.hidden=false;
   build({title:'Vérification officielle',meta:'Résultat local : '+stats.correct+' / '+snapshot.answers.length});
   const retry=button('Réessayer la synchronisation',()=>{finishing=false;void finish()},true);
   try{
@@ -194,6 +226,7 @@ export function createCertifiedSubtraction({
    // Le serveur a déjà validé atomiquement l'épreuve : ne jamais refaire
    // une écriture XP à cause d'une panne de rafraîchissement ou de projection.
    store?.clear();
+   if(nativeRunning){native()?.home();nativeRunning=false}
    try{await refresh()}catch(error){notify('✅ XP certifiés, actualisation du profil à retenter.')}
    try{await onVerified?.({eventId:snapshot.sessionId,ack:receipt})}
    catch{notify('✅ XP certifiés, projection à consulter plus tard.')}
@@ -219,7 +252,9 @@ export function createCertifiedSubtraction({
   build({title:'Chargement du défi certifié',meta:'Soustraction · Niveau '+level});
   const prior=store.read(),restored=restore(prior,mode,level,method);
   if(restored){
-   run=restored;render();return true;
+   run=restored;
+   if(!mode.startsWith('hard-')){try{showNative();return true}catch(error){show(error.message);return false}}
+   render();return true;
   }
   try{
    const action=mode==='classic'?'start-classic-v1':'start-extended-v1';
@@ -230,6 +265,7 @@ export function createCertifiedSubtraction({
    if(!accepted)throw Error('Défi scolaire non valide');
    run={...accepted,mode,level,method,answers:[]};
    if(!store.save(run))throw Error('Sauvegarde de la preuve impossible');
+   if(!mode.startsWith('hard-')){showNative();return true}
    render();return true;
   }catch(error){
    build({title:'Défi indisponible',meta:'Aucun point ni XP fictif n’a été attribué.'});
@@ -237,5 +273,5 @@ export function createCertifiedSubtraction({
    inner.append(button('Retour au menu',close,true));return false;
   }
  }
- return Object.freeze({start,close,isOpen:()=>!root.hidden,destroy(){root.remove();style.remove()}});
+ return Object.freeze({start,close,isOpen:()=>!root.hidden,destroy(){native()?.abandonView();root.remove();style.remove()}});
 }
