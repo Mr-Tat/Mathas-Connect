@@ -491,7 +491,9 @@ toolbar.style.cssText='display:'+(mode==='connected'?'none':'flex')+';box-sizing
 const syncText=document.createElement('span');syncText.id='ce-sync';syncText.style.cssText='font:500 11px system-ui;color:#c0e6ec';
 const statusLabel=document.createElement('span');statusLabel.id='ce-identity';
 statusLabel.style.cssText='flex:0 1 auto;min-width:0;max-width:clamp(85px,28vw,300px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
-statusLabel.textContent='● Connecté · '+(studentName||'Compte élève')+(initial?'':' · Nouvelle progression Connect');
+// L'identité du joueur ne doit pas accueillir un message de progression :
+// le relevé XP porte déjà les informations sur le parcours Connect.
+statusLabel.textContent='● Connecté · '+(studentName||'Compte élève');
 statusLabel.title=statusLabel.textContent;
 const hubLink=document.createElement('a');hubLink.id='ce-hub-link';
 hubLink.href='https://mr-tat.github.io/Mathas-Connect/hub.html'+(isTestClass?'?class='+encodeURIComponent(classId)+'&name=Toutes&toutes=1':UUID.test(classId)?'?class='+encodeURIComponent(classId)+(teacherPlayer?'&joueur=prof':''):'');
