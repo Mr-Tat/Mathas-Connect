@@ -31,7 +31,7 @@ async function fixture(authorized){
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  const page=await browser.newPage({viewport:{width:1200,height:900}});
  let allRequests=0;
- const approvals=[];let pending=true;
+ const approvals=[];const apiActions=[];let pending=true;
  const base='https://mr-tat.github.io/Mathas-Connect';
  await page.route('**/*',async route=>{
    const url=route.request().url();
@@ -51,6 +51,7 @@ async function fixture(authorized){
    }
    if(url.includes('/functions/v1/connect-api')){
      const body=JSON.parse(route.request().postData()||'{}');
+     apiActions.push(body.action);
      if(body.action==='teacher-review-join'){approvals.push(body);pending=false}
      const data=body.action==='teacher-dashboard'?{
        ok:true,classes:[{id:testClass}],students:[{id:'22222222-2222-4222-8222-222222222222',display_name:'Élève.A'}],
@@ -60,7 +61,7 @@ async function fixture(authorized){
    }
    return route.abort();
  });
- return {browser,page,server,base,getRequests:()=>allRequests,getApprovals:()=>approvals};
+ return {browser,page,server,base,getRequests:()=>allRequests,getApprovals:()=>approvals,getApiActions:()=>apiActions};
 }
 async function close(f){await f.browser.close();await new Promise(done=>f.server.close(done))}
 test('HUB Toutes: six vrais app_key dans Tests, sans carte en double ni modification des HUB scolaires', {timeout:60000},async()=>{
@@ -170,6 +171,8 @@ test('Côté élève, seul le retour vers Monsieur T est proposé ; approbations
    assert.equal(await f.page.locator('#toutes-connect-student').isVisible(),false);
    assert.equal(await f.page.locator('#toutes-requests-open').isVisible(),false);
    assert.equal(await f.page.locator('#levels .app-card').count(),6);
+   assert.equal(f.getApiActions().includes('teacher-dashboard'),false,'aucune lecture de code ou demande professeur sur la page élève');
+   assert.equal(await f.page.locator('#toutes-pending-requests').textContent(),'');
    await f.page.locator('#toutes-switch').click();
    await f.page.waitForURL(/joueur=prof/);
    const u=new URL(f.page.url());
