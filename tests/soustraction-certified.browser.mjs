@@ -166,7 +166,10 @@ async function fillCalc(frame,index,raw){
 async function solvePair(frame,questions){
  for(let i=0;i<questions.length;i++)
   await fillCalc(frame,i,String(BigInt(questions[i].a)-BigInt(questions[i].b)));
- await frame.locator('#primaryBtn').click();
+ // Le moteur natif peut valider automatiquement la paire lors de la dernière
+ // saisie ; ne pas cliquer derrière le reçu officiel déjà affiché.
+ if((await frame.locator('#primaryBtn').textContent())?.includes('Valider'))
+  await frame.locator('#primaryBtn').click();
 }
 test('Chromium scolaire natif : 4 soustractions, XP, consentement et projection', {timeout:120000},async()=>{
  const ctx=await setup(),errors=[];
