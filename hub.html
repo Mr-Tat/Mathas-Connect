@@ -11,6 +11,7 @@
   var requested=q.get('class')||'';
   var valid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   var id=valid.test(requested)?requested:(space?space[0]:null);
+  if(!id&&q.get('toutes')==='1'&&q.get('joueur')==='prof'){id='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';}
   if(!id){location.replace('./connexion.html');return;}
   window.__mathasClassRoute={id:id,name:(q.get('name')||'').trim().slice(0,80)||(space?space[1]:'Ma classe')};
 })();
@@ -104,4 +105,4 @@
 <main class="page-shell">
 <section class="daily-section panel panel-hero"><div class="section-heading"><div class="title-row title-row-large"><h2>Sélection du jour</h2><span id="dailyCount" class="count-pill">0 app</span></div></div><div id="dailyApps" class="app-grid daily-grid empty-grid"><p class="empty-state">Chargement…</p></div></section><div id="levels"></div></main>
 <template id="levelTemplate"><section class="level panel collapsed"><button class="level-toggle" type="button" aria-expanded="false"><span class="level-heading-group"><span class="level-title"></span><small class="level-description"></small></span><span class="level-spacer"></span><span class="level-count count-pill">0 app</span><span class="chevron">⌄</span></button><div class="level-content"><div class="app-grid level-apps"></div></div></section></template>
-<template id="appTemplate"><a class="app-card" href="#"><div class="app-thumb"><span class="app-initial">M</span></div><div class="app-meta"><strong class="app-name">Application</strong><small class="app-scores">Accès libre · scores locaux</small></div></a></template><script type="module" src="./hub.js?v=20261104-profile-levels-5-25"></script></body></html>
+<template id="appTemplate"><a class="app-card" href="#"><div class="app-thumb"><span class="app-initial">M</span></div><div class="app-meta"><strong class="app-name">Application</strong><small class="app-scores">Accès libre · scores locaux</small></div></a></template><script type="module" src="./hub.js?v=20261105-toutes-v1"></script></body></html>
