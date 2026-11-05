@@ -464,7 +464,7 @@ let lastIdentityRequestAt=0,refreshingIdentity=false;
 async function showIdentity(refresh=false) {
   if(refresh&&(refreshingIdentity||Date.now()-lastIdentityRequestAt<2000))return;
   if(!refresh)drawIdentity(null);
-  if (!classId || (!playingAsTeacher&&inFreeMode())) return;
+  if (!classId || (!playingAsTeacher&&inFreeMode()&&!allMode)) return;
   refreshingIdentity=true;lastIdentityRequestAt=Date.now();
   try {
     const sb=await getSupabase();
