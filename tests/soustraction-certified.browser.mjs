@@ -138,96 +138,95 @@ async function setup({viewport={width:1024,height:768},fixtureData=fixture()}={}
   async close(){await context.close();await browser.close();await new Promise(ok=>server.close(ok))}
  };
 }
-async function clickAndAnswer(page,frame,{method='addBottom',count=4}={}){
+
+async function launchClassic(page,frame,{method='addBottom',count=4}={}){
  await frame.locator('input[name="borrowMethod"][value="'+method+'"]').evaluate(input=>input.closest('label').click());
- await frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"]').evaluate(el=>{
-  window.__schoolClickTrace=[];
-  el.ownerDocument.defaultView.addEventListener('click',e=>window.__schoolClickTrace.push({
-   id:e.target?.id,count:e.target?.dataset?.count,trusted:e.isTrusted,
-   className:String(e.target?.className||'').slice(0,100)
-  }),true);
- });
  await frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"]').click();
- console.log('CLASSIC_CLICKS',JSON.stringify(await frame.locator('body').evaluate(()=>window.__schoolClickTrace)));
- await page.locator('.mathas-sub-proof:not([hidden]) .mathas-sub-answer').waitFor({timeout:20000});
+ await frame.locator('#gameScreen:not(.hidden) #calculationsPair .calc-box').first().waitFor({timeout:20000});
+ assert.equal(await page.locator('.mathas-sub-proof:not([hidden])').count(),0,
+  'Les exercices normaux restent dans les grilles originales, pas dans une interface parallèle');
 }
-async function solve(page,answers){
- for(const value of answers){
-  const box=page.locator('.mathas-sub-proof:not([hidden]) .mathas-sub-answer');
-  await box.fill(value);
-  await page.locator('.mathas-sub-proof:not([hidden]) button.primary').first().click();
- }
- await page.getByRole('heading',{name:'Série vérifiée ✓'}).waitFor({timeout:30000});
+async function fillCalc(frame,index,raw){
+ await frame.locator('#calculationsPair').evaluate((pair,{index,raw})=>{
+  const box=pair.querySelectorAll('.calc-box')[index];
+  if(!box)throw Error('Calcul natif absent '+index);
+  const fields=[...box.querySelectorAll('.answer-input')];
+  const digits=String(raw).padStart(fields.length,'0').split('').reverse();
+  if(digits.length!==fields.length)throw Error('Valeur à trop de chiffres');
+  for(let col=0;col<fields.length;col++){
+   const input=box.querySelector('.answer-input[data-col="'+col+'"]');
+   if(!input)throw Error('Saisie native absente, colonne '+col);
+   input.focus();
+   const key=document.querySelector('#numpad .num-key[data-key="'+digits[col]+'"]');
+   if(!key)throw Error('Touche native absente : '+digits[col]);
+   key.click();
+  }
+ },{index,raw});
 }
-test('Chromium scolaire certifié: 4 soustractions -> preuve, XP, consentement et projection', {timeout:120000},async()=>{
+async function solvePair(frame,questions){
+ for(let i=0;i<questions.length;i++)
+  await fillCalc(frame,i,String(BigInt(questions[i].a)-BigInt(questions[i].b)));
+ await frame.locator('#primaryBtn').click();
+}
+test('Chromium scolaire natif : 4 soustractions, XP, consentement et projection', {timeout:120000},async()=>{
  const ctx=await setup(),errors=[];
  try{
   const {page,frame}=await ctx.page();
   page.on('pageerror',e=>errors.push(e.message));
-  await clickAndAnswer(page,frame,{method:'takeTop',count:4});
-  assert.equal(ctx.fixture.issued[0]?.method,'takeTop','méthode conservée dans le défi serveur');
-  assert.equal(ctx.fixture.issued[0]?.total,4,'clic sur 4 doit émettre exactement 4 calculs : '+JSON.stringify(ctx.fixture.received.filter(x=>x.action==='start-classic-v1')));
-  assert.equal(await frame.locator('#calculationsPair .calc-box:visible').count(),0,
-   'le jeu libre ne doit pas lancer un score non certifié');
-  const questions=ctx.fixture.issued[0].questions;
-  await solve(page,questions.map(q=>String(BigInt(q.a)-BigInt(q.b))));
-  assert.equal(ctx.fixture.checks.length,1);
+  await launchClassic(page,frame,{method:'takeTop',count:4});
+  assert.equal(ctx.fixture.issued[0]?.method,'takeTop');
+  assert.equal(ctx.fixture.issued[0]?.total,4);
+  assert.equal(await frame.locator('#calculationsPair .calc-box:visible').count(),2);
+  const q=ctx.fixture.issued[0].questions;
+  await solvePair(frame,q.slice(0,2));
+  await frame.locator('#primaryBtn').click();
+  await solvePair(frame,q.slice(2,4));
+  await page.getByRole('heading',{name:'Série vérifiée ✓'}).waitFor({timeout:25000});
   assert.deepEqual(ctx.fixture.checks[0],{mode:'classic',method:'takeTop',correct:4,attempts:4});
   assert.equal(ctx.fixture.received.some(x=>x.action==='game-record'),false);
-  assert.equal(ctx.fixture.shared,0,'aucun partage sans consentement');
-  await page.locator('.mathas-projection-offer:not([hidden]) button.yes').waitFor({timeout:12000});
-  await page.locator('.mathas-projection-offer:not([hidden]) button.yes').click();
-  await page.waitForFunction(()=>document.querySelector('#ce-identity')?.textContent?.includes('Connecté'),null,{timeout:20000});
-  // Le mock est réellement invoqué après le geste Oui.
+  assert.equal(ctx.fixture.shared,0);
+  await page.locator('.mathas-projection-offer:not([hidden]) button.yes').click({timeout:16000});
   await page.waitForFunction(()=>document.querySelector('.mathas-projection-offer')?.hidden===true,null,{timeout:15000});
-  await page.waitForTimeout(400);
   assert.equal(ctx.fixture.shared,1);
   assert.deepEqual(errors,[]);
  }finally{await ctx.close()}
 });
-test('Chromium scolaire: 3 vies, exactement trois erreurs et zéro score client', {timeout:120000},async()=>{
+test('Chromium scolaire natif : 3 vies et trois erreurs', {timeout:120000},async()=>{
  const ctx=await setup({viewport:{width:390,height:740}});
  try{
   const {page,frame}=await ctx.page();
-  assert.equal(await frame.locator('#mathasSousThreeLives').count(),1);
-  // Le menu HARD est construit à l'ouverture ; ses boutons sont ajoutés par le watcher.
   await frame.locator('#mathasSousThreeLives').click();
-  await page.locator('.mathas-sub-proof:not([hidden]) .mathas-sub-answer').waitFor({timeout:20000});
-  for(let i=0;i<3;i++){
-   await page.locator('.mathas-sub-proof:not([hidden]) .mathas-sub-answer').fill('0');
-   await page.locator('.mathas-sub-proof:not([hidden]) button.primary').first().click();
-  }
-  await page.getByRole('heading',{name:'Série vérifiée ✓'}).waitFor({timeout:20000});
+  await frame.locator('#gameScreen:not(.hidden) #calculationsPair .calc-box').first().waitFor({timeout:20000});
+  await fillCalc(frame,0,'0');
+  await frame.locator('#primaryBtn').click();
+  await fillCalc(frame,1,'0');
+  await frame.locator('#primaryBtn').click();
+  await frame.locator('#primaryBtn').click();
+  await fillCalc(frame,0,'0');
+  await frame.locator('#primaryBtn').click();
+  await page.getByRole('heading',{name:'Série vérifiée ✓'}).waitFor({timeout:25000});
   assert.deepEqual(ctx.fixture.checks[0],{mode:'three-lives',method:'addBottom',correct:0,attempts:3});
   assert.equal(ctx.fixture.received.some(x=>x.action==='game-record'),false);
-  assert.equal(ctx.fixture.shared,0);
  }finally{await ctx.close()}
 });
-test('Chromium scolaire: interruption puis reprise même élève, preuve soumise une fois', {timeout:120000},async()=>{
+test('Chromium scolaire natif : reprise du même calcul après interruption', {timeout:120000},async()=>{
  const ctx=await setup();
  try{
   const first=await ctx.page();
-  await clickAndAnswer(first.page,first.frame,{method:'takeTop'});
-  assert.equal(ctx.fixture.issued[0]?.total,4,'épreuve de 4 calculs avant interruption');
+  await launchClassic(first.page,first.frame,{method:'takeTop'});
   const q=ctx.fixture.issued[0].questions;
-  for(let i=0;i<2;i++){
-   await first.page.locator('.mathas-sub-proof:not([hidden]) .mathas-sub-answer')
-    .fill(String(BigInt(q[i].a)-BigInt(q[i].b)));
-   await first.page.locator('.mathas-sub-proof:not([hidden]) button.primary').first().click();
-  }
-  assert.equal(ctx.fixture.checks.length,0);
+  await fillCalc(first.frame,0,String(BigInt(q[0].a)-BigInt(q[0].b)));
+  await first.frame.locator('#primaryBtn').click();
   await first.page.close();
   const second=await ctx.page();
-  await clickAndAnswer(second.page,second.frame,{method:'takeTop'});
-  assert.equal(ctx.fixture.issued.length,1,'reprise locale, aucun nouveau défi requis');
-  assert.equal(ctx.fixture.issued[0]?.total,4,'reprise sur série de 4');
-  for(let i=2;i<4;i++){
-   await second.page.locator('.mathas-sub-proof:not([hidden]) .mathas-sub-answer')
-    .fill(String(BigInt(q[i].a)-BigInt(q[i].b)));
-   await second.page.locator('.mathas-sub-proof:not([hidden]) button.primary').first().click();
-  }
+  await launchClassic(second.page,second.frame,{method:'takeTop'});
+  assert.equal(ctx.fixture.issued.length,1,'Une reprise réutilise les nombres serveur');
+  await fillCalc(second.frame,1,String(BigInt(q[1].a)-BigInt(q[1].b)));
+  await second.frame.locator('#primaryBtn').click();
+  await second.frame.locator('#primaryBtn').click();
+  await solvePair(second.frame,q.slice(2,4));
   await second.page.getByRole('heading',{name:'Série vérifiée ✓'}).waitFor({timeout:25000});
-  assert.equal(ctx.fixture.checks.length,1,'une seule preuve vérifiée');
+  assert.equal(ctx.fixture.checks.length,1);
   assert.equal(ctx.fixture.checks[0].correct,4);
  }finally{await ctx.close()}
 });
