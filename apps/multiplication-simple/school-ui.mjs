@@ -51,7 +51,7 @@ function putCups(doc,button,specs){
   slot.append(cup);row.append(slot);
  }
  button.style.setProperty('position','relative','important');
- button.style.setProperty('padding-top','19px','important');
+ if(button.matches('button'))button.style.setProperty('padding-top','19px','important');
 }
 
 
@@ -102,13 +102,21 @@ function ensureStyle(doc){
  '#startSudden>.mathas-multi-official-xp,#hardMenu .hard-sudden>.mathas-multi-official-xp{left:6px!important;right:auto!important}',
  'body.light .mathas-multi-official-xp,body.light-mode .mathas-multi-official-xp{color:#523107!important}',
  '.mathas-multi-instruction-note{font:700 12px/1.4 system-ui;color:#f7cb76;margin-top:5px}',
- '.mathas-multi-school-cups{position:absolute!important;top:2px!important;right:6px!important;display:inline-flex!important;gap:3px!important;align-items:center!important;pointer-events:none!important;z-index:3}',
+ '.mathas-multi-school-cups{position:absolute!important;bottom:10px!important;top:auto!important;right:9px!important;display:inline-flex!important;gap:3px!important;align-items:center!important;pointer-events:none!important;z-index:3}',
+ '#menuScreen .mode-card.classic{position:relative!important}',
+ '#menuScreen .mode-card.classic>.mathas-multi-school-cups{bottom:12px!important;right:16px!important}',
  '.mathas-multi-school-cup{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:15px;min-height:16px}',
  '.mathas-multi-school-cup .mathas-multi-school-cup-art{display:inline-flex!important;width:16px!important;height:17px!important;font-size:15px!important}',
  '.mathas-multi-school-cup .mathas-multi-school-cup-art svg{width:100%!important;height:100%!important}',
  '.mathas-multi-school-cup.locked{opacity:.38;filter:grayscale(1)}',
  '.mathas-multi-school-cup.earned{opacity:1;filter:drop-shadow(0 1px 3px #f4d48a77)}',
  '/* Les fonds et couleurs natifs restent inchangés : disposition et relief seulement. */',
+ '/* Le groupe de survie doit couvrir les deux colonnes de la grille icône/titre du moteur V7. */',
+ '#menuScreen .mode-card.sudden>.mathas-multi-survival-options{grid-column:1/-1!important;grid-row:auto!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:clamp(8px,1vw,14px)!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;align-items:stretch!important;justify-self:stretch!important}',
+ '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice{min-width:0!important;max-width:none!important;width:100%!important;min-height:154px!important;margin:0!important;box-sizing:border-box!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:8px!important;white-space:normal!important;overflow-wrap:normal!important;word-break:normal!important;text-align:center!important;font-size:clamp(.88rem,1.25vw,1.15rem)!important;line-height:1.18!important;padding:16px 10px 29px!important}',
+ '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice:disabled{cursor:not-allowed!important;opacity:.56!important;filter:grayscale(.42)!important}',
+ '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice>.mathas-multi-official-xp{left:auto!important;right:8px!important;bottom:7px!important}',
+ '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice>.mathas-multi-school-cups{right:8px!important;bottom:22px!important}',
  '#menuScreen .mathas-multi-survival-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(7px,1.1vw,13px);width:100%;min-width:0;align-items:stretch}',
  '#menuScreen .mathas-multi-survival-options>.big-mode-choice{min-width:0;width:100%;min-height:88px;margin:0!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;white-space:normal;text-align:center}',
  '#hardMenu .hard-actions:has(.mathas-multi-hard-three-lives){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}',
@@ -157,9 +165,11 @@ function renderXp(doc,xp){
  }
 }
 function renderCups(doc,rewards){
- for(const button of doc.querySelectorAll('#menuScreen .classic-count-btn[data-count]')){
-  const n=level(doc,'classicLevel');putCups(doc,button,officialMultiplicationCups(rewards,'classic',n));
- }
+ // Un seul trophée de maîtrise pour les trois séries : la carte Calculs,
+ // plutôt que trois coupes trompeuses à l'intérieur des boutons 4/10/20.
+ doc.querySelectorAll('#menuScreen .classic-count-btn[data-count] .'+CUPS).forEach(x=>x.remove());
+ const classicCard=doc.querySelector('#menuScreen .mode-card.classic');
+ putCups(doc,classicCard,officialMultiplicationCups(rewards,'classic',level(doc,'classicLevel')));
  putCups(doc,doc.getElementById('startSudden'),
   officialMultiplicationCups(rewards,'sudden',level(doc,'suddenLevel')));
  for(const card of doc.querySelectorAll('#hardMenu .hard-level-card')){
