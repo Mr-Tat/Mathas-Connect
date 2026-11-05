@@ -69,7 +69,7 @@ Deno.serve(async(req:Request)=>{
    if(raw.length>2500)return fail('payload_too_large',413);
    let body:any;
    try{body=JSON.parse(raw)}catch{return fail('invalid_json')}
-   if(body?.classId!==TEST_CLASS||!['list','set'].includes(body.action))return fail('invalid_test_class',403);
+   if(body?.classId!==TEST_CLASS||!['list','set','all','set-all'].includes(body.action))return fail('invalid_test_class',403);
    const token=req.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];
    if(!token)return fail('authentication_required',401);
    const {data:{user},error}=await auth.auth.getUser(token);
@@ -80,7 +80,35 @@ Deno.serve(async(req:Request)=>{
    const p=await db.from('connect_class_permissions').select('class_id')
      .eq('class_id',TEST_CLASS).eq('teacher_id',user.id).eq('can_manage',true).maybeSingle();
    if(p.error||!p.data)return fail('class_permission_required',403);
+   if(body.action==='all'){
+     // Catalogue professeur uniquement : une seule fiche officielle par app_key.
+     // La distinction test/publié dépend des visibilités réelles des cinq presets,
+     // jamais de l'URL ou d'un choix effectué dans le navigateur.
+     const [listed, presets, settings] = await Promise.all([
+       catalogue(true),
+       db.from('connect_hub_preset_entries').select('app_key,visible')
+         .eq('visible',true).limit(500),
+       db.from('connect_hub_all_settings').select('app_key,all_order,stage').limit(500),
+     ]);
+     if(presets.error||settings.error)throw Error('catalogue_unavailable');
+     const configuration=new Map((settings.data||[]).map((entry:any)=>[entry.app_key,entry]));
+     const published=new Set((presets.data||[]).map((entry:any)=>entry.app_key));
+     return respond({ok:true,apps:listed.filter(app=>app.enabled).map(app=>({
+       ...app,published:published.has(app.app_key),in_test:app.visible,
+       all_order:(configuration.get(app.app_key) as any)?.all_order??app.display_order,
+       stage:(configuration.get(app.app_key) as any)?.stage??(published.has(app.app_key)?'published':'test')
+     }))});
+   }
    if(body.action==='list')return respond({ok:true,apps:await catalogue(true)});
+   if(body.action==='set-all'){
+     if(!validKey(body.appKey)||!Number.isSafeInteger(body.allOrder)||body.allOrder<0||body.allOrder>100000||!['test','published'].includes(body.stage))return fail('invalid_all_settings');
+     const exists=await db.from('connect_apps').select('app_key').eq('app_key',body.appKey).eq('enabled',true).maybeSingle();
+     if(exists.error||!exists.data||body.appKey==='connect-lab')return fail('app_not_enabled',409);
+     // Le statut est descriptif : publication réelle seulement par les presets scolaires et permissions serveur.
+     const saved=await db.from('connect_hub_all_settings').upsert({app_key:body.appKey,all_order:body.allOrder,stage:body.stage,updated_at:new Date().toISOString()},{onConflict:'app_key'});
+     if(saved.error)throw Error('all_settings_save_failed');
+     return respond({ok:true,appKey:body.appKey,allOrder:body.allOrder,stage:body.stage});
+   }
    if(!validKey(body.appKey)||typeof body.visible!=='boolean')return fail('invalid_visibility');
    // On ne peut jamais activer une appli désactivée ni l'outil de diagnostic.
    const app=await db.from('connect_apps').select('enabled').eq('app_key',body.appKey).maybeSingle();

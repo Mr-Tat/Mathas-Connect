@@ -93,7 +93,8 @@ test('secours Edge limité au GET de la classe TEST, sans fausse activation Conn
   }
   assert.equal(edge.includes('https://mr-tat.github.io/Mathas-Connect/apps/GRAN-abaque-m-1/'),false,'Abaque reste une carte statique, pas une activation Edge');
   assert.match(hub,/apps=data\.apps\.filter\(app=>!labDemoKeys\.has\(app\.app_key\)\)/);
-  assert.doesNotMatch(edge,/connect_hub_preset_entries/);
+  assert.match(edge,/\.from\('connect_hub_preset_entries'\)\.select\(/);
+  assert.doesNotMatch(edge,/\.from\('connect_hub_preset_entries'\)\.(?:update|upsert|insert|delete)\(/);
   assert.doesNotMatch(edge,/\.from\('connect_xp_credits'\)/);
 });
 

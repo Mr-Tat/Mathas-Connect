@@ -84,7 +84,9 @@ test('les cases Afficher ne publient jamais les quatre vrais HUB',()=>{
  assert.match(hub,/if\(classId===LAB_CLASS\)/);
  assert.match(hub,/connect-lab-catalog/);
  assert.match(hub,/test_catalog_unavailable/);
- assert.doesNotMatch(edge,/connect_hub_preset_entries|update\(\{.*enabled/);
+ assert.match(edge,/\.from\('connect_hub_preset_entries'\)\.select\(/);
+ assert.doesNotMatch(edge,/\.from\('connect_hub_preset_entries'\)\.(?:update|upsert|insert|delete)\(/);
+ assert.doesNotMatch(edge,/update\(\{.*enabled/);
  assert.match(edge,/connect_lab_hub_visibility/);
  assert.match(edge,/user\.is_anonymous/);
  assert.match(edge,/\.from\('connect_teachers'\)/);

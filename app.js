@@ -885,10 +885,30 @@ const APP_SPACES=[['observation','Observation'],['phase1','Phase 1'],['phase2','
 async function loadTeacherAppPreview(){
  const body=$('teacher-app-tbody');if(!body)return;
  body.replaceChildren();
- const loading=document.createElement('tr'),loadingCell=document.createElement('td');loadingCell.colSpan=9;loadingCell.textContent='Chargement du tableau GLOBAL…';loading.append(loadingCell);body.append(loading);
+ const loading=document.createElement('tr'),loadingCell=document.createElement('td');loadingCell.colSpan=11;loadingCell.textContent='Chargement du tableau GLOBAL…';loading.append(loadingCell);body.append(loading);
  try{
   const data=await resultCall('teacher-app-matrix-get');
   const entries=new Map((data.entries||[]).map(e=>[e.preset_slug+'|'+e.app_key,e]));
+  const {data:{session:allSession}}=await sb.auth.getSession();
+  let allSettings=new Map();
+  if(allSession?.access_token){
+    try{
+      const response=await fetch(url+'/functions/v1/connect-lab-catalog',{method:'POST',headers:{apikey:key,authorization:'Bearer '+allSession.access_token,'content-type':'application/json'},body:JSON.stringify({action:'all',classId:labTestClass})});
+      if(response.ok){const all=await response.json();if(all.ok&&Array.isArray(all.apps))allSettings=new Map(all.apps.map(a=>[a.app_key,a]));}
+    }catch{}
+  }
+  const saveAll=async(app,allOrder,stage,controls=[])=>{
+    if(saving)return false;
+    if(!allSession?.access_token){info('Connexion professeur requise pour le classement Toutes.',true);return false}
+    saving=true;controls.forEach(c=>c.disabled=true);
+    try{
+      const response=await fetch(url+'/functions/v1/connect-lab-catalog',{method:'POST',headers:{apikey:key,authorization:'Bearer '+allSession.access_token,'content-type':'application/json'},body:JSON.stringify({action:'set-all',classId:labTestClass,appKey:app.app_key,allOrder,stage})});
+      const saved=await response.json();if(!response.ok||!saved.ok)throw Error(saved.error||'Enregistrement impossible');
+      allSettings.set(app.app_key,{...allSettings.get(app.app_key),all_order:allOrder,stage});
+      info('✓ Paramètres du HUB Toutes enregistrés');return true;
+    }catch(error){info('HUB Toutes : '+error.message,true);return false}
+    finally{saving=false;controls.forEach(c=>c.disabled=false)}
+  };
   const commonOrder=app=>{const values=APP_SPACES.map(([slug])=>entries.get(slug+'|'+app.app_key)?.display_order).filter(Number.isFinite);return values.length&&values.every(v=>v===values[0])?values[0]:(app.display_order??0)};
   const apps=(data.apps||[]).filter(a=>a.app_key!=='connect-lab').sort((a,b)=>commonOrder(a)-commonOrder(b)||a.title.localeCompare(b.title,'fr'));
   const images={'addition-ecrite-simple':'./assets/miniatures/addition-ecrite-simple.webp','multiplication-ecrite-simple':'./assets/miniatures/multiplication-ecrite-simple.webp','soustraction-ecrite-simple':'./assets/miniatures/soustraction-ecrite-simple.webp'};
@@ -957,6 +977,27 @@ async function loadTeacherAppPreview(){
    };
    order.oninput=()=>{order.classList.add('dirty');ok.classList.add('dirty')};order.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();applyOrder()}};ok.onclick=applyOrder;
    orderCell.append(order,ok);tr.append(orderCell);
+   const allConfig=allSettings.get(app.app_key)||{all_order:app.display_order??0,stage:'test'};
+   const allOrderCell=document.createElement('td');allOrderCell.className='teacher-matrix-order';
+   const allOrder=document.createElement('input');allOrder.type='number';allOrder.min='0';allOrder.max='100000';allOrder.value=String(allConfig.all_order);allOrder.setAttribute('aria-label','Ordre Toutes — '+app.title);
+   const allOk=document.createElement('button');allOk.type='button';allOk.textContent='OK';allOk.className='teacher-matrix-order-ok';
+   const saveOrder=async()=>{const n=Number(allOrder.value);if(!Number.isInteger(n)||n<0||n>100000){info('Ordre Toutes invalide',true);return}if(await saveAll(app,n,allSettings.get(app.app_key)?.stage||allConfig.stage,[allOrder,allOk])){allOrder.classList.remove('dirty');allOk.classList.remove('dirty')}};
+   allOrder.oninput=()=>{allOrder.classList.add('dirty');allOk.classList.add('dirty')};allOrder.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();saveOrder()}};allOk.onclick=saveOrder;allOrderCell.append(allOrder,allOk);tr.append(allOrderCell);
+   const stageCell=document.createElement('td'),stageSelect=document.createElement('select');stageSelect.className='teacher-matrix-select';stageSelect.setAttribute('aria-label','État — '+app.title);
+   stageSelect.add(new Option('En test','test'),new Option('Publié','published'));stageSelect.value=allConfig.stage;
+   stageSelect.title='Étiquette de suivi uniquement : la visibilité dans chaque classe se règle séparément.';
+   stageSelect.onchange=async()=>{const previous=allSettings.get(app.app_key)?.stage||allConfig.stage;if(!await saveAll(app,Number(allSettings.get(app.app_key)?.all_order??allConfig.all_order),stageSelect.value,[stageSelect]))stageSelect.value=previous};
+   const labLabel=document.createElement('label'),labBox=document.createElement('input');
+   labLabel.className='teacher-matrix-check';labBox.type='checkbox';labBox.checked=allConfig.in_test===true;
+   labLabel.append(labBox,document.createTextNode(' Dans Tests'));
+   labBox.setAttribute('aria-label','Dans Tests — '+app.title);
+   labBox.onchange=async()=>{const previous=!labBox.checked;labBox.disabled=true;
+     try{const response=await fetch(url+'/functions/v1/connect-lab-catalog',{method:'POST',headers:{apikey:key,authorization:'Bearer '+allSession.access_token,'content-type':'application/json'},body:JSON.stringify({action:'set',classId:labTestClass,appKey:app.app_key,visible:labBox.checked})});const saved=await response.json();
+       if(!response.ok||!saved.ok)throw Error(saved.error||'Échec');
+       allSettings.set(app.app_key,{...allSettings.get(app.app_key),in_test:saved.visible});info('✓ Tests mis à jour');
+     }catch(e){labBox.checked=previous;info('Tests : '+e.message,true)}finally{labBox.disabled=false}
+   };
+   stageCell.append(stageSelect,labLabel);tr.append(stageCell);
    const position=document.createElement('td');position.className='teacher-matrix-position';position.textContent=String(index+1);tr.append(position);body.append(tr);
   }
   function sortRows(){const rows=[...body.querySelectorAll('tr.teacher-matrix-row')];rows.sort((a,b)=>Number(a.dataset.order)-Number(b.dataset.order)||a.dataset.title.localeCompare(b.dataset.title,'fr'));rows.forEach((row,index)=>{row.lastElementChild.textContent=String(index+1);body.append(row)})}
@@ -966,6 +1007,6 @@ async function loadTeacherAppPreview(){
    if(!confirm('Retirer '+affected.length+' sélection(s) « Du jour » de cette colonne ?'))return;
    if(await save(affected.map(app=>change(slug,app,{featured:false})),[btn]))loadTeacherAppPreview();
   }});
-  if(!apps.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=8;td.textContent='Aucune application à afficher.';tr.append(td);body.append(tr)}
- }catch(e){body.replaceChildren();const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=8;td.textContent='Impossible de charger : '+e.message;tr.append(td);body.append(tr)}
+  if(!apps.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=11;td.textContent='Aucune application à afficher.';tr.append(td);body.append(tr)}
+ }catch(e){body.replaceChildren();const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=11;td.textContent='Impossible de charger : '+e.message;tr.append(td);body.append(tr)}
 }

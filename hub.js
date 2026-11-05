@@ -9,6 +9,7 @@ import {schoolRecordLaunch,schoolAdditionsLaunch,SCHOOL_RECORD_APPS,SCHOOL_RECOR
 const url = 'https://awmhpfofacaglewammxt.supabase.co';
 const key = 'sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const playingAsTeacher=new URLSearchParams(location.search).get('joueur')==='prof';
+const allMode=new URLSearchParams(location.search).get('toutes')==='1'&&playingAsTeacher;
 const LAB_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 // Le catalogue et le mode libre ne chargent pas le SDK Supabase.
 let supabasePromise;
@@ -74,13 +75,13 @@ function card(app) {
   // silencieusement un 4/4 sans preuve et sans XP. Le mode Classique reste libre.
   if(schoolMultiplication && !inFreeMode() && target.origin===location.origin)
     target.searchParams.set('requireConnect','1');
-   if (playingAsTeacher && ['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
+   if (playingAsTeacher && !allMode && ['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
   node.href = target.href;
   if(testSlug)node.dataset.labSchool=testSlug;
   else node.dataset.appKey=app.app_key;
   node.target = '_blank';
   node.rel = 'noopener noreferrer';
-  node.querySelector('.app-name').textContent = app.title;
+  node.querySelector('.app-name').textContent = app.title + (allMode ? (app.stage==='published'?' · Publiée':' · En test') : '');
   node.querySelector('.app-initial').textContent = app.title.charAt(0).toUpperCase();
   node.querySelector('.app-scores').textContent = testMultiplication?'🧪 TEST · vrais XP et trophées Connect (connexion obligatoire)':
     testSlug?(app.app_key==='addition-ecrite-multiple'?'🧪 TEST · XP Connect en Classique / Mort subite':'🧪 TEST · nouveaux modes XP en préparation'):progressText(app.app_key);
@@ -136,7 +137,17 @@ function section(kind, title, description, apps, makeCard=card) {
 async function showCatalog() {
   try {
     let apps=[];
-    if(classId===LAB_CLASS){
+    if(allMode){
+      // Accès professeur vérifié côté serveur, sans secours catalogue élève.
+      const sb=await getSupabase();
+      const {data:{session}}=await sb.auth.getSession();
+      if(!session?.access_token||session.user?.is_anonymous)throw Error('professor_session_required');
+      const response=await fetch(url+'/functions/v1/connect-lab-catalog',{method:'POST',cache:'no-store',headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},body:JSON.stringify({action:'all',classId:LAB_CLASS})});
+      if(!response.ok)throw Error('all_catalog_unavailable');
+      const data=await response.json();
+      if(!data.ok||!Array.isArray(data.apps))throw Error('all_catalog_unavailable');
+      apps=data.apps;
+    }else if(classId===LAB_CLASS){
       // Le HUB de test ne se replie JAMAIS sur Observation en cas de panne.
       const response=await fetch(url+'/functions/v1/connect-lab-catalog?class='+encodeURIComponent(LAB_CLASS),{cache:'no-store'});
       if(!response.ok)throw Error('test_catalog_unavailable');
@@ -178,23 +189,32 @@ async function showCatalog() {
       }
     }catch{ /* Le HUB reste utilisable avec le catalogue statique. */ }
     }
-    apps=apps.filter(a=>a.enabled!==false).sort((a,b)=>(a.display_order||0)-(b.display_order||0));
-    const featured = apps.filter(a => a.featured);
+    apps=apps.filter(a=>a.enabled!==false).sort((a,b)=>((allMode?a.all_order:a.display_order)||0)-((allMode?b.all_order:b.display_order)||0));
+    const featured = allMode?[]:apps.filter(a => a.featured);
     $('dailyCount').textContent = featured.length + ' app' + (featured.length === 1 ? '' : 's');
     $('dailyApps').replaceChildren(...(featured.length ? featured.map(card) : [
       Object.assign(document.createElement('p'), { className: 'empty-state', textContent: 'Pas de sélection pour le moment.' })
     ]));
     $('dailyApps').classList.toggle('empty-grid', featured.length === 0);
-    const groups=levels.map(([id, title, desc]) =>
-      section(id, title, desc, apps.filter(a => a.hub_section === id))
+    const ordinary=allMode?apps.filter(a=>!a.in_test):apps;
+    const groups=levels.filter(([id])=>!allMode||ordinary.some(a=>a.hub_section===id)).map(([id, title, desc]) =>
+      section(id, title, desc, ordinary.filter(a => a.hub_section === id))
     );
-    if(classId===LAB_CLASS)groups.unshift(labPreviewSection());
+    if(allMode){
+      document.body.classList.add('hub-toutes');
+      const trials=apps.filter(a=>a.in_test);
+      groups.unshift(section('tests','🧪 Tests','Applications présentes dans le circuit d’essai, y compris celles déjà publiées dans certaines classes. Connect réel avec profils fictifs TEST.',trials));
+      groups[0].classList.remove('collapsed');groups[0].querySelector('.level-toggle').setAttribute('aria-expanded','true');
+      $('classLabel').textContent='Toutes les applications · Professeur';
+      document.querySelector('.daily-section')?.setAttribute('hidden','');
+    }else if(classId===LAB_CLASS)groups.unshift(labPreviewSection());
 
     $('levels').replaceChildren(...groups);
   } catch {
-    $('dailyApps').textContent = classId===LAB_CLASS?'Catalogue Connect du laboratoire indisponible. Aucun jeu Connect affiché.':'Le catalogue est momentanément indisponible.';
+    $('dailyApps').textContent = allMode?'Catalogue professeur indisponible. Vérifie ta connexion.':classId===LAB_CLASS?'Catalogue Connect du laboratoire indisponible. Aucun jeu Connect affiché.':'Le catalogue est momentanément indisponible.';
     // Même si l'Edge du catalogue tombe, seuls les essais statiques sans compte restent disponibles.
-    if(classId===LAB_CLASS)$('levels').replaceChildren(labPreviewSection());
+    if(allMode)$('levels').replaceChildren();
+    else if(classId===LAB_CLASS)$('levels').replaceChildren(labPreviewSection());
 
   }
 }
@@ -401,7 +421,7 @@ function drawIdentity(profile) {
   action.textContent = authorized ? '⚙ Mon profil' : 'Se connecter';
   // Le lien fonctionne nativement, sans attendre Supabase et même si le script échoue.
   if (authorized) action.removeAttribute('href');
-  else action.setAttribute('href', classId ? loginUrl() : './connexion.html');
+  else action.setAttribute('href', allMode?loginUrl(LAB_CLASS,'Classe démo - TEST'):(classId ? loginUrl() : './connexion.html'));
   $('identity-extra').hidden = true;
   $('mode-toggle').textContent=playingAsTeacher?'Retour à l’espace professeur':'Se déconnecter';
   action.onclick = event => {
