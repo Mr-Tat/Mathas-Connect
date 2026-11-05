@@ -9,7 +9,7 @@ import {schoolRecordLaunch,schoolAdditionsLaunch,SCHOOL_RECORD_APPS,SCHOOL_RECOR
 const url = 'https://awmhpfofacaglewammxt.supabase.co';
 const key = 'sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const playingAsTeacher=new URLSearchParams(location.search).get('joueur')==='prof';
-const allMode=new URLSearchParams(location.search).get('toutes')==='1'&&playingAsTeacher;
+const allMode=new URLSearchParams(location.search).get('toutes')==='1';
 const LAB_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 // Le catalogue et le mode libre ne chargent pas le SDK Supabase.
 let supabasePromise;
@@ -20,6 +20,15 @@ function getSupabase(){
         ...(playingAsTeacher?{storageKey:'mathas-connect-professor-auth-v1'}:{})}
     })).catch(error=>{supabasePromise=null;throw error});
   return supabasePromise;
+}
+let teacherClientPromise;
+function getTeacherSupabase(){
+  if(playingAsTeacher)return getSupabase();
+  if(!teacherClientPromise)teacherClientPromise=import('https://esm.sh/@supabase/supabase-js@2.95.0')
+    .then(({createClient})=>createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,
+      detectSessionInUrl:false,storageKey:'mathas-connect-professor-auth-v1'}}))
+    .catch(error=>{teacherClientPromise=null;throw error});
+  return teacherClientPromise;
 }
 const $ = id => document.getElementById(id);
 const FREE_KEY = 'mathas.connect.mode-libre.v1';
@@ -139,7 +148,7 @@ async function showCatalog() {
     let apps=[];
     if(allMode){
       // Accès professeur vérifié côté serveur, sans secours catalogue élève.
-      const sb=await getSupabase();
+      const sb=await getTeacherSupabase();
       const {data:{session}}=await sb.auth.getSession();
       if(!session?.access_token||session.user?.is_anonymous)throw Error('professor_session_required');
       const response=await fetch(url+'/functions/v1/connect-lab-catalog',{method:'POST',cache:'no-store',headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},body:JSON.stringify({action:'all',classId:LAB_CLASS})});
@@ -205,7 +214,7 @@ async function showCatalog() {
       const trials=apps.filter(a=>a.in_test);
       groups.unshift(section('tests','🧪 Tests','Applications présentes dans le circuit d’essai, y compris celles déjà publiées dans certaines classes. Connect réel avec profils fictifs TEST.',trials));
       groups[0].classList.remove('collapsed');groups[0].querySelector('.level-toggle').setAttribute('aria-expanded','true');
-      $('classLabel').textContent='Toutes les applications · Professeur';
+      $('classLabel').textContent='Toutes les applications · TEST';
       document.querySelector('.daily-section')?.setAttribute('hidden','');
     }else if(classId===LAB_CLASS)groups.unshift(labPreviewSection());
 
@@ -416,7 +425,7 @@ function drawIdentity(profile) {
   if(authorized)paintAvatar(avatar,profile.avatar);
   $('edit-avatar').hidden=!authorized;
   $('edit-avatar').textContent='🏅 Mes récompenses de profil';
-  $('classLabel').textContent = classId ? classLabel : 'Jeux';
+  $('classLabel').textContent = allMode?'Toutes les applications · TEST':classId ? classLabel : 'Jeux';
   const action = $('identity-action');
   action.textContent = authorized ? '⚙ Mon profil' : 'Se connecter';
   // Le lien fonctionne nativement, sans attendre Supabase et même si le script échoue.
@@ -480,5 +489,10 @@ async function showIdentity(refresh=false) {
 
 // Retour d'un onglet de jeu : un seul résumé à la demande, jamais de polling.
 window.addEventListener('focus',()=>{if(activeProfile)void showIdentity(true)});
+if(allMode)import('./hub-toutes-auth.mjs?v=20261105-v1')
+ .then(({mountHubToutesAuth})=>mountHubToutesAuth({
+   teacherClient:getTeacherSupabase, studentClient:getSupabase, isTeacherMode:playingAsTeacher,
+   testClass:LAB_CLASS,baseUrl:url,publicKey:key
+ })).catch(error=>console.error('Hub Toutes auth error',error));
 showCatalog();
 showIdentity();
