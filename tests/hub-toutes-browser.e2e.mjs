@@ -92,9 +92,12 @@ test('Le HUB Toutes reste lisible sur un petit écran de téléphone', {timeout:
    const layout=await f.page.evaluate(()=>({
      viewport:innerWidth,
      documentWidth:document.documentElement.scrollWidth,
-     firstCardWidth:document.querySelector('#levels .app-card')?.getBoundingClientRect().width
+     firstCardWidth:document.querySelector('#levels .app-card')?.getBoundingClientRect().width,
+     levelClass:document.querySelector('#levels .level')?.className,
+     sectionDisplay:getComputedStyle(document.querySelector('#levels .level-content')).display,
+     levelsDisplay:getComputedStyle(document.querySelector('#levels')).display
    }));
-   assert.ok(layout.firstCardWidth>100,'carte lisible');
+   assert.ok(layout.firstCardWidth>100,'carte lisible : '+JSON.stringify(layout));
    assert.ok(layout.documentWidth<=layout.viewport+4,'pas de débordement horizontal');
  }finally{await close(f)}
 });
