@@ -18,7 +18,7 @@ const apps=[
  ['abaque-longueurs','Abaque des longueurs','outil','test']
 ].map(([app_key,title,hub_section,stage],i)=>({app_key,title,hub_section,stage,all_order:10+i*10,display_order:10+i*10,enabled:true,visible:true,in_test:true,featured:false,launch_url:'https://mr-tat.github.io/Mathas-Connect/apps/'+app_key+'/',image_url:null}));
 const session={user:{id:'11111111-1111-4111-8111-111111111111',is_anonymous:false},access_token:'FAKE_TEST_ONLY_TEACHER_JWT'};
-const sdk=(authorized)=>'export function createClient(){return {auth:{getSession:async()=>({data:{session:'+JSON.stringify(authorized?session:null)+'}}),signOut:async()=>({error:null})}}}';
+const sdk=(authorized)=>'export function createClient(url,key,options){return {auth:{getSession:async()=>({data:{session:options?.auth?.storageKey?'+JSON.stringify(authorized?session:null)+':null}}),signOut:async()=>({error:null})}}}';
 async function fixture(authorized){
  const server=createServer(async(req,res)=>{
    const uri=new URL(req.url,'http://localhost');
@@ -31,6 +31,7 @@ async function fixture(authorized){
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  const page=await browser.newPage({viewport:{width:1200,height:900}});
  let allRequests=0;
+ const approvals=[];const apiActions=[];let pending=true;
  const base='https://mr-tat.github.io/Mathas-Connect';
  await page.route('**/*',async route=>{
    const url=route.request().url();
@@ -48,10 +49,19 @@ async function fixture(authorized){
      assert.equal(body.action,'all');
      return route.fulfill({status:authorized?200:403,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(authorized?{ok:true,apps}:{ok:false,error:'professor_required'})});
    }
-   if(url.includes('/functions/v1/connect-api'))return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:true,status:'approved',classId:testClass,displayName:'Monsieur T',progress:{apps:[]}})});
+   if(url.includes('/functions/v1/connect-api')){
+     const body=JSON.parse(route.request().postData()||'{}');
+     apiActions.push(body.action);
+     if(body.action==='teacher-review-join'){approvals.push(body);pending=false}
+     const data=body.action==='teacher-dashboard'?{
+       ok:true,classes:[{id:testClass}],students:[{id:'22222222-2222-4222-8222-222222222222',display_name:'Élève.A'}],
+       requests:pending?[{id:'33333333-3333-4333-8333-333333333333',first_name:'Élève',last_initial:'A',verify_code:'7412'}]:[]
+     }:{ok:true,status:'approved',classId:testClass,displayName:'Monsieur T',progress:{apps:[]}};
+     return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(data)});
+   }
    return route.abort();
  });
- return {browser,page,server,base,getRequests:()=>allRequests};
+ return {browser,page,server,base,getRequests:()=>allRequests,getApprovals:()=>approvals,getApiActions:()=>apiActions};
 }
 async function close(f){await f.browser.close();await new Promise(done=>f.server.close(done))}
 test('HUB Toutes: six vrais app_key dans Tests, sans carte en double ni modification des HUB scolaires', {timeout:60000},async()=>{
@@ -99,5 +109,75 @@ test('Le HUB Toutes reste lisible sur un petit écran de téléphone', {timeout:
    }));
    assert.ok(layout.firstCardWidth>100,'carte lisible : '+JSON.stringify(layout));
    assert.ok(layout.documentWidth<=layout.viewport+4,'pas de débordement horizontal');
+ }finally{await close(f)}
+});
+
+test('Le professeur choisit une fiche fictive, puis seule la connexion native Connect est proposée', {timeout:60000},async()=>{
+ const f=await fixture(true);
+ try{
+   await f.page.goto(f.base+'/hub.html?toutes=1&joueur=prof&class='+testClass,{waitUntil:'domcontentloaded'});
+   await f.page.locator('#toutes-connect-student:not([disabled])').waitFor({timeout:20000});
+   assert.equal(await f.page.locator('#toutes-student-select option').first().textContent(),'Élève.A');
+   assert.equal(await f.page.locator('#toutes-switch').isVisible(),false);
+   assert.equal(await f.page.locator('#toutes-connect-student').textContent(),'Se connecter avec Élève.A');
+   await f.page.locator('#toutes-connect-student').click();
+   await f.page.waitForURL(/index\.html\?/);
+   const url=new URL(f.page.url());
+   assert.equal(url.searchParams.get('class'),testClass);
+   assert.equal(url.searchParams.get('testFirst'),'Élève');
+   assert.equal(url.searchParams.get('testInitial'),'A');
+   assert.equal(url.searchParams.get('toutesReturn'),'1');
+   assert.equal(url.searchParams.has('joueur'),false);
+   assert.equal(f.getApprovals().length,0);
+ }finally{await close(f)}
+});
+test('La demande native exige consentement, vérification du code et professeur authentifié', {timeout:60000},async()=>{
+ const f=await fixture(true);
+ try{
+   f.page.on('dialog',d=>d.accept());
+   await f.page.goto(f.base+'/hub.html?toutes=1&joueur=prof&class='+testClass,{waitUntil:'domcontentloaded'});
+   await f.page.locator('#toutes-requests-open:not([disabled])').waitFor({timeout:20000});
+   await f.page.locator('#toutes-requests-open').click();
+   assert.match(await f.page.locator('#toutes-pending-requests').textContent(),/7412/);
+   const approve=f.page.getByRole('button',{name:'Accepter la connexion'});
+   assert.equal(await approve.isDisabled(),true);
+   await f.page.locator('#toutes-fictive-confirm').check();
+   assert.equal(await approve.isDisabled(),false);
+   await approve.click();
+   await f.page.waitForFunction(()=>document.querySelector('#toutes-pending-requests')?.textContent?.includes('Aucune demande'));
+   const records=f.getApprovals();
+   assert.equal(records.length,1);
+   assert.deepEqual({action:records[0].action,classId:records[0].classId,approve:records[0].approve,existingStudentId:records[0].existingStudentId},
+     {action:'teacher-review-join',classId:testClass,approve:true,existingStudentId:'22222222-2222-4222-8222-222222222222'});
+ }finally{await close(f)}
+});
+test('Sans session professeur, ni profils fictifs ni contrôle des demandes ne sont accessibles', {timeout:60000},async()=>{
+ const f=await fixture(false);
+ try{
+   await f.page.goto(f.base+'/hub.html?toutes=1&class='+testClass,{waitUntil:'domcontentloaded'});
+   await f.page.waitForFunction(()=>document.querySelector('#toutes-auth-current')?.textContent==='Accès professeur nécessaire');
+   assert.equal(await f.page.locator('#toutes-connect-student').isDisabled(),true);
+   assert.equal(await f.page.locator('#toutes-requests-open').isVisible(),false);
+   assert.equal(f.getApprovals().length,0);
+ }finally{await close(f)}
+});
+
+test('Côté élève, seul le retour vers Monsieur T est proposé ; approbations cachées', {timeout:60000},async()=>{
+ const f=await fixture(true);
+ try{
+   await f.page.goto(f.base+'/hub.html?toutes=1&class='+testClass+'&name=Toutes',{waitUntil:'domcontentloaded'});
+   await f.page.locator('#toutes-switch:not([disabled])').waitFor({timeout:20000});
+   assert.equal(await f.page.locator('#toutes-switch').textContent(),'Se connecter avec Monsieur T');
+   assert.equal(await f.page.locator('#toutes-connect-student').isVisible(),false);
+   assert.equal(await f.page.locator('#toutes-requests-open').isVisible(),false);
+   assert.equal(await f.page.locator('#levels .app-card').count(),6);
+   assert.equal(f.getApiActions().includes('teacher-dashboard'),false,'aucune lecture de code ou demande professeur sur la page élève');
+   assert.equal(await f.page.locator('#toutes-pending-requests').textContent(),'');
+   await f.page.locator('#toutes-switch').click();
+   await f.page.waitForURL(/joueur=prof/);
+   const u=new URL(f.page.url());
+   assert.equal(u.searchParams.get('class'),testClass);
+   assert.equal(u.searchParams.get('toutes'),'1');
+   assert.equal(u.searchParams.get('joueur'),'prof');
  }finally{await close(f)}
 });

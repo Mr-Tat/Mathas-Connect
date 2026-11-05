@@ -20,7 +20,7 @@ const sb=createClient(url,key,{auth:{
  ...(teacherPortal?{storageKey:'mathas-connect-professor-auth-v1'}:{})
 }});
 const $=id=>document.getElementById(id);
-const hubLink=hubUrl();
+const hubLink=(cls===labTestClass&&params.get('lab')==='1'&&params.get('toutesReturn')==='1')?hubUrl(cls,'Toutes')+'&toutes=1':hubUrl();
 // Les sections restent dans le DOM pour les événements, mais sont inaccessibles
 // via show() et invisibles dans le parcours élève. Aucun lien élève vers Professeur.
 if(!teacherPortal){document.getElementById('teacher-entry').hidden=true;}
@@ -413,7 +413,7 @@ $('finish-avatar').onclick=()=>run(async()=>{
  rememberRecentProfile(cls,$('first-name').value.trim()+' '+$('last-initial').value.trim().toUpperCase());
  stopWaiting();location.href=hubLink;
 });
-$('continue-profile').onclick=()=>{if(existingProfileClass)location.href=hubUrl(existingProfileClass);else location.href=hubLink};
+$('continue-profile').onclick=()=>{if(existingProfileClass&&hubLink.includes('toutes=1')&&existingProfileClass===labTestClass)location.href=hubLink;else if(existingProfileClass)location.href=hubUrl(existingProfileClass);else location.href=hubLink};
 $('switch-profile').onclick=()=>run(async()=>{
  if(!confirm('Changer de profil sur cet appareil ? Les scores et XP restent sauvegardés. Le professeur devra autoriser de nouveau cet appareil si tu reviens à ce profil.'))return;
  await call('student-release');const {error}=await sb.auth.signOut({scope:'local'});if(error)throw error;
