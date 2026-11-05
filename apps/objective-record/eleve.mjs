@@ -9,7 +9,7 @@ import {createCertifiedExtendedUI} from './certified-extended-ui.mjs';
 import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs?v=20261104-three-lives-half-xp-v1';
 import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
-import {createSchoolScoreView} from './school-score-view.mjs?v=20261104-native-records-v1';
+import {createSchoolScoreView} from './school-score-view.mjs?v=20261105-compact-hint-v2';
 import {installTensFirstDuringGame} from './in-game-tens-first.mjs?v=20261103-leading-carry-amber-v1';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
