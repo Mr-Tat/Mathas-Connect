@@ -51,7 +51,7 @@ export function nativeDayPoints(top){
 // Réutilise les cartes natives : Top du jour, coupes et podium historique.
 // Le clic ne propose que l'envoi volontaire d'un score certifié Connect.
 export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
- if(!['addition-ecrite-simple','addition-ecrite-multiple','multiplication-ecrite-simple'].includes(appKey))
+ if(!['addition-ecrite-simple','addition-ecrite-multiple','multiplication-ecrite-simple','soustraction-ecrite-simple'].includes(appKey))
   throw Error('unsupported_score_app');
  let state={},remote=null,documentRef=null,loading=null,destroyed=false,clickTarget=null;
  const autoOffered=new Set();
