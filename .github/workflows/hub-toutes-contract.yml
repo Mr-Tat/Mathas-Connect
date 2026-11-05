@@ -10,6 +10,7 @@ on:
       - 'supabase/functions/connect-lab-catalog/index.ts'
       - 'supabase/migrations/*connect_hub_toutes*'
       - 'tests/hub-toutes-contract.test.mjs'
+      - 'tests/hub-toutes-browser.e2e.mjs'
       - '.github/workflows/hub-toutes-contract.yml'
   workflow_dispatch:
 permissions:
@@ -29,3 +30,19 @@ jobs:
           node --input-type=module --check < laboratoire.js
       - name: Contrats de navigation et catalogue
         run: node --test tests/hub-toutes-contract.test.mjs
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Chromium dans Ubuntu compatible
+        run: |
+          npm install --prefix "$RUNNER_TEMP/mathas-browser" --no-audit --no-fund playwright@1.58.2
+          "$RUNNER_TEMP/mathas-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Tester HUB Toutes en Chromium avec professeur fictif et accès refusé
+        run: node --test tests/hub-toutes-browser.e2e.mjs
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/mathas-browser/node_modules/playwright/index.mjs
