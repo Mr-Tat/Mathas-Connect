@@ -63,12 +63,21 @@ export function createSubtractionSchoolConnect({
   },
   notify
  });
+ // Repli exclusivement dans le stockage Connect du profil courant :
+ // ne jamais en déduire un trophée à partir d'un ancien score non certifié.
+ function cachedRewards(){
+  try{
+   const saved=JSON.parse(localStorage.getItem('mathas_trophies_v3_soustraction-ecrite')||'null');
+   return saved?.version===3?saved:null;
+  }catch{return null}
+ }
  const getNormalLevel=(doc,id)=>NORMAL_LEVELS[Number(doc.getElementById(id)?.value)]||0;
  function mount(){
   const doc=iframe.contentDocument;
   if(!doc?.getElementById('menuScreen'))return false;
   installSubtractionSchoolUi(doc,{
-   connected:true,xp:getState()?.xp??currentXp,rewards:getState()?.state?.rewards
+   connected:true,xp:getState()?.xp??currentXp,
+   rewards:getState()?.state?.rewards??cachedRewards()
   });
   scoreView.mount(doc);
   if(doc.__mathasSubCertifiedRouter)return true;
