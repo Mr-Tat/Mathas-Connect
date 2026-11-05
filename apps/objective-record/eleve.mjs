@@ -387,8 +387,11 @@ async function choose(){
  activeApp=GAME_URLS[slug][0];
  // Le bandeau rétractable est remplacé, dans les deux additions seulement,
  // par une identité compacte et un bouton XP dans les véritables cartes du jeu.
- document.documentElement.classList.toggle('mathas-native-connect-hud',
-  SERVER_PROOF_ADDITIONS.has(activeApp));
+ // Soustraction TEST garde son ancien contrat de résultats mais place, comme
+ // les deux Additions, les commandes du bandeau dans l'en-tête natif.
+ const nativeConnectHud=SERVER_PROOF_ADDITIONS.has(activeApp)||
+  (classId===CLASS_TEST&&activeApp==='soustraction-ecrite-simple');
+ document.documentElement.classList.toggle('mathas-native-connect-hud',nativeConnectHud);
  try{
   message('Vérification de l’identité et de la classe Connect…');
   const approved=await approvedProfile();
@@ -437,7 +440,7 @@ async function choose(){
    for(const option of $('certified-mode').options)option.disabled=option.value!=='classic';
   }
   updateCertifiedModeControls();
-  $('gameFrame').src=GAME_URLS[slug][1]+(SERVER_PROOF_ADDITIONS.has(activeApp)?'?connect=1&ui=20261104-three-lives-half-xp-v1':'');
+  $('gameFrame').src=GAME_URLS[slug][1]+(nativeConnectHud?'?connect=1&ui=20261105-sous-native-hud':'');
   $('gameFrame').hidden=false;$('refresh').disabled=false;
   watchGame(seq);
   message(SERVER_PROOF_ADDITIONS.has(activeApp)
@@ -447,6 +450,9 @@ async function choose(){
  }catch(e){
   if(seq!==generation)return;
   clear();
+  // Aucune fausse identité Connect si l'authentification Soustraction échoue.
+  if(activeApp==='soustraction-ecrite-simple')
+   document.documentElement.classList.remove('mathas-native-connect-hud');
   // Un visitor sans profil approuvé garde le moteur natif jouable, sans
   // aucune requête de validation XP ni privilège d'enregistrement.
   // Le repli libre est EXPLICITE pour ne jamais faire croire à un crédit Connect.
