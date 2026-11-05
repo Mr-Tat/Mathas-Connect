@@ -114,6 +114,9 @@ export async function mountHubToutesAuth({teacherClient,studentClient,isTeacherM
  $('toutes-requests-refresh').onclick=async()=>{if(busy)return;busy=true;try{await refresh();msg('Demandes actualisées.')}catch(e){msg(e.message||'Erreur.',true)}finally{busy=false}};
  try{
    if(!isTeacherMode){
+     $('toutes-student-picker').hidden=true;
+     $('toutes-connect-student').hidden=true;
+     $('toutes-requests-open').hidden=true;
      // Ne jamais demander ni conserver les noms, codes ou demandes professeur dans le DOM élève.
      const professor=await teacherCall('teacher-player');
      if(professor.status!=='approved'||professor.displayName!=='Monsieur T')throw Error('Profil Monsieur T indisponible.');
