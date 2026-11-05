@@ -140,7 +140,15 @@ async function setup({viewport={width:1024,height:768},fixtureData=fixture()}={}
 }
 async function clickAndAnswer(page,frame,{method='addBottom',count=4}={}){
  await frame.locator('input[name="borrowMethod"][value="'+method+'"]').evaluate(input=>input.closest('label').click());
+ await frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"]').evaluate(el=>{
+  window.__schoolClickTrace=[];
+  el.ownerDocument.addEventListener('click',e=>window.__schoolClickTrace.push({
+   id:e.target?.id,count:e.target?.dataset?.count,trusted:e.isTrusted,
+   className:String(e.target?.className||'').slice(0,100)
+  }),true);
+ });
  await frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"]').click();
+ console.log('CLASSIC_CLICKS',JSON.stringify(await frame.locator('body').evaluate(()=>window.__schoolClickTrace)));
  await page.locator('.mathas-sub-proof:not([hidden]) .mathas-sub-answer').waitFor({timeout:20000});
 }
 async function solve(page,answers){
