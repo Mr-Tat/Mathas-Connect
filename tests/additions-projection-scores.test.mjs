@@ -115,7 +115,7 @@ test('Cartouches sobres : TOP DU JOUR certifié et défis, sans modifier les zon
   assert.ok(html.includes('/* Petit cartouche seulement : le bouton reste la bande complète des trophées. */'),path);
   assert.ok(html.includes('border:1px solid rgba(140,194,217,.35)'),path);
   assert.ok(html.includes('white-space:nowrap;text-align:center;letter-spacing:.01em;pointer-events:none'),path);
-  assert.ok(html.includes('content:" ›";font-size:1.1em!important'),path);
+  assert.ok(html.includes('content:"›";margin-left:7px!important;font-size:1.1em!important'),path);
   assert.ok(html.includes("strip.addEventListener('click',()=>{openPopover()"),path);
  }
  // Soustraction ne propose pas encore le score de cette carte par clic.
