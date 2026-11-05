@@ -145,7 +145,84 @@ if(!html.includes(flushAnchor))throw Error('Observateur de récompenses du moteu
 html=html.replace(flushAnchor,'window.__mathasConnectFlushRewards=watch;'+flushAnchor);
 html=html.replace('<head>','<head>'+scopedBootstrap).replace('</body>',bridge+'</body>');
 // The child frame uses the same origin and isolated storage keys. No public classic game is changed.
-const iframe=document.createElement('iframe');iframe.title='Soustraction écrite V6.0.2';iframe.style.cssText='border:0;width:100%;height:calc(100dvh - var(--ce-toolbar-height,46px));display:block';iframe.setAttribute('allow','fullscreen');
+const iframe=document.createElement('iframe');iframe.title='Soustraction écrite V6.0.2';iframe.style.cssText='border:0;width:100%;height:'+(mode==='connected'?'100dvh':'calc(100dvh - var(--ce-toolbar-height,46px))')+';display:block';iframe.setAttribute('allow','fullscreen');
+// En-tête Connect intégré dans le moteur NATIF, sans créer de seconde interface de calcul.
+function mountNativeConnectHeader(){
+ if(mode!=='connected')return;
+ const doc=iframe.contentDocument;
+ const copy=doc?.querySelector('.mathas-illustrated-header .mathas-header-copy');
+ const brandRow=copy?.querySelector('.mathas-brand-row');
+ const heading=copy?.querySelector('h1');
+ const actions=doc?.querySelector('.mathas-top-cluster .mathas-top-actions');
+ if(!brandRow||!heading||!actions||!document.getElementById('ce-toolbar'))return;
+ if(!doc.getElementById('mathas-sous-connect-style')){
+  const style=doc.createElement('style');style.id='mathas-sous-connect-style';
+  style.textContent=`
+  /* Ne modifier que la place des commandes, pas les couleurs historiques du jeu. */
+  main.app > header .mathas-brand-row{display:flex!important;align-items:center!important;flex-wrap:wrap!important;gap:clamp(6px,1vw,12px)!important;margin-top:6px!important}
+  .mathas-header-copy h1 .mathas-sous-title-version{display:inline-flex!important;vertical-align:middle!important;margin-left:12px!important;font-size:clamp(10px,1.15vw,13px)!important;padding:4px 9px!important;line-height:1.15!important;white-space:nowrap!important}
+  .mathas-brand-row>.app-version-pill{display:none!important}
+  .mathas-sous-connect-dock{display:flex;flex-wrap:wrap;align-items:center;gap:9px;min-width:0;font:700 12px system-ui;color:#e7faff}
+  .mathas-sous-connect-person{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;padding:8px 11px;border:1px solid rgba(80,200,213,.43);border-radius:12px;background:rgba(19,65,80,.87)}
+  .mathas-sous-connect-identity{max-width:210px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .mathas-sous-connect-level{color:#ffe3a4;white-space:nowrap}
+  .mathas-sous-connect-progress{display:grid;gap:3px;min-width:85px}
+  .mathas-sous-connect-count{font-size:10px;color:#d7eaf0}
+  .mathas-sous-connect-track{height:8px;border:1px solid #538fa4;border-radius:20px;background:#062838;overflow:hidden}
+  .mathas-sous-connect-fill{display:block;width:0;height:100%;background:linear-gradient(90deg,#c9932f,#ffdf82);transition:width .5s ease}
+  .mathas-sous-connect-xp{color:#fbe3a1;border:1px solid #d1a14d;border-radius:12px;background:linear-gradient(180deg,#856021,#604512);padding:10px 14px;cursor:pointer;font:850 12px system-ui;box-shadow:inset 0 1px #ffffff40,0 4px 0 #36240d,0 8px 18px #0004}
+  .mathas-sous-connect-xp:hover{filter:brightness(1.13);transform:translateY(-1px)}
+  .mathas-sous-connect-xp:active{transform:translateY(3px);box-shadow:inset 0 1px 4px #0008,0 1px 0 #36240d}
+  .mathas-top-cluster .mathas-top-actions{display:grid!important;grid-template-columns:minmax(100px,1fr) minmax(116px,1fr)!important;grid-template-rows:auto auto!important;gap:8px!important;width:clamp(244px,24vw,300px)!important;align-items:stretch!important}
+  .mathas-top-cluster .mathas-top-actions>#mathas-sous-hub-link{grid-column:1!important;grid-row:1!important;width:100%!important;min-width:0!important;box-sizing:border-box!important}
+  .mathas-top-cluster .mathas-top-actions>#fullscreenBtn{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;max-width:none!important;box-sizing:border-box!important}
+  .mathas-top-cluster .mathas-top-actions>.theme-toggle-btn{grid-column:2!important;grid-row:2!important;width:100%!important;min-width:0!important;max-width:none!important;box-sizing:border-box!important}
+  .mathas-sous-hub-link{display:inline-flex!important;align-items:center;justify-content:center;text-decoration:none!important;white-space:nowrap;border-radius:12px;border:1px solid #66acc3!important;background:linear-gradient(180deg,#29536b,#173b52)!important;color:#f5fcff!important;padding:10px 11px!important;font:850 12px system-ui;box-shadow:inset 0 1px #ffffff30,0 4px 0 #0a2231,0 8px 16px #0003}
+  .mathas-sous-hub-link:hover{filter:brightness(1.12);transform:translateY(-1px)}
+  .mathas-sous-hub-link:active{transform:translateY(3px)}
+  body.light .mathas-sous-connect-person,body.light-mode .mathas-sous-connect-person{background:#e8f5f5;color:#123e47}
+  body.light .mathas-sous-connect-count,body.light-mode .mathas-sous-connect-count{color:#255365}
+  body.light .mathas-sous-connect-level,body.light-mode .mathas-sous-connect-level{color:#875415}
+  @media(max-width:680px){.mathas-sous-connect-dock{gap:6px}.mathas-sous-connect-person{padding:6px 7px;gap:5px}.mathas-sous-connect-identity{max-width:140px}.mathas-sous-connect-progress{min-width:65px}.mathas-sous-connect-xp{padding:8px 10px}.mathas-top-cluster .mathas-top-actions{grid-template-columns:minmax(80px,1fr) minmax(105px,1fr)!important;width:min(232px,54vw)!important;gap:5px!important}.mathas-sous-hub-link{font-size:10px!important;padding:7px 3px!important}}
+  `;
+  doc.head.append(style);
+ }
+ let dock=doc.getElementById('mathas-sous-connect-dock');
+ if(!dock){
+  dock=doc.createElement('div');dock.id='mathas-sous-connect-dock';dock.className='mathas-sous-connect-dock';
+  const person=doc.createElement('div');person.className='mathas-sous-connect-person';
+  const identity=doc.createElement('span');identity.id='mathas-sous-connect-identity';identity.className='mathas-sous-connect-identity';
+  const level=doc.createElement('span');level.id='mathas-sous-connect-level';level.className='mathas-sous-connect-level';
+  const progress=doc.createElement('div');progress.className='mathas-sous-connect-progress';
+  const count=doc.createElement('span');count.id='mathas-sous-connect-count';count.className='mathas-sous-connect-count';
+  const track=doc.createElement('div');track.className='mathas-sous-connect-track';
+  const fill=doc.createElement('i');fill.id='mathas-sous-connect-fill';fill.className='mathas-sous-connect-fill';
+  track.append(fill);progress.append(count,track);person.append(identity,level,progress);
+  const button=doc.createElement('button');button.id='mathas-sous-connect-xp';button.type='button';button.className='mathas-sous-connect-xp';button.textContent='✨ XP à récupérer';
+  button.addEventListener('click',()=>document.getElementById('xp-toolbar-button')?.click());
+  dock.append(person,button);
+ }
+ if(dock.parentElement!==brandRow)brandRow.append(dock);
+ const originalVersion=brandRow.querySelector(':scope > .app-version-pill');
+ if(originalVersion){
+  let titleVersion=heading.querySelector('.mathas-sous-title-version');
+  if(!titleVersion){titleVersion=originalVersion.cloneNode(true);titleVersion.classList.add('mathas-sous-title-version');heading.append(titleVersion)}
+  else if(titleVersion.textContent!==originalVersion.textContent)titleVersion.textContent=originalVersion.textContent;
+ }
+ if(!doc.getElementById('mathas-sous-hub-link')){
+  const link=doc.createElement('a');link.id='mathas-sous-hub-link';link.className='mathas-sous-hub-link';link.target='_top';
+  link.textContent='↩ Retour au HUB';link.href=document.getElementById('ce-hub-link')?.href||'../../hub.html';actions.prepend(link);
+ }
+ doc.getElementById('mathas-sous-connect-identity').textContent=document.getElementById('ce-identity')?.textContent||'● Connecté';
+ doc.getElementById('mathas-sous-connect-level').textContent='Niveau '+(document.getElementById('ce-xp-level-number')?.textContent||'…');
+ doc.getElementById('mathas-sous-connect-count').textContent=document.getElementById('ce-xp-meter-count')?.textContent||'… / 50 XP';
+ const track=document.getElementById('ce-xp-meter-track');
+ const value=Number(track?.getAttribute('aria-valuenow')||0),max=Number(track?.getAttribute('aria-valuemax')||50);
+ doc.getElementById('mathas-sous-connect-fill').style.width=(max>0?Math.min(100,Math.max(0,value*100/max)):0)+'%';
+ document.getElementById('ce-toolbar').style.display='none';
+ iframe.style.height='100dvh';
+}
+
 // XP Connect : overlay non bloquant et consultation permanente des jalons.
 let lastXp=null,xpUiVersion=0,xpVisualQueue=Promise.resolve(),xpVisualPending=0;
 function showEarnedXp(value){
@@ -175,6 +252,7 @@ function renderXpMeter(total,level,instant=false){
  track.setAttribute('aria-valuenow',String(earned));
  track.setAttribute('aria-valuemax',String(width));
  card.title='Niveau '+actual+' · '+value+' XP au total · '+earned+' / '+width+' XP dans ce niveau';
+ if(iframe.contentDocument?.getElementById('mathas-sous-connect-dock'))mountNativeConnectHeader();
 }
 function bumpXpMeter(){
  const meter=document.getElementById('ce-xp-meter');
@@ -405,7 +483,7 @@ window.addEventListener('pagehide',()=>{
 });
 iframe.srcdoc=html;
 const toolbar=document.createElement('header');toolbar.id='ce-toolbar';
-toolbar.style.cssText='box-sizing:border-box;width:100%;min-height:46px;height:var(--ce-toolbar-height,46px);padding:0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#102f46;color:#fff;font:600 13px system-ui;border-bottom:1px solid #286180';
+toolbar.style.cssText='display:'+(mode==='connected'?'none':'flex')+';box-sizing:border-box;width:100%;min-height:46px;height:var(--ce-toolbar-height,46px);padding:0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#102f46;color:#fff;font:600 13px system-ui;border-bottom:1px solid #286180';
 const syncText=document.createElement('span');syncText.id='ce-sync';syncText.style.cssText='font:500 11px system-ui;color:#c0e6ec';
 const statusLabel=document.createElement('span');statusLabel.id='ce-identity';
 statusLabel.style.cssText='flex:0 1 auto;min-width:0;max-width:clamp(85px,28vw,300px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
@@ -439,6 +517,18 @@ if(mode==='connected'){
  toolbar.append(globalInfo,appInfo);
 }else toolbar.append(hubLink);
 document.body.replaceChildren(toolbar,iframe);
+if(mode==='connected'){
+ const refreshNativeHeader=()=>{
+  mountNativeConnectHeader();
+  if(!iframe.contentDocument?.getElementById('mathas-sous-connect-dock')){
+   toolbar.style.display='flex';
+   iframe.style.height='calc(100dvh - var(--ce-toolbar-height,46px))';
+  }
+ };
+ iframe.addEventListener('load',refreshNativeHeader);
+ // Le logo/version natifs apparaissent après la construction du DOM ; pas avant.
+ window.setInterval(()=>{if(document.visibilityState==='visible')refreshNativeHeader()},1100);
+}
  if(mode==='connected'&&cloud&&session) {
    consent=createProjectionConsent({classId,appKey:APP,studentKey:session.user.id,getToken:async()=>{
      const current=(await cloud.auth.getSession()).data.session;
