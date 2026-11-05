@@ -512,6 +512,7 @@ function installNativeCertifiedProof(){
   sudden.insertAdjacentElement('afterend',button);
  }
  const lives=doc.getElementById('mathasMultiThreeLives');
+ if(sudden&&lives)lives.disabled=sudden.disabled;
  if(sudden&&lives&&!sudden.closest('.mathas-multi-survival-options')){
   const group=doc.createElement('div');group.className='mathas-multi-survival-options';
   sudden.parentElement.insertBefore(group,sudden);
