@@ -190,7 +190,7 @@ async function showCatalog() {
       }
     }catch{ /* Le HUB reste utilisable avec le catalogue statique. */ }
     }
-    apps=apps.filter(a=>a.enabled!==false).sort((a,b)=>(a.display_order||0)-(b.display_order||0));
+    apps=apps.filter(a=>a.enabled!==false).sort((a,b)=>((allMode?a.all_order:a.display_order)||0)-((allMode?b.all_order:b.display_order)||0));
     const featured = allMode?[]:apps.filter(a => a.featured);
     $('dailyCount').textContent = featured.length + ' app' + (featured.length === 1 ? '' : 's');
     $('dailyApps').replaceChildren(...(featured.length ? featured.map(card) : [
