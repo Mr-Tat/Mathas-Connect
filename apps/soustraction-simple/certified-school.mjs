@@ -253,6 +253,7 @@ export function createCertifiedSubtraction({
   const prior=store.read(),restored=restore(prior,mode,level,method);
   if(restored){
    run=restored;
+   if(subtractionEndState(run.mode,run.answers,run.questions)?.complete){void finish();return true}
    if(!mode.startsWith('hard-')){try{showNative();return true}catch(error){show(error.message);return false}}
    render();return true;
   }
