@@ -31,10 +31,16 @@ async function fixture(authorized){
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  const page=await browser.newPage({viewport:{width:1200,height:900}});
  let allRequests=0;
- const base='http://127.0.0.1:'+server.address().port;
+ const base='https://mr-tat.github.io/Mathas-Connect';
  await page.route('**/*',async route=>{
    const url=route.request().url();
-   if(url.startsWith(base))return route.continue();
+   if(url.startsWith(base+'/')){
+     const pathname=new URL(url).pathname.replace(/^\/Mathas-Connect/,'');
+     const path=resolve(root,'.'+(pathname.endsWith('/')?pathname+'index.html':pathname));
+     if(path!==root&&!path.startsWith(root+'/'))return route.fulfill({status:403,body:'forbidden'});
+     try{const data=await readFile(path);return route.fulfill({status:200,contentType:contentTypes[extname(path)]||'application/octet-stream',body:data})}
+     catch{return route.fulfill({status:404,body:'not found'})}
+   }
    if(url.startsWith('https://esm.sh/'))return route.fulfill({status:200,contentType:'text/javascript',body:sdk(authorized)});
    if(url.includes('/functions/v1/connect-lab-catalog')){
      allRequests++;
