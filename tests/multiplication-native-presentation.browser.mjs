@@ -32,6 +32,8 @@ try{
   try{
    await page.goto(origin+'/apps/multiplication-simple/game-original.html',{waitUntil:'domcontentloaded'});
    await page.locator('#menuScreen .classic-count-btn[data-count]').first().waitFor();
+   // Le bloc TOP DU JOUR est créé après l'installation initiale du menu natif.
+   await page.locator('#mathasPointsQuick .mathas-points-quick-item--best').waitFor({state:'attached'});
    await page.evaluate(async()=>{
     const {installMultiplicationSchoolUi}=await import('/apps/multiplication-simple/school-ui.mjs');
     const rewards={version:3,
