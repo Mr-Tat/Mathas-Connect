@@ -4,6 +4,17 @@
 <link rel="icon" type="image/png" href="../../assets/brand/favicon.png">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Math’as Connect — Objectif record</title>
+<script>
+// Déterminer le parcours natif avant le premier rendu : aucune apparition
+// fugace de l'ancien bandeau Connect durant le chargement des modules.
+(function(){
+ const q=new URLSearchParams(location.search);
+ const app=q.get('app')||'addition-simple';
+ const native=app==='addition-simple'||app==='addition-multiple'||
+  (app==='soustraction'&&q.get('class')==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9');
+ if(native)document.documentElement.classList.add('mathas-native-connect-hud');
+})();
+</script>
 <style>
 :root{color-scheme:dark;--connect-bar-height:58px}
 *{box-sizing:border-box}
