@@ -41,3 +41,28 @@ test('soustraction: conservation et reprise isolées par profil et méthode',()=
  assert.equal(subtractionTranscriptStore(storage,ID,ID,'classic',2,'takeTop').read(),null);
  s.clear();assert.equal(s.read(),null);
 });
+
+test('soustraction : reprises classiques 4 / 10 / 20 restent séparées',()=>{
+ const data=new Map();
+ const storage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),
+  removeItem:k=>data.delete(k)};
+ const s4=subtractionTranscriptStore(storage,ID,ID,'classic',2,'addBottom',4);
+ const s10=subtractionTranscriptStore(storage,ID,ID,'classic',2,'addBottom',10);
+ s10.save({...challenge(),total:10,questions:Array.from({length:10},(_,i)=>question(i)),answers:[{id:'q1',answer:'9000'}]});
+ assert.equal(s4.read(),null,'un clic sur 4 ne doit pas reprendre une série de 10');
+ s4.save({...challenge(),total:4,answers:[{id:'q1',answer:'9000'}]});
+ assert.equal(s4.read()?.total,4);
+ assert.equal(s10.read()?.total,10);
+ s4.clear();
+ assert.equal(s4.read(),null);
+ assert.equal(s10.read()?.total,10,'effacer 4 ne touche pas à 10');
+});
+test('soustraction : reprise d’une sauvegarde ancienne seulement si la longueur correspond',()=>{
+ const data=new Map();
+ const storage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),
+  removeItem:k=>data.delete(k)};
+ const legacy=subtractionTranscriptStore(storage,ID,ID,'classic',2,'addBottom');
+ legacy.save({...challenge(),total:4,answers:[]});
+ assert.ok(subtractionTranscriptStore(storage,ID,ID,'classic',2,'addBottom',4).read());
+ assert.equal(subtractionTranscriptStore(storage,ID,ID,'classic',2,'addBottom',10).read(),null);
+});
