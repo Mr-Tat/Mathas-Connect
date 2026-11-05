@@ -350,7 +350,8 @@ test('Chromium scolaire : aucune barre extérieure et toutes les fonctions dans 
   assert.equal(await frame.locator('#themeToggleBtn').isVisible(),true);
   assert.match(await frame.locator('h1').first().textContent(),/Soustraction.*V6/i);
   assert.match(await frame.locator('#mathas-sous-connect-identity').textContent(),/Élève test/);
-  assert.match(await frame.locator('#mathas-sous-connect-level').textContent(),/Niveau 1/);
+  assert.equal(await frame.locator('#mathas-sous-connect-level .mathas-sous-connect-level-label').textContent(),'Niveau');
+  assert.equal(await frame.locator('#mathas-sous-connect-level strong').textContent(),'1');
   assert.equal(await frame.locator('#mathas-sous-connect-xp').isVisible(),true);
   await frame.locator('#mathas-sous-connect-xp').click();
   await page.locator('#xp-details:not([hidden])').waitFor({timeout:15000});
