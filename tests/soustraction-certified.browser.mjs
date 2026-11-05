@@ -233,3 +233,49 @@ test('Chromium scolaire natif : reprise du même calcul après interruption', {t
   assert.equal(ctx.fixture.checks[0].correct,4);
  }finally{await ctx.close()}
 });
+
+
+async function launchHard(page,frame,mode='hard-sudden'){
+ await frame.locator('#classicMaxDigits').selectOption('__hard__');
+ const selector=mode==='hard-sudden'
+  ?'#hardLevelGrid .hard-start[data-mode="sudden"][data-level="1"]'
+  :'#hardLevelGrid .mathas-sub-hard-three[data-mode="three-lives"][data-level="1"]';
+ await frame.locator(selector).waitFor({timeout:15000});
+ await frame.locator(selector).click();
+ await frame.locator('#hardGameScreen:not(.hidden) #hardOperation .hard-answer').first().waitFor({timeout:15000});
+ assert.equal(await page.locator('.mathas-sub-proof:not([hidden])').count(),0,
+  'Le mode HARD utilise la vraie grille d’emprunt du moteur');
+}
+async function wrongHardCalc(frame){
+ const pad=frame.locator('#hardNumpad .hard-key[data-key="0"]');
+ const count=await frame.locator('#hardOperation .hard-answer').count();
+ assert.ok(count>=9&&count<=16,'Véritable calcul HARD avec au moins neuf chiffres');
+ for(let i=0;i<count;i++)await pad.evaluate(button=>button.click());
+}
+test('Chromium scolaire natif : HARD mort subite vérifie une erreur serveur', {timeout:120000},async()=>{
+ const ctx=await setup();
+ try{
+  const {page,frame}=await ctx.page();
+  await launchHard(page,frame,'hard-sudden');
+  await wrongHardCalc(frame);
+  await page.getByRole('heading',{name:'Série vérifiée ✓'}).waitFor({timeout:25000});
+  assert.equal(ctx.fixture.checks[0]?.mode,'hard-sudden');
+  assert.equal(ctx.fixture.checks[0]?.attempts,1);
+  assert.equal(ctx.fixture.received.some(x=>x.action==='game-record'),false);
+ }finally{await ctx.close()}
+});
+test('Chromium scolaire natif : HARD trois vies se terminent au troisième échec', {timeout:120000},async()=>{
+ const ctx=await setup();
+ try{
+  const {page,frame}=await ctx.page();
+  await launchHard(page,frame,'hard-three-lives');
+  for(let i=0;i<3;i++){
+   if(i>0)await frame.locator('#hardPrimary').click();
+   await wrongHardCalc(frame);
+  }
+  await page.getByRole('heading',{name:'Série vérifiée ✓'}).waitFor({timeout:25000});
+  assert.equal(ctx.fixture.checks[0]?.mode,'hard-three-lives');
+  assert.equal(ctx.fixture.checks[0]?.attempts,3);
+  assert.equal(ctx.fixture.shared,0);
+ }finally{await ctx.close()}
+});
