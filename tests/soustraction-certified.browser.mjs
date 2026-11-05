@@ -321,3 +321,19 @@ test('Chromium scolaire natif : HARD trois vies se terminent au troisième éche
   assert.equal(ctx.fixture.shared,0);
  }finally{await ctx.close()}
 });
+
+
+test('Chromium scolaire : quitter 10 calculs puis lancer 4 crée deux défis distincts', {timeout:120000},async()=>{
+ const ctx=await setup();
+ try{
+  const {page,frame}=await ctx.page();
+  await launchClassic(page,frame,{count:10});
+  assert.equal(ctx.fixture.issued[0]?.total,10);
+  await frame.locator('#menuBtn').click();
+  await frame.locator('#menuScreen:not(.hidden)').waitFor({timeout:10000});
+  await launchClassic(page,frame,{count:4});
+  assert.deepEqual(ctx.fixture.issued.map(x=>x.total),[10,4],
+   'l’ancienne série 10 reste sauvegardée et ne remplace pas la nouvelle série 4');
+  assert.equal(ctx.fixture.received.some(x=>x.action==='game-record'),false);
+ }finally{await ctx.close()}
+});
