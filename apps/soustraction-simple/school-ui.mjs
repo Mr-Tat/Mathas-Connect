@@ -115,16 +115,18 @@ export function installSubtractionSchoolUi(doc,{connected=false,xp=null,rewards=
   three.textContent='❤️ 3 vies';three.disabled=native.disabled;
   native.insertAdjacentElement('beforebegin',three);
  }
- if(!xp||(!Array.isArray(xp.milestones)&&!Array.isArray(xp.currentMilestones)))doc.querySelectorAll('.'+XP).forEach(n=>n.remove());
+ const earnedXp=Array.isArray(xp?.milestones)?xp:
+  Array.isArray(xp?.currentMilestones)?{...xp,milestones:xp.currentMilestones}:null;
+ if(!earnedXp)doc.querySelectorAll('.'+XP).forEach(n=>n.remove());
  else{
   const classicLevel=level(doc,'classicMaxDigits');
   for(const button of doc.querySelectorAll('#classicCountPicker .classic-count-btn[data-count]'))
-   badge(doc,button,xpStillAvailable(xp,'classic',classicLevel,Number(button.dataset.count)));
+   badge(doc,button,xpStillAvailable(earnedXp,'classic',classicLevel,Number(button.dataset.count)));
   const suddenLevel=level(doc,'suddenMaxDigits');
-  badge(doc,sudden,xpStillAvailable(xp,'sudden',suddenLevel));
-  badge(doc,life,xpStillAvailable(xp,'three-lives',suddenLevel));
+  badge(doc,sudden,xpStillAvailable(earnedXp,'sudden',suddenLevel));
+  badge(doc,life,xpStillAvailable(earnedXp,'three-lives',suddenLevel));
   for(const btn of doc.querySelectorAll('#hardLevelGrid .hard-start[data-mode="sudden"],#hardLevelGrid .hard-start[data-mode="three-lives"]')){
-   badge(doc,btn,xpStillAvailable(xp,btn.dataset.mode==='three-lives'?'hard-three-lives':'hard-sudden',hardLevel(btn)));
+   badge(doc,btn,xpStillAvailable(earnedXp,btn.dataset.mode==='three-lives'?'hard-three-lives':'hard-sudden',hardLevel(btn)));
   }
  }
  if(!rewards)doc.querySelectorAll('.'+CUP).forEach(n=>n.remove());
