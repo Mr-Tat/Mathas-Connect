@@ -50,7 +50,7 @@ export function createSubtractionSchoolConnect({
   return xp;
  }
  const certified=createCertifiedSubtraction({
-  documentRef:document,storage:localStorage,
+  documentRef:document,storage:localStorage,getFrame:()=>iframe,
   getContext:()=>({connected:true,classId,studentId:session.user.id}),
   call:(action,body)=>endpoint('connect-soustraction-school',{action,classId,...body}),
   refresh,
