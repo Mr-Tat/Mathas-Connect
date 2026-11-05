@@ -111,7 +111,9 @@ export function createCertifiedSubtraction({
  root.setAttribute('aria-label','Soustraction scolaire certifiée');
  const inner=d.createElement('div');inner.className='mathas-sub-proof-inner';root.append(inner);d.body.append(root);
  let run=null,store=null,sending=false,finishing=false,nativeRunning=false;
- const native=()=>getFrame()?.contentWindow?.MathasSubtractionNativeProof||null;
+ const native=(which=run?.mode)=>which?.startsWith('hard-')
+  ?getFrame()?.contentWindow?.MathasSubtractionHardProof||null
+  :getFrame()?.contentWindow?.MathasSubtractionNativeProof||null;
  const live=()=>getContext?.().connected===true;
  function show(message){const el=inner.querySelector('.mathas-sub-status');if(el)el.textContent=message;notify(message)}
  function close(){if(sending||finishing)return;root.hidden=true;inner.replaceChildren();run=null;store=null;nativeRunning=false}
@@ -254,8 +256,7 @@ export function createCertifiedSubtraction({
   if(restored){
    run=restored;
    if(subtractionEndState(run.mode,run.answers,run.questions)?.complete){void finish();return true}
-   if(!mode.startsWith('hard-')){try{showNative();return true}catch(error){show(error.message);return false}}
-   render();return true;
+   try{showNative();return true}catch(error){show(error.message);return false}
   }
   try{
    const action=mode==='classic'?'start-classic-v1':'start-extended-v1';
@@ -266,8 +267,7 @@ export function createCertifiedSubtraction({
    if(!accepted)throw Error('Défi scolaire non valide');
    run={...accepted,mode,level,method,answers:[]};
    if(!store.save(run))throw Error('Sauvegarde de la preuve impossible');
-   if(!mode.startsWith('hard-')){showNative();return true}
-   render();return true;
+   showNative();return true;
   }catch(error){
    build({title:'Défi indisponible',meta:'Aucun point ni XP fictif n’a été attribué.'});
    show(error instanceof Error?error.message:'Connexion scolaire indisponible');
