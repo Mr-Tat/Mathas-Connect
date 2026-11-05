@@ -197,7 +197,7 @@ async function showCatalog() {
     ]));
     $('dailyApps').classList.toggle('empty-grid', featured.length === 0);
     const ordinary=allMode?apps.filter(a=>!a.in_test):apps;
-    const groups=levels.map(([id, title, desc]) =>
+    const groups=levels.filter(([id])=>!allMode||ordinary.some(a=>a.hub_section===id)).map(([id, title, desc]) =>
       section(id, title, desc, ordinary.filter(a => a.hub_section === id))
     );
     if(allMode){
