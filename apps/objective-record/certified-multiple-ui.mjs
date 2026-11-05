@@ -35,7 +35,7 @@ export function createMultipleProofUI({
     if(!run||run.finished||sending)return;
     queue?.clear();
     run=null;queue=null;suppressedTerminal=false;
-    delete win.__mathasServerCertified;
+    delete win.__mathasServerCertifiedMulti;
     if(!button.dataset.extendedBusy)button.disabled=false;
     notify('Partie interrompue. Tu peux lancer une nouvelle série.');
    });
