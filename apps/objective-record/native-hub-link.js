@@ -134,7 +134,7 @@
       const profile=doc.createElement('div');
       profile.id='mathas-native-connect-profile';
       profile.setAttribute('aria-label','Profil et progression Math’as Connect');
-      profile.innerHTML='<span class="connect-identity"><span class="connect-presence" aria-hidden="true">●</span>Connecté · <strong class="connect-person"></strong></span><span class="connect-level">Niveau <strong></strong></span><span class="connect-meter"><span class="connect-earned"></span><span class="connect-track"><span class="connect-fill"></span></span></span>';
+      profile.innerHTML='<span class="connect-identity"><span class="connect-presence" aria-hidden="true">●</span><strong class="connect-person"></strong></span><span class="connect-level">Niveau <strong></strong></span><span class="connect-meter"><span class="connect-earned"></span><span class="connect-track"><span class="connect-fill"></span></span></span>';
       row.append(profile);
     }
     const profileAnchor=doc.getElementById('mathas-native-connect-profile');
