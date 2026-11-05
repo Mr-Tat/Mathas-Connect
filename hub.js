@@ -201,6 +201,7 @@ async function showCatalog() {
       section(id, title, desc, ordinary.filter(a => a.hub_section === id))
     );
     if(allMode){
+      document.body.classList.add('hub-toutes');
       const trials=apps.filter(a=>a.in_test);
       groups.unshift(section('tests','🧪 Tests','Applications présentes dans le circuit d’essai, y compris celles déjà publiées dans certaines classes. Connect réel avec profils fictifs TEST.',trials));
       groups[0].classList.remove('collapsed');groups[0].querySelector('.level-toggle').setAttribute('aria-expanded','true');
