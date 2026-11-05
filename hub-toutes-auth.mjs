@@ -42,6 +42,7 @@ export async function mountHubToutesAuth({teacherClient,studentClient,isTeacherM
    if(first)sel.value=first.value;else sel.add(new Option('Aucun profil disponible',''));
    sel.disabled=!first;$('toutes-connect-student').disabled=!first;
    $('toutes-switch').disabled=false;$('toutes-requests-open').disabled=false;
+   $('toutes-requests-open').hidden=!isTeacherMode;
    $('toutes-switch').textContent=isTeacherMode?'Passer à la session élève':'Se connecter avec Monsieur T';
    $('toutes-auth-current').textContent=isTeacherMode?'👨‍🏫 Monsieur T':'👧 Session élève TEST';
  }
