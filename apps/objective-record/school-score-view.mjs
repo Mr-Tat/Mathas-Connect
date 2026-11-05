@@ -59,7 +59,8 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
  const css='#mathasPointsQuick .mathas-points-quick-item--best.mathas-school-shareable{cursor:pointer;outline-offset:3px}'
   +'#mathasPointsQuick .mathas-points-quick-item--best.mathas-school-shareable:focus-visible{outline:3px solid #ffe3a1}'
   // Le cadre est un repère VISUEL dans la carte déjà cliquable : aucune nouvelle zone de clic.
-  +'#mathasPointsQuick .mathas-school-share-hint{display:inline-flex;align-items:center;justify-content:center;max-width:calc(100% - 4px);box-sizing:border-box;padding:3px 6px;margin-top:4px;border:1px solid rgba(143,199,218,.36);border-radius:6px;background:rgba(35,83,110,.30);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);font:750 10px/1.25 system-ui;color:#c5e7f6;white-space:normal;text-align:center;pointer-events:none}'
+  +'#mathasPointsQuick .mathas-school-share-hint{display:inline-flex;align-items:center;justify-content:center;align-self:flex-start;flex:0 0 auto;width:max-content;max-width:calc(100% - 76px);box-sizing:border-box;padding:3px 6px;margin-top:4px;border:1px solid rgba(143,199,218,.36);border-radius:6px;background:rgba(35,83,110,.30);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);font:750 10px/1.25 system-ui;color:#c5e7f6;white-space:normal;text-align:center;pointer-events:none}'
+  +'#mathasPointsQuick .mathas-school-share-hint::after{content:"›";margin-left:7px;flex:none;font-size:1.12em;line-height:1;color:#eed48d}'
   +'#mathasPointsQuick .mathas-school-shareable:hover .mathas-school-share-hint,#mathasPointsQuick .mathas-school-shareable:focus-visible .mathas-school-share-hint{border-color:rgba(172,220,235,.64);background:rgba(40,100,125,.40)}'
   +'body.light #mathasPointsQuick .mathas-school-share-hint,body.light-mode #mathasPointsQuick .mathas-school-share-hint{color:#24536c;background:rgba(215,238,247,.72);border-color:rgba(69,127,153,.35)}';
  function nativeBestPoints(){return nativeDayPoints(clickTarget)}
