@@ -1,10 +1,12 @@
 <!doctype html><html lang="fr"><head>
 <link rel="icon" type="image/png" href="../../assets/brand/favicon.png"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Math’as · Soustraction écrite</title><style>body{font-family:system-ui;background:#0c2235;color:white;margin:0;padding:25px}#loading{max-width:620px;margin:12vh auto;padding:25px;border:1px solid #628ba7;border-radius:16px}a{color:#8ce7fc}</style></head><body><main id="loading"><h1>Math’as · Soustraction écrite</h1><p id="message">Chargement du jeu…</p><p><a href="https://mr-tat.github.io/Mathas-Connect/">Retour aux jeux</a></p></main><script type="module">
 import {createProjectionConsent} from '../../projection-consent.mjs';
+import {createSubtractionSchoolConnect} from './certified-connect.mjs';
 const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM',APP='soustraction-ecrite-simple';
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
-const free=!teacherPlayer&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,studentName='',connectionCheckRequired=false,consent=null;
+const requireConnect=query.get('requireConnect')==='1';
+const free=!teacherPlayer&&!requireConnect&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,studentName='',connectionCheckRequired=false,consent=null;
 const status=s=>document.getElementById('message').textContent=s;
 const originalPromise=fetch('./game-original.html').then(r=>{if(!r.ok)throw Error('Copie du jeu non disponible');return r.text()});
 // Un visiteur sans profil approuvé ouvre directement le jeu classique.
@@ -41,15 +43,18 @@ try{
 const original=await originalPromise;
 // Compte élève reconnu mais serveur indisponible : ne jamais enregistrer
 // silencieusement des parties Connect dans les résultats locaux.
-if((connectionCheckRequired||teacherPlayer)&&mode!=='connected'){
+if((connectionCheckRequired||teacherPlayer||requireConnect)&&mode!=='connected'){
  const view=document.getElementById('loading');
- document.getElementById('message').textContent='Impossible de vérifier les sauvegardes du compte. Aucun résultat ne sera perdu : réessaie plus tard ou joue sans synchronisation.';
+ document.getElementById('message').textContent=requireConnect?'Compte Connect approuvé nécessaire pour ce test scolaire. Connecte-toi via ton HUB et réessaie. Aucun XP fictif ne sera attribué.':'Impossible de vérifier les sauvegardes du compte. Aucun résultat ne sera perdu : réessaie plus tard ou joue sans synchronisation.';
  const actions=document.createElement('div');actions.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-top:20px';
  const retry=document.createElement('button');retry.textContent='Réessayer';retry.onclick=()=>location.reload();
  const classic=document.createElement('button');classic.textContent='Jouer sans synchronisation';
  classic.onclick=()=>{if(teacherPlayer)location.href=location.pathname+'?class='+encodeURIComponent(classId);else{localStorage.setItem('mathas.connect.mode-libre.v1','1');location.reload()}};
  for(const b of [retry,classic])b.style.cssText='padding:12px;border:0;border-radius:10px;background:#176e8d;color:white;font:600 13px system-ui;cursor:pointer';
- actions.append(retry,classic);view.appendChild(actions);
+ actions.append(retry);
+ if(!requireConnect)actions.append(classic);
+ else{const link=document.createElement('a');link.href='../../index.html?class='+encodeURIComponent(classId);link.textContent='Se connecter au HUB';link.style.cssText='color:#fff;border:1px solid #8dbccc;padding:12px;border-radius:9px;text-decoration:none';actions.append(link)}
+ view.appendChild(actions);
 }else{
 const ns=mode==='connected'?'mathas.ce-soustraction.connect.'+classId+'.'+(teacherPlayer?'monsieur-t':session.user.id)+'.v1:':'mathas.ce-soustraction.libre.v1:',GKEYS=new Set();
 const native={get:Storage.prototype.getItem,set:Storage.prototype.setItem,remove:Storage.prototype.removeItem};
@@ -167,6 +172,7 @@ if(!html.includes(flushAnchor))throw Error('Observateur de récompenses du moteu
 html=html.replace(flushAnchor,'window.__mathasConnectFlushRewards=watch;'+flushAnchor);
 html=html.replace('<head>','<head>'+scopedBootstrap).replace('</body>',bridge+'</body>');
 // The child frame uses the same origin and isolated storage keys. No public classic game is changed.
+let school=null;
 const iframe=document.createElement('iframe');iframe.title='Soustraction écrite V6.0.2';iframe.style.cssText='border:0;width:100%;height:'+(mode==='connected'?'100dvh':'calc(100dvh - var(--ce-toolbar-height,46px))')+';display:block';iframe.setAttribute('allow','fullscreen');
 // En-tête Connect intégré dans le moteur NATIF, sans créer de seconde interface de calcul.
 function mountNativeConnectHeader(){
@@ -386,7 +392,7 @@ async function loadXp(){
  const readVersion=xpUiVersion;
  const auth=(await cloud.auth.getSession()).data.session;if(!auth)return null;
  const res=await fetch(URL+'/functions/v1/connect-results',{method:'POST',headers:{apikey:KEY,authorization:'Bearer '+auth.access_token,'content-type':'application/json'},body:JSON.stringify({action:'student-xp',classId,appKey:APP})});
- const data=await res.json();if(res.ok&&data.ok){lastXp=data;if(xpUiVersion===readVersion&&xpVisualPending===0){showEarnedXp(data.appXp);renderXpMeter(data.total,data.level,true)}return data}return null;
+ const data=await res.json();if(res.ok&&data.ok){lastXp=data;school?.setXp(data);if(xpUiVersion===readVersion&&xpVisualPending===0){showEarnedXp(data.appXp);renderXpMeter(data.total,data.level,true)}return data}return null;
 }
 async function toggleXpDetails(){
  let panel=document.getElementById('xp-details');
@@ -435,6 +441,12 @@ function staleCount(){try{return staleQueue().length}catch{return 1}}
 let draining=false, syncWarning='';
 function showSync(){const v=document.getElementById('ce-sync');if(!v)return;let pending=0;try{pending=readQueue().length}catch{syncWarning='File locale illisible : prévenir le professeur.'}const stale=staleCount();v.textContent=mode==='connected'?(syncWarning||(stale?'À vérifier : '+stale+' ancien(s) résultat(s)':pending?'En attente : '+pending:(!navigator.onLine?'Hors ligne':'Synchronisé'))):'';v.title=syncWarning||(stale?'Résultats archivés d’un parcours précédent : prévenir le professeur.':'')}
 async function drain(){
+ // Les anciens scores non certifiés restent locaux, sans XP scolaire.
+ if(mode==='connected'){
+  try{if(readQueue().length)syncWarning='Anciens scores non certifiés conservés sans envoi.'}
+  catch{syncWarning='Ancienne file locale illisible : prévenir le professeur.'}
+  showSync();return;
+ }
  if(draining||mode!=='connected'||!cloud)return;
  draining=true;
  try{
@@ -470,7 +482,9 @@ window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='v
 window.MathasPilotBridge={mode,openTeacherParcours:()=>{
  window.open('https://mr-tat.github.io/Mathas-Connect/index.html?portail=prof&profClass='+encodeURIComponent(classId),'_blank','noopener');
 },completed:(item,options={})=>{
- if(mode!=='connected'||!cloud)return;
+ // Pas de résultats déclarés par le navigateur en mode scolaire.
+ if(mode==='connected')return null;
+ if(!cloud)return;
  const label=item.label||'',match=label.match(/(?:Niveau|NIV|Hard)\s*([123])/i);if(!match)return;
  const level=Number(match[1]),hard=/HARD/i.test(label),sudden=/Mort subite/i.test(label);
  const scoreText=String(item.score||'');const result=scoreText.match(/^(\d+)(?:\s*[/]\s*(\d+))?$/);if(!result)return;
@@ -505,7 +519,7 @@ window.addEventListener('pagehide',()=>{
 });
 iframe.srcdoc=html;
 const toolbar=document.createElement('header');toolbar.id='ce-toolbar';
-toolbar.style.cssText='display:'+(mode==='connected'?'none':'flex')+';box-sizing:border-box;width:100%;min-height:46px;height:var(--ce-toolbar-height,46px);padding:0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#102f46;color:#fff;font:600 13px system-ui;border-bottom:1px solid #286180';
+toolbar.style.cssText='box-sizing:border-box;width:100%;min-height:46px;height:var(--ce-toolbar-height,46px);padding:0 10px;display:'+(mode==='connected'?'none':'flex')+';align-items:center;justify-content:space-between;gap:8px;background:#102f46;color:#fff;font:600 13px system-ui;border-bottom:1px solid #286180';
 const syncText=document.createElement('span');syncText.id='ce-sync';syncText.style.cssText='font:500 11px system-ui;color:#c0e6ec';
 const statusLabel=document.createElement('span');statusLabel.id='ce-identity';
 statusLabel.style.cssText='flex:0 1 auto;min-width:0;max-width:clamp(85px,28vw,300px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
@@ -542,6 +556,7 @@ document.body.replaceChildren(toolbar,iframe);
 if(mode==='connected'){
  const refreshNativeHeader=()=>{
   mountNativeConnectHeader();
+  school?.mount();
   if(iframe.contentDocument?.readyState==='complete'&&!iframe.contentDocument?.getElementById('mathas-sous-connect-dock')){
    toolbar.style.display='flex';
    iframe.style.height='calc(100dvh - var(--ce-toolbar-height,46px))';
@@ -557,6 +572,16 @@ if(mode==='connected'){
      if(current?.user?.id!==session.user.id||!current?.access_token)throw Error('connect_session_changed');
      return current.access_token;
    }});
+ }
+ if(mode==='connected'&&cloud&&session){
+  school=createSubtractionSchoolConnect({
+   iframe,cloud,session,classId,appKey:APP,url:URL,key:KEY,consent,
+   getState:()=>({state:initial,xp:lastXp}),
+   setState:fresh=>{revision=fresh.revision;resetEpoch=fresh.resetEpoch??resetEpoch;initial=fresh.state},
+   applyState:apply,loadXp,queueXpGain,
+   notify:message=>{const badge=document.getElementById('ce-sync');if(badge)badge.title=message}
+  });
+  school.mount();
  }
 document.body.style.cssText='margin:0;padding:0;background:#071e2a;overflow:hidden';
 
