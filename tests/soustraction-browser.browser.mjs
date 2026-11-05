@@ -102,6 +102,20 @@ test('Chromium réel : Connect -> fin de partie -> trophée -> file -> serveur f
   assert.equal(identity.text,'Élève test','le mot Connecté ne précède plus le nom');
   assert.ok(identity.dot.includes('●'),'point vert de présence conservé');
   assert.equal(identity.color,'rgb(112, 227, 174)');
+  const badge=await frame.locator('#mathas-sous-connect-level').evaluate(el=>{
+   const style=getComputedStyle(el),strong=el.querySelector('strong');
+   const number=getComputedStyle(strong),rect=el.getBoundingClientRect();
+   return {text:el.textContent,number:strong.textContent,edge:style.borderTopColor,
+    background:style.backgroundImage,font:parseFloat(number.fontSize),
+    weight:number.fontWeight,right:rect.right,viewport:innerWidth};
+  });
+  assert.match(badge.text,/Niveau\s*1/);
+  assert.equal(badge.number,'1');
+  assert.equal(badge.edge,'rgb(239, 197, 106)','cadre doré de la barre historique');
+  assert.match(badge.background,/linear-gradient/);
+  assert.equal(badge.font,25,'gros chiffre du niveau sur PC');
+  assert.equal(Number(badge.weight),900);
+  assert.ok(badge.right<=badge.viewport+2,'le cadre ne déborde pas');
   await frame.locator('input[name="borrowMethod"][value="takeTop"]').evaluate(input=>input.closest('label').click());
   await frame.locator('body').evaluate(()=>window.__setLastWork({label:'Mort subite · Niveau 1',score:'5',rulerUsed:false}));
   // Les XP peuvent être crédités par le serveur sans que l'élève voie la séquence.

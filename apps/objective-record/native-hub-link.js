@@ -66,8 +66,21 @@
     #mathas-native-connect-profile .connect-person{
       max-width:140px!important;overflow:hidden!important;text-overflow:ellipsis!important
     }
-    #mathas-native-connect-profile .connect-level{white-space:nowrap!important;color:#ffe7a4!important}
-    #mathas-native-connect-profile .connect-level strong{font-size:17px!important;color:#ffe8a4!important}
+    /* Badge Niveau restauré depuis l'ancien bandeau : cartouche bleu/or, chiffre 25 px. */
+    #mathas-native-connect-profile .connect-level{
+      display:inline-flex!important;align-items:center!important;justify-content:center!important;
+      gap:6px!important;min-width:90px!important;box-sizing:border-box!important;
+      padding:3px 8px!important;border:1px solid #efc56a!important;border-radius:99px!important;
+      background:linear-gradient(140deg,#325f90,#1b4678)!important;
+      box-shadow:inset 0 1px 0 #ffffff30!important;white-space:nowrap!important;
+      color:#f7d996!important;font:750 10px/1 system-ui,sans-serif!important
+    }
+    #mathas-native-connect-profile .connect-level strong{
+      display:inline-flex!important;align-items:center!important;justify-content:center!important;
+      min-height:25px!important;font:900 25px/1 system-ui,sans-serif!important;
+      color:#fff8d4!important;text-shadow:0 1px 5px #0006!important;
+      font-variant-numeric:tabular-nums!important
+    }
     #mathas-native-connect-profile .connect-meter{
       display:grid!important;gap:3px!important;min-width:98px!important;
       max-width:145px!important;flex:1 1 98px!important;font:650 10px system-ui,sans-serif!important
@@ -95,6 +108,8 @@
       .mathas-brand-row #mathas-native-connect-profile{max-width:100%!important;gap:5px 9px!important;padding:6px 8px!important}
       #mathas-native-connect-profile .connect-identity{max-width:155px!important;font-size:11px!important}
       #mathas-native-connect-profile .connect-person{max-width:106px!important}
+      #mathas-native-connect-profile .connect-level{min-width:77px!important;gap:4px!important;padding:3px 5px!important}
+      #mathas-native-connect-profile .connect-level strong{font-size:23px!important}
       .mathas-brand-row #mathas-native-connect-xp{min-width:130px!important;margin-left:0!important}
     }
     @media(max-width:440px){
@@ -104,10 +119,11 @@
     body.light-mode #mathas-native-connect-profile,body.light #mathas-native-connect-profile{
       background:#e4f2fa!important;border-color:#8ab3cc!important;color:#14364f!important
     }
+    /* Le cartouche conserve son contraste bleu/or également en mode clair. */
     body.light-mode #mathas-native-connect-profile .connect-level,
-    body.light #mathas-native-connect-profile .connect-level,
+    body.light #mathas-native-connect-profile .connect-level{color:#f7d996!important}
     body.light-mode #mathas-native-connect-profile .connect-level strong,
-    body.light #mathas-native-connect-profile .connect-level strong{color:#744e0e!important}
+    body.light #mathas-native-connect-profile .connect-level strong{color:#fff8d4!important}
   `;
   doc.head.append(style);
   let ticker;

@@ -27,3 +27,22 @@ for(const [app,slug] of [['Multiplication','multiplication'],['Soustraction','so
   assert.match(code,new RegExp("getElementById\\('mathas-"+prefix+"-connect-count'\\)"));
  });
 }
+
+test('Le Niveau reprend le cartouche bleu/or et le gros numéro de la barre historique',()=>{
+ const native=source('apps/objective-record/native-hub-link.js');
+ assert.match(native,/#mathas-native-connect-profile \.connect-level\{/);
+ assert.match(native,/min-width:90px!important/);
+ assert.match(native,/border:1px solid #efc56a!important/);
+ assert.match(native,/font:900 25px\/1 system-ui/);
+ assert.match(native,/\.connect-level strong\{font-size:23px!important/);
+ for(const [slug,prefix] of [['multiplication','multi'],['soustraction','sous']]){
+  const launcher=source('apps/'+slug+'-simple/index.html');
+  assert.match(launcher,new RegExp('\\.mathas-'+prefix+'-connect-level\\{display:inline-flex'));
+  assert.match(launcher,new RegExp('\\.mathas-'+prefix+'-connect-level-number\\{display:inline-flex'));
+  assert.ok(launcher.includes('border:1px solid #efc56a'),slug);
+  assert.ok(launcher.includes('font:900 25px/1 system-ui'),slug);
+  assert.ok(launcher.includes('level.append(levelLabel,levelNumber)'),slug);
+  assert.match(launcher,new RegExp("getElementById\\('mathas-"+prefix+"-connect-level'\\)\\.querySelector\\('strong'\\)\\.textContent="));
+  assert.doesNotMatch(launcher,new RegExp("getElementById\\('mathas-"+prefix+"-connect-level'\\)\\.textContent="));
+ }
+});
