@@ -62,7 +62,7 @@ for(const item of [
   try{
    browser=await chromium.launch({headless:true,args:['--no-sandbox']});
    const page=await browser.newPage({viewport:{width:1280,height:850}});
-   const requests=[],errors=[];
+   const requests=[],errors=[];let starts=0;
    page.on('pageerror',e=>errors.push(e.message));
    await page.route('**/supabase-js@2.95.0*',r=>r.fulfill({
     status:200,contentType:'text/javascript',headers:{'access-control-allow-origin':'*'},
@@ -82,7 +82,7 @@ for(const item of [
      data={ok:true,events:[],bestThree:[],todayBest:null,boardBest:0};
     }else if(r.request().url().includes('/connect-objective-record-test')){
      if(b.action!==item.startAction)throw Error('UNEXPECTED_PROOF_WRITE '+b.action);
-     data={ok:true,sessionId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+     data={ok:true,sessionId:'aaaaaaaa-aaaa-4aaa-8aaa-'+String(++starts).padStart(12,'0'),
       questions:item.questions,revision:0,resetEpoch:0,level:1,total:4,
       expiresAt:'2090-12-31T23:59:59Z'};
     }else throw Error('unexpected '+r.request().url());
@@ -150,6 +150,36 @@ for(const item of [
    await page.waitForTimeout(1000);
    assert.equal(await page.locator('#certify').isDisabled(),true);
    assert.equal(requests.filter(b=>b.action===item.startAction).length,1);
+   assert.equal(requests.filter(b=>b.action==='game-record').length,0);
+   // Reproduire la régression #220 : lancer une série, la quitter via le VRAI
+   // bouton Menu, puis relancer une autre série sans recharger la page.
+   await native.locator('#gameScreen #menuBtn').click();
+   await page.waitForFunction(()=>{
+    const d=document.getElementById('gameFrame')?.contentDocument
+     ?.getElementById('game')?.contentDocument;
+    return d?.getElementById('menuScreen')?.classList.contains('hidden')===false
+     && d?.getElementById('gameScreen')?.classList.contains('hidden')===true;
+   },null,{timeout:15000});
+   await native.locator('.classic-count-btn[data-count="4"]').click();
+   await page.waitForFunction(()=>{
+    const win=document.getElementById('gameFrame')?.contentDocument
+     ?.getElementById('game')?.contentWindow;
+    return win?.__mathasServerCertified?.sessionId?.endsWith('000000000002')
+      ||win?.__mathasServerCertifiedMulti?.sessionId?.endsWith('000000000002');
+   },null,{timeout:20000});
+   const restarted=await page.evaluate(()=>{
+    const win=document.getElementById('gameFrame').contentDocument
+     .getElementById('game').contentWindow;
+    return {
+     gameVisible:!win.document.getElementById('gameScreen').classList.contains('hidden'),
+     menuHidden:win.document.getElementById('menuScreen').classList.contains('hidden')
+    };
+   });
+   assert.deepEqual(restarted,{gameVisible:true,menuHidden:true},item.slug+' : seconde série native jouable');
+   assert.equal(requests.filter(b=>b.action===item.startAction).length,2,
+    item.slug+' : une nouvelle preuve serveur doit être demandée après Menu');
+   assert.equal(requests.filter(b=>b.action==='finish-proof-v2'||b.action==='finish-proof-multi-v1').length,0,
+    'Une série quittée sans être terminée ne crédite pas des XP');
    assert.equal(requests.filter(b=>b.action==='game-record').length,0);
    assert.deepEqual(errors,[]);
   }finally{await browser?.close();await new Promise(resolve=>server.close(resolve))}
