@@ -106,7 +106,7 @@ function fixture(){
 }
 async function setup({viewport={width:1024,height:768},fixtureData=fixture()}={}){
  const {server,url}=await serve();
- const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
  const context=await browser.newContext({viewport,reducedMotion:'reduce'});
  const unexpected=[];
  await context.route('**/*',async route=>{
@@ -335,5 +335,25 @@ test('Chromium scolaire : quitter 10 calculs puis lancer 4 crée deux défis dis
   assert.deepEqual(ctx.fixture.issued.map(x=>x.total),[10,4],
    'l’ancienne série 10 reste sauvegardée et ne remplace pas la nouvelle série 4');
   assert.equal(ctx.fixture.received.some(x=>x.action==='game-record'),false);
+ }finally{await ctx.close()}
+});
+
+test('Chromium scolaire : aucune barre extérieure et toutes les fonctions dans le vrai en-tête', {timeout:120000},async()=>{
+ const ctx=await setup({viewport:{width:1024,height:768}});
+ try{
+  const {page,frame}=await ctx.page();
+  await frame.locator('#mathas-sous-connect-dock').waitFor({timeout:15000});
+  assert.equal(await page.locator('#ce-toolbar').isVisible(),false,'bandeau extérieur supprimé');
+  assert.equal(await page.locator('iframe').evaluate(f=>Math.abs(f.getBoundingClientRect().top)),0);
+  assert.equal(await frame.locator('#mathas-sous-hub-link').isVisible(),true);
+  assert.equal(await frame.locator('#fullscreenBtn').isVisible(),true);
+  assert.equal(await frame.locator('#themeToggleBtn').isVisible(),true);
+  assert.match(await frame.locator('h1').first().textContent(),/Soustraction.*V6/i);
+  assert.match(await frame.locator('#mathas-sous-connect-identity').textContent(),/Élève test/);
+  assert.match(await frame.locator('#mathas-sous-connect-level').textContent(),/Niveau 1/);
+  assert.equal(await frame.locator('#mathas-sous-connect-xp').isVisible(),true);
+  await frame.locator('#mathas-sous-connect-xp').click();
+  await page.locator('#xp-details:not([hidden])').waitFor({timeout:15000});
+  assert.match(await page.locator('#xp-details').textContent(),/XP acquis dans ce jeu/);
  }finally{await ctx.close()}
 });
