@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {officialMultiplicationCups} from '../apps/multiplication-simple/school-ui.mjs';
+import {officialMultiplicationCups,indicativeMultiplicationCups} from '../apps/multiplication-simple/school-ui.mjs';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
@@ -32,15 +32,42 @@ test('classic needs all three native perfect series for ONE bronze trophy',()=>{
  assert.equal(trophy[0].earned,true);
 });
 
-test('sudden trophy and HARD trio use independent, level-specific official flags',()=>{
+test('Mort subite, TOP DU JOUR et HARD affichent les trois coupes officielles indépendantes',()=>{
  const r=rewards();
  r.sudden[1]=true;
- assert.equal(officialMultiplicationCups(r,'sudden',2)[0].earned,true);
- assert.equal(officialMultiplicationCups(r,'sudden',1)[0].earned,false);
+ const sudden=officialMultiplicationCups(r,'sudden',2);
+ assert.deepEqual(sudden.map(x=>x.color),['bronze','silver','gold']);
+ assert.deepEqual(sudden.map(x=>x.earned),[false,true,false]);
+ assert.deepEqual(officialMultiplicationCups(r,'sudden',1),sudden,'niveau courant sans incidence sur le trio');
+ r.scoreOne.gold=true;
+ assert.deepEqual(officialMultiplicationCups(r,'score').map(x=>x.earned),[false,false,true]);
  r.hardAwards.silver[2]=true;
  const cups=officialMultiplicationCups(r,'hard-sudden',3);
  assert.deepEqual(cups.map(x=>x.key),['hard:bronze:3','hard:silver:3','hard:gold:3']);
  assert.deepEqual(cups.map(x=>x.earned),[false,true,false]);
+});
+
+test('sans état serveur, les trois zones ont des indicateurs neutres mais aucun acquis fictif',()=>{
+ for(const [mode,level,count] of [['score',undefined,3],['sudden',1,3],['classic',1,1],['hard-sudden',2,3]]){
+  const visual=indicativeMultiplicationCups(mode,level);
+  assert.equal(visual.length,count,mode);
+  assert.ok(visual.every(x=>x.earned===null),mode);
+ }
+ assert.equal(indicativeMultiplicationCups('classic',4),null);
+ assert.equal(indicativeMultiplicationCups('three-lives',1),null);
+ const source=read('apps/multiplication-simple/school-ui.mjs');
+ assert.match(source,/if\(connected\)renderCups\(doc,rewards\)/);
+ assert.match(source,/spec\.earned===null\?'unknown'/);
+ assert.match(source,/Statut en attente de confirmation Connect/);
+});
+
+test('menu scolaire compact et identité Connect lisible sans message de progression tronqué',()=>{
+ const ui=read('apps/multiplication-simple/school-ui.mjs');
+ const launcher=read('apps/multiplication-simple/index.html');
+ assert.match(ui,/min-height:124px!important/);
+ assert.doesNotMatch(ui,/min-height:154px!important/);
+ assert.match(launcher,/statusLabel\.textContent='● Connecté · '\+\(studentName\|\|'Compte élève'\);/);
+ assert.doesNotMatch(launcher,/\+\(initial\?'':' · Nouvelle progression Connect'\)/);
 });
 
 test('native game still owns its 20 visual trophies; buttons never create server awards',()=>{

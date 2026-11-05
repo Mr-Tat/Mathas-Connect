@@ -55,7 +55,7 @@ test('Aucun trophée fictif : seule la structure de récompenses permanentes pro
  const rewards={version:3,mastery:{4:[true,false,false],10:[true,false,false],20:[true,false,false]},
   sudden:[false,true,false],hardAwards:{bronze:[false,false,false],silver:[false,false,false],gold:[false,false,false]}};
  assert.equal(officialMultiplicationCups(rewards,'classic',1)[0].earned,true);
- assert.equal(officialMultiplicationCups(rewards,'sudden',2)[0].earned,true);
+ assert.deepEqual(officialMultiplicationCups(rewards,'sudden',2).map(x=>x.earned),[false,true,false]);
  assert.equal(officialMultiplicationCups(rewards,'classic',3)[0].earned,false);
 });
 test('Élève final : relais des deux boutons et consentement strict via scores certifiés',()=>{

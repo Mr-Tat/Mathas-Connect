@@ -26,12 +26,14 @@ const origin='http://127.0.0.1:'+server.address().port;
 const browser=await chromium.launch({headless:true});
 
 try{
- await test('native school buttons: one official XP badge and cups, no overlap at 320/390/1160px',async()=>{
+ await test('native school buttons: official XP, mastery cup, three record cups and compact survival height at 320/390/1160px',async()=>{
   const context=await browser.newContext({viewport:{width:320,height:780}});
   const page=await context.newPage();
   try{
    await page.goto(origin+'/apps/multiplication-simple/game-original.html',{waitUntil:'domcontentloaded'});
    await page.locator('#menuScreen .classic-count-btn[data-count]').first().waitFor();
+   // Le bloc TOP DU JOUR est créé après l'installation initiale du menu natif.
+   await page.locator('#mathasPointsQuick .mathas-points-quick-item--best').waitFor({state:'attached'});
    await page.evaluate(async()=>{
     const {installMultiplicationSchoolUi}=await import('/apps/multiplication-simple/school-ui.mjs');
     const rewards={version:3,
@@ -63,16 +65,44 @@ try{
         collision:area
       };
      });
-     return {buttons:rects,style:!!document.getElementById('mathas-multi-school-style')};
+     const cups=s=>document.querySelectorAll(s).length;
+     const survival=document.getElementById('startSudden');
+     return {
+      buttons:rects,
+      style:!!document.getElementById('mathas-multi-school-style'),
+      mastery:cups('#menuScreen .mathas-multi-mastery-under-series > .mathas-multi-school-cups .mathas-multi-school-cup'),
+      top:cups('#menuScreen #mathasPointsQuick .mathas-points-quick-item--best > .mathas-multi-school-cups .mathas-multi-school-cup'),
+      sudden:cups('#menuScreen #startSudden > .mathas-multi-school-cups .mathas-multi-school-cup'),
+      survivalHeight:survival?.getBoundingClientRect().height
+     };
     });
     assert.equal(state.buttons.length,3,'all native classic buttons must exist');
     for(const row of state.buttons){
      assert.equal(row.countXP,1,JSON.stringify({width,row}));
-     assert.equal(row.countCups,1,JSON.stringify({width,row}));
+     assert.equal(row.countCups,0,'maîtrise regroupée hors des boutons : '+JSON.stringify({width,row}));
      assert.equal(row.text,1,JSON.stringify({width,row}));
-     assert.ok(row.collision!==null&&row.collision<1,JSON.stringify({width,row}));
+     assert.equal(row.collision,null,'les XP ne doivent pas se superposer à une coupe dans le bouton');
     }
+    assert.equal(state.mastery,1,'une seule coupe de maîtrise sous 4/10/20 : '+JSON.stringify({width,state}));
+    assert.equal(state.top,3,'trois coupes du TOP DU JOUR : '+JSON.stringify({width,state}));
+    assert.equal(state.sudden,3,'trois coupes Mort subite : '+JSON.stringify({width,state}));
+    assert.ok(state.survivalHeight>=60&&state.survivalHeight<=150,
+      'bouton Mort subite compact : '+JSON.stringify({width,state}));
    }
+   await page.evaluate(()=>{
+    const {__installSchool}=window;
+    window.__installSchool=()=>{};
+    // Une réponse Connect sans instantané de trophées garde les indicateurs neutres.
+    const d=document;
+    return import('/apps/multiplication-simple/school-ui.mjs').then(({installMultiplicationSchoolUi})=>
+      installMultiplicationSchoolUi(d,{connected:true,rewards:null,xp:{milestones:[],repeatXp:false,parcours:1}}));
+   });
+   const unknown=await page.evaluate(()=>({
+     top:[...document.querySelectorAll('#mathasPointsQuick .mathas-multi-school-cup')].map(x=>x.classList.contains('unknown')),
+     sudden:[...document.querySelectorAll('#startSudden .mathas-multi-school-cup')].map(x=>x.classList.contains('unknown'))
+   }));
+   assert.deepEqual(unknown.top,[true,true,true],'les coupes inconnues ne doivent pas apparaître obtenues');
+   assert.deepEqual(unknown.sudden,[true,true,true],'aucune récompense inventée');
   }finally{await context.close()}
  });
 }finally{
