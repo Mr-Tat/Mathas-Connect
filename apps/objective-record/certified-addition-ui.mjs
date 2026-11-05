@@ -26,6 +26,21 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,mode
   panel.hidden=false;
   if(!button.dataset.extendedBusy)button.disabled=!!run||sending;
   if(!win)return;
+  // Un retour au menu avant la fin de la partie abandonne uniquement cette
+  // tentative locale. Les réponses incomplètes ne doivent jamais être créditées.
+  // Le prochain clic relance une nouvelle épreuve certifiée par le serveur.
+  if(!doc.__mathasCertifiedExitListener){
+   doc.__mathasCertifiedExitListener=true;
+   doc.addEventListener('click',event=>{
+    if(!event.target?.closest?.('#menuBtn'))return;
+    if(!run||run.finished||sending)return;
+    queue?.clear();
+    run=null;queue=null;suppressedTerminal=false;
+    delete win.__mathasServerCertified;
+    if(!button.dataset.extendedBusy)button.disabled=false;
+    notify('Partie interrompue. Tu peux lancer une nouvelle série.');
+   });
+  }
   if(run && win.__mathasServerCertified?.sessionId!==run.sessionId){
    win.__mathasServerCertified={sessionId:run.sessionId,level:run.level,total:run.total,questions:run.questions,index:0};
   }else if(!run&&win.__mathasServerCertified){
