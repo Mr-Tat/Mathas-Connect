@@ -60,17 +60,16 @@ function card(app) {
   const node = $('appTemplate').content.firstElementChild.cloneNode(true);
   // En TEST, Multiplication utilise déjà son vrai moteur V7 certifié :
   // ne pas la renvoyer vers l'ancien hôte Objectif record des autres jeux.
-  const effectiveClass=allMode?LAB_CLASS:classId;
-  const testMultiplication=effectiveClass===LAB_CLASS&&app.app_key==='multiplication-ecrite-simple';
-  const schoolMultiplication=SCHOOL_CLASS_IDS.includes(effectiveClass)&&app.app_key==='multiplication-ecrite-simple';
-  const testSlug=effectiveClass===LAB_CLASS&&!testMultiplication?recordSlugByApp[app.app_key]:null;
+  const testMultiplication=classId===LAB_CLASS&&app.app_key==='multiplication-ecrite-simple';
+  const schoolMultiplication=SCHOOL_CLASS_IDS.includes(classId)&&app.app_key==='multiplication-ecrite-simple';
+  const testSlug=classId===LAB_CLASS&&!testMultiplication?recordSlugByApp[app.app_key]:null;
   const target = new URL(testMultiplication?'./apps/multiplication-simple/':
     schoolMultiplication?'./apps/multiplication-simple/':
     testSlug?SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(testSlug):
-    schoolAdditionsLaunch({classId:effectiveClass,appKey:app.app_key,legacyUrl:
-      schoolRecordLaunch({classId:effectiveClass,appKey:app.app_key,legacyUrl:app.launch_url})}),location.href);
+    schoolAdditionsLaunch({classId:classId,appKey:app.app_key,legacyUrl:
+      schoolRecordLaunch({classId:classId,appKey:app.app_key,legacyUrl:app.launch_url})}),location.href);
   // Le HUB fournit la classe au jeu Connect ; les autorisations restent vérifiées côté serveur.
-  if (effectiveClass && target.origin === location.origin) target.searchParams.set('class', effectiveClass);
+  if (classId && target.origin === location.origin) target.searchParams.set('class', classId);
   if(testMultiplication && target.origin===location.origin)target.searchParams.set('requireConnect','1');
   // En mode Connect scolaire, une carte officielle ne doit jamais ouvrir
   // silencieusement un 4/4 sans preuve et sans XP. Le mode Classique reste libre.
