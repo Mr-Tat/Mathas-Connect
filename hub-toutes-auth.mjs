@@ -5,7 +5,7 @@ export async function mountHubToutesAuth({teacherClient,studentClient,isTeacherM
  panel.setAttribute('aria-labelledby','toutes-auth-title');
  panel.innerHTML='<div class="toutes-auth-heading"><div><h2 id="toutes-auth-title">🧪 Connexions de test</h2><p>Deux sessions indépendantes, classe fictive TEST. Les XP restent liés au profil approuvé.</p></div><span id="toutes-auth-current">Vérification…</span></div>'+
  '<div class="toutes-auth-actions"><button id="toutes-switch" class="ghost-btn" type="button" disabled>Vérification…</button>'+
- '<label for="toutes-student-select">Profil fictif <select id="toutes-student-select" disabled><option>Chargement…</option></select></label>'+
+ '<label id="toutes-student-picker" for="toutes-student-select">Profil fictif <select id="toutes-student-select" disabled><option>Chargement…</option></select></label>'+
  '<button id="toutes-connect-student" class="ghost-btn" type="button" disabled>Se connecter avec ce profil</button>'+
  '<button id="toutes-requests-open" class="ghost-btn" type="button" aria-expanded="false" disabled>Demandes d’accès</button></div>'+
  '<p id="toutes-auth-feedback" role="status" aria-live="polite"></p>'+
@@ -41,9 +41,14 @@ export async function mountHubToutesAuth({teacherClient,studentClient,isTeacherM
    const first=[...sel.options].find(o=>!o.disabled);
    if(first)sel.value=first.value;else sel.add(new Option('Aucun profil disponible',''));
    sel.disabled=!first;$('toutes-connect-student').disabled=!first;
+   const updateStudentButton=()=>{$('toutes-connect-student').textContent='Se connecter avec '+(sel.selectedOptions[0]?.textContent||'ce profil')};
+   sel.onchange=updateStudentButton;updateStudentButton();
+   $('toutes-student-picker').hidden=!isTeacherMode;
+   $('toutes-connect-student').hidden=!isTeacherMode;
+   $('toutes-switch').hidden=isTeacherMode;
    $('toutes-switch').disabled=false;$('toutes-requests-open').disabled=false;
    $('toutes-requests-open').hidden=!isTeacherMode;
-   $('toutes-switch').textContent=isTeacherMode?'Passer à la session élève':'Se connecter avec Monsieur T';
+   $('toutes-switch').textContent='Se connecter avec Monsieur T';
    $('toutes-auth-current').textContent=isTeacherMode?'👨‍🏫 Monsieur T':'👧 Session élève TEST';
  }
  function drawRequests(){
@@ -121,6 +126,7 @@ export async function mountHubToutesAuth({teacherClient,studentClient,isTeacherM
    }
  }catch(e){
    panel.classList.add('toutes-auth-blocked');$('toutes-auth-current').textContent='Accès professeur nécessaire';
+   $('toutes-switch').hidden=false;$('toutes-student-picker').hidden=true;$('toutes-connect-student').hidden=true;
    $('toutes-switch').disabled=false;$('toutes-switch').textContent='Ouvrir la connexion professeur';
    $('toutes-switch').onclick=()=>location.assign('./index.html?portail=prof');
    msg('Authentification spéciale indisponible : '+(e.message||'Compte professeur requis.'),true);
