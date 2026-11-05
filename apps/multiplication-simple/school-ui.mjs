@@ -197,27 +197,27 @@ function polishSurvivalMenu(doc){
   description.textContent='Pour marquer un plus gros score !';
  const lives=doc.getElementById('mathasMultiThreeLives');
  const sudden=doc.getElementById('startSudden');
- if(lives&&!lives.dataset.mathasMenuLabel){
-  lives.dataset.mathasMenuLabel='1';
-  const label=doc.createElement('span');
-  label.textContent='❤️ ❤️ ❤️';
-  const name=doc.createElement('strong');
-  name.textContent='3 vies';
-  lives.replaceChildren(label,name,...[...lives.children].filter(x=>x.classList.contains(BADGE)));
-  lives.setAttribute('aria-label','Mode 3 vies');
+ // Les scripts natifs peuvent réécrire textContent lorsqu'un mode est débloqué.
+ // Restituer l'habillage sans supprimer les coupes et les badges XP officiels.
+ function label(button,emoji,name,aria){
+  if(!button)return;
+  const rendered=button.querySelector(':scope > .mathas-multi-choice-name');
+  if(rendered?.textContent===name)return;
+  const extras=[...button.children].filter(x=>x.classList.contains(BADGE)||x.classList.contains(CUPS));
+  const symbol=doc.createElement('span');
+  symbol.className='mathas-multi-choice-icon';symbol.textContent=emoji;
+  const text=doc.createElement('strong');
+  text.className='mathas-multi-choice-name';text.textContent=name;
+  button.replaceChildren(symbol,text,...extras);
+  button.setAttribute('aria-label',aria);
  }
- if(sudden&&!sudden.dataset.mathasMenuLabel){
-  sudden.dataset.mathasMenuLabel='1';
-  const symbol=doc.createElement('span');symbol.textContent='💀';
-  const name=doc.createElement('strong');name.textContent='Mort subite';
-  sudden.replaceChildren(symbol,name,...[...sudden.children].filter(x=>x.classList.contains(BADGE)||x.classList.contains(CUPS)));
-  sudden.setAttribute('aria-label','Mode Mort subite');
- }
- // Ne jamais inventer une condition de déblocage : reprendre l'état natif des boutons.
+ label(lives,'❤️ ❤️ ❤️','3 vies','Mode 3 vies');
+ label(sudden,'💀','Mort subite','Mode Mort subite');
  let note=card.querySelector(':scope > .mathas-multi-unlock-note');
  if(!note){note=doc.createElement('div');note.className='mathas-multi-unlock-note';card.append(note)}
  const locked=!!(lives?.disabled||sudden?.disabled);
- note.textContent=locked?'🔒 Modes record : réussis 8/10 ou 16/20 au niveau choisi pour les débloquer.':'Deux moyens de battre ton record !';
+ const detail=locked?'🔒 Réussis 8/10 ou 16/20 au niveau choisi pour débloquer ces modes.':'Deux moyens de battre ton record !';
+ if(note.textContent!==detail)note.textContent=detail;
 }
 function instruction(doc,enabled){
  const root=doc.getElementById('instructionText');
