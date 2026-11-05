@@ -35,6 +35,21 @@ const browser=await chromium.launch({headless:true});
 
 async function connectedPage(teacher=false,failFirstFinish=false,cls=CLS){
  const page=await browser.newPage({viewport:{width:390,height:820}});
+ // Image par image : ce compteur détecte les bandeaux fugitifs à l'ouverture.
+ await page.addInitScript(()=>{
+  window.__toolbarVisibleFrames=0;
+  window.__toolbarSampledFrames=0;
+  function sample(){
+   const toolbar=document.getElementById('ce-toolbar');
+   if(toolbar){
+    window.__toolbarSampledFrames++;
+    if(getComputedStyle(toolbar).display!=='none'&&toolbar.getBoundingClientRect().height>0)
+     window.__toolbarVisibleFrames++;
+   }
+   requestAnimationFrame(sample);
+  }
+  requestAnimationFrame(sample);
+ });
  const calls=[],proofCalls=[],projectionCalls=[];
  let state=null,firstFinishFails=failFirstFinish,projectionPublished=false;
  let xp={ok:true,milestones:[],repeatXp:false,parcours:1,total:0,appXp:0,level:1};
@@ -158,6 +173,23 @@ async function playFour(page){
 }
 
 try{
+ await test('Connect multiplication: the old toolbar never flashes while the native header mounts',async()=>{
+  const {page}=await connectedPage();
+  try{
+   await page.frameLocator('iframe').locator('#mathas-multi-connect-dock').waitFor({state:'attached',timeout:17000});
+   await page.waitForTimeout(300);
+   const check=await page.evaluate(()=>({
+    visible:window.__toolbarVisibleFrames,
+    sampled:window.__toolbarSampledFrames,
+    display:getComputedStyle(document.getElementById('ce-toolbar')).display,
+    native:!!document.querySelector('iframe')?.contentDocument?.getElementById('mathas-multi-connect-dock')
+   }));
+   assert.ok(check.sampled>0,'mesurer des images pendant le chargement');
+   assert.equal(check.visible,0,'aucune image affichant la barre : '+JSON.stringify(check));
+   assert.equal(check.display,'none');
+   assert.equal(check.native,true);
+  }finally{await page.close()}
+ });
  await test('TEST en ligne: refuse a silently free 4/4 without approved Connect session, including legacy free-mode flag',async()=>{
   const page=await browser.newPage({viewport:{width:390,height:820}});
   const edgeCalls=[];
