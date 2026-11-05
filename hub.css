@@ -696,3 +696,6 @@ body.theme-partage {
 .toutes-request-actions{display:flex;flex-wrap:wrap;gap:8px}
 .toutes-auth-blocked #toutes-connect-student,.toutes-auth-blocked #toutes-requests-open{display:none}
 @media(max-width:600px){.toutes-auth{padding:16px}.toutes-auth-heading{display:block}#toutes-auth-current{display:inline-block;margin-bottom:14px}.toutes-auth-actions>*{width:100%;max-width:none}.toutes-auth select{max-width:none;width:100%}}
+
+/* L'attribut hidden reste prioritaire sur les styles de boutons dans les deux rôles. */
+.toutes-auth [hidden]{display:none!important}
