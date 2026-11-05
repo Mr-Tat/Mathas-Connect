@@ -49,7 +49,8 @@ test('Server: both TEST endpoints close client-declared score bypass for additio
  assert.match(resultsEdge,/b\.action==='game-record'&&proofOnlyAddClasses\.has\(b\.classId\)/);
  assert.match(resultsEdge,/b\.appKey===app\|\|b\.appKey===addMulti/);
  assert.match(resultsEdge,/return deny\('server_proof_required',403\)/);
-  assert.ok(host.includes("SERVER_PROOF_ADDITIONS.has(activeApp)?'?connect=1"));
+  assert.ok(host.includes("nativeConnectHud?'?connect=1"));
+ assert.match(host,/SERVER_PROOF_ADDITIONS\.has\(activeApp\)\|\|/);
 });
 for(const item of [
  {slug:'addition-simple',appKey:'addition-ecrite-simple',startAction:'start-proof-v2',
@@ -185,3 +186,71 @@ for(const item of [
   }finally{await browser?.close();await new Promise(resolve=>server.close(resolve))}
  });
 }
+
+test('Chromium Soustraction TEST : profil et XP dans le jeu, sans bandeau rétractable ni XP simulé',async()=>{
+ const {server,url}=await serve();let browser;
+ try{
+  browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+  const page=await browser.newPage({viewport:{width:1280,height:850}});
+  const requests=[],errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.route('**/supabase-js@2.95.0*',r=>r.fulfill({
+   status:200,contentType:'text/javascript',headers:{'access-control-allow-origin':'*'},
+   body:'export function createClient(){return {auth:{getSession:async()=>({data:{session:{access_token:"test",user:{id:"'+AUTH+'",is_anonymous:true}}}}),getUser:async()=>({data:{user:{id:"'+AUTH+'",is_anonymous:true}},error:null})}}}'
+  }));
+  await page.route('**/*.supabase.co/**',async r=>{
+   const body=r.request().postDataJSON()??{};requests.push(body);
+   let data;
+   if(r.request().url().includes('/connect-api')){
+    data={ok:true,status:'approved',classId:CLASS,displayName:'Élève test'};
+   }else if(r.request().url().includes('/connect-results')){
+    if(body.action==='student-load')
+     data={ok:true,revision:0,resetEpoch:0,state:{rewards:REWARDS},storageSubject:PUPIL};
+    else if(body.action==='student-xp')
+     data={ok:true,appXp:0,total:28,level:1,milestones:[],currentMilestones:[],parcours:1,repeatXp:false};
+    else throw Error('write forbidden in HUD test: '+body.action);
+   }else if(r.request().url().includes('/connect-projection-v2')){
+    data={ok:true,events:[],bestThree:[],todayBest:null,boardBest:0};
+   }else throw Error('unexpected request '+r.request().url());
+   await r.fulfill({status:200,contentType:'application/json',
+    headers:{'access-control-allow-origin':'*'},body:JSON.stringify(data)});
+  });
+  await page.goto(url+'/apps/objective-record/eleve.html?class='+CLASS+'&app=soustraction',
+   {waitUntil:'domcontentloaded',timeout:25000});
+  await page.waitForFunction(()=>{
+   const frame=document.getElementById('gameFrame');
+   const native=frame?.contentDocument?.getElementById('game')?.contentDocument;
+   return !!native?.getElementById('mathas-native-connect-profile')
+    && !!native?.getElementById('mathas-native-connect-xp')
+    && !!native?.getElementById('mathas-game-hub-return');
+  },null,{timeout:50000});
+  const state=await page.evaluate(()=>{
+   const game=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+   const hostBar=document.getElementById('connect-bar');
+   const barHandle=document.getElementById('bar-handle');
+   const profile=game.getElementById('mathas-native-connect-profile');
+   return {
+    hostNative:document.documentElement.classList.contains('mathas-native-connect-hud'),
+    barHidden:getComputedStyle(hostBar).display==='none',
+    handleHidden:getComputedStyle(barHandle).display==='none',
+    profileText:profile.textContent,
+    xpText:game.getElementById('mathas-native-connect-xp').textContent,
+    hub:game.getElementById('mathas-game-hub-return').getAttribute('href'),
+    fakeXp:game.querySelectorAll('.classic-xp-remaining,.score-mode-detail,.mathas-pilot-remaining').length
+   };
+  });
+  assert.equal(state.hostNative,true);
+  assert.equal(state.barHidden,true,JSON.stringify(state));
+  assert.equal(state.handleHidden,true,JSON.stringify(state));
+  assert.match(state.profileText,/Élève test/);
+  assert.match(state.xpText,/XP à récupérer/);
+  assert.match(state.hub,/hub\.html/);
+  assert.equal(state.fakeXp,0,'aucun indicateur fictif de XP dans la session Connect');
+  await page.frameLocator('#gameFrame').frameLocator('#game')
+   .locator('#mathas-native-connect-xp').click();
+  await page.locator('#xp-panel:not([hidden])').waitFor({state:'visible',timeout:10000});
+  assert.match(await page.locator('#xp-heading-total').textContent(),/0/);
+  assert.equal(requests.some(x=>x.action==='game-record'),false,'aucun score écrit par cette vérification');
+  assert.deepEqual(errors,[]);
+ }finally{await browser?.close();await new Promise(resolve=>server.close(resolve))}
+});
