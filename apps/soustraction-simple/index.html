@@ -520,7 +520,7 @@ document.body.replaceChildren(toolbar,iframe);
 if(mode==='connected'){
  const refreshNativeHeader=()=>{
   mountNativeConnectHeader();
-  if(!iframe.contentDocument?.getElementById('mathas-sous-connect-dock')){
+  if(iframe.contentDocument?.readyState==='complete'&&!iframe.contentDocument?.getElementById('mathas-sous-connect-dock')){
    toolbar.style.display='flex';
    iframe.style.height='calc(100dvh - var(--ce-toolbar-height,46px))';
   }
