@@ -116,6 +116,17 @@ test('Chromium réel : Connect -> fin de partie -> trophée -> file -> serveur f
   assert.equal(badge.font,25,'gros chiffre du niveau sur PC');
   assert.equal(Number(badge.weight),900);
   assert.ok(badge.right<=badge.viewport+2,'le cadre ne déborde pas');
+  const challenges=await frame.locator('#mathasTrophiesStrip').evaluate(strip=>{
+   const label=strip.querySelector('.mathas-trophies-hint');
+   return {text:label?.textContent?.trim(),edge:getComputedStyle(label).borderTopWidth,
+    pointer:getComputedStyle(label).pointerEvents,tag:strip.tagName,
+    falseProjection:!!document.querySelector('#mathasPointsQuick .mathas-school-share-hint')};
+  });
+  assert.equal(challenges.text,'Voir les défis');
+  assert.equal(challenges.edge,'1px','discret filet autour du texte');
+  assert.equal(challenges.pointer,'none','l ensemble de la bande conserve sa zone cliquable');
+  assert.equal(challenges.tag,'BUTTON');
+  assert.equal(challenges.falseProjection,false,'pas de fausse invitation de projection');
   await frame.locator('input[name="borrowMethod"][value="takeTop"]').evaluate(input=>input.closest('label').click());
   await frame.locator('body').evaluate(()=>window.__setLastWork({label:'Mort subite · Niveau 1',score:'5',rulerUsed:false}));
   // Les XP peuvent être crédités par le serveur sans que l'élève voie la séquence.
