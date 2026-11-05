@@ -46,16 +46,39 @@ export function officialMultiplicationCups(rewards,mode,level){
  }
  return null;
 }
+// Indicateurs purement visuels si l'état des récompenses officielles n'est pas encore
+// disponible. Aucun trophée n'est déclaré acquis, sauvegardé ni crédité ici.
+export function indicativeMultiplicationCups(mode,level){
+ const colors=['bronze','silver','gold'];
+ if(mode==='score')return colors.map((color,i)=>({
+  key:'score:'+color,color,earned:null,
+  title:'Défi de score : '+[200,400,600][i]+' points sur une partie'
+ }));
+ if(mode==='sudden')return colors.map((color,i)=>({
+  key:'sudden:'+(i+1),color,earned:null,
+  title:'Mort subite niveau '+(i+1)+' : 25 réussites'
+ }));
+ if(![1,2,3].includes(level))return null;
+ if(mode==='classic')return [{
+  key:'mastery:'+level,color:colors[level-1],earned:null,
+  title:'Maîtrise niveau '+level+' : 4/4, 10/10 et 20/20'
+ }];
+ if(mode==='hard-sudden')return colors.map((color,i)=>({
+  key:'hard:'+color+':'+level,color,earned:null,
+  title:'Mort subite HARD niveau '+level+' : '+[3,5,10][i]+' réussites'
+ }));
+ return null;
+}
 function putCups(doc,button,specs){
  if(!button||!specs)return;
  let row=button.querySelector(':scope > .'+CUPS);
  if(!row){row=doc.createElement('span');row.className=CUPS;button.append(row)}
- const signature=specs.map(x=>x.key+':'+(x.earned?'1':'0')).join('|');
+ const signature=specs.map(x=>x.key+':'+(x.earned===null?'?':x.earned?'1':'0')).join('|');
  if(row.dataset.signature===signature)return;
  row.dataset.signature=signature;row.replaceChildren();
  for(const spec of specs){
-  const slot=doc.createElement('span');slot.className='mathas-multi-school-cup '+(spec.earned?'earned':'locked');
-  slot.title=spec.title+(spec.earned?' · Coupe acquise':' · Coupe à gagner');
+  const slot=doc.createElement('span');slot.className='mathas-multi-school-cup '+(spec.earned===null?'unknown':spec.earned?'earned':'locked');
+  slot.title=spec.title+(spec.earned===null?' · Statut en attente de confirmation Connect':spec.earned?' · Coupe acquise':' · Coupe à gagner');
   slot.setAttribute('aria-label',slot.title);
   const cup=doc.createElement('span');
   cup.className='mathas-v602-trophy-cup mathas-multi-school-cup-art';
@@ -126,6 +149,7 @@ function ensureStyle(doc){
  '.mathas-multi-school-cup .mathas-multi-school-cup-art{display:inline-flex!important;width:16px!important;height:17px!important;font-size:15px!important}',
  '.mathas-multi-school-cup .mathas-multi-school-cup-art svg{width:100%!important;height:100%!important}',
  '.mathas-multi-school-cup.locked{opacity:.38;filter:grayscale(1)}',
+ '.mathas-multi-school-cup.unknown{opacity:.55;filter:grayscale(.65)}',
  '.mathas-multi-school-cup.earned{opacity:1;filter:drop-shadow(0 1px 3px #f4d48a77)}',
  '/* Le bonus est lisible dans Mort subite comme dans Addition, sans se confondre avec les XP. */',
  '#menuScreen .mathas-multi-survival-options>#startSudden>.mathas-multi-score-x2{display:block!important;position:static!important;flex:none!important;align-self:center!important;width:max-content!important;max-width:100%!important;margin:0!important;padding:2px 8px!important;border:1px solid rgba(247,209,126,.45)!important;border-radius:7px!important;background:rgba(67,32,38,.28)!important;color:#ffe7a2!important;font:850 clamp(10px,.9vw,12px)/1.2 system-ui!important;white-space:nowrap!important;pointer-events:none!important}',
@@ -139,7 +163,7 @@ function ensureStyle(doc){
  '#menuScreen .mode-card.sudden .mathas-multi-survival-options>#mathasMultiThreeLives,#menuScreen .mode-card.sudden .mathas-multi-survival-options>#startSudden{grid-column:auto!important;grid-row:auto!important;min-width:0!important;width:100%!important;max-width:none!important;justify-self:stretch!important;align-self:stretch!important}',
  '#menuScreen .mode-card.sudden .mathas-multi-survival-options>#mathasMultiThreeLives{grid-column:1!important}',
  '#menuScreen .mode-card.sudden .mathas-multi-survival-options>#startSudden{grid-column:2!important}',
- '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice{min-width:0!important;max-width:none!important;width:100%!important;min-height:154px!important;margin:0!important;box-sizing:border-box!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:8px!important;white-space:normal!important;overflow-wrap:normal!important;word-break:normal!important;text-align:center!important;font-size:clamp(.88rem,1.25vw,1.15rem)!important;line-height:1.18!important;padding:16px 10px 29px!important}',
+ '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice{min-width:0!important;max-width:none!important;width:100%!important;min-height:124px!important;margin:0!important;box-sizing:border-box!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:5px!important;white-space:normal!important;overflow-wrap:normal!important;word-break:normal!important;text-align:center!important;font-size:clamp(.88rem,1.25vw,1.15rem)!important;line-height:1.18!important;padding:11px 9px 27px!important}',
  '/* Même relief et interactions que Mort subite, avec une couleur propre au mode 3 vies. */',
  '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>#mathasMultiThreeLives{background:linear-gradient(180deg,#79445f 0%,#57304d 55%,#45253e 100%)!important;border:1px solid #bb779e!important;color:#fff4fa!important}',
  '#hardMenu .hard-actions>.mathas-multi-hard-three-lives{background:linear-gradient(180deg,#79445f 0%,#57304d 55%,#45253e 100%)!important;border:1px solid #bb779e!important;color:#fff4fa!important}',
@@ -152,7 +176,7 @@ function ensureStyle(doc){
  '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice:not(:disabled){box-shadow:inset 0 2px 0 #ffffff25,inset 0 -4px 0 #0004,0 5px 0 #0005,0 11px 19px #0004!important}',
  '@media(hover:hover) and (pointer:fine){#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice:not(:disabled):hover{transform:translateY(-3px)!important;filter:brightness(1.12)!important}}',
  '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice:not(:disabled):active{transform:translateY(3px)!important;box-shadow:inset 0 2px 5px #0005,0 2px 0 #0005!important}',
- '@media(max-width:570px){#menuScreen .mode-card.sudden>.mathas-multi-survival-options{gap:7px!important}#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice{min-height:115px!important;font-size:.88rem!important;padding:10px 5px 30px!important}}',
+ '@media(max-width:570px){#menuScreen .mode-card.sudden>.mathas-multi-survival-options{gap:7px!important}#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice{min-height:112px!important;font-size:.88rem!important;padding:8px 5px 26px!important}}',
  '#menuScreen .mathas-multi-survival-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(7px,1.1vw,13px);width:100%;min-width:0;align-items:stretch}',
  '#menuScreen .mathas-multi-survival-options>.big-mode-choice{min-width:0;width:100%;min-height:88px;margin:0!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;white-space:normal;text-align:center}',
  '#hardMenu .hard-actions:has(.mathas-multi-hard-three-lives){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}',
@@ -201,6 +225,8 @@ function renderXp(doc,xp){
  }
 }
 function renderCups(doc,rewards){
+ const cupsFor=(mode,lv)=>officialMultiplicationCups(rewards,mode,lv)
+  ??indicativeMultiplicationCups(mode,lv);
  // Un seul trophée de maîtrise pour les trois séries : la carte Calculs,
  // plutôt que trois coupes trompeuses à l'intérieur des boutons 4/10/20.
  doc.querySelectorAll('#menuScreen .classic-count-btn[data-count] .'+CUPS).forEach(x=>x.remove());
@@ -212,15 +238,15 @@ function renderCups(doc,rewards){
   if(mastery.previousElementSibling!==series)series.insertAdjacentElement('afterend',mastery);
   classicCard?.querySelector(':scope > .'+CUPS)?.remove();
  }else if(mastery){mastery.remove();mastery=null}
- putCups(doc,mastery||classicCard,officialMultiplicationCups(rewards,'classic',level(doc,'classicLevel')));
+ putCups(doc,mastery||classicCard,cupsFor('classic',level(doc,'classicLevel')));
  putCups(doc,doc.getElementById('startSudden'),
-  officialMultiplicationCups(rewards,'sudden',level(doc,'suddenLevel')));
+  cupsFor('sudden',level(doc,'suddenLevel')));
  const scoreCard=doc.querySelector('#menuScreen #mathasPointsQuick .mathas-points-quick-item--best');
- putCups(doc,scoreCard,officialMultiplicationCups(rewards,'score'));
+ putCups(doc,scoreCard,cupsFor('score'));
  for(const card of doc.querySelectorAll('#hardMenu .hard-level-card')){
   const n=Number(card.querySelector('h3')?.textContent.match(/NIV\s*([123])/i)?.[1]);
   const button=card.querySelector('.hard-sudden:not(.mathas-multi-hard-three-lives):not(:disabled)');
-  if(button)putCups(doc,button,officialMultiplicationCups(rewards,'hard-sudden',n));
+  if(button)putCups(doc,button,cupsFor('hard-sudden',n));
  }
 }
 function polishSurvivalMenu(doc,connected){
@@ -315,7 +341,7 @@ export function installMultiplicationSchoolUi(doc,{connected=false,xp=null,rewar
  sync();
  if(connected&&xp)renderXp(doc,xp);
  else doc.querySelectorAll('.'+BADGE).forEach(x=>x.remove());
- if(connected&&rewards)renderCups(doc,rewards);
+ if(connected)renderCups(doc,rewards);
  else doc.querySelectorAll('.'+CUPS).forEach(x=>x.remove());
  return true;
 }
