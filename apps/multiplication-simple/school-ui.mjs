@@ -119,6 +119,9 @@ function ensureStyle(doc){
  '.mathas-multi-school-cups{position:absolute!important;bottom:10px!important;top:auto!important;right:9px!important;display:inline-flex!important;gap:3px!important;align-items:center!important;pointer-events:none!important;z-index:3}',
  '#menuScreen .mode-card.classic{position:relative!important}',
  '#menuScreen .mode-card.classic>.mathas-multi-school-cups{bottom:12px!important;right:16px!important}',
+ '/* Maîtrise : une coupe sous la rangée 4/10/20, pas sous le tableau récapitulatif. */',
+ '#menuScreen .mode-card.classic>.mathas-multi-mastery-under-series{position:relative!important;grid-column:1/-1!important;display:block!important;width:100%!important;min-height:22px!important;margin:3px 0 4px!important}',
+ '#menuScreen .mode-card.classic>.mathas-multi-mastery-under-series>.mathas-multi-school-cups{right:8px!important;bottom:0!important}',
  '.mathas-multi-school-cup{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:15px;min-height:16px}',
  '.mathas-multi-school-cup .mathas-multi-school-cup-art{display:inline-flex!important;width:16px!important;height:17px!important;font-size:15px!important}',
  '.mathas-multi-school-cup .mathas-multi-school-cup-art svg{width:100%!important;height:100%!important}',
@@ -202,7 +205,14 @@ function renderCups(doc,rewards){
  // plutôt que trois coupes trompeuses à l'intérieur des boutons 4/10/20.
  doc.querySelectorAll('#menuScreen .classic-count-btn[data-count] .'+CUPS).forEach(x=>x.remove());
  const classicCard=doc.querySelector('#menuScreen .mode-card.classic');
- putCups(doc,classicCard,officialMultiplicationCups(rewards,'classic',level(doc,'classicLevel')));
+ const series=classicCard?.querySelector('.mathas-series-panel');
+ let mastery=classicCard?.querySelector(':scope > .mathas-multi-mastery-under-series');
+ if(series){
+  if(!mastery){mastery=doc.createElement('div');mastery.className='mathas-multi-mastery-under-series'}
+  if(mastery.previousElementSibling!==series)series.insertAdjacentElement('afterend',mastery);
+  classicCard?.querySelector(':scope > .'+CUPS)?.remove();
+ }else if(mastery){mastery.remove();mastery=null}
+ putCups(doc,mastery||classicCard,officialMultiplicationCups(rewards,'classic',level(doc,'classicLevel')));
  putCups(doc,doc.getElementById('startSudden'),
   officialMultiplicationCups(rewards,'sudden',level(doc,'suddenLevel')));
  const scoreCard=doc.querySelector('#menuScreen #mathasPointsQuick .mathas-points-quick-item--best');
