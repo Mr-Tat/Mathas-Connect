@@ -69,7 +69,7 @@ Deno.serve(async(req:Request)=>{
    if(raw.length>2500)return fail('payload_too_large',413);
    let body:any;
    try{body=JSON.parse(raw)}catch{return fail('invalid_json')}
-   if(body?.classId!==TEST_CLASS||!['list','set'].includes(body.action))return fail('invalid_test_class',403);
+   if(body?.classId!==TEST_CLASS||!['list','set','all'].includes(body.action))return fail('invalid_test_class',403);
    const token=req.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];
    if(!token)return fail('authentication_required',401);
    const {data:{user},error}=await auth.auth.getUser(token);
@@ -80,6 +80,21 @@ Deno.serve(async(req:Request)=>{
    const p=await db.from('connect_class_permissions').select('class_id')
      .eq('class_id',TEST_CLASS).eq('teacher_id',user.id).eq('can_manage',true).maybeSingle();
    if(p.error||!p.data)return fail('class_permission_required',403);
+   if(body.action==='all'){
+     // Catalogue professeur uniquement : une seule fiche officielle par app_key.
+     // La distinction test/publié dépend des visibilités réelles des cinq presets,
+     // jamais de l'URL ou d'un choix effectué dans le navigateur.
+     const [listed, presets] = await Promise.all([
+       catalogue(true),
+       db.from('connect_hub_preset_entries').select('app_key,visible')
+         .eq('visible',true).limit(500),
+     ]);
+     if(presets.error)throw Error('catalogue_unavailable');
+     const published=new Set((presets.data||[]).map((entry:any)=>entry.app_key));
+     return respond({ok:true,apps:listed.filter(app=>app.enabled).map(app=>({
+       ...app,published:published.has(app.app_key),in_test:app.visible&&!published.has(app.app_key)
+     }))});
+   }
    if(body.action==='list')return respond({ok:true,apps:await catalogue(true)});
    if(!validKey(body.appKey)||typeof body.visible!=='boolean')return fail('invalid_visibility');
    // On ne peut jamais activer une appli désactivée ni l'outil de diagnostic.
