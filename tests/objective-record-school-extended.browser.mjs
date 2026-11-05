@@ -115,6 +115,10 @@ for(const item of examples){
      const card=doc.querySelector('#menuScreen .mode-card.sudden');
      const profile=doc.getElementById('mathas-native-connect-profile');
      const xpButton=doc.getElementById('mathas-native-connect-xp');
+     const levelBadge=profile.querySelector('.connect-level');
+     const levelNumber=levelBadge.querySelector('strong');
+     const badgeCss=doc.defaultView.getComputedStyle(levelBadge);
+     const numberCss=doc.defaultView.getComputedStyle(levelNumber);
      const row=doc.querySelector('main.app > header .mathas-brand-row');
      const logo=row.querySelector('.mathas-header-wordmark');
      const originalVersion=row.querySelector(':scope > .app-version-pill');
@@ -127,6 +131,13 @@ for(const item of examples){
       launchBottomMargin:launchMargin,launchToTensGap:tensRect.top-launchRect.bottom,
       tensOptionVisible:tensRect.width>0&&tensRect.height>0,
       profileText:profile.textContent.trim(),profileVisible:pr.width>0&&pr.height>0,
+      levelBadgeWidth:levelBadge.getBoundingClientRect().width,
+      levelBadgeRight:levelBadge.getBoundingClientRect().right,
+      levelBadgeColor:badgeCss.borderTopColor,
+      levelBadgeBackground:badgeCss.backgroundImage,
+      levelBadgeRadius:badgeCss.borderTopLeftRadius,
+      levelNumberFont:parseFloat(numberCss.fontSize),
+      levelNumberWeight:numberCss.fontWeight,
       profileInHeader:row.contains(profile),profileRight:pr.right,profileLeft:pr.left,
       profileTop:pr.top,logoRight:logoRect.right,logoTop:logoRect.top,
       originalVersionHidden:doc.defaultView.getComputedStyle(originalVersion).display==='none',
@@ -170,6 +181,13 @@ for(const item of examples){
       'la version ne dépasse pas la largeur : '+JSON.stringify(layout));
     }
     assert.match(layout.profileText,/^●.*Niveau 1.*0 \/ 50 XP/);
+    assert.ok(layout.levelBadgeWidth>=75,'cadre Niveau visible : '+JSON.stringify(layout));
+    assert.ok(layout.levelBadgeRight<=viewportWidth+3,'cadre Niveau dans la fenêtre : '+JSON.stringify(layout));
+    assert.equal(layout.levelBadgeColor,'rgb(239, 197, 106)','bordure or de l ancien bandeau');
+    assert.match(layout.levelBadgeBackground,/linear-gradient/,'cartouche bleu dégradé conservé');
+    assert.equal(layout.levelBadgeRadius,'99px');
+    assert.ok(layout.levelNumberFont>=23,'chiffre du niveau mis en évidence : '+JSON.stringify(layout));
+    assert.equal(Number(layout.levelNumberWeight),900);
     assert.doesNotMatch(layout.profileText,/Connecté ·/,'le nom suffit pour signaler la session');
     assert.equal(layout.xpVisible,true,'bouton XP visible près du profil : '+JSON.stringify(layout));
     assert.equal(layout.xpBesideProfile,true,'bouton XP immédiatement après le profil Connect');
