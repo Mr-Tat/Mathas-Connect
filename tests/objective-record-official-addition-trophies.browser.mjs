@@ -112,6 +112,9 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
      sharePointer:getComputedStyle(share).pointerEvents,
      shareBorder:getComputedStyle(share).borderTopWidth,
      shareHeight:share.getBoundingClientRect().height,
+     shareWidth:share.getBoundingClientRect().width,
+     shareArrow:getComputedStyle(share,'::after').content,
+     shareArrowGap:getComputedStyle(share,'::after').marginLeft,
      clickArea:score.getBoundingClientRect().width,
      trophyText:challenge?.textContent?.trim(),
      trophyBorder:getComputedStyle(challenge).borderTopWidth,
@@ -124,6 +127,10 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
    assert.equal(discreet.shareBorder,'1px');
    assert.ok(discreet.shareHeight<35,'contour de projection discret');
    assert.ok(discreet.clickArea>150,'la carte complète reste la zone cliquable');
+   assert.ok(discreet.shareWidth<=discreet.clickArea-70,
+    'le cadre de projection ne doit pas s étirer jusque sous les coupes : '+JSON.stringify(discreet));
+   assert.match(discreet.shareArrow,/›/,'flèche à la fin de la proposition');
+   assert.equal(discreet.shareArrowGap,'7px','flèche espacée du texte');
    assert.equal(discreet.trophyText,'Voir les défis');
    assert.equal(discreet.trophyBorder,'1px');
    assert.equal(discreet.trophyPointer,'none','le bouton reste la bande de trophées entière');
