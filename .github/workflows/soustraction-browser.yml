@@ -22,7 +22,12 @@ jobs:
       - name: Install lightweight browser test dependencies
         run: |
           npm install --no-save --no-package-lock playwright@1.57.0
-          npx playwright install chromium --with-deps
+          browser=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)
+          if [ -n "$browser" ]; then
+            echo "CHROME_BIN=$browser" >> "$GITHUB_ENV"
+          else
+            npx playwright install chromium --with-deps
+          fi
       - name: Contrats mathématiques et reprises
         run: node --test tests/soustraction-certified-client.test.mjs
       - name: Moteur autonome libre préservé
