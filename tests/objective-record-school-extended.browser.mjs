@@ -169,7 +169,8 @@ for(const item of examples){
      assert.ok(layout.titleVersionRight<=viewportWidth+2,
       'la version ne dépasse pas la largeur : '+JSON.stringify(layout));
     }
-    assert.match(layout.profileText,/Connecté · .*Niveau 1.*0 \/ 50 XP/);
+    assert.match(layout.profileText,/^●.*Niveau 1.*0 \/ 50 XP/);
+    assert.doesNotMatch(layout.profileText,/Connecté ·/,'le nom suffit pour signaler la session');
     assert.equal(layout.xpVisible,true,'bouton XP visible près du profil : '+JSON.stringify(layout));
     assert.equal(layout.xpBesideProfile,true,'bouton XP immédiatement après le profil Connect');
     assert.equal(layout.xpLabel,'✨ XP à récupérer');
