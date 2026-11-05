@@ -217,11 +217,17 @@ try{
    const actions=await page.frameLocator('iframe').locator('#mathasPointsQuick').evaluate(quick=>{
     const card=quick.querySelector('.mathas-points-quick-item--best');
     const hint=card.querySelector('.mathas-school-share-hint');
+    const cups=card.querySelector(':scope > .mathas-multi-school-cups');
+    const shareRect=hint.getBoundingClientRect(),cupRect=cups?.getBoundingClientRect();
     const trophy=document.getElementById('mathasTrophiesStrip');
     const label=trophy.querySelector('.mathas-trophies-hint');
     return {
      share:hint.textContent,shareBorder:getComputedStyle(hint).borderTopWidth,
      sharePointer:getComputedStyle(hint).pointerEvents,cardRole:card.getAttribute('role'),
+     shareRight:shareRect.right,shareWidth:shareRect.width,cardWidth:card.getBoundingClientRect().width,
+     cupsLeft:cupRect?.left,shareArrow:getComputedStyle(hint,'::after').content,
+     shareArrowGap:getComputedStyle(hint,'::after').marginLeft,
+     trophyArrowGap:getComputedStyle(label,'::after').marginLeft,
      challenges:label.textContent.trim(),trophyBorder:getComputedStyle(label).borderTopWidth,
      trophyPointer:getComputedStyle(label).pointerEvents,stripTag:trophy.tagName
     };
@@ -230,6 +236,13 @@ try{
    assert.equal(actions.shareBorder,'1px');
    assert.equal(actions.sharePointer,'none','le cadre décoratif ne change pas la zone de clic');
    assert.equal(actions.cardRole,'button');
+   assert.ok(actions.shareWidth<actions.cardWidth-60,
+    'le cadre score doit s arrêter avant les coupes : '+JSON.stringify(actions));
+   assert.ok(actions.shareRight<=actions.cupsLeft+2,
+    'les coupes doivent être hors du cadre : '+JSON.stringify(actions));
+   assert.match(actions.shareArrow,/›/);
+   assert.equal(actions.shareArrowGap,'7px');
+   assert.equal(actions.trophyArrowGap,'7px');
    assert.equal(actions.challenges,'Voir les défis');
    assert.equal(actions.trophyBorder,'1px');
    assert.equal(actions.trophyPointer,'none');
