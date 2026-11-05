@@ -270,6 +270,9 @@ function renderXpMeter(total,level,instant=false){
  track.setAttribute('aria-valuenow',String(earned));
  track.setAttribute('aria-valuemax',String(width));
  card.title='Niveau '+actual+' · '+value+' XP au total · '+earned+' / '+width+' XP dans ce niveau';
+ // La jauge visible dans le moteur suit immédiatement chaque attribution d'XP.
+ if(iframe.contentDocument?.getElementById('mathas-multi-connect-dock'))
+  mountNativeConnectHeader(iframe.contentDocument);
 }
 function bumpXpMeter(){
  const meter=document.getElementById('ce-xp-meter');
