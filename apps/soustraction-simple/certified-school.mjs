@@ -23,7 +23,7 @@ export function acceptSubtractionChallenge(data,level,total,method='addBottom'){
   ||!Number.isSafeInteger(data.revision)||data.revision<0
   ||!Number.isSafeInteger(data.resetEpoch)||data.resetEpoch<0
   ||!Array.isArray(data.questions)||data.questions.length!==total
-  ||!Number.isFinite(Date.parse(data.expiresAt)))return null;
+  ||!Number.isFinite(Date.parse(data.expiresAt))||Date.parse(data.expiresAt)<=Date.now())return null;
  return data.questions.every((q,i)=>goodQuestion(q,i,WIDTHS.normal[level-1],method))?data:null;
 }
 export function acceptSubtractionExtended(data,level,mode,method='addBottom'){
@@ -34,7 +34,7 @@ export function acceptSubtractionExtended(data,level,mode,method='addBottom'){
   ||!Number.isSafeInteger(data.revision)||data.revision<0
   ||!Number.isSafeInteger(data.resetEpoch)||data.resetEpoch<0
   ||!Array.isArray(data.questions)||data.questions.length!==120
-  ||!Number.isFinite(Date.parse(data.expiresAt)))return null;
+  ||!Number.isFinite(Date.parse(data.expiresAt))||Date.parse(data.expiresAt)<=Date.now())return null;
  return data.questions.every((q,i)=>goodQuestion(q,i,expectedSubtractionWidth(mode,level),method))?data:null;
 }
 export function subtractionAttemptCorrect(question,raw){
