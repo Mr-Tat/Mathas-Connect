@@ -17,7 +17,16 @@ header strong{font-size:15px}header small{color:#c1d5e8}a{color:#d4efff;font-wei
 #state{color:#ffd19b;max-width:600px;margin:16px auto}
 iframe{display:block;flex:1 1 auto;width:100%;height:auto;min-height:0;border:0;background:#0c2235}
 @media(max-width:700px){header{padding:9px 10px;gap:5px;flex-wrap:wrap}header strong{font-size:13px}header small{font-size:11px}iframe{height:auto}}
+/* La maquette autonome reste intacte ; le HUB Connect affiche uniquement le moteur natif. */
+html.mathas-connect-host header{display:none!important}
+html.mathas-connect-host #state{margin:10px auto}
 </style>
+<script>
+if(new URL(location.href).searchParams.get('connect')==='1'){
+ document.documentElement.classList.add('mathas-connect-host');
+ document.title='Math’as Connect — soustraction écrite';
+}
+</script>
 </head>
 <body>
 <header>
@@ -36,17 +45,26 @@ iframe{display:block;flex:1 1 auto;width:100%;height:auto;min-height:0;border:0;
 <div id="state" role="alert">Préparation du jeu de démonstration…</div>
 <iframe id="game" title="Essai sur le véritable moteur Soustraction écrite" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
 <script src="./lab-objectif-record-v2.js"></script>
+<script src="../../native-hub-link.js?v=20261105-sous-native-hud"></script>
 <script>
 (async function(){
  'use strict';
  const status=document.getElementById('state');
  const frame=document.getElementById('game');
+ window.MathasAttachNativeHubLink(frame);
  const xpPreviewMode=document.getElementById('xp-preview-mode');
+ const hostedByConnect=new URL(location.href).searchParams.get('connect')==='1';
+ if(hostedByConnect&&xpPreviewMode)xpPreviewMode.value='free';
  // Les chiffres ci-dessous sont des exemples visuels : ce prototype n'utilise
  // aucun compte Connect, aucun droit élève ni aucune requête de récompense XP.
  function renderConnectPreview(){
    const doc=frame.contentDocument;
    if(!doc||!xpPreviewMode)return;
+   if(hostedByConnect){
+     xpPreviewMode.value='free';
+     doc.querySelectorAll('#menuScreen .classic-xp-remaining,#menuScreen .score-mode-detail,#menuScreen .mathas-pilot-remaining').forEach(node=>node.remove());
+     return; // Aucun XP simulé dans l'hôte Connect : seule la réponse serveur compte.
+   }
    for(const [id,total] of [['startThreeLives',10],['startSudden',20]]){
      const meta=doc.querySelector('#'+id+' .score-mode-meta');
      if(!meta)continue;
