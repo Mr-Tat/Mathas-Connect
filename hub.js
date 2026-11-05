@@ -82,7 +82,7 @@ function card(app) {
   else node.dataset.appKey=app.app_key;
   node.target = '_blank';
   node.rel = 'noopener noreferrer';
-  node.querySelector('.app-name').textContent = app.title;
+  node.querySelector('.app-name').textContent = app.title + (allMode ? (app.stage==='published'?' · Publiée':' · En test') : '');
   node.querySelector('.app-initial').textContent = app.title.charAt(0).toUpperCase();
   node.querySelector('.app-scores').textContent = testMultiplication?'🧪 TEST · vrais XP et trophées Connect (connexion obligatoire)':
     testSlug?(app.app_key==='addition-ecrite-multiple'?'🧪 TEST · XP Connect en Classique / Mort subite':'🧪 TEST · nouveaux modes XP en préparation'):progressText(app.app_key);
@@ -203,7 +203,7 @@ async function showCatalog() {
     );
     if(allMode){
       const trials=apps.filter(a=>a.in_test);
-      groups.unshift(section('tests','🧪 Tests','Applications non publiées · essais avec profils fictifs de la classe TEST. Les XP Connect réels nécessitent un moteur intégré.',trials));
+      groups.unshift(section('tests','🧪 Tests','Applications présentes dans le circuit d’essai, y compris celles déjà publiées dans certaines classes. Connect réel avec profils fictifs TEST.',trials));
       groups[0].classList.remove('collapsed');groups[0].querySelector('.level-toggle').setAttribute('aria-expanded','true');
       $('classLabel').textContent='Toutes les applications · Professeur';
       document.querySelector('.daily-section')?.setAttribute('hidden','');
