@@ -165,9 +165,74 @@ if(mode==='connected')html=injectNativeMultiplicationProof(html);
 // The child frame uses the same origin and isolated storage keys. No public classic game is changed.
 const iframe=document.createElement('iframe');iframe.title='Multiplication écrite simple V7.0.0';iframe.style.cssText='border:0;width:100%;height:calc(100dvh - var(--ce-toolbar-height,46px));display:block';iframe.setAttribute('allow','fullscreen');
 // Présentation additionnelle du moteur natif sans muter ses points ni reports.
+// La barre Connect extérieure reste un état technique (XP, synchronisation), mais
+// son affichage est transféré dans l'en-tête NATIF du jeu, sans autre moteur de calcul.
+function mountNativeConnectHeader(doc){
+ if(mode!=='connected')return;
+ const copy=doc.querySelector('.mathas-illustrated-header .mathas-header-copy');
+ const actions=doc.querySelector('.mathas-top-cluster .mathas-top-actions');
+ if(!copy||!actions||!document.getElementById('ce-toolbar'))return;
+ if(!doc.getElementById('mathas-multi-connect-style')){
+  const css=doc.createElement('style');css.id='mathas-multi-connect-style';
+  css.textContent=`
+  .mathas-multi-connect-dock{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:10px 0 0!important;position:relative;z-index:4;font:700 12px system-ui;color:#e7faff}
+  .mathas-multi-connect-person{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;background:rgba(19,65,80,.87);border:1px solid rgba(80,200,213,.43);border-radius:13px;padding:8px 11px}
+  .mathas-multi-connect-identity{max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mathas-multi-connect-level{color:#ffe3a4;white-space:nowrap}
+  .mathas-multi-connect-progress{display:grid;gap:3px;min-width:84px}
+  .mathas-multi-connect-count{font-size:10px;color:#d7eaf0}
+  .mathas-multi-connect-track{height:8px;overflow:hidden;border:1px solid #538fa4;border-radius:20px;background:#062838}
+  .mathas-multi-connect-fill{display:block;height:100%;width:0;background:linear-gradient(90deg,#c9932f,#ffdf82);transition:width .5s ease}
+  .mathas-multi-connect-xp{color:#fbe3a1;border:1px solid #d1a14d;border-radius:12px;background:linear-gradient(180deg,#856021,#604512);padding:10px 14px;cursor:pointer;font:850 12px system-ui;box-shadow:inset 0 1px #ffffff40,0 4px 0 #36240d,0 8px 18px #0004}
+  .mathas-multi-connect-xp:hover{filter:brightness(1.13);transform:translateY(-1px)}
+  .mathas-multi-connect-xp:active{transform:translateY(3px);box-shadow:inset 0 1px 4px #0008,0 1px 0 #36240d}
+  .mathas-multi-hub-link{display:inline-flex!important;align-items:center;justify-content:center;text-decoration:none!important;white-space:nowrap;border-radius:12px;border:1px solid #66acc3!important;background:linear-gradient(180deg,#29536b,#173b52)!important;color:#f5fcff!important;padding:10px 13px!important;min-height:19px;font:850 12px system-ui;box-shadow:inset 0 1px #ffffff30,0 4px 0 #0a2231,0 8px 16px #0003}
+  .mathas-multi-hub-link:hover{filter:brightness(1.12);transform:translateY(-1px)}
+  .mathas-multi-hub-link:active{transform:translateY(3px)}
+  body.light .mathas-multi-connect-person,body.light-mode .mathas-multi-connect-person{background:#e8f5f5;color:#123e47;border-color:#79bfc8}
+  body.light .mathas-multi-connect-count,body.light-mode .mathas-multi-connect-count{color:#255365}
+  body.light .mathas-multi-connect-level,body.light-mode .mathas-multi-connect-level{color:#875415}
+  @media(max-width:680px){.mathas-multi-connect-dock{gap:6px}.mathas-multi-connect-person{padding:6px 7px;gap:5px}.mathas-multi-connect-identity{max-width:140px}.mathas-multi-connect-progress{min-width:65px}.mathas-multi-connect-xp{padding:8px 10px}.mathas-multi-hub-link{padding:8px 9px!important;font-size:11px}}
+  `;
+  doc.head.append(css);
+ }
+ let dock=doc.getElementById('mathas-multi-connect-dock');
+ if(!dock){
+  dock=doc.createElement('div');dock.id='mathas-multi-connect-dock';dock.className='mathas-multi-connect-dock';
+  const person=doc.createElement('div');person.className='mathas-multi-connect-person';
+  const identity=doc.createElement('span');identity.id='mathas-multi-connect-identity';identity.className='mathas-multi-connect-identity';
+  const level=doc.createElement('span');level.id='mathas-multi-connect-level';level.className='mathas-multi-connect-level';
+  const progress=doc.createElement('div');progress.className='mathas-multi-connect-progress';
+  const count=doc.createElement('span');count.id='mathas-multi-connect-count';count.className='mathas-multi-connect-count';
+  const track=doc.createElement('div');track.className='mathas-multi-connect-track';
+  const fill=doc.createElement('i');fill.id='mathas-multi-connect-fill';fill.className='mathas-multi-connect-fill';
+  track.append(fill);progress.append(count,track);person.append(identity,level,progress);
+  const button=doc.createElement('button');button.id='mathas-multi-connect-xp';button.type='button';button.className='mathas-multi-connect-xp';button.textContent='✨ XP à récupérer';
+  button.addEventListener('click',()=>document.getElementById('xp-toolbar-button')?.click());
+  dock.append(person,button);copy.append(dock);
+ }
+ if(!doc.getElementById('mathas-multi-hub-link')){
+  const link=doc.createElement('a');link.id='mathas-multi-hub-link';link.className='mathas-multi-hub-link';link.target='_top';link.textContent='↩ Retour au HUB';
+  link.href=document.getElementById('ce-hub-link')?.href||'../../hub.html';
+  actions.prepend(link);
+ }
+ doc.getElementById('mathas-multi-connect-identity').textContent=document.getElementById('ce-identity')?.textContent||'● Connecté';
+ doc.getElementById('mathas-multi-connect-level').textContent='Niveau '+(document.getElementById('ce-xp-level-number')?.textContent||'…');
+ doc.getElementById('mathas-multi-connect-count').textContent=document.getElementById('ce-xp-meter-count')?.textContent||'… / 50 XP';
+ const originalTrack=document.getElementById('ce-xp-meter-track');
+ const current=Number(originalTrack?.getAttribute('aria-valuenow')||0),max=Number(originalTrack?.getAttribute('aria-valuemax')||50);
+ doc.getElementById('mathas-multi-connect-fill').style.width=(max>0?Math.min(100,Math.max(0,100*current/max)):0)+'%';
+ // Masquer uniquement APRÈS la création de commandes de remplacement fonctionnelles.
+ const toolbar=document.getElementById('ce-toolbar');
+ if(toolbar&&toolbar.style.display!=='none'){
+  toolbar.style.display='none';
+  iframe.style.height='100dvh';
+ }
+}
 function applySchoolUi(){
  try{
   installMultiplicationSchoolUi(iframe.contentDocument,{connected:mode==='connected',xp:lastXp,rewards:initial?.rewards});
+  mountNativeConnectHeader(iframe.contentDocument);
   installNativeCertifiedProof();certifiedScoreView?.mount(iframe.contentDocument);
  }
  catch(error){console.warn('Affichage scolaire multiplication indisponible',error)}
@@ -397,7 +462,7 @@ statusLabel.style.cssText='flex:0 1 auto;min-width:0;max-width:clamp(85px,28vw,3
 statusLabel.textContent='● Connecté · '+(studentName||'Compte élève')+(initial?'':' · Nouvelle progression Connect');
 statusLabel.title=statusLabel.textContent;
 const hubLink=document.createElement('a');hubLink.id='ce-hub-link';
-hubLink.href='https://mr-tat.github.io/Mathas-Connect/hub.html'+(UUID.test(classId)?'?class='+encodeURIComponent(classId)+(teacherPlayer?'&joueur=prof':''):'');
+hubLink.href='https://mr-tat.github.io/Mathas-Connect/hub.html'+(isTestClass?'?class='+encodeURIComponent(classId)+'&name=Toutes&toutes=1':UUID.test(classId)?'?class='+encodeURIComponent(classId)+(teacherPlayer?'&joueur=prof':''):'');
 hubLink.textContent='Retour au HUB';
 hubLink.style.cssText='flex:none;color:#b9ecff;text-decoration:underline;font-size:12px';
 const xpEarned=document.createElement('span');xpEarned.id='xp-earned-total';
