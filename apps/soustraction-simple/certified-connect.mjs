@@ -32,7 +32,7 @@ export function createSubtractionSchoolConnect({
   consent:()=>consent,
   notify
  });
- scoreView.updateState(getState()||{});
+ scoreView.updateState(getState()?.state||{});
  void scoreView.load();
  async function refresh(){
   const fresh=await endpoint('connect-results',{action:'student-load',classId,appKey});

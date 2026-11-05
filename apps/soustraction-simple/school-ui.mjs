@@ -76,6 +76,12 @@ function style(doc){
  '.mathas-sub-cup .mathas-v602-trophy-cup{font-size:16px!important}',
  '.mathas-sub-cup.locked{opacity:.36;filter:grayscale(1)}',
  '.mathas-sub-cup.earned{opacity:1;filter:drop-shadow(0 1px 3px #ffdc8b77)}',
+ // La bande de trophées native garde son clic (ouvre les défis).
+ // Son indication est un cadre discret et non un second bouton.
+ '#menuScreen #mathasTrophiesStrip .mathas-trophies-hint{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:0!important;max-width:100%!important;width:max-content!important;padding:5px 9px!important;border:1px solid rgba(143,199,218,.44)!important;border-radius:8px!important;background:rgba(33,80,104,.37)!important;color:#c5e7f6!important;font:800 11px/1.2 system-ui!important;letter-spacing:.03em!important;white-space:nowrap!important;text-transform:uppercase!important;cursor:pointer!important}',
+ '#menuScreen #mathasTrophiesStrip .mathas-trophies-hint::after{content:"›"!important;margin-left:8px!important;color:#eed48d!important;font-size:16px!important;line-height:1!important}',
+ 'body.light-mode #menuScreen #mathasTrophiesStrip .mathas-trophies-hint{background:rgba(215,238,247,.72)!important;color:#24536c!important}',
+ '#menuScreen #mathasTrophiesStrip .mathas-trophies-hint:hover{border-color:#b4dbe9!important}',
  '@media(max-width:440px){.mathas-sub-survival-pair>button,#hardLevelGrid .hard-mode-buttons>button{font-size:12px!important}}'
  ].join('\n');doc.head.append(css);
 }
@@ -109,7 +115,7 @@ export function installSubtractionSchoolUi(doc,{connected=false,xp=null,rewards=
   three.textContent='❤️ 3 vies';three.disabled=native.disabled;
   native.insertAdjacentElement('beforebegin',three);
  }
- if(!xp||!Array.isArray(xp.milestones))doc.querySelectorAll('.'+XP).forEach(n=>n.remove());
+ if(!xp||(!Array.isArray(xp.milestones)&&!Array.isArray(xp.currentMilestones)))doc.querySelectorAll('.'+XP).forEach(n=>n.remove());
  else{
   const classicLevel=level(doc,'classicMaxDigits');
   for(const button of doc.querySelectorAll('#classicCountPicker .classic-count-btn[data-count]'))
