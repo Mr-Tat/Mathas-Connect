@@ -92,7 +92,16 @@ test('Chromium réel : Connect -> fin de partie -> trophée -> file -> serveur f
   await page.goto(url+'/apps/soustraction-simple/?class='+klass,{waitUntil:'domcontentloaded'});
   const frame=page.frameLocator('iframe');
   await frame.locator('#menuScreen').waitFor({timeout:30000});
-  assert.match(await page.locator('#ce-identity').textContent(),/Élève test/);
+  assert.equal(await page.locator('#ce-identity').textContent(),'Élève test');
+  await frame.locator('#mathas-sous-connect-identity').waitFor({state:'attached'});
+  const identity=await frame.locator('#mathas-sous-connect-identity').evaluate(el=>({
+   text:el.textContent,
+   dot:getComputedStyle(el,'::before').content,
+   color:getComputedStyle(el,'::before').color
+  }));
+  assert.equal(identity.text,'Élève test','le mot Connecté ne précède plus le nom');
+  assert.ok(identity.dot.includes('●'),'point vert de présence conservé');
+  assert.equal(identity.color,'rgb(112, 227, 174)');
   await frame.locator('input[name="borrowMethod"][value="takeTop"]').evaluate(input=>input.closest('label').click());
   await frame.locator('body').evaluate(()=>window.__setLastWork({label:'Mort subite · Niveau 1',score:'5',rulerUsed:false}));
   // Les XP peuvent être crédités par le serveur sans que l'élève voie la séquence.
