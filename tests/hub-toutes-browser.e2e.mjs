@@ -81,3 +81,20 @@ test('Sans authentification professeur, aucun catalogue Tests ne se charge', {ti
    assert.equal(f.getRequests(),0);
  }finally{await close(f)}
 });
+
+test('Le HUB Toutes reste lisible sur un petit écran de téléphone', {timeout:60000},async()=>{
+ const f=await fixture(true);
+ try{
+   await f.page.setViewportSize({width:390,height:844});
+   await f.page.goto(f.base+'/hub.html?toutes=1&joueur=prof&class='+testClass+'&name=Toutes',{waitUntil:'domcontentloaded'});
+   await f.page.waitForFunction(()=>document.querySelectorAll('#levels .app-card').length===6);
+   assert.equal(await f.page.locator('#levels .level-title').first().textContent(),'🧪 Tests');
+   const layout=await f.page.evaluate(()=>({
+     viewport:innerWidth,
+     documentWidth:document.documentElement.scrollWidth,
+     firstCardWidth:document.querySelector('#levels .app-card')?.getBoundingClientRect().width
+   }));
+   assert.ok(layout.firstCardWidth>100,'carte lisible');
+   assert.ok(layout.documentWidth<=layout.viewport+4,'pas de débordement horizontal');
+ }finally{await close(f)}
+});
