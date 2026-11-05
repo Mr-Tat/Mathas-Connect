@@ -15,6 +15,8 @@ button{cursor:pointer}button:disabled{opacity:.5}
 [hidden]{display:none!important}
 #connect-bar{position:fixed;top:0;left:0;right:0;z-index:1200;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:7px 14px;background:linear-gradient(110deg,#102c46,#15384d);border-bottom:1px solid #5c91ad;box-shadow:0 6px 18px #0007;transition:transform .28s ease;min-height:54px}
 #connect-bar.retracted{transform:translateY(calc(-100% - 9px));pointer-events:none}
+/* L'attribut hidden doit primer sur le display:flex auteur, dès le premier rendu. */
+#connect-bar[hidden],#bar-handle[hidden]{display:none!important}
 #connect-bar .connect-ident{display:flex;align-items:center;gap:13px;flex:1 1 auto;min-width:0}
 #connected-name-wrap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:650;color:#d6f3ff}
 #connected-dot{color:#79e3b2;margin-right:5px}
