@@ -66,7 +66,8 @@ test('menu scolaire compact et identité Connect lisible sans message de progres
  const launcher=read('apps/multiplication-simple/index.html');
  assert.match(ui,/min-height:124px!important/);
  assert.doesNotMatch(ui,/min-height:154px!important/);
- assert.match(launcher,/statusLabel\.textContent='● Connecté · '\+\(studentName\|\|'Compte élève'\);/);
+ assert.match(launcher,/statusLabel\.textContent=studentName\|\|'Compte élève';/);
+ assert.match(launcher,/\.mathas-multi-connect-identity::before\{content:'●';color:#70e3ae/);
  assert.doesNotMatch(launcher,/\+\(initial\?'':' · Nouvelle progression Connect'\)/);
 });
 
