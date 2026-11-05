@@ -66,8 +66,8 @@ function card(app) {
   const target = new URL(testMultiplication?'./apps/multiplication-simple/':
     schoolMultiplication?'./apps/multiplication-simple/':
     testSlug?SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(testSlug):
-    schoolAdditionsLaunch({classId:classId,appKey:app.app_key,legacyUrl:
-      schoolRecordLaunch({classId:classId,appKey:app.app_key,legacyUrl:app.launch_url})}),location.href);
+    schoolAdditionsLaunch({classId,appKey:app.app_key,legacyUrl:
+      schoolRecordLaunch({classId,appKey:app.app_key,legacyUrl:app.launch_url})}),location.href);
   // Le HUB fournit la classe au jeu Connect ; les autorisations restent vérifiées côté serveur.
   if (classId && target.origin === location.origin) target.searchParams.set('class', classId);
   if(testMultiplication && target.origin===location.origin)target.searchParams.set('requireConnect','1');
