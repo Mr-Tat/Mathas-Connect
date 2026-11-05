@@ -6,7 +6,7 @@
 <title>Laboratoire de test — Math’as Connect</title>
 <link rel="icon" type="image/png" href="./assets/brand/favicon.png">
 <link rel="stylesheet" href="./laboratoire.css?v=20261102-abaque-connect-pilot">
-<script type="module" src="./laboratoire.js?v=20261104-multiplication-certified-lab"></script>
+<script type="module" src="./laboratoire.js?v=20261105-hub-toutes-v1"></script>
 </head>
 <body>
 <main class="shell">
@@ -38,9 +38,9 @@
       </section>
     </div>
     <section class="card" aria-labelledby="apps-title">
-      <div class="heading"><div><h2 id="apps-title">Tests en ligne</h2><p class="muted">Choisis les applications affichées uniquement dans le HUB de test, sans toucher aux quatre HUB de tes classes.</p></div></div>
+      <div class="heading"><div><h2 id="apps-title">Essais Connect — HUB « Toutes »</h2><p class="muted">Les applications en cours d’essai se trouvent maintenant dans le HUB général. Le Laboratoire conserve ici les commandes techniques de la classe fictive.</p><p><a class="action" href="./hub.html?toutes=1&amp;joueur=prof&amp;class=4bf3400d-a315-4ea4-a2f3-afaca24dc9b9&amp;name=Toutes">🧪 Ouvrir Tests dans le HUB Toutes</a></p></div></div>
       <div class="actions"><button id="teacher-mode" type="button" class="secondary">🎮 Activer Monsieur T pour les tests</button><span id="teacher-status" class="muted tiny">Session Monsieur T non vérifiée.</span></div>
-      <div id="apps" class="game-grid"><p class="muted">Chargement du catalogue professeur…</p></div>
+      <div id="apps" class="game-grid" hidden aria-hidden="true"></div>
     </section>
     <section class="card" aria-labelledby="record-previews-title">
       <div class="heading"><div>
@@ -53,10 +53,10 @@
     <section class="card" aria-labelledby="pilot-record-title">
       <div class="heading"><div>
         <h2 id="pilot-record-title">Archives du précédent pilote — Classe TEST</h2>
-        <p class="muted">Historique des anciens essais pilotes : résultats fictifs conservés pour vérification. Les cinq cartes « Tests en ligne » utilisent maintenant le nouvel hôte Connect scolaire de la classe TEST.</p>
+        <p class="muted">Historique des anciens essais pilotes : résultats fictifs conservés pour vérification. Les applications Connect sont désormais lancées depuis « Toutes → Tests ».</p>
       </div><span class="pill">PILOTE TEST</span></div>
 
-      <p class="muted tiny">Pour les nouvelles versions, utilise les cinq cartes « Tests en ligne ». Les anciens XP pilotes ci-dessous restent historiques et ne sont pas transférés dans les XP scolaires.</p>
+      <p class="muted tiny">Pour les nouvelles versions, utilise « Toutes → Tests ». Les anciens XP pilotes ci-dessous restent historiques et ne sont pas transférés dans les XP scolaires.</p>
       <div class="actions" style="margin-top:12px">
         <label for="pilot-results-app">Résultats du pilote
           <select id="pilot-results-app">
