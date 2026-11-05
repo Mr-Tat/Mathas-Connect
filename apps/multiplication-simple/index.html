@@ -186,7 +186,10 @@ function mountNativeConnectHeader(doc){
   .mathas-multi-connect-person{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;background:rgba(19,65,80,.87);border:1px solid rgba(80,200,213,.43);border-radius:13px;padding:8px 11px}
   .mathas-multi-connect-identity::before{content:'●';color:#70e3ae;margin-right:5px}
   .mathas-multi-connect-identity{max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .mathas-multi-connect-level{color:#ffe3a4;white-space:nowrap}
+  /* Badge récupéré de #ce-xp-level-badge : fond bleu, filet or et chiffre XXL. */
+  .mathas-multi-connect-level{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:90px;box-sizing:border-box;padding:3px 8px;border:1px solid #efc56a;border-radius:99px;background:linear-gradient(140deg,#325f90,#1b4678);box-shadow:inset 0 1px 0 #ffffff30;white-space:nowrap}
+  .mathas-multi-connect-level-label{display:inline-flex;align-items:center;justify-content:center;height:25px;font:750 10px/1 system-ui;letter-spacing:.025em;color:#f7d996;transform:translateY(2px)}
+  .mathas-multi-connect-level-number{display:inline-flex;align-items:center;justify-content:center;height:25px;font:900 25px/1 system-ui;color:#fff8d4;text-shadow:0 1px 5px #0006;font-variant-numeric:tabular-nums}
   .mathas-multi-connect-progress{display:grid;gap:3px;min-width:84px}
   .mathas-multi-connect-count{font-size:10px;color:#d7eaf0}
   .mathas-multi-connect-track{height:8px;overflow:hidden;border:1px solid #538fa4;border-radius:20px;background:#062838}
@@ -205,8 +208,11 @@ function mountNativeConnectHeader(doc){
   .mathas-multi-hub-link:active{transform:translateY(3px)}
   body.light .mathas-multi-connect-person,body.light-mode .mathas-multi-connect-person{background:#e8f5f5;color:#123e47;border-color:#79bfc8}
   body.light .mathas-multi-connect-count,body.light-mode .mathas-multi-connect-count{color:#255365}
-  body.light .mathas-multi-connect-level,body.light-mode .mathas-multi-connect-level{color:#875415}
+  /* Le cartouche reste bleu et son numéro crème reste contrasté en mode clair. */
+  body.light .mathas-multi-connect-level-label,body.light-mode .mathas-multi-connect-level-label{color:#f7d996}
+  body.light .mathas-multi-connect-level-number,body.light-mode .mathas-multi-connect-level-number{color:#fff8d4}
   @media(max-width:680px){.mathas-multi-connect-dock{gap:6px}.mathas-multi-connect-person{padding:6px 7px;gap:5px}.mathas-multi-connect-identity{max-width:140px}.mathas-multi-connect-progress{min-width:65px}.mathas-multi-connect-xp{padding:8px 10px}.mathas-multi-hub-link{padding:8px 9px!important;font-size:11px}}
+  @media(max-width:680px){.mathas-multi-connect-level{min-width:77px;gap:4px;padding:3px 5px}.mathas-multi-connect-level-number{font-size:23px}}
   `;
   doc.head.append(css);
  }
@@ -216,6 +222,9 @@ function mountNativeConnectHeader(doc){
   const person=doc.createElement('div');person.className='mathas-multi-connect-person';
   const identity=doc.createElement('span');identity.id='mathas-multi-connect-identity';identity.className='mathas-multi-connect-identity';
   const level=doc.createElement('span');level.id='mathas-multi-connect-level';level.className='mathas-multi-connect-level';
+  const levelLabel=doc.createElement('span');levelLabel.className='mathas-multi-connect-level-label';levelLabel.textContent='Niveau';
+  const levelNumber=doc.createElement('strong');levelNumber.className='mathas-multi-connect-level-number';levelNumber.textContent='…';
+  level.append(levelLabel,levelNumber);
   const progress=doc.createElement('div');progress.className='mathas-multi-connect-progress';
   const count=doc.createElement('span');count.id='mathas-multi-connect-count';count.className='mathas-multi-connect-count';
   const track=doc.createElement('div');track.className='mathas-multi-connect-track';
@@ -239,7 +248,7 @@ function mountNativeConnectHeader(doc){
   actions.prepend(link);
  }
  doc.getElementById('mathas-multi-connect-identity').textContent=document.getElementById('ce-identity')?.textContent||'Compte élève';
- doc.getElementById('mathas-multi-connect-level').textContent='Niveau '+(document.getElementById('ce-xp-level-number')?.textContent||'…');
+ doc.getElementById('mathas-multi-connect-level').querySelector('strong').textContent=document.getElementById('ce-xp-level-number')?.textContent||'…';
  doc.getElementById('mathas-multi-connect-count').textContent=document.getElementById('ce-xp-meter-count')?.textContent||'… / 50 XP';
  const originalTrack=document.getElementById('ce-xp-meter-track');
  const current=Number(originalTrack?.getAttribute('aria-valuenow')||0),max=Number(originalTrack?.getAttribute('aria-valuemax')||50);
