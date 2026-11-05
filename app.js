@@ -987,7 +987,17 @@ async function loadTeacherAppPreview(){
    stageSelect.add(new Option('En test','test'),new Option('Publié','published'));stageSelect.value=allConfig.stage;
    stageSelect.title='Étiquette de suivi uniquement : la visibilité dans chaque classe se règle séparément.';
    stageSelect.onchange=async()=>{const previous=allSettings.get(app.app_key)?.stage||allConfig.stage;if(!await saveAll(app,Number(allSettings.get(app.app_key)?.all_order??allConfig.all_order),stageSelect.value,[stageSelect]))stageSelect.value=previous};
-   stageCell.append(stageSelect);tr.append(stageCell);
+   const labLabel=document.createElement('label'),labBox=document.createElement('input');
+   labLabel.className='teacher-matrix-check';labBox.type='checkbox';labBox.checked=allConfig.in_test===true;
+   labLabel.append(labBox,document.createTextNode(' Dans Tests'));
+   labBox.setAttribute('aria-label','Dans Tests — '+app.title);
+   labBox.onchange=async()=>{const previous=!labBox.checked;labBox.disabled=true;
+     try{const response=await fetch(url+'/functions/v1/connect-lab-catalog',{method:'POST',headers:{apikey:key,authorization:'Bearer '+allSession.access_token,'content-type':'application/json'},body:JSON.stringify({action:'set',classId:labTestClass,appKey:app.app_key,visible:labBox.checked})});const saved=await response.json();
+       if(!response.ok||!saved.ok)throw Error(saved.error||'Échec');
+       allSettings.set(app.app_key,{...allSettings.get(app.app_key),in_test:saved.visible});info('✓ Tests mis à jour');
+     }catch(e){labBox.checked=previous;info('Tests : '+e.message,true)}finally{labBox.disabled=false}
+   };
+   stageCell.append(stageSelect,labLabel);tr.append(stageCell);
    const position=document.createElement('td');position.className='teacher-matrix-position';position.textContent=String(index+1);tr.append(position);body.append(tr);
   }
   function sortRows(){const rows=[...body.querySelectorAll('tr.teacher-matrix-row')];rows.sort((a,b)=>Number(a.dataset.order)-Number(b.dataset.order)||a.dataset.title.localeCompare(b.dataset.title,'fr'));rows.forEach((row,index)=>{row.lastElementChild.textContent=String(index+1);body.append(row)})}
