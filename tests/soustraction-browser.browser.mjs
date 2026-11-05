@@ -33,7 +33,14 @@ test('Chromium réel : lanceur libre et moteur autonome s’affichent', {timeout
   await frame.locator('#menuScreen').waitFor({timeout:30000});
   assert.equal(await frame.locator('input[name="borrowMethod"]').count(),2);
   assert.equal(await frame.locator('button#masterModeReset').count(),1);
-  assert.equal(await page.locator('header#ce-toolbar').count(),1);
+  assert.equal(await page.locator('header#ce-toolbar').count(),1,'support technique conservé');
+  assert.equal(await page.locator('#ce-toolbar').isVisible(),false,'aucune barre extérieure en mode libre');
+  await frame.locator('#mathas-sous-hub-link').waitFor({timeout:15000});
+  assert.equal(await frame.locator('#mathas-sous-hub-link').isVisible(),true,'retour HUB natif visible');
+  assert.equal(await frame.locator('#fullscreenBtn').isVisible(),true,'plein écran natif visible');
+  assert.equal(await frame.locator('#themeToggleBtn').isVisible(),true,'mode clair natif visible');
+  assert.equal(await frame.locator('#mathas-sous-connect-dock').count(),0,'aucun profil ni XP sans compte');
+  assert.equal(await page.locator('iframe').evaluate(f=>Math.abs(f.getBoundingClientRect().top)),0,'jeu plein écran sans bandeau');
   assert.ok((await frame.locator('body').textContent()).includes('Soustraction'));
   await page.close();
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
