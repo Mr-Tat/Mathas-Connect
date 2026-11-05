@@ -79,10 +79,12 @@ export function createSubtractionSchoolConnect({
    const btn=event.target?.closest?.('button');
    if(!btn||btn.disabled)return;
    let choice=null;
-   if(btn.id==='startClassic'){
-    // Le bouton « Exercice guidé » doit rester un exercice natif sans XP.
-    if(doc.getElementById('trainingChoiceBtn')?.classList.contains('active'))return;
-    const total=Number(doc.querySelector('#classicCountPicker .classic-count-btn.active[data-count]')?.dataset.count||10);
+   if(btn.id==='startClassic'||btn.matches('#classicCountPicker .classic-count-btn[data-count]')){
+    // Le moteur V6 lance immédiatement la série depuis 4/10/20. Intercepter
+    // le VRAI clic humain sur ce choix, et non le startClassic.click() synthétique.
+    if(btn.id==='startClassic'&&doc.getElementById('trainingChoiceBtn')?.classList.contains('active'))return;
+    const total=btn.matches('.classic-count-btn[data-count]')?Number(btn.dataset.count)
+      :Number(doc.querySelector('#classicCountPicker .classic-count-btn.active[data-count]')?.dataset.count||10);
     choice={mode:'classic',level:getNormalLevel(doc,'classicMaxDigits'),total};
    }else if(btn.id==='startSudden'||btn.id==='mathasSousThreeLives'){
     choice={mode:btn.id==='startSudden'?'sudden':'three-lives',
