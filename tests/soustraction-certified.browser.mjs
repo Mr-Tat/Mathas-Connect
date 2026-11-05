@@ -238,7 +238,7 @@ test('Chromium scolaire natif : reprise du même calcul après interruption', {t
 
 
 async function launchHard(page,frame,mode='hard-sudden'){
- await frame.locator('#classicMaxDigits').evaluate(select=>{
+ await frame.locator('#trainingMaxDigits').evaluate(select=>{
   // Dans l'interface élève, les paramètres de niveau sont masqués par la carte :
   // c'est la transition native vers HARD qui est testée, pas le <select> caché.
   const option=[...select.options].find(x=>x.value==='__hard__');
