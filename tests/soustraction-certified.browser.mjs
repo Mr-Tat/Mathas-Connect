@@ -168,8 +168,10 @@ async function solvePair(frame,questions){
   await fillCalc(frame,i,String(BigInt(questions[i].a)-BigInt(questions[i].b)));
  // Le moteur natif peut valider automatiquement la paire lors de la dernière
  // saisie ; ne pas cliquer derrière le reçu officiel déjà affiché.
- if((await frame.locator('#primaryBtn').textContent())?.includes('Valider'))
-  await frame.locator('#primaryBtn').click();
+ await frame.locator('#primaryBtn').evaluate(btn=>{
+  // La dernière case peut déclencher automatiquement la certification.
+  if(!btn.closest('#gameScreen')?.classList.contains('hidden')&&btn.textContent.includes('Valider'))btn.click();
+ });
 }
 test('Chromium scolaire natif : 4 soustractions, XP, consentement et projection', {timeout:120000},async()=>{
  const ctx=await setup(),errors=[];
@@ -236,7 +238,15 @@ test('Chromium scolaire natif : reprise du même calcul après interruption', {t
 
 
 async function launchHard(page,frame,mode='hard-sudden'){
- await frame.locator('#classicMaxDigits').selectOption('__hard__');
+ await frame.locator('#classicMaxDigits').evaluate(select=>{
+  // Dans l'interface élève, les paramètres de niveau sont masqués par la carte :
+  // c'est la transition native vers HARD qui est testée, pas le <select> caché.
+  const option=[...select.options].find(x=>x.value==='__hard__');
+  if(!option)throw Error('Option HARD absente du moteur');
+  select.value='__hard__';
+  select.dispatchEvent(new Event('change',{bubbles:true}));
+ });
+ await frame.locator('#hardMenuScreen:not(.hidden)').waitFor({timeout:16000});
  const selector=mode==='hard-sudden'
   ?'#hardLevelGrid .hard-start[data-mode="sudden"][data-level="1"]'
   :'#hardLevelGrid .mathas-sub-hard-three[data-mode="three-lives"][data-level="1"]';
