@@ -106,7 +106,7 @@ function fixture(){
 }
 async function setup({viewport={width:1024,height:768},fixtureData=fixture()}={}){
  const {server,url}=await serve();
- const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
  const context=await browser.newContext({viewport,reducedMotion:'reduce'});
  const unexpected=[];
  await context.route('**/*',async route=>{
