@@ -212,6 +212,28 @@ try{
    assert.ok(badge.font>=23&&Number(badge.weight)===900,'chiffre dominant');
    assert.ok(badge.width>=75&&badge.right<=badge.viewport+2,
     'le badge Niveau ne déborde pas sur téléphone : '+JSON.stringify(badge));
+   await page.frameLocator('iframe').locator('#mathasPointsQuick .mathas-school-share-hint')
+    .waitFor({state:'attached',timeout:12000});
+   const actions=await page.frameLocator('iframe').locator('#mathasPointsQuick').evaluate(quick=>{
+    const card=quick.querySelector('.mathas-points-quick-item--best');
+    const hint=card.querySelector('.mathas-school-share-hint');
+    const trophy=document.getElementById('mathasTrophiesStrip');
+    const label=trophy.querySelector('.mathas-trophies-hint');
+    return {
+     share:hint.textContent,shareBorder:getComputedStyle(hint).borderTopWidth,
+     sharePointer:getComputedStyle(hint).pointerEvents,cardRole:card.getAttribute('role'),
+     challenges:label.textContent.trim(),trophyBorder:getComputedStyle(label).borderTopWidth,
+     trophyPointer:getComputedStyle(label).pointerEvents,stripTag:trophy.tagName
+    };
+   });
+   assert.equal(actions.share,'Proposer ce score à la projection');
+   assert.equal(actions.shareBorder,'1px');
+   assert.equal(actions.sharePointer,'none','le cadre décoratif ne change pas la zone de clic');
+   assert.equal(actions.cardRole,'button');
+   assert.equal(actions.challenges,'Voir les défis');
+   assert.equal(actions.trophyBorder,'1px');
+   assert.equal(actions.trophyPointer,'none');
+   assert.equal(actions.stripTag,'BUTTON');
   }finally{await page.close()}
  });
  await test('TEST en ligne: refuse a silently free 4/4 without approved Connect session, including legacy free-mode flag',async()=>{
