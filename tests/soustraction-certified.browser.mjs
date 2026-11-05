@@ -142,7 +142,7 @@ async function clickAndAnswer(page,frame,{method='addBottom',count=4}={}){
  await frame.locator('input[name="borrowMethod"][value="'+method+'"]').evaluate(input=>input.closest('label').click());
  await frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"]').evaluate(el=>{
   window.__schoolClickTrace=[];
-  el.ownerDocument.addEventListener('click',e=>window.__schoolClickTrace.push({
+  el.ownerDocument.defaultView.addEventListener('click',e=>window.__schoolClickTrace.push({
    id:e.target?.id,count:e.target?.dataset?.count,trusted:e.isTrusted,
    className:String(e.target?.className||'').slice(0,100)
   }),true);
