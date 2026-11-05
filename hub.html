@@ -11,7 +11,7 @@
   var requested=q.get('class')||'';
   var valid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   var id=valid.test(requested)?requested:(space?space[0]:null);
-  if(!id&&q.get('toutes')==='1'&&q.get('joueur')==='prof'){id='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';}
+  if(!id&&q.get('toutes')==='1'&&q.get('joueur')==='prof'){q.set('class','4bf3400d-a315-4ea4-a2f3-afaca24dc9b9');q.set('name','Toutes');location.replace('./hub.html?'+q.toString());return;}
   if(!id){location.replace('./connexion.html');return;}
   window.__mathasClassRoute={id:id,name:(q.get('name')||'').trim().slice(0,80)||(space?space[1]:'Ma classe')};
 })();
