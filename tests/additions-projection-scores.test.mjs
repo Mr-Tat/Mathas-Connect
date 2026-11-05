@@ -67,7 +67,7 @@ test('Les additions réutilisent les cartes natives et une invitation sécurisé
   assert.match(html,/id='mathasPointsDetail'/);
   assert.match(html,/mathas-v541-cup/);
  }
- assert.match(read('apps/objective-record/eleve.mjs'),/school-score-view\.mjs\?v=20261104-native-records-v1/);
+ assert.match(read('apps/objective-record/eleve.mjs'),/school-score-view\.mjs\?v=20261105-compact-hint-v2/);
  assert.match(read('apps/objective-record/eleve.html'),/eleve\.mjs\?v=20261104-three-lives-half-xp-v1/);
 });
 test('Protection Edge: RPC atomique, identité élève et preuve du résultat',()=>{
@@ -89,4 +89,36 @@ test('Protection Edge: RPC atomique, identité élève et preuve du résultat',(
  assert.match(host,/schoolScoreView\?\.mount\(doc\)/);
  assert.match(host,/schoolScoreView\?\.recorded\(receipt\.eventId\)/);
  assert.match(host,/schoolScoreView\.updateState\(latestState/);
+});
+
+test('Cartouches sobres : TOP DU JOUR certifié et défis, sans modifier les zones cliquables',()=>{
+ const score=read('apps/objective-record/school-score-view.mjs');
+ assert.ok(score.includes("hint.textContent='Proposer ce score à la projection'"));
+ assert.ok(!score.includes('Cliquer pour proposer ce score'));
+ assert.ok(score.includes('mathas-school-share-hint{display:inline-flex'));
+ assert.ok(score.includes('pointer-events:none'));
+ assert.ok(score.includes("target.addEventListener('click',onClick)"));
+ assert.ok(score.includes("target.setAttribute('role','button')"));
+ assert.ok(read('apps/multiplication-simple/index.html').includes('school-score-view.mjs?v=20261105-compact-hint-v2'));
+
+ const games=[
+  'apps/objective-record/engines/addition-simple/game-original.html',
+  'apps/objective-record/engines/addition-multiple/index.html',
+  'apps/multiplication-simple/game-original.html',
+  'apps/soustraction-simple/game-original.html'
+ ];
+ for(const path of games){
+  const html=read(path);
+  assert.ok(html.includes('mathas-trophies-hint">Voir les défis</span>'),path);
+  assert.ok(html.includes('mathas-platinum-action">Voir les défis</span>'),path);
+  assert.ok(!html.includes('Touchez pour voir les défis'),path);
+  assert.ok(html.includes('/* Petit cartouche seulement : le bouton reste la bande complète des trophées. */'),path);
+  assert.ok(html.includes('border:1px solid rgba(140,194,217,.35)'),path);
+  assert.ok(html.includes('white-space:nowrap;text-align:center;letter-spacing:.01em;pointer-events:none'),path);
+  assert.ok(html.includes('content:" ›";font-size:1.1em!important'),path);
+  assert.ok(html.includes("strip.addEventListener('click',()=>{openPopover()"),path);
+ }
+ // Soustraction ne propose pas encore le score de cette carte par clic.
+ // Il n'y a donc pas de faux encadré de projection ajouté à sa carte.
+ assert.ok(!read('apps/soustraction-simple/index.html').includes('createSchoolScoreView'));
 });
