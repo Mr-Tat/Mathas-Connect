@@ -19,6 +19,7 @@ const headers={
 const respond=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers});
 const fail=(message:string,status=400)=>respond({ok:false,error:message},status);
 const validKey=(s:unknown):s is string=>typeof s==='string'&&/^[a-z0-9-]{1,80}$/.test(s);
+const ALL_SECTIONS=new Set(['test','objectif','calculs_ecrits','depassement','revision','outil','jeux']);
 
 // Secours transitoire : le HUB TEST déjà en ligne peut afficher ces démos même si
 // GitHub Pages bloque la publication du nouveau hub.js. GET uniquement, classe TEST.
@@ -88,7 +89,7 @@ Deno.serve(async(req:Request)=>{
        catalogue(true),
        db.from('connect_hub_preset_entries').select('app_key,visible')
          .eq('visible',true).limit(500),
-       db.from('connect_hub_all_settings').select('app_key,all_order,stage').limit(500),
+       db.from('connect_hub_all_settings').select('app_key,all_order,stage,section').limit(500),
      ]);
      if(presets.error||settings.error)throw Error('catalogue_unavailable');
      const configuration=new Map((settings.data||[]).map((entry:any)=>[entry.app_key,entry]));
@@ -96,18 +97,25 @@ Deno.serve(async(req:Request)=>{
      return respond({ok:true,apps:listed.filter(app=>app.enabled).map(app=>({
        ...app,published:published.has(app.app_key),in_test:app.visible,
        all_order:(configuration.get(app.app_key) as any)?.all_order??app.display_order,
-       stage:(configuration.get(app.app_key) as any)?.stage??(published.has(app.app_key)?'published':'test')
+       stage:(configuration.get(app.app_key) as any)?.stage??(published.has(app.app_key)?'published':'test'),
+       section:(configuration.get(app.app_key) as any)?.section??(((configuration.get(app.app_key) as any)?.stage==='test')?'test':app.hub_section),
+       all_section:(configuration.get(app.app_key) as any)?.section??(((configuration.get(app.app_key) as any)?.stage==='test')?'test':app.hub_section)
      }))});
    }
    if(body.action==='list')return respond({ok:true,apps:await catalogue(true)});
    if(body.action==='set-all'){
-     if(!validKey(body.appKey)||!Number.isSafeInteger(body.allOrder)||body.allOrder<0||body.allOrder>100000||!['test','published'].includes(body.stage))return fail('invalid_all_settings');
-     const exists=await db.from('connect_apps').select('app_key').eq('app_key',body.appKey).eq('enabled',true).maybeSingle();
+     if(!validKey(body.appKey)||!Number.isSafeInteger(body.allOrder)||body.allOrder<0||body.allOrder>100000||(!ALL_SECTIONS.has(body.section)&&!['test','published'].includes(body.stage)))return fail('invalid_all_settings');
+     const exists=await db.from('connect_apps').select('app_key,hub_section').eq('app_key',body.appKey).eq('enabled',true).maybeSingle();
      if(exists.error||!exists.data||body.appKey==='connect-lab')return fail('app_not_enabled',409);
+     // Anciennes pages professeur conservées en cache : l'ancien paramètre stage
+     // garde sa compatibilité mais ne change jamais les rubriques des classes.
+     const chosenSection=ALL_SECTIONS.has(body.section)?body.section:
+       body.stage==='test'?'test':
+       (ALL_SECTIONS.has(exists.data.hub_section)?exists.data.hub_section:'jeux');
      // Le statut est descriptif : publication réelle seulement par les presets scolaires et permissions serveur.
-     const saved=await db.from('connect_hub_all_settings').upsert({app_key:body.appKey,all_order:body.allOrder,stage:body.stage,updated_at:new Date().toISOString()},{onConflict:'app_key'});
+     const saved=await db.from('connect_hub_all_settings').upsert({app_key:body.appKey,all_order:body.allOrder,stage:chosenSection==='test'?'test':'published',section:chosenSection,updated_at:new Date().toISOString()},{onConflict:'app_key'});
      if(saved.error)throw Error('all_settings_save_failed');
-     return respond({ok:true,appKey:body.appKey,allOrder:body.allOrder,stage:body.stage});
+     return respond({ok:true,appKey:body.appKey,allOrder:body.allOrder,section:chosenSection,stage:chosenSection==='test'?'test':'published'});
    }
    if(!validKey(body.appKey)||typeof body.visible!=='boolean')return fail('invalid_visibility');
    // On ne peut jamais activer une appli désactivée ni l'outil de diagnostic.

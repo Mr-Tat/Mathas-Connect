@@ -880,6 +880,7 @@ document.querySelectorAll('.teacher-space .teacher-space-small[href]').forEach(a
  if(space){const u=new URL(a.href);u.searchParams.set('class',space.id);u.searchParams.set('name',space.name);a.href=u.href}
 });
 const APP_SECTIONS=[['objectif','Objectif'],['calculs_ecrits','Calculs écrits'],['depassement','Dépassement'],['revision','Révision'],['outil','Outils'],['jeux','Jeux']];
+const ALL_SECTIONS=[['test','🧪 Tests'],...APP_SECTIONS];
 const APP_SPACES=[['observation','Observation'],['phase1','Phase 1'],['phase2','Phase 2 A'],['phase2b','Phase 2 B'],['2eco','2 ECO']];
 
 async function loadTeacherAppPreview(){
@@ -897,14 +898,14 @@ async function loadTeacherAppPreview(){
       if(response.ok){const all=await response.json();if(all.ok&&Array.isArray(all.apps))allSettings=new Map(all.apps.map(a=>[a.app_key,a]));}
     }catch{}
   }
-  const saveAll=async(app,allOrder,stage,controls=[])=>{
+  const saveAll=async(app,allOrder,section,controls=[])=>{
     if(saving)return false;
     if(!allSession?.access_token){info('Connexion professeur requise pour le classement Toutes.',true);return false}
     saving=true;controls.forEach(c=>c.disabled=true);
     try{
-      const response=await fetch(url+'/functions/v1/connect-lab-catalog',{method:'POST',headers:{apikey:key,authorization:'Bearer '+allSession.access_token,'content-type':'application/json'},body:JSON.stringify({action:'set-all',classId:labTestClass,appKey:app.app_key,allOrder,stage})});
+      const response=await fetch(url+'/functions/v1/connect-lab-catalog',{method:'POST',headers:{apikey:key,authorization:'Bearer '+allSession.access_token,'content-type':'application/json'},body:JSON.stringify({action:'set-all',classId:labTestClass,appKey:app.app_key,allOrder,section})});
       const saved=await response.json();if(!response.ok||!saved.ok)throw Error(saved.error||'Enregistrement impossible');
-      allSettings.set(app.app_key,{...allSettings.get(app.app_key),all_order:allOrder,stage});
+      allSettings.set(app.app_key,{...allSettings.get(app.app_key),all_order:allOrder,section,stage:section==='test'?'test':'published'});
       info('✓ Paramètres du HUB Toutes enregistrés');return true;
     }catch(error){info('HUB Toutes : '+error.message,true);return false}
     finally{saving=false;controls.forEach(c=>c.disabled=false)}
@@ -977,27 +978,26 @@ async function loadTeacherAppPreview(){
    };
    order.oninput=()=>{order.classList.add('dirty');ok.classList.add('dirty')};order.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();applyOrder()}};ok.onclick=applyOrder;
    orderCell.append(order,ok);tr.append(orderCell);
-   const allConfig=allSettings.get(app.app_key)||{all_order:app.display_order??0,stage:'test'};
+   const allConfig=allSettings.get(app.app_key)||{all_order:app.display_order??0,section:app.hub_section||'calculs_ecrits'};
    const allOrderCell=document.createElement('td');allOrderCell.className='teacher-matrix-order';
    const allOrder=document.createElement('input');allOrder.type='number';allOrder.min='0';allOrder.max='100000';allOrder.value=String(allConfig.all_order);allOrder.setAttribute('aria-label','Ordre Toutes — '+app.title);
    const allOk=document.createElement('button');allOk.type='button';allOk.textContent='OK';allOk.className='teacher-matrix-order-ok';
-   const saveOrder=async()=>{const n=Number(allOrder.value);if(!Number.isInteger(n)||n<0||n>100000){info('Ordre Toutes invalide',true);return}if(await saveAll(app,n,allSettings.get(app.app_key)?.stage||allConfig.stage,[allOrder,allOk])){allOrder.classList.remove('dirty');allOk.classList.remove('dirty')}};
+   const saveOrder=async()=>{const n=Number(allOrder.value);if(!Number.isInteger(n)||n<0||n>100000){info('Ordre Toutes invalide',true);return}if(await saveAll(app,n,allSettings.get(app.app_key)?.section||allConfig.section||'calculs_ecrits',[allOrder,allOk])){allOrder.classList.remove('dirty');allOk.classList.remove('dirty')}};
    allOrder.oninput=()=>{allOrder.classList.add('dirty');allOk.classList.add('dirty')};allOrder.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();saveOrder()}};allOk.onclick=saveOrder;allOrderCell.append(allOrder,allOk);tr.append(allOrderCell);
-   const stageCell=document.createElement('td'),stageSelect=document.createElement('select');stageSelect.className='teacher-matrix-select';stageSelect.setAttribute('aria-label','État — '+app.title);
-   stageSelect.append(new Option('En test','test'),new Option('Validée (suivi)','published'));stageSelect.value=allConfig.stage;
-   stageSelect.title='Étiquette de suivi uniquement : la visibilité dans chaque classe se règle séparément.';
-   stageSelect.onchange=async()=>{const previous=allSettings.get(app.app_key)?.stage||allConfig.stage;if(!await saveAll(app,Number(allSettings.get(app.app_key)?.all_order??allConfig.all_order),stageSelect.value,[stageSelect]))stageSelect.value=previous};
-   const labLabel=document.createElement('label'),labBox=document.createElement('input');
-   labLabel.className='teacher-matrix-check';labBox.type='checkbox';labBox.checked=allConfig.in_test===true;
-   labLabel.append(labBox,document.createTextNode(' Dans Tests'));
-   labBox.setAttribute('aria-label','Dans Tests — '+app.title);
-   labBox.onchange=async()=>{const previous=!labBox.checked;labBox.disabled=true;
-     try{const response=await fetch(url+'/functions/v1/connect-lab-catalog',{method:'POST',headers:{apikey:key,authorization:'Bearer '+allSession.access_token,'content-type':'application/json'},body:JSON.stringify({action:'set',classId:labTestClass,appKey:app.app_key,visible:labBox.checked})});const saved=await response.json();
-       if(!response.ok||!saved.ok)throw Error(saved.error||'Échec');
-       allSettings.set(app.app_key,{...allSettings.get(app.app_key),in_test:saved.visible});info('✓ Tests mis à jour');
-     }catch(e){labBox.checked=previous;info('Tests : '+e.message,true)}finally{labBox.disabled=false}
+   // La page Toutes possède sa propre catégorie, indépendante des cinq classes.
+   const allSectionCell=document.createElement('td');
+   allSectionCell.className='teacher-matrix-all-section';
+   const allSection=document.createElement('select');
+   allSection.className='teacher-matrix-select';
+   allSection.setAttribute('aria-label','Section Toutes — '+app.title);
+   for(const [key,title] of ALL_SECTIONS)allSection.add(new Option(title,key));
+   allSection.value=allConfig.section|| (allConfig.stage==='test'?'test':app.hub_section||'calculs_ecrits');
+   allSection.onchange=async()=>{
+    const previous=allSettings.get(app.app_key)?.section||allConfig.section||app.hub_section||'calculs_ecrits';
+    if(!await saveAll(app,Number(allSettings.get(app.app_key)?.all_order??allConfig.all_order),allSection.value,[allSection]))allSection.value=previous;
    };
-   stageCell.append(stageSelect,labLabel);tr.append(stageCell);
+   allSectionCell.append(allSection);
+   tr.insertBefore(allSectionCell,orderCell);
    const position=document.createElement('td');position.className='teacher-matrix-position';position.textContent=String(index+1);tr.append(position);body.append(tr);
   }
   function sortRows(){const rows=[...body.querySelectorAll('tr.teacher-matrix-row')];rows.sort((a,b)=>Number(a.dataset.order)-Number(b.dataset.order)||a.dataset.title.localeCompare(b.dataset.title,'fr'));rows.forEach((row,index)=>{row.lastElementChild.textContent=String(index+1);body.append(row)})}

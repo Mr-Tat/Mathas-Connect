@@ -90,7 +90,7 @@ function card(app) {
   else node.dataset.appKey=app.app_key;
   node.target = '_blank';
   node.rel = 'noopener noreferrer';
-  node.querySelector('.app-name').textContent = app.title + (allMode ? (app.published===true?' · Déjà publiée dans une classe':' · En test') : '');
+  node.querySelector('.app-name').textContent = app.title;
   node.querySelector('.app-initial').textContent = app.title.charAt(0).toUpperCase();
   node.querySelector('.app-scores').textContent = testMultiplication?'🧪 TEST · vrais XP et trophées Connect (connexion obligatoire)':
     testSlug?(app.app_key==='addition-ecrite-multiple'?'🧪 TEST · XP Connect en Classique / Mort subite':'🧪 TEST · nouveaux modes XP en préparation'):progressText(app.app_key);
@@ -129,7 +129,7 @@ function labPreviewSection() {
 function section(kind, title, description, apps, makeCard=card) {
   const node = $('levelTemplate').content.firstElementChild.cloneNode(true);
   node.querySelector('.level-title').textContent = title;
-  node.querySelector('.level-description').textContent = description;
+  const desc=node.querySelector('.level-description');desc.textContent=description;desc.hidden=!description;
   node.querySelector('.level-count').textContent = apps.length + ' app' + (apps.length > 1 ? 's' : '');
   node.querySelector('.level-apps').replaceChildren(...apps.map(makeCard));
   const toggle = node.querySelector('.level-toggle');
@@ -205,14 +205,14 @@ async function showCatalog() {
       Object.assign(document.createElement('p'), { className: 'empty-state', textContent: 'Pas de sélection pour le moment.' })
     ]));
     $('dailyApps').classList.toggle('empty-grid', featured.length === 0);
-    const ordinary=allMode?apps.filter(a=>!a.in_test):apps;
-    const groups=levels.filter(([id])=>!allMode||ordinary.some(a=>a.hub_section===id)).map(([id, title, desc]) =>
-      section(id, title, desc, ordinary.filter(a => a.hub_section === id))
+    const ordinary=allMode?apps.filter(a=>(a.all_section||a.hub_section)!=='test'):apps;
+    const groups=levels.filter(([id])=>!allMode||ordinary.some(a=>(allMode?a.all_section:a.hub_section)===id)).map(([id, title, desc]) =>
+      section(id, title, allMode?'':desc, ordinary.filter(a => (allMode?a.all_section:a.hub_section) === id))
     );
     if(allMode){
       document.body.classList.add('hub-toutes');
-      const trials=apps.filter(a=>a.in_test);
-      groups.unshift(section('tests','🧪 Tests','Applications présentes dans le circuit d’essai, y compris celles déjà publiées dans certaines classes. Connect réel avec profils fictifs TEST.',trials));
+      const trials=apps.filter(a=>a.all_section==='test');
+      groups.unshift(section('tests','🧪 Tests','',trials));
       groups[0].classList.remove('collapsed');groups[0].querySelector('.level-toggle').setAttribute('aria-expanded','true');
       $('classLabel').textContent='Toutes les applications · TEST';
       document.querySelector('.daily-section')?.setAttribute('hidden','');
