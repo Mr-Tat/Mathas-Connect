@@ -113,8 +113,13 @@ export async function mountHubToutesAuth({teacherClient,studentClient,isTeacherM
  $('toutes-requests-open').onclick=()=>{const open=$('toutes-request-panel').hidden;$('toutes-request-panel').hidden=!open;$('toutes-requests-open').setAttribute('aria-expanded',String(open))};
  $('toutes-requests-refresh').onclick=async()=>{if(busy)return;busy=true;try{await refresh();msg('Demandes actualisées.')}catch(e){msg(e.message||'Erreur.',true)}finally{busy=false}};
  try{
-   await refresh();
    if(!isTeacherMode){
+     // Ne jamais demander ni conserver les noms, codes ou demandes professeur dans le DOM élève.
+     const professor=await teacherCall('teacher-player');
+     if(professor.status!=='approved'||professor.displayName!=='Monsieur T')throw Error('Profil Monsieur T indisponible.');
+     $('toutes-switch').disabled=false;
+     $('toutes-switch').textContent='Se connecter avec Monsieur T';
+     $('toutes-auth-current').textContent='👧 Session élève TEST';
      const sb=await studentClient();const {data:{session}}=await sb.auth.getSession();
      if(session?.user?.is_anonymous){
        const r=await fetch(baseUrl+'/functions/v1/connect-api',{method:'POST',
@@ -123,6 +128,8 @@ export async function mountHubToutesAuth({teacherClient,studentClient,isTeacherM
        const d=await r.json().catch(()=>({}));
        if(r.ok&&d.ok&&d.status==='approved'&&d.classId===testClass)$('toutes-auth-current').textContent='👧 '+d.displayName+' · TEST';
      }
+   }else{
+     await refresh();
    }
  }catch(e){
    panel.classList.add('toutes-auth-blocked');$('toutes-auth-current').textContent='Accès professeur nécessaire';
