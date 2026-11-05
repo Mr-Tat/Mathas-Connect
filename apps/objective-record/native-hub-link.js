@@ -55,7 +55,9 @@
         margin-left:8px!important;padding:3px 7px!important;font-size:10px!important
       }
     }
-    #mathas-native-connect-profile[hidden],#mathas-native-connect-xp[hidden]{display:none!important}
+    /* Plus spécifique que le display:inline-flex des éléments de l'en-tête : hidden doit toujours gagner. */
+    .mathas-brand-row #mathas-native-connect-profile[hidden],
+    .mathas-brand-row #mathas-native-connect-xp[hidden]{display:none!important}
     #mathas-native-connect-profile .connect-identity{
       display:inline-flex!important;gap:5px!important;align-items:center!important;
       max-width:190px!important;min-width:0!important;white-space:nowrap!important
@@ -136,7 +138,9 @@
       row.append(profile);
     }
     const profileAnchor=doc.getElementById('mathas-native-connect-profile');
-    if(profileAnchor&&!doc.getElementById('mathas-native-connect-xp')){
+    // Aucun bouton XP en mode libre : on le crée uniquement après validation du compte.
+    const available=!host.getElementById('connect-bar')?.hidden;
+    if(profileAnchor&&available&&!doc.getElementById('mathas-native-connect-xp')){
       const button=doc.createElement('button');
       button.type='button';button.id='mathas-native-connect-xp';
       button.textContent='✨ XP à récupérer';
@@ -152,7 +156,6 @@
     }
     const profile=doc.getElementById('mathas-native-connect-profile');
     const button=doc.getElementById('mathas-native-connect-xp');
-    const available=!host.getElementById('connect-bar')?.hidden;
     if(profile){
       profile.hidden=!available;
       if(available){
