@@ -92,7 +92,7 @@ Deno.serve(async(req:Request)=>{
      if(presets.error)throw Error('catalogue_unavailable');
      const published=new Set((presets.data||[]).map((entry:any)=>entry.app_key));
      return respond({ok:true,apps:listed.filter(app=>app.enabled).map(app=>({
-       ...app,published:published.has(app.app_key),in_test:app.visible&&!published.has(app.app_key)
+       ...app,published:published.has(app.app_key),in_test:app.visible
      }))});
    }
    if(body.action==='list')return respond({ok:true,apps:await catalogue(true)});
