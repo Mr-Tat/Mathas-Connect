@@ -337,3 +337,23 @@ test('Chromium scolaire : quitter 10 calculs puis lancer 4 crée deux défis dis
   assert.equal(ctx.fixture.received.some(x=>x.action==='game-record'),false);
  }finally{await ctx.close()}
 });
+
+test('Chromium scolaire : aucune barre extérieure et toutes les fonctions dans le vrai en-tête', {timeout:120000},async()=>{
+ const ctx=await setup({viewport:{width:1024,height:768}});
+ try{
+  const {page,frame}=await ctx.page();
+  await frame.locator('#mathas-sous-connect-dock').waitFor({timeout:15000});
+  assert.equal(await page.locator('#ce-toolbar').isVisible(),false,'bandeau extérieur supprimé');
+  assert.equal(await page.locator('iframe').evaluate(f=>Math.abs(f.getBoundingClientRect().top)),0);
+  assert.equal(await frame.locator('#mathas-sous-hub-link').isVisible(),true);
+  assert.equal(await frame.locator('#fullscreenBtn').isVisible(),true);
+  assert.equal(await frame.locator('#themeToggleBtn').isVisible(),true);
+  assert.match(await frame.locator('h1').first().textContent(),/Soustraction.*V6/i);
+  assert.match(await frame.locator('#mathas-sous-connect-identity').textContent(),/Élève test/);
+  assert.match(await frame.locator('#mathas-sous-connect-level').textContent(),/Niveau 1/);
+  assert.equal(await frame.locator('#mathas-sous-connect-xp').isVisible(),true);
+  await frame.locator('#mathas-sous-connect-xp').click();
+  await page.locator('#xp-details:not([hidden])').waitFor({timeout:15000});
+  assert.match(await page.locator('#xp-details').textContent(),/XP acquis dans ce jeu/);
+ }finally{await ctx.close()}
+});
