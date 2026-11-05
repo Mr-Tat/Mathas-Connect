@@ -141,7 +141,19 @@ async function setup({viewport={width:1024,height:768},fixtureData=fixture()}={}
 
 async function launchClassic(page,frame,{method='addBottom',count=4}={}){
  await frame.locator('input[name="borrowMethod"][value="'+method+'"]').evaluate(input=>input.closest('label').click());
+ await frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"]').evaluate(el=>{
+  const w=el.ownerDocument.defaultView;
+  w.__mathasClassicClicks=[];
+  w.addEventListener('click',event=>{
+   const b=event.target?.closest?.('button');
+   if(b?.id==='startClassic'||b?.matches?.('.classic-count-btn[data-count]'))
+    w.__mathasClassicClicks.push({id:b.id||'',count:b.dataset.count||'',
+      trusted:event.isTrusted,phase:event.eventPhase,active:b.classList.contains('active')});
+  },true);
+ });
  await frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"]').click();
+ console.log('CERTIFIED CLASSIC',JSON.stringify({requested:count,
+  clicks:await frame.locator('body').evaluate(()=>window.__mathasClassicClicks)}));
  await frame.locator('#gameScreen:not(.hidden) #calculationsPair .calc-box').first().waitFor({timeout:20000});
  assert.equal(await page.locator('.mathas-sub-proof:not([hidden])').count(),0,
   'Les exercices normaux restent dans les grilles originales, pas dans une interface parallèle');
