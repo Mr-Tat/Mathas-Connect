@@ -15296,7 +15296,7 @@ function makeUI(){
   }
   if(level&&!document.getElementById('mathasTrophiesStrip')){
     const strip=document.createElement('button');strip.type='button';strip.className='mathas-trophies-strip';strip.id='mathasTrophiesStrip';strip.setAttribute('aria-haspopup','dialog');strip.setAttribute('aria-expanded','false');
-    strip.innerHTML=`<div class="mathas-trophies-badges" aria-hidden="true"><div class="mathas-trophy-badge" data-color="bronze"><span class="mathas-trophy-name">Bronze</span><span class="mathas-trophy-face"><span class="mathas-trophy-medal">${cupSvg('bronze')}</span><span class="mathas-trophy-count" data-trophies="bronze">0/6</span></span></div><div class="mathas-trophy-badge" data-color="silver"><span class="mathas-trophy-name">Argent</span><span class="mathas-trophy-face"><span class="mathas-trophy-medal">${cupSvg('silver')}</span><span class="mathas-trophy-count" data-trophies="silver">0/6</span></span></div><div class="mathas-trophy-badge" data-color="gold"><span class="mathas-trophy-name">Or</span><span class="mathas-trophy-face"><span class="mathas-trophy-medal">${cupSvg('gold')}</span><span class="mathas-trophy-count" data-trophies="gold">0/7</span></span></div></div><div class="mathas-trophies-footer"><span class="mathas-trophies-total"><span data-trophies="total">0</span><small>/20</small></span><span class="mathas-trophies-hint">Touchez pour voir les défis</span></div><div class="mathas-platinum-panel"><span class="mathas-platinum-art">${PLATINUM_SVG}</span><span class="mathas-platinum-copy"><span class="mathas-platinum-heading">PLATINE</span><span class="mathas-platinum-caption">Les 19 trophées officiels ont été obtenus !</span><span class="mathas-platinum-progress">20/20 récompenses</span><span class="mathas-platinum-action">Touchez pour voir les défis</span></span></div>`;
+    strip.innerHTML=`<div class="mathas-trophies-badges" aria-hidden="true"><div class="mathas-trophy-badge" data-color="bronze"><span class="mathas-trophy-name">Bronze</span><span class="mathas-trophy-face"><span class="mathas-trophy-medal">${cupSvg('bronze')}</span><span class="mathas-trophy-count" data-trophies="bronze">0/6</span></span></div><div class="mathas-trophy-badge" data-color="silver"><span class="mathas-trophy-name">Argent</span><span class="mathas-trophy-face"><span class="mathas-trophy-medal">${cupSvg('silver')}</span><span class="mathas-trophy-count" data-trophies="silver">0/6</span></span></div><div class="mathas-trophy-badge" data-color="gold"><span class="mathas-trophy-name">Or</span><span class="mathas-trophy-face"><span class="mathas-trophy-medal">${cupSvg('gold')}</span><span class="mathas-trophy-count" data-trophies="gold">0/7</span></span></div></div><div class="mathas-trophies-footer"><span class="mathas-trophies-total"><span data-trophies="total">0</span><small>/20</small></span><span class="mathas-trophies-hint">Voir les défis</span></div><div class="mathas-platinum-panel"><span class="mathas-platinum-art">${PLATINUM_SVG}</span><span class="mathas-platinum-copy"><span class="mathas-platinum-heading">PLATINE</span><span class="mathas-platinum-caption">Les 19 trophées officiels ont été obtenus !</span><span class="mathas-platinum-progress">20/20 récompenses</span><span class="mathas-platinum-action">Voir les défis</span></span></div>`;
     strip.addEventListener('click',()=>{openPopover();strip.setAttribute('aria-expanded','true')});
     strip.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openPopover();strip.setAttribute('aria-expanded','true')}});
     const anchor=document.getElementById('mathasPointsQuick')||level;anchor.insertAdjacentElement('afterend',strip);
@@ -16762,6 +16762,18 @@ html.mathas-handheld-portrait #aidPanel .ruler-n {font-size:11px!important;line-
   text-align:right;color:#c1e0ee;font-size:clamp(.59rem,1.1vw,.76rem);
   font-weight:900;line-height:1.2;letter-spacing:.03em;
 }
+/* Petit cartouche seulement : le bouton reste la bande complète des trophées. */
+#mathasTrophiesStrip .mathas-trophies-hint{
+  display:inline-flex;align-items:center;justify-content:center;flex:0 1 auto;
+  box-sizing:border-box;max-width:100%;padding:3px 7px;
+  border:1px solid rgba(140,194,217,.35);border-radius:7px;
+  background:rgba(35,81,105,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+  white-space:nowrap;text-align:center;letter-spacing:.01em;pointer-events:none;
+}
+#mathasTrophiesStrip:hover .mathas-trophies-hint,
+#mathasTrophiesStrip:focus-visible .mathas-trophies-hint{
+  border-color:rgba(181,222,237,.63);background:rgba(45,101,127,.37);
+}
 #mathasTrophiesStrip .mathas-trophies-hint::after{
   content:' ›';font-size:1.12em;vertical-align:baseline;color:#eed48d;
 }
@@ -16797,7 +16809,7 @@ body.light-mode #mathasTrophiesStrip .mathas-trophies-total{color:#805515}
 body.light #mathasTrophiesStrip .mathas-trophies-total small,
 body.light-mode #mathasTrophiesStrip .mathas-trophies-total small{color:#476a7d}
 body.light #mathasTrophiesStrip .mathas-trophies-hint,
-body.light-mode #mathasTrophiesStrip .mathas-trophies-hint{color:#36657d}
+body.light-mode #mathasTrophiesStrip .mathas-trophies-hint{color:#36657d;background:rgba(218,240,250,.68);border-color:rgba(78,139,165,.33)}
 @media(max-width:440px){
   #mathasTrophiesStrip.mathas-trophies-strip{padding:8px 8px 0}
   #mathasTrophiesStrip .mathas-trophies-badges{gap:6px}
@@ -16920,7 +16932,7 @@ html.mathas-p29-trophies-off .mathas-trophy-dock,html.mathas-p29-trophies-off .m
 .mathas-platinum-copy{display:flex;flex-direction:column;gap:6px;min-width:0}
 .mathas-platinum-heading{font-size:clamp(1.65rem,6.2vw,3rem);line-height:1.02;font-weight:1000;letter-spacing:.115em;color:#ecfcff;text-shadow:0 2px 0 rgba(3,20,51,.75),0 0 21px rgba(166,241,255,.7)}
 .mathas-platinum-caption{font-size:clamp(.68rem,1.3vw,.88rem);font-weight:850;color:#d7f3ff;line-height:1.25}
-.mathas-platinum-action{font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;color:#e0e9ff;font-weight:850;opacity:.94}
+.mathas-platinum-action{display:inline-flex;align-items:center;justify-content:center;width:max-content;max-width:100%;padding:3px 7px;border:1px solid rgba(183,211,242,.38);border-radius:7px;background:rgba(91,126,166,.20);font-size:.68rem;letter-spacing:.03em;text-transform:uppercase;color:#e0e9ff;font-weight:850;opacity:.94;pointer-events:none}
 .mathas-platinum-notice{padding:12px;border-radius:16px;border:1px solid rgba(191,236,255,.62);background:linear-gradient(110deg,rgba(101,149,210,.25),rgba(207,244,255,.2));text-align:center;color:#d9f8ff;font-weight:900;margin-bottom:10px}
 .mathas-platinum-notice svg{display:block;margin:auto auto 6px;width:95px;height:95px}
 body.light #mathasTrophiesStrip.is-platinum,body.light-mode #mathasTrophiesStrip.is-platinum{background:linear-gradient(135deg,#d9edff,#b5cde9,#cedcf8)!important;border-color:#7798b9!important}
@@ -17042,11 +17054,11 @@ body.light #mathasTrophiesStrip.is-platinum .mathas-platinum-caption,body.light-
    font-size:.61rem!important;
  }
  html.mathas-handheld-portrait #menuScreen #mathasTrophiesStrip .mathas-trophies-hint{
-   font-size:0!important;text-align:right!important;
+   font-size:clamp(.5rem,2.2vw,.64rem)!important;text-align:center!important;
+   padding:3px 5px!important;letter-spacing:0!important;
  }
  html.mathas-handheld-portrait #menuScreen #mathasTrophiesStrip .mathas-trophies-hint::after{
-   content:"Défis ›";font-size:clamp(.54rem,2.2vw,.64rem)!important;
-   white-space:nowrap!important;
+   content:" ›";font-size:1.1em!important;white-space:nowrap!important;
  }
  /* Les deux réglages Master fonctionnent indépendamment. */
  html.mathas-handheld-portrait.mathas-p29-scores-off #menuScreen .mathas-v521-results,
