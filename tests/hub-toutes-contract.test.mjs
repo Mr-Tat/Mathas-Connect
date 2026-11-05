@@ -12,7 +12,8 @@ test('Toutes opens a distinct professor HUB',()=>{
 });
 test('Tests is first, and cards are not duplicated in ordinary sections',()=>{
  const hub=read('hub.js');
- assert.match(hub,/apps\.filter\(a=>!a\.in_test\)/);
+ assert.match(hub,/apps\.filter\(a=>\(a\.all_section\|\|a\.hub_section\)!=='test'\)/);
+ assert.match(hub,/apps\.filter\(a=>a\.all_section==='test'\)/);
  assert.match(hub,/groups\.unshift\(section\('tests'/);
  assert.match(hub,/classList\.remove\('collapsed'\)/);
 });
@@ -36,4 +37,15 @@ test('all-order storage is private and independent of school catalogues',()=>{
  assert.match(migration,/enable row level security/);
  assert.match(migration,/revoke all.*anon, authenticated/);
  assert.doesNotMatch(migration,/\bdelete\s+from\s+.*(?:connect_students|connect_xp)/i);
+});
+
+test('page Toutes uses its own section selector, independent of classes',()=>{
+ const js=read('app.js'),html=read('index.html'),edge=read('supabase/functions/connect-lab-catalog/index.ts');
+ const migration=read('supabase/migrations/20261106090000_hub_all_independent_sections.sql');
+ assert.match(html,/<th>Partout<\/th><th>Section Toutes<\/th><th>Ordre<\/th>/);
+ assert.match(js,/const ALL_SECTIONS=\[\['test'/);
+ assert.match(js,/Section Toutes — /);
+ assert.match(edge,/ALL_SECTIONS/);
+ assert.match(edge,/all_section:/);
+ assert.match(migration,/ADD COLUMN IF NOT EXISTS section/);
 });
