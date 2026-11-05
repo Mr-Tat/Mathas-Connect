@@ -231,9 +231,11 @@ function mountNativeConnectHeader(doc){
 }
 function applySchoolUi(){
  try{
+  // Créer d'abord les modes certifiés, puis habiller les boutons qui existent réellement.
+  installNativeCertifiedProof();
   installMultiplicationSchoolUi(iframe.contentDocument,{connected:mode==='connected',xp:lastXp,rewards:initial?.rewards});
   mountNativeConnectHeader(iframe.contentDocument);
-  installNativeCertifiedProof();certifiedScoreView?.mount(iframe.contentDocument);
+  certifiedScoreView?.mount(iframe.contentDocument);
  }
  catch(error){console.warn('Affichage scolaire multiplication indisponible',error)}
 }
