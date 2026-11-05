@@ -188,6 +188,16 @@ try{
    assert.equal(check.visible,0,'aucune image affichant la barre : '+JSON.stringify(check));
    assert.equal(check.display,'none');
    assert.equal(check.native,true);
+   const profile=await page.frameLocator('iframe')
+    .locator('#mathas-multi-connect-identity').evaluate(el=>({
+     text:el.textContent,
+     bullet:getComputedStyle(el,'::before').content,
+     color:getComputedStyle(el,'::before').color
+    }));
+   assert.match(profile.text,/Élève fictif/);
+   assert.equal(profile.text.includes('Connecté'),false,'nom sans mention redondante');
+   assert.ok(profile.bullet.includes('●'),'point de connexion présent');
+   assert.equal(profile.color,'rgb(112, 227, 174)','point de connexion vert');
   }finally{await page.close()}
  });
  await test('TEST en ligne: refuse a silently free 4/4 without approved Connect session, including legacy free-mode flag',async()=>{
