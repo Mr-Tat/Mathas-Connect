@@ -83,6 +83,7 @@ export function installSubtractionSchoolUi(doc,{connected=false,xp=null,rewards=
  if(!connected||!doc?.getElementById?.('menuScreen'))return false;
  style(doc);
  const sudden=doc.getElementById('startSudden');
+ if(sudden)sudden.title='Mort subite · défi officiel Connect';
  if(sudden&&!doc.getElementById('mathasSousThreeLives')){
   const three=doc.createElement('button');three.id='mathasSousThreeLives';
   three.type='button';three.className=sudden.className;
@@ -90,6 +91,11 @@ export function installSubtractionSchoolUi(doc,{connected=false,xp=null,rewards=
   sudden.insertAdjacentElement('afterend',three);
  }
  const life=doc.getElementById('mathasSousThreeLives');
+ // Sur un compte Connect, les deux modes donnent accès aux épreuves officielles.
+ // Ne pas conserver l'étiquette d'entraînement de la version libre.
+ const practiceNote=doc.querySelector('#menuScreen .mathas-sous-three-info');
+ if(practiceNote)practiceNote.textContent='3 vies et Mort subite : résultats certifiés par Connect.';
+ if(life)life.title='Trois erreurs possibles · défi officiel Connect';
  if(sudden&&life&&!sudden.closest('.mathas-sub-survival-pair')&&!sudden.closest('.mathas-sous-record-buttons')){
   const row=doc.createElement('div');row.className='mathas-sub-survival-pair';
   sudden.parentElement.insertBefore(row,sudden);row.append(life,sudden);
