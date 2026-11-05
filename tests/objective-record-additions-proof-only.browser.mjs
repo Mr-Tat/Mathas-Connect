@@ -132,6 +132,19 @@ for(const item of [
     'Défi Connect a disparu de la barre repliable');
    assert.equal(await page.locator('#xp-note,#xp-summary,#total-xp,#trophies').count(),0);
    assert.equal(await page.locator('#connect-bar').isVisible(),false);
+   const profile=await page.frameLocator('#gameFrame').frameLocator('#game')
+    .locator('#mathas-native-connect-profile').evaluate(el=>({
+     text:el.textContent,
+     dot:el.querySelector('.connect-presence')?.textContent,
+     color:getComputedStyle(el.querySelector('.connect-presence')).color,
+     name:el.querySelector('.connect-person')?.textContent,
+     level:el.querySelector('.connect-level')?.textContent
+    }));
+   assert.equal(profile.dot,'●','point de connexion conservé');
+   assert.equal(profile.color,'rgb(112, 227, 174)','point toujours vert');
+   assert.equal(profile.text.includes('Connecté'),false,'mot redondant masqué');
+   assert.equal(profile.name,'Élève');
+   assert.match(profile.level,/Niveau/);
    await page.frameLocator('#gameFrame').frameLocator('#game')
     .locator('#mathas-native-connect-xp').click();
    const panel=page.locator('#xp-panel:not([hidden])');
