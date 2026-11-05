@@ -117,7 +117,8 @@ test('Le professeur choisit une fiche fictive, puis seule la connexion native Co
    await f.page.goto(f.base+'/hub.html?toutes=1&joueur=prof&class='+testClass,{waitUntil:'domcontentloaded'});
    await f.page.locator('#toutes-connect-student:not([disabled])').waitFor({timeout:20000});
    assert.equal(await f.page.locator('#toutes-student-select option').first().textContent(),'Élève.A');
-   assert.equal(await f.page.locator('#toutes-switch').textContent(),'Passer à la session élève');
+   assert.equal(await f.page.locator('#toutes-switch').isVisible(),false);
+   assert.equal(await f.page.locator('#toutes-connect-student').textContent(),'Se connecter avec Élève.A');
    await f.page.locator('#toutes-connect-student').click();
    await f.page.waitForURL(/index\.html\?/);
    const url=new URL(f.page.url());
