@@ -223,7 +223,7 @@ function renderCups(doc,rewards){
   if(button)putCups(doc,button,officialMultiplicationCups(rewards,'hard-sudden',n));
  }
 }
-function polishSurvivalMenu(doc){
+function polishSurvivalMenu(doc,connected){
  const card=doc.querySelector('#menuScreen .mode-card.sudden');
  if(!card)return;
  const title=card.querySelector('.mode-title');
@@ -250,12 +250,17 @@ function polishSurvivalMenu(doc){
   button.setAttribute('aria-label',aria);
  }
  label(lives,'❤️ ❤️ ❤️','3 vies','Mode 3 vies');
- label(sudden,'💀','Mort subite','Mode Mort subite · Score ×2');
+ label(sudden,'💀','Mort subite',connected?'Mode Mort subite · Score ×2':'Mode Mort subite');
  if(sudden){
   let bonus=sudden.querySelector(':scope > .'+SCORE_X2);
-  if(!bonus){bonus=doc.createElement('span');bonus.className=SCORE_X2;sudden.append(bonus)}
-  if(bonus.textContent!=='Score ×2')bonus.textContent='Score ×2';
-  sudden.setAttribute('aria-label','Mode Mort subite · Score ×2');
+  if(connected){
+   if(!bonus){bonus=doc.createElement('span');bonus.className=SCORE_X2;sudden.append(bonus)}
+   if(bonus.textContent!=='Score ×2')bonus.textContent='Score ×2';
+   sudden.setAttribute('aria-label','Mode Mort subite · Score ×2');
+  }else{
+   bonus?.remove();
+   sudden.setAttribute('aria-label','Mode Mort subite');
+  }
  }
  let note=card.querySelector(':scope > .mathas-multi-unlock-note');
  if(!note){note=doc.createElement('div');note.className='mathas-multi-unlock-note';card.append(note)}
@@ -277,7 +282,7 @@ export function installMultiplicationSchoolUi(doc,{connected=false,xp=null,rewar
  const home=doc?.getElementById?.('tensFirstToggle');
  if(!home||!doc.querySelector('#menuScreen'))return false;
  ensureStyle(doc);
- polishSurvivalMenu(doc);
+ polishSurvivalMenu(doc,connected);
  const sync=()=>{
   doc.querySelectorAll('.'+TOGGLE+' input').forEach(x=>{x.checked=!!home.checked});
   updateMultiplicationAmber(doc,home.checked);
