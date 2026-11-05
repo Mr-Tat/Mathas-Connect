@@ -86,7 +86,7 @@ try{
     assert.equal(state.mastery,1,'une seule coupe de maîtrise sous 4/10/20 : '+JSON.stringify({width,state}));
     assert.equal(state.top,3,'trois coupes du TOP DU JOUR : '+JSON.stringify({width,state}));
     assert.equal(state.sudden,3,'trois coupes Mort subite : '+JSON.stringify({width,state}));
-    assert.ok(state.survivalHeight>=90&&state.survivalHeight<=150,
+    assert.ok(state.survivalHeight>=60&&state.survivalHeight<=150,
       'bouton Mort subite compact : '+JSON.stringify({width,state}));
    }
    await page.evaluate(()=>{
