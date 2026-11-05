@@ -51,7 +51,7 @@ function putCups(doc,button,specs){
   slot.append(cup);row.append(slot);
  }
  button.style.setProperty('position','relative','important');
- button.style.setProperty('padding-top','19px','important');
+ if(button.matches('button'))button.style.setProperty('padding-top','19px','important');
 }
 
 
@@ -102,13 +102,31 @@ function ensureStyle(doc){
  '#startSudden>.mathas-multi-official-xp,#hardMenu .hard-sudden>.mathas-multi-official-xp{left:6px!important;right:auto!important}',
  'body.light .mathas-multi-official-xp,body.light-mode .mathas-multi-official-xp{color:#523107!important}',
  '.mathas-multi-instruction-note{font:700 12px/1.4 system-ui;color:#f7cb76;margin-top:5px}',
- '.mathas-multi-school-cups{position:absolute!important;top:2px!important;right:6px!important;display:inline-flex!important;gap:3px!important;align-items:center!important;pointer-events:none!important;z-index:3}',
+ '.mathas-multi-school-cups{position:absolute!important;bottom:10px!important;top:auto!important;right:9px!important;display:inline-flex!important;gap:3px!important;align-items:center!important;pointer-events:none!important;z-index:3}',
+ '#menuScreen .mode-card.classic{position:relative!important}',
+ '#menuScreen .mode-card.classic>.mathas-multi-school-cups{bottom:12px!important;right:16px!important}',
  '.mathas-multi-school-cup{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:15px;min-height:16px}',
  '.mathas-multi-school-cup .mathas-multi-school-cup-art{display:inline-flex!important;width:16px!important;height:17px!important;font-size:15px!important}',
  '.mathas-multi-school-cup .mathas-multi-school-cup-art svg{width:100%!important;height:100%!important}',
  '.mathas-multi-school-cup.locked{opacity:.38;filter:grayscale(1)}',
  '.mathas-multi-school-cup.earned{opacity:1;filter:drop-shadow(0 1px 3px #f4d48a77)}',
  '/* Les fonds et couleurs natifs restent inchangés : disposition et relief seulement. */',
+ '/* Le groupe de survie doit couvrir les deux colonnes de la grille icône/titre du moteur V7. */',
+ '#menuScreen .mode-card.sudden>.mathas-multi-survival-options{grid-column:1/-1!important;grid-row:auto!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:clamp(8px,1vw,14px)!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;align-items:stretch!important;justify-self:stretch!important}',
+ '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice{min-width:0!important;max-width:none!important;width:100%!important;min-height:154px!important;margin:0!important;box-sizing:border-box!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:8px!important;white-space:normal!important;overflow-wrap:normal!important;word-break:normal!important;text-align:center!important;font-size:clamp(.88rem,1.25vw,1.15rem)!important;line-height:1.18!important;padding:16px 10px 29px!important}',
+ '/* Même relief et interactions que Mort subite, avec une couleur propre au mode 3 vies. */',
+ '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>#mathasMultiThreeLives{background:linear-gradient(180deg,#79445f 0%,#57304d 55%,#45253e 100%)!important;border:1px solid #bb779e!important;color:#fff4fa!important}',
+ '#hardMenu .hard-actions>.mathas-multi-hard-three-lives{background:linear-gradient(180deg,#79445f 0%,#57304d 55%,#45253e 100%)!important;border:1px solid #bb779e!important;color:#fff4fa!important}',
+ '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice:disabled{cursor:not-allowed!important;opacity:.56!important;filter:grayscale(.42)!important}',
+ '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice>.mathas-multi-official-xp{left:auto!important;right:8px!important;bottom:7px!important}',
+ '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice>.mathas-multi-school-cups{right:8px!important;bottom:22px!important}',
+ '/* La disposition du moteur reste intacte ; uniquement la carte de sélection est harmonisée. */',
+ '#menuScreen .mode-card.sudden>.mode-description,#menuScreen .mode-card.sudden>.mathas-multi-unlock-note{grid-column:1/-1!important;width:100%!important}',
+ '#menuScreen .mode-card.sudden>.mathas-multi-unlock-note{font:750 12px/1.45 system-ui;color:#ffdfa1;text-align:center;padding:2px 4px;box-sizing:border-box}',
+ '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice:not(:disabled){box-shadow:inset 0 2px 0 #ffffff25,inset 0 -4px 0 #0004,0 5px 0 #0005,0 11px 19px #0004!important}',
+ '@media(hover:hover) and (pointer:fine){#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice:not(:disabled):hover{transform:translateY(-3px)!important;filter:brightness(1.12)!important}}',
+ '#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice:not(:disabled):active{transform:translateY(3px)!important;box-shadow:inset 0 2px 5px #0005,0 2px 0 #0005!important}',
+ '@media(max-width:570px){#menuScreen .mode-card.sudden>.mathas-multi-survival-options{gap:7px!important}#menuScreen .mode-card.sudden>.mathas-multi-survival-options>.big-mode-choice{min-height:115px!important;font-size:.88rem!important;padding:10px 5px 30px!important}}',
  '#menuScreen .mathas-multi-survival-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(7px,1.1vw,13px);width:100%;min-width:0;align-items:stretch}',
  '#menuScreen .mathas-multi-survival-options>.big-mode-choice{min-width:0;width:100%;min-height:88px;margin:0!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;white-space:normal;text-align:center}',
  '#hardMenu .hard-actions:has(.mathas-multi-hard-three-lives){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}',
@@ -157,9 +175,11 @@ function renderXp(doc,xp){
  }
 }
 function renderCups(doc,rewards){
- for(const button of doc.querySelectorAll('#menuScreen .classic-count-btn[data-count]')){
-  const n=level(doc,'classicLevel');putCups(doc,button,officialMultiplicationCups(rewards,'classic',n));
- }
+ // Un seul trophée de maîtrise pour les trois séries : la carte Calculs,
+ // plutôt que trois coupes trompeuses à l'intérieur des boutons 4/10/20.
+ doc.querySelectorAll('#menuScreen .classic-count-btn[data-count] .'+CUPS).forEach(x=>x.remove());
+ const classicCard=doc.querySelector('#menuScreen .mode-card.classic');
+ putCups(doc,classicCard,officialMultiplicationCups(rewards,'classic',level(doc,'classicLevel')));
  putCups(doc,doc.getElementById('startSudden'),
   officialMultiplicationCups(rewards,'sudden',level(doc,'suddenLevel')));
  for(const card of doc.querySelectorAll('#hardMenu .hard-level-card')){
@@ -167,6 +187,40 @@ function renderCups(doc,rewards){
   const button=card.querySelector('.hard-sudden:not(.mathas-multi-hard-three-lives):not(:disabled)');
   if(button)putCups(doc,button,officialMultiplicationCups(rewards,'hard-sudden',n));
  }
+}
+function polishSurvivalMenu(doc){
+ const card=doc.querySelector('#menuScreen .mode-card.sudden');
+ if(!card)return;
+ const title=card.querySelector('.mode-title');
+ if(title&&title.textContent!=='Objectif record')title.textContent='Objectif record';
+ const icon=card.querySelector('.mode-icon');
+ if(icon&&icon.textContent!=='👑')icon.textContent='👑';
+ const description=card.querySelector('.mode-description');
+ if(description&&description.textContent!=='Pour marquer un plus gros score !')
+  description.textContent='Pour marquer un plus gros score !';
+ const lives=doc.getElementById('mathasMultiThreeLives');
+ const sudden=doc.getElementById('startSudden');
+ // Les scripts natifs peuvent réécrire textContent lorsqu'un mode est débloqué.
+ // Restituer l'habillage sans supprimer les coupes et les badges XP officiels.
+ function label(button,emoji,name,aria){
+  if(!button)return;
+  const rendered=button.querySelector(':scope > .mathas-multi-choice-name');
+  if(rendered?.textContent===name)return;
+  const extras=[...button.children].filter(x=>x.classList.contains(BADGE)||x.classList.contains(CUPS));
+  const symbol=doc.createElement('span');
+  symbol.className='mathas-multi-choice-icon';symbol.textContent=emoji;
+  const text=doc.createElement('strong');
+  text.className='mathas-multi-choice-name';text.textContent=name;
+  button.replaceChildren(symbol,text,...extras);
+  button.setAttribute('aria-label',aria);
+ }
+ label(lives,'❤️ ❤️ ❤️','3 vies','Mode 3 vies');
+ label(sudden,'💀','Mort subite','Mode Mort subite');
+ let note=card.querySelector(':scope > .mathas-multi-unlock-note');
+ if(!note){note=doc.createElement('div');note.className='mathas-multi-unlock-note';card.append(note)}
+ const locked=!!(lives?.disabled||sudden?.disabled);
+ const detail=locked?'🔒 Réussis 8/10 ou 16/20 au niveau choisi pour débloquer ces modes.':'Deux moyens de battre ton record !';
+ if(note.textContent!==detail)note.textContent=detail;
 }
 function instruction(doc,enabled){
  const root=doc.getElementById('instructionText');
@@ -182,6 +236,7 @@ export function installMultiplicationSchoolUi(doc,{connected=false,xp=null,rewar
  const home=doc?.getElementById?.('tensFirstToggle');
  if(!home||!doc.querySelector('#menuScreen'))return false;
  ensureStyle(doc);
+ polishSurvivalMenu(doc);
  const sync=()=>{
   doc.querySelectorAll('.'+TOGGLE+' input').forEach(x=>{x.checked=!!home.checked});
   updateMultiplicationAmber(doc,home.checked);
