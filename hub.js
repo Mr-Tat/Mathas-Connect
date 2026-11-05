@@ -76,7 +76,7 @@ function card(app) {
   // silencieusement un 4/4 sans preuve et sans XP. Le mode Classique reste libre.
   if(schoolMultiplication && !inFreeMode() && target.origin===location.origin)
     target.searchParams.set('requireConnect','1');
-   if (playingAsTeacher && ['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
+   if (playingAsTeacher && !allMode && ['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
   node.href = target.href;
   if(testSlug)node.dataset.labSchool=testSlug;
   else node.dataset.appKey=app.app_key;
@@ -421,7 +421,7 @@ function drawIdentity(profile) {
   action.textContent = authorized ? '⚙ Mon profil' : 'Se connecter';
   // Le lien fonctionne nativement, sans attendre Supabase et même si le script échoue.
   if (authorized) action.removeAttribute('href');
-  else action.setAttribute('href', classId ? loginUrl() : './connexion.html');
+  else action.setAttribute('href', allMode?loginUrl(LAB_CLASS,'Classe démo - TEST'):(classId ? loginUrl() : './connexion.html'));
   $('identity-extra').hidden = true;
   $('mode-toggle').textContent=playingAsTeacher?'Retour à l’espace professeur':'Se déconnecter';
   action.onclick = event => {
