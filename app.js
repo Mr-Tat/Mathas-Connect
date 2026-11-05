@@ -984,7 +984,7 @@ async function loadTeacherAppPreview(){
    const saveOrder=async()=>{const n=Number(allOrder.value);if(!Number.isInteger(n)||n<0||n>100000){info('Ordre Toutes invalide',true);return}if(await saveAll(app,n,allSettings.get(app.app_key)?.stage||allConfig.stage,[allOrder,allOk])){allOrder.classList.remove('dirty');allOk.classList.remove('dirty')}};
    allOrder.oninput=()=>{allOrder.classList.add('dirty');allOk.classList.add('dirty')};allOrder.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();saveOrder()}};allOk.onclick=saveOrder;allOrderCell.append(allOrder,allOk);tr.append(allOrderCell);
    const stageCell=document.createElement('td'),stageSelect=document.createElement('select');stageSelect.className='teacher-matrix-select';stageSelect.setAttribute('aria-label','État — '+app.title);
-   stageSelect.add(new Option('En test','test'),new Option('Publié','published'));stageSelect.value=allConfig.stage;
+   stageSelect.add(new Option('En test','test'),new Option('Validée (suivi)','published'));stageSelect.value=allConfig.stage;
    stageSelect.title='Étiquette de suivi uniquement : la visibilité dans chaque classe se règle séparément.';
    stageSelect.onchange=async()=>{const previous=allSettings.get(app.app_key)?.stage||allConfig.stage;if(!await saveAll(app,Number(allSettings.get(app.app_key)?.all_order??allConfig.all_order),stageSelect.value,[stageSelect]))stageSelect.value=previous};
    const labLabel=document.createElement('label'),labBox=document.createElement('input');
