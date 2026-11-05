@@ -26,6 +26,7 @@ jobs:
       - name: Contrats mathématiques et reprises
         run: node --test tests/soustraction-certified-client.test.mjs
       - name: Moteur autonome libre préservé
-        run: node --test --test-name-pattern='Chromium réel : lanceur libre' tests/soustraction-browser.browser.mjs
+        run: |
+          node --test --test-name-pattern='Chromium réel : lanceur libre' tests/soustraction-browser.browser.mjs
       - name: Vrais clics, défi certifié, XP et consentement (réseau simulé)
         run: node --test tests/soustraction-certified.browser.mjs
