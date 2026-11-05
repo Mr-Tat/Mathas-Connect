@@ -52,15 +52,27 @@ export function subtractionEndState(mode,answers,questions){
  return {correct,errors,complete:answers.length===questions.length||errors>=lives,
   livesLeft:Number.isFinite(lives)?Math.max(0,lives-errors):null};
 }
-export function subtractionTranscriptStore(storage,studentId,classId,mode,level,method){
- const key='mathas.sub-certified.'+[studentId,classId,mode,level,method].join('.')+'.v1';
+export function subtractionTranscriptStore(storage,studentId,classId,mode,level,method,total=null){
+ const base='mathas.sub-certified.'+[studentId,classId,mode,level,method].join('.');
+ const legacyKey=base+'v1';
+ const countScoped=mode==='classic'&&COUNTS.includes(total);
+ const key=countScoped?base+'n'+total+'.v1':legacyKey;
+ function legacy(){
+  if(!countScoped)return null;
+  try{
+   const snapshot=JSON.parse(storage.getItem(legacyKey)||'null');
+   return snapshot?.total===total?snapshot:null;
+  }catch{return null}
+ }
  return Object.freeze({
   read(){
    try{
-    const value=JSON.parse(storage.getItem(key)||'null');
+    const raw=storage.getItem(key);
+    const value=raw?JSON.parse(raw):legacy();
     if(!value||!UUID.test(value.sessionId)||!Array.isArray(value.answers)
       ||Date.parse(value.expiresAt)<=Date.now()||value.method!==method
-      ||value.mode!==mode||value.level!==level)return null;
+      ||value.mode!==mode||value.level!==level
+      ||countScoped&&value.total!==total)return null;
     return value;
    }catch{return null}
   },
@@ -68,7 +80,11 @@ export function subtractionTranscriptStore(storage,studentId,classId,mode,level,
    try{storage.setItem(key,JSON.stringify(run));return true}catch{return false}
   },
   clear(){
-   try{storage.removeItem(key);return true}catch{return false}
+   try{
+    storage.removeItem(key);
+    if(countScoped&&legacy())storage.removeItem(legacyKey);
+    return true;
+   }catch{return false}
   }
  });
 }
@@ -249,7 +265,7 @@ export function createCertifiedSubtraction({
    ||![1,2,3].includes(level)||!['addBottom','takeTop'].includes(method)
    ||mode==='classic'&&!COUNTS.includes(total))return false;
   const ctx=getContext();
-  store=subtractionTranscriptStore(storage,ctx.studentId,ctx.classId,mode,level,method);
+  store=subtractionTranscriptStore(storage,ctx.studentId,ctx.classId,mode,level,method,total);
   root.hidden=false;
   build({title:'Chargement du défi certifié',meta:'Soustraction · Niveau '+level});
   const prior=store.read(),restored=restore(prior,mode,level,method);
