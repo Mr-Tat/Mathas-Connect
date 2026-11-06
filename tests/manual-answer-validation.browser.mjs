@@ -155,6 +155,9 @@ for(const item of games){
    assert.equal(await page.locator('#mathasManualValidationDuringGame-normal').isChecked(),false);
    await startFour(page,item);
    await solve(page,item,0);
+   // Attendre la validation du premier avant d'activer le deuxième.
+   await page.locator('#calculationsPair .calc-box[data-calc="0"].mathas-calc-verified').waitFor({timeout:9000});
+   assert.equal(await page.locator('#calculationsPair .calc-box[data-calc="1"]').evaluate(el=>el.inert),false);
    await solve(page,item,1);
    await page.locator('#primaryBtn').filter({hasText:/Calculs suivants|Passer aux 2 calculs suivants/})
     .waitFor({timeout:9000});
