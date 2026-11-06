@@ -46,6 +46,7 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
 <div id="state" role="alert">Préparation du jeu de démonstration…</div>
 <iframe id="game" title="Essai sur le véritable moteur Addition simple" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
 <script src="./lab-objectif-record-v2.js?v=20261106-certified-grid-v6"></script>
+<script src="../../native-certified-survival-patch.js?v=20261106-native-school-v1"></script>
 <script src="../../native-hub-link.js?v=20261106-xp-single-right-v2"></script>
 <script>
 (async function(){
@@ -345,6 +346,7 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
      "    const r=button.getBoundingClientRect();\n    const top=Math.max(8,Math.ceil(r.bottom+5));\n    const viewport=window.visualViewport?.height??window.innerHeight;\n    const wanted=normalHeight(menu);\n    // Always open BELOW the level button, and scroll internally if needed.\n    const available=Math.max(56,Math.floor(viewport-top-8));\n    const height=Math.min(wanted,available);",
      'menu Niveau : ouvrir sous le sélecteur');
    game=window.MathasLabV2.patch(game,'add');
+   if(hostedByConnect)game=window.MathasCertifiedSurvivalPatch(game,'add');
    frame.srcdoc=game;
    status.remove();
  }catch(error){
