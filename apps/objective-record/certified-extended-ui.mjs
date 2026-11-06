@@ -198,14 +198,30 @@ export function createCertifiedExtendedUI({
   }
   controlsBusy(true);
   try{
-   const received=await call('start-extended-proof-v1',ctx.activeApp,{level,mode});
-   if(seq!==getContext().generation)return;
-   const parsed=parseExtendedChallenge(received,ctx.activeApp,mode,level);
-   if(!parsed||Date.parse(parsed.expiresAt)<=Date.now())throw Error('Défi serveur invalide ou expiré');
+   // Lire la sauvegarde AVANT de demander une nouvelle session. Avant ce
+   // correctif, le serveur émettait une nouvelle session à chaque lancement,
+   // et les réponses locales ne correspondaient donc jamais à son UUID.
    queue=createExtendedQueue({storage:localStorage,studentId:ctx.pupilId,classId:ctx.classId,
     appKey:ctx.activeApp,mode,level});
    if(!queue)throw Error('Sauvegarde locale inaccessible');
    const previous=queue.read();
+   let received=null;
+   if(previous?.sessionId){
+    try{
+     received=await call('resume-extended-proof-v1',ctx.activeApp,{sessionId:previous.sessionId});
+    }catch(e){
+     // Reprendre un défi encore valide est prioritaire. Si le service est
+     // temporairement indisponible, conserver les réponses plutôt que les
+     // écraser avec une nouvelle partie.
+     const known=new Set(['proof_not_found','proof_expired','revision_conflict',
+      'stale_reset_epoch','proof_already_finished']);
+     if(!known.has(e?.message))throw Error('Reprise impossible : les réponses restent sauvegardées. '+e.message);
+    }
+   }
+   if(!received)received=await call('start-extended-proof-v1',ctx.activeApp,{level,mode});
+   if(seq!==getContext().generation)return;
+   const parsed=parseExtendedChallenge(received,ctx.activeApp,mode,level);
+   if(!parsed||Date.parse(parsed.expiresAt)<=Date.now())throw Error('Défi serveur invalide ou expiré');
    run={...parsed,appKey:ctx.activeApp,generation:seq,
      answers:[],finished:false,invalid:false};
    if(previous?.sessionId===parsed.sessionId&&previous.answers.every((x,i)=>
