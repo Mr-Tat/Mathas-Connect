@@ -5,7 +5,7 @@ import {createAtomicTestRecorder,isWritableTestApp} from './atomic-test-recorder
 import {MIXED_TEST_APP,isMixedTestTerminal} from './mixed-test-proof.mjs';
 import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
-import {createCertifiedExtendedUI} from './certified-extended-ui.mjs?v=20261106-native-survival-workspace-v3';
+import {createCertifiedExtendedUI} from './certified-extended-ui.mjs?v=20261106-resumable-survival-v4';
 import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs?v=20261106-survival-40xp-v1';
 import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs?v=20261106-record-80-v1';
 import {createProjectionConsent} from '../../projection-consent.mjs';
@@ -461,7 +461,7 @@ async function choose(){
   // aucune requête de validation XP ni privilège d'enregistrement.
   // Le repli libre est EXPLICITE pour ne jamais faire croire à un crédit Connect.
   if(SERVER_PROOF_ADDITIONS.has(activeApp)){
-   $('gameFrame').src=GAME_URLS[slug][1]+'?connect=1&ui=20261104-three-lives-half-xp-v1';
+   $('gameFrame').src=GAME_URLS[slug][1]+'?connect=1&ui=20261106-resumable-school-v1';
    $('gameFrame').hidden=false;
    $('guest-home').hidden=true; // le bouton HUB existe dans le moteur lui-même
    message('⚠️ Profil Connect indisponible : mode libre sans XP officiel. '+(e?.message||''));
