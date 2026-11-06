@@ -9662,10 +9662,35 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     }
   }
 
+  // Feedback visuel : validation d'un calcul, sans modifier la preuve ni les points.
+  function mathasGateSecondCalc(locked){
+    const box=calculationsPair.querySelector('.calc-box[data-calc="1"]');
+    if(!box)return;
+    box.inert=!!locked;
+    box.classList.toggle('mathas-awaits-first',!!locked);
+  }
+  function mathasShowCalcVerified(i){
+    const box=calculationsPair.querySelector('.calc-box[data-calc="'+i+'"]');
+    if(!box)return;
+    box.classList.add('mathas-calc-verified');
+    if(!document.getElementById('mathas-one-calc-badge-css')){
+      const style=document.createElement('style');style.id='mathas-one-calc-badge-css';
+      style.textContent='.calc-box.mathas-awaits-first{opacity:.58;transition:opacity .18s ease}.calc-box.mathas-calc-verified{opacity:1}.mathas-calc-ok-badge{position:absolute;top:8px;right:9px;z-index:5;display:inline-grid;place-items:center;width:37px;height:37px;box-sizing:border-box;border-radius:50%;background:linear-gradient(150deg,#21ba71,#0e7946);border:3px solid #e9fff2;box-shadow:0 3px 10px #092d2180,0 0 0 2px #51ce90;color:#fff;font:900 26px/1 system-ui;pointer-events:none;animation:mathas-calc-ok-enter .42s cubic-bezier(.2,1.5,.4,1) both}@keyframes mathas-calc-ok-enter{0%{opacity:0;transform:scale(.35) rotate(-22deg)}65%{opacity:1;transform:scale(1.18) rotate(3deg)}100%{transform:scale(1) rotate(0)}}@media(prefers-reduced-motion:reduce){.mathas-calc-ok-badge{animation:none!important}}';
+      document.head.appendChild(style);
+    }
+    if(getComputedStyle(box).position==='static')box.style.position='relative';
+    let badge=box.querySelector('.mathas-calc-ok-badge');
+    if(!badge){
+      badge=document.createElement('span');badge.className='mathas-calc-ok-badge';
+      badge.textContent='✓';badge.setAttribute('aria-label','Calcul correct');
+      badge.setAttribute('role','img');box.appendChild(badge);
+    }
+    if(i===0)mathasGateSecondCalc(false);
+  }
   function makePair(){
     removeCelebrations();resetHintTracker();
     states=[newState(),newState()];phase='answering';active={kind:'answer',calc:0,col:0,replace:false};
-    calculationsPair.innerHTML='';states.forEach((s,i)=>renderCalc(s,i));
+    calculationsPair.innerHTML='';states.forEach((s,i)=>renderCalc(s,i));mathasGateSecondCalc(true);
     setPrimaryActionLabel('Valider');resetBtn.disabled=false;setNumpadDisabled(false);
     hintBtn.classList.remove('hidden');hintBtn.disabled=false;hintBtn.textContent=session.mode==='training'?'🧭 Guide':'💡 Indice';
     setFeedback('','');updateBar();focusInput(0,0)
@@ -9852,7 +9877,8 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     clearTimeout(mathasAutoNormalTimer);
     mathasAutoNormalTimer=setTimeout(()=>{
       if(window.__mathasManualValidation||phase!=='answering'||states!==work)return;
-      if(states.every((s,i)=>s.solved||[...opFor(i).querySelectorAll("input.answer-input, input.adjust-input:not(.hidden-adjust)")].filter(x=>!x.disabled).every(x=>x.value!=="")))handlePrimary();
+      const complete=i=>[...opFor(i).querySelectorAll("input.answer-input, input.adjust-input:not(.hidden-adjust)")].filter(x=>!x.disabled).every(x=>x.value!=="");
+      if((!states[0].solved&&complete(0))||(states[0].solved&&!states[1].solved&&complete(1)))handlePrimary();
     },100);
   }
   function setDigit(i,col,digit){
@@ -9864,7 +9890,7 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
       if(window.__mathasManualValidation){
         setFeedback('Calcul 1 rempli. Vérifie tes réponses puis clique sur Valider pour passer au calcul 2.','info');
         primaryBtn.focus();
-      }else focusInput(1,0);
+      }else{setFeedback('Calcul 1 terminé : vérification automatique en cours…','info');inp.blur()}
     }else inp.blur()
     mathasScheduleNormal();
   }
@@ -10376,7 +10402,7 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
 
   function lockCalc(i){
     states[i].solved=true;
-    opFor(i).querySelectorAll('input,button').forEach(x=>x.disabled=true)
+    opFor(i).querySelectorAll('input,button').forEach(x=>x.disabled=true);mathasShowCalcVerified(i)
   }
 
   function status(i,text,type){
@@ -10414,7 +10440,7 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
 
     // Le calcul 2 n'est corrigé que lorsque les deux calculs sont terminés
     // (ou lorsque le calcul 1 a déjà été validé auparavant).
-    if(secondReady&&bothFinished&&(!window.__mathasManualValidation||states[0].solved))candidates.push(1)
+    if(secondReady&&states[0].solved)candidates.push(1)
 
     // Un calcul terminé peut être vérifié sans obliger l'élève à finir l'autre.
     if(!candidates.length){
