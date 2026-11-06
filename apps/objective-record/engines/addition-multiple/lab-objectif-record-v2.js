@@ -276,7 +276,7 @@ function patch(game,kind){
       "  try{school=new URL(window.parent.location.href).searchParams.get('connect')==='1'}catch{}",
       "  if(school){",
       "    let official=null;try{official=window.parent.parent.MathasConnectOfficialTrophies}catch{}",
-      "    if(official?.active===true&&official.appKey==='"+officialApp+"'&&official.rewards?.version===3)return official.rewards;",
+      "    if(official?.active===true&&official.appKey==='"+officialApp+"'&&official.rewards?.version===3)return JSON.parse(JSON.stringify(official.rewards));",
       "    return freshTrophies();",
       "  }"
     ].join('\n')+'\n';
