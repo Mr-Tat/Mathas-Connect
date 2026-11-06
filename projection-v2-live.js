@@ -365,7 +365,7 @@ function exploit(type,message,appTitle=null){
   const name=document.createElement('strong');name.className='event-student';
   name.textContent=message.slice(0,split);
   const action=document.createElement('strong');action.className='event-action';
-  action.textContent=message.slice(split).trimStart();
+  action.textContent=message.slice(split);
   text.append(name,action);
  }else{
   const fallback=document.createElement('span');fallback.className='event-action';
