@@ -607,10 +607,24 @@ for(const item of examples){
      return win.__mathasServerCertifiedExtended?.index>=expected;
     },i+1,{timeout:5000});
    }
-   await page.waitForFunction(()=>{
-    const doc=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
-    return !!doc?.getElementById('mathas-certified-survival-screen');
-   },null,{timeout:15000});
+   try{
+    await page.waitForFunction(()=>{
+     const doc=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+     return !!doc?.getElementById('mathas-certified-survival-screen');
+    },null,{timeout:15000});
+   }catch(error){
+    const debug=await page.evaluate(()=>{
+     const inner=document.getElementById('gameFrame')?.contentDocument?.getElementById('game');
+     const doc=inner?.contentDocument,win=inner?.contentWindow;
+     const proof=win?.__mathasServerCertifiedExtended;
+     return {proof,phase:document.getElementById('extended-certified')?.dataset.phase,
+      hostStatus:document.getElementById('status')?.textContent,
+      nativeFeedback:doc?.getElementById('feedback')?.textContent,
+      primary:doc?.getElementById('primaryBtn')?.textContent,
+      statuses:[...doc?.querySelectorAll('#calculationsPair .calc-status')||[]].map(x=>x.textContent)};
+    });
+    throw Error('Certification sans résultat natif : '+JSON.stringify(debug)+' '+error.message);
+   }
    if(item.mode.endsWith('sudden')){
     const before=await page.evaluate(()=>{
      const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;

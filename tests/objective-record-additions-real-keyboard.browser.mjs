@@ -175,6 +175,8 @@ for(const item of examples){
      },PUPIL),'1','préférence conservée uniquement pour ce profil');
     }
     for(let slot=0;slot<2;slot++){
+     // Le moteur verrouille volontairement le second avant la réussite du premier.
+     if(slot===1)await game.locator('#calculationsPair .calc-box[data-calc="0"].mathas-calc-verified').waitFor({state:'attached',timeout:10000});
      const q=item.questions[2*batch+slot],nums=numbers(q);
      const digits=String(nums.reduce((s,n)=>s+n,0)).split('').reverse();
      const overflow=digits.length>item.width;

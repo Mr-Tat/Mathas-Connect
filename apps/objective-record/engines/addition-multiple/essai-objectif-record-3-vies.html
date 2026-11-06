@@ -286,7 +286,7 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
      "        if(evals[i].correct){",
      "          lockCalc(i);status(i,'Correct','ok');session.score++;session.completed++;right++;",
      "        }else{",
-     "          states[i].solved=true;states[i].firstTry=false;session.completed++;lost++;",
+     "          states[i].solved=true;states[i].firstTry=false;session.completed++;lost++;if(i===0)mathasGateSecondCalc(false);",
      "          opFor(i).querySelectorAll('input').forEach(input=>input.disabled=true);",
      "          status(i,'Calcul raté · une vie perdue','bad');loseDemoHeart();",
      "          if(session.hearts===0){endThreeLives();return}",
