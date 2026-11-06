@@ -101,14 +101,15 @@ test('moteur Soustraction : version animée protégée par empreinte Git',async(
  const sha=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
  // Changement pédagogique approuvé du 06/11/2026 : gardes optionnelles
  // de validation manuelle, sans toucher aux animations ni au barème.
- assert.equal(sha,'a61b90f66b27d6967134aede7afbbfc8214dc5da');
+ assert.equal(sha,'b1e0955b4c443648872ab455eee5b13c127801d5');
 });
 
 test('Soustraction : animation forcée sur le jeu et son lanceur (sans toucher aux règles XP)',()=>{
  const launcher=read('../apps/soustraction-simple/index.html');
  assert.match(engine,/const reducedMotion=\(\)=>false;/);
  assert.match(launcher,/const reducedMotion=\(\)=>false;/);
- assert.doesNotMatch(engine,/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{/);
+ // Seul le nouveau badge respecte le mouvement réduit, les animations historiques restent inchangées.
+ assert.match(engine,/mathas-calc-ok-badge/);
  assert.doesNotMatch(launcher,/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{/);
  assert.match(launcher,/const movement=el\.animate\(\[/);
  assert.match(launcher,/await movement\.finished/);
