@@ -40,6 +40,8 @@ for(const item of examples){
   const questions=Array.from({length:120},(_,i)=>({id:'q'+(i+1),op:'add',width,
    addends:Array(terms).fill(number)}));
   const actions=[],errors=[];let recordUnlocked=item.slug!=='addition-simple';
+  let releaseFinish;
+  const finishGate=new Promise(resolve=>{releaseFinish=resolve});
   try{
    browser=await chromium.launch({headless:true,args:['--no-sandbox']});
    const page=await browser.newPage({viewport:{width:1160,height:820}});
@@ -72,6 +74,7 @@ for(const item of examples){
       assert.ok(b.answers.every((a,i)=>a.id==='q'+(i+1)));
       ack={ok:true,proofVerified:true,verifiedScore:0,mode:item.mode,attempted:item.wrong,
        revision:1,resetEpoch:0,xp:{delta:0,appXp:0,total:0,level:1}};
+      if(item.mode.endsWith('sudden'))await finishGate;
      }else throw Error('unexpected extended action '+b.action);
     }else throw Error('unhandled endpoint '+part);
     await r.fulfill({status:200,contentType:'application/json',
@@ -496,6 +499,14 @@ for(const item of examples){
     for(let j=0;j<n;j++)await fields.nth(j).fill('0');
     await page.locator('#extended-verify').click();
     if(i<item.wrong-1)await page.locator('#extended-next').click();
+   }
+   if(item.mode.endsWith('sudden')){
+    await page.waitForFunction(()=>document.getElementById('extended-certified')?.dataset.phase==='saving',
+     null,{timeout:10000});
+    assert.match(await page.locator('#extended-status').textContent(),/confirmation de Connect/);
+    assert.equal(await page.locator('#extended-grid .extended-finished').count(),0,
+     'no certified end screen before server ACK');
+    releaseFinish();
    }
    await page.waitForFunction(()=>document.getElementById('status').textContent.includes('XP officiels'),
     null,{timeout:18000});
