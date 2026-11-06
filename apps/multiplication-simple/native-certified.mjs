@@ -22,6 +22,14 @@ export function createNativeCertifiedMultiplication({
  const same=()=>{const ctx=identity();return run&&ctx?.connected===true
   &&contextKey===ctx.classId+'|'+ctx.studentId};
  const stats=()=>run?multiplicationEndState(run.mode,run.answers,run.questions):null;
+ // Purely visual status: official scores still require the server receipt.
+ const syncSurvivalHud=()=>{
+  const win=getFrame?.()?.contentWindow;
+  if(!win)return;
+  const state=stats();
+  win.__mathasCertifiedSurvivalHud=run?.mode==='three-lives'&&state?.valid
+   ?{mode:'three-lives',remaining:state.lives}:null;
+ };
  const receiver={
   progress:()=>stats(),
   record(answer){
@@ -36,6 +44,7 @@ export function createNativeCertifiedMultiplication({
     return false;
    }
    run.answers=answers;
+   syncSurvivalHud();
    notice.hidden=true;
    if(state.complete){
     bridge()?.completed();
@@ -47,6 +56,7 @@ export function createNativeCertifiedMultiplication({
    if(sending)return;
    if(run&&!stats()?.complete)queue?.clear();
    run=null;queue=null;contextKey=null;
+   syncSurvivalHud();
    show('Exercice quitté : réponses incomplètes abandonnées. Les acquis restent sauvegardés.',true);
   },
   problem:message=>show(message,true)
@@ -66,6 +76,7 @@ export function createNativeCertifiedMultiplication({
     throw Error('Le reçu de preuve ne correspond pas aux premiers essais.');
    saved?.clear();
    run=null;queue=null;contextKey=null;
+   syncSurvivalHud();
    bridge()?.abandonView();
    show('✅ Série certifiée · '+calculated+' réussite(s) · +'+(ack.duplicate?0:ack.xp.delta)+' XP officiels.');
    try{await refresh?.()}catch{show('✅ Série certifiée, mais actualisation des scores indisponible.')}
@@ -118,6 +129,7 @@ export function createNativeCertifiedMultiplication({
     starting=false;return await finish();
    }
    if(!native.launch(run,receiver))throw Error('Le moteur natif n’a pas pu afficher le défi.');
+   syncSurvivalHud();
    notice.hidden=true;
    if(run.answers.length)show('Défi conservé : '+run.answers.length+
       ' premier(s) essai(s) retrouvés · même série serveur.',true);
@@ -125,6 +137,7 @@ export function createNativeCertifiedMultiplication({
   }catch(e){
    show('⚠️ Partie scolaire indisponible : '+(e?.message||'Erreur inconnue'));
    run=null;queue=null;contextKey=null;
+   syncSurvivalHud();
    return false;
   }finally{starting=false}
  }
@@ -133,6 +146,7 @@ export function createNativeCertifiedMultiplication({
   if(run&&!stats()?.complete)queue?.clear();
   bridge()?.abandonView();
   run=null;queue=null;contextKey=null;sending=false;starting=false;notice.hidden=true;
+  syncSurvivalHud();
  }
  return Object.freeze({start,reset,isOpen:()=>!!run,destroy(){reset();notice.remove()}});
 }
