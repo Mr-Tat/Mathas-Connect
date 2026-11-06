@@ -233,7 +233,7 @@ function syncSchoolSurvivalHearts(doc,appKey){
  if(certified?.mode==='three-lives'&&Number.isInteger(certified.remaining))
   count=certified.remaining;
  else if(appKey==='soustraction-ecrite-simple'&&/3 vies/.test(mode)){
-  const match=score.match(/(?:❤|♥)\s*([0-3])/u);
+  const match=score.match(/[❤♥]\uFE0F?\s*([0-3])/u);
   count=match?Number(match[1]):3;
  }
  const active=count!==null&&screen&&!screen.classList.contains('hidden');
