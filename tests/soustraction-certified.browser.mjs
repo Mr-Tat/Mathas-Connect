@@ -157,6 +157,18 @@ async function launchClassic(page,frame,{method='addBottom',count=4,useKeyboard=
  const target=frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"]');
  // La reprise vérifie également le clavier : pas de clic géométrique
  // pendant le re-rendu des boutons, et une activation utilisateur réelle.
+ const geometry=await frame.locator('body').evaluate(()=>{
+  const picker=document.getElementById('classicCountPicker');
+  return [...picker.querySelectorAll('.classic-count-btn[data-count]')].map(btn=>{
+   const r=btn.getBoundingClientRect();
+   const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+   return {count:btn.dataset.count,x:Math.round(r.x),y:Math.round(r.y),
+    w:Math.round(r.width),h:Math.round(r.height),
+    hit:hit?.closest('.classic-count-btn')?.dataset.count||hit?.tagName,
+    display:getComputedStyle(btn).display,active:btn.classList.contains('active')};
+  });
+ });
+ console.log('CERTIFIED CLASSIC GEOMETRY',JSON.stringify(geometry));
  if(useKeyboard)await target.press('Enter');else await target.click();
  console.log('CERTIFIED CLASSIC',JSON.stringify({requested:count,
   clicks:await frame.locator('body').evaluate(()=>window.__mathasClassicClicks)}));
