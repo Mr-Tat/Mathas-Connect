@@ -12,7 +12,7 @@ import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOffici
 import {createProjectionConsent} from '../../projection-consent.mjs?v=20261106-fullscreen-consent-v1';
 import {createSchoolScoreView} from './school-score-view.mjs?v=20261106-fullscreen-share-v3';
 import {installTensFirstDuringGame} from './in-game-tens-first.mjs?v=20261106-manual-validation-per-profile-v2';
-import {installSessionToolbarLayout} from './in-game-session-layout.mjs?v=20261106-session-row-v1';
+import {installSessionToolbarLayout} from './in-game-session-layout.mjs?v=20261106-single-row-large-hearts-v2';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
 
