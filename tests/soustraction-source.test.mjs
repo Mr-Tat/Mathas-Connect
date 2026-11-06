@@ -99,9 +99,9 @@ test('moteur Soustraction : version animée protégée par empreinte Git',async(
  const {readFileSync}=await import('node:fs');
  const bytes=readFileSync(new URL('../apps/soustraction-simple/game-original.html',import.meta.url));
  const sha=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
- // Changement pédagogique approuvé du 06/11/2026 : gardes optionnelles
- // de validation manuelle, sans toucher aux animations ni au barème.
- assert.equal(sha,'d2e77d03819bb77514f0aa061debae2e4f8431c8');
+ // Changement UI approuvé du 06/11/2026 : petite croix après correction,
+ // sans toucher aux animations historiques ni au barème.
+ assert.equal(sha,'806b462de721d25a5cc8a96ef4e1d0230b123c03');
 });
 
 test('Soustraction : animation forcée sur le jeu et son lanceur (sans toucher aux règles XP)',()=>{
