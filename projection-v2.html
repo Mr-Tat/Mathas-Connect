@@ -477,6 +477,30 @@ header.projection-header .header-class{
  .projection-main .right .event-student,
  .projection-main .right .event-action{font-size:19px}
 }
+
+/* Exploits en deux lignes : identité cyan, réussite dorée, application en petit dessous. */
+.projection-main .right .event-text{display:flex;flex-direction:column;gap:3px;min-width:0}
+.projection-main .right .event-student{
+ display:block;font-size:clamp(19px,1.6vw,25px);font-weight:950;line-height:1.14;
+ color:#96eaff;overflow-wrap:anywhere;
+}
+.projection-main .right .event-action{
+ display:block;font-size:clamp(18px,1.45vw,23px);font-weight:900;line-height:1.17;
+ color:#ffe392;overflow-wrap:anywhere;
+}
+.projection-main .right .event-app{
+ display:block;margin-top:4px;font-size:11px;font-weight:650;line-height:1.3;
+ color:var(--v-soft,#c8deed);opacity:.88;
+}
+.projection-main .right .event-description{
+ font-size:13px;color:var(--v-soft,#c8deed);line-height:1.4;
+}
+html[data-proj-da="papier"] .projection-main .right .event-student{color:#09638a}
+html[data-proj-da="papier"] .projection-main .right .event-action{color:#865209}
+@media(max-width:810px){
+ .projection-main .right .event-student{font-size:21px}
+ .projection-main .right .event-action{font-size:19px}
+}
 </style>
 </head>
 <body>
@@ -525,6 +549,6 @@ header.projection-header .header-class{
   <section class="options"><strong>Comparaison avec les autres classes</strong><p class="note">Pour chaque classe, affiche le score de l’application en cours, le pourcentage de réussite, ou les deux.</p><table class="comparison-table"><thead><tr><th>Classe</th><th>Score</th><th>%</th></tr></thead><tbody id="comparison-options"></tbody></table><label><input id="show-teacher" type="checkbox"> Afficher Monsieur T (décoché au lancement)</label></section>
   <div id="reset-confirm" class="options" hidden><strong id="reset-heading">Réinitialiser le score projeté</strong><label>Mot de passe professeur <input id="reset-password" type="password" autocomplete="current-password" maxlength="160" placeholder="Mot de passe"/></label><div class="controls"><button id="reset-apply" type="button">Confirmer uniquement ce score</button><button id="reset-cancel" type="button">Annuler</button></div></div><p class="note">Une réinitialisation n’affecte qu’une application et une classe. Jamais les %, les résultats réels, les XP, les trophées ou les parcours des élèves.</p>
 </dialog>
-<script type="module" src="./projection-v2-live.js?v=20261106-classe-exploits-v1"></script>
+<script type="module" src="./projection-v2-live.js?v=20261106-exploits-brefs-v2"></script>
 </body>
 </html>
