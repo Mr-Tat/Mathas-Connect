@@ -372,6 +372,7 @@ try{
    await frame.locator('#gameScreen').evaluate(screen=>{
     const w=screen.ownerDocument.defaultView;
     w.__mathasCertifiedSurvivalHud={mode:'three-lives',remaining:2};
+    w.dispatchEvent(new w.Event('mathas:survival-lives-updated'));
    });
    await page.waitForTimeout(420);
    const hud=await frame.locator('#threeLivesHud').evaluate(h=>({
