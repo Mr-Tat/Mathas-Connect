@@ -6,6 +6,16 @@
 const ID='mathas-session-toolbar-layout-v1';
 const ADDITIONS=new Set(['addition-ecrite-simple','addition-ecrite-multiple']);
 const CSS=`
+/* The server-certified provisional score is much longer than "Score: 0".
+   Keep every word, but allow two compact lines instead of forcing the grid
+   wider than the 1500px game panel inside a 1920px browser viewport. */
+@media(min-width:1450px){
+ html:not(.mathas-handheld-portrait) #gameScreen .session-bar #sessionScore{
+  box-sizing:border-box!important;min-width:0!important;max-width:206px!important;
+  white-space:normal!important;text-align:center!important;
+  line-height:1.15!important;
+ }
+}
 /* Desktop: one continuous row; the manual checkbox takes the remaining width. */
 @media(min-width:1600px){
  html:not(.mathas-handheld-portrait) #gameScreen .session-bar{
