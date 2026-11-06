@@ -13,6 +13,7 @@ on:
       - 'tests/objective-record-additions-real-keyboard.browser.mjs'
       - 'tests/objective-record-school-additions-keyboard.browser.mjs'
       - 'tests/objective-record-school-extended.browser.mjs'
+      - 'tests/objective-record-postactivity-proof.browser.mjs'
       - 'apps/objective-record/certified-extended*.mjs'
       - 'tests/objective-record-official-addition-trophies.browser.mjs'
       - 'apps/objective-record/mixed-test-proof.mjs'
@@ -37,4 +38,4 @@ jobs:
           # Ubuntu 24.04 contient déjà les bibliothèques nécessaires ; éviter apt/fonts.
           npx playwright install chromium
       - name: Jeu natif, questions serveur et transmission des premiers chiffres/reports
-        run: node --test tests/objective-record-addition-proof.browser.mjs tests/objective-record-multiple-proof.browser.mjs tests/objective-record-additions-proof-only.browser.mjs tests/objective-record-additions-real-keyboard.browser.mjs tests/objective-record-official-addition-trophies.browser.mjs tests/objective-record-mixed-native.browser.mjs tests/objective-record-school-additions-keyboard.browser.mjs tests/objective-record-school-extended.browser.mjs
+        run: node --test tests/objective-record-addition-proof.browser.mjs tests/objective-record-multiple-proof.browser.mjs tests/objective-record-additions-proof-only.browser.mjs tests/objective-record-additions-real-keyboard.browser.mjs tests/objective-record-official-addition-trophies.browser.mjs tests/objective-record-mixed-native.browser.mjs tests/objective-record-school-additions-keyboard.browser.mjs tests/objective-record-school-extended.browser.mjs tests/objective-record-postactivity-proof.browser.mjs
