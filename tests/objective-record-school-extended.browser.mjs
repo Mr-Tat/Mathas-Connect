@@ -191,7 +191,8 @@ for(const item of examples){
     assert.doesNotMatch(layout.profileText,/Connecté ·/,'le nom suffit pour signaler la session');
     assert.equal(layout.xpVisible,true,'bouton XP visible près du profil : '+JSON.stringify(layout));
     assert.equal(layout.xpBesideProfile,true,'bouton XP immédiatement après le profil Connect');
-    assert.equal(layout.xpLabel,'✨ XP à récupérer');
+    assert.match(layout.xpLabel,/✨ \d+ \/ \d+ XP récupérés/);
+    assert.match(layout.xpLabel,/Voir le détail/);
     const [fullscreen,hub,theme]=layout.points;
     assert.ok(hub.left<fullscreen.left,'Retour au HUB à gauche de Plein écran : '+JSON.stringify(layout));
     assert.ok(Math.abs(fullscreen.top-hub.top)<=2,'boutons d origine côte à côte : '+JSON.stringify(layout));
