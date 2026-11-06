@@ -132,7 +132,9 @@ export function createCertifiedSubtraction({
   :getFrame()?.contentWindow?.MathasSubtractionNativeProof||null;
  const live=()=>getContext?.().connected===true;
  function show(message){const el=inner.querySelector('.mathas-sub-status');if(el)el.textContent=message;notify(message)}
- function close(){if(sending||finishing)return;root.hidden=true;inner.replaceChildren();run=null;store=null;nativeRunning=false}
+ function close(){if(sending||finishing)return;
+  if(run&&!subtractionEndState(run.mode,run.answers,run.questions)?.complete)store?.clear();
+  root.hidden=true;inner.replaceChildren();run=null;store=null;nativeRunning=false}
  function node(tag,className,textContent){
   const el=d.createElement(tag);if(className)el.className=className;
   if(textContent!==undefined)el.textContent=textContent;return el;
@@ -192,8 +194,9 @@ export function createCertifiedSubtraction({
   },
   suspended(){
    if(sending||finishing)return;
+   if(run&&!subtractionEndState(run.mode,run.answers,run.questions)?.complete)store?.clear();
    run=null;store=null;nativeRunning=false;
-   notify('Défi conservé : reprends la même série depuis le menu.');
+   notify('Exercice abandonné : réponses incomplètes effacées, anciens acquis conservés.');
   },
   problem(message){notify(message)}
  });
@@ -269,6 +272,7 @@ export function createCertifiedSubtraction({
   root.hidden=false;
   build({title:'Chargement du défi certifié',meta:'Soustraction · Niveau '+level});
   const prior=store.read(),restored=restore(prior,mode,level,method);
+  if(prior&&!restored)store.clear();
   if(restored){
    run=restored;
    if(subtractionEndState(run.mode,run.answers,run.questions)?.complete){void finish();return true}
@@ -290,5 +294,5 @@ export function createCertifiedSubtraction({
    inner.append(button('Retour au menu',close,true));return false;
   }
  }
- return Object.freeze({start,close,isOpen:()=>!root.hidden,destroy(){native()?.abandonView();root.remove();style.remove()}});
+ return Object.freeze({start,close,isOpen:()=>!root.hidden,destroy(){if(run&&!subtractionEndState(run.mode,run.answers,run.questions)?.complete)store?.clear();native()?.abandonView();root.remove();style.remove()}});
 }
