@@ -554,7 +554,7 @@ window.MathasPilotBridge={mode,openTeacherParcours:()=>{
  const points=hardChallenge?0:Math.max(0,Math.round(window.MathasPilotBridge.points(item)));
  const eventId=crypto.randomUUID();
  const body={action:'game-record',classId,appKey:APP,eventId,expectedRevision:revision,expectedResetEpoch:resetEpoch,mode:modeKey,level,score,total:hardChallenge?5:sudden?null:total,points,...(sudden&&!hard?{method:item.method==='takeTop'?'takeTop':'addBottom'}:{})};
- try{const pending=readQueue();pending.push(body);saveQueue(pending);syncWarning='';showSync();consent?.offer(eventId);if(!options.defer){const awards=currentRewards();if(awards?.version===3){body.rewards=awards;saveQueue(pending)}void drain()}return eventId}
+ try{const pending=readQueue();pending.push(body);saveQueue(pending);syncWarning='';showSync();/* Pas de proposition avant validation serveur : le score natif peut être provisoire. */if(!options.defer){const awards=currentRewards();if(awards?.version===3){body.rewards=awards;saveQueue(pending)}void drain()}return eventId}
  catch(error){syncWarning='ATTENTION : sauvegarde locale impossible. Préviens ton professeur.';showSync();console.error('Résultat non mis en attente',error);return null}
 },finalize:eventId=>{
  const pending=readQueue(),event=pending.find(x=>x.eventId===eventId);
