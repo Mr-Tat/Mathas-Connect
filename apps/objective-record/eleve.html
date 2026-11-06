@@ -146,8 +146,10 @@ html.mathas-native-connect-hud #guest-home{display:none!important}
 .extended-digit.extended-indicator{color:#edba76;opacity:.8;font-size:19px}
 .extended-digit.extended-operator{color:#ffe0a6;font-size:30px;font-weight:900}
 .extended-digit.extended-equals{color:#c8f6f0;font-size:24px;font-weight:900}
-.extended-digit.extended-last-addend{
-  border-bottom:3px solid #d1e8f5;min-height:52px;
+.extended-digit.extended-last-addend{min-height:52px}
+.extended-result-bar{
+  grid-column:1/-1;height:3px;margin:2px 0 4px;
+  background:#94a3b8;border-radius:999px;
 }
 .extended-digit-input{
   box-sizing:border-box;width:100%;height:48px;min-width:0;padding:0;
@@ -166,7 +168,7 @@ html.mathas-native-connect-hud #guest-home{display:none!important}
   font-size:clamp(12px,1.5vw,14px);line-height:1.4;text-align:center;
 }
 .extended-keypad{
-  box-sizing:border-box;display:grid;grid-template-columns:repeat(3,minmax(50px,64px));
+  box-sizing:border-box;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
   gap:7px;align-content:center;justify-content:center;
   flex:0 0 220px;width:220px;max-width:100%;
   padding:10px;background:#111b2c;border:1px solid #334155;border-radius:14px;
@@ -208,7 +210,7 @@ html.mathas-native-connect-hud #guest-home{display:none!important}
   .extended-digit-input{height:41px;font-size:22px}
   .extended-digit-input.carry{height:28px;font-size:15px}
   .extended-operations{gap:2px}
-  .extended-keypad{grid-template-columns:repeat(3,minmax(48px,65px));gap:7px}
+  .extended-keypad{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
   .extended-actions button{font-size:12px}
 }
 
@@ -276,4 +278,4 @@ html.mathas-native-connect-hud #guest-home{display:none!important}
 </div>
 </section>
 <iframe id="gameFrame" hidden title="Jeu Objectif record" allow="fullscreen" referrerpolicy="no-referrer"></iframe>
-</main><script type="module" src="./eleve.mjs?v=20261106-one-xp-and-survival-grid-v5"></script></body></html>
+</main><script type="module" src="./eleve.mjs?v=20261106-native-survival-workspace-v6"></script></body></html>
