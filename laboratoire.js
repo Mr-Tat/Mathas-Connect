@@ -1,6 +1,5 @@
 // Laboratoire de test : même backend Connect que les élèves, classe fixe, aucun contournement.
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
-import {objectiveRecordLabPreviews} from './objective-record-lab-previews.mjs';
 import {SCHOOL_RECORD_APPS,SCHOOL_RECORD_LAUNCHER} from './apps/objective-record/release-routing.mjs';
 import {ABAQUE_ONLINE_APP,includeAbaquePilot,mountAbaquePilot} from './apps/GRAN-abaque-m-1/connect/laboratory-pilot.mjs';
 const BASE='https://awmhpfofacaglewammxt.supabase.co';
@@ -89,24 +88,6 @@ function linkFor(app,prof=false){
  }
  return url.href;
 }
-function renderObjectiveRecordPreviews(){
- const list=$('record-previews');list.replaceChildren();
- for(const preview of objectiveRecordLabPreviews){
-   const card=el('article','','profile');
-   const heading=el('strong',preview.title);
-   const warning=el('p','🧪 Essai isolé · XP fictifs · aucun résultat Connect','muted tiny');
-   const actions=el('div','','actions');
-   const open=el('a','Tester la démo','action');
-   open.href=preview.url;open.target='_blank';open.rel='noopener noreferrer';
-   open.onclick=event=>{
-     if(!verified||!consent()){
-       event.preventDefault();
-       display('Confirme d’abord que les profils du laboratoire sont fictifs avant d’ouvrir cet essai.',true);
-     }
-   };
-   actions.append(open);card.append(heading,warning,actions);list.append(card);
- }
-}
 function copy(text){return navigator.clipboard.writeText(text).then(()=>display('Lien copié dans le presse-papiers.'))}
 async function loadTeacher(){
  const scoped=await api('teacher-dashboard',{classId:TEST_CLASS});
@@ -116,7 +97,6 @@ async function loadTeacher(){
  $('class-meta').textContent=(match.name||TEST_LABEL)+' · classe Connect dédiée aux tests';
  $('hub-link').href=new URL(HUB,location.href).href;
  $('lab').hidden=false;
- renderObjectiveRecordPreviews();
  await loadClass(scoped);
  await loadApps();
  await refreshConnectedTestStudent();

@@ -28,7 +28,7 @@ test('catalogue Toutes requires authorized professor and has independent order',
 });
 test('the laboratory preserves demos but no longer displays another online catalog',()=>{
  const html=read('laboratoire.html');
- assert.match(html,/id="record-previews"/);
+ assert.doesNotMatch(html,/id="record-previews"/);
  assert.match(html,/id="apps"[^>]*hidden/);
  assert.match(html,/Ouvrir Tests dans le HUB Toutes/);
 });

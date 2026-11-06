@@ -3,7 +3,6 @@ import {PROFILE_REWARDS,AVATAR_LEVELS,officialInitial,unlockedProfileLevel,avata
 import {createProfileCelebrations} from './profile-celebration.mjs?v=20261104-levels-v2';
 import { classId, classLabel, loginUrl } from './connect-context.js';
 import {rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
-import {objectiveRecordLabPreviews} from './objective-record-lab-previews.mjs';
 import {schoolRecordLaunch,schoolAdditionsLaunch,SCHOOL_RECORD_APPS,SCHOOL_RECORD_LAUNCHER,SCHOOL_CLASS_IDS} from './apps/objective-record/release-routing.mjs';
 
 const url = 'https://awmhpfofacaglewammxt.supabase.co';
@@ -111,23 +110,6 @@ function card(app) {
 }
 
 // Les démos ne reçoivent pas d'app_key Connect : pas de progression ni d'XP simulé dans le HUB.
-function previewCard(preview) {
-  const node = $('appTemplate').content.firstElementChild.cloneNode(true);
-  node.href = preview.url;
-  node.target = '_blank';
-  node.rel = 'noopener noreferrer';
-  node.dataset.labPreview = preview.id;
-  node.querySelector('.app-name').textContent = preview.title;
-  node.querySelector('.app-initial').textContent = '🏆';
-  node.querySelector('.app-scores').textContent = '🧪 Essai isolé · XP fictifs · aucun résultat Connect';
-  return node;
-}
-function labPreviewSection() {
-  return section('record_lab', '🏆 Objectif record — essais',
-    'Versions expérimentales des jeux. Les XP affichés sont fictifs et les parties ne sont pas enregistrées sur Connect.',
-    objectiveRecordLabPreviews, previewCard);
-}
-
 function section(kind, title, description, apps, makeCard=card) {
   const node = $('levelTemplate').content.firstElementChild.cloneNode(true);
   node.querySelector('.level-title').textContent = title;
@@ -167,8 +149,7 @@ async function showCatalog() {
       // Les anciennes versions du HUB voient les cinq raccourcis renvoyés par
       // l'Edge TEST. La nouvelle version utilise sa rubrique statique dédiée,
       // donc retire les doublons sans toucher aux applications officielles.
-      const labDemoKeys=new Set(objectiveRecordLabPreviews.map(p=>'lab-record-'+p.id));
-      apps=data.apps.filter(app=>!labDemoKeys.has(app.app_key));
+      apps=data.apps.filter(app=>!String(app.app_key).startsWith('lab-record-'));
     } else {
     // Petit fichier statique sur GitHub Pages : zéro appel Supabase pour jouer librement.
     const response = await fetch('./hub-catalog.json', { cache: 'no-cache' });
@@ -218,14 +199,14 @@ async function showCatalog() {
       groups[0].classList.remove('collapsed');groups[0].querySelector('.level-toggle').setAttribute('aria-expanded','true');
       $('classLabel').textContent='Toutes les applications · TEST';
       document.querySelector('.daily-section')?.setAttribute('hidden','');
-    }else if(classId===LAB_CLASS)groups.unshift(labPreviewSection());
+    }
 
     $('levels').replaceChildren(...groups);
   } catch {
     $('dailyApps').textContent = allMode?'Catalogue professeur indisponible. Vérifie ta connexion.':classId===LAB_CLASS?'Catalogue Connect du laboratoire indisponible. Aucun jeu Connect affiché.':'Le catalogue est momentanément indisponible.';
     // Même si l'Edge du catalogue tombe, seuls les essais statiques sans compte restent disponibles.
     if(allMode)$('levels').replaceChildren();
-    else if(classId===LAB_CLASS)$('levels').replaceChildren(labPreviewSection());
+
 
   }
 }
