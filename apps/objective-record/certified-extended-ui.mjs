@@ -12,8 +12,107 @@ export function createCertifiedExtendedUI({
  button,modeSelect,levelSelect,frame,root,title,status,grid,
  verifyButton,nextButton,exitButton,getContext,call,refresh,notify,onRecorded=()=>{}
 }){
- let run=null,queue=null,sending=false;
+ let run=null,queue=null,sending=false,native=null;
  let answerFields=[],carryFields=[];
+ const clearNative=()=>{
+  if(!native)return;
+  const {win,doc}=native;
+  doc.getElementById('mathas-certified-survival-screen')?.remove();
+  delete win.__mathasServerCertifiedExtended;
+  delete win.MathasCertifiedExtendedAttempt;
+  native=null;
+ };
+ const nativeMessage=(text,phase)=>{
+  if(!native)return;
+  const {doc}=native;
+  let overlay=doc.getElementById('mathas-certified-survival-screen');
+  if(!overlay){
+   overlay=doc.createElement('section');
+   overlay.id='mathas-certified-survival-screen';
+   overlay.setAttribute('role','dialog');
+   overlay.setAttribute('aria-modal','true');
+   overlay.style.cssText='position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(6,20,34,.94);color:#f5f9ff;font:16px/1.5 system-ui,sans-serif';
+   doc.body.appendChild(overlay);
+  }
+  const panel=doc.createElement('div');
+  panel.style.cssText='width:min(540px,100%);max-height:90vh;overflow:auto;text-align:center;padding:clamp(20px,5vw,36px);background:#16344f;border:2px solid #a7c5d4;border-radius:20px;box-shadow:0 12px 35px #0008';
+  const heading=doc.createElement('h2');
+  heading.textContent=phase==='verified'?'🏆 Résultat officiel Connect':
+   phase==='pending'?'⚠️ Synchronisation en attente':'⏳ Vérification du résultat';
+  heading.style.cssText='margin:0 0 12px;color:#ffe3aa;font-size:clamp(22px,4vw,30px)';
+  const message=doc.createElement('p');message.textContent=text;
+  panel.append(heading,message);
+  if(phase==='pending'||phase==='verified'){
+   const action=doc.createElement('button');
+   action.type='button';
+   action.textContent=phase==='verified'?'Retour au jeu':'↻ Réessayer l’enregistrement';
+   action.style.cssText='margin-top:12px;padding:12px 20px;min-height:48px;border-radius:12px;border:1px solid #e4c17a;background:#a77829;color:#fff;font:800 16px system-ui;cursor:pointer';
+   action.addEventListener('click',()=>{
+    if(phase==='pending'){void finish();return;}
+    const {doc:gameDoc,mode}=native;
+    const back=gameDoc.getElementById(mode.startsWith('hard-')?'hardGameBack':'menuBtn');
+    clearNative();
+    back?.click();
+   });
+   panel.appendChild(action);
+  }
+  overlay.replaceChildren(panel);
+ };
+ const startNativeView=()=>{
+  if(!run||run.answers.length!==0)return false;
+  const iframe=frame.contentDocument?.getElementById('game');
+  const win=iframe?.contentWindow,doc=iframe?.contentDocument;
+  if(!win||!doc||typeof win.MathasLabV2Update!=='function')return false;
+  const hard=run.mode.startsWith('hard-');
+  const nativeMode=hard?run.mode.slice(5):run.mode;
+  let launch=null;
+  if(hard){
+   launch=[...doc.querySelectorAll('#hardMenuScreen .hard-start')]
+    .find(b=>Number(b.dataset.level)===run.level&&b.dataset.mode===nativeMode&&!b.disabled);
+  }else{
+   const sel=doc.getElementById('suddenMaxDigits');
+   const width=run.appKey==='addition-ecrite-simple'?[3,5,7][run.level-1]:[5,6,7][run.level-1];
+   if(!sel||!Array.from(sel.options).some(opt=>opt.value===String(width)))return false;
+   sel.value=String(width);
+   sel.dispatchEvent(new win.Event('change',{bubbles:true}));
+   launch=doc.getElementById(nativeMode==='sudden'?'startSudden':'startThreeLives');
+  }
+  if(!launch||launch.disabled)return false;
+  native={win,doc,mode:run.mode};
+  win.__mathasServerCertifiedExtended={
+   sessionId:run.sessionId,mode:run.mode,level:run.level,width:run.width,
+   questions:run.questions,index:0,finished:false
+  };
+  win.MathasCertifiedExtendedAttempt=raw=>{
+   const current=run;
+   if(!current||!active(current.generation)||current.invalid||current.finished||sending)return;
+   const q=current.questions[current.answers.length];
+   const attempt=normalizeExtendedAttempt(q,raw);
+   const updated=attempt?[...current.answers,attempt]:null;
+   const state=updated?extendedEndState(current.mode,updated,current.questions):null;
+   if(!state?.valid||!queue?.save(current,updated)){
+    current.invalid=true;
+    nativeMessage('Preuve non sauvegardée. Aucun XP ne sera demandé ; reviens au HUB pour recommencer.','pending');
+    info('⚠️ Preuve invalide ou sauvegarde impossible : aucun XP demandé.');
+    return;
+   }
+   current.answers=updated;
+   if(state.complete){
+    current.finished=true;
+    win.__mathasServerCertifiedExtended.finished=true;
+    void finish();
+   }
+  };
+  doc.addEventListener('click',event=>{
+   if(native?.doc!==doc||sending||!run||run.finished)return;
+   if(!event.target?.closest?.('#menuBtn,#hardGameBack,#hardExit'))return;
+   queue?.clear();run=null;queue=null;
+   clearNative();controlsBusy(false);
+  });
+  frame.hidden=false;root.hidden=true;
+  launch.click(); // Synthetic: bypass the trusted user-launch router on purpose.
+  return true;
+ };
  const active=seq=>seq===getContext().generation&&run?.appKey===getContext().activeApp;
  // Une mise à jour du site ou un rechargement ne doit pas interrompre
  // silencieusement une série certifiée. La preuve reste locale tant qu'elle
@@ -35,6 +134,7 @@ export function createCertifiedExtendedUI({
   // sans supprimer une fin complète en attente de synchronisation.
   if(run&&!run.finished)try{queue?.clear()}catch{}
   run=null;queue=null;sending=false;root.hidden=true;
+  clearNative();
   delete root.dataset.mode;delete root.dataset.phase;
   frame.hidden=!frame.getAttribute('src');grid.replaceChildren();
   answerFields=[];carryFields=[];controlsBusy(false);
@@ -156,6 +256,7 @@ export function createCertifiedExtendedUI({
   if(!run||!run.finished||run.invalid||sending||!active(run.generation))return;
   const current=run;sending=true;verifyButton.disabled=true;exitButton.disabled=true;
   root.dataset.phase='saving';
+  if(native)nativeMessage('Tes réponses sont conservées. Le serveur vérifie le résultat et les XP officiels.','saving');
   info('⏳ Enregistrement officiel en cours… Attends la confirmation de Connect.');
   try{
    const ack=await call('finish-extended-proof-v1',current.appKey,
@@ -173,15 +274,19 @@ export function createCertifiedExtendedUI({
    const done='✅ Partie vérifiée par Connect · '+score+' bonnes réponses sur '+n+
     ' · +'+delta+' XP officiels.'+(updated?'':' Profil à actualiser.');
    info(done);
-   title.textContent='🏆 '+EXTENDED_LABELS[current.mode]+' · Résultat certifié';
-   const result=document.createElement('div');
-   result.className='extended-finished';result.textContent=done;
-   grid.replaceChildren(result);
+   if(native)nativeMessage(done,'verified');
+   else{
+    title.textContent='🏆 '+EXTENDED_LABELS[current.mode]+' · Résultat certifié';
+    const result=document.createElement('div');
+    result.className='extended-finished';result.textContent=done;
+    grid.replaceChildren(result);
+   }
    exitButton.disabled=false;exitButton.textContent='Retour au jeu';
    controlsBusy(false);verifyButton.disabled=true;nextButton.hidden=true;
   }catch(e){
    if(active(current.generation)){
     root.dataset.phase='pending';
+    if(native)nativeMessage('Réponses conservées. Réessaie la synchronisation avec Connect.','pending');
     info('⚠️ Réponses conservées ; clique « Actualiser le profil » pour réessayer : '+e.message);
    }
   }finally{sending=false;exitButton.disabled=false}
@@ -249,10 +354,12 @@ export function createCertifiedExtendedUI({
    frame.hidden=true;root.dataset.mode=mode;root.hidden=false;
    const state=extendedEndState(mode,run.answers,run.questions);
    if(state.complete){run.finished=true;info('Reprise de la preuve terminée…');void finish();}
+   else if(!run.answers.length&&startNativeView())return;
    else render();
   }catch(e){
    if(seq===getContext().generation){
     run=null;queue=null;root.hidden=true;frame.hidden=false;
+    clearNative();
     delete root.dataset.mode;delete root.dataset.phase;
     controlsBusy(false);info('⚠️ '+e.message+' · aucun XP demandé.');
    }
@@ -262,6 +369,7 @@ export function createCertifiedExtendedUI({
   if(sending)return;
   if(run&&!run.finished)try{queue?.clear()}catch{}
   run=null;queue=null;root.hidden=true;frame.hidden=false;
+  clearNative();
   delete root.dataset.mode;delete root.dataset.phase;
   controlsBusy(false);verifyButton.disabled=true;nextButton.hidden=true;
   info('Retour au jeu. Exercice abandonné : les réponses non validées sont effacées.');
@@ -277,5 +385,6 @@ export function createCertifiedExtendedUI({
  nextButton.addEventListener('click',()=>{if(run&&!run.finished)render()});
  exitButton.addEventListener('click',exit);
  return Object.freeze({reset,startNative,hasPending:()=>!!run?.finished,
+  onGameEvent:event=>!!native&&event?.mode===native.mode.replace(/^hard-/,'')&&!!event?.hard===native.mode.startsWith('hard-'),
   retry:()=>run?.finished?finish():Promise.resolve()});
 }
