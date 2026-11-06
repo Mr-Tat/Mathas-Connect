@@ -203,6 +203,8 @@ test('Chromium scolaire natif : 4 soustractions, XP, consentement et projection'
   assert.equal(ctx.fixture.received.some(x=>x.action==='game-record'),false);
   assert.equal(ctx.fixture.shared,0);
   await page.locator('.mathas-projection-offer:not([hidden]) button.yes').click({timeout:16000});
+  await page.locator('.mathas-projection-offer:not([hidden])').getByText('Score bien envoyé au tableau').waitFor({timeout:15000});
+  await page.locator('.mathas-projection-offer:not([hidden]) button:not(.yes)').click();
   await page.waitForFunction(()=>document.querySelector('.mathas-projection-offer')?.hidden===true,null,{timeout:15000});
   assert.equal(ctx.fixture.shared,1);
   assert.deepEqual(errors,[]);
@@ -355,6 +357,7 @@ test('Chromium scolaire : aucune barre extérieure et toutes les fonctions dans 
   assert.equal(await frame.locator('#mathas-sous-connect-xp').isVisible(),true);
   await frame.locator('#mathas-sous-connect-xp').click();
   await page.locator('#xp-details:not([hidden])').waitFor({timeout:15000});
+  await page.waitForFunction(()=>document.querySelector('#xp-details')?.textContent?.includes('XP acquis dans ce jeu'),null,{timeout:15000});
   assert.match(await page.locator('#xp-details').textContent(),/XP acquis dans ce jeu/);
  }finally{await ctx.close()}
 });
