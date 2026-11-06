@@ -735,50 +735,19 @@ function openParcoursDialog({scope,studentId=null,studentName='',count=null,appK
  };
  dialog.showModal();check.focus();
 }
-// Gestion légère des multiplicateurs : un appel à l'ouverture et un à l'enregistrement.
+// Résultats reste une consultation : les permissions se gèrent toujours
+// dans le même écran indépendant, même si aucune partie n'a été jouée.
 function multiplierLockPanel(container,studentId=null,appKey='multiplication-ecrite-simple'){
- const details=document.createElement('details');details.className='management';
- const summary=document.createElement('summary');summary.textContent='🔒 Tables obligatoires de multiplication';
- const description=document.createElement('p');description.className='hint';description.textContent='Ces tables sont obligatoires : l’élève ne peut pas les retirer, mais peut ajouter les autres.';
- const scopeLabel=document.createElement('label');scopeLabel.textContent='Appliquer le verrouillage';
- const scope=document.createElement('select');scope.setAttribute('aria-label','Portée du verrouillage');
- scope.add(new Option('Pour cet élève','student'));scope.add(new Option('Pour toute la classe','class'));
- if(!studentId)scope.remove(0);
- scopeLabel.append(scope);
- const area=document.createElement('div');area.className='multiplier-lock-choices';
- const checks=new Map();
- for(let n=2;n<=9;n++){const label=document.createElement('label');const cb=document.createElement('input');cb.type='checkbox';cb.value=String(n);checks.set(n,cb);label.append(cb,document.createTextNode(' '+n));area.append(label)}
- const actions=document.createElement('div');actions.className='multiplier-lock-actions';
- const save=document.createElement('button');save.type='button';save.className='soft';save.textContent='Verrouiller les tables choisies';
- const unlock=document.createElement('button');unlock.type='button';unlock.className='soft';unlock.textContent='Retirer le verrouillage';
- const feedback=document.createElement('p');feedback.className='hint';feedback.setAttribute('role','status');
- actions.append(save,unlock);details.append(summary,description,scopeLabel,area,actions,feedback);container.append(details);
- let locks=[];
- function refreshChoice(){
-  const selectedScope=scope.value==='student'?studentId:'class';
-  const found=locks.find(x=>x.scope_key===selectedScope);
-  const inherited=selectedScope!=='class'?locks.find(x=>x.scope_key==='class'):null;
-  const chosen=found?.multipliers||inherited?.multipliers||[];
-  checks.forEach((cb,n)=>cb.checked=chosen.includes(n));
-  feedback.textContent=found?'Verrouillage actif ('+(selectedScope==='class'?'classe':'élève')+')':inherited?'Tables obligatoires héritées de la classe':'Aucun verrouillage actif';
- }
- async function load(){
-  feedback.textContent='Lecture du réglage…';
-  try{const r=await resultCall('teacher-multipliers-get',{appKey});locks=r.locks||[];refreshChoice()}
-  catch(e){feedback.textContent='Impossible de charger : '+e.message}
- }
- details.addEventListener('toggle',()=>{if(details.open)load()});
- scope.onchange=refreshChoice;
- async function update(values){
-  save.disabled=unlock.disabled=scope.disabled=true;feedback.textContent='Enregistrement…';
-  try{
-   await resultCall('teacher-multipliers-set',{appKey,studentId:scope.value==='student'?studentId:null,multipliers:values});
-   await load();feedback.textContent=values?'Tables obligatoires enregistrées. L’élève peut en ajouter. Application au prochain lancement.':'Verrouillage retiré. Application au prochain lancement.';
-  }catch(e){feedback.textContent='Échec : '+e.message}
-  finally{save.disabled=unlock.disabled=scope.disabled=false}
- }
- save.onclick=()=>{const selected=[...checks].filter(([,cb])=>cb.checked).map(([n])=>n);if(!selected.length){feedback.textContent='Choisis au moins une table obligatoire.';return}update(selected)};
- unlock.onclick=()=>update(null);
+ const link=document.createElement('button');link.type='button';link.className='soft';
+ link.textContent='⚙ Autorisations de multiplication';
+ link.onclick=()=>{
+  const cls=$('class-selector').value;
+  if(cls)$('auth-class').value=cls;
+  $('auth-scope').value=studentId?'student':'class';
+  showTeacherTab('authorizations');
+  void loadAuthorizations(studentId);
+ };
+ container.append(link);
 }
 function addParcoursControls(container,studentId,name,appKey,appName,xpSnapshot=null){
  // Chaque application Connect pourra brancher ici son propre parcours.
@@ -821,7 +790,90 @@ $('results-app').onchange=()=>run(showResults);
 $('results-back').onclick=()=>{$('results-detail').hidden=true;$('results-list').hidden=false};
 
 /* B1 : navigation visuelle professeur (sans changer les API éprouvées). */
-const teacherTabs=['home','apps','other','results','management'];
+
+const authMultipliers=new Map();
+for(let n=2;n<=9;n++){
+ const label=document.createElement('label'),input=document.createElement('input');
+ input.type='checkbox';input.value=String(n);
+ authMultipliers.set(n,input);
+ label.append(input,document.createTextNode(' '+n));
+ $('auth-multipliers').append(label);
+}
+for(const [id,{name}] of Object.entries(CLASS_SPACES))
+ $('auth-class').add(new Option(name,CLASS_SPACES[id].id));
+$('auth-class').add(new Option('Classe TEST',labTestClass));
+let authLocks=[],authAid=[],authLoadSequence=0;
+const authSay=(message)=>{$('auth-feedback').textContent=message};
+const authSelected=()=>$('auth-scope').value==='student' ? $('auth-student').value : 'class';
+function authRender(){
+ const scope=authSelected(),student=scope!=='class';
+ $('auth-student-wrap').hidden=$('auth-scope').value!=='student';
+ const configured=authLocks.find(x=>x.scope_key===scope);
+ const inherited=authLocks.find(x=>x.scope_key==='class');
+ const active=configured??(student?inherited:null);
+ const values=active?.multipliers??[];
+ for(const [n,box] of authMultipliers)box.checked=values.includes(n);
+ $('auth-inheritance').textContent=configured
+  ?'Réglage spécifique '+(student?'de cet élève':'de cette classe')+'. L’élève peut ajouter des multiplicateurs.'
+  :student&&inherited?'Réglage hérité de la classe. Enregistrer créera une exception pour cet élève.'
+  :'Aucun multiplicateur imposé. L’élève peut choisir les tables de 2 à 9.';
+ const aid=authAid.find(x=>x.scope_key===scope)??(student?authAid.find(x=>x.scope_key==='class'):null);
+ document.querySelectorAll('input[name="auth-aid"]').forEach(input=>{input.checked=input.value===(aid?.allowed===false?'deny':'allow')});
+ $('auth-aid-clear').hidden=!student&&!authAid.some(x=>x.scope_key==='class');
+}
+async function loadAuthorizations(requestedStudent=null){
+ const seq=++authLoadSequence;
+ const cls=$('auth-class');if(!cls.value)cls.value=$('class-selector').value||CLASS_SPACES.observation.id;
+ authSay('Chargement des autorisations…');
+ $('auth-student').replaceChildren();
+ try{
+  const classId=cls.value,appKey='multiplication-ecrite-simple';
+  const [dashboard,locks,aid]=await Promise.all([
+   call('teacher-dashboard',{classId}),
+   resultCall('teacher-multipliers-get',{classId,appKey}),
+   resultCall('teacher-table-aid-get',{classId,appKey})
+  ]);
+  if(seq!==authLoadSequence||cls.value!==classId)return;
+  authLocks=locks.locks||[];authAid=aid.locks||[];
+  const students=(dashboard.students||[]).slice().sort((a,b)=>String(a.display_name).localeCompare(String(b.display_name),'fr'));
+  for(const student of students)$('auth-student').add(new Option(student.display_name,student.id));
+  if(requestedStudent&&students.some(s=>s.id===requestedStudent))$('auth-student').value=requestedStudent;
+  if($('auth-scope').value==='student'&&!students.length){
+   $('auth-scope').value='class';
+   authSay('Aucun élève dans cette classe. Tu peux déjà préparer ses autorisations.');
+  }else authSay('Réglages chargés · application aux nouvelles parties.');
+  authRender();
+ }catch(error){if(seq!==authLoadSequence)return;authSay('Impossible de charger les autorisations : '+error.message)}
+}
+$('auth-class').onchange=()=>void loadAuthorizations();
+$('auth-scope').onchange=()=>authRender();
+$('auth-student').onchange=()=>authRender();
+async function authSave(action,data){
+ const scope=authSelected(),classId=$('auth-class').value;
+ if($('auth-scope').value==='student'&&!scope){authSay('Sélectionne un élève.');return}
+ const buttons=[...document.querySelectorAll('#teacher-authorizations .authorization-actions button')];
+ buttons.forEach(b=>b.disabled=true);authSay('Enregistrement…');
+ try{
+  await resultCall(action,{classId,appKey:'multiplication-ecrite-simple',
+    studentId:scope==='class'?null:scope,...data});
+  await loadAuthorizations(scope==='class'?null:scope);
+  authSay('Enregistré. Les réglages seront appliqués au prochain lancement Connect.');
+ }catch(error){authSay('Échec de l’enregistrement : '+error.message)}
+ finally{buttons.forEach(b=>b.disabled=false)}
+}
+$('auth-multipliers-save').onclick=()=>{
+ const vals=[...authMultipliers].filter(([,v])=>v.checked).map(([n])=>n);
+ if(!vals.length){authSay('Coche au moins une table, ou choisis « Supprimer ce réglage ».');return}
+ void authSave('teacher-multipliers-set',{multipliers:vals});
+};
+$('auth-multipliers-clear').onclick=()=>void authSave('teacher-multipliers-set',{multipliers:null});
+$('auth-aid-save').onclick=()=>{
+ const allow=document.querySelector('input[name="auth-aid"]:checked')?.value!=='deny';
+ void authSave('teacher-table-aid-set',{allowed:allow});
+};
+$('auth-aid-clear').onclick=()=>void authSave('teacher-table-aid-set',{allowed:null});
+
+const teacherTabs=['home','apps','authorizations','results','management'];
 function showTeacherTab(tab){
  const selected=teacherTabs.includes(tab)?tab:'home';
  for(const t of teacherTabs){
@@ -829,6 +881,7 @@ function showTeacherTab(tab){
   if(node)node.hidden=t!==selected;
  }
  if(selected==='apps')loadTeacherAppPreview();
+ if(selected==='authorizations')void loadAuthorizations();
  if(selected==='management'&&!busy)run(refresh);
  if(selected==='home'&&!busy)run(refreshGlobalRequests);
  if(selected==='results' && !currentTeacherSpace)run(showResults);

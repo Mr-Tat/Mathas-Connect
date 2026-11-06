@@ -12,7 +12,7 @@ const teacherPlayer=query.get('joueur')==='prof';
 // Les lancements depuis « Tests en ligne » ne sont PAS des démos sans XP.
 const requireConnect=query.get('requireConnect')==='1';
 const isTestClass=classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
-const free=!teacherPlayer&&!requireConnect&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,multiplierLock=null,studentName='',connectionCheckRequired=false;
+const free=!teacherPlayer&&!requireConnect&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,multiplierLock=null,tableAidAllowed=true,studentName='',connectionCheckRequired=false;
 const status=s=>document.getElementById('message').textContent=s;
 const originalPromise=fetch('./game-original.html').then(r=>{if(!r.ok)throw Error('Copie du jeu non disponible');return r.text()});
 // Un visiteur sans profil approuvé ouvre directement le jeu classique.
@@ -33,7 +33,7 @@ try{
    const r=await statePromise;
    const x=await r.json().catch(()=>({}));
    if(r.ok&&x.ok){
-    mode='connected';revision=x.revision;resetEpoch=x.resetEpoch??0;initial=x.state;multiplierLock=Array.isArray(x.multiplierLock)?x.multiplierLock:null;cloud=sb;
+    mode='connected';revision=x.revision;resetEpoch=x.resetEpoch??0;initial=x.state;multiplierLock=Array.isArray(x.multiplierLock)?x.multiplierLock:null;tableAidAllowed=x.tableAidAllowed!==false;cloud=sb;
     try{
       const profile=await profilePromise;
       if(profile?.ok&&profile.status==='approved'&&profile.classId===classId&&typeof profile.displayName==='string')
@@ -140,7 +140,7 @@ function currentRewards(){
 }
 
 // Injecte uniquement la configuration de verrouillage, sans modifier le placement des outils.
-const multiplierBootstrap='<script>window.__mathasMultiplierLock='+JSON.stringify(multiplierLock)+';<'+'/script>';
+const multiplierBootstrap='<script>window.__mathasMultiplierLock='+JSON.stringify(multiplierLock)+';window.__mathasTablesAidAllowed='+JSON.stringify(tableAidAllowed)+';<'+'/script>';
 const bridge=`<script>
 (function(){
  const pilot=window.parent.MathasPilotBridge; if(!pilot)return;

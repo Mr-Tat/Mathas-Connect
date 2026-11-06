@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="./style.css?v=20261102-connect-3d-svg-v1">
   <link rel="preconnect" href="https://esm.sh" crossorigin>
   <link rel="preconnect" href="https://awmhpfofacaglewammxt.supabase.co" crossorigin>
-  <script type="module" src="./app.js?v=20261105-toutes-auth-v1"></script>
+  <script type="module" src="./app.js?v=20261106-authorizations-v1"></script>
 <link rel="stylesheet" href="./join-avatar.css?v=20261103-cadres-v4">
 <link rel="stylesheet" href="./student-entry-dark.css?v=20261026go2">
 <script type="module" src="./join-avatar.js?v=20261103-profile-rewards-v1"></script>
@@ -103,7 +103,7 @@
         </div>
         <nav class="teacher-shortcuts" aria-label="Navigation professeur">
           <button type="button" data-teacher-tab="apps">Applis</button>
-          <button type="button" data-teacher-tab="other">Autres</button>
+          <button type="button" data-teacher-tab="authorizations">Autorisations</button>
           <a class="teacher-shortcut-all" id="teacher-all" href="./hub.html?toutes=1&amp;joueur=prof&amp;class=4bf3400d-a315-4ea4-a2f3-afaca24dc9b9&amp;name=Toutes" target="_blank" rel="noopener noreferrer">Toutes</a>
           <button type="button" data-teacher-tab="management">Gestion</button>
         </nav>
@@ -116,9 +116,32 @@
         <div class="teacher-section-heading"><h2>Applications · GLOBAL</h2><button type="button" class="teacher-quiet" data-teacher-tab="home">← Accueil</button></div>
         <p class="teacher-context">Pour publier une application, coche « Visible » dans la colonne de chaque classe concernée. Chaque colonne classe garde sa visibilité et sa rubrique. La colonne « Toutes » classe indépendamment chaque application, avec « Tests » en premier. Enregistrement automatique.</p><p id="teacher-app-feedback" class="teacher-matrix-feedback" role="status" aria-live="polite"></p><div class="teacher-app-scroll"><table class="teacher-app-table"><thead><tr><th>Application</th><th>Observation <button type="button" data-matrix-clear-day="observation" class="teacher-matrix-clear">Vider « Du jour »</button></th><th>Phase 1 <button type="button" data-matrix-clear-day="phase1" class="teacher-matrix-clear">Vider « Du jour »</button></th><th>Phase 2 A <button type="button" data-matrix-clear-day="phase2" class="teacher-matrix-clear">Vider « Du jour »</button></th><th>Phase 2 B <button type="button" data-matrix-clear-day="phase2b" class="teacher-matrix-clear">Vider « Du jour »</button></th><th>2 ECO <button type="button" data-matrix-clear-day="2eco" class="teacher-matrix-clear">Vider « Du jour »</button></th><th>Partout</th><th>Section Toutes</th><th>Ordre</th><th>Ordre Toutes</th><th>Position</th></tr></thead><tbody id="teacher-app-tbody"><tr><td colspan="11">Chargement…</td></tr></tbody></table></div>
       </div>
-      <div class="teacher-section" id="teacher-other" hidden>
-        <div class="teacher-section-heading"><h2>Autres</h2><button type="button" class="teacher-quiet" data-teacher-tab="home">← Accueil</button></div>
-        <p class="teacher-context">Les pages spéciales de l’ancien Math’as seront adaptées à Connect, sans réutiliser sa base de données.</p>
+      <div class="teacher-section" id="teacher-authorizations" hidden>
+        <div class="teacher-section-heading"><h2>Autorisations des applications</h2><button type="button" class="teacher-quiet" data-teacher-tab="home">← Accueil</button></div>
+        <p class="teacher-context">Prépare les réglages même avant le premier résultat. La classe définit les valeurs générales ; une exception pour un élève les remplace. Les résultats et les XP restent indépendants.</p>
+        <div class="authorization-card">
+          <div class="authorization-fields">
+            <label for="auth-app">Application<select id="auth-app"><option value="multiplication-ecrite-simple">Multiplication écrite</option></select></label>
+            <label for="auth-class">Classe<select id="auth-class"></select></label>
+            <label for="auth-scope">Appliquer à<select id="auth-scope"><option value="class">Toute la classe</option><option value="student">Un élève</option></select></label>
+            <label for="auth-student" id="auth-student-wrap" hidden>Élève<select id="auth-student"></select></label>
+          </div>
+          <div class="authorization-options">
+            <h3>Multiplicateurs obligatoires</h3>
+            <p class="hint">Ces tables sont imposées et ne peuvent pas être retirées par l’élève. Il peut en ajouter d’autres de 2 à 9. Le HARD conserve ses propres règles.</p>
+            <div id="auth-multipliers" class="authorization-multipliers" role="group" aria-label="Multiplicateurs obligatoires"></div>
+            <p id="auth-inheritance" class="hint"></p>
+            <div class="authorization-actions"><button id="auth-multipliers-save" type="button">Enregistrer les multiplicateurs</button><button id="auth-multipliers-clear" type="button" class="soft">Supprimer ce réglage</button></div>
+          </div>
+          <div class="authorization-options">
+            <h3>Aide : afficher les tables de multiplication</h3>
+            <p class="hint">Choisis si l’élève peut ouvrir l’aide affichant les tables pendant un calcul, y compris en HARD.</p>
+            <label class="authorization-radio"><input type="radio" name="auth-aid" value="allow"> Autorisé — l’élève peut afficher les tables</label>
+            <label class="authorization-radio"><input type="radio" name="auth-aid" value="deny"> Interdit — l’aide est inaccessible</label>
+            <div class="authorization-actions"><button id="auth-aid-save" type="button">Enregistrer l’autorisation</button><button id="auth-aid-clear" type="button" class="soft">Reprendre le réglage de la classe</button></div>
+          </div>
+          <p id="auth-feedback" class="teacher-context" role="status" aria-live="polite"></p>
+        </div>
       </div>
       <div class="teacher-section" id="teacher-results" hidden>
         <div class="teacher-section-heading"><h2>Résultats des élèves</h2><button type="button" class="teacher-quiet" data-teacher-tab="home">← Accueil</button></div>

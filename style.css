@@ -583,3 +583,21 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
   .teacher-logo-lockup img.connect-wordmark-3d{width:clamp(88px,27vw,129px)}
   .student-entry-brand img.connect-wordmark-3d{width:clamp(89px,25vw,128px)}
 }
+
+/* Autorisations : interface professeur, indépendante des résultats. */
+#teacher-authorizations .authorization-card{max-width:1050px;display:grid;gap:18px;margin:18px 0}
+#teacher-authorizations .authorization-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+#teacher-authorizations .authorization-fields label{display:grid;gap:7px;font-weight:700;color:#d9edff}
+#teacher-authorizations select{width:100%;min-height:43px;padding:9px;border-radius:9px;background:#edf5ff;color:#112a41}
+#teacher-authorizations .authorization-options{padding:19px;border-radius:14px;border:1px solid #426783;background:#102a40}
+#teacher-authorizations .authorization-options h3{margin:0 0 6px;color:#fff}
+#teacher-authorizations .authorization-multipliers{display:flex;gap:9px;flex-wrap:wrap;margin:16px 0}
+#teacher-authorizations .authorization-multipliers label{min-width:59px;display:flex;gap:7px;justify-content:center;align-items:center;background:#203e55;border:1px solid #6688a4;border-radius:9px;padding:12px 9px;cursor:pointer;font-weight:800}
+#teacher-authorizations .authorization-multipliers label:has(input:checked){background:#175b75;border-color:#7fd7ee}
+#teacher-authorizations input[type=checkbox],#teacher-authorizations input[type=radio]{accent-color:#47bfdb;width:19px;height:19px}
+#teacher-authorizations .authorization-radio{display:flex;gap:9px;align-items:center;padding:7px 0;cursor:pointer}
+#teacher-authorizations .authorization-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+#teacher-authorizations .authorization-actions button{min-height:40px}
+#auth-feedback{min-height:22px}
+
+#teacher-authorizations #auth-student-wrap[hidden]{display:none!important}

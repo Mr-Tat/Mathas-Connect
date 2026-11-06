@@ -6330,8 +6330,13 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
   tablePicker.onchange=renderTable;renderTable();
   function hardTablesActive(){return !!hardSession&&!hardGame.classList.contains('hidden')}
   function syncTablesButtons(){tablesBtn.textContent=tablesOpen?'✖ Masquer les tables':'✖ Afficher les tables de multiplication';if(hardTablesBtn)hardTablesBtn.textContent=tablesOpen?'✖ Masquer les tables':'✖ Afficher les tables'}
-  function openTables(){const inHard=hardTablesActive();if(!inHard&&!session)return;tablesOpen=true;tablePicker.value='';renderTable();if(inHard){hardSession.tablesUsed=true;hardSessionScore?.classList.add('tables-aid-active');hardSessionScore.title='Aide utilisée : tables de multiplication affichées'}else{session.tablesUsed=true;updateBar()}tablesPanel.classList.remove('hidden');tablesPanel.setAttribute('aria-hidden','false');document.body.classList.add('tables-open');syncTablesButtons();requestAnimationFrame(updateScrollArrow)}
+  function openTables(){if(window.__mathasTablesAidAllowed===false)return;const inHard=hardTablesActive();if(!inHard&&!session)return;tablesOpen=true;tablePicker.value='';renderTable();if(inHard){hardSession.tablesUsed=true;hardSessionScore?.classList.add('tables-aid-active');hardSessionScore.title='Aide utilisée : tables de multiplication affichées'}else{session.tablesUsed=true;updateBar()}tablesPanel.classList.remove('hidden');tablesPanel.setAttribute('aria-hidden','false');document.body.classList.add('tables-open');syncTablesButtons();requestAnimationFrame(updateScrollArrow)}
   function closeTables(update=true){tablesOpen=false;tablesPanel.classList.add('hidden');tablesPanel.setAttribute('aria-hidden','true');document.body.classList.remove('tables-open');syncTablesButtons();if(update)requestAnimationFrame(updateScrollArrow)}
+  if(window.__mathasTablesAidAllowed===false){
+   tablesBtn.hidden=true;tablesBtn.style.display='none';
+   if(hardTablesBtn){hardTablesBtn.hidden=true;hardTablesBtn.style.display='none'}
+   closeTables(false);
+  }
   tablesBtn.onclick=()=>tablesOpen?closeTables():openTables();
   if(hardTablesBtn)hardTablesBtn.onclick=()=>tablesOpen?closeTables():openTables();
 
