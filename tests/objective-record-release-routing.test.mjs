@@ -25,7 +25,7 @@ test('school HUB uses guarded links; TEST multiplication uses certified V7 while
  const hub=readFileSync(new URL('../hub.js',import.meta.url),'utf8');
  assert.match(hub,/schoolRecordLaunch\(\{classId,appKey:app\.app_key,legacyUrl:app\.launch_url\}\)/);
  assert.match(hub,/testMultiplication=classId===LAB_CLASS&&app\.app_key==='multiplication-ecrite-simple'/);
- assert.match(hub,/testSlug=classId===LAB_CLASS&&!testMultiplication\?recordSlugByApp\[app\.app_key\]:null/);
+ assert.match(hub,/testSlug=classId===LAB_CLASS&&!testMultiplication&&!testMixed\?recordSlugByApp\[app\.app_key\]:null/);
  assert.match(hub,/testMultiplication\?'\.\/apps\/multiplication-simple\/'/);
  assert.match(hub,/target\.searchParams\.set\('requireConnect','1'\)/);
  assert.match(hub,/testSlug\?SCHOOL_RECORD_LAUNCHER/);

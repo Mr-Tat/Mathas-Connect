@@ -56,7 +56,7 @@ test('official school Multiplication links use certified native launcher, with e
  assert.match(hub,/SCHOOL_CLASS_IDS\.includes\(classId\)&&app\.app_key==='multiplication-ecrite-simple'/);
  assert.match(hub,/schoolMultiplication\?'\.\/apps\/multiplication-simple\/'/);
  assert.match(hub,/schoolMultiplication && !inFreeMode\(\) && target\.origin===location\.origin/);
- assert.match(hub,/if\(testMultiplication && target\.origin===location\.origin\)/);
+ assert.match(hub,/if\(\(testMultiplication\|\|testMixed\) && target\.origin===location\.origin\)/);
  assert.match(hub,/target\.searchParams\.set\('requireConnect','1'\)/);
  assert.match(launcher,/const isTestClass=classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'/);
  assert.match(launcher,/Connexion Connect obligatoire pour les résultats officiels de multiplication/);

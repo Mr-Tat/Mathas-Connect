@@ -78,9 +78,9 @@ test('le LAB et le HUB TEST ouvrent la multiplication V7 certifiée; les autres 
  const release=read('apps/objective-record/release-routing.mjs');
  const home=read('hub.html'),catalog=read('hub-catalog.json');
  assert.match(hub,/testMultiplication=classId===LAB_CLASS&&app\.app_key==='multiplication-ecrite-simple'/);
- assert.match(hub,/testSlug=classId===LAB_CLASS&&!testMultiplication\?recordSlugByApp\[app\.app_key\]:null/);
+ assert.match(hub,/testSlug=classId===LAB_CLASS&&!testMultiplication&&!testMixed\?recordSlugByApp\[app\.app_key\]:null/);
  assert.match(hub,/testMultiplication\?'\.\/apps\/multiplication-simple\/'/);
- assert.match(hub,/if\(testMultiplication && target\.origin===location\.origin\)target\.searchParams\.set\('requireConnect','1'\)/);
+ assert.match(hub,/if\(\(testMultiplication\|\|testMixed\) && target\.origin===location\.origin\)target\.searchParams\.set\('requireConnect','1'\)/);
  assert.match(hub,/if\(testSlug&&!allMode\)node\.dataset\.labSchool=testSlug/);
  assert.match(hub,/SCHOOL_RECORD_LAUNCHER\+'\?app='\+encodeURIComponent\(testSlug\)/);
  assert.doesNotMatch(hub,/essais\/objectif-record-pilote\.html/);
