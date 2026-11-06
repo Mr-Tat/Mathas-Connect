@@ -93,7 +93,15 @@ function apply(state){
    ||(Number.isInteger(classic20)&&classic20>=16&&classic20<=20);
  }
  put('mathas_progression_soustraction_ecrite_v1',progress);
- put('mathas_points_v1_soustraction-ecrite',{version:1,day:new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels'}).format(new Date()),top:[],bestOne:state.bestPoints==null?null:{points:state.bestPoints},bestThree:(state.topThree||[]).map(points=>({points}))});
+ // Le Top du jour vient du meilleur score certifié du jour dans Connect.
+ // Il survit à une fermeture, mais ne se reporte jamais sur le jour suivant.
+ const day=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels'}).format(new Date());
+ const daily=state.todayBest?.day===day&&Number.isSafeInteger(state.todayBest?.points)&&state.todayBest.points>=0
+  ?state.todayBest.points:null;
+ put('mathas_points_v1_soustraction-ecrite',{version:1,day,
+  top:daily===null?[]:[{points:daily,at:day,label:'Meilleur certifié du jour'}],
+  bestOne:state.bestPoints==null?null:{points:state.bestPoints},
+  bestThree:(state.topThree||[]).map(points=>({points}))});
 }
 function clearConnectedScoreCache(){
  for(const name of ['soustraction_classic20_v6','soustraction_sudden_v6','soustraction_hard_sudden_v1','soustraction_hard_three_v1','soustraction_last_work','mathas_progression_soustraction_ecrite_v1','mathas_points_v1_soustraction-ecrite','mathas_recent_two_scores_v1_soustraction-ecrite','mathas_trophies_v3_soustraction-ecrite'])localStorage.removeItem(name);
