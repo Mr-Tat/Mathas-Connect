@@ -360,8 +360,12 @@ try{
      assert.ok(row[key]&&Math.abs(row[key].mid-row.level.mid)<15,
       key+' ne doit pas descendre à la deuxième ligne : '+JSON.stringify(row));
     }
-    assert.ok(row.points&&Math.abs(row.points.mid-row.level.mid)<15,
-     'les points restent sur la première ligne : '+JSON.stringify(row));
+    if(row.points){
+     assert.ok(Math.abs(row.points.mid-row.level.mid)<15,
+      'le compteur de points présent reste sur la première ligne : '+JSON.stringify(row));
+    }else{
+     assert.equal(row.rows,'66px','aucune seconde ligne même si le compteur est temporairement absent');
+    }
     assert.ok(Math.abs(row.manual.width-row.tens.width)<3,
      'les cases de validation et dizaines ont la même largeur : '+JSON.stringify(row));
    }
