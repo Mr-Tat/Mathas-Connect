@@ -79,6 +79,9 @@ export function createCertifiedExtendedUI({
    const padded=s.padStart(columns,' ');
    for(const digit of padded)table.appendChild(makeCell(digit.trim(),lineClass.trim()));
   });
+  // Trait de séparation continu, comme sur les calculs posés du moteur natif.
+  const rule=doc.createElement('div');rule.className='extended-result-bar';
+  rule.setAttribute('aria-hidden','true');table.appendChild(rule);
   table.appendChild(makeCell('=','extended-equals'));
   answerFields=Array(columns).fill(null);
   for(let col=columns-1;col>=0;col--){
