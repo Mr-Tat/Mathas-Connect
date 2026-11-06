@@ -5,7 +5,7 @@ import {createAtomicTestRecorder,isWritableTestApp} from './atomic-test-recorder
 import {MIXED_TEST_APP,isMixedTestTerminal} from './mixed-test-proof.mjs';
 import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
-import {createCertifiedExtendedUI} from './certified-extended-ui.mjs?v=20261106-readable-columns-v2';
+import {createCertifiedExtendedUI} from './certified-extended-ui.mjs?v=20261106-native-survival-workspace-v3';
 import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs?v=20261106-survival-40xp-v1';
 import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs?v=20261106-record-80-v1';
 import {createProjectionConsent} from '../../projection-consent.mjs';
