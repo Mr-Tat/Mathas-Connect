@@ -96,6 +96,7 @@ function revealBar(){
 function closePanels(){
  xpPanel.hidden=true;challengePanel.hidden=true;
  $('xp-toggle').setAttribute('aria-expanded','false');
+ visibleDoc?.getElementById('mathasSchoolConnectXp')?.setAttribute('aria-expanded','false');
  scheduleBar();
 }
 function showConnectedBar(profile){
@@ -253,6 +254,57 @@ function hideFictionalXp(doc){
   doc.head.append(style);
  }
 }
+// Les additions n'utilisent plus la barre Connect visible : un vrai bouton
+// dans l'en-tête du moteur ouvre le relevé officiel déjà existant.
+function mountNativeConnectXp(doc){
+ if(!SERVER_PROOF_ADDITIONS.has(activeApp)||!doc?.head||!pupilId)return;
+ const row=doc.querySelector('.mathas-illustrated-header .mathas-brand-row');
+ if(!row)return;
+ let style=doc.getElementById('mathas-school-xp-access-style');
+ if(!style){
+  style=doc.createElement('style');style.id='mathas-school-xp-access-style';
+  style.textContent=`
+   #mathasSchoolConnectXp{box-sizing:border-box!important;display:inline-flex!important;
+    flex-direction:column!important;align-items:center!important;justify-content:center!important;
+    gap:3px!important;width:177px!important;min-width:177px!important;max-width:177px!important;
+    flex:0 0 177px!important;height:51px!important;min-height:51px!important;max-height:51px!important;
+    margin:0!important;padding:6px 7px!important;border:1px solid #d1a14d!important;
+    border-radius:12px!important;background:linear-gradient(180deg,#856021,#604512)!important;
+    color:#fbe3a1!important;cursor:pointer!important;font:850 11px/1.14 system-ui!important;
+    white-space:nowrap!important;text-align:center!important;
+    box-shadow:inset 0 1px #ffffff40,0 4px 0 #36240d,0 8px 18px #0004!important}
+   #mathasSchoolConnectXp .mathas-school-xp-main{display:block!important;
+    white-space:nowrap!important;font-variant-numeric:tabular-nums!important}
+   #mathasSchoolConnectXp .mathas-school-xp-hint{display:block!important;
+    font:650 9.5px/1.1 system-ui!important;opacity:.75}
+   #mathasSchoolConnectXp:hover{filter:brightness(1.13);transform:translateY(-1px)}
+   #mathasSchoolConnectXp:active{transform:translateY(3px);
+    box-shadow:inset 0 1px 4px #0008,0 1px 0 #36240d!important}
+   @media(max-width:680px){#mathasSchoolConnectXp{width:158px!important;min-width:158px!important;
+    max-width:158px!important;flex-basis:158px!important;font-size:10px!important}
+    #mathasSchoolConnectXp .mathas-school-xp-hint{font-size:9px!important}}
+  `;
+  doc.head.append(style);
+ }
+ let button=doc.getElementById('mathasSchoolConnectXp');
+ if(!button){
+  button=doc.createElement('button');button.type='button';button.id='mathasSchoolConnectXp';
+  button.title='Voir les XP acquis et les récompenses encore disponibles';
+  const main=doc.createElement('span');main.className='mathas-school-xp-main';
+  const hint=doc.createElement('span');hint.className='mathas-school-xp-hint';hint.textContent='Voir le détail ›';
+  button.append(main,hint);
+  button.addEventListener('click',()=>{showXpPanel();button.setAttribute('aria-expanded',String(!xpPanel.hidden))});
+ }
+ if(button.parentElement!==row){
+  row.insertBefore(button,row.querySelector('.app-version-pill'));
+ }
+ const earned=Number(lastOfficialXp?.appXp),max=Number(lastOfficialXp?.max);
+ const valid=lastOfficialXp&&Number.isSafeInteger(earned)&&earned>=0&&Number.isSafeInteger(max)&&max>0;
+ const value=valid?'✨ '+earned+' / '+max+' XP récupérés':'✨ XP à récupérer';
+ const label=button.querySelector('.mathas-school-xp-main');
+ if(label&&label.textContent!==value)label.textContent=value;
+ button.setAttribute('aria-expanded',String(!xpPanel.hidden));
+}
 function watchGame(seq){
  clearInterval(watching);
  watching=setInterval(()=>{
@@ -275,6 +327,7 @@ function watchGame(seq){
    }
    hideFictionalXp(doc);
    renderNativeOfficialXp(doc,activeApp,lastOfficialXp);
+   mountNativeConnectXp(doc);
    schoolScoreView?.mount(doc);
    installTensFirstDuringGame(doc,activeApp);
    if(lastOfficialProgress){
