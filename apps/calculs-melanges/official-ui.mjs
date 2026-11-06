@@ -145,9 +145,9 @@ export function installMixedOfficialUi(doc,{connected=false,returnHref='../../hu
   const available=Number.isFinite(lastSharePoints)?lastSharePoints:Number(recent?.points);
   share.hidden=!(connected&&onShare&&lastShareId&&Number.isSafeInteger(available)&&available>0&&available===displayed);
   const totalXp=Number(currentXp?.total);
-  const level=Number.isFinite(totalXp)&&totalXp>=0
+  const accountLevel=Number.isFinite(totalXp)&&totalXp>=0
    ?(totalXp<300?Math.floor(totalXp/50)+1:Math.floor((totalXp-300)/100)+7):null;
-  connectedLabel.textContent=connected?'● Connecté'+(className?' · '+className:'')+(level!==null?' · Niveau '+level:''):'Mode libre';
+  connectedLabel.textContent=connected?'● Connecté'+(className?' · '+className:'')+(accountLevel!==null?' · Niveau '+accountLevel:''):'Mode libre';
   xpLabel.disabled=!connected;
   xpMain.textContent=connected?'✨ '+scoreNumber(currentXp?.appXp)+' / '+MAX_XP+' XP récupérés':'XP : mode libre';
   renderXpDetails();
