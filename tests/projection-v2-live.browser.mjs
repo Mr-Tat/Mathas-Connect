@@ -430,7 +430,7 @@ test('V2 — prénom en gras dans les exploits, jeu et texte normal, sans surtit
   assert.ok((await page.locator('#exploits .event').first().getAttribute('title')).includes('gagne un nouveau trophée'),
    'Le détail complet reste consultable');
   assert.deepEqual(results.slice(0,3).map(x=>x.name),['Élève 1','Élève 2','Élève 3']);
-  assert.ok(results.every(x=>x.nameSize>=18&&x.actionSize>=18),'Nom et exploit visibles depuis la classe');
+  assert.ok(results.every(x=>x.nameSize>=16&&x.nameSize<=18&&x.actionSize>=15&&x.actionSize<=17),'Nom et exploit compacts mais lisibles');
   assert.ok(results.every(x=>x.appSize<x.actionSize),'Application discrète');
   assert.ok(results[0].action==='Nouveau trophée !'&&results[1].action==='Série parfaite !',
    'La nature de chaque exploit reste explicite');
