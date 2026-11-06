@@ -194,7 +194,7 @@ Deno.serve(async req=>{
     }
     // SQL revalidates every bound and journal entry, then commits state + XP atomically.
     if(b.schemaVersion!==1||b.points!==0||!valid(b.eventId)||!int(b.expectedRevision,0,1e9)||!int(b.expectedResetEpoch,0,1e9)
-     ||!['classic','sudden','hard'].includes(b.mode)||!int(b.level,1,3)||!int(b.score,0,1000)
+     ||!['classic','sudden','hard','three-lives','hard-three-lives'].includes(b.mode)||!int(b.level,1,3)||!int(b.score,0,1000)
      ||(b.mode==='classic'?(![4,10,20].includes(b.total)||b.score>b.total):b.total!==null)
      ||typeof b.aidUsed!=='boolean'||typeof b.masterMode!=='boolean'
      ||!Array.isArray(b.operationsSelectedAtStart)||!Array.isArray(b.operationsCompleted)||!Array.isArray(b.firstTry)

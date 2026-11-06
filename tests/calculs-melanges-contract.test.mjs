@@ -28,7 +28,7 @@ test('both 4→10→20 and reverse persist three independent records and 150 XP'
   s=applyCompletion(s,event(4));assert.equal(milestones(s).xp,150);
  }
 });
-test('exact deltas, all 27 milestones, 594 cap; no bonus global',()=>{
+test('exact deltas, all 27 milestones, 690 cap; no bonus global',()=>{
  let s=empty(),before=0;
  for(const [total,score,delta] of [[4,4,28],[10,8,38],[10,10,8],[20,16,63],[20,20,13]]){
   const e=event(total,{score,firstTry:Array.from({length:total},(_,i)=>i<score)});s=applyCompletion(s,e);
@@ -38,14 +38,14 @@ test('exact deltas, all 27 milestones, 594 cap; no bonus global',()=>{
   for(const n of [4,10,20])s=applyCompletion(s,event(n,{level}));
   for(const [mode,score] of [['sudden',10],['hard',7]])s=applyCompletion(s,event(score,{level,mode,total:null}));
  }
- assert.equal(MAX_XP,594);assert.equal(milestones(s).xp,594);assert.equal(milestones(s).keys.length,27);
+ assert.equal(MAX_XP,690);assert.equal(milestones(s).xp,690);assert.equal(milestones(s).keys.length,27);
 });
 test('half-rate high record preserves full-rate proof; all-three lucky sudden draw receives both full thresholds',()=>{
  let s=applyCompletion(empty(),event(10,{score:8,firstTry:[true,true,true,true,true,true,true,true,false,false]}));
  s=applyCompletion(s,event(10,{operationsSelectedAtStart:['add','sub'],operationsCompleted:Array(10).fill('add')}));
  assert.equal(s.classic[0][10],10);assert.equal(s.eligible.classic[0][10],8);assert.equal(s.halfEligible.classic[0][10],10);assert.equal(milestones(s).xp,42,'full pass 38 plus new half bonus 4');
  s=applyCompletion(empty(),event(10,{mode:'sudden',total:null,operationsCompleted:[...Array(5).fill('add'),'sub','mul','sub','mul','add']}));
- assert.deepEqual(milestones(s).keys,['sudden:1:10','sudden:1:5']);assert.equal(milestones(s).xp,24);
+ assert.deepEqual(milestones(s).keys,['sudden:1:10','sudden:1:5']);assert.equal(milestones(s).xp,40);
  s=applyCompletion(empty(),event(4,{masterMode:true}));assert.equal(milestones(s).xp,0);
 });
 test('reduced start selections receive their tier, then only the full complement once',()=>{
@@ -73,11 +73,11 @@ test('half classic deltas are integer XP and perfect-series totals remain exactl
 });
 test('half sudden thresholds upgrade independently and never downgrade full rights',()=>{
  let s=applyCompletion(empty(),event(10,{mode:'sudden',total:null,operationsSelectedAtStart:['add','sub'],operationsCompleted:Array(10).fill('add')}));
- assert.equal(milestones(s).xp,12);
- s=applyCompletion(s,event(5,{mode:'sudden',total:null,operationsCompleted:Array(5).fill('add')}));assert.equal(milestones(s).xp,18);
+ assert.equal(milestones(s).xp,20);
+ s=applyCompletion(s,event(5,{mode:'sudden',total:null,operationsCompleted:Array(5).fill('add')}));assert.equal(milestones(s).xp,30);
  s=applyCompletion(s,event(10,{mode:'sudden',total:null,operationsCompleted:Array(10).fill('add')}));assert.equal(milestones(s).xp,24);
 });
-test('restricted normal modes then native all-three HARD remain upgradeable to the full 594 cap',()=>{
+test('restricted normal modes then native all-three HARD remain upgradeable to the full 690 cap',()=>{
  let s=empty();
  for(let level=1;level<=3;level++){
   for(const total of [4,10,20])s=applyCompletion(s,event(total,{level,operationsSelectedAtStart:['add','sub'],operationsCompleted:Array(total).fill('add')}));
@@ -89,7 +89,7 @@ test('restricted normal modes then native all-three HARD remain upgradeable to t
   for(const total of [4,10,20])s=applyCompletion(s,event(total,{level}));
   s=applyCompletion(s,event(10,{level,mode:'sudden',total:null}));
  }
- assert.equal(milestones(s).xp,594);assert.equal(milestones(s).keys.length,27);
+ assert.equal(milestones(s).xp,690);assert.equal(milestones(s).keys.length,27);
  assert.equal(normalizeCompletion(event(7,{mode:'hard',total:null,operationsSelectedAtStart:['add'],operationsCompleted:Array(7).fill('add')})),null);
 });
 test('native hydration chooses one display record while retaining ALL series outside native cache',()=>{
@@ -124,7 +124,7 @@ test('quarter-rate classic rounding and independent 4/10/20 records upgrade cumu
   for(const total of order)s=applyCompletion(s,event(total));assert.equal(milestones(s).xp,150);
  }
 });
-test('all normal quarter proofs then half then full preserve the 594 cap; Master never adds a tier',()=>{
+test('all normal quarter proofs then half then full preserve the 690 cap; Master never adds a tier',()=>{
  let s=empty();
  for(const count of [1,2,3]){
   for(let level=1;level<=3;level++){
@@ -133,7 +133,7 @@ test('all normal quarter proofs then half then full preserve the 594 cap; Master
    s=applyCompletion(s,event(10,{...changes,mode:'sudden',total:null,operationsCompleted:Array(10).fill('add')}));
    s=applyCompletion(s,event(7,{level,mode:'hard',total:null}));
   }
-  assert.equal(milestones(s).xp,[0,204,333,594][count]);
+  assert.equal(milestones(s).xp,[0,264,405,690][count]);
  }
  assert.equal(milestones(s).keys.length,27);
  for(const count of [1,2,3])assert.equal(milestones(applyCompletion(empty(),event(4,{masterMode:true,operationsSelectedAtStart:['add','sub','mul'].slice(0,count),operationsCompleted:Array(4).fill('add')}))).xp,0);
@@ -205,4 +205,27 @@ test('matching numeric revisions alone cannot acknowledge another event/pupil/ap
 
 test('completed corrections stay in the journal while firstTry determines the score',()=>{
  const e=normalizeCompletion(event(10,{score:8,operationsCompleted:[...Array(8).fill('add'),'sub','mul'],firstTry:[...Array(8).fill(true),false,false]}));assert.ok(e);assert.equal(eligible(e),true);assert.equal(milestones(applyCompletion(empty(),e)).xp,38);
+});
+
+test('3 vies : trois erreurs terminales, 20 XP maximum puis complément à 40 en Mort subite',()=>{
+ const proof=(mode,score=10,changes={})=>event(10,{mode,total:null,score,
+  operationsCompleted:Array(score+3).fill('add'),
+  firstTry:[...Array(score).fill(true),false,false,false],...changes});
+ const three=normalizeCompletion(proof('three-lives'));
+ assert.ok(three);
+ assert.equal(normalizeCompletion(proof('three-lives',10,{firstTry:Array(13).fill(true)})),null);
+ assert.equal(normalizeCompletion(proof('three-lives',10,{firstTry:[false,...Array(10).fill(true),false,false]})),null);
+ let state=applyCompletion(empty(),three);
+ assert.equal(state.threeLives[0],10);
+ assert.equal(state.sudden[0],0,'3 vies ne fabrique pas un record Mort subite');
+ assert.equal(milestones(state).xp,20);
+ state=applyCompletion(state,event(10,{mode:'sudden',total:null,operationsCompleted:Array(10).fill('add')}));
+ assert.equal(milestones(state).xp,40);
+ const hard=normalizeCompletion(proof('hard-three-lives',7,{operationsCompleted:Array(10).fill('add'),
+   firstTry:[...Array(7).fill(true),false,false,false]}));
+ assert.ok(hard);
+ state=applyCompletion(state,hard);
+ assert.equal(milestones(state).xp,60,'HARD trois vies rapporte 20 XP séparément');
+ state=applyCompletion(state,event(7,{mode:'hard',total:null}));
+ assert.equal(milestones(state).xp,80);
 });

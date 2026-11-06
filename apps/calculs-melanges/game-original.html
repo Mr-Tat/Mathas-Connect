@@ -3409,6 +3409,15 @@ body.light-mode #hardMenuScreen .hard-welcome-v6 strong {color:#9d3046;}
 @media(max-width:390px){.mathas-platinum-art .mathas-v602-trophy-cup{font-size:82px}}
 @media(max-width:360px){.mathas-platinum-entry .mathas-v602-trophy-cup{font-size:53px}}
 </style>
+<style id="mathas-mixed-connect-survival-pair">
+#menuScreen .mathas-mixed-survival-pair{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;grid-column:1/-1!important;width:100%!important}
+#menuScreen .mathas-mixed-survival-pair>button{grid-column:auto!important;min-width:0!important;width:100%!important;min-height:55px!important;white-space:normal!important;border-radius:12px!important;transition:transform .16s,box-shadow .16s,filter .16s}
+#menuScreen .mathas-mixed-survival-pair>button:not(:disabled):hover{transform:translateY(-2px)!important;filter:brightness(1.12)}
+#menuScreen .mathas-mixed-survival-pair>button:active{transform:translateY(2px)!important}
+#hardMenu .hard-three-lives{border-radius:10px;padding:10px 12px;font-weight:800;background:linear-gradient(180deg,#952d4b,#572139);color:#fff;border:1px solid #c68da1;cursor:pointer}
+#hardMenu .hard-three-lives:disabled{opacity:.4;cursor:not-allowed}
+#hardMenu .hard-three-lives:not(:disabled):hover{filter:brightness(1.13);transform:translateY(-2px)}
+</style>
 </head>
 <body>
 <main class="app">
@@ -3469,7 +3478,7 @@ body.light-mode #hardMenuScreen .hard-welcome-v6 strong {color:#9d3046;}
     <article class="mode-card"><div class="mode-icon">🔢</div><h3 class="mode-title">Calculs</h3><p class="mode-desc">Choisis la longueur de la série.</p><div class="classic-grid"><!-- Mode Exercice guidé volontairement conservé dans le code pour compatibilité/éventuel retour futur.
              Il n’est plus proposé dans l’interface : dans Mélange, l’Indice du mode normal couvre ce besoin. -->
         <button class="launch training" id="trainingBtn" hidden aria-hidden="true" tabindex="-1">Exercice guidé</button><button class="launch c4 countBtn" data-count="4">4 calculs</button><button class="launch c10 countBtn" data-count="10">10 calculs</button><button class="launch c20 countBtn" data-count="20">20 calculs</button></div><div id="classicScores" class="score-memory hidden"></div></article>
-    <article class="mode-card"><div class="mode-icon">💀</div><h3 class="mode-title">Mort subite</h3><p class="mode-desc">Les opérations choisies sont mélangées jusqu’à la première erreur.</p><button id="suddenBtn" class="sudden-btn">Lancer la mort subite</button><div id="suddenScores" class="score-memory hidden"></div></article>
+    <article class="mode-card"><div class="mode-icon">💀</div><h3 class="mode-title">Mort subite</h3><p class="mode-desc">Les opérations choisies sont mélangées jusqu’à la première erreur.</p><div class="mathas-mixed-survival-pair"><button id="mixedThreeLives" class="sudden-btn" type="button">❤️ 3 vies</button><button id="suddenBtn" class="sudden-btn">💀 Mort subite</button></div><div id="suddenScores" class="score-memory hidden"></div></article>
   </div>
   <div id="lastCard" class="last-card hidden"><div class="last-title">Dernier travail</div><div class="last-main"></div><div class="last-sub"></div></div>
 </section>
@@ -3782,16 +3791,41 @@ function lock(s,calc,hard=false){if(!s.solved)window.MathasMixedBridge?.solved(h
 /* normal session */
 function startSession(mode,total=null){
   aidOpen=false;closeAid();
-  session={mode,total,level:settings.level,max:LEVELS[settings.level],score:0,completed:0,ops:[...settings.ops],tablesUsed:false,aidUsed:false};
+  session={mode,total,level:settings.level,max:LEVELS[settings.level],score:0,completed:0,mistakes:0,ops:[...settings.ops],tablesUsed:false,aidUsed:false};
   window.MathasMixedBridge?.begin(session,false);
   $('hintBtn')?.classList.remove('hidden');if($('hintBtn'))$('hintBtn').textContent=mode==='training'?'🧭 Guide':'💡 Indice';
   $('menuScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');makePair()
 }
 function makePair(){document.querySelectorAll('.mathas-hint-overlay').forEach(x=>{if(typeof x._mathasHintCleanup==='function')x._mathasHintCleanup();x.remove()});states=[generate(chosenOp(session.ops),session.max),generate(chosenOp(session.ops),session.max)];phase='answering';active={calc:0,kind:'answer',col:0};$('pair').innerHTML='';states.forEach((s,i)=>renderState(s,i,$('pair'),false));rootFor(1,false).classList.add('waiting');$('primaryBtn').textContent='Valider';setFeedbackText('','');updateBar();updateSecond();focusTarget(nextTarget(states[0],0),false);requestAnimationFrame(updateScrollArrow)}
 function updateSecond(){const b=rootFor(1,false);if(b)b.classList.toggle('waiting',!states[0].solved&&!calcFilled(states[0]));requestAnimationFrame(updateScrollArrow)}
-function validateNormal(){if(phase==='review'){makePair();return}if(phase==='ended'||phase==='finished'){goMenu();return}const ev=states.map(s=>s.solved?{filled:true,correct:true}:evaluate(s));const candidates=[];if(!states[0].solved&&ev[0].filled)candidates.push(0);const both=(states[0].solved||ev[0].filled)&&(states[1].solved||ev[1].filled);if(!states[1].solved&&ev[1].filled&&(states[0].solved||both))candidates.push(1);if(!candidates.length){const i=!states[0].solved?0:1;setFeedbackText(`Termine le calcul ${i+1} avant de le vérifier.`,'info');focusTarget(nextTarget(states[i],i));return}if(session.mode==='sudden'){for(const i of candidates){if(ev[i].correct){lock(states[i],i);session.score++;session.completed++}else{markErrors(states[i],i);endSudden(i);return}}if(states.every(s=>s.solved)){phase='review';$('primaryBtn').textContent='Calculs suivants';setFeedbackText(`Parfait. Score : ${session.score}.`,'ok');celebrate()}else{setFeedbackText('Calcul 1 correct. Continue avec le calcul 2.','ok');focusTarget(nextTarget(states[1],1))}updateBar();return}let wrong=false;for(const i of candidates){if(ev[i].correct){const point=session.mode==='classic'&&states[i].firstTry?1:0;lock(states[i],i);if(session.mode==='classic')session.score+=point;session.completed++}else{markErrors(states[i],i);wrong=true}}updateBar();if(states.every(s=>s.solved)){if(session.mode==='classic'&&session.completed>=session.total)finishClassic();else{phase='review';$('primaryBtn').textContent=session.mode==='training'?'Nouveaux calculs':'Calculs suivants';setFeedbackText('Les deux calculs sont terminés.','ok');celebrate()}}else if(wrong){setFeedbackText('Corrige les cases indiquées.','bad');const i=!states[0].solved?0:1;focusTarget(nextTarget(states[i],i))}else{setFeedbackText('Calcul 1 correct. Continue avec le calcul 2.','ok');focusTarget(nextTarget(states[1],1))}}
-function updateBar(){const ops=session.ops.map(o=>OPINFO[o].symbol).join(' ');$('sessionMode').textContent=session.mode==='training'?`🧭 Exercice guidé · ${ops}`:session.mode==='sudden'?`💀 ${ops}`:`🔢 ${ops}`;$('levelPill').textContent=`Niveau ${session.level}`;if(session.mode==='training'){$('progressPill').textContent=`Calculs ${session.completed+1}–${session.completed+2}`;$('scorePill').textContent='Sans points'}else if(session.mode==='sudden'){$('progressPill').textContent=`Calcul ${session.completed+1}`;$('scorePill').textContent=`Score : ${session.score}`}else{$('progressPill').textContent=`${Math.min(session.completed+1,session.total)}–${Math.min(session.completed+2,session.total)} / ${session.total}`;$('scorePill').textContent=`Score : ${session.score} / ${session.total}`}$('scorePill').classList.toggle('aid-used-score',session.aidUsed)}
+function validateNormal(){if(phase==='review'){makePair();return}if(phase==='ended'||phase==='finished'){goMenu();return}const ev=states.map(s=>s.solved?{filled:true,correct:true}:evaluate(s));const candidates=[];if(!states[0].solved&&ev[0].filled)candidates.push(0);const both=(states[0].solved||ev[0].filled)&&(states[1].solved||ev[1].filled);if(!states[1].solved&&ev[1].filled&&(states[0].solved||both))candidates.push(1);if(!candidates.length){const i=!states[0].solved?0:1;setFeedbackText(`Termine le calcul ${i+1} avant de le vérifier.`,'info');focusTarget(nextTarget(states[i],i));return}if(session.mode==='sudden'||session.mode==='three-lives'){
+ for(const i of candidates){
+  if(ev[i].correct){lock(states[i],i);session.score++;session.completed++}
+  else{
+   markErrors(states[i],i);
+   if(session.mode==='sudden'){endSudden(i);return}
+   window.MathasMixedBridge?.miss(session,states[i]);
+   session.mistakes++;session.completed++;
+   states[i].solved=true;
+   const row=rootFor(i,false);
+   row?.querySelectorAll('input,button.borrow-cell').forEach(el=>el.disabled=true);
+   const status=row?.querySelector('.status');
+   if(status){status.textContent='Erreur · vie perdue';status.className='status bad'}
+   if(session.mistakes>=3){endThreeLives();return}
+  }
+ }
+ if(states.every(s=>s.solved)){
+  phase='review';$('primaryBtn').textContent='Calculs suivants';
+  setFeedbackText(session.mode==='three-lives'?`Score : ${session.score} · ${3-session.mistakes} vie(s) restante(s).`:`Parfait. Score : ${session.score}.`,'ok');
+  celebrate();
+ }else{setFeedbackText('Passe au calcul suivant.','ok');focusTarget(nextTarget(states[1],1))}
+ updateBar();return}let wrong=false;for(const i of candidates){if(ev[i].correct){const point=session.mode==='classic'&&states[i].firstTry?1:0;lock(states[i],i);if(session.mode==='classic')session.score+=point;session.completed++}else{markErrors(states[i],i);wrong=true}}updateBar();if(states.every(s=>s.solved)){if(session.mode==='classic'&&session.completed>=session.total)finishClassic();else{phase='review';$('primaryBtn').textContent=session.mode==='training'?'Nouveaux calculs':'Calculs suivants';setFeedbackText('Les deux calculs sont terminés.','ok');celebrate()}}else if(wrong){setFeedbackText('Corrige les cases indiquées.','bad');const i=!states[0].solved?0:1;focusTarget(nextTarget(states[i],i))}else{setFeedbackText('Calcul 1 correct. Continue avec le calcul 2.','ok');focusTarget(nextTarget(states[1],1))}}
+function updateBar(){const ops=session.ops.map(o=>OPINFO[o].symbol).join(' ');$('sessionMode').textContent=session.mode==='training'?`🧭 Exercice guidé · ${ops}`:session.mode==='sudden'?`💀 ${ops}`:session.mode==='three-lives'?`❤️ ${ops}`:`🔢 ${ops}`;$('levelPill').textContent=`Niveau ${session.level}`;if(session.mode==='training'){$('progressPill').textContent=`Calculs ${session.completed+1}–${session.completed+2}`;$('scorePill').textContent='Sans points'}else if(session.mode==='sudden'||session.mode==='three-lives'){$('progressPill').textContent=`Calcul ${session.completed+1}`;$('scorePill').textContent=`Score : ${session.score}`+(session.mode==='three-lives'?` · ❤️ ${3-session.mistakes}`:'')}else{$('progressPill').textContent=`${Math.min(session.completed+1,session.total)}–${Math.min(session.completed+2,session.total)} / ${session.total}`;$('scorePill').textContent=`Score : ${session.score} / ${session.total}`}$('scorePill').classList.toggle('aid-used-score',session.aidUsed)}
 function finishClassic(){if(phase==='finished')return;window.__progressionUnlockRecord?.(session.level,session.score,session.total);phase='finished';disableNormal();$('primaryBtn').textContent='Retour au menu';setFeedbackText(`Série terminée : ${session.score} / ${session.total}.`,'ok');const rec=saveClassic();saveMathas(session.score,session.total);setLast(`Calculs · Niveau ${session.level}`,`${session.score}/${session.total}`);window.MathasMixedBridge?.finish(session);rec?recordAnim(`${session.score} / ${session.total}`):finishAnim(`${session.score} / ${session.total}`)}
+function endThreeLives(){if(phase==='ended')return;phase='ended';disableNormal();$('primaryBtn').textContent='Retour au menu';
+ const scores=scoreStore('mixcalc_threeLives_v1'),key=String(session.level);
+ if((scores[key]?.score??-1)<session.score){scores[key]={score:session.score,aideVisuelle:!!session.aidUsed};safeSet('mixcalc_threeLives_v1',scores)}
+ saveMathas(session.score,session.completed);setLast(`3 vies · Niveau ${session.level}`,String(session.score));window.MathasMixedBridge?.finish(session);setFeedbackText(`3 vies terminées. Score : ${session.score}.`,'bad');finishAnim(`Score ${session.score}`)}
 function endSudden(i){if(phase==='ended')return;phase='ended';disableNormal();$('primaryBtn').textContent='Retour au menu';const rec=saveSudden();saveMathas(session.score,session.score+1);setLast(`Mort subite · Niveau ${session.level}`,String(session.score));window.MathasMixedBridge?.finish(session);setFeedbackText(`Mort subite terminée. Score : ${session.score}.`,'bad');rec?recordAnim(`Score ${session.score}`):finishAnim(`Score ${session.score}`)}
 function disableNormal(){$('pair').querySelectorAll('input,button.borrow-cell').forEach(x=>x.disabled=true)}
 function saveMathas(score,total){enregistrerResultatMathas(score,total,`Niveau ${session.level}`,session.level,session.aidUsed,session.ops)}
@@ -3800,7 +3834,7 @@ function saveMathas(score,total){enregistrerResultatMathas(score,total,`Niveau $
 function scoreStore(k){return safeGet(k,{})}function classicKey(){return String(session.level)}
 function saveClassic(){const d=scoreStore(STORE.classic),k=classicKey(),old=d[k],cand={score:session.score,total:session.total,aideTables:session.aidUsed,aideVisuelle:session.aidUsed};const oldAid=!!(old?.aideVisuelle??old?.aideTables),candAid=!!cand.aideVisuelle;const oldRate=old&&old.total?old.score/old.total:-1,candRate=cand.total?cand.score/cand.total:0;const better=!old||candRate>oldRate||(candRate===oldRate&&cand.total>old.total)||(candRate===oldRate&&cand.total===old.total&&oldAid&&!candAid);if(better){d[k]=cand;safeSet(STORE.classic,d)}return better}
 function saveSudden(){const d=scoreStore(STORE.sudden),k=String(session.level),old=d[k],cand={score:session.score,aideTables:session.aidUsed,aideVisuelle:session.aidUsed};const oldAid=!!(old?.aideVisuelle??old?.aideTables),candAid=!!cand.aideVisuelle;const better=!old||cand.score>old.score||(cand.score===old.score&&oldAid&&!candAid);if(better){d[k]=cand;safeSet(STORE.sudden,d)}return better}
-function refreshScores(){const c=scoreStore(STORE.classic),s=scoreStore(STORE.sudden),cr=[],sr=[];for(let l=1;l<=3;l++){if(c[l])cr.push(`<div class="score-line"><span>Niveau ${l}</span><strong class="${(c[l].aideVisuelle??c[l].aideTables)?'aid-used-score':''}">${c[l].score}/${c[l].total}</strong></div>`);if(s[l])sr.push(`<div class="score-line"><span>Niveau ${l}</span><strong class="${(s[l].aideVisuelle??s[l].aideTables)?'aid-used-score':''}">${s[l].score}</strong></div>`)}$('classicScores').innerHTML=cr.length?`<div class="score-title">Meilleurs scores</div>${cr.join('')}`:'';$('classicScores').classList.toggle('hidden',!cr.length);$('suddenScores').innerHTML=sr.length?`<div class="score-title">Meilleurs scores</div>${sr.join('')}`:'';$('suddenScores').classList.toggle('hidden',!sr.length)}
+function refreshScores(){const c=scoreStore(STORE.classic),s=scoreStore(STORE.sudden),lives=scoreStore('mixcalc_threeLives_v1'),cr=[],sr=[];for(let l=1;l<=3;l++){if(c[l])cr.push(`<div class="score-line"><span>Niveau ${l}</span><strong class="${(c[l].aideVisuelle??c[l].aideTables)?'aid-used-score':''}">${c[l].score}/${c[l].total}</strong></div>`);if(s[l])sr.push(`<div class="score-line"><span>Niveau ${l} · Mort subite</span><strong class="${(s[l].aideVisuelle??s[l].aideTables)?'aid-used-score':''}">${s[l].score}</strong></div>`);if(lives[l])sr.push(`<div class="score-line"><span>Niveau ${l} · 3 vies</span><strong>${lives[l].score}</strong></div>`)}$('classicScores').innerHTML=cr.length?`<div class="score-title">Meilleurs scores</div>${cr.join('')}`:'';$('classicScores').classList.toggle('hidden',!cr.length);$('suddenScores').innerHTML=sr.length?`<div class="score-title">Meilleurs scores</div>${sr.join('')}`:'';$('suddenScores').classList.toggle('hidden',!sr.length)}
 function setLast(label,score){safeSet(STORE.last,{label,score,at:new Date().toISOString(),aid:!!session?.aidUsed});refreshLast()}
 function refreshLast(){const d=safeGet(STORE.last,null),c=$('lastCard');if(!d){c.classList.add('hidden');return}c.classList.remove('hidden');const m=c.querySelector('.last-main');m.textContent=`${d.label} · Score : ${d.score}`;m.classList.toggle('aid-used-score',!!d.aid);try{c.querySelector('.last-sub').textContent=`Fait à ${new Date(d.at).toLocaleTimeString('fr-BE',{hour:'2-digit',minute:'2-digit'})}`}catch{}}
 
@@ -3869,11 +3903,11 @@ function hardBest(){return safeGet(STORE.hard,{})}function renderHardMenu(){
   for(let l=1;l<=3;l++){
     const card=div('hard-card'),three=hardThreeScore(l),challengeOpen=hardThreeUnlocked(l),suddenOpen=hardSuddenUnlocked(l);
     card.innerHTML=`<h3>HARD NIV ${l}</h3>      <div class="hard-record"><span>Record<br>Mort subite</span><span class="hard-record-value">${Number.isFinite(Number(d[l]))?d[l]:'—'}</span></div>
-      <div class="hard-actions"><button class="hard-train" ${challengeOpen?'':'disabled'}>🧠 Entraînement</button><button class="hard-sudden" ${suddenOpen?'':'disabled'}>💀 Mort subite</button></div>
+      <div class="hard-actions"><button class="hard-train" ${challengeOpen?'':'disabled'}>🧠 Entraînement</button><button class="hard-three-lives" ${suddenOpen?'':'disabled'}>❤️ 3 vies</button><button class="hard-sudden" ${suddenOpen?'':'disabled'}>💀 Mort subite</button></div>
       ${!challengeOpen?`<div class="hard-lock-note">🔒 Atteins 3 réussites en mort subite HARD ${l-1} pour débloquer ce niveau.</div>`:(!suddenOpen?'<div class="hard-lock-note">🔒 Atteins 3 réussites en mort subite HARD précédente pour débloquer ce niveau.</div>':'')}`;
     card.querySelector('.hard-train').onclick=()=>startHard(l,'training');
 
-    card.querySelector('.hard-sudden').onclick=()=>startHard(l,'sudden');
+    card.querySelector('.hard-sudden').onclick=()=>startHard(l,'sudden');card.querySelector('.hard-three-lives').onclick=()=>startHard(l,'three-lives');
     wrap.appendChild(card)
   }
 }
@@ -3881,8 +3915,8 @@ function openHardMenu(){$('menuScreen').classList.add('hidden');$('gameScreen').
 function startHard(level,mode){
   if(mode==='challenge')return;
     if(mode==='training'&&!hardThreeUnlocked(level))return;
-  if(mode==='sudden'&&!hardSuddenUnlocked(level))return;
-  hardSession={level,mode,score:0,completed:0,max:HARD[level],currentFirstTry:true};
+  if((mode==='sudden'||mode==='three-lives')&&!hardSuddenUnlocked(level))return;
+  hardSession={level,mode,score:0,completed:0,mistakes:0,max:HARD[level],currentFirstTry:true};
   window.MathasMixedBridge?.begin(hardSession,true);
   $('hardMenu').classList.add('hidden');$('hardGame').classList.remove('hidden');newHardCalc()
 }
@@ -3894,10 +3928,10 @@ function newHardCalc(){
 }
 function updateHardBar(){
   $('hardTitle').textContent=`Mélange de calculs · HARD NIV ${hardSession.level}`;
-  const label=hardSession.mode==='training'?'🧠 Entraînement':hardSession.mode==='challenge'?'🎯 5 calculs':'💀 Mort subite';
+  const label=hardSession.mode==='training'?'🧠 Entraînement':hardSession.mode==='challenge'?'🎯 5 calculs':hardSession.mode==='three-lives'?'❤️ 3 vies':'💀 Mort subite';
   $('hardMeta').textContent=`${label} · ${OPINFO[hardState.op].name}`;
-  $('hardScore').textContent=hardSession.mode==='challenge'?`Score ${hardSession.score} / 5`:hardSession.mode==='sudden'?`Score ${hardSession.score}`:'Sans points';
-  $('hardScore').classList.toggle('no-score',hardSession.mode==='training');$('hardScore').classList.toggle('sun',hardSession.mode==='sudden');
+  $('hardScore').textContent=hardSession.mode==='challenge'?`Score ${hardSession.score} / 5`:['sudden','three-lives'].includes(hardSession.mode)?`Score ${hardSession.score}`+(hardSession.mode==='three-lives'?` · ❤️ ${3-hardSession.mistakes}`:''):'Sans points';
+  $('hardScore').classList.toggle('no-score',hardSession.mode==='training');$('hardScore').classList.toggle('sun',['sudden','three-lives'].includes(hardSession.mode));
   $('hardCounter').textContent=hardSession.mode==='challenge'?`Calcul ${Math.min(hardSession.completed+1,5)} / 5`:`Calcul ${hardSession.completed+1}`
 }
 function validateHard(){
@@ -3922,12 +3956,30 @@ function validateHard(){
       }
     }else{
       hardSession.completed++;
-      if(hardSession.mode==='sudden'){hardSession.score++;const d=hardBest(),old=Number(d[hardSession.level]);if(!Number.isFinite(old)||hardSession.score>old){d[hardSession.level]=hardSession.score;safeSet(STORE.hard,d)}}
+      if(hardSession.mode==='sudden'||hardSession.mode==='three-lives'){hardSession.score++;const d=hardBest(),old=Number(d[hardSession.level]);if(hardSession.mode==='sudden'&&(!Number.isFinite(old)||hardSession.score>old)){d[hardSession.level]=hardSession.score;safeSet(STORE.hard,d)}}
     }
     hardPhase='review';$('hardPrimary').textContent='Calcul suivant';updateHardBar();
-    setFeedbackText(hardSession.mode==='challenge'?`Correct. Score : ${hardSession.score} / 5.`:hardSession.mode==='sudden'?`Correct. Score : ${hardSession.score}.`:'Correct. Calcul suivant.','ok',true);celebrate();return
+    setFeedbackText(hardSession.mode==='challenge'?`Correct. Score : ${hardSession.score} / 5.`:['sudden','three-lives'].includes(hardSession.mode)?`Correct. Score : ${hardSession.score}.`:'Correct. Calcul suivant.','ok',true);celebrate();return
   }
   markErrors(hardState,0,true);
+  if(hardSession.mode==='three-lives'){
+    window.MathasMixedBridge?.miss(hardSession,hardState);
+    hardSession.mistakes++;hardSession.completed++;
+    if(hardSession.mistakes>=3){
+      hardPhase='ended';$('hardPrimary').textContent='Retour au menu HARD';
+      enregistrerResultatMathas(hardSession.score,hardSession.completed,`Hard ${hardSession.level}`,3+hardSession.level,false,['add','sub','mul']);
+      const lifeRecords=scoreStore('mixcalc_hardThreeLives_v1'),key=String(hardSession.level);
+      if((lifeRecords[key]??-1)<hardSession.score){lifeRecords[key]=hardSession.score;safeSet('mixcalc_hardThreeLives_v1',lifeRecords)}
+      safeSet(STORE.last,{label:`Hard ${hardSession.level} · 3 vies`,score:String(hardSession.score),at:new Date().toISOString(),aid:false});
+      window.MathasMixedBridge?.finish(hardSession);
+      setFeedbackText(`3 vies terminées. Score : ${hardSession.score}.`,'bad',true);
+      finishAnim(`Score ${hardSession.score}`);
+    }else{
+      hardPhase='review';$('hardPrimary').textContent='Calcul suivant';
+      updateHardBar();setFeedbackText(`Vie perdue · ${3-hardSession.mistakes} restante(s).`,'bad',true);
+    }
+    return
+  }
   if(hardSession.mode==='sudden'){
     const d=hardBest(),old=Number(d[hardSession.level]),rec=!Number.isFinite(old)||hardSession.score>old;if(rec){d[hardSession.level]=hardSession.score;safeSet(STORE.hard,d)}
     hardPhase='ended';$('hardPrimary').textContent='Retour au menu HARD';setFeedbackText(`Erreur. Score final : ${hardSession.score}.`,'bad',true);
@@ -3940,7 +3992,7 @@ function validateHard(){
 }
 
 /* UI events */
-$('trainingBtn').onclick=()=>startSession('training');document.querySelectorAll('.countBtn').forEach(b=>b.onclick=()=>startSession('classic',+b.dataset.count));$('suddenBtn').onclick=()=>startSession('sudden');$('primaryBtn').onclick=validateNormal;$('clearBtn').onclick=()=>clearCalc(active.calc,false);$('menuBtn').onclick=goMenu;$('hardBack').onclick=goMenu;$('hardPrimary').onclick=validateHard;$('hardClear').onclick=()=>clearCalc(0,true);$('hardExit').onclick=()=>{$('hardGame').classList.add('hidden');$('hardMenu').classList.remove('hidden');renderHardMenu()};
+$('trainingBtn').onclick=()=>startSession('training');document.querySelectorAll('.countBtn').forEach(b=>b.onclick=()=>startSession('classic',+b.dataset.count));$('suddenBtn').onclick=()=>startSession('sudden');$('mixedThreeLives').onclick=()=>startSession('three-lives');$('primaryBtn').onclick=validateNormal;$('clearBtn').onclick=()=>clearCalc(active.calc,false);$('menuBtn').onclick=goMenu;$('hardBack').onclick=goMenu;$('hardPrimary').onclick=validateHard;$('hardClear').onclick=()=>clearCalc(0,true);$('hardExit').onclick=()=>{$('hardGame').classList.add('hidden');$('hardMenu').classList.remove('hidden');renderHardMenu()};
 function keyAction(k,hard=false){if(/^\d$/.test(k))enterDigit(k,hard);else if(k==='back')erase(hard);else if(k==='borrow')borrowAction(hard);else if(k==='check')(hard?$('hardPrimary'):$('primaryBtn')).click()}
 $('numpad').addEventListener('mousedown',e=>{if(e.target.closest('.key'))e.preventDefault()});$('numpad').onclick=e=>{const b=e.target.closest('[data-key]');if(b)keyAction(b.dataset.key,false)};$('hardNumpad').addEventListener('mousedown',e=>{if(e.target.closest('.hard-key'))e.preventDefault()});$('hardNumpad').onclick=e=>{const b=e.target.closest('[data-key]');if(b)keyAction(b.dataset.key,true)};document.addEventListener('keydown',e=>{const hard=!$('hardGame').classList.contains('hidden'),normal=!$('gameScreen').classList.contains('hidden');if(!hard&&!normal)return;if(/^\d$/.test(e.key)){e.preventDefault();keyAction(e.key,hard)}else if(e.key==='Backspace'||e.key==='Delete'){e.preventDefault();keyAction('back',hard)}else if(e.key==='Enter'){e.preventDefault();keyAction('check',hard)}else if(e.key.toLowerCase()==='b'){e.preventDefault();keyAction('borrow',hard)}});
 function setFeedbackText(t,type='',hard=false){const el=hard?$('hardFeedback'):$('feedback');el.textContent=t;if(!hard)el.className=`feedback${type?' '+type:''}`}
@@ -4190,6 +4242,12 @@ loadSettings();refreshScores();refreshLast();renderHardMenu();
     if(!btn.dataset.progressOpenLabel)btn.dataset.progressOpenLabel=textTarget.textContent.trim()||'Lancer la mort subite';
     btn.disabled=locked;
     btn.classList.toggle('progress-sudden-locked',locked);
+    const threeLivesBtn=document.getElementById('mixedThreeLives');
+    if(threeLivesBtn){
+      threeLivesBtn.disabled=locked;
+      threeLivesBtn.classList.toggle('progress-sudden-locked',locked);
+      threeLivesBtn.title=locked?`Réussis au moins 8/10 ou 16/20 au Niveau ${level} pour débloquer les 3 vies.`:'';
+    }
     if(locked){
       textTarget.innerHTML=`<span class="mathas-lock-main">Mort subite</span><span class="mathas-lock-note">(bloquée → Niv ${level}, 10 ou 20 calculs : 80%)</span>`;
     }else{
@@ -7191,7 +7249,7 @@ function makeUI(){
   }
   if(level&&!document.getElementById('mathasTrophiesStrip')){
     const strip=document.createElement('button');strip.type='button';strip.className='mathas-trophies-strip';strip.id='mathasTrophiesStrip';strip.setAttribute('aria-haspopup','dialog');strip.setAttribute('aria-expanded','false');
-    strip.innerHTML=`<div class="mathas-trophies-badges" aria-hidden="true"><div class="mathas-trophy-badge" data-color="bronze"><span class="mathas-trophy-name">Bronze</span><span class="mathas-trophy-face"><span class="mathas-trophy-medal">${cupSvg('bronze')}</span><span class="mathas-trophy-count" data-trophies="bronze">0/6</span></span></div><div class="mathas-trophy-badge" data-color="silver"><span class="mathas-trophy-name">Argent</span><span class="mathas-trophy-face"><span class="mathas-trophy-medal">${cupSvg('silver')}</span><span class="mathas-trophy-count" data-trophies="silver">0/6</span></span></div><div class="mathas-trophy-badge" data-color="gold"><span class="mathas-trophy-name">Or</span><span class="mathas-trophy-face"><span class="mathas-trophy-medal">${cupSvg('gold')}</span><span class="mathas-trophy-count" data-trophies="gold">0/7</span></span></div></div><div class="mathas-trophies-footer"><span class="mathas-trophies-total"><span data-trophies="total">0</span><small>/20</small></span><span class="mathas-trophies-hint">Touchez pour voir les défis</span></div><div class="mathas-platinum-panel"><span class="mathas-platinum-art">${PLATINUM_SVG}</span><span class="mathas-platinum-copy"><span class="mathas-platinum-heading">PLATINE</span><span class="mathas-platinum-caption">Les 19 trophées officiels ont été obtenus !</span><span class="mathas-platinum-progress">20/20 récompenses</span><span class="mathas-platinum-action">Touchez pour voir les défis</span></span></div>`;
+    strip.innerHTML=`<div class="mathas-trophies-badges" aria-hidden="true"><div class="mathas-trophy-badge" data-color="bronze"><span class="mathas-trophy-name">Bronze</span><span class="mathas-trophy-face"><span class="mathas-trophy-medal">${cupSvg('bronze')}</span><span class="mathas-trophy-count" data-trophies="bronze">0/6</span></span></div><div class="mathas-trophy-badge" data-color="silver"><span class="mathas-trophy-name">Argent</span><span class="mathas-trophy-face"><span class="mathas-trophy-medal">${cupSvg('silver')}</span><span class="mathas-trophy-count" data-trophies="silver">0/6</span></span></div><div class="mathas-trophy-badge" data-color="gold"><span class="mathas-trophy-name">Or</span><span class="mathas-trophy-face"><span class="mathas-trophy-medal">${cupSvg('gold')}</span><span class="mathas-trophy-count" data-trophies="gold">0/7</span></span></div></div><div class="mathas-trophies-footer"><span class="mathas-trophies-total"><span data-trophies="total">0</span><small>/20</small></span><span class="mathas-trophies-hint">Voir les défis</span></div><div class="mathas-platinum-panel"><span class="mathas-platinum-art">${PLATINUM_SVG}</span><span class="mathas-platinum-copy"><span class="mathas-platinum-heading">PLATINE</span><span class="mathas-platinum-caption">Les 19 trophées officiels ont été obtenus !</span><span class="mathas-platinum-progress">20/20 récompenses</span><span class="mathas-platinum-action">Voir les défis</span></span></div>`;
     strip.addEventListener('click',()=>{openPopover();strip.setAttribute('aria-expanded','true')});
     strip.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openPopover();strip.setAttribute('aria-expanded','true')}});
     const anchor=document.getElementById('mathasPointsQuick')||level;anchor.insertAdjacentElement('afterend',strip);
@@ -10134,3 +10192,4 @@ html.mathas-handheld-portrait #menuScreen .mode-card.sudden .mode-desc {
   line-height:1.32!important;
 }
 </style>
+
