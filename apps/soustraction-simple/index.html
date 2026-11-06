@@ -635,7 +635,9 @@ window.setInterval(()=>{if(document.visibilityState==='visible')refreshNativeHea
    applyState:apply,loadXp,queueXpGain,
    notify:message=>{const badge=document.getElementById('ce-sync');if(badge)badge.title=message}
   });
-  school.mount();
+  // Placer d'abord l'en-tête natif Connect : le menu ne doit pas se déplacer
+  // après l'activation des lanceurs certifiés 4 / 10 / 20.
+  refreshNativeHeader();
  }
 document.body.style.cssText='margin:0;padding:0;background:#071e2a;overflow:hidden';
 

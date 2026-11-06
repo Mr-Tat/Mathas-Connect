@@ -133,6 +133,7 @@ async function setup({viewport={width:1024,height:768},fixtureData=fixture()}={}
    await frame.locator('#menuScreen').waitFor({timeout:30000});
    await page.waitForFunction(()=>document.querySelector('iframe')?.contentDocument?.__mathasSubCertifiedRouter===true,
     null,{timeout:30000});
+   await frame.locator('#mathas-sous-connect-dock .mathas-sous-connect-person').waitFor({state:'attached',timeout:30000});
    return {page,frame};
   },
   async close(){await context.close();await browser.close();await new Promise(ok=>server.close(ok))}
