@@ -78,5 +78,5 @@ test('les correctifs sont en cache versionnée sans changer les règles de score
  const html=source('apps/objective-record/eleve.html');
  assert.match(host,/native-survival-v1/);
  assert.match(host,/resumable-school-v1/);
- assert.match(html,/native-survival-v1/);
+ assert.match(html,/fast-certified-start-v1/);
 });
