@@ -265,24 +265,23 @@ function labUI(){
   setInterval(()=>{if(!document.hidden)trophies()},850);
 }
 function patch(game,kind){
-  function swap(a,b,why)
-  // Un trophée scolaire n'est jamais déduit du navigateur : le rendu natif
-  // lit exactement le snapshot serveur, comme les coupes de la page de menu.
-  // Le mode démo hors Connect garde son propre stockage isolé.
+  function swap(a,b,why){const parts=game.split(a);if(parts.length!==2)throw Error(kind+" "+why+" (matches "+(parts.length-1)+")");game=parts.join(b)}
+  // En mode Connect, le rendu natif lit la vérité serveur, jamais les anciennes
+  // coupes du navigateur. En mode libre, la logique historique est inchangée.
   if(kind==='add'||kind==='multi'){
     const officialApp=kind==='add'?'addition-ecrite-simple':'addition-ecrite-multiple';
-    const original="function readTrophies(){";
-    const authoritative=
-      "function readTrophies(){\\n"+
-      "  let school=false;try{school=new URL(window.parent.location.href).searchParams.get('connect')==='1'}catch{}\\n"+
-      "  if(school){\\n"+
-      "    let official=null;try{official=window.parent.parent.MathasConnectOfficialTrophies}catch{}\\n"+
-      "    if(official?.active===true&&official.appKey==='"+officialApp+"'&&official.rewards?.version===3)return official.rewards;\\n"+
-      "    return freshTrophies();\\n"+
-      "  }\\n";
-    swap(original,authoritative,'trophées scolaires toujours issus du serveur');
+    const authoritative=[
+      "function readTrophies(){",
+      "  let school=false;",
+      "  try{school=new URL(window.parent.location.href).searchParams.get('connect')==='1'}catch{}",
+      "  if(school){",
+      "    let official=null;try{official=window.parent.parent.MathasConnectOfficialTrophies}catch{}",
+      "    if(official?.active===true&&official.appKey==='"+officialApp+"'&&official.rewards?.version===3)return official.rewards;",
+      "    return freshTrophies();",
+      "  }"
+    ].join('\n')+'\n';
+    swap("function readTrophies(){",authoritative,'trophées scolaires toujours issus du serveur');
   }
-{const parts=game.split(a);if(parts.length!==2)throw Error(kind+" "+why+" (matches "+(parts.length-1)+")");game=parts.join(b)}
   const hookNormal="queueMicrotask(()=>window.MathasLabV2Update?.({mode:session.mode,level:session.level,score:session.score,total:session.total??session.totalCalculs??null,ops:session.ops??null,phase,completed:session.completed??null,hearts:session.hearts??null,hard:false}));";
   const hookHard="queueMicrotask(()=>window.MathasLabV2Update?.({mode:hardSession.mode,level:hardSession.level,score:hardSession.score,hearts:hardSession.hearts,ops:hardSession.ops??null,phase:hardPhase,hard:true}));";
   swap("function updateBar(){","function updateBar(){"+hookNormal,"score normal");
