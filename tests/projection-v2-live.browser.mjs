@@ -282,6 +282,18 @@ test('V2 — barre du haut : thème à gauche, classe centrale et MAJ/barre à d
    assert.ok(subtle.fillBackground!=='transparent','La progression reste perceptible : '+theme);
    const weight=await page.locator('#header-class').evaluate(el=>getComputedStyle(el).fontWeight);
    assert.ok(Number(weight)>=900,'Titre de classe bien gras : '+theme);
+   const halo=await page.locator('#header-class').evaluate(el=>{
+    const style=getComputedStyle(el);
+    const badge=getComputedStyle(el,'::before');
+    return {shadow:style.boxShadow,bg:style.backgroundImage,radius:style.borderRadius,
+     badge:badge.content,color:style.color,padding:parseFloat(style.paddingLeft)};
+   });
+   assert.ok(halo.shadow.includes('rgb')&&halo.shadow!=='none','Halo visible : '+theme);
+   assert.ok(halo.bg.includes('gradient'),'Cartouche lumineux : '+theme);
+   assert.ok(halo.radius!=='0px'&&halo.padding>=12,'Cartouche arrondi et aéré : '+theme);
+   assert.match(halo.badge,/CLASSE/,'Petit libellé de classe : '+theme);
+   if(theme==='papier')assert.equal(halo.color,'rgb(23, 53, 76)','Contraste sur le thème papier');
+
   }
   await page.setViewportSize({width:780,height:780});
   const compact=await page.evaluate(()=>{
