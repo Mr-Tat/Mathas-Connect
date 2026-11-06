@@ -89,7 +89,7 @@ test('l hôte actualise et met en cache la grille et le score du jour',()=>{
  assert.match(host,/school-official-unlocks\.mjs\?v=20261106-certified-results-v2/);
  assert.match(host,/school-score-view\.mjs\?v=20261106-fullscreen-share-v3/);
  assert.match(host,/window\.MathasConnectOfficialSchoolProgress=lastOfficialProgress/);
- assert.match(html,/eleve\.mjs\?v=20261106-toolbar-hearts-v1/);
+ assert.match(html,/eleve\.mjs\?v=20261106-toolbar-one-line-v2/);
  assert.match(scoreboard,/MutationObserver\(renderToday\)/);
  assert.match(scoreboard,/renderCertifiedTodayPoints\(documentRef,remote,state\)/);
 });
