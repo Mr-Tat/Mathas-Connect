@@ -2,19 +2,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-test('les deux additions en ligne exposent un bouton XP visible dans le jeu natif',()=>{
+test('les deux additions en ligne : un seul bouton XP, juste après le profil',()=>{
  const host=source('apps/objective-record/eleve.mjs');
  const page=source('apps/objective-record/eleve.html');
+ const native=source('apps/objective-record/native-hub-link.js');
  const routing=source('apps/objective-record/release-routing.mjs');
- assert.match(routing,/SCHOOL_ADDITIONS_ROLLOUT=Object\.freeze\(\{\s*enabled:true/);
- assert.match(host,/SERVER_PROOF_ADDITIONS=new Set\(\['addition-ecrite-simple','addition-ecrite-multiple'\]\)/);
- assert.match(host,/mountNativeConnectXp\(doc\);/);
- assert.match(host,/mathasSchoolConnectXp/);
- assert.match(host,/showXpPanel\(\)/);
- assert.match(host,/lastOfficialXp\?\.appXp/);
- assert.match(host,/lastOfficialXp\?\.max/);
- assert.match(host,/Voir le détail/);
- assert.match(page,/xp-online-four-v3/);
+ assert.match(routing,/SCHOOL_ADDITIONS_ROLLOUT=Object\\.freeze\\(\\{\\s*enabled:true/);
+ assert.match(host,/SERVER_PROOF_ADDITIONS=new Set\\(\\['addition-ecrite-simple','addition-ecrite-multiple'\\]\\)/);
+ assert.doesNotMatch(host,/mountNativeConnectXp|mathasSchoolConnectXp/);
+ assert.match(native,/profileAnchor\\.insertAdjacentElement\\('afterend',button\\)/);
+ assert.match(native,/mathas-native-connect-xp/);
+ assert.match(native,/Voir le détail/);
+ assert.match(native,/host\\.getElementById\\('xp-toggle-main'\\)/);
+ assert.match(host,/showXpPanel\\(\\)/);
+ assert.match(host,/xp\\?\\.appXp/);
+ assert.match(host,/xp\\?\\.max/);
+ assert.match(page,/one-xp-and-survival-grid-v5/);
 });
 test('soustraction et multiplication : mêmes deux lignes, largeur fixe et chiffre officiel',()=>{
  for(const [path,name] of [
