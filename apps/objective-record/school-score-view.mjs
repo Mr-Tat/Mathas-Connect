@@ -24,7 +24,7 @@ export function schoolScoreSnapshot(remote,state={}){
  const top=(Array.isArray(remote?.bestThree)?remote.bestThree:recent)
   .map(cleanScoreEntry).filter(Boolean).sort((a,b)=>b.points-a.points||b.at.localeCompare(a.at)).slice(0,3);
  const remoteDay=cleanScoreEntry(remote?.todayBest);
- const localToday=state?.todayBest?.day===today()?points(state.todayBest.points):null;
+ const localToday=remote?.ok===true?null:state?.todayBest?.day===today()?points(state.todayBest.points):null;
  // Le serveur conserve le meilleur du jour même s'il est ancien et que
  // sa preuve ne figure plus dans les derniers événements. Ne pas l'inventer.
  const sameDay=recent.filter(x=>day(x.at)===today()).sort((a,b)=>b.points-a.points||b.at.localeCompare(a.at))[0]||null;
@@ -147,28 +147,25 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
  async function offerBest(){
   if(destroyed)return false;
   // L'élève choisit de proposer le score ; rien n'est publié sans Oui.
-  const displayed=nativeBestPoints();
-  await load(true);
+  if(!await load(true)){notify('Synchronisation du meilleur score indisponible. Réessaie.');return false;}
   const snapshot=select();
   if(!snapshot.today){notify('Aucun score certifié aujourd’hui.');return false;}
   if(!snapshot.official||!snapshot.today.eventId){
    notify('Le score est conservé, mais son envoi nécessite une preuve certifiée Connect.');return false;
   }
-  if(displayed===null||displayed!==snapshot.today.points){
-   notify('Le score affiché ne correspond pas au meilleur score certifié Connect. Vérifie la synchronisation.');return false;
-  }
   if(!canShareBestScore(snapshot)){
    notify('Ce score ne dépasse pas les points déjà présents au tableau de projection.');return false;
   }
-  return !!consent()?.offer(snapshot.today.eventId);
+  return !!consent()?.offer(snapshot.today.eventId,{points:snapshot.today.points,mode:snapshot.today.mode});
  }
  async function recorded(eventId){
   if(!UUID.test(eventId)||destroyed||autoOffered.has(eventId))return false;
   if(!await load(true))return false;
   const snapshot=select();
   const row=[...snapshot.recent,...snapshot.top,snapshot.today].find(e=>e?.eventId===eventId);
-  if(!row||snapshot.boardBest===null||row.points<=snapshot.boardBest)return false;
-  const offered=!!consent()?.offer(eventId);
+  if(!row||!snapshot.today||snapshot.today.eventId!==eventId
+   ||snapshot.boardBest===null||row.points<=snapshot.boardBest)return false;
+  const offered=!!consent()?.offer(eventId,{points:row.points,mode:row.mode});
   if(offered)autoOffered.add(eventId);
   return offered;
  }
