@@ -19,7 +19,7 @@ test('le portail remplace Autres par Autorisations sans dépendre des résultats
 });
 test('la configuration des multiplicateurs reste facultativement étendue par les élèves',()=>{
  const html=read('index.html'),native=read('apps/multiplication-simple/game-original.html');
- assert.match(html,/Il peut en ajouter d’autres de 2 à 9/);
+ assert.match(html,/L’élève peut ensuite en ajouter et les conserver/);
  assert.match(native,/teacherMultiplierLock/);
  assert.match(native,/selectedMultipliers=new Set/);
  assert.match(native,/teacher-required/);
