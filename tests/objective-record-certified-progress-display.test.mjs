@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import {schoolOfficialResultRecords,schoolProgressSnapshot} from '../apps/objective-record/school-official-unlocks.mjs';
-import {renderCertifiedTodayPoints,nativeDayPoints} from '../apps/objective-record/school-score-view.mjs';
+import {renderCertifiedTodayPoints,nativeDayPoints,schoolScoreSnapshot} from '../apps/objective-record/school-score-view.mjs';
 
 const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const state={classic:[{'4':4,'10':9}, {}, {}],sudden:[null,null,null],
@@ -82,14 +82,32 @@ test('le top du jour officiel remplace le 0 local sans écriture en base',()=>{
  assert.equal(renderCertifiedTodayPoints(doc,{ok:false,...history,ok:false}),false);
 });
 
+test('reconnexion le même jour : student-load suffit si l historique de projection est indisponible',()=>{
+ const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ const previous=new Date();previous.setDate(previous.getDate()-1);
+ const yesterday=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(previous);
+ const box={children:[],textContent:'0',append(node){this.children.push(node);this.textContent=node.textContent}};
+ const doc={querySelector:()=>box,createElement:()=>({textContent:''})};
+ const loaded={todayBest:{day:today,points:52}};
+ assert.equal(renderCertifiedTodayPoints(doc,null,loaded),true);
+ assert.equal(box.textContent,'52');
+ // A temporarily empty projection history must not erase the verified Connect state.
+ assert.equal(renderCertifiedTodayPoints(doc,{ok:true,events:[],bestThree:[],todayBest:null},loaded),true);
+ assert.equal(box.textContent,'52');
+ assert.equal(schoolScoreSnapshot({ok:true,events:[],bestThree:[],todayBest:null},loaded).today.points,52);
+ assert.equal(renderCertifiedTodayPoints(doc,{ok:true,events:[],bestThree:[],todayBest:null},
+  {todayBest:{day:yesterday,points:52}}),true);
+ assert.equal(box.textContent,'0','le record de la veille ne devient pas celui du jour');
+});
+
 test('l hôte actualise et met en cache la grille et le score du jour',()=>{
  const host=source('apps/objective-record/eleve.mjs');
  const html=source('apps/objective-record/eleve.html');
  const scoreboard=source('apps/objective-record/school-score-view.mjs');
  assert.match(host,/school-official-unlocks\.mjs\?v=20261106-certified-results-v2/);
- assert.match(host,/school-score-view\.mjs\?v=20261106-fullscreen-share-v3/);
+ assert.match(host,/school-score-view\.mjs\?v=20261106-daily-reopen-v4/);
  assert.match(host,/window\.MathasConnectOfficialSchoolProgress=lastOfficialProgress/);
- assert.match(html,/eleve\.mjs\?v=20261106-four-confirmed-v3/);
+ assert.match(html,/eleve\.mjs\?v=20261106-daily-reopen-v4/);
  assert.match(scoreboard,/MutationObserver\(renderToday\)/);
  assert.match(scoreboard,/renderCertifiedTodayPoints\(documentRef,remote,state\)/);
 });
