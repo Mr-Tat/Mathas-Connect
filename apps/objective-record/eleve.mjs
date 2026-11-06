@@ -5,7 +5,7 @@ import {createAtomicTestRecorder,isWritableTestApp} from './atomic-test-recorder
 import {MIXED_TEST_APP,isMixedTestTerminal} from './mixed-test-proof.mjs';
 import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
-import {createCertifiedExtendedUI} from './certified-extended-ui.mjs?v=20261106-sudden-simple-v1';
+import {createCertifiedExtendedUI} from './certified-extended-ui.mjs?v=20261106-native-survival-v1';
 import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs?v=20261106-survival-40xp-v1';
 import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs?v=20261106-certified-results-v2';
 import {createProjectionConsent} from '../../projection-consent.mjs?v=20261106-fullscreen-consent-v1';
@@ -322,6 +322,7 @@ function watchGame(seq){
      native(event);
      if(seq!==generation||!event)return;
      if(activeProofUI.onGameEvent(event))return;
+     if(extendedUI.onGameEvent(event))return;
      if(recorder){
       const mixed=activeApp===MIXED_TEST_APP&&isMixedTestTerminal(event);
       const observed=mixed?{...event,
