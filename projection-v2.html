@@ -448,6 +448,54 @@ header.projection-header .header-class{
  html[data-proj-da] header.projection-header .header-class,
  header.projection-header .header-class{font-size:clamp(30px,8vw,40px)}
 }
+/* Cartouche + halo de la classe : bien identifiable au projecteur sans recouvrir les commandes.
+   Les couleurs du texte s'adaptent aux thèmes, dont le thème Papier clair. */
+html[data-proj-da] header.projection-header .header-class,
+header.projection-header .header-class{
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ padding:8px 18px 10px;
+ width:fit-content;
+ max-width:100%;
+ min-width:0;
+ border-radius:18px;
+ border:1px solid color-mix(in srgb,var(--v-accent,#ffdc81) 65%,#fff 35%);
+ background:radial-gradient(ellipse at center,
+  color-mix(in srgb,var(--v-hilite,#1c4c68) 88%,transparent) 0%,
+  color-mix(in srgb,var(--v-header,#0b263d) 90%,transparent) 100%);
+ box-shadow:0 0 0 2px #0002,0 0 16px 3px color-mix(in srgb,var(--v-accent,#ffdc81) 30%,transparent),
+  0 0 28px 5px color-mix(in srgb,#72cdf9 25%,transparent),0 5px 16px #0003;
+ text-shadow:0 2px 5px #0007;
+ overflow:visible;
+ text-overflow:clip;
+}
+header.projection-header .header-class::before{
+ content:"CLASSE";
+ display:block;
+ font:800 10px/1 system-ui,sans-serif;
+ letter-spacing:.17em;
+ margin-bottom:4px;
+ color:var(--v-soft,#c8deed);
+ text-shadow:none;
+}
+html[data-proj-da="papier"] header.projection-header .header-class{
+ background:radial-gradient(ellipse at center,#ffffff 0%,#e8f1f7 100%);
+ border-color:#9c7b41;
+ color:#17354c;
+ text-shadow:none;
+ box-shadow:0 0 0 2px #ffffffaa,0 0 18px 3px #83badb72,0 5px 16px #1d45602d;
+}
+html[data-proj-da="papier"] header.projection-header .header-class::before{color:#465e70}
+@media(max-width:950px){
+ html[data-proj-da] header.projection-header .header-class,
+ header.projection-header .header-class{padding:7px 14px 9px}
+}
+@media(max-width:570px){
+ html[data-proj-da] header.projection-header .header-class,
+ header.projection-header .header-class{padding:7px 12px 9px;border-radius:14px}
+}
 /* Exploits : prénom et nature de l'exploit en vedette, application secondaire. */
 .projection-main .right .event{
  align-items:flex-start;
