@@ -443,77 +443,105 @@ for(const item of examples){
     await native.locator('#'+modeButton).click();
     assert.equal(await page.locator('#certified-mode').inputValue(),item.mode);
    }else{
-    // Contrat du contrôleur HARD : les réglages internes restent disponibles
-    // pour la certification, mais ne font plus partie de la barre élève.
-    await page.evaluate(({mode,level})=>{
-     const m=document.getElementById('certified-mode');
-     m.value=mode;m.dispatchEvent(new Event('change',{bubbles:true}));
-     document.getElementById('certified-level').value=String(level);
-     const start=document.getElementById('certify');
-     if(start.disabled)throw Error('La preuve scolaire HARD est indisponible');
-     start.click();
-    },{mode:item.mode,level:item.level});
-   }
-   await page.locator('#extended-certified:not([hidden])').waitFor({state:'visible',timeout:15000});
-   if(item.mode.endsWith('sudden')){
-    const simplified=await page.evaluate(()=>{
-     const root=document.getElementById('extended-certified');
-     const keys=[...root.querySelectorAll('.extended-key')];
-     const help=root.querySelector('.extended-instructions').textContent;
-     return {mode:root.dataset.mode,phase:root.dataset.phase,
-      title:document.getElementById('extended-title').textContent,
-      status:document.getElementById('extended-status').textContent,
-      help,answerCount:root.querySelectorAll('.extended-digit-input.answer').length,
-      keyCount:keys.length,
-      minKeyHeight:Math.min(...keys.map(el=>el.getBoundingClientRect().height)),
-      instructions:root.querySelector('.extended-calc-label')?.getBoundingClientRect().height};
+    // Ouvrir le VRAI menu HARD et utiliser son bouton d'origine.
+    await page.evaluate(()=>{
+     const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+     const select=doc.getElementById('suddenMaxDigits');
+     const hard=[...select.options].find(x=>x.value==='__hard__');
+     if(!hard)throw Error('Le bouton HARD natif est absent');
+     select.value=hard.value;select.dispatchEvent(new Event('change',{bubbles:true}));
     });
-    assert.equal(simplified.mode,item.mode);
-    assert.equal(simplified.phase,'playing');
-    assert.match(simplified.title,/Mort subite/);
-    assert.match(simplified.status,/1 erreur = fin/);
-    assert.match(simplified.help,/XP officiels.*Connect/);
-    assert.equal(simplified.instructions,0,'no repeated exercise heading');
-    assert.equal(simplified.keyCount,12,'touch keypad still available');
-    assert.ok(simplified.minKeyHeight>=44,'touch keys remain accessible');
-    assert.ok(simplified.answerCount>=width,'answer digits unchanged');
-    await page.setViewportSize({width:390,height:820});
-    const mobile=await page.evaluate(()=>{
-     const root=document.getElementById('extended-certified');
-     const scroll=root.querySelector('.extended-grid-scroll');
-     const rect=root.querySelector('.extended-keypad').getBoundingClientRect();
-     return {overflow:document.documentElement.scrollWidth-innerWidth,
-      keypadLeft:rect.left,keypadRight:rect.right,screenWidth:innerWidth,
-      calcScrollable:scroll.scrollWidth>scroll.clientWidth};
-    });
-    assert.ok(mobile.overflow<=2,'no page-level horizontal overflow: '+JSON.stringify(mobile));
-    assert.ok(mobile.keypadLeft>=0&&mobile.keypadRight<=mobile.screenWidth+2,
-     'touch keypad fits a mobile viewport: '+JSON.stringify(mobile));
-    if(item.mode==='hard-sudden')assert.equal(mobile.calcScrollable,true,
-     'HARD operations scroll inside the calculation card');
-    await page.setViewportSize({width:1160,height:820});
+    const hardMode=item.mode.slice(5);
+    await native.locator('#hardMenu:not(.hidden)').waitFor({state:'visible',timeout:15000});
+    const hardButton=native.locator('#hardMenu .hard-start[data-level="'+item.level+'"][data-mode="'+hardMode+'"]');
+    await hardButton.waitFor({state:'visible',timeout:15000});
+    await hardButton.click();
    }
+   // Une série certifiée utilise le VRAI jeu et ne masque plus son iframe.
+   await page.waitForFunction(mode=>{
+    const host=document.getElementById('gameFrame');
+    const w=host?.contentDocument?.getElementById('game')?.contentWindow;
+    const d=w?.document;
+    const screen=d?.getElementById(mode.startsWith('hard-')?'hardGame':'gameScreen');
+    return !!w?.__mathasServerCertifiedExtended?.sessionId &&
+     !host.hidden && document.getElementById('extended-certified').hidden &&
+     !!screen && !screen.classList.contains('hidden');
+   },item.mode,{timeout:18000});
+   await page.evaluate(()=>{
+    const win=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
+    win.__mathasManualValidation=true; // Real keypresses, deliberate checking.
+   });
+   const nativeVisual=await page.evaluate(mode=>{
+    const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+    const active=doc.getElementById(mode.startsWith('hard-')?'hardGame':'gameScreen');
+    const proof=doc.defaultView.__mathasServerCertifiedExtended;
+    return {native:!active.classList.contains('hidden'),
+     inputs:active.querySelectorAll('input.answer-input,input.hard-answer').length,
+     hearts:doc.getElementById('threeLivesHud')?.hidden,
+     proofMode:proof?.mode,proofWidth:proof?.width,certifiedOverlay:!!doc.getElementById('mathas-certified-survival-screen')};
+   },item.mode);
+   assert.equal(nativeVisual.native,true,'la vue du jeu historique est utilisée');
+   assert.equal(nativeVisual.proofMode,item.mode);
+   assert.equal(nativeVisual.proofWidth,width);
+   assert.ok(nativeVisual.inputs>=width,'les cases de saisie originales restent présentes');
+   assert.equal(nativeVisual.certifiedOverlay,false,'aucun écran de substitution pendant le jeu');
+   if(item.mode==='three-lives')assert.equal(nativeVisual.hearts,false,'les cœurs natifs sont visibles');
+   await page.setViewportSize({width:390,height:820});
+   assert.equal(await page.locator('#gameFrame').isVisible(),true,'le jeu natif reste visible sur mobile');
+   await page.setViewportSize({width:1160,height:820});
+
+   // Rejouer les premières tentatives à travers les vrais champs/clavier du jeu.
    for(let i=0;i<item.wrong;i++){
-    const fields=page.locator('#extended-grid input.answer');
-    const n=await fields.count();assert.ok(n>=width);
-    for(let j=0;j<n;j++)await fields.nth(j).fill('0');
-    await page.locator('#extended-verify').click();
-    if(i<item.wrong-1)await page.locator('#extended-next').click();
+    const hard=item.mode.startsWith('hard-');
+    const index=i%2;
+    const digitSelector=hard?'#hardGame input.hard-answer':
+     '.answer-input[data-calc="'+index+'"]';
+    const carrySelector=hard?'#hardGame input.hard-carry':
+     '.carry-input[data-calc="'+index+'"]';
+    const fields=native.locator(digitSelector),carries=native.locator(carrySelector);
+    const n=await fields.count();
+    assert.ok(n>=width,'des chiffres du résultat sont attendus');
+    for(let j=0;j<n;j++){await fields.nth(j).focus();await page.keyboard.press('0')}
+    const m=await carries.count();
+    for(let j=0;j<m;j++){await carries.nth(j).focus();await page.keyboard.press('0')}
+    if(hard){
+     await native.locator('#hardPrimary').click();
+     if(i<item.wrong-1)await native.locator('#hardPrimary').click();
+    }else{
+     await native.locator('#primaryBtn').click();
+     if(i===1&&i<item.wrong-1)await native.locator('#primaryBtn').click();
+    }
+    await page.waitForFunction(expected=>{
+     const win=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
+     return win.__mathasServerCertifiedExtended?.index>=expected;
+    },i+1,{timeout:5000});
    }
+   await page.waitForFunction(()=>{
+    const doc=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+    return !!doc?.getElementById('mathas-certified-survival-screen');
+   },null,{timeout:15000});
    if(item.mode.endsWith('sudden')){
-    await page.waitForFunction(()=>document.getElementById('extended-certified')?.dataset.phase==='saving',
-     null,{timeout:10000});
-    assert.match(await page.locator('#extended-status').textContent(),/confirmation de Connect/);
-    assert.equal(await page.locator('#extended-grid .extended-finished').count(),0,
-     'no certified end screen before server ACK');
+    const before=await page.evaluate(()=>{
+     const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+     const node=doc.getElementById('mathas-certified-survival-screen');
+     return {label:node.textContent,phase:document.getElementById('extended-certified').dataset.phase};
+    });
+    assert.equal(before.phase,'saving');
+    assert.match(before.label,/Vérification du résultat/i);
+    assert.doesNotMatch(before.label,/Résultat officiel Connect/i,
+     'le score officiel attend le reçu du serveur');
     releaseFinish();
    }
-   await page.waitForFunction(()=>document.getElementById('status').textContent.includes('XP officiels'),
-    null,{timeout:18000});
-   if(item.mode.endsWith('sudden')){
-    assert.equal(await page.locator('#extended-certified').getAttribute('data-phase'),'verified');
-    assert.match(await page.locator('#extended-title').textContent(),/Résultat certifié/);
-   }
+   await page.waitForFunction(()=>{
+    const doc=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+    return doc?.getElementById('mathas-certified-survival-screen')?.textContent.includes('Résultat officiel Connect');
+   },null,{timeout:18000});
+   const official=await page.evaluate(()=>{
+    const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+    return doc.getElementById('mathas-certified-survival-screen').textContent;
+   });
+   assert.match(official,/Partie vérifiée par Connect/);
+   assert.match(official,/XP officiels/);
    assert.equal(actions.filter(a=>a.action==='finish-extended-proof-v1').length,1);
    assert.equal(actions.filter(a=>a.action==='game-record').length,0);
    // Switching straight from a finished extended mode to the other addition
