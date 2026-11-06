@@ -6026,7 +6026,7 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     classicMax:6,suddenMax:6,trainingMax:6,classicCount:10,
     classicAddends:3,suddenAddends:3,trainingAddends:3
   });
-  tensFirstToggle.checked=!!settings.tensFirst;window.__mathasTensFirst=!!settings.tensFirst;
+  tensFirstToggle.checked=!!settings.tensFirst;window.__mathasTensFirst=!!settings.tensFirst;window.__mathasManualValidation=!!settings.manualValidation;
   classicMaxDigits.value=normalizeLevelMax(settings.classicMax);
   suddenMaxDigits.value=normalizeLevelMax(settings.suddenMax);
   trainingMaxDigits.value=normalizeLevelMax(settings.trainingMax);
@@ -6050,7 +6050,7 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     safeSet(STORAGE.settings,{
       classicMax:+classicMaxDigits.value,suddenMax:+suddenMaxDigits.value,trainingMax:+trainingMaxDigits.value,
       classicCount:selectedClassicCount(),
-      classicAddends:+classicAddendCount.value,suddenAddends:+suddenAddendCount.value,trainingAddends:+trainingAddendCount.value,tensFirst:!!tensFirstToggle.checked
+      classicAddends:+classicAddendCount.value,suddenAddends:+suddenAddendCount.value,trainingAddends:+trainingAddendCount.value,tensFirst:!!tensFirstToggle.checked,manualValidation:!!window.__mathasManualValidation
     })
   }
   const tensFirstEnabled=()=>!!tensFirstToggle.checked;
@@ -6246,7 +6246,7 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     if(tensFirstEnabled()&&c<s.count-1&&s.outgoing[c]>0&&s.carryValues[c+1]!==String(s.outgoing[c])){focusCarry(i,c+1);setFeedback('Écris d’abord la dizaine du report, puis le chiffre des unités.','info');return}
     focusAnswer(i,c)
   }
-  function nextCalcOrStay(i){if(i===0&&!states[1].solved)focusColumnStart(1,0)}
+  function nextCalcOrStay(i){if(i===0&&!states[1].solved){if(window.__mathasManualValidation){if(evaluateCalc(0).filled){setFeedback('Calcul 1 terminé. Clique sur Valider pour le vérifier avant le calcul 2.','info');primaryBtn.focus()}return}focusColumnStart(1,0)}}
   function afterAnswer(i,c){
     const s=states[i],carry=c<s.count-1?s.outgoing[c]:0;
     if(!tensFirstEnabled()&&carry>0&&s.carryValues[c+1]!==String(carry)){focusCarry(i,c+1);setFeedback('Retenue nécessaire : écris maintenant la retenue dans la petite case au-dessus de la colonne de gauche.','info');return}
@@ -6261,11 +6261,11 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
   // V5.4.16 — Vérification automatique uniquement après remplissage complet
   let mathasAutoNormalTimer=0;
   function mathasScheduleNormal(){
-    if(phase!=='answering'||!session||!states?.length)return;
+    if(window.__mathasManualValidation||phase!=='answering'||!session||!states?.length)return;
     const work=states;
     clearTimeout(mathasAutoNormalTimer);
     mathasAutoNormalTimer=setTimeout(()=>{
-      if(phase!=='answering'||states!==work)return;
+      if(window.__mathasManualValidation||phase!=='answering'||states!==work)return;
       if(states.every((s,i)=>s.solved||evaluateCalc(i).filled))handlePrimary();
     },100);
   }
@@ -6392,7 +6392,7 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
 
     // Le calcul 2 n'est corrigé que lorsque les deux calculs sont terminés
     // (ou lorsque le calcul 1 a déjà été validé auparavant).
-    if(secondReady&&bothFinished)candidates.push(1)
+    if(secondReady&&bothFinished&&(!window.__mathasManualValidation||states[0].solved))candidates.push(1)
 
     // On peut vérifier un calcul terminé sans obliger l'élève à finir l'autre.
     if(!candidates.length){
@@ -7534,11 +7534,11 @@ function hardThreeScore(level){
   // V5.4.16 — Même règle sur l'unique calcul affiché en HARD
   let mathasAutoHardTimer=0;
   function mathasScheduleHard(){
-    if(hardPhase!=='answering'||!hardState||!hardSession)return;
+    if(window.__mathasManualValidation||hardPhase!=='answering'||!hardState||!hardSession)return;
     const work=hardState;
     clearTimeout(mathasAutoHardTimer);
     mathasAutoHardTimer=setTimeout(()=>{
-      if(hardPhase!=='answering'||hardState!==work)return;
+      if(window.__mathasManualValidation||hardPhase!=='answering'||hardState!==work)return;
       if(evaluateHard().filled)hardPrimaryAction();
     },100);
   }
