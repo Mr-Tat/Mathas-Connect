@@ -194,6 +194,14 @@ html=html.replace('<head>','<head>'+scopedBootstrap).replace('</body>',bridge+'<
 let school=null;
 const iframe=document.createElement('iframe');iframe.title='Soustraction écrite V6.0.2';iframe.style.cssText='border:0;width:100%;height:100dvh;display:block';iframe.setAttribute('allow','fullscreen');
 // En-tête Connect intégré dans le moteur NATIF, sans créer de seconde interface de calcul.
+function updateNativeXpAction(doc){
+ const button=doc?.getElementById('mathas-sous-connect-xp'),label=button?.querySelector('.mathas-xp-action-main');
+ if(!label)return;
+ const earned=Number(lastXp?.appXp),max=Number(lastXp?.max);
+ const valid=lastXp&&Number.isSafeInteger(earned)&&earned>=0&&Number.isSafeInteger(max)&&max>0;
+ const value=valid?'✨ '+earned+' / '+max+' XP récupérés':'✨ XP à récupérer';
+ if(label.textContent!==value)label.textContent=value;
+}
 function mountNativeConnectHeader(){
  // Le même en-tête natif sert en mode libre et en mode Connect.
  const doc=iframe.contentDocument;
@@ -223,7 +231,10 @@ function mountNativeConnectHeader(){
   .mathas-sous-connect-warning{color:#ffe4a0;font-size:10px;max-width:175px;line-height:1.2}
   .mathas-sous-connect-track{height:8px;border:1px solid #538fa4;border-radius:20px;background:#062838;overflow:hidden}
   .mathas-sous-connect-fill{display:block;width:0;height:100%;background:linear-gradient(90deg,#c9932f,#ffdf82);transition:width .5s ease}
-  .mathas-sous-connect-xp{color:#fbe3a1;border:1px solid #d1a14d;border-radius:12px;background:linear-gradient(180deg,#856021,#604512);padding:10px 14px;cursor:pointer;font:850 12px system-ui;box-shadow:inset 0 1px #ffffff40,0 4px 0 #36240d,0 8px 18px #0004}
+  .mathas-sous-connect-xp{color:#fbe3a1;border:1px solid #d1a14d;border-radius:12px;background:linear-gradient(180deg,#856021,#604512);box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:177px;flex:0 0 177px;height:51px;padding:6px 7px;white-space:nowrap;cursor:pointer;font:850 11px/1.14 system-ui;box-shadow:inset 0 1px #ffffff40,0 4px 0 #36240d,0 8px 18px #0004}
+  .mathas-sous-connect-xp .mathas-xp-action-main{display:block;font-weight:850;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .mathas-sous-connect-xp .mathas-xp-action-detail{display:block;font-size:9.5px;font-weight:650;opacity:.75;letter-spacing:.01em}
+  @media(max-width:680px){.mathas-sous-connect-xp{width:158px;flex-basis:158px;height:51px;font-size:10px;padding:6px 4px;gap:3px}.mathas-sous-connect-xp .mathas-xp-action-detail{font-size:9px}}
   .mathas-sous-connect-xp:hover{filter:brightness(1.13);transform:translateY(-1px)}
   .mathas-sous-connect-xp:active{transform:translateY(3px);box-shadow:inset 0 1px 4px #0008,0 1px 0 #36240d}
   .mathas-sous-connect-person.mathas-sous-xp-bump{animation:mathas-sous-xp-bump .48s ease}
@@ -262,11 +273,12 @@ function mountNativeConnectHeader(){
   track.append(fill);progress.append(count,track);person.append(identity,level,progress);
   const total=doc.createElement('span');total.id='mathas-sous-connect-total';total.className='mathas-sous-connect-total';person.append(total);
   const warning=doc.createElement('span');warning.id='mathas-sous-connect-warning';warning.className='mathas-sous-connect-warning';warning.hidden=true;person.append(warning);
-  const button=doc.createElement('button');button.id='mathas-sous-connect-xp';button.type='button';button.className='mathas-sous-connect-xp';button.textContent='✨ XP à récupérer';
+  const button=doc.createElement('button');button.id='mathas-sous-connect-xp';button.type='button';button.className='mathas-sous-connect-xp';button.innerHTML='<span class="mathas-xp-action-main">✨ XP à récupérer</span><span class="mathas-xp-action-detail">Voir le détail ›</span>';button.title='Afficher les XP acquis et les récompenses encore possibles';
   button.addEventListener('click',()=>document.getElementById('xp-toolbar-button')?.click());
   dock.append(person,button);
  }
  if(dock.parentElement!==brandRow)brandRow.append(dock);
+ updateNativeXpAction(doc);
  }
  const originalVersion=brandRow.querySelector(':scope > .app-version-pill');
  if(originalVersion){
