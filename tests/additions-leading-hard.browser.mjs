@@ -78,9 +78,12 @@ for(const item of examples){
    // Plusieurs palettes natives utilisent des variantes proches du même ambre ;
    // vérifier la teinte plutôt qu'une seule écriture CSS exacte.
    const rgb=amber.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-   assert.ok(rgb&&Number(rgb[1])>=200&&Number(rgb[1])<=255
-    &&Number(rgb[2])>=145&&Number(rgb[2])<=205
-    &&Number(rgb[3])>=40&&Number(rgb[3])<=115,
+   // L'ambre historique du thème sombre peut être plus profond
+   // (ex. rgba(182,131,50,.17)) : vérifier la dominante chaude.
+   assert.ok(rgb&&Number(rgb[1])>=175&&Number(rgb[1])<=255
+    &&Number(rgb[2])>=120&&Number(rgb[2])<=205
+    &&Number(rgb[3])>=40&&Number(rgb[3])<=115
+    &&Number(rgb[1])>Number(rgb[2])&&Number(rgb[2])>Number(rgb[3]),
     'ambre discret visible dans la case suivante : '+amber);
    await page.keyboard.press('1');
    assert.equal(await lead.inputValue(),'1','la retenue sortante est réellement saisie avant les unités');
