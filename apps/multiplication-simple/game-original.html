@@ -5559,10 +5559,35 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
     window.scrollTo({top:0,behavior:'smooth'})
   }
 
+  // Feedback visuel : validation d'un calcul, sans modifier la preuve ni les points.
+  function mathasGateSecondCalc(locked){
+    const box=calculationsPair.querySelector('.calc-box[data-calc="1"]');
+    if(!box)return;
+    box.inert=!!locked;
+    box.classList.toggle('mathas-awaits-first',!!locked);
+  }
+  function mathasShowCalcVerified(i){
+    const box=calculationsPair.querySelector('.calc-box[data-calc="'+i+'"]');
+    if(!box)return;
+    box.classList.add('mathas-calc-verified');
+    if(!document.getElementById('mathas-one-calc-badge-css')){
+      const style=document.createElement('style');style.id='mathas-one-calc-badge-css';
+      style.textContent='.calc-box.mathas-awaits-first{opacity:.58;transition:opacity .18s ease}.calc-box.mathas-calc-verified{opacity:1}.mathas-calc-ok-badge{position:absolute;top:8px;right:9px;z-index:5;display:inline-grid;place-items:center;width:37px;height:37px;box-sizing:border-box;border-radius:50%;background:linear-gradient(150deg,#21ba71,#0e7946);border:3px solid #e9fff2;box-shadow:0 3px 10px #092d2180,0 0 0 2px #51ce90;color:#fff;font:900 26px/1 system-ui;pointer-events:none;animation:mathas-calc-ok-enter .42s cubic-bezier(.2,1.5,.4,1) both}@keyframes mathas-calc-ok-enter{0%{opacity:0;transform:scale(.35) rotate(-22deg)}65%{opacity:1;transform:scale(1.18) rotate(3deg)}100%{transform:scale(1) rotate(0)}}@media(prefers-reduced-motion:reduce){.mathas-calc-ok-badge{animation:none!important}}';
+      document.head.appendChild(style);
+    }
+    if(getComputedStyle(box).position==='static')box.style.position='relative';
+    let badge=box.querySelector('.mathas-calc-ok-badge');
+    if(!badge){
+      badge=document.createElement('span');badge.className='mathas-calc-ok-badge';
+      badge.textContent='✓';badge.setAttribute('aria-label','Calcul correct');
+      badge.setAttribute('role','img');box.appendChild(badge);
+    }
+    if(i===0)mathasGateSecondCalc(false);
+  }
   function makePair(){
     clearMultiplicationHint();hintBtn._step=0;hintBtn._key=null;
     const makeOne=()=>session.mode==='training'?generateGuidedMultiplication(session.maxDigits,session.multipliers):generateMultiplication(session.maxDigits,session.multipliers);
-    states=[makeOne(),makeOne()];active={kind:'answer',calc:0,col:0};calculationsPair.innerHTML='';states.forEach((s,i)=>renderCalc(s,i));phase='answering';primaryBtn.textContent='Valider';resetBtn.disabled=false;hintBtn.classList.remove('hidden');hintBtn.textContent=session.mode==='training'?'🧭 Guide':'💡 Indice';updateInstruction();updateBar();setFeedback('','');focusMulColumn(0,0);updateSecondDim();requestAnimationFrame(updateScrollArrow)
+    states=[makeOne(),makeOne()];active={kind:'answer',calc:0,col:0};calculationsPair.innerHTML='';states.forEach((s,i)=>renderCalc(s,i));mathasGateSecondCalc(true);phase='answering';primaryBtn.textContent='Valider';resetBtn.disabled=false;hintBtn.classList.remove('hidden');hintBtn.textContent=session.mode==='training'?'🧭 Guide':'💡 Indice';updateInstruction();updateBar();setFeedback('','');focusMulColumn(0,0);updateSecondDim();requestAnimationFrame(updateScrollArrow)
   }
   function groupSep(el,c){if(!el)return;el.classList.add('group-shift');el.style.setProperty('--group-step',Math.floor(c/3))}
   function renderCalc(s,i){
@@ -5784,7 +5809,7 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
     clearTimeout(mathasAutoNormalTimer);
     mathasAutoNormalTimer=setTimeout(()=>{
       if(window.__mathasManualValidation||phase!=='answering'||states!==work)return;
-      if(states.every((s,i)=>s.solved||evaluate(i).filled))handlePrimary();
+      if((!states[0].solved&&evaluate(0).filled)||(states[0].solved&&!states[1].solved&&evaluate(1).filled))handlePrimary();
     },100);
   }
   function enterDigit(d){if(phase!=='answering'||!active)return;if(active.kind==='answer')setAnswerDigit(active.calc,active.col,d);else if(active.kind==='carry')setTopCarry(active.calc,active.col,d);else setSideCarry(active.calc,active.col,d);mathasScheduleNormal()}
@@ -5826,7 +5851,7 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
   function expectedDigits(s){return s.result.split('').reverse()}
   function evaluate(i){const s=states[i],exp=expectedDigits(s);let filled=true,correct=true;for(let c=0;c<s.answerCount;c++){if(s.answerValues[c]==='')filled=false;if(s.answerValues[c]!==exp[c])correct=false}for(let c=1;c<s.count;c++){const e=s.incoming[c]>0?String(s.incoming[c]):'';if(carryMethod==='top'){const raw=s.carryValues[c],act=(e===''&&raw==='0')?'':raw;if(act!==''&&act!==e)correct=false}else if(s.sideCarryValues[c]!==''&&s.sideCarryValues[c]!==e){correct=false}}return{filled,correct}}
   function markErrors(i){const s=states[i],exp=expectedDigits(s);s.firstTry=false;for(let c=0;c<s.answerCount;c++){const inp=answerFor(i,c);if(s.answerValues[c]!==exp[c]){if(s.answerValues[c]!=='')s.wrongHistory[c]=s.answerValues[c];const wh=opFor(i)?.querySelector(`[data-wrong="${c}"]`);if(wh)wh.textContent=s.wrongHistory[c];s.answerValues[c]='';if(inp){inp.value='';inp.classList.add('incorrect')}}}if(carryMethod==='top'){for(let c=1;c<s.count;c++){const e=s.incoming[c]>0?String(s.incoming[c]):'',raw=s.carryValues[c],act=(e===''&&raw==='0')?'':raw;if(act!==e){const inp=carryFor(i,c),wh=opFor(i)?.querySelector(`[data-carry-wrong="${c}"]`);if(raw!=='')s.carryWrong[c]=raw;if(wh)wh.textContent=s.carryWrong[c];s.carryValues[c]='';if(inp){inp.value='';inp.classList.add('bad')}}}}}
-  function lockCalc(i){const s=states[i];s.solved=true;const box=calculationsPair.querySelector(`.calc-box[data-calc="${i}"]`);box.querySelectorAll('input').forEach(x=>{x.disabled=true;x.classList.remove('incorrect','bad','active-entry');if(x.value)x.classList.add('correct','good')});status(i,'Correct','ok');updateSecondDim()}
+  function lockCalc(i){const s=states[i];s.solved=true;const box=calculationsPair.querySelector(`.calc-box[data-calc="${i}"]`);box.querySelectorAll('input').forEach(x=>{x.disabled=true;x.classList.remove('incorrect','bad','active-entry');if(x.value)x.classList.add('correct','good')});status(i,'Correct','ok');mathasShowCalcVerified(i);updateSecondDim()}
   function firstTargetInCalc(i){const s=states[i];if(!s||s.solved)return null;for(const target of mathasMulEntrySequence(s,i)){if(mathasMulEntryValue(s,target)==='')return{kind:target.kind,i:target.calc,c:target.col}}return null}
   function calcFilled(i){
     return !!states[i]&&evaluate(i).filled
@@ -5839,10 +5864,7 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
       updateSecondDim();
       return;
     }
-    const target=firstTargetInCalc(1);
-    if(!target)return;
-    setFeedback('Calcul 1 terminé. Passe au calcul 2, ou appuie sur Valider pour vérifier le calcul 1.','info');
-    window.mathasEntryNavigation.schedule(()=>{if(!window.__mathasManualValidation)focusTarget(target)})
+    setFeedback('Calcul 1 terminé : vérification automatique en cours…','info');
   }
   function firstTarget(){for(let i=0;i<2;i++){const target=firstTargetInCalc(i);if(target)return target}return null}
   function focusTarget(t){if(!t)return;t.kind==='answer'?focusAnswer(t.i,t.c):t.kind==='carry'?focusCarry(t.i,t.c):focusSide(t.i,t.c)}
@@ -5854,7 +5876,7 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
 
     const candidates=[];
     if(firstReady)candidates.push(0);
-    if(secondReady&&(states[0].solved||bothReady)&&(!window.__mathasManualValidation||states[0].solved))candidates.push(1);
+    if(secondReady&&states[0].solved)candidates.push(1);
 
     if(!candidates.length){
       if(!states[0].solved&&!ev[0].filled){
@@ -6292,7 +6314,7 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
   function setInputsEnabled(on){calculationsPair.querySelectorAll('input').forEach(x=>x.disabled=!on);resetBtn.disabled=!on}
   function updateSecondDim(){
     const b=calculationsPair.querySelector('.calc-box[data-calc="1"]');
-    const firstReady=states[0]?.solved||(!window.__mathasManualValidation&&!!evaluate(0).filled);
+    const firstReady=!!states[0]?.solved;
     if(b)b.classList.toggle('waiting-for-first',!firstReady);
     updateScrollArrow()
   }
