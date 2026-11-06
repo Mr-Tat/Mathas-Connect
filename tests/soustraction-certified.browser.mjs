@@ -139,7 +139,7 @@ async function setup({viewport={width:1024,height:768},fixtureData=fixture()}={}
  };
 }
 
-async function launchClassic(page,frame,{method='addBottom',count=4}={}){
+async function launchClassic(page,frame,{method='addBottom',count=4,useKeyboard=false}={}){
  await frame.locator('input[name="borrowMethod"][value="'+method+'"]').evaluate(input=>input.closest('label').click());
  await frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"]').evaluate(el=>{
   const w=el.ownerDocument.defaultView;
@@ -151,9 +151,14 @@ async function launchClassic(page,frame,{method='addBottom',count=4}={}){
       trusted:event.isTrusted,phase:event.eventPhase,active:b.classList.contains('active')});
   },true);
  });
- await frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"]').click();
+ const target=frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"]');
+ // La reprise vérifie également le clavier : pas de clic géométrique
+ // pendant le re-rendu des boutons, et une activation utilisateur réelle.
+ if(useKeyboard)await target.press('Enter');else await target.click();
  console.log('CERTIFIED CLASSIC',JSON.stringify({requested:count,
   clicks:await frame.locator('body').evaluate(()=>window.__mathasClassicClicks)}));
+ const lastClick=await frame.locator('body').evaluate(()=>window.__mathasClassicClicks?.at(-1));
+ assert.equal(lastClick?.count,String(count),'Le bouton activé doit correspondre au nombre choisi');
  await frame.locator('#gameScreen:not(.hidden) #calculationsPair .calc-box').first().waitFor({timeout:20000});
  assert.equal(await page.locator('.mathas-sub-proof:not([hidden])').count(),0,
   'Les exercices normaux restent dans les grilles originales, pas dans une interface parallèle');
@@ -232,13 +237,13 @@ test('Chromium scolaire natif : reprise du même calcul après interruption', {t
  const ctx=await setup();
  try{
   const first=await ctx.page();
-  await launchClassic(first.page,first.frame,{method:'takeTop'});
+  await launchClassic(first.page,first.frame,{method:'takeTop',useKeyboard:true});
   const q=ctx.fixture.issued[0].questions;
   await fillCalc(first.frame,0,String(BigInt(q[0].a)-BigInt(q[0].b)));
   await first.frame.locator('#primaryBtn').click();
   await first.page.close();
   const second=await ctx.page();
-  await launchClassic(second.page,second.frame,{method:'takeTop'});
+  await launchClassic(second.page,second.frame,{method:'takeTop',useKeyboard:true});
   assert.equal(ctx.fixture.issued.length,1,'Une reprise réutilise les nombres serveur');
   await fillCalc(second.frame,1,String(BigInt(q[1].a)-BigInt(q[1].b)));
   await second.frame.locator('#primaryBtn').click();
