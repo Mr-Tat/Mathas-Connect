@@ -99,3 +99,15 @@ test('Toutes → Tests lance bien le Mélange officiel, jamais le vieux pilot',(
  assert.match(host,/!teacherPlayer&&!requireConnect&&localStorage/);
  assert.doesNotMatch(read('hub-catalog.json'),/melange-calculs-ecrits/);
 });
+
+// Les détails de l’interface Connect ne doivent pas réintroduire l’ancienne bande rétractable.
+test('Mélange TEST : la bande ancienne reste cachée et le niveau/XP s’affichent dans le jeu',()=>{
+ const host=read('apps/calculs-melanges/index.html');
+ const ui=read('apps/calculs-melanges/official-ui.mjs');
+ assert.match(host,/<div class="notice" hidden>/);
+ assert.match(host,/if\(connected&&officialUi&&!blockedSession&&connected\.pending\(\)<100\)/);
+ assert.match(host,/frame\.contentDocument\?\.getElementById\('mathasMixedXp'\)/);
+ assert.match(host,/if\(!connected\)document\.querySelector\('\.notice'\)\.hidden=false/);
+ assert.match(ui,/Niveau '\+level/);
+ assert.match(ui,/totalXp<300\?Math\.floor\(totalXp\/50\)\+1/);
+});
