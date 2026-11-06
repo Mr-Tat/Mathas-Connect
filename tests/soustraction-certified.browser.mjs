@@ -208,7 +208,7 @@ async function solvePair(frame,questions){
  // La validation du premier rend le second accessible.
  for(let i=0;i<questions.length;i++){
   await fillCalc(frame,i,String(BigInt(questions[i].a)-BigInt(questions[i].b)));
-  await frame.locator('#calculationsPair .calc-box[data-calc="'+i+'"].mathas-calc-verified').waitFor({timeout:8000});
+  await frame.locator('#calculationsPair .calc-box[data-calc="'+i+'"].mathas-calc-verified').waitFor({timeout:8000,state:'attached'});
  }
  await frame.locator('#primaryBtn').evaluate(btn=>{
   if(!btn.closest('#gameScreen')?.classList.contains('hidden')&&btn.textContent.includes('Valider'))btn.click();
@@ -286,7 +286,17 @@ test('Chromium scolaire natif : 3 vies et trois erreurs', {timeout:120000},async
   await frame.locator('#primaryBtn').filter({hasText:/Passer aux 2 calculs suivants/}).waitFor({timeout:8000});
   await frame.locator('#primaryBtn').click();
   await fillCalc(frame,0,'0');
-  await page.getByRole('heading',{name:'Série vérifiée ✓'}).waitFor({timeout:25000});
+  try{
+   await page.getByRole('heading',{name:'Série vérifiée ✓'}).waitFor({timeout:25000});
+  }catch(e){
+   const state=await frame.locator('body').evaluate(body=>({
+    primary:body.querySelector('#primaryBtn')?.textContent,
+    feedback:body.querySelector('#feedback')?.textContent,
+    statuses:[...body.querySelectorAll('#calculationsPair .calc-status')].map(x=>x.textContent),
+    answers:[...body.querySelectorAll('#calculationsPair .calc-box')].map(box=>[...box.querySelectorAll('.answer-input')].map(x=>x.value))
+   }));
+   throw Error('3 vies non terminées : '+JSON.stringify({state,checks:ctx.fixture.checks,received:ctx.fixture.received.slice(-6)})+' '+e.message);
+  }
   assert.deepEqual(ctx.fixture.checks[0],{mode:'three-lives',method:'addBottom',correct:0,attempts:3});
   assert.equal(ctx.fixture.received.some(x=>x.action==='game-record'),false);
  }finally{await ctx.close()}
