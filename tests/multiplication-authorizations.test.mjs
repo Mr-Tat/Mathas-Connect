@@ -41,3 +41,10 @@ test('permission de tables transmise à la session certifiée avec héritage cla
  assert.match(migration,/ENABLE ROW LEVEL SECURITY/);
  assert.match(migration,/REVOKE ALL/);
 });
+
+test('les multiplicateurs des calculs mélangés gardent leur panneau historique',()=>{
+ const app=read('app.js');
+ assert.match(app,/function mixedMultiplierLockPanel\(/);
+ assert.match(app,/if\(appKey==='melange-calculs-ecrits'\)return mixedMultiplierLockPanel/);
+ assert.match(app,/function multiplierLockPanel\(/);
+});

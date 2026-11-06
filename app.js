@@ -735,9 +735,56 @@ function openParcoursDialog({scope,studentId=null,studentName='',count=null,appK
  };
  dialog.showModal();check.focus();
 }
+// Gestion légère des multiplicateurs : un appel à l'ouverture et un à l'enregistrement.
+function mixedMultiplierLockPanel(container,studentId=null,appKey='multiplication-ecrite-simple'){
+ const details=document.createElement('details');details.className='management';
+ const summary=document.createElement('summary');summary.textContent='🔒 Tables obligatoires de multiplication';
+ const description=document.createElement('p');description.className='hint';description.textContent='Ces tables sont obligatoires : l’élève ne peut pas les retirer, mais peut ajouter les autres.';
+ const scopeLabel=document.createElement('label');scopeLabel.textContent='Appliquer le verrouillage';
+ const scope=document.createElement('select');scope.setAttribute('aria-label','Portée du verrouillage');
+ scope.add(new Option('Pour cet élève','student'));scope.add(new Option('Pour toute la classe','class'));
+ if(!studentId)scope.remove(0);
+ scopeLabel.append(scope);
+ const area=document.createElement('div');area.className='multiplier-lock-choices';
+ const checks=new Map();
+ for(let n=2;n<=9;n++){const label=document.createElement('label');const cb=document.createElement('input');cb.type='checkbox';cb.value=String(n);checks.set(n,cb);label.append(cb,document.createTextNode(' '+n));area.append(label)}
+ const actions=document.createElement('div');actions.className='multiplier-lock-actions';
+ const save=document.createElement('button');save.type='button';save.className='soft';save.textContent='Verrouiller les tables choisies';
+ const unlock=document.createElement('button');unlock.type='button';unlock.className='soft';unlock.textContent='Retirer le verrouillage';
+ const feedback=document.createElement('p');feedback.className='hint';feedback.setAttribute('role','status');
+ actions.append(save,unlock);details.append(summary,description,scopeLabel,area,actions,feedback);container.append(details);
+ let locks=[];
+ function refreshChoice(){
+  const selectedScope=scope.value==='student'?studentId:'class';
+  const found=locks.find(x=>x.scope_key===selectedScope);
+  const inherited=selectedScope!=='class'?locks.find(x=>x.scope_key==='class'):null;
+  const chosen=found?.multipliers||inherited?.multipliers||[];
+  checks.forEach((cb,n)=>cb.checked=chosen.includes(n));
+  feedback.textContent=found?'Verrouillage actif ('+(selectedScope==='class'?'classe':'élève')+')':inherited?'Tables obligatoires héritées de la classe':'Aucun verrouillage actif';
+ }
+ async function load(){
+  feedback.textContent='Lecture du réglage…';
+  try{const r=await resultCall('teacher-multipliers-get',{appKey});locks=r.locks||[];refreshChoice()}
+  catch(e){feedback.textContent='Impossible de charger : '+e.message}
+ }
+ details.addEventListener('toggle',()=>{if(details.open)load()});
+ scope.onchange=refreshChoice;
+ async function update(values){
+  save.disabled=unlock.disabled=scope.disabled=true;feedback.textContent='Enregistrement…';
+  try{
+   await resultCall('teacher-multipliers-set',{appKey,studentId:scope.value==='student'?studentId:null,multipliers:values});
+   await load();feedback.textContent=values?'Tables obligatoires enregistrées. L’élève peut en ajouter. Application au prochain lancement.':'Verrouillage retiré. Application au prochain lancement.';
+  }catch(e){feedback.textContent='Échec : '+e.message}
+  finally{save.disabled=unlock.disabled=scope.disabled=false}
+ }
+ save.onclick=()=>{const selected=[...checks].filter(([,cb])=>cb.checked).map(([n])=>n);if(!selected.length){feedback.textContent='Choisis au moins une table obligatoire.';return}update(selected)};
+ unlock.onclick=()=>update(null);
+}
+
 // Résultats reste une consultation : les permissions se gèrent toujours
 // dans le même écran indépendant, même si aucune partie n'a été jouée.
 function multiplierLockPanel(container,studentId=null,appKey='multiplication-ecrite-simple'){
+ if(appKey==='melange-calculs-ecrits')return mixedMultiplierLockPanel(container,studentId,appKey);
  const link=document.createElement('button');link.type='button';link.className='soft';
  link.textContent='⚙ Autorisations de multiplication';
  link.onclick=()=>{
