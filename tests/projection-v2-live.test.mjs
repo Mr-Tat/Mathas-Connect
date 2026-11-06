@@ -140,7 +140,7 @@ test('Projection V2 : noms mis en gras dans les événements, sans HTML injecté
  assert.doesNotMatch(js,/text\.innerHTML\s*=/);
  assert.match(html,/\.event-text \.event-student\{font-weight:900;color:inherit\}/);
  assert.doesNotMatch(js,/MEILLEURS SCORES · PÉRIODE DE PROJECTION/);
- assert.match(html,/projection-v2-live\.js\?v=20261106-classe-exploits-v1/);
+ assert.match(html,/projection-v2-live\.js\?v=20261106-exploits-brefs-v2/);
 });
 
 test('Projection V2 : cadre 24px carré, score centré, chiffres en gras',()=>{
