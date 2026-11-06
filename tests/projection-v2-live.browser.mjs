@@ -198,7 +198,7 @@ test('V2 — animations de remontée indépendantes, aucun score mélangé',{tim
   assert.equal(await page.locator(card(SUB)+' .entry.rank-1 .player-label strong').textContent(),'Élève 5');
   assert.equal(await page.locator(card(ADD)+' .entry.rank-1 .player-label strong').textContent(),'Élève 1');
   assert.equal(await page.locator(card(ADD)+' .ranking-list').evaluate(e=>Number(e.dataset.overtakeSteps||0)),0);
-  await page.waitForFunction(()=>document.querySelector('#exploits')?.textContent?.includes('remonte de 4 places'));
+  await page.waitForFunction(()=>[...document.querySelectorAll('#exploits .event')].some(el=>el.title.includes('remonte de 4 places')&&el.textContent.includes('Belle remontée !')));
   assert.match(await page.locator('#exploits').textContent(),/Soustraction écrite/);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
@@ -432,7 +432,7 @@ test('V2 — prénom en gras dans les exploits, jeu et texte normal, sans surtit
   assert.deepEqual(results.slice(0,3).map(x=>x.name),['Élève 1','Élève 2','Élève 3']);
   assert.ok(results.every(x=>x.nameSize>=18&&x.actionSize>=18),'Nom et exploit visibles depuis la classe');
   assert.ok(results.every(x=>x.appSize<x.actionSize),'Application discrète');
-  assert.ok(results[0].action.includes('trophée')&&results[1].action.includes('série parfaite'),
+  assert.ok(results[0].action==='Nouveau trophée !'&&results[1].action==='Série parfaite !',
    'La nature de chaque exploit reste explicite');
   assert.equal(await page.locator('.ranking-card .ranking-head .over').count(),0,'Surtitre supprimé');
   assert.deepEqual(await page.locator('.ranking-card .ranking-head h2').allTextContents(),
