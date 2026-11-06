@@ -16,7 +16,10 @@ for(const [name,path,check] of games){
   assert.match(code,/mathasGateSecondCalc\(true\)/,'le second calcul est initialement inaccessible');
   assert.match(code,/if\(secondReady&&states\[0\]\.solved\)candidates\.push\(1\)/,
    'le second calcul ne peut pas être validé avant le premier');
-  assert.match(code,/mathasShowCalcVerified\(i\)/,'un badge signale la réussite');
+  assert.match(code,/mathasShowCalcVerified\(i\)/,'un badge signale le verdict du premier essai');
+  assert.match(code,/states\[i\]\?\.firstTry===false/,'une correction conserve le verdict raté');
+  assert.match(code,/missed\?'Raté':'✓'/,'le ✓ est réservé aux premiers essais réussis');
+  assert.match(code,/mathas-calc-missed-badge/,'badge rouge distinct après correction');
   assert.match(code,/prefers-reduced-motion:reduce/,'animation respectueuse des préférences');
   assert.match(code,/window\.__mathasManualValidation/,'validation manuelle conservée');
   assert.match(code,/!states\[0\]\.solved&&/,'vérification automatique du premier calcul');
