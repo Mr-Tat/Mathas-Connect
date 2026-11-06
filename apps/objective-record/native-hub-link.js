@@ -93,14 +93,24 @@
       display:block!important;height:100%!important;width:0;
       background:linear-gradient(90deg,#d9a336,#ffe18b)!important
     }
+    /* Bouton unique : à droite du profil et de taille fixe, même après gain d'XP. */
     .mathas-brand-row #mathas-native-connect-xp{
-      box-sizing:border-box!important;display:inline-flex!important;align-items:center!important;
-      justify-content:center!important;min-height:39px!important;min-width:152px!important;
-      width:max-content!important;max-width:100%!important;margin:0!important;flex:0 0 auto!important;white-space:nowrap!important;
-      padding:8px 13px!important;border:1px solid #c9a45b!important;border-radius:10px!important;
-      background:linear-gradient(150deg,#685020,#4f3918)!important;color:#fff1bf!important;
-      box-shadow:0 3px 11px rgba(0,0,0,.24)!important;
-      font:750 12px system-ui,sans-serif!important;cursor:pointer!important
+      box-sizing:border-box!important;display:inline-flex!important;flex-direction:column!important;
+      align-items:center!important;justify-content:center!important;gap:3px!important;
+      flex:0 0 177px!important;width:177px!important;min-width:177px!important;max-width:177px!important;
+      height:51px!important;min-height:51px!important;max-height:51px!important;
+      padding:6px 7px!important;margin:0!important;white-space:nowrap!important;
+      border:1px solid #d1a14d!important;border-radius:12px!important;
+      background:linear-gradient(180deg,#856021,#604512)!important;color:#fbe3a1!important;
+      box-shadow:inset 0 1px #ffffff40,0 4px 0 #36240d,0 8px 18px #0004!important;
+      font:850 11px/1.14 system-ui,sans-serif!important;cursor:pointer!important
+    }
+    #mathas-native-connect-xp .mathas-connect-xp-main{
+      display:block!important;white-space:nowrap!important;
+      font:850 11px/1.14 system-ui,sans-serif!important;font-variant-numeric:tabular-nums!important
+    }
+    #mathas-native-connect-xp .mathas-connect-xp-hint{
+      display:block!important;font:650 9.5px/1.1 system-ui,sans-serif!important;opacity:.75!important
     }
     .mathas-brand-row #mathas-native-connect-xp:hover{filter:brightness(1.11)!important}
     .mathas-brand-row #mathas-native-connect-xp:focus-visible{outline:3px solid #ffe489!important;outline-offset:2px!important}
@@ -110,7 +120,12 @@
       #mathas-native-connect-profile .connect-person{max-width:106px!important}
       #mathas-native-connect-profile .connect-level{min-width:77px!important;gap:4px!important;padding:3px 5px!important}
       #mathas-native-connect-profile .connect-level strong{font-size:23px!important}
-      .mathas-brand-row #mathas-native-connect-xp{min-width:130px!important;margin-left:0!important}
+      .mathas-brand-row #mathas-native-connect-xp{
+        width:158px!important;min-width:158px!important;max-width:158px!important;
+        flex-basis:158px!important;margin-left:0!important
+      }
+      #mathas-native-connect-xp .mathas-connect-xp-main{font-size:10px!important}
+      #mathas-native-connect-xp .mathas-connect-xp-hint{font-size:9px!important}
     }
     @media(max-width:440px){
       .mathas-brand-row #mathas-native-connect-profile{width:auto!important;flex:1 1 auto!important;max-width:100%!important}
@@ -159,7 +174,8 @@
     if(profileAnchor&&available&&!doc.getElementById('mathas-native-connect-xp')){
       const button=doc.createElement('button');
       button.type='button';button.id='mathas-native-connect-xp';
-      button.textContent='✨ XP à récupérer';
+      button.innerHTML='<span class="mathas-connect-xp-main">✨ XP à récupérer</span><span class="mathas-connect-xp-hint">Voir le détail ›</span>';
+      button.title='Voir les XP acquis et les récompenses encore possibles';
       button.setAttribute('aria-label','Afficher les XP acquis et à gagner');
       button.setAttribute('aria-expanded','false');
       button.addEventListener('click',()=>{
@@ -183,6 +199,9 @@
     }
     if(button){
       button.hidden=!available;
+      const source=host.getElementById('xp-toggle-main')?.textContent||'✨ XP à récupérer';
+      const main=button.querySelector('.mathas-connect-xp-main');
+      if(main&&main.textContent!==source)main.textContent=source;
       button.setAttribute('aria-expanded',host.getElementById('xp-toggle')?.getAttribute('aria-expanded')||'false');
     }
   };
