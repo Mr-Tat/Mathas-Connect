@@ -5779,11 +5779,11 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
   // V5.4.16 — Vérification automatique uniquement après remplissage complet
   let mathasAutoNormalTimer=0;
   function mathasScheduleNormal(){
-    if(phase!=='answering'||!session||!states?.length)return;
+    if(window.__mathasManualValidation||phase!=='answering'||!session||!states?.length)return;
     const work=states;
     clearTimeout(mathasAutoNormalTimer);
     mathasAutoNormalTimer=setTimeout(()=>{
-      if(phase!=='answering'||states!==work)return;
+      if(window.__mathasManualValidation||phase!=='answering'||states!==work)return;
       if(states.every((s,i)=>s.solved||evaluate(i).filled))handlePrimary();
     },100);
   }
@@ -5833,10 +5833,16 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
   }
   function autoAdvanceAfterCalc(i){
     if(i!==0||states[0].solved||!calcFilled(0)||states[1].solved)return;
+    if(window.__mathasManualValidation){
+      setFeedback('Calcul 1 terminé. Clique sur Valider pour vérifier avant le calcul 2.','info');
+      primaryBtn.focus();
+      updateSecondDim();
+      return;
+    }
     const target=firstTargetInCalc(1);
     if(!target)return;
     setFeedback('Calcul 1 terminé. Passe au calcul 2, ou appuie sur Valider pour vérifier le calcul 1.','info');
-    window.mathasEntryNavigation.schedule(()=>focusTarget(target))
+    window.mathasEntryNavigation.schedule(()=>{if(!window.__mathasManualValidation)focusTarget(target)})
   }
   function firstTarget(){for(let i=0;i<2;i++){const target=firstTargetInCalc(i);if(target)return target}return null}
   function focusTarget(t){if(!t)return;t.kind==='answer'?focusAnswer(t.i,t.c):t.kind==='carry'?focusCarry(t.i,t.c):focusSide(t.i,t.c)}
@@ -5848,7 +5854,7 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
 
     const candidates=[];
     if(firstReady)candidates.push(0);
-    if(secondReady&&(states[0].solved||bothReady))candidates.push(1);
+    if(secondReady&&(states[0].solved||bothReady)&&(!window.__mathasManualValidation||states[0].solved))candidates.push(1);
 
     if(!candidates.length){
       if(!states[0].solved&&!ev[0].filled){
@@ -6286,7 +6292,7 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
   function setInputsEnabled(on){calculationsPair.querySelectorAll('input').forEach(x=>x.disabled=!on);resetBtn.disabled=!on}
   function updateSecondDim(){
     const b=calculationsPair.querySelector('.calc-box[data-calc="1"]');
-    const firstReady=states[0]?.solved||!!evaluate(0).filled;
+    const firstReady=states[0]?.solved||(!window.__mathasManualValidation&&!!evaluate(0).filled);
     if(b)b.classList.toggle('waiting-for-first',!firstReady);
     updateScrollArrow()
   }
@@ -6549,11 +6555,11 @@ function hardThreeScore(level){const n=Number(hardThreeStore()[String(level)]);r
   // V5.4.16 — Même règle sur l'unique calcul affiché en HARD
   let mathasAutoHardTimer=0;
   function mathasScheduleHard(){
-    if(hardPhase!=='answering'||!hardState||!hardSession)return;
+    if(window.__mathasManualValidation||hardPhase!=='answering'||!hardState||!hardSession)return;
     const work=hardState;
     clearTimeout(mathasAutoHardTimer);
     mathasAutoHardTimer=setTimeout(()=>{
-      if(hardPhase!=='answering'||hardState!==work)return;
+      if(window.__mathasManualValidation||hardPhase!=='answering'||hardState!==work)return;
       if(evalHard().filled)hardPrimaryAction();
     },100);
   }

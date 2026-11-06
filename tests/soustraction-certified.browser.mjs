@@ -335,8 +335,12 @@ test('Chromium scolaire natif : HARD trois vies se terminent au troisième éche
   const {page,frame}=await ctx.page();
   await launchHard(page,frame,'hard-three-lives');
   for(let i=0;i<3;i++){
-   if(i>0)await frame.locator('#hardPrimary').click();
+   if(i>0)await frame.locator('#hardPrimary').filter({hasText:'Calcul suivant'}).click();
    await wrongHardCalc(frame);
+   // L'autocorrection du vrai moteur s'effectue après le dernier chiffre.
+   // Ne pas cliquer avant qu'elle ait traité l'erreur précédente.
+   if(i<2)await frame.locator('#hardPrimary').filter({hasText:'Calcul suivant'})
+    .waitFor({timeout:10000});
   }
   await page.getByRole('heading',{name:'Série vérifiée ✓'}).waitFor({timeout:25000});
   assert.equal(ctx.fixture.checks[0]?.mode,'hard-three-lives');

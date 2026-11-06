@@ -1,0 +1,33 @@
+name: Quatre calculs — validation manuelle facultative
+on:
+  pull_request:
+    paths:
+      - 'apps/objective-record/in-game-manual-validation.mjs'
+      - 'apps/multiplication-simple/game-original.html'
+      - 'apps/multiplication-simple/index.html'
+      - 'apps/soustraction-simple/game-original.html'
+      - 'apps/soustraction-simple/index.html'
+      - 'tests/manual-answer-validation.browser.mjs'
+      - '.github/workflows/manual-answer-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  manual-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe du module et du test
+        run: |
+          node --check apps/objective-record/in-game-manual-validation.mjs
+          node --check tests/manual-answer-validation.browser.mjs
+      - name: Chromium sans apt supplémentaire
+        run: |
+          npm install --no-save --no-package-lock playwright@1.58.2
+          npx playwright install chromium
+      - name: Exercices natifs réels, correction automatique et validation optionnelle
+        run: node --test --test-concurrency=1 tests/manual-answer-validation.browser.mjs

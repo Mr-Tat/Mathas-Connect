@@ -20,6 +20,7 @@ const files={
  '/apps/multiplication-simple/native-certified.mjs':['../apps/multiplication-simple/native-certified.mjs','text/javascript'],
  '/apps/multiplication-simple/school-record-eligibility.mjs':['../apps/multiplication-simple/school-record-eligibility.mjs','text/javascript'],
  '/apps/objective-record/native-connect-bridge.mjs':['../apps/objective-record/native-connect-bridge.mjs','text/javascript'],
+ '/apps/objective-record/in-game-manual-validation.mjs':['../apps/objective-record/in-game-manual-validation.mjs','text/javascript'],
  '/apps/objective-record/school-score-view.mjs':['../apps/objective-record/school-score-view.mjs','text/javascript'],
  '/projection-consent.mjs':['../projection-consent.mjs','text/javascript']
 };

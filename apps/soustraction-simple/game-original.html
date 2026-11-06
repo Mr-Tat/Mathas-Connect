@@ -9847,11 +9847,11 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
   // V5.4.16 — Vérification automatique uniquement après remplissage complet
   let mathasAutoNormalTimer=0;
   function mathasScheduleNormal(){
-    if(phase!=='answering'||!session||!states?.length)return;
+    if(window.__mathasManualValidation||phase!=='answering'||!session||!states?.length)return;
     const work=states;
     clearTimeout(mathasAutoNormalTimer);
     mathasAutoNormalTimer=setTimeout(()=>{
-      if(phase!=='answering'||states!==work)return;
+      if(window.__mathasManualValidation||phase!=='answering'||states!==work)return;
       if(states.every((s,i)=>s.solved||[...opFor(i).querySelectorAll("input.answer-input, input.adjust-input:not(.hidden-adjust)")].filter(x=>!x.disabled).every(x=>x.value!=="")))handlePrimary();
     },100);
   }
@@ -9860,7 +9860,12 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     const inp=inputFor(i,col);if(!inp)return;active={kind:'answer',calc:i,col,replace:false};inp.value=digit;inp.classList.remove('incorrect');
     const next=col+1;
     if(next<states[i].answerCount)focusInput(i,next);
-    else if(i===0&&!states[1].solved)focusInput(1,0);else inp.blur()
+    else if(i===0&&!states[1].solved){
+      if(window.__mathasManualValidation){
+        setFeedback('Calcul 1 rempli. Vérifie tes réponses puis clique sur Valider pour passer au calcul 2.','info');
+        primaryBtn.focus();
+      }else focusInput(1,0);
+    }else inp.blur()
     mathasScheduleNormal();
   }
 
@@ -10409,7 +10414,7 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
 
     // Le calcul 2 n'est corrigé que lorsque les deux calculs sont terminés
     // (ou lorsque le calcul 1 a déjà été validé auparavant).
-    if(secondReady&&bothFinished)candidates.push(1)
+    if(secondReady&&bothFinished&&(!window.__mathasManualValidation||states[0].solved))candidates.push(1)
 
     // Un calcul terminé peut être vérifié sans obliger l'élève à finir l'autre.
     if(!candidates.length){
@@ -11400,11 +11405,11 @@ function hardThreeScore(level){
   // V5.4.16 — Même règle sur l'unique calcul affiché en HARD
   let mathasAutoHardTimer=0;
   function mathasScheduleHard(){
-    if(hardPhase!=='answering'||!hardState||!hardSession)return;
+    if(window.__mathasManualValidation||hardPhase!=='answering'||!hardState||!hardSession)return;
     const work=hardState;
     clearTimeout(mathasAutoHardTimer);
     mathasAutoHardTimer=setTimeout(()=>{
-      if(hardPhase!=='answering'||hardState!==work)return;
+      if(window.__mathasManualValidation||hardPhase!=='answering'||hardState!==work)return;
       if(evaluateHard().filled)hardPrimaryAction();
     },100);
   }
