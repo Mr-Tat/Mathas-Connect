@@ -10,6 +10,14 @@ const VALID_PROOF_CLASSES=new Set(['4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',...SCH
 // cannot choose the grade, milestone or credited XP.
 export function createAdditionProofUI({button,panel,levelSelect,totalSelect,modeSelect,frame,getContext,call,refresh,notify,onRecorded=()=>{}}){
  let run=null,queue=null,sending=false,suppressedTerminal=false;
+ // Never announce the native end as an official result before Connect confirms.
+ function proofStatus(phase,receipt=null){
+  const win=inner().win;
+  if(!win)return;
+  const detail={phase,receipt};
+  win.__mathasSchoolProofState=detail;
+  win.dispatchEvent(new win.CustomEvent('mathas:school-proof-status',{detail}));
+ }
  const isCurrent=seq=>seq===getContext().generation&&getContext().activeApp===PROOF_APP;
  const inner=()=>{
   const outer=frame.contentDocument;
@@ -18,7 +26,7 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,mode
  };
  function reset(){
   run=null;queue=null;sending=false;suppressedTerminal=false;
-  panel.hidden=true;button.disabled=true;
+  proofStatus('idle');panel.hidden=true;button.disabled=true;
  }
  function bind(win,doc){
   const ctx=getContext();
@@ -35,11 +43,20 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,mode
     if(!event.target?.closest?.('#menuBtn'))return;
     if(!run||run.finished||sending)return;
     queue?.clear();
-    run=null;queue=null;suppressedTerminal=false;
+    run=null;queue=null;suppressedTerminal=false;proofStatus('idle');
     delete win.__mathasServerCertified;
     if(!button.dataset.extendedBusy)button.disabled=false;
     notify('Partie interrompue. Tu peux lancer une nouvelle série.');
    });
+  }
+  if(!doc.__mathasCertifiedFinishGuard){
+   doc.__mathasCertifiedFinishGuard=true;
+   doc.addEventListener('click',event=>{
+    if(!['saving','failed'].includes(win.__mathasSchoolProofState?.phase))return;
+    if(!event.target?.closest?.('#menuBtn,#primaryBtn,.mathas-post-activity-overlay'))return;
+    event.preventDefault();event.stopImmediatePropagation();
+    notify('Résultat en cours de confirmation Connect. Utilise « Actualiser » si nécessaire.');
+   },true);
   }
   if(run && win.__mathasServerCertified?.sessionId!==run.sessionId){
    win.__mathasServerCertified={sessionId:run.sessionId,level:run.level,total:run.total,questions:run.questions,index:0};
@@ -64,7 +81,7 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,mode
    notify('Partie certifiée incomplète : '+run.total+' premières réponses nécessaires. Aucun XP demandé.');
    return;
   }
-  sending=true;const current=run;
+  sending=true;const current=run;proofStatus('saving');
   try{
    const ack=await call('finish-proof-v2',{sessionId:current.sessionId,answers:current.answers});
    if(!isCurrent(current.generation))return;
@@ -74,15 +91,16 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,mode
    queue?.clear();run=null;suppressedTerminal=true;
    // This session ID is the same eventId as the official score receipt.
    // A consent offer follows server verification and never affects the award.
-   try{onRecorded({eventId:current.sessionId,appKey:PROOF_APP,duplicate:ack.duplicate===true})}
-   catch{/* Projection is optional, and cannot roll back an awarded result. */}
    let profileUpdated=true;
    try{await refresh()}catch{profileUpdated=false}
+   proofStatus('verified',{score:ack.verifiedScore,total:current.total,xp:ack.xp.delta});
+   try{await onRecorded({eventId:current.sessionId,appKey:PROOF_APP,duplicate:ack.duplicate===true})}
+   catch{/* Projection optional, never rolls back awarded results. */}
    notify('✅ Vérifié côté serveur : '+ack.verifiedScore+'/'+current.total+
     ' · +'+ack.xp.delta+' XP Connect.'+
     (profileUpdated?'':' Profil à actualiser lorsque la connexion revient.'));
   }catch(e){
-   if(isCurrent(current.generation))notify('⚠️ Preuve conservée. Actualiser pour retenter : '+e.message);
+   if(isCurrent(current.generation)){proofStatus('failed');notify('⚠️ Preuve conservée. Actualiser pour retenter : '+e.message)}
   }finally{sending=false}
  }
  function onGameEvent(event){
@@ -115,7 +133,7 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,mode
    notify('Choisis un niveau et une série de calculs valides.');return;
   }
   if(run||sending)return;
-  button.disabled=true;
+  button.disabled=true;proofStatus('starting');
   try{
    const data=await call('start-proof-v2',{level,total});
    if(!isCurrent(seq))return;
@@ -127,7 +145,7 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,mode
    if(!queue)throw Error('Profil de sauvegarde indisponible');
    const previous=queue.read();
    run={...challenge,generation:seq,answers:[],finished:false,invalid:false};
-   suppressedTerminal=false;
+   suppressedTerminal=false;proofStatus('playing');
    if(previous?.sessionId===challenge.sessionId&&previous.level===level&&previous.total===total&&previous.answers.length===total){
     run.answers=previous.answers;run.finished=true;
     notify('Synchronisation des '+total+' réponses conservées…');
@@ -149,7 +167,7 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,mode
    launch.click();
    notify('🔐 '+total+' additions niveau '+level+' émises par Connect. Chiffres et reports vérifiés côté serveur.');
   }catch(e){
-   if(isCurrent(seq)){run=null;queue=null;notify('⚠️ '+e.message+' : aucun XP demandé.');}
+   if(isCurrent(seq)){run=null;queue=null;proofStatus('idle');notify('⚠️ '+e.message+' : aucun XP demandé.');}
   }finally{if(isCurrent(seq))button.disabled=!!run||sending}
  }
  function startNative(level,total){

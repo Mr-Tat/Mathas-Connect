@@ -12,13 +12,21 @@ export function createMultipleProofUI({
  button,panel,levelSelect,totalSelect,modeSelect,frame,getContext,call,refresh,notify,onRecorded=()=>{}
 }){
  let run=null,queue=null,sending=false,suppressedTerminal=false;
+ // Never announce the native end as an official result before Connect confirms.
+ function proofStatus(phase,receipt=null){
+  const win=inner().win;
+  if(!win)return;
+  const detail={phase,receipt};
+  win.__mathasSchoolProofState=detail;
+  win.dispatchEvent(new win.CustomEvent('mathas:school-proof-status',{detail}));
+ }
  const isCurrent=seq=>seq===getContext().generation&&getContext().activeApp===MULTI_PROOF_APP;
  const inner=()=>{
   const outer=frame.contentDocument;
   const node=outer?.getElementById('game');
   return {win:node?.contentWindow,doc:node?.contentDocument};
  };
- function reset(){run=null;queue=null;sending=false;suppressedTerminal=false;}
+ function reset(){run=null;queue=null;sending=false;suppressedTerminal=false;proofStatus('idle');}
  function bind(win,doc){
   const ctx=getContext();
   if(ctx.activeApp!==MULTI_PROOF_APP||!ctx.pupilId||!doc?.getElementById('menuScreen'))return;
@@ -34,11 +42,20 @@ export function createMultipleProofUI({
     if(!event.target?.closest?.('#menuBtn'))return;
     if(!run||run.finished||sending)return;
     queue?.clear();
-    run=null;queue=null;suppressedTerminal=false;
+    run=null;queue=null;suppressedTerminal=false;proofStatus('idle');
     delete win.__mathasServerCertifiedMulti;
     if(!button.dataset.extendedBusy)button.disabled=false;
     notify('Partie interrompue. Tu peux lancer une nouvelle série.');
    });
+  }
+  if(!doc.__mathasCertifiedFinishGuard){
+   doc.__mathasCertifiedFinishGuard=true;
+   doc.addEventListener('click',event=>{
+    if(!['saving','failed'].includes(win.__mathasSchoolProofState?.phase))return;
+    if(!event.target?.closest?.('#menuBtn,#primaryBtn,.mathas-post-activity-overlay'))return;
+    event.preventDefault();event.stopImmediatePropagation();
+    notify('Résultat en cours de confirmation Connect. Utilise « Actualiser » si nécessaire.');
+   },true);
   }
   if(run&&win.__mathasServerCertifiedMulti?.sessionId!==run.sessionId)
    win.__mathasServerCertifiedMulti={sessionId:run.sessionId,
@@ -61,7 +78,7 @@ export function createMultipleProofUI({
    notify('Partie certifiée incomplète : '+run.total+' premières réponses nécessaires. Aucun XP demandé.');
    return;
   }
-  sending=true;const current=run;
+  sending=true;const current=run;proofStatus('saving');
   try{
    const ack=await call('finish-proof-multi-v1',{sessionId:current.sessionId,answers:current.answers});
    if(!isCurrent(current.generation))return;
@@ -69,14 +86,15 @@ export function createMultipleProofUI({
     ||ack.verifiedScore<0||ack.verifiedScore>current.total
     ||!Number.isSafeInteger(ack.xp?.delta))throw Error('Réponse mathématique non confirmée par Connect');
    queue?.clear();run=null;suppressedTerminal=true;
-   try{onRecorded({eventId:current.sessionId,appKey:MULTI_PROOF_APP,duplicate:ack.duplicate===true})}
-   catch{/* A projection opt-in never changes the XP award. */}
    let updated=true;try{await refresh()}catch{updated=false}
+   proofStatus('verified',{score:ack.verifiedScore,total:current.total,xp:ack.xp.delta});
+   try{await onRecorded({eventId:current.sessionId,appKey:MULTI_PROOF_APP,duplicate:ack.duplicate===true})}
+   catch{/* Projection optional, never rolls back awarded results. */}
    notify('✅ Addition multiple vérifiée : '+ack.verifiedScore+'/'+current.total+
     ' · +'+ack.xp.delta+' XP Connect.'+
     (updated?'':' Actualiser pour relire le profil.'));
   }catch(e){
-   if(isCurrent(current.generation))notify('⚠️ Preuve conservée. Actualiser pour réessayer : '+e.message);
+   if(isCurrent(current.generation)){proofStatus('failed');notify('⚠️ Preuve conservée. Actualiser pour réessayer : '+e.message)}
   }finally{sending=false}
  }
  function onGameEvent(event){
@@ -110,7 +128,7 @@ export function createMultipleProofUI({
    notify('Choisis un niveau et une série valides.');return;
   }
   if(run||sending)return;
-  button.disabled=true;
+  button.disabled=true;proofStatus('starting');
   try{
    const data=await call('start-proof-multi-v1',{level,total});
    if(!isCurrent(seq))return;
@@ -120,7 +138,7 @@ export function createMultipleProofUI({
    if(!queue)throw Error('Stockage du profil indisponible');
    const previous=queue.read();
    run={...challenge,generation:seq,answers:[],finished:false,invalid:false};
-   suppressedTerminal=false;
+   suppressedTerminal=false;proofStatus('playing');
    if(previous?.sessionId===challenge.sessionId&&previous.level===level
     &&previous.total===total&&previous.answers.length===total){
     run.answers=previous.answers;run.finished=true;
@@ -142,7 +160,7 @@ export function createMultipleProofUI({
    notify('🔐 '+total+' additions de plusieurs nombres niveau '+level+
     ' émises par Connect. Reports et résultats vérifiés côté serveur.');
   }catch(e){
-   if(isCurrent(seq)){run=null;queue=null;notify('⚠️ '+e.message+' : aucun XP demandé.')}
+   if(isCurrent(seq)){run=null;queue=null;proofStatus('idle');notify('⚠️ '+e.message+' : aucun XP demandé.')}
   }finally{if(isCurrent(seq))button.disabled=!!run||sending}
  }
  function startNative(level,total){
