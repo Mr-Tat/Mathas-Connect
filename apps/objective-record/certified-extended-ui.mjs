@@ -87,17 +87,23 @@ export function createCertifiedExtendedUI({
   }
   const wrapped=document.createElement('div');
   wrapped.className='extended-grid-scroll';wrapped.appendChild(table);
-  grid.replaceChildren(wrapped);
-  const help=document.createElement('p');
-  help.className='extended-instructions';
-  help.textContent='Écris chaque chiffre du résultat et les retenues en colonne. '+ 
-   'Une mauvaise première réponse coûte une vie (ou termine la Mort subite).';
-  grid.appendChild(help);
-  const pad=document.createElement('div');pad.className='extended-keypad';
-  for(const digit of ['1','2','3','4','5','6','7','8','9','⌫','0']){
-   const b=document.createElement('button');
+  const exercise=doc.createElement('div');exercise.className='extended-calc-box';
+  const caption=doc.createElement('p');caption.className='extended-calc-label';
+  caption.textContent='Calcul posé · '+(index+1);
+  exercise.append(caption,wrapped);
+  const help=doc.createElement('p');help.className='extended-instructions';
+  help.textContent='💡 Commence par les unités : écris les chiffres du résultat et les retenues au-dessus des colonnes. '+
+   'Une première réponse incorrecte coûte une vie (ou termine la Mort subite).';
+  const workspace=doc.createElement('div');workspace.className='extended-workspace';
+  const pad=doc.createElement('div');pad.className='extended-keypad';
+  const padTitle=doc.createElement('p');padTitle.className='extended-keypad-title';
+  padTitle.textContent='Clavier tactile';pad.appendChild(padTitle);
+  for(const digit of ['1','2','3','4','5','6','7','8','9','⌫','0','✓']){
+   const b=doc.createElement('button');
    b.type='button';b.textContent=digit;b.className='extended-key';
+   if(digit==='✓')b.classList.add('extended-key-confirm');
    b.addEventListener('click',()=>{
+    if(digit==='✓'){verifyButton.click();return;}
     const focused=document.activeElement;
     const t=focused?.classList?.contains('extended-digit-input')?focused:answerFields[0];
     if(!t)return;
@@ -109,7 +115,8 @@ export function createCertifiedExtendedUI({
    });
    pad.appendChild(b);
   }
-  grid.appendChild(pad);
+  workspace.append(exercise,pad);
+  grid.replaceChildren(help,workspace);
   verifyButton.disabled=false;nextButton.hidden=true;
   answerFields[0]?.focus({preventScroll:true});
  }
