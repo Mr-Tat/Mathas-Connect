@@ -69,8 +69,8 @@
    '}'
   ].join('\n');
   game=swap(game,
-   "      for(const i of candidates){\n        if(evals[i].correct){",
-   "      for(const i of candidates){\n"+captureNormal+"\n        if(evals[i].correct){",
+   "    if(session.mode==='three-lives'){\n      let right=0,lost=0;\n      for(const i of candidates){\n        if(evals[i].correct){",
+   "    if(session.mode==='three-lives'){\n      let right=0,lost=0;\n      for(const i of candidates){\n"+captureNormal+"\n        if(evals[i].correct){",
    'première réponse trois vies');
   game=swap(game,
    "    if(session.mode==='sudden'){\n      let newly=0;\n      for(const i of candidates){\n        if(evals[i].correct){",
