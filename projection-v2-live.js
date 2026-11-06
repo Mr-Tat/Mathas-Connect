@@ -345,9 +345,14 @@ function exploit(type,message,appTitle=null){
  const el=document.createElement('div');el.className='event '+style;
  const icon=document.createElement('span');icon.className='event-icon';icon.textContent=symbol;icon.setAttribute('aria-hidden','true');
  const text=document.createElement('span');text.className='event-text';
- if(appTitle)text.append(document.createTextNode(appTitle+' · '));
- // Pour ces cinq types, le nom précède un libellé serveur connu.
- // Tout le contenu est construit avec des nœuds texte, jamais avec innerHTML.
+ // Garder le contexte (application) discret. Le nom et l'exploit sont
+ // les deux informations principales visibles depuis le fond de la classe.
+ if(appTitle){
+  const context=document.createElement('span');context.className='event-app';context.textContent=appTitle+' · ';
+  text.append(context);
+ }
+ // Seules les phrases reconnues et confirmées par le serveur sont segmentées.
+ // Aucun trophée, score ou événement n'est déduit ou inventé dans l'interface.
  const actions={
   trophy:' gagne un nouveau trophée',
   perfect:' réussit une série parfaite',
@@ -359,8 +364,13 @@ function exploit(type,message,appTitle=null){
  if(split>0&&split<=80){
   const name=document.createElement('strong');name.className='event-student';
   name.textContent=message.slice(0,split);
-  text.append(name,document.createTextNode(message.slice(split)));
- }else text.append(document.createTextNode(message));
+  const action=document.createElement('strong');action.className='event-action';
+  action.textContent=message.slice(split).trimStart();
+  text.append(name,action);
+ }else{
+  const fallback=document.createElement('span');fallback.className='event-action';
+  fallback.textContent=message;text.append(fallback);
+ }
  el.append(icon,text);return el;
 }
 function numericPercent(value){return typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<=100?value:null}
