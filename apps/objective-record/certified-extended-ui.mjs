@@ -62,7 +62,9 @@ export function createCertifiedExtendedUI({
   const columns=solution.length;
   const table=document.createElement('div');
   table.className='extended-operations';
-  table.style.gridTemplateColumns='26px repeat('+columns+',34px)';
+  // Dimensions communes à l'interface, adaptées à l'écran. Le défilement
+  // horizontal évite l'écrasement des calculs HARD à 12–16 chiffres.
+  table.style.gridTemplateColumns='var(--extended-operator-width) repeat('+columns+',var(--extended-column-width))';
   table.appendChild(makeCell('↗','extended-indicator'));
   carryFields=Array(q.width).fill(null);
   for(let col=columns-1;col>=0;col--){
@@ -71,9 +73,11 @@ export function createCertifiedExtendedUI({
    table.appendChild(input);carryFields[col]=input;
   }
   terms.forEach((s,i)=>{
-   table.appendChild(makeCell(i===terms.length-1?'+':'','extended-operator'));
+   const last=i===terms.length-1;
+   const lineClass=last?' extended-last-addend':'';
+   table.appendChild(makeCell(last?'+':'','extended-operator'+lineClass));
    const padded=s.padStart(columns,' ');
-   for(const digit of padded)table.appendChild(makeCell(digit.trim()));
+   for(const digit of padded)table.appendChild(makeCell(digit.trim(),lineClass.trim()));
   });
   table.appendChild(makeCell('=','extended-equals'));
   answerFields=Array(columns).fill(null);
