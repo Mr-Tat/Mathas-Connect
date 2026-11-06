@@ -57,12 +57,47 @@ export function schoolModeLockReason(mode,level){
   :'HARD niveau '+level+' : atteins au moins 3 réussites en Mort subite HARD '+(level-1)+'.';
  return 'Mode non autorisé.';
 }
+// Données de la grille "Niv. 1 / Niv. 2 / Niv. 3" : le moteur natif ne
+// connaissait que ses records locaux, d'où les —/4, —/10 et —/20 sous Connect.
+// Construire une vue STRICTEMENT LECTURE SEULE à partir du profil authentifié.
+export function schoolOfficialResultRecords(state,progress=schoolUnlockProgress(state)){
+ const totals=[4,10,20];
+ const classics=Array.from({length:3},(_,i)=>{
+  const row=state?.classic?.[i],out={};
+  for(const total of totals){
+   const raw=row?.[String(total)];
+   if(raw===null||raw===undefined||raw==='')continue;
+   const n=Number(raw);
+   if(Number.isSafeInteger(n)&&n>=0&&n<=total)out[total]=n;
+  }
+  return Object.freeze(out);
+ });
+ const suddens=Array.from({length:3},(_,i)=>{
+  const raw=state?.sudden?.[i],n=Number(raw);
+  return raw===null||raw===undefined||raw===''||!Number.isSafeInteger(n)||n<0?null:n;
+ });
+ const hardRows=[];
+ for(let i=0;i<3;i++){
+  const raw=state?.hard?.[i],n=Number(raw);
+  if(raw!==null&&raw!==undefined&&raw!==''&&Number.isSafeInteger(n)&&n>=0)
+   hardRows.push(Object.freeze({level:i+1,score:n}));
+ }
+ return Object.freeze({
+  classics:Object.freeze(classics),
+  suddens:Object.freeze(suddens),
+  hardRows:Object.freeze(hardRows),
+  visibleLevels:Object.freeze([true,!!(progress.level2||progress.level3),!!progress.level3]),
+  hardUnlocked:progress.hard===true
+ });
+}
 export function schoolProgressSnapshot(appKey,state){
  if(!APPS.has(appKey))return null;
+ const progress=schoolUnlockProgress(state);
  return Object.freeze({
   active:true,appKey,
-  progress:schoolUnlockProgress(state),
-  hardRecords:schoolHardRecords(state)
+  progress,
+  hardRecords:schoolHardRecords(state),
+  records:schoolOfficialResultRecords(state,progress)
  });
 }
 // Only copy an authenticated server snapshot into the original engine's
