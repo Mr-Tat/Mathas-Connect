@@ -446,14 +446,14 @@ for(const item of examples){
     // Ouvrir le VRAI menu HARD et utiliser son bouton d'origine.
     await page.evaluate(()=>{
      const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
-     const select=doc.getElementById('suddenMaxDigits');
+     const select=doc.getElementById('trainingMaxDigits');
      const hard=[...select.options].find(x=>x.value==='__hard__');
      if(!hard)throw Error('Le bouton HARD natif est absent');
      select.value=hard.value;select.dispatchEvent(new Event('change',{bubbles:true}));
     });
     const hardMode=item.mode.slice(5);
-    await nativeMenu.locator('#hardMenu:not(.hidden)').waitFor({state:'visible',timeout:15000});
-    const hardButton=nativeMenu.locator('#hardMenu .hard-start[data-level="'+item.level+'"][data-mode="'+hardMode+'"]');
+    await nativeMenu.locator('#hardMenuScreen:not(.hidden)').waitFor({state:'visible',timeout:15000});
+    const hardButton=nativeMenu.locator('#hardMenuScreen .hard-start[data-level="'+item.level+'"][data-mode="'+hardMode+'"]');
     await hardButton.waitFor({state:'visible',timeout:15000});
     await hardButton.click();
    }
@@ -462,7 +462,7 @@ for(const item of examples){
     const host=document.getElementById('gameFrame');
     const w=host?.contentDocument?.getElementById('game')?.contentWindow;
     const d=w?.document;
-    const screen=d?.getElementById(mode.startsWith('hard-')?'hardGame':'gameScreen');
+    const screen=d?.getElementById(mode.startsWith('hard-')?'hardGameScreen':'gameScreen');
     return !!w?.__mathasServerCertifiedExtended?.sessionId &&
      !host.hidden && document.getElementById('extended-certified').hidden &&
      !!screen && !screen.classList.contains('hidden');
@@ -473,7 +473,7 @@ for(const item of examples){
    });
    const nativeVisual=await page.evaluate(mode=>{
     const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
-    const active=doc.getElementById(mode.startsWith('hard-')?'hardGame':'gameScreen');
+    const active=doc.getElementById(mode.startsWith('hard-')?'hardGameScreen':'gameScreen');
     const proof=doc.defaultView.__mathasServerCertifiedExtended;
     return {native:!active.classList.contains('hidden'),
      inputs:active.querySelectorAll('input.answer-input,input.hard-answer').length,
@@ -494,9 +494,9 @@ for(const item of examples){
    for(let i=0;i<item.wrong;i++){
     const hard=item.mode.startsWith('hard-');
     const index=i%2;
-    const digitSelector=hard?'#hardGame input.hard-answer':
+    const digitSelector=hard?'#hardGameScreen input.hard-answer':
      '.answer-input[data-calc="'+index+'"]';
-    const carrySelector=hard?'#hardGame input.hard-carry':
+    const carrySelector=hard?'#hardGameScreen input.hard-carry':
      '.carry-input[data-calc="'+index+'"]';
     const fields=nativeMenu.locator(digitSelector),carries=nativeMenu.locator(carrySelector);
     const n=await fields.count();
