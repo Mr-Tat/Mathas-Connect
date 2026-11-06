@@ -35,6 +35,7 @@ export function createCertifiedExtendedUI({
   // sans supprimer une fin complète en attente de synchronisation.
   if(run&&!run.finished)try{queue?.clear()}catch{}
   run=null;queue=null;sending=false;root.hidden=true;
+  delete root.dataset.mode;delete root.dataset.phase;
   frame.hidden=!frame.getAttribute('src');grid.replaceChildren();
   answerFields=[];carryFields=[];controlsBusy(false);
   verifyButton.disabled=true;nextButton.hidden=true;exitButton.disabled=false;
@@ -66,11 +67,16 @@ export function createCertifiedExtendedUI({
   if(!q)return;
   const current=extendedEndState(run.mode,run.answers,run.questions);
   if(!current.valid){info('Preuve interrompue : réponses incohérentes.');return}
-  title.textContent=EXTENDED_LABELS[run.mode]+' · Niveau '+run.level+
+  const sudden=run.mode.endsWith('sudden');
+  root.dataset.phase='playing';
+  title.textContent=sudden?EXTENDED_LABELS[run.mode]:
+   EXTENDED_LABELS[run.mode]+' · Niveau '+run.level+
    (run.appKey==='addition-ecrite-simple'?' · Addition simple':' · Addition de plusieurs nombres');
-  status.textContent='Calcul '+(index+1)+'/'+EXTENDED_LIMIT+
-   ' · Score : '+current.correct+' · '+(run.mode.includes('three-lives')?
-    '❤️ '+current.hearts+' vie(s) restante(s)':'💀 Une erreur termine la partie');
+  status.textContent=sudden?
+   'Niveau '+run.level+' · Calcul '+(index+1)+' · '+current.correct+
+   ' réussite'+(current.correct===1?'':'s')+' · 1 erreur = fin':
+   'Calcul '+(index+1)+'/'+EXTENDED_LIMIT+
+   ' · Score : '+current.correct+' · ❤️ '+current.hearts+' vie(s) restante(s)';
   const terms=q.addends,solution=terms.reduce((n,s)=>n+BigInt(s),0n).toString();
   const columns=solution.length;
   const table=document.createElement('div');
@@ -108,7 +114,9 @@ export function createCertifiedExtendedUI({
   caption.textContent='Calcul posé · '+(index+1);
   exercise.append(caption,wrapped);
   const help=document.createElement('p');help.className='extended-instructions';
-  help.textContent='💡 Commence par les unités : écris les chiffres du résultat et les retenues au-dessus des colonnes. '+
+  help.textContent=sudden?
+   'Écris le résultat et les retenues, puis valide. Les XP officiels arrivent seulement après confirmation de Connect.':
+   '💡 Commence par les unités : écris les chiffres du résultat et les retenues au-dessus des colonnes. '+
    'Une première réponse incorrecte coûte une vie (ou termine la Mort subite).';
   const workspace=document.createElement('div');workspace.className='extended-workspace';
   const pad=document.createElement('div');pad.className='extended-keypad';
@@ -147,6 +155,8 @@ export function createCertifiedExtendedUI({
  async function finish(){
   if(!run||!run.finished||run.invalid||sending||!active(run.generation))return;
   const current=run;sending=true;verifyButton.disabled=true;exitButton.disabled=true;
+  root.dataset.phase='saving';
+  info('⏳ Enregistrement officiel en cours… Attends la confirmation de Connect.');
   try{
    const ack=await call('finish-extended-proof-v1',current.appKey,
     {sessionId:current.sessionId,answers:current.answers});
@@ -157,7 +167,7 @@ export function createCertifiedExtendedUI({
     throw Error('Le score certifié ne correspond pas aux calculs.');
    queue?.clear();
    const n=current.answers.length,score=ack.verifiedScore,delta=ack.xp.delta;
-   run=null;queue=null;
+   run=null;queue=null;root.dataset.phase='verified';
    try{onRecorded({appKey:current.appKey,eventId:current.sessionId,duplicate:ack.duplicate===true});}catch{}
    let updated=true;try{await refresh()}catch{updated=false}
    const done='✅ Partie vérifiée par Connect · '+score+' bonnes réponses sur '+n+
@@ -170,7 +180,10 @@ export function createCertifiedExtendedUI({
    exitButton.disabled=false;exitButton.textContent='Retour au jeu';
    controlsBusy(false);verifyButton.disabled=true;nextButton.hidden=true;
   }catch(e){
-   if(active(current.generation))info('⚠️ Réponses conservées ; clique « Actualiser le profil » pour réessayer : '+e.message);
+   if(active(current.generation)){
+    root.dataset.phase='pending';
+    info('⚠️ Réponses conservées ; clique « Actualiser le profil » pour réessayer : '+e.message);
+   }
   }finally{sending=false;exitButton.disabled=false}
  }
  function verify(){
@@ -184,7 +197,7 @@ export function createCertifiedExtendedUI({
    run.invalid=true;verifyButton.disabled=true;
    info('⚠️ La preuve ne peut pas être sauvegardée : aucun XP demandé.');return;
   }
-  run.answers=updated;verifyButton.disabled=true;
+  run.answers=updated;verifyButton.disabled=true;root.dataset.phase='feedback';
   info((ok?'✅ Correct !':'❌ Résultat incorrect. La bonne somme était '+q.addends.reduce((s,x)=>s+BigInt(x),0n)+'.')+
    ' · Score : '+state.correct+(run.mode.includes('three-lives')?' · ❤️ '+state.hearts:''));
   if(state.complete){run.finished=true;void finish();return;}
@@ -233,13 +246,14 @@ export function createCertifiedExtendedUI({
     if(previousState.valid)run.answers=previous.answers;
    }
    if(!queue.save(run,run.answers))throw Error('Sauvegarde de la session impossible');
-   frame.hidden=true;root.hidden=false;
+   frame.hidden=true;root.dataset.mode=mode;root.hidden=false;
    const state=extendedEndState(mode,run.answers,run.questions);
    if(state.complete){run.finished=true;info('Reprise de la preuve terminée…');void finish();}
    else render();
   }catch(e){
    if(seq===getContext().generation){
     run=null;queue=null;root.hidden=true;frame.hidden=false;
+    delete root.dataset.mode;delete root.dataset.phase;
     controlsBusy(false);info('⚠️ '+e.message+' · aucun XP demandé.');
    }
   }
@@ -248,6 +262,7 @@ export function createCertifiedExtendedUI({
   if(sending)return;
   if(run&&!run.finished)try{queue?.clear()}catch{}
   run=null;queue=null;root.hidden=true;frame.hidden=false;
+  delete root.dataset.mode;delete root.dataset.phase;
   controlsBusy(false);verifyButton.disabled=true;nextButton.hidden=true;
   info('Retour au jeu. Exercice abandonné : les réponses non validées sont effacées.');
  }
