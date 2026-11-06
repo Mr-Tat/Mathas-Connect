@@ -1,5 +1,6 @@
 <!doctype html><html lang="fr"><head>
 <link rel="icon" type="image/png" href="../../assets/brand/favicon.png"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Math’as · Soustraction écrite</title><style>body{font-family:system-ui;background:#0c2235;color:white;margin:0;padding:25px}#loading{max-width:620px;margin:12vh auto;padding:25px;border:1px solid #628ba7;border-radius:16px}a{color:#8ce7fc}</style></head><body><main id="loading"><h1>Math’as · Soustraction écrite</h1><p id="message">Chargement du jeu…</p><p><a href="https://mr-tat.github.io/Mathas-Connect/">Retour aux jeux</a></p></main><script type="module">
+import {avatarGlyph,avatarColor} from '../../avatar-catalog.js';
 import {createProjectionConsent} from '../../projection-consent.mjs?v=20261106-fullscreen-consent-v1';
 import {createSubtractionSchoolConnect} from './certified-connect.mjs?v=20261106-stable-count-buttons-v5';
 import {injectNativeSubtractionProof} from './native-proof-adapter.mjs';
@@ -9,7 +10,7 @@ const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
 const requireConnect=query.get('requireConnect')==='1';
-const free=!teacherPlayer&&!requireConnect&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,studentName='',connectionCheckRequired=false,consent=null;
+const free=!teacherPlayer&&!requireConnect&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,studentName='',studentAvatar=null,connectionCheckRequired=false,consent=null;
 const status=s=>document.getElementById('message').textContent=s;
 const originalPromise=fetch('./game-original.html').then(r=>{if(!r.ok)throw Error('Copie du jeu non disponible');return r.text()});
 // Un visiteur sans profil approuvé ouvre directement le jeu classique.
@@ -34,7 +35,7 @@ try{
     try{
       const profile=await profilePromise;
       if(profile?.ok&&profile.status==='approved'&&profile.classId===classId&&typeof profile.displayName==='string')
-        studentName=profile.displayName.trim().slice(0,70);
+        {studentName=profile.displayName.trim().slice(0,70);studentAvatar=profile.avatar||null;}
     }catch(err){console.info('Nom du compte momentanément indisponible.')}
    }else if(r.status===403&&['forbidden','not_enrolled','not_registered'].includes(x.error)){
     // L'utilisateur n'a pas d'accès Connect à cette classe : aucun écran de connexion.
@@ -222,6 +223,8 @@ function mountNativeConnectHeader(){
   .mathas-sous-connect-dock{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:0!important;min-width:0;position:relative;z-index:4;font:700 12px system-ui;color:#e7faff}
   .mathas-sous-connect-person{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;padding:8px 11px;border:1px solid rgba(80,200,213,.43);border-radius:12px;background:rgba(19,65,80,.87)}
   .mathas-sous-connect-identity::before{content:'●';color:#70e3ae;margin-right:5px}
+   .mathas-sous-connect-avatar{display:inline-flex;align-items:center;justify-content:center;flex:none;width:32px;height:32px;border:1px solid #78b9cf;border-radius:50%;font:21px/1 system-ui}
+   .mathas-sous-connect-avatar[hidden]{display:none!important}
   .mathas-sous-connect-identity{max-width:210px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
   /* Badge récupéré de #ce-xp-level-badge : fond bleu, filet or et chiffre XXL. */
   .mathas-sous-connect-level{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:90px;box-sizing:border-box;padding:3px 8px;border:1px solid #efc56a;border-radius:99px;background:linear-gradient(140deg,#325f90,#1b4678);box-shadow:inset 0 1px 0 #ffffff30;white-space:nowrap}
@@ -263,7 +266,8 @@ function mountNativeConnectHeader(){
  if(!dock){
   dock=doc.createElement('div');dock.id='mathas-sous-connect-dock';dock.className='mathas-sous-connect-dock';
   const person=doc.createElement('div');person.className='mathas-sous-connect-person';
-  const identity=doc.createElement('span');identity.id='mathas-sous-connect-identity';identity.className='mathas-sous-connect-identity';
+  const avatar=doc.createElement('span');avatar.className='mathas-sous-connect-avatar';avatar.setAttribute('aria-hidden','true');avatar.hidden=true;
+   const identity=doc.createElement('span');identity.id='mathas-sous-connect-identity';identity.className='mathas-sous-connect-identity';
   const level=doc.createElement('span');level.id='mathas-sous-connect-level';level.className='mathas-sous-connect-level';
   const levelLabel=doc.createElement('span');levelLabel.className='mathas-sous-connect-level-label';levelLabel.textContent='Niveau';
   const levelNumber=doc.createElement('strong');levelNumber.className='mathas-sous-connect-level-number';levelNumber.textContent='…';
@@ -272,7 +276,7 @@ function mountNativeConnectHeader(){
   const count=doc.createElement('span');count.id='mathas-sous-connect-count';count.className='mathas-sous-connect-count';
   const track=doc.createElement('div');track.className='mathas-sous-connect-track';
   const fill=doc.createElement('i');fill.id='mathas-sous-connect-fill';fill.className='mathas-sous-connect-fill';
-  track.append(fill);progress.append(count,track);person.append(identity,level,progress);
+  track.append(fill);progress.append(count,track);person.append(avatar,identity,level,progress);
   const total=doc.createElement('span');total.id='mathas-sous-connect-total';total.className='mathas-sous-connect-total';person.append(total);
   const warning=doc.createElement('span');warning.id='mathas-sous-connect-warning';warning.className='mathas-sous-connect-warning';warning.hidden=true;person.append(warning);
   const button=doc.createElement('button');button.id='mathas-sous-connect-xp';button.type='button';button.className='mathas-sous-connect-xp';button.innerHTML='<span class="mathas-xp-action-main">✨ XP à récupérer</span><span class="mathas-xp-action-detail">Voir le détail ›</span>';button.title='Afficher les XP acquis et les récompenses encore possibles';
@@ -294,6 +298,11 @@ function mountNativeConnectHeader(){
  }
  if(mode==='connected'){
   doc.getElementById('mathas-sous-connect-identity').textContent=document.getElementById('ce-identity')?.textContent||'Compte élève';
+ const avatar=doc.querySelector('.mathas-sous-connect-avatar');
+ if(avatar){
+  avatar.hidden=!studentAvatar;
+  if(studentAvatar){avatar.textContent=avatarGlyph(studentAvatar);avatar.style.background=avatarColor(studentAvatar.color);}
+ }
   doc.getElementById('mathas-sous-connect-level').querySelector('strong').textContent=document.getElementById('ce-xp-level-number')?.textContent||'…';
   doc.getElementById('mathas-sous-connect-count').textContent=document.getElementById('ce-xp-meter-count')?.textContent||'… / 50 XP';
   const total=doc.getElementById('mathas-sous-connect-total');
