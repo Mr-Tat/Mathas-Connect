@@ -66,3 +66,25 @@ test('XP serveur et verrouillés par niveau, sans ouverture d’une version él�
  const hub=read('hub.js');
  assert.match(hub,/const LAB_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'/);
 });
+
+test('Projection Mélange : bouton Top du jour lié aux ACK certifiés et RPC atomiques',()=>{
+ const host=read('apps/calculs-melanges/index.html');
+ const ui=read('apps/calculs-melanges/official-ui.mjs');
+ const edge=read('supabase/functions/connect-projection-v2/index.ts');
+ const sql=read('supabase/migrations/20261106083500_mixed_certified_projection_shared_score_v1.sql');
+ assert.match(host,/onShare:eventId=>consent\?\.offer\(eventId\)/);
+ assert.doesNotMatch(host,/if\(status==='pending'&&reply\?\.eventId\)consent\?\.offer/);
+ assert.match(ui,/share\.textContent='Proposer ce score ›'/);
+ assert.match(ui,/lastShareId/);
+ assert.match(sql,/connect_mixed_receipts/);
+ assert.match(sql,/FOR UPDATE/);
+ assert.match(edge,/connect_projection_mixed_share_improved_v1/);
+ assert.match(edge,/connect_projection_mixed_verified_summary_v1/);
+});
+test('Les scores trois vies alimentent le TOP mais pas les trophées Mort subite',()=>{
+ const engine=read('apps/calculs-melanges/game-original.html');
+ assert.match(engine,/const sudden=\/mort subite\/i\.test\(label\),lives=\/3 vies\/i\.test\(label\)/);
+ assert.match(engine,/if\(sudden\|\|lives\)/);
+ assert.match(engine,/if\(points\.sudden&&!points\.hard&&points\.correct>=25\)/);
+ assert.match(read('supabase/migrations/20261106083400_mixed_certified_projection_game_points.sql'),/v_game_points/);
+});

@@ -7314,15 +7314,15 @@ function render(){
 function parse(item){
   if(!item||!item.at||!item.label)return null;
   const label=String(item.label),hard=/\bHARD\b/i.test(label);const lm=label.match(/(?:HARD\s*(?:NIV|LVL)?|Hard|Niveau)\s*(\d+)/i);if(!lm)return null;
-  const level=Number(lm[1]);if(level<1||level>3)return null;const sudden=/mort subite/i.test(label),five=hard&&/5 calculs/i.test(label);if(five||(!sudden&&!/calculs/i.test(label)))return null;
+  const level=Number(lm[1]);if(level<1||level>3)return null;const sudden=/mort subite/i.test(label),lives=/3 vies/i.test(label),five=hard&&/5 calculs/i.test(label);if(five||(!sudden&&!lives&&!/calculs/i.test(label)))return null;
   const sm=String(item.score).trim().match(/^(\d+)\s*(?:\/\s*(\d+))?$/);if(!sm)return null;
   const correct=Number(sm[1]),total=sm[2]?Number(sm[2]):null;
-  if(!Number.isSafeInteger(correct)||correct<0||correct>100000||(!sudden&&(!total||correct>total)))return null;if(five&&total!==5)return null;if(!sudden&&!five&&![4,10,20].includes(total))return null;
-  const multipliers=[1,1.2,1.4,1.6,1.8,2],multLevel=multipliers[hard?level+2:level-1],multFormat=sudden?1.6:five?2.5:total===20?1.6:total===10?1.3:1;
-  let weighted=correct;if(sudden){weighted=0;for(let n=0;n<correct;n++)weighted+=Math.min(4,Math.pow(1.035,n))}
+  if(!Number.isSafeInteger(correct)||correct<0||correct>100000||(!sudden&&!lives&&(!total||correct>total)))return null;if(five&&total!==5)return null;if(!sudden&&!lives&&!five&&![4,10,20].includes(total))return null;
+  const multipliers=[1,1.2,1.4,1.6,1.8,2],multLevel=multipliers[hard?level+2:level-1],multFormat=sudden?1.6:lives?.8:five?2.5:total===20?1.6:total===10?1.3:1;
+  let weighted=correct;if(sudden||lives){weighted=0;for(let n=0;n<correct;n++)weighted+=Math.min(4,Math.pow(1.035,n))}
   const allTables=cfg.family==='multiplication'&&!!item.allTables;const pts=5*multLevel*multFormat*weighted*(allTables?1.15:1);
   const aid=!!(item.rulerUsed||item.tablesUsed||item.aidUsed||item.aid||item.aideTables||item.aideVisuelle||item.aideGuide||item.hintUsed);
-  return {points:pts,aid,label,at:String(item.at),correct,total,level,hard,sudden,allTables};
+  return {points:pts,aid,label,at:String(item.at),correct,total,level,hard,sudden,lives,allTables};
 }
 
 // P2.7 : une seule file de célébrations. Aucun contrôle du jeu n'est bloqué.

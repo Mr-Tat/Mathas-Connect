@@ -30,6 +30,11 @@ export function installMixedOfficialUi(doc,{connected=false,returnHref='../../hu
   padding:7px 12px;border-radius:9px;border:1px solid #5d90ad;background:#254259;color:#e3f5ff;
   font:800 12px system-ui;text-decoration:none;white-space:nowrap}
  #mathasMixedReturn:hover{filter:brightness(1.16)}
+ #mathasMixedShare{display:inline-flex;align-items:center;margin:7px 0 0;padding:4px 9px;
+  border-radius:7px;border:1px solid rgba(140,194,217,.35);background:rgba(87,149,181,.10);
+  color:inherit;font:750 11px system-ui;white-space:nowrap;cursor:pointer;transition:filter .16s}
+ #mathasMixedShare:hover{filter:brightness(1.22)}
+ #mathasMixedShare[hidden]{display:none!important}
  .mathas-mixed-xp-badge{position:absolute!important;right:5px!important;bottom:4px!important;
   font:750 10px system-ui!important;color:#f9e5ac!important;pointer-events:none!important;
   background:rgba(0,0,0,.12)!important;padding:2px 4px!important;border-radius:5px!important;white-space:nowrap!important}
@@ -60,7 +65,13 @@ export function installMixedOfficialUi(doc,{connected=false,returnHref='../../hu
   level:Number(doc.getElementById('levelSelect')?.value)||1,
   ops:Math.max(1,doc.querySelectorAll('#opsSelector [data-op].active').length)
  });
- let currentState=state??{},currentXp=xp??null,lastShareId=null;
+ let currentState=state??{},currentXp=xp??null,lastShareId=null,lastSharePoints=null;
+ const share=doc.createElement('button');share.type='button';share.id='mathasMixedShare';
+ share.textContent='Proposer ce score ›';share.title='Proposer le score certifié du jour au tableau de projection';
+ share.hidden=true;
+ const top=doc.querySelector('#mathasPointsQuick .mathas-points-quick-item--best');
+ top?.append(share);
+ share.onclick=()=>{if(share.hidden||!lastShareId)return;onShare?.(lastShareId)};
  const badge=(button,value)=>{
   if(!button)return;
   let span=button.querySelector(':scope>.mathas-mixed-xp-badge');
@@ -70,6 +81,10 @@ export function installMixedOfficialUi(doc,{connected=false,returnHref='../../hu
   span.hidden=value===null;
  };
  const refresh=()=>{
+  const displayed=Number((doc.querySelector('#mathasPointsQuick [data-points="daily"]')?.textContent||'').replace(/[^\d]/g,''));
+  const recent=Array.isArray(currentState?.recent)?currentState.recent.find(e=>e.eventId===lastShareId):null;
+  const available=Number.isFinite(lastSharePoints)?lastSharePoints:Number(recent?.points);
+  share.hidden=!(connected&&onShare&&lastShareId&&Number.isSafeInteger(available)&&available>0&&available===displayed);
   xpLabel.textContent=connected?'⭐ '+scoreNumber(currentXp?.appXp)+' / '+MAX_XP+' XP':'XP : mode libre';
   if(!connected)return;
   const {level,ops}=source();
@@ -89,7 +104,9 @@ export function installMixedOfficialUi(doc,{connected=false,returnHref='../../hu
  observer.observe(doc.getElementById('hardMenu'),{childList:true,subtree:true});
  refresh();
  return Object.freeze({
-  update({state,xp,eventId}={}){if(state)currentState=state;if(xp)currentXp=xp;if(eventId)lastShareId=eventId;refresh()},
-  destroy(){observer.disconnect();style.remove();back.remove();connectedLabel.remove();xpLabel.remove()}
+  update({state,xp,eventId,verifiedPoints}={}){if(state)currentState=state;if(xp)currentXp=xp;
+   if(eventId){lastShareId=eventId;lastSharePoints=Number.isSafeInteger(Number(verifiedPoints))?Number(verifiedPoints):null}
+   refresh()},
+  destroy(){observer.disconnect();style.remove();back.remove();connectedLabel.remove();xpLabel.remove();share.remove()}
  });
 }

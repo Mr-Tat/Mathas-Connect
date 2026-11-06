@@ -7,7 +7,7 @@ import {buildConnectPilot,CONNECT_WRITE_READY as writeReady} from './connect-pil
 import {createEdgePost} from './edge-transport.mjs';
 import {createAuthenticatedHost} from './connect-host.mjs';
 import {hydrateNativeRecords} from './connect-hydration.mjs';
-import {installMixedOfficialUi} from './official-ui.mjs?v=20261106-survival40-v1';
+import {installMixedOfficialUi} from './official-ui.mjs?v=20261106-share-certified-v2';
 (async()=>{const frame=document.getElementById('game'),output=document.getElementById('result'),recorded=[];
  // Class launches require the native approved session and an enabled backend.
  const launch=new URLSearchParams(location.search);
@@ -15,7 +15,7 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261106-survival40-v1
  const modeNote=document.getElementById('mode-note');
  if(simulate)modeNote.textContent='Laboratoire · simulation seulement — aucun envoi Supabase';
  let connected=null,host=null,consent=null,multiplierLock=null,multiplierLockVersion=null,tableAidAllowed=true,blockedSession=false;
- let officialUi=null,activeState=null,xpSnapshot=null;
+ let officialUi=null,activeState=null,xpSnapshot=null,approvedToday=null;
  let xpAnimationQueue=Promise.resolve();
  function guardQueue(){const full=(connected?.pending()??0)>=100;const body=frame.contentDocument?.body;if(body)body.inert=full||blockedSession;frame.inert=full||blockedSession;document.getElementById('retry').hidden=!connected;if(full)output.textContent='File offline pleine : 100 résultats conservés. Reconnectez-vous avant une nouvelle partie.';}
  frame.addEventListener('load',()=>{
@@ -24,11 +24,12 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261106-survival40-v1
   if(!doc?.getElementById('menuScreen'))return;
   officialUi?.destroy();
   const returnTo=classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'
-   ?new URL('../../hub.html?toutes=1&class='+encodeURIComponent(classId)+'&joueur=prof',location.href).href
+   ?new URL('../../hub.html?toutes=1&class='+encodeURIComponent(classId),location.href).href
    :new URL('../../hub.html'+(classId?'?class='+encodeURIComponent(classId):''),location.href).href;
   officialUi=installMixedOfficialUi(doc,{connected:!!connected,returnHref:returnTo,
     className:classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'?'TEST':'Math’as Connect',
-    state:activeState,xp:xpSnapshot});
+    state:activeState,xp:xpSnapshot,onShare:eventId=>consent?.offer(eventId)});
+  if(approvedToday)officialUi?.update({eventId:approvedToday.eventId,verifiedPoints:approvedToday.points});
   // Le HUD est désormais dans le véritable jeu, pas dans une bande supérieure.
   if(connected&&officialUi)document.querySelector('.notice').hidden=true;
 });
@@ -50,8 +51,7 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261106-survival40-v1
    const post=createEdgePost({endpoint:host.endpoint,apikey:host.apikey,getToken:host.getToken});
    const loaded=await host.load();
    const candidate=buildConnectPilot({storage:localStorage,classId:host.classId,studentId:host.studentId,pupilId:host.pupilId,post,onStatus:(status,reply)=>{
-     // Jamais de proposition au tableau avant un accusé de réception serveur.
-     if(status==='saved'&&reply?.eventId)consent?.offer(reply.eventId);
+     // Le partage se demande depuis le Top du jour uniquement après ACK serveur.
      if(['conflict','unauthorized','rejected'].includes(status))blockedSession=true;
      if(['conflict','unauthorized','rejected','offline'].includes(status))document.querySelector('.notice').hidden=false;
      if(status==='saved')blockedSession=false;
@@ -59,7 +59,10 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261106-survival40-v1
      if(status==='saved'&&reply?.xp){
        output.textContent='Connect : '+reply.xp.appXp+' XP';
        activeState=reply.state??activeState;xpSnapshot=reply.xp;
-       officialUi?.update({state:activeState,xp:xpSnapshot,eventId:reply.eventId});
+       const event=Array.isArray(activeState?.recent)?activeState.recent.find(e=>e.eventId===reply.eventId):null;
+       approvedToday=event?{eventId:reply.eventId,points:Number(event.points)}:approvedToday;
+       officialUi?.update({state:activeState,xp:xpSnapshot,eventId:reply.eventId,
+        verifiedPoints:event?Number(event.points):undefined});
        confirmXp(reply.xp);
        if(connected){const v=connected.version();frame.setAttribute('data-revision',v.revision);frame.setAttribute('data-reset-epoch',v.resetEpoch);}
      }else if(status==='quarantined')output.textContent='Ancien parcours : '+reply.count+' résultat(s) hors ligne conservé(s) à part après la remise à zéro.';
@@ -79,6 +82,21 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261106-survival40-v1
      state:loaded.state,pending:candidate.pending()});
    if(!hydrated)output.textContent='Connect : sauvegardes locales en attente de synchronisation';
    try{xpSnapshot=await host.readXp();showXpMeter(xpSnapshot)}catch{output.textContent='Connect : lecture XP momentanément indisponible'}
+   // Retrouver le meilleur résultat certifié après une reconnexion : aucun score
+   // local non vérifié ne rend cliquable « Proposer ce score ».
+   void (async()=>{
+    try{
+     const token=await host.getToken();
+     const endpoint=host.endpoint.replace('/connect-results','/connect-projection-v2');
+     const response=await fetch(endpoint,{method:'POST',headers:{apikey:host.apikey,authorization:'Bearer '+token,'content-type':'application/json'},
+      body:JSON.stringify({action:'student-score-history',classId,appKey:'melange-calculs-ecrits'})});
+     const history=await response.json();
+     if(response.ok&&history?.ok&&history.todayBest?.eventId){
+      approvedToday={eventId:history.todayBest.eventId,points:Number(history.todayBest.points)};
+      officialUi?.update({eventId:approvedToday.eventId,verifiedPoints:approvedToday.points});
+     }
+    }catch{/* Historique projection facultatif, jamais bloquant pour les exercices. */}
+   })();
    void connected.retry();
    modeNote.textContent='Mode connecté — résultats et XP sauvegardés côté serveur';
   }catch(error){
