@@ -23,7 +23,7 @@ for (const width of [1280,390]) {
     '<div class="results-overview-scroll" style="width:100%">'+
     '<table class="results-overview-table"><thead><tr>'+columns+'</tr></thead>'+
     '<tbody>'+rows+'</tbody></table></div></div></div>'+
-    '<div style="height:250px"></div>');
+    '<div style="height:900px"></div>');
    await page.addStyleTag({path:new URL('../style.css',import.meta.url).pathname});
    await page.evaluate(async code=>{
      const src=URL.createObjectURL(new Blob([code],{type:'text/javascript'}));
