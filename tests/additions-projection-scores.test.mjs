@@ -54,7 +54,9 @@ test('Les additions réutilisent les cartes natives et une invitation sécurisé
  assert.match(src,/mathasPointsQuick/);
  assert.match(src,/\.mathas-points-quick-item--best/);
  assert.match(src,/nativeBestPoints/);
- assert.match(src,/displayed!==snapshot\.today\.points/);
+ assert.doesNotMatch(src,/displayed!==snapshot\.today\.points/);
+ assert.match(src,/snapshot\.today\.eventId/);
+ assert.match(src,/consent\(\)\?\.offer\(snapshot\.today\.eventId/);
  assert.match(src,/target\.addEventListener\('click',onClick\)/);
  assert.match(src,/target\.addEventListener\('keydown',onKeydown\)/);
  assert.match(src,/target===clickTarget/);
