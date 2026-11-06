@@ -42,7 +42,7 @@ async function open(page,url,item,profile=PROFILE_A){
  await page.goto(url+'/apps/'+item.slug+'/game-original.html',{waitUntil:'domcontentloaded'});
  await page.locator('#menuScreen:not(.hidden)').waitFor({timeout:20000});
  assert.equal(await mount(page,item,profile),true);
- await page.locator('#mathasManualValidationDuringGame-normal').waitFor();
+ await page.locator('#mathasManualValidationDuringGame-normal').waitFor({state:'attached'});
  assert.equal(await page.locator('#mathasManualValidationDuringGame-hard').count(),1);
  if(item.isMul){
   assert.equal(await page.locator('#mathasTensFirstDuringGame-normal').count(),1);
@@ -114,11 +114,11 @@ for(const item of games){
    await open(page,url,item);
    const manual=page.locator('#mathasManualValidationDuringGame-normal');
    assert.equal(await manual.isChecked(),false,'automatic must remain default');
+   await startFour(page,item);
    await manual.check();
    assert.equal(await page.locator('#mathasManualValidationDuringGame-hard').isChecked(),true);
    const key='mathas.manual-validation.v1.'+item.appKey+'.'+PROFILE_A;
    assert.equal(await page.evaluate(k=>localStorage.getItem(k),key),'1');
-   await startFour(page,item);
    await solve(page,item,0);
    await page.waitForTimeout(300);
    assert.equal((await page.locator('#primaryBtn').textContent()).trim(),'Valider');
@@ -145,6 +145,7 @@ for(const item of games){
    const page=await browser.newPage({viewport:{width:1360,height:900}});
    await open(page,url,item,PROFILE_A);
    assert.equal(await page.locator('#mathasManualValidationDuringGame-normal').isChecked(),false);
+   await startFour(page,item);
    await page.locator('#mathasManualValidationDuringGame-normal').check();
    await page.reload({waitUntil:'domcontentloaded'});
    assert.equal(await mount(page,item,PROFILE_A),true);

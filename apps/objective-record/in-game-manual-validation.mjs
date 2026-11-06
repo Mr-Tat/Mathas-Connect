@@ -82,9 +82,13 @@ export function installManualValidationForWrittenCalc(doc,appKey,studentId=null)
    const enabled=!!input.checked;
    view.__mathasManualValidation=enabled;
    doc.querySelectorAll('.'+MANUAL_CLASS+' input').forEach(item=>{item.checked=enabled});
-   if(scope)try{view.localStorage.setItem(scope,enabled?'1':'0')}catch{}
+   const currentScope=doc.__mathasManualScope;
+   if(currentScope)try{view.localStorage.setItem(currentScope,enabled?'1':'0')}catch{}
   });
  }
+ doc.querySelectorAll('.'+MANUAL_CLASS+' input').forEach(input=>{
+  input.checked=!!view.__mathasManualValidation;
+ });
  syncTens();
  return true;
 }
