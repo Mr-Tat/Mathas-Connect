@@ -372,6 +372,32 @@ test('V2 — onglet masqué : zéro MAJ, barre figée et reprise du temps restan
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
 
+test('V2 — 8 élèves en une colonne avec 1 ou 2 applications',{timeout:80000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  for(const active of [[ADD],[ADD,MUL]]){
+   const page=await browser.newPage({viewport:{width:1366,height:768}});
+   const state=sampleState(active,8);
+   const {errors}=await openBoard(page,url,state);
+   await page.waitForFunction(count=>document.querySelectorAll('.ranking-card').length===count,active.length);
+   for(const key of active){
+    assert.equal(await page.locator(card(key)+' .ranking-col').count(),1,
+      'Une seule colonne à 8 élèves : '+key);
+    assert.equal(await page.locator(card(key)+' .entry').count(),8);
+   }
+   state.count=9;
+   await page.locator('#load-real').click();
+   await page.waitForFunction(()=>document.querySelectorAll('.ranking-card .entry').length===9*document.querySelectorAll('.ranking-card').length);
+   for(const key of active){
+    assert.equal(await page.locator(card(key)+' .ranking-col').count(),2,
+      'Deux colonnes à partir de 9 élèves : '+key);
+   }
+   assert.deepEqual(errors,[]);
+   await page.close();
+  }
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
+
 test('V2 — prénom en gras dans les exploits, jeu et texte normal, sans surtitre',{timeout:60000},async()=>{
  const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  try{
