@@ -10,6 +10,10 @@ on:
       - 'hub.html'
       - 'apps/soustraction-simple/**'
       - 'assets/miniatures/soustraction-ecrite-simple.webp'
+  pull_request:
+    paths:
+      - 'tests/soustraction-live-readonly.mjs'
+      - '.github/workflows/soustraction-live-readonly.yml'
   workflow_dispatch:
 permissions:
   contents: read
