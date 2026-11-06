@@ -6432,39 +6432,6 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
       return
     }
 
-    // En 3 vies scolaire, chaque mauvaise première tentative est définitive :
-    // une vie est perdue, mais il n'y a ni coche verte ni correction imposée.
-    const certifiedLives=window.__mathasServerCertifiedExtended;
-    if(session.mode==='three-lives'&&certifiedLives?.mode==='three-lives'){
-      // Ne passer au calcul suivant que si le contrôleur de preuve a
-      // effectivement conservé chaque tentative dans sa file persistante.
-      if(!Number.isInteger(certifiedLives.index)||certifiedLives.index<session.completed+candidates.length){
-        setFeedback('Sauvegarde de la tentative en cours. Réessaie la validation.','info');return
-      }
-      for(const i of candidates){
-        const s=states[i],r=evals[i];
-        if(r.correct){lockCalc(i);status(i,'Correct','ok');session.score++}
-        else{
-          s.firstTry=false;markErrorsForCorrection(i);
-          s.solved=true;opFor(i).querySelectorAll('input,button').forEach(x=>x.disabled=true);
-          if(i===0)mathasGateSecondCalc(false);
-          status(i,'Erreur : une vie perdue','bad')
-        }
-        session.completed++;
-      }
-      updateBar();
-      if(certifiedLives.finished){phase='ended';setNumpadDisabled(true);resetBtn.disabled=true;setPrimaryLabel('Retour au menu');return}
-      if(states.every(s=>s.solved)){
-        phase='review';setNumpadDisabled(true);resetBtn.disabled=true;
-        setPrimaryLabel('Passer aux 2 calculs suivants');
-        setFeedback('Deux tentatives enregistrées. Tu peux continuer.','info')
-      }else{
-        setFeedback('Tentative enregistrée. Passe maintenant au calcul 2.','info');
-        focusTarget(firstUnsolvedTarget())
-      }
-      return
-    }
-
     if(session.mode==='sudden'){
       let newly=0;
       for(const i of candidates){
