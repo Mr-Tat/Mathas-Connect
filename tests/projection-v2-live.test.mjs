@@ -38,7 +38,7 @@ test('Projection V2 : rafraîchissement toutes les 20 s, sans changement automat
  assert.match(js,/if\(ticket===refreshTicket&&connected&&hasLoaded\)startRefreshCycle\(\)/);
  assert.match(js,/function pauseRefreshCycle\(\)/);
  assert.match(js,/function resumeRefreshCycle\(\)/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-completed-classic-pct-v3/);
+ assert.match(html,/projection-v2-live\.js\?v=20261106-classe-exploits-v1/);
  assert.match(html,/id="projection-refresh-progress"/);
  assert.match(html,/id="projection-refresh-fill"/);
  assert.match(html,/role="progressbar"/);
@@ -129,7 +129,9 @@ test('Projection V2 : noms mis en gras dans les événements, sans HTML injecté
  assert.match(js,/function exploit\(type,message,appTitle=null\)/);
  assert.match(js,/name\.className='event-student'/);
  assert.match(js,/name\.textContent=message\.slice\(0,split\)/);
- assert.match(js,/text\.append\(name,document\.createTextNode\(message\.slice\(split\)\)\)/);
+ assert.match(js,/action\.className='event-action'/);
+ assert.match(js,/action\.textContent=message\.slice\(split\)/);
+ assert.match(js,/text\.append\(name,action\)/);
  assert.match(js,/trophy:' gagne un nouveau trophée'/);
  assert.match(js,/perfect:' réussit une série parfaite'/);
  assert.match(js,/sudden:' dépasse 10 bonnes réponses en Mort subite'/);
@@ -138,7 +140,7 @@ test('Projection V2 : noms mis en gras dans les événements, sans HTML injecté
  assert.doesNotMatch(js,/text\.innerHTML\s*=/);
  assert.match(html,/\.event-text \.event-student\{font-weight:900;color:inherit\}/);
  assert.doesNotMatch(js,/MEILLEURS SCORES · PÉRIODE DE PROJECTION/);
- assert.match(html,/projection-v2-live\.js\?v=20261104-completed-classic-pct-v3/);
+ assert.match(html,/projection-v2-live\.js\?v=20261106-classe-exploits-v1/);
 });
 
 test('Projection V2 : cadre 24px carré, score centré, chiffres en gras',()=>{

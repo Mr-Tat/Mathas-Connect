@@ -372,6 +372,32 @@ test('V2 — onglet masqué : zéro MAJ, barre figée et reprise du temps restan
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
 
+test('V2 — 8 élèves en une colonne avec 1 ou 2 applications',{timeout:80000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  for(const active of [[ADD],[ADD,MUL]]){
+   const page=await browser.newPage({viewport:{width:1366,height:768}});
+   const state=sampleState(active,8);
+   const {errors}=await openBoard(page,url,state);
+   await page.waitForFunction(count=>document.querySelectorAll('.ranking-card').length===count,active.length);
+   for(const key of active){
+    assert.equal(await page.locator(card(key)+' .ranking-col').count(),1,
+      'Une seule colonne à 8 élèves : '+key);
+    assert.equal(await page.locator(card(key)+' .entry').count(),8);
+   }
+   state.count=9;
+   await page.locator('#load-real').click();
+   await page.waitForFunction(()=>document.querySelectorAll('.ranking-card .entry').length===9*document.querySelectorAll('.ranking-card').length);
+   for(const key of active){
+    assert.equal(await page.locator(card(key)+' .ranking-col').count(),2,
+      'Deux colonnes à partir de 9 élèves : '+key);
+   }
+   assert.deepEqual(errors,[]);
+   await page.close();
+  }
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
+
 test('V2 — prénom en gras dans les exploits, jeu et texte normal, sans surtitre',{timeout:60000},async()=>{
  const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  try{
@@ -382,17 +408,21 @@ test('V2 — prénom en gras dans les exploits, jeu et texte normal, sans surtit
    ['Élève 1','Élève 2','Élève 3'],'Les noms seuls sont en gras');
   const results=await page.locator('#exploits .event-text').evaluateAll(elements=>elements.map(el=>({
    content:el.textContent,
-   initialNodeType:el.firstChild.nodeType,
-   nameWeight:getComputedStyle(el.querySelector('strong')).fontWeight,
-   name:el.querySelector('strong').textContent,
-   remainder:el.querySelector('strong').nextSibling.textContent
+   app:el.querySelector('.event-app')?.textContent,
+   name:el.querySelector('.event-student')?.textContent,
+   action:el.querySelector('.event-action')?.textContent,
+   nameSize:parseFloat(getComputedStyle(el.querySelector('.event-student')).fontSize),
+   actionSize:parseFloat(getComputedStyle(el.querySelector('.event-action')).fontSize),
+   appSize:parseFloat(getComputedStyle(el.querySelector('.event-app')).fontSize)
   })));
   assert.ok(results[0].content.startsWith('Addition écrite · Élève 1 gagne un nouveau trophée'));
   assert.ok(results[1].content.startsWith('Addition écrite · Élève 2 réussit une série parfaite'));
   assert.ok(results[2].content.startsWith('Soustraction écrite · Élève 3 réalise un score du Top 5'));
-  assert.ok(results.every(x=>x.initialNodeType===3),'Le titre du jeu reste en texte normal');
-  assert.ok(results.every(x=>Number(x.nameWeight)>=700),'Les noms ressortent en gras');
-  assert.ok(results.every(x=>x.remainder.startsWith(' ')),'La phrase après le prénom reste distincte');
+  assert.deepEqual(results.slice(0,3).map(x=>x.name),['Élève 1','Élève 2','Élève 3']);
+  assert.ok(results.every(x=>x.nameSize>=18&&x.actionSize>=18),'Nom et exploit visibles depuis la classe');
+  assert.ok(results.every(x=>x.appSize<x.actionSize),'Application discrète');
+  assert.ok(results[0].action.includes('trophée')&&results[1].action.includes('série parfaite'),
+   'La nature de chaque exploit reste explicite');
   assert.equal(await page.locator('.ranking-card .ranking-head .over').count(),0,'Surtitre supprimé');
   assert.deepEqual(await page.locator('.ranking-card .ranking-head h2').allTextContents(),
    ['Addition écrite','Soustraction écrite']);

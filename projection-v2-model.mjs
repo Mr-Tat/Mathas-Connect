@@ -112,8 +112,8 @@ export function rankMultiClass({
 }
 export function splitProjectedRanking(rows=[],multiClass=false){
  const data=(Array.isArray(rows)?rows:[]).slice(0,16);
- if(data.length<=7)return [data];
- // Deux colonnes équilibrées, jusqu'à 8 rangs chacune.
+ if(data.length<=8)return [data];
+ // Une seule colonne jusqu'à 8 élèves (1 ou 2 applications) ; au-delà, deux colonnes équilibrées.
  const cut=Math.ceil(data.length/2);
  return [data.slice(0,cut),data.slice(cut)];
 }
