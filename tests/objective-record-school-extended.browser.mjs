@@ -559,14 +559,16 @@ for(const item of examples){
      const level=r('#gameScreen #sessionLevel'),manual=r('#gameScreen .mathas-manual-validation-during-game');
      const points=r('#gameScreen .mathas-points-live');
      const hearts=r('#gameScreen #threeLivesHud'),menu=r('#gameScreen #menuBtn');
-     return {levelTop:level?.top,manualTop:manual?.top,pointsTop:points?.top,
+     return {levelTop:level?.top,manualTop:manual?.top,
+      levelMid:level?(level.top+level.bottom)/2:null,
+      pointsMid:points?(points.top+points.bottom)/2:null,
       heartsTop:hearts?.top,heartsHidden:d.getElementById('threeLivesHud')?.hidden,
       menuRight:menu?.right,levelLeft:level?.left,heartsLeft:hearts?.left,heartsRight:hearts?.right};
     });
     assert.ok(Math.abs(laptop.manualTop-laptop.levelTop)<18,
      'à 1536px, Valider les réponses ne doit plus passer sur une deuxième ligne : '+JSON.stringify(laptop));
-    assert.ok(Math.abs(laptop.pointsTop-laptop.levelTop)<19,
-     'à 1536px, les points restent sur la ligne principale : '+JSON.stringify(laptop));
+    assert.ok(Math.abs(laptop.pointsMid-laptop.levelMid)<15,
+     'à 1536px, les points sont centrés sur la même ligne : '+JSON.stringify(laptop));
     if(item.mode==='three-lives'){
      assert.ok(Math.abs(laptop.heartsTop-laptop.levelTop)<20,
       'à 1536px, les cœurs ne passent pas sur une deuxième ligne : '+JSON.stringify(laptop));
