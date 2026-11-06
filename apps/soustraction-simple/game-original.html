@@ -10427,7 +10427,9 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
   }
 
   function verifyPair(){
-    const pageWasFirstTry=states.every(s=>s.firstTry&&!s.solved);
+    // Le calcul 1 est déjà validé lorsque le 2 termine : conserver l'animation
+    // si les deux ont été réussis du premier coup.
+    const pageWasFirstTry=states.every(s=>s.firstTry);
     const evals=states.map((s,i)=>s.solved?{filled:true,correct:true}:evaluateCalc(i));
     const candidates=[];
     const firstReady=!states[0].solved&&evals[0].filled;
