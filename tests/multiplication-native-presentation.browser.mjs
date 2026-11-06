@@ -15,7 +15,7 @@ const pathMap=new Map([
   ['../apps/objective-record/native-connect-bridge.mjs','text/javascript; charset=utf-8']]
 ]);
 const server=createServer((req,res)=>{
- const target=pathMap.get(req.url);
+ const target=pathMap.get((req.url||'').split('?')[0]);
  if(!target){res.writeHead(404);res.end();return}
  const [relative,contentType]=target;
  res.writeHead(200,{'content-type':contentType});

@@ -314,7 +314,8 @@ try{
    const consent=page.locator('.mathas-projection-offer:not([hidden])');
    await consent.waitFor({timeout:9000});
    assert.equal(projectionCalls.length,0);
-   await consent.getByRole('button',{name:'Oui, envoyer'}).click();
+   await consent.locator('button.yes').click();
+   await consent.getByText('Score bien envoyé au tableau',{exact:false}).waitFor({timeout:9000});
    await page.waitForFunction((school)=>window.localStorage.getItem(
     'mathas.projection-consents.'+school+'.multiplication-ecrite-simple.'+
      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.v1')==='[]',school,{timeout:9000});
@@ -340,7 +341,7 @@ try{
    const consent=page.locator('.mathas-projection-offer:not([hidden])');
    await consent.waitFor({timeout:9000});
    assert.equal(projectionCalls.length,0,'un résultat certifié seul ne partage aucun score');
-   await consent.getByRole('button',{name:'Non, merci'}).click();
+   await consent.getByRole('button',{name:'NON'}).click();
    assert.equal(projectionCalls.length,0,'refuser ne transmet aucune donnée');
    assert.equal(await page.locator('.mathas-projection-offer:not([hidden])').count(),0);
    assert.deepEqual(proofCalls.map(x=>x.action),['start-classic-v1','finish-classic-v1']);
@@ -364,7 +365,9 @@ try{
    const consent=page.locator('.mathas-projection-offer:not([hidden])');
    await consent.waitFor({timeout:9000});
    assert.equal(projectionCalls.length,0,'aucune projection sans choix de l’élève');
-   await consent.getByRole('button',{name:'Oui, envoyer'}).click();
+   await consent.locator('button.yes').click();
+   await consent.getByText('Score bien envoyé au tableau',{exact:false}).waitFor({timeout:9000});
+   await consent.getByRole('button',{name:'Fermer'}).click();
    await page.waitForFunction(()=>!document.querySelector('.mathas-projection-offer:not([hidden])'),
     null,{timeout:9000});
    await page.waitForFunction(()=>window.localStorage.getItem('mathas.projection-consents.'+
