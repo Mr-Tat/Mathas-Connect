@@ -53,7 +53,7 @@ for(const item of examples){
     if(part.includes('/connect-api'))ack={ok:true,status:'approved',classId:CLASS};
     else if(part.includes('/connect-results'))ack=b.action==='student-load'?
      {ok:true,revision:0,resetEpoch:0,state:{rewards:REWARDS,progress:recordUnlocked?{level2:true,level3:true,sudden1:true,sudden2:true,sudden3:true,perfect1:true,perfect2:true,perfect3:true,hard:true}:{},hard:[3,3,0]},storageSubject:PUPIL}:
-     {ok:true,appXp:0,total:0,level:1,milestones:[],currentMilestones:[],
+     {ok:true,appXp:0,total:0,max:594,level:1,milestones:[],currentMilestones:[],
       parcours:1,repeatXp:false};
     else if(part.includes('/connect-projection-v2')){
      if(b.action!=='student-score-history')throw Error('unexpected score action '+b.action);
