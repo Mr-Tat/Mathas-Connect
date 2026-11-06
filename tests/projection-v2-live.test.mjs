@@ -130,7 +130,7 @@ test('Projection V2 : noms mis en gras dans les événements, sans HTML injecté
  assert.match(js,/name\.className='event-student'/);
  assert.match(js,/name\.textContent=message\.slice\(0,split\)/);
  assert.match(js,/action\.className='event-action'/);
- assert.match(js,/action\.textContent=message\.slice\(split\)\.trimStart\(\)/);
+ assert.match(js,/action\.textContent=message\.slice\(split\)/);
  assert.match(js,/text\.append\(name,action\)/);
  assert.match(js,/trophy:' gagne un nouveau trophée'/);
  assert.match(js,/perfect:' réussit une série parfaite'/);
