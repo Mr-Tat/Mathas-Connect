@@ -8,6 +8,8 @@
  const frame=window.frameElement;
  const lock=JSON.parse(frame?.getAttribute('data-multiplier-lock')||'null');
  Object.defineProperty(window,'__mathasMixedMultiplierLock',{value:lock});
+ Object.defineProperty(window,'__mathasMixedMultiplierVersion',{value:frame?.getAttribute('data-multiplier-lock-version')||null});
+ Object.defineProperty(window,'__mathasMixedTeacherAllowTables',{value:frame?.getAttribute('data-table-aid-allowed')!=='false'});
  const number=name=>Number(frame?.getAttribute(name)||0);
  Object.defineProperty(window,'MathasMixedBridge',{value:Object.freeze({
   begin(s,hard){

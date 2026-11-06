@@ -3418,6 +3418,9 @@ body.light-mode #hardMenuScreen .hard-welcome-v6 strong {color:#9d3046;}
 #hardMenu .hard-three-lives:disabled{opacity:.4;cursor:not-allowed}
 #hardMenu .hard-three-lives:not(:disabled):hover{filter:brightness(1.13);transform:translateY(-2px)}
 </style>
+<style id="mathas-mixed-teacher-multipliers">
+#multPicker .mult-chip.teacher-required{background:#253248!important;color:#d2e1f1!important;border-color:#8092ab!important;box-shadow:inset 0 0 0 1px #101b2c!important;opacity:1!important;cursor:not-allowed!important}
+</style>
 </head>
 <body>
 <main class="app">
@@ -3655,6 +3658,8 @@ function rtl(s,count){return Array.from({length:count},(_,c)=>digitAt(s,c))}
 function chooseLen(max){return Math.max(1,max-(Math.random()<APP_CFG.normal.shorterByOneChance?1:0))}
 function chosenOp(list=settings.ops){return list[rand(0,list.length-1)]}
 const minimumMultipliers=Array.isArray(window.__mathasMixedMultiplierLock)?window.__mathasMixedMultiplierLock.filter(n=>Number.isInteger(n)&&n>=2&&n<=9):[];
+const teacherMultiplierVersion=minimumMultipliers.length?String(window.__mathasMixedMultiplierVersion||minimumMultipliers.join('-')):null;
+let appliedTeacherMultiplierVersion=null;
 function selectedMultipliers(){return [...new Set([...settings.multipliers,...minimumMultipliers])].length?[...new Set([...settings.multipliers,...minimumMultipliers])]:[ALL_MULTIPLIERS[0]]}
 
 /* theme/fullscreen */
@@ -3662,9 +3667,17 @@ function setTheme(light){document.body.classList.toggle('light',light);$('themeB
 setTheme(safeGet(STORE.theme,'dark')==='light');$('themeBtn').onclick=()=>setTheme(!document.body.classList.contains('light'));$('fullBtn').onclick=async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch{}};document.addEventListener('fullscreenchange',()=>$('fullBtn').textContent=document.fullscreenElement?'✕ Quitter plein écran':'⛶ Plein écran');
 
 /* settings */
-function loadSettings(){const s=safeGet(STORE.settings,{});if(Array.isArray(s.ops)&&s.ops.length)settings.ops=s.ops.filter(x=>OPINFO[x]);settings.level=[1,2,3].includes(+s.level)?+s.level:1;settings.subMethod=s.subMethod==='takeTop'?'takeTop':'addBottom';settings.mulMethod=s.mulMethod==='side'?'side':'top';settings.tensFirst=!!s.tensFirst;window.__mathasTensFirst=!!settings.tensFirst;const m=Array.isArray(s.multipliers)?s.multipliers.map(Number).filter(n=>ALL_MULTIPLIERS.includes(n)):[...ALL_MULTIPLIERS];if(m.length)settings.multipliers=[...new Set(m)];renderSettings()}
-function saveSettings(){settings.multipliers=selectedMultipliers();safeSet(STORE.settings,settings)}
-function renderSettings(){settings.multipliers=selectedMultipliers();document.querySelectorAll('.op-toggle').forEach(b=>b.classList.toggle('active',settings.ops.includes(b.dataset.op)));$('subSettings').classList.toggle('disabled-setting',!settings.ops.includes('sub'));$('mulSettings').classList.toggle('disabled-setting',!settings.ops.includes('mul'));document.querySelector(`input[name="subMethod"][value="${settings.subMethod}"]`).checked=true;document.querySelector(`input[name="mulMethod"][value="${settings.mulMethod}"]`).checked=true;$('levelSelect').value=String(settings.level);$('levelBtn').textContent=`Niveau ${settings.level}`;document.querySelectorAll('.mult-chip').forEach(b=>b.classList.toggle('active',b.dataset.mult==='all'?ALL_MULTIPLIERS.every(n=>settings.multipliers.includes(n)):settings.multipliers.includes(+b.dataset.mult)));const tf=$('tensFirstToggle');if(tf)tf.checked=!!settings.tensFirst}
+function loadSettings(){const s=safeGet(STORE.settings,{});if(Array.isArray(s.ops)&&s.ops.length)settings.ops=s.ops.filter(x=>OPINFO[x]);settings.level=[1,2,3].includes(+s.level)?+s.level:1;settings.subMethod=s.subMethod==='takeTop'?'takeTop':'addBottom';settings.mulMethod=s.mulMethod==='side'?'side':'top';settings.tensFirst=!!s.tensFirst;window.__mathasTensFirst=!!settings.tensFirst;const m=Array.isArray(s.multipliers)?s.multipliers.map(Number).filter(n=>ALL_MULTIPLIERS.includes(n)):[...ALL_MULTIPLIERS];
+ appliedTeacherMultiplierVersion=teacherMultiplierVersion;
+ if(minimumMultipliers.length)settings.multipliers=s.teacherMultiplierVersion===teacherMultiplierVersion&&m.length
+   ?[...new Set([...m,...minimumMultipliers])]:[...minimumMultipliers];
+ else settings.multipliers=m.length?[...new Set(m)]:[...ALL_MULTIPLIERS];
+ renderSettings()}
+function saveSettings(){settings.multipliers=selectedMultipliers();safeSet(STORE.settings,{...settings,teacherMultiplierVersion:appliedTeacherMultiplierVersion})}
+function renderSettings(){settings.multipliers=selectedMultipliers();document.querySelectorAll('.op-toggle').forEach(b=>b.classList.toggle('active',settings.ops.includes(b.dataset.op)));$('subSettings').classList.toggle('disabled-setting',!settings.ops.includes('sub'));$('mulSettings').classList.toggle('disabled-setting',!settings.ops.includes('mul'));document.querySelector(`input[name="subMethod"][value="${settings.subMethod}"]`).checked=true;document.querySelector(`input[name="mulMethod"][value="${settings.mulMethod}"]`).checked=true;$('levelSelect').value=String(settings.level);$('levelBtn').textContent=`Niveau ${settings.level}`;document.querySelectorAll('.mult-chip').forEach(b=>{const required=minimumMultipliers.includes(+b.dataset.mult);
+ b.classList.toggle('active',b.dataset.mult==='all'?ALL_MULTIPLIERS.every(n=>settings.multipliers.includes(n)):settings.multipliers.includes(+b.dataset.mult));
+ b.classList.toggle('teacher-required',required);b.disabled=required;
+ b.title=required?'Table obligatoire du professeur':'';});const tf=$('tensFirstToggle');if(tf)tf.checked=!!settings.tensFirst}
 $('opsSelector').onclick=e=>{const b=e.target.closest('.op-toggle');if(!b)return;const op=b.dataset.op;if(settings.ops.includes(op)){if(settings.ops.length===1)return;settings.ops=settings.ops.filter(x=>x!==op)}else settings.ops.push(op);saveSettings();renderSettings()};
 document.querySelectorAll('input[name="subMethod"]').forEach(r=>r.onchange=()=>{settings.subMethod=r.value;saveSettings()});document.querySelectorAll('input[name="mulMethod"]').forEach(r=>r.onchange=()=>{settings.mulMethod=r.value;saveSettings()});
 const tensFirstToggle=$('tensFirstToggle');if(tensFirstToggle)tensFirstToggle.onchange=()=>{settings.tensFirst=!!tensFirstToggle.checked;window.__mathasTensFirst=!!settings.tensFirst;saveSettings()};
@@ -4422,7 +4435,7 @@ loadSettings();refreshScores();refreshLast();renderHardMenu();
   const CONTROLS=window.MathasAppConfig.aids.controls;
   let prefs={...DEFAULTS};
   try{const raw=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(raw&&typeof raw==='object')prefs={...prefs,...raw}}catch{}
-  const allowed=name=>prefs[name]!==false;
+  const allowed=name=>(name!=='tables'||window.__mathasMixedTeacherAllowTables!==false)&&prefs[name]!==false;
   function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(prefs))}catch{}}
   function clickIfOpen(button,panel){
     if(!button||!panel)return;

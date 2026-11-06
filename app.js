@@ -784,12 +784,12 @@ function mixedMultiplierLockPanel(container,studentId=null,appKey='multiplicatio
 // Résultats reste une consultation : les permissions se gèrent toujours
 // dans le même écran indépendant, même si aucune partie n'a été jouée.
 function multiplierLockPanel(container,studentId=null,appKey='multiplication-ecrite-simple'){
- if(appKey==='melange-calculs-ecrits')return mixedMultiplierLockPanel(container,studentId,appKey);
  const link=document.createElement('button');link.type='button';link.className='soft';
  link.textContent='⚙ Autorisations de multiplication';
  link.onclick=()=>{
   const cls=$('class-selector').value;
   if(cls)$('auth-class').value=cls;
+  $('auth-app').value=appKey;
   $('auth-scope').value=studentId?'student':'class';
   showTeacherTab('authorizations');
   void loadAuthorizations(studentId);
@@ -874,7 +874,7 @@ async function loadAuthorizations(requestedStudent=null){
  authSay('Chargement des autorisations…');
  $('auth-student').replaceChildren();
  try{
-  const classId=cls.value,appKey='multiplication-ecrite-simple';
+  const classId=cls.value,appKey=$('auth-app').value;
   const [dashboard,locks,aid]=await Promise.all([
    call('teacher-dashboard',{classId}),
    resultCall('teacher-multipliers-get',{classId,appKey}),
@@ -893,6 +893,7 @@ async function loadAuthorizations(requestedStudent=null){
  }catch(error){if(seq!==authLoadSequence)return;authSay('Impossible de charger les autorisations : '+error.message)}
 }
 $('auth-class').onchange=()=>void loadAuthorizations();
+$('auth-app').onchange=()=>void loadAuthorizations();
 $('auth-scope').onchange=()=>authRender();
 $('auth-student').onchange=()=>authRender();
 async function authSave(action,data){
@@ -901,7 +902,7 @@ async function authSave(action,data){
  const buttons=[...document.querySelectorAll('#teacher-authorizations .authorization-actions button')];
  buttons.forEach(b=>b.disabled=true);authSay('Enregistrement…');
  try{
-  await resultCall(action,{classId,appKey:'multiplication-ecrite-simple',
+  await resultCall(action,{classId,appKey:$('auth-app').value,
     studentId:scope==='class'?null:scope,...data});
   await loadAuthorizations(scope==='class'?null:scope);
   authSay('Enregistré. Une nouvelle sélection de tables du professeur réinitialise les tables facultatives au prochain lancement ; l’élève pourra ensuite en ajouter et les conserver.');

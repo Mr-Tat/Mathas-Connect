@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="./style.css?v=20261102-connect-3d-svg-v1">
   <link rel="preconnect" href="https://esm.sh" crossorigin>
   <link rel="preconnect" href="https://awmhpfofacaglewammxt.supabase.co" crossorigin>
-  <script type="module" src="./app.js?v=20261106-authorizations-v1"></script>
+  <script type="module" src="./app.js?v=20261106-mixed-permissions-v1"></script>
 <link rel="stylesheet" href="./join-avatar.css?v=20261103-cadres-v4">
 <link rel="stylesheet" href="./student-entry-dark.css?v=20261026go2">
 <script type="module" src="./join-avatar.js?v=20261103-profile-rewards-v1"></script>
@@ -121,14 +121,14 @@
         <p class="teacher-context">Prépare les réglages même avant le premier résultat. La classe définit les valeurs générales ; une exception pour un élève les remplace. Les résultats et les XP restent indépendants.</p>
         <div class="authorization-card">
           <div class="authorization-fields">
-            <label for="auth-app">Application<select id="auth-app"><option value="multiplication-ecrite-simple">Multiplication écrite</option></select></label>
+            <label for="auth-app">Application<select id="auth-app"><option value="multiplication-ecrite-simple">Multiplication écrite</option><option value="melange-calculs-ecrits">Calculs écrits mélangés</option></select></label>
             <label for="auth-class">Classe<select id="auth-class"></select></label>
             <label for="auth-scope">Appliquer à<select id="auth-scope"><option value="class">Toute la classe</option><option value="student">Un élève</option></select></label>
             <label for="auth-student" id="auth-student-wrap" hidden>Élève<select id="auth-student"></select></label>
           </div>
           <div class="authorization-options">
             <h3>Multiplicateurs obligatoires</h3>
-            <p class="hint">Les tables cochées seront les seules actives au prochain lancement après ton enregistrement. Les autres seront désactivées. L’élève peut ensuite en ajouter et les conserver jusqu’à ta prochaine modification. Le HARD conserve ses propres règles.</p>
+            <p class="hint">Les tables cochées seront les seules actives au prochain lancement après ton enregistrement. Les autres seront désactivées. L’élève peut ensuite en ajouter et les conserver jusqu’à ta prochaine modification. En HARD, toutes les tables restent disponibles.</p>
             <div id="auth-multipliers" class="authorization-multipliers" role="group" aria-label="Multiplicateurs obligatoires"></div>
             <p id="auth-inheritance" class="hint"></p>
             <div class="authorization-actions"><button id="auth-multipliers-save" type="button">Enregistrer les multiplicateurs</button><button id="auth-multipliers-clear" type="button" class="soft">Supprimer ce réglage</button></div>

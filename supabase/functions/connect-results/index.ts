@@ -156,6 +156,24 @@ Deno.serve(async req=>{
     }const device=await read(db.from('connect_devices').select('student_id').eq('auth_user_id',user.id).eq('state','approved').limit(1));if(!device)return null;const enrolled=await read(db.from('connect_enrollments').select('student_id').eq('student_id',device.student_id).eq('class_id',b.classId).is('left_at',null));if(!enrolled)return null;const active=await read(db.from('connect_students').select('id').eq('id',device.student_id).is('archived_at',null));return active?device.student_id:null};
   // Isolated mixed application. No change to existing game RPCs or XP scales.
   if(b.appKey===mixed){
+   if(b.action==='teacher-table-aid-get'||b.action==='teacher-table-aid-set'){
+    if(!await managed())return deny('forbidden',403);
+    if(b.action==='teacher-table-aid-get'){
+     const r=await db.from('connect_mixed_table_aid').select('scope_key,allowed').eq('class_id',b.classId).limit(260);
+     return r.error?deny('db_error',500):answer({ok:true,locks:r.data??[]});
+    }
+    const student=b.studentId??null;
+    if(student!==null){
+     if(!valid(student))return deny('invalid_student');
+     const row=await read(db.from('connect_enrollments').select('student_id').eq('class_id',b.classId).eq('student_id',student).is('left_at',null));
+     if(!row)return deny('not_enrolled',403);
+    }
+    if(b.allowed!==null&&typeof b.allowed!=='boolean')return deny('invalid_table_aid');
+    const scope=student??'class',r=b.allowed===null
+      ?await db.from('connect_mixed_table_aid').delete().eq('class_id',b.classId).eq('scope_key',scope)
+      :await db.from('connect_mixed_table_aid').upsert({class_id:b.classId,scope_key:scope,allowed:b.allowed,updated_at:new Date().toISOString()},{onConflict:'class_id,scope_key'});
+    return r.error?deny('db_error',500):answer({ok:true});
+   }
    if(b.action==='teacher-multipliers-get'||b.action==='teacher-multipliers-set'){
     if(!await managed())return deny('forbidden',403);
     if(b.action==='teacher-multipliers-get'){
@@ -169,7 +187,7 @@ Deno.serve(async req=>{
     const values=b.multipliers;
     if(values!==null&&(!Array.isArray(values)||!values.length||values.length>8||new Set(values).size!==values.length||values.some((v:any)=>!int(v,2,9))))return deny('invalid_multipliers');
     const r=values===null?await db.from('connect_mixed_multiplier_locks').delete().eq('class_id',b.classId).eq('scope_key',student??'class'):
-     await db.from('connect_mixed_multiplier_locks').upsert({class_id:b.classId,scope_key:student??'class',multipliers:values},{onConflict:'class_id,scope_key'});
+     await db.from('connect_mixed_multiplier_locks').upsert({class_id:b.classId,scope_key:student??'class',multipliers:values,updated_at:new Date().toISOString()},{onConflict:'class_id,scope_key'});
     return r.error?deny('db_error',500):answer({ok:true});
    }
    if(['student-load','student-xp','game-record'].includes(b.action)){
@@ -180,13 +198,19 @@ Deno.serve(async req=>{
     if((b.action!=='student-load'||b.expectedStudentId!=null)&&(!valid(b.expectedStudentId)||b.expectedStudentId!==studentId))return deny('identity_binding_conflict',409);
     if(b.action==='student-load'){
      const current=await read(db.from('connect_states').select('revision,state_data,reset_epoch').eq('student_id',studentId).eq('app_key',mixed));
-     const locks=await db.from('connect_mixed_multiplier_locks').select('scope_key,multipliers').eq('class_id',b.classId).in('scope_key',['class',studentId]).limit(2);
-     if(locks.error)return deny('db_error',500);
-     const multiplierLock=(locks.data??[]).find((x:any)=>x.scope_key===studentId)?.multipliers??(locks.data??[]).find((x:any)=>x.scope_key==='class')?.multipliers??null;
+     const [locks,aids]=await Promise.all([
+       db.from('connect_mixed_multiplier_locks').select('scope_key,multipliers,updated_at').eq('class_id',b.classId).in('scope_key',['class',studentId]).limit(2),
+       db.from('connect_mixed_table_aid').select('scope_key,allowed').eq('class_id',b.classId).in('scope_key',['class',studentId]).limit(2)
+     ]);
+     if(locks.error||aids.error)return deny('db_error',500);
+     const configured=(locks.data??[]).find((x:any)=>x.scope_key===studentId)??(locks.data??[]).find((x:any)=>x.scope_key==='class')??null;
+     const multiplierLock=configured?.multipliers??null;
+     const multiplierLockVersion=configured?.updated_at??null;
+     const tableAidAllowed=(aids.data??[]).find((x:any)=>x.scope_key===studentId)?.allowed??(aids.data??[]).find((x:any)=>x.scope_key==='class')?.allowed??true;
      const {data:permanent,error:trophyError}=await db.rpc('connect_trophy_rewards_v1',{p_student:studentId,p_app:mixed});
       if(trophyError)return deny('trophies_unavailable',503);
       const state=permanent?{...(current?.state_data??{}),rewards:permanent}:current?.state_data??null;
-      return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,state,multiplierLock,storageSubject:studentId});
+      return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,state,multiplierLock,multiplierLockVersion,tableAidAllowed,storageSubject:studentId});
     }
     if(b.action==='student-xp'){
      const r=await db.rpc('connect_mixed_xp_read_v1',{p_student:studentId,p_app:mixed,p_include_milestones:true});
