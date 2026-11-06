@@ -1,4 +1,5 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
+import {createVerifiedSessionToken} from './verified-session-token.mjs';
 import {studentHostContract} from './student-host-contract.mjs';
 import {ATOMIC_TEST_APP,isFixedTestApp} from './native-official-record.mjs';
 import {createAtomicTestRecorder,isWritableTestApp} from './atomic-test-recorder.mjs';
@@ -42,7 +43,7 @@ for(const id of ['bar-home','guest-home'])$(id).href=back.href;
 function UUID_SAFE_CLASS(x){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x)}
 const session=createClient(BASE,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
  ...(teacher?{storageKey:'mathas-connect-professor-auth-v1'}:{})}});
-let generation=0,tokenOwner=null,activeApp='',visibleDoc=null,watching=null,recorder=null,pupilId=null;
+let generation=0,activeApp='',visibleDoc=null,watching=null,recorder=null,pupilId=null;
 let certifiedRun=null,certifiedQueue=null,certifiedSending=false,projectionConsent=null,schoolScoreView=null,latestState=null;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 // Both additions now have an independently graded PostgreSQL proof. Never
@@ -185,16 +186,8 @@ const clear=()=>{
   lastOfficialXp=null;lastOfficialProgress=null;window.MathasConnectOfficialSchoolProgress=null;
   $('xp-toggle-main').textContent='✨ XP à récupérer';
 };
-async function verifiedToken(){
- const {data:{session:local}}=await session.auth.getSession();
- if(!local?.access_token||!local.user?.id)throw Error('Session Connect absente');
- const {data:{user},error}=await session.auth.getUser();
- if(error||!user||user.id!==local.user.id||(teacher?user.is_anonymous===true:user.is_anonymous!==true))
-  throw Error('Session Connect non reconnue');
- if(tokenOwner&&tokenOwner!==user.id)throw Error('Le profil connecté a changé');
- tokenOwner=user.id;
- return local.access_token;
-}
+// Reuse a recently server-verified JWT; every Edge Function still checks it.
+const verifiedToken=createVerifiedSessionToken({auth:session.auth,teacher});
 async function call(endpoint,action,appKey,payload={}){
  const token=await verifiedToken();
  const controller=new AbortController();
@@ -293,8 +286,11 @@ function watchGame(seq){
    // ce clic n'est pas trusted, et contournait auparavant la preuve scolaire.
    const launchOfficial=choice=>{
     if(seq!==generation||!pupilId)return true;
-    // Le moteur peut afficher son écran de fin avant l'ACK du serveur.
-    // Empêcher toute nouvelle série avant la confirmation officielle.
+    // The first click must react immediately, even when the network is slow.
+    // This also prevents a double-click from creating two server challenges.
+    if(doc.__mathasNativeLaunchPending){
+     message('Préparation de ton exercice certifié en cours…');return true;
+    }
     if(['starting','playing','saving','failed'].includes(
       inside.contentWindow?.__mathasSchoolProofState?.phase)){
      message('Termine ou synchronise d’abord le résultat officiel.');return true;
@@ -307,8 +303,32 @@ function watchGame(seq){
     if(!schoolModeAllowed(lastOfficialProgress,choice.mode,choice.level)){
      message('🔒 '+schoolModeLockReason(choice.mode,choice.level));return true;
     }
-    if(choice.mode==='classic')void activeProofUI.startNative(choice.level,choice.total);
-    else void extendedUI.startNative(choice.mode,choice.level);
+    doc.__mathasNativeLaunchPending=true;
+    const feedback=doc.createElement('div');
+    feedback.id='mathas-official-launch-feedback';
+    feedback.setAttribute('role','status');
+    feedback.setAttribute('aria-live','polite');
+    feedback.textContent='⏳ Préparation des calculs Connect…';
+    // A lightweight floating status, not a replacement for the native game.
+    feedback.style.cssText='position:fixed;z-index:2147483000;left:50%;bottom:20px;transform:translateX(-50%);max-width:calc(100vw - 24px);width:max-content;pointer-events:none;padding:11px 18px;border-radius:14px;border:1px solid #7b9db8;background:rgba(13,36,59,.97);color:#fff5db;box-shadow:0 5px 22px #0008;font:800 14px system-ui;text-align:center';
+    doc.body?.appendChild(feedback);
+    let promise;
+    try{
+     promise=choice.mode==='classic'
+      ?activeProofUI.startNative(choice.level,choice.total)
+      :extendedUI.startNative(choice.mode,choice.level);
+    }catch(e){
+     doc.__mathasNativeLaunchPending=false;
+     feedback.remove();
+     message('⚠️ Lancement impossible : '+(e?.message||'erreur Connect'));
+     return true;
+    }
+    void Promise.resolve(promise).catch(e=>{
+     if(seq===generation)message('⚠️ Lancement impossible : '+(e?.message||'erreur Connect'));
+    }).finally(()=>{
+     doc.__mathasNativeLaunchPending=false;
+     feedback.remove();
+    });
     return true;
    };
    inside.contentWindow.__mathasConnectOfficialLaunch=launchOfficial;
