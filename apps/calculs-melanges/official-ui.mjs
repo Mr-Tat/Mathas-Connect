@@ -60,7 +60,7 @@ export function installMixedOfficialUi(doc,{connected=false,returnHref='../../hu
  const connectedLabel=doc.createElement('span');connectedLabel.id='mathasMixedConnected';
  connectedLabel.textContent=connected?'● Connecté'+(className?' · '+className:''):'Mode libre';
  const xpLabel=doc.createElement('span');xpLabel.id='mathasMixedXp';
- cluster.append(connectedLabel,xpLabel);
+ cluster.insertBefore(connectedLabel,actions);cluster.insertBefore(xpLabel,actions);
  const source=()=>({
   level:Number(doc.getElementById('levelSelect')?.value)||1,
   ops:Math.max(1,doc.querySelectorAll('#opsSelector [data-op].active').length)
