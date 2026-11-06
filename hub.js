@@ -86,19 +86,21 @@ function card(app) {
     target.searchParams.set('requireConnect','1');
    if (playingAsTeacher && !allMode && ['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
   node.href = target.href;
-  if(testSlug)node.dataset.labSchool=testSlug;
+  if(testSlug&&!allMode)node.dataset.labSchool=testSlug;
   else node.dataset.appKey=app.app_key;
   node.target = '_blank';
   node.rel = 'noopener noreferrer';
   node.querySelector('.app-name').textContent = app.title;
   node.querySelector('.app-initial').textContent = app.title.charAt(0).toUpperCase();
-  node.querySelector('.app-scores').textContent = testMultiplication?'🧪 TEST · vrais XP et trophées Connect (connexion obligatoire)':
+  node.querySelector('.app-scores').textContent = allMode?progressText(app.app_key):
+    testMultiplication?'🧪 TEST · vrais XP et trophées Connect (connexion obligatoire)':
     testSlug?(app.app_key==='addition-ecrite-multiple'?'🧪 TEST · XP Connect en Classique / Mort subite':'🧪 TEST · nouveaux modes XP en préparation'):progressText(app.app_key);
-  if (app.image_url && !app.image_url.includes('jftzuslpelgzbdrftszw')) {
+  const officialThumbnail=(allMode&&app.app_key==='addition-ecrite-simple')?'./assets/miniatures/addition-ecrite-simple.webp':app.image_url;
+  if (officialThumbnail && !officialThumbnail.includes('jftzuslpelgzbdrftszw')) {
     const img = document.createElement('img');
     // Un numéro de version uniquement pour les deux miniatures approuvées évite
     // le cache de l'ancien visuel sans changer les URLs du catalogue Supabase.
-    const thumbUrl = new URL(app.image_url, location.href);
+    const thumbUrl = new URL(officialThumbnail, location.href);
     if (['soustraction-ecrite-simple','melange-calculs-ecrits'].includes(app.app_key)) {
       thumbUrl.searchParams.set('v','20261031-miniatures-prof');
     }
