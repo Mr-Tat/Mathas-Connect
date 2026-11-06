@@ -19,7 +19,8 @@ const REWARDS={version:3,mastery:{'4':[false,false,false],'10':[false,false,fals
 const examples=[
  {slug:'addition-simple',app:'addition-ecrite-simple',mode:'sudden',level:1,wrong:1},
  {slug:'addition-simple',app:'addition-ecrite-simple',mode:'three-lives',level:1,wrong:3},
- {slug:'addition-multiple',app:'addition-ecrite-multiple',mode:'hard-three-lives',level:3,wrong:3}
+ {slug:'addition-multiple',app:'addition-ecrite-multiple',mode:'hard-three-lives',level:3,wrong:3},
+ {slug:'addition-multiple',app:'addition-ecrite-multiple',mode:'hard-sudden',level:3,wrong:1}
 ];
 for(const item of examples){
  test('school browser certified '+item.slug+' '+item.mode+' early stop, score, XP, projected consent',async()=>{
@@ -39,6 +40,8 @@ for(const item of examples){
   const questions=Array.from({length:120},(_,i)=>({id:'q'+(i+1),op:'add',width,
    addends:Array(terms).fill(number)}));
   const actions=[],errors=[];let recordUnlocked=item.slug!=='addition-simple';
+  let releaseFinish;
+  const finishGate=new Promise(resolve=>{releaseFinish=resolve});
   try{
    browser=await chromium.launch({headless:true,args:['--no-sandbox']});
    const page=await browser.newPage({viewport:{width:1160,height:820}});
@@ -71,6 +74,7 @@ for(const item of examples){
       assert.ok(b.answers.every((a,i)=>a.id==='q'+(i+1)));
       ack={ok:true,proofVerified:true,verifiedScore:0,mode:item.mode,attempted:item.wrong,
        revision:1,resetEpoch:0,xp:{delta:0,appXp:0,total:0,level:1}};
+      if(item.mode.endsWith('sudden'))await finishGate;
      }else throw Error('unexpected extended action '+b.action);
     }else throw Error('unhandled endpoint '+part);
     await r.fulfill({status:200,contentType:'application/json',
@@ -451,6 +455,44 @@ for(const item of examples){
     },{mode:item.mode,level:item.level});
    }
    await page.locator('#extended-certified:not([hidden])').waitFor({state:'visible',timeout:15000});
+   if(item.mode.endsWith('sudden')){
+    const simplified=await page.evaluate(()=>{
+     const root=document.getElementById('extended-certified');
+     const keys=[...root.querySelectorAll('.extended-key')];
+     const help=root.querySelector('.extended-instructions').textContent;
+     return {mode:root.dataset.mode,phase:root.dataset.phase,
+      title:document.getElementById('extended-title').textContent,
+      status:document.getElementById('extended-status').textContent,
+      help,answerCount:root.querySelectorAll('.extended-digit-input.answer').length,
+      keyCount:keys.length,
+      minKeyHeight:Math.min(...keys.map(el=>el.getBoundingClientRect().height)),
+      instructions:root.querySelector('.extended-calc-label')?.getBoundingClientRect().height};
+    });
+    assert.equal(simplified.mode,item.mode);
+    assert.equal(simplified.phase,'playing');
+    assert.match(simplified.title,/Mort subite/);
+    assert.match(simplified.status,/1 erreur = fin/);
+    assert.match(simplified.help,/XP officiels.*Connect/);
+    assert.equal(simplified.instructions,0,'no repeated exercise heading');
+    assert.equal(simplified.keyCount,12,'touch keypad still available');
+    assert.ok(simplified.minKeyHeight>=44,'touch keys remain accessible');
+    assert.ok(simplified.answerCount>=width,'answer digits unchanged');
+    await page.setViewportSize({width:390,height:820});
+    const mobile=await page.evaluate(()=>{
+     const root=document.getElementById('extended-certified');
+     const scroll=root.querySelector('.extended-grid-scroll');
+     const rect=root.querySelector('.extended-keypad').getBoundingClientRect();
+     return {overflow:document.documentElement.scrollWidth-innerWidth,
+      keypadLeft:rect.left,keypadRight:rect.right,screenWidth:innerWidth,
+      calcScrollable:scroll.scrollWidth>scroll.clientWidth};
+    });
+    assert.ok(mobile.overflow<=2,'no page-level horizontal overflow: '+JSON.stringify(mobile));
+    assert.ok(mobile.keypadLeft>=0&&mobile.keypadRight<=mobile.screenWidth+2,
+     'touch keypad fits a mobile viewport: '+JSON.stringify(mobile));
+    if(item.mode==='hard-sudden')assert.equal(mobile.calcScrollable,true,
+     'HARD operations scroll inside the calculation card');
+    await page.setViewportSize({width:1160,height:820});
+   }
    for(let i=0;i<item.wrong;i++){
     const fields=page.locator('#extended-grid input.answer');
     const n=await fields.count();assert.ok(n>=width);
@@ -458,8 +500,20 @@ for(const item of examples){
     await page.locator('#extended-verify').click();
     if(i<item.wrong-1)await page.locator('#extended-next').click();
    }
+   if(item.mode.endsWith('sudden')){
+    await page.waitForFunction(()=>document.getElementById('extended-certified')?.dataset.phase==='saving',
+     null,{timeout:10000});
+    assert.match(await page.locator('#extended-status').textContent(),/confirmation de Connect/);
+    assert.equal(await page.locator('#extended-grid .extended-finished').count(),0,
+     'no certified end screen before server ACK');
+    releaseFinish();
+   }
    await page.waitForFunction(()=>document.getElementById('status').textContent.includes('XP officiels'),
     null,{timeout:18000});
+   if(item.mode.endsWith('sudden')){
+    assert.equal(await page.locator('#extended-certified').getAttribute('data-phase'),'verified');
+    assert.match(await page.locator('#extended-title').textContent(),/Résultat certifié/);
+   }
    assert.equal(actions.filter(a=>a.action==='finish-extended-proof-v1').length,1);
    assert.equal(actions.filter(a=>a.action==='game-record').length,0);
    // Switching straight from a finished extended mode to the other addition

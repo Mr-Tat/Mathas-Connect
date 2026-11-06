@@ -194,6 +194,78 @@ html.mathas-native-connect-hud #guest-home{display:none!important}
   font-size:clamp(17px,2.4vw,22px);color:#d8f5e1;
 }
 #extended-next[hidden]{display:none}
+
+/* Mort subite : un seul calcul au centre, des commandes lisibles, aucun
+   changement de questions/réponses ni de validation officielle. HARD conserve
+   le défilement horizontal pour les opérations très longues. */
+#extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]){
+  gap:clamp(8px,1.5vw,15px);
+  padding:clamp(10px,2vw,24px);
+  background:radial-gradient(ellipse at top,#19405b 0%,#102a41 48%,#081e30 100%);
+}
+#extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) h2{
+  margin:2px auto 0;
+  color:#ffe6b8;font-size:clamp(24px,3.2vw,36px);
+}
+#extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) #extended-status{
+  width:auto;max-width:min(800px,100%);padding:9px 15px;
+  border-color:#9a825b;background:#27364a;color:#fff1d5;
+  line-height:1.45;white-space:normal;
+}
+#extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) .extended-instructions{
+  max-width:760px;line-height:1.5;color:#d6e8f3;
+}
+#extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) .extended-workspace{
+  max-width:960px;gap:clamp(12px,2vw,22px);align-items:center;
+}
+#extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) .extended-calc-box{
+  max-width:760px;padding:clamp(10px,2vw,22px);
+  border-color:#56758c;background:#10263c;
+  box-shadow:0 10px 24px #0005;
+}
+#extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) .extended-calc-label,
+#extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) .extended-keypad-title{
+  display:none;
+}
+#extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) .extended-keypad{
+  padding:12px;border-color:#56758c;background:#10263c;
+}
+#extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) .extended-key{
+  min-height:48px;
+}
+#extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) .extended-actions{
+  gap:12px;width:100%;padding:3px 0 12px;
+}
+#extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) #extended-verify,
+#extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) #extended-next{
+  min-width:190px;min-height:48px;
+  border-color:#e8c47a;background:#ad7624;color:#fff;
+  font-size:15px;font-weight:850;
+}
+#extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) #extended-exit{
+  min-height:44px;background:#24435b;
+}
+#extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"])[data-phase="saving"] #extended-status{
+  border-color:#d7ad60;color:#ffe7ac;
+}
+@media(max-width:520px){
+  #extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) #extended-status{
+    font-size:13px;
+  }
+  #extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) .extended-workspace{
+    width:100%;gap:10px;
+  }
+  #extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) .extended-keypad{
+    width:min(320px,100%);grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  #extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) .extended-actions{
+    gap:9px;
+  }
+  #extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) #extended-verify,
+  #extended-certified:is([data-mode="sudden"],[data-mode="hard-sudden"]) #extended-next{
+    width:min(320px,100%);
+  }
+}
 @media(max-width:860px){
   .extended-workspace{flex-direction:column;gap:12px}
   .extended-calc-box{flex:0 1 auto;width:100%;max-width:100%}
@@ -278,4 +350,4 @@ html.mathas-native-connect-hud #guest-home{display:none!important}
 </div>
 </section>
 <iframe id="gameFrame" hidden title="Jeu Objectif record" allow="fullscreen" referrerpolicy="no-referrer"></iframe>
-</main><script type="module" src="./eleve.mjs?v=20261106-certification-safe-v9"></script></body></html>
+</main><script type="module" src="./eleve.mjs?v=20261106-sudden-simple-v1"></script></body></html>

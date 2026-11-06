@@ -10,7 +10,7 @@ test('les deux additions conservent le calcul certifié pour Mort subite et 3 vi
  assert.ok(proof.includes("start-extended-proof-v1"));
  assert.ok(proof.includes("finish-extended-proof-v1"));
  assert.ok(proof.includes("extendedFirstTryCorrect(q,attempt)"));
- assert.ok(host.includes("certified-extended-ui.mjs?v=20261106-abandon-safe-render-v5"));
+ assert.ok(host.includes("certified-extended-ui.mjs?v=20261106-sudden-simple-v1"));
 });
 test('le calcul posé reprend le trait continu et le clavier tactile du moteur natif',()=>{
  const page=source('apps/objective-record/eleve.html');

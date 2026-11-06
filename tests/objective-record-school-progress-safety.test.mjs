@@ -76,7 +76,7 @@ test('API reprise : droits, identité, durée, version et validation de la sauve
 test('les correctifs sont en cache versionnée sans changer les règles de score',()=>{
  const host=source('apps/objective-record/eleve.mjs');
  const html=source('apps/objective-record/eleve.html');
- assert.match(host,/abandon-safe-render-v5/);
+ assert.match(host,/sudden-simple-v1/);
  assert.match(host,/resumable-school-v1/);
- assert.match(html,/certification-safe-v9/);
+ assert.match(html,/sudden-simple-v1/);
 });
