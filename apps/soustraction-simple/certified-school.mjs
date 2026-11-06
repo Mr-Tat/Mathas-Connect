@@ -159,7 +159,7 @@ export function createCertifiedSubtraction({
     'Effectue la soustraction posée avec la méthode choisie. Un seul essai par calcul.'));
    const bar=node('div','mathas-sub-actions');
    bar.append(button('Valider ce calcul',()=>validate(answer),true),
-    button('Fermer (reprendre plus tard)',close));
+    button('Quitter l’exercice (abandonner)',close));
    inner.append(bar);
    const pad=node('div','mathas-sub-pad');
    for(const n of ['7','8','9','4','5','6','1','2','3','⌫','0','C']){

@@ -26,5 +26,6 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-save --no-package-lock playwright@1.58.2
-      - run: npx playwright install chromium --with-deps
+      # Ubuntu 24.04 already has Chromium libraries; --with-deps can stall on apt fonts.
+      - run: npx playwright install chromium
       - run: node --test --test-concurrency=1 tests/multiplication-certified-keyboard.browser.mjs tests/multiplication-native-presentation.browser.mjs tests/multiplication-approved-journey.browser.mjs
