@@ -19,7 +19,7 @@ export function createCertifiedExtendedUI({
  // silencieusement une série certifiée. La preuve reste locale tant qu'elle
  // n'est pas finalisée côté serveur ; prévenir avant de quitter l'onglet.
  const warnWhilePlaying=event=>{
-  if(!run||run.finished||run.invalid||!active(run.generation))return;
+  if(!run||run.invalid||!active(run.generation))return;
   event.preventDefault();
   event.returnValue='';
  };
