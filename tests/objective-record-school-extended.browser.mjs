@@ -501,6 +501,48 @@ for(const item of examples){
    assert.ok(nativeVisual.inputs>=width,'les cases de saisie originales restent présentes');
    assert.equal(nativeVisual.certifiedOverlay,false,'aucun écran de substitution pendant le jeu');
    if(item.mode==='three-lives')assert.equal(nativeVisual.hearts,false,'les cœurs natifs sont visibles');
+   if(!item.mode.startsWith('hard-')){
+    // Wide-screen native bar: Menu → centered hearts → metrics → stretched
+    // manual validation → live points, all on one line (user's screenshot).
+    await page.setViewportSize({width:1920,height:900});
+    await page.waitForFunction(()=>{
+     const d=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentDocument;
+     return !!d?.getElementById('mathas-session-toolbar-layout-v1')&&
+      !!d?.querySelector('#gameScreen .mathas-manual-validation-during-game')&&
+      !!d?.querySelector('#gameScreen .mathas-points-live');
+    },null,{timeout:10000});
+    const row=await page.evaluate(()=>{
+     const d=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+     const r=selector=>{
+      const x=d.querySelector(selector)?.getBoundingClientRect();
+      return x?{left:x.left,right:x.right,top:x.top,bottom:x.bottom,width:x.width,
+       mid:(x.top+x.bottom)/2,center:(x.left+x.right)/2}:null;
+     };
+     return {bar:r('#gameScreen .session-bar'),menu:r('#gameScreen #menuBtn'),
+      hearts:r('#gameScreen #threeLivesHud'),level:r('#gameScreen #sessionLevel'),
+      progress:r('#gameScreen #sessionProgress'),score:r('#gameScreen #sessionScore'),
+      ruler:r('#gameScreen #scoreRulerBtn'),tens:r('#gameScreen .mathas-tens-first-during-game'),
+      manual:r('#gameScreen .mathas-manual-validation-during-game'),
+      points:r('#gameScreen .mathas-points-live'),
+      heartsHidden:d.getElementById('threeLivesHud')?.hidden};
+    });
+    assert.ok(row.level.left>row.menu.right,'niveau déplacé à gauche mais après Menu : '+JSON.stringify(row));
+    for(const [a,b] of [['level','progress'],['progress','score'],['score','ruler'],['ruler','tens'],['tens','manual'],['manual','points']]){
+     assert.ok(row[b].left>=row[a].right-2,a+' doit précéder '+b+' : '+JSON.stringify(row));
+    }
+    assert.ok(row.manual.width>=185,'Valider les réponses utilise un espace plus large : '+JSON.stringify(row));
+    assert.ok(row.points.right<=row.bar.right+3,'le score de jeu tient dans la barre : '+JSON.stringify(row));
+    assert.ok(Math.abs(row.manual.mid-row.level.mid)<15,'validation et niveau sur la même ligne');
+    if(item.mode==='three-lives'){
+     assert.equal(row.heartsHidden,false);
+     assert.ok(row.hearts.left>=row.menu.right-2&&row.hearts.right<=row.level.left+2,
+      'les trois cœurs sont entre Menu et Niveau : '+JSON.stringify(row));
+     assert.ok(Math.abs(row.hearts.center-(row.menu.right+row.level.left)/2)<28,
+      'les trois cœurs sont centrés dans cet espace : '+JSON.stringify(row));
+     assert.ok(Math.abs(row.hearts.mid-row.level.mid)<16,'les trois cœurs sont sur la ligne principale');
+    }
+    await page.setViewportSize({width:1160,height:820});
+   }
    await page.setViewportSize({width:390,height:820});
    assert.equal(await page.locator('#gameFrame').isVisible(),true,'le jeu natif reste visible sur mobile');
    await page.setViewportSize({width:1160,height:820});
