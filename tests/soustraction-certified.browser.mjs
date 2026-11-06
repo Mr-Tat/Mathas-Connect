@@ -262,7 +262,17 @@ test('Chromium scolaire natif : 3 vies et trois erreurs', {timeout:120000},async
   await page.setViewportSize({width:390,height:740});
   await fillCalc(frame,0,'0');
   await frame.locator('#primaryBtn').click();
-  await frame.locator('#threeLivesHud .demo-heart.lost').first().waitFor({timeout:6000});
+  // Sur le petit écran, la zone pédagogique est gérée par le mode portrait
+  // du moteur historique. Vérifier l'état de la vie perdue dans le DOM, sans
+  // imposer un rectangle visible pendant son animation/reflux.
+  await page.waitForFunction(()=>{
+   const doc=document.querySelector('iframe')?.contentDocument;
+   return doc?.querySelectorAll('#threeLivesHud .demo-heart.lost').length===1;
+  },null,{timeout:6000});
+  const lives=await frame.locator('#threeLivesHud').evaluate(h=>({
+   marked:h.querySelectorAll('.demo-heart.lost').length,total:h.children.length
+  }));
+  assert.deepEqual(lives,{marked:1,total:3});
   await fillCalc(frame,1,'0');
   await frame.locator('#primaryBtn').click();
   await frame.locator('#primaryBtn').click();
