@@ -64,6 +64,9 @@ function style(doc){
  if(doc.getElementById(CSSID))return;
  const css=doc.createElement('style');css.id=CSSID;
  css.textContent=[
+ // Le menu réserve d'emblée l'espace XP et coupes : leur arrivée asynchrone
+ // ne déplace pas les boutons 4 / 10 / 20 sous le pointeur de l'élève.
+ '#menuScreen #classicCountPicker .classic-count-btn[data-count]{position:relative!important;padding-top:19px!important;padding-bottom:24px!important}',
  '.mathas-sub-survival-pair,.mathas-sous-record-buttons{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;width:100%!important}',
  '/* Survie : empêcher les règles natives grid-column:1/-1 de faire passer Mort subite dessous. */',
  '#menuScreen .mode-card.sudden .mathas-sous-record-buttons{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-flow:row!important;gap:9px!important;width:100%!important;min-width:0!important;align-items:stretch!important}',

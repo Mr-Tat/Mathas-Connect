@@ -141,6 +141,9 @@ async function setup({viewport={width:1024,height:768},fixtureData=fixture()}={}
 
 async function launchClassic(page,frame,{method='addBottom',count=4,useKeyboard=false}={}){
  await frame.locator('input[name="borrowMethod"][value="'+method+'"]').evaluate(input=>input.closest('label').click());
+ // Attendre les récompenses Connect avant le clic réel : aucun bouton ne doit
+ // changer de dimensions pendant le ciblage de 4, 10 ou 20 calculs.
+ await frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"] .mathas-sub-official-xp').waitFor({state:'attached',timeout:15000});
  await frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"]').evaluate(el=>{
   const w=el.ownerDocument.defaultView;
   w.__mathasClassicClicks=[];
