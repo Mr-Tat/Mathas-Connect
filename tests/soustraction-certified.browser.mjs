@@ -170,7 +170,15 @@ async function launchClassic(page,frame,{method='addBottom',count=4,useKeyboard=
   });
  });
  console.log('CERTIFIED CLASSIC GEOMETRY',JSON.stringify(geometry));
- if(useKeyboard)await target.press('Enter');else await target.click();
+ // Les animations de cartes/recharges XP peuvent encore déplacer les boutons
+ // entre la mesure de leurs coordonnées et pointerdown. Stabiliser le vrai
+ // clic souris, sans déclencher de .click() synthétique ou de doublon.
+ if(useKeyboard)await target.press('Enter');
+ else{
+  await target.evaluate(el=>el.scrollIntoView({block:'center',inline:'center'}));
+  await page.waitForTimeout(320);
+  await target.click({timeout:10000});
+ }
  console.log('CERTIFIED CLASSIC',JSON.stringify({requested:count,
   clicks:await frame.locator('body').evaluate(()=>window.__mathasClassicClicks)}));
  const lastClick=await frame.locator('body').evaluate(()=>window.__mathasClassicClicks?.at(-1));
@@ -237,8 +245,43 @@ test('Chromium scolaire natif : 3 vies et trois erreurs', {timeout:120000},async
   const {page,frame}=await ctx.page();
   await frame.locator('#mathasSousThreeLives').click();
   await frame.locator('#gameScreen:not(.hidden) #calculationsPair .calc-box').first().waitFor({timeout:20000});
+  await page.setViewportSize({width:1536,height:820});
+  await frame.locator('#gameScreen:not(.hidden) #threeLivesHud:not([hidden])').waitFor({state:'visible',timeout:6000});
+  const row=await frame.locator('#gameScreen .session-bar').evaluate(bar=>{
+   const box=s=>bar.querySelector(s)?.getBoundingClientRect();
+   const fields={menu:box('#menuBtn'),level:box('#sessionLevel'),
+    progress:box('#sessionProgress'),score:box('#sessionScore'),
+    ruler:box('#scoreRulerBtn'),manual:box('.mathas-manual-validation-during-game'),
+    hearts:box('#threeLivesHud')};
+   const rect=Object.fromEntries(Object.entries(fields).map(([k,b])=>
+    [k,b?{left:b.left,right:b.right,top:b.top,mid:(b.top+b.bottom)/2,width:b.width}:null]));
+   const hearts=bar.querySelector('#threeLivesHud');
+   return {...rect,heartsHidden:hearts?.hidden,
+    heartWidth:hearts?.querySelector('.demo-heart')?.getBoundingClientRect().width,
+    count:hearts?.querySelectorAll('.demo-heart').length};
+  });
+  assert.equal(row.heartsHidden,false,'3 vies : cœurs natifs visibles');
+  assert.equal(row.count,3);assert.ok(row.heartWidth>=46,'cœurs plus grands');
+  assert.ok(row.hearts.left>=row.menu.right-3&&row.hearts.right<=row.level.left+3,
+   'les cœurs sont entre Menu et Niveau : '+JSON.stringify(row));
+  for(const key of ['progress','score','ruler','manual']){
+   assert.ok(row[key]&&Math.abs(row[key].mid-row.level.mid)<16,
+    'une seule ligne, y compris '+key+' : '+JSON.stringify(row));
+  }
+  await page.setViewportSize({width:390,height:740});
   await fillCalc(frame,0,'0');
   await frame.locator('#primaryBtn').click();
+  // Sur le petit écran, la zone pédagogique est gérée par le mode portrait
+  // du moteur historique. Vérifier l'état de la vie perdue dans le DOM, sans
+  // imposer un rectangle visible pendant son animation/reflux.
+  await page.waitForFunction(()=>{
+   const doc=document.querySelector('iframe')?.contentDocument;
+   return doc?.querySelectorAll('#threeLivesHud .demo-heart.lost').length===1;
+  },null,{timeout:6000});
+  const lives=await frame.locator('#threeLivesHud').evaluate(h=>({
+   marked:h.querySelectorAll('.demo-heart.lost').length,total:h.children.length
+  }));
+  assert.deepEqual(lives,{marked:1,total:3});
   await fillCalc(frame,1,'0');
   await frame.locator('#primaryBtn').click();
   await frame.locator('#primaryBtn').click();

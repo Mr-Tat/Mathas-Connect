@@ -12,7 +12,8 @@ import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOffici
 import {createProjectionConsent} from '../../projection-consent.mjs?v=20261106-fullscreen-consent-v1';
 import {createSchoolScoreView} from './school-score-view.mjs?v=20261106-fullscreen-share-v3';
 import {installTensFirstDuringGame} from './in-game-tens-first.mjs?v=20261106-manual-validation-per-profile-v2';
-import {installSessionToolbarLayout} from './in-game-session-layout.mjs?v=20261106-single-row-large-hearts-v2';
+import {installManualValidationForWrittenCalc} from './in-game-manual-validation.mjs?v=20261106-manual-validation-v1';
+import {installSessionToolbarLayout} from './in-game-session-layout.mjs?v=20261106-all-confirmed-v3';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
 
@@ -271,6 +272,7 @@ function watchGame(seq){
    renderNativeOfficialXp(doc,activeApp,lastOfficialXp);
    schoolScoreView?.mount(doc);
    installTensFirstDuringGame(doc,activeApp,pupilId);
+   installManualValidationForWrittenCalc(doc,activeApp,pupilId);
    // Layout only: native buttons, their listeners and scoring stay untouched.
    installSessionToolbarLayout(doc,activeApp);
    if(lastOfficialProgress){
