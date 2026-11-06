@@ -7,7 +7,7 @@ import {buildConnectPilot,CONNECT_WRITE_READY as writeReady} from './connect-pil
 import {createEdgePost} from './edge-transport.mjs';
 import {createAuthenticatedHost} from './connect-host.mjs';
 import {hydrateNativeRecords} from './connect-hydration.mjs';
-import {installMixedOfficialUi} from './official-ui.mjs?v=20261106-hud-level-xp-visible-v3';
+import {installMixedOfficialUi} from './official-ui.mjs?v=20261106-history-xp-detail-v4';
 (async()=>{const frame=document.getElementById('game'),output=document.getElementById('result'),recorded=[];
  // Class launches require the native approved session and an enabled backend.
  const launch=new URLSearchParams(location.search);
@@ -16,8 +16,26 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261106-hud-level-xp-
  const modeNote=document.getElementById('mode-note');
  if(simulate){document.querySelector('.notice').hidden=false;modeNote.textContent='Laboratoire · simulation seulement — aucun envoi Supabase';}
  let connected=null,host=null,consent=null,multiplierLock=null,multiplierLockVersion=null,tableAidAllowed=true,blockedSession=false;
- let officialUi=null,activeState=null,xpSnapshot=null,approvedToday=null;
+ let officialUi=null,activeState=null,xpSnapshot=null,approvedToday=null,verifiedHistory=null;
  let xpAnimationQueue=Promise.resolve();
+ async function refreshOfficialHistory(){
+  if(!host)return;
+  try{
+   const token=await host.getToken();
+   const endpoint=host.endpoint.replace('/connect-results','/connect-projection-v2');
+   const response=await fetch(endpoint,{method:'POST',
+    headers:{apikey:host.apikey,authorization:'Bearer '+token,'content-type':'application/json'},
+    body:JSON.stringify({action:'student-score-history',classId,appKey:'melange-calculs-ecrits'})});
+   const history=await response.json();
+   if(!response.ok||history?.ok!==true||!Array.isArray(history.bestThree))return;
+   verifiedHistory=history;
+   if(history.todayBest?.eventId){
+    approvedToday={eventId:history.todayBest.eventId,points:Number(history.todayBest.points)};
+   }
+   officialUi?.update({history:verifiedHistory,...(approvedToday
+    ?{eventId:approvedToday.eventId,verifiedPoints:approvedToday.points}:{})});
+  }catch{/* L'historique officiel reste facultatif et n'empêche jamais de jouer. */}
+ }
  function guardQueue(){const full=(connected?.pending()??0)>=100;const body=frame.contentDocument?.body;if(body)body.inert=full||blockedSession;frame.inert=full||blockedSession;document.getElementById('retry').hidden=!connected;if(full){document.querySelector('.notice').hidden=false;output.textContent='File offline pleine : 100 résultats conservés. Reconnectez-vous avant une nouvelle partie.';}}
  frame.addEventListener('load',()=>{
   guardQueue();
@@ -30,7 +48,7 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261106-hud-level-xp-
   officialUi=installMixedOfficialUi(doc,{connected:!!connected,returnHref:returnTo,
     className:classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'?'TEST':'Math’as Connect',
     state:activeState,xp:xpSnapshot,onShare:eventId=>consent?.offer(eventId)});
-  if(approvedToday)officialUi?.update({eventId:approvedToday.eventId,verifiedPoints:approvedToday.points});
+  if(verifiedHistory||approvedToday)officialUi?.update({...(verifiedHistory?{history:verifiedHistory}:{}),...(approvedToday?{eventId:approvedToday.eventId,verifiedPoints:approvedToday.points}:{})});
   // Le HUD est désormais dans le véritable jeu, pas dans une bande supérieure.
   if(connected&&officialUi&&!blockedSession&&connected.pending()<100)document.querySelector('.notice').hidden=true;
 });
@@ -66,6 +84,7 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261106-hud-level-xp-
        officialUi?.update({state:activeState,xp:xpSnapshot,eventId:reply.eventId,
         verifiedPoints:event?Number(event.points):undefined});
        confirmXp(reply.xp);
+       void refreshOfficialHistory();
        if(connected){const v=connected.version();frame.setAttribute('data-revision',v.revision);frame.setAttribute('data-reset-epoch',v.resetEpoch);}
      }else if(status==='quarantined')output.textContent='Ancien parcours : '+reply.count+' résultat(s) hors ligne conservé(s) à part après la remise à zéro.';
      else if(status==='unauthorized')output.textContent='Connect : session expirée, révoquée ou changée. Résultat conservé pour ce profil ; reconnectez-vous.';
@@ -84,21 +103,9 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261106-hud-level-xp-
      state:loaded.state,pending:candidate.pending()});
    if(!hydrated)output.textContent='Connect : sauvegardes locales en attente de synchronisation';
    try{xpSnapshot=await host.readXp();showXpMeter(xpSnapshot)}catch{output.textContent='Connect : lecture XP momentanément indisponible'}
-   // Retrouver le meilleur résultat certifié après une reconnexion : aucun score
-   // local non vérifié ne rend cliquable « Proposer ce score ».
-   void (async()=>{
-    try{
-     const token=await host.getToken();
-     const endpoint=host.endpoint.replace('/connect-results','/connect-projection-v2');
-     const response=await fetch(endpoint,{method:'POST',headers:{apikey:host.apikey,authorization:'Bearer '+token,'content-type':'application/json'},
-      body:JSON.stringify({action:'student-score-history',classId,appKey:'melange-calculs-ecrits'})});
-     const history=await response.json();
-     if(response.ok&&history?.ok&&history.todayBest?.eventId){
-      approvedToday={eventId:history.todayBest.eventId,points:Number(history.todayBest.points)};
-      officialUi?.update({eventId:approvedToday.eventId,verifiedPoints:approvedToday.points});
-     }
-    }catch{/* Historique projection facultatif, jamais bloquant pour les exercices. */}
-   })();
+   // Les trois meilleurs scores historiques et le Top du jour proviennent
+   // exclusivement des événements certifiés par Supabase, jamais du cache local.
+   void refreshOfficialHistory();
    void connected.retry();
    modeNote.textContent='Mode connecté — résultats et XP sauvegardés côté serveur';
   }catch(error){
