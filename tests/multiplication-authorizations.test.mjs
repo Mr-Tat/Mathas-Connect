@@ -42,11 +42,11 @@ test('permission de tables transmise à la session certifiée avec héritage cla
  assert.match(migration,/REVOKE ALL/);
 });
 
-test('les multiplicateurs des calculs mélangés gardent leur panneau historique',()=>{
+test('les autorisations des calculs mélangés utilisent maintenant la page commune',()=>{
  const app=read('app.js');
- assert.match(app,/function mixedMultiplierLockPanel\(/);
- assert.match(app,/if\(appKey==='melange-calculs-ecrits'\)return mixedMultiplierLockPanel/);
  assert.match(app,/function multiplierLockPanel\(/);
+ assert.match(app,/\$\('auth-app'\)\.value=appKey/);
+ assert.doesNotMatch(app,/if\(appKey==='melange-calculs-ecrits'\)return mixedMultiplierLockPanel/);
 });
 
 test('une consigne professeur remplace les tables cochées, sans effacer les ajouts à chaque lancement',()=>{
