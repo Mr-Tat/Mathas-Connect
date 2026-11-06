@@ -431,16 +431,16 @@ for(const item of examples){
     }
     // A real click on either normal score button must issue its specific school
     // proof. No separate "Défi Connect" action is necessary.
-    const native=page.frameLocator('#gameFrame').frameLocator('#game');
+    // already defined above as nativeMenu
     await page.evaluate(()=>{
      const doc=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
      const level=doc.getElementById('suddenMaxDigits');level.value='3';
      level.dispatchEvent(new Event('change',{bubbles:true}));
     });
     const modeButton=item.mode==='three-lives'?'startThreeLives':'startSudden';
-    await native.locator('#'+modeButton+' .mathas-connect-official-xp').waitFor({state:'visible',timeout:15000});
-    assert.match(await native.locator('#'+modeButton).textContent(),item.mode==='three-lives'?/Reste 20 XP/:/Reste 40 XP/);
-    await native.locator('#'+modeButton).click();
+    await nativeMenu.locator('#'+modeButton+' .mathas-connect-official-xp').waitFor({state:'visible',timeout:15000});
+    assert.match(await nativeMenu.locator('#'+modeButton).textContent(),item.mode==='three-lives'?/Reste 20 XP/:/Reste 40 XP/);
+    await nativeMenu.locator('#'+modeButton).click();
     assert.equal(await page.locator('#certified-mode').inputValue(),item.mode);
    }else{
     // Ouvrir le VRAI menu HARD et utiliser son bouton d'origine.
@@ -452,8 +452,8 @@ for(const item of examples){
      select.value=hard.value;select.dispatchEvent(new Event('change',{bubbles:true}));
     });
     const hardMode=item.mode.slice(5);
-    await native.locator('#hardMenu:not(.hidden)').waitFor({state:'visible',timeout:15000});
-    const hardButton=native.locator('#hardMenu .hard-start[data-level="'+item.level+'"][data-mode="'+hardMode+'"]');
+    await nativeMenu.locator('#hardMenu:not(.hidden)').waitFor({state:'visible',timeout:15000});
+    const hardButton=nativeMenu.locator('#hardMenu .hard-start[data-level="'+item.level+'"][data-mode="'+hardMode+'"]');
     await hardButton.waitFor({state:'visible',timeout:15000});
     await hardButton.click();
    }
@@ -498,18 +498,18 @@ for(const item of examples){
      '.answer-input[data-calc="'+index+'"]';
     const carrySelector=hard?'#hardGame input.hard-carry':
      '.carry-input[data-calc="'+index+'"]';
-    const fields=native.locator(digitSelector),carries=native.locator(carrySelector);
+    const fields=nativeMenu.locator(digitSelector),carries=nativeMenu.locator(carrySelector);
     const n=await fields.count();
     assert.ok(n>=width,'des chiffres du résultat sont attendus');
     for(let j=0;j<n;j++){await fields.nth(j).focus();await page.keyboard.press('0')}
     const m=await carries.count();
     for(let j=0;j<m;j++){await carries.nth(j).focus();await page.keyboard.press('0')}
     if(hard){
-     await native.locator('#hardPrimary').click();
-     if(i<item.wrong-1)await native.locator('#hardPrimary').click();
+     await nativeMenu.locator('#hardPrimary').click();
+     if(i<item.wrong-1)await nativeMenu.locator('#hardPrimary').click();
     }else{
-     await native.locator('#primaryBtn').click();
-     if(i===1&&i<item.wrong-1)await native.locator('#primaryBtn').click();
+     await nativeMenu.locator('#primaryBtn').click();
+     if(i===1&&i<item.wrong-1)await nativeMenu.locator('#primaryBtn').click();
     }
     await page.waitForFunction(expected=>{
      const win=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
