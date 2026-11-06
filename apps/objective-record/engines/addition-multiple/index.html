@@ -6508,24 +6508,42 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
   }
 
   /* SCORES */
-  function finishClassic(){window.__progressionUnlockRecord?.(session.level,session.score,session.totalCalculs);
+  function finishClassic(){
+    const official=['playing','saving'].includes(window.__mathasSchoolProofState?.phase);
+    if(!official)window.__progressionUnlockRecord?.(session.level,session.score,session.totalCalculs);
     const scores=classicScoreStore();scores.levels??={};scores.levels[session.level]??={};
     const bucket=scores.levels[session.level];
     const old=Number(bucket[session.totalCalculs]),isRecord=!Number.isFinite(old)||session.score>old;
-    if(isRecord){
+    if(!official&&isRecord){
       bucket[session.totalCalculs]=session.score;
       setClassicRulerUsage(session.level,session.totalCalculs,!!session.rulerUsed)
-    }else if(session.score===old&&!session.rulerUsed){
+    }else if(!official&&session.score===old&&!session.rulerUsed){
       // Un score égal réalisé sans réglette prouve que le meilleur score est aussi réalisable sans aide.
       setClassicRulerUsage(session.level,session.totalCalculs,false)
     }
-    safeSet(STORAGE.classic,scores);
+    if(!official)safeSet(STORAGE.classic,scores);
     phase='ended';setNumpadDisabled(true);resetBtn.disabled=true;setPrimaryLabel('Retour au menu');
-    setFeedback(isRecord?`Nouveau record : ${session.score}/${session.totalCalculs} !`:`Série terminée : ${session.score}/${session.totalCalculs}.`,'ok');
-    window.__setLastWork&&window.__setLastWork({label:`Calculs · Niveau ${session.level}`,score:`${session.score}/${session.totalCalculs}`,rulerUsed:!!session.rulerUsed});
-    enregistrerResultatMathas(session.score,session.totalCalculs,`Niveau ${session.level}`,session.level);
-    updateBar();isRecord?showRecordCelebration(session.score,session.totalCalculs):showScoreCelebration(session.score,session.totalCalculs,old)
+    setFeedback(official?'Calculs terminés. Enregistrement officiel Connect en cours…':
+     isRecord?`Nouveau record : ${session.score}/${session.totalCalculs} !`:`Série terminée : ${session.score}/${session.totalCalculs}.`,official?'info':'ok');
+    if(!official){
+      window.__setLastWork&&window.__setLastWork({label:`Calculs · Niveau ${session.level}`,score:`${session.score}/${session.totalCalculs}`,rulerUsed:!!session.rulerUsed});
+      enregistrerResultatMathas(session.score,session.totalCalculs,`Niveau ${session.level}`,session.level);
+    }
+    // Le statut de fin est publié AVANT les animations. En mode Connect,
+    // les records/XP viennent exclusivement de l'ACK du serveur.
+    updateBar();
+    if(!official)isRecord?showRecordCelebration(session.score,session.totalCalculs):
+     showScoreCelebration(session.score,session.totalCalculs,old);
   }
+  window.addEventListener('mathas:school-proof-status',event=>{
+    const proof=event.detail;
+    if(proof?.phase!=='verified'||phase!=='ended'||session?.mode!=='classic')return;
+    const score=Number(proof.receipt?.score),total=Number(proof.receipt?.total);
+    if(!Number.isSafeInteger(score)||!Number.isSafeInteger(total))return;
+    setFeedback('✅ Résultat enregistré par Connect : '+score+'/'+total+
+     ' · +'+proof.receipt.xp+' XP officiels.','ok');
+    showScoreCelebration(score,total,score);
+  });
   function saveSuddenBest(){
     const scores=suddenScoreStore();scores.levels??={};
     const old=Number(scores.levels[session.level]);
@@ -9116,8 +9134,22 @@ body.light-mode .mathas-post-activity-summary,body.light .mathas-post-activity-s
     if(p&&/retour.*menu/i.test(p.textContent||''))p.click();else{const b=$('#hardGameBack,#hardExit');b?.click()}
     setTimeout(cb,180)
   }
-  function launchNormal(a){goNormalMenu(()=>{setNormalLevel(a.level);setTimeout(()=>{const b=findNormalButton(a.mode,a.count);if(b&&!b.disabled)b.click()},80)})}
-  function launchHard(a){goHardMenu(()=>{const b=findHardButton(a.level,a.mode);if(b&&!b.disabled)b.click()})}
+  function launchNormal(a){goNormalMenu(()=>{setNormalLevel(a.level);setTimeout(()=>{
+    // Les clics .click() synthétiques ne sont pas trusted. En Connect ils
+    // contournaient le lanceur certifié : utiliser son API scolaire explicite.
+    const school=window.__mathasConnectOfficialLaunch;
+    if(typeof school==='function'&&['classic','sudden','three-lives'].includes(a.mode)){
+      school({mode:a.mode,level:a.level,total:a.count});return;
+    }
+    const b=findNormalButton(a.mode,a.count);if(b&&!b.disabled)b.click()
+  },80)})}
+  function launchHard(a){goHardMenu(()=>{
+    const school=window.__mathasConnectOfficialLaunch;
+    if(typeof school==='function'&&['sudden','three-lives'].includes(a.mode)){
+      school({mode:a.mode==='sudden'?'hard-sudden':'hard-three-lives',level:a.level});return;
+    }
+    const b=findHardButton(a.level,a.mode);if(b&&!b.disabled)b.click()
+  })}
   function menuFromOverlay(){
     const wasHard=current?.zone==='hard';closeOverlay();
     if(wasHard){const p=$('#hardPrimary');if(p&&/retour.*menu/i.test(p.textContent||'')){p.click();setTimeout(()=>{$('#hardMenuBack,#hardBack,.hard-back')?.click()},120)}else $('#hardGameBack,#hardExit')?.click()}
@@ -9153,6 +9185,8 @@ body.light-mode .mathas-post-activity-summary,body.light .mathas-post-activity-s
     for(const s of sels){const e=$(s);if(e&&norm(e.textContent))return norm(e.textContent)}return''
   }
   function showEndOverlay(zone){
+    const proof=window.__mathasSchoolProofState;
+    if(zone==='normal'&&proof&&proof.phase!=='verified')return;
     if(!current||current.zone!==zone||document.querySelector('.mathas-post-activity-overlay'))return;
     const sig=JSON.stringify(current)+'|'+summaryText(zone);if(sig===lastEndSignature)return;lastEndSignature=sig;
     const follow=zone==='hard'?hardCandidates(current):normalCandidates(current);
@@ -9164,7 +9198,11 @@ body.light-mode .mathas-post-activity-summary,body.light .mathas-post-activity-s
     const card=document.createElement('div');card.className='mathas-post-activity-card';
     const menu=document.createElement('button');menu.className='mathas-post-activity-menu';menu.textContent='Menu';menu.onclick=menuFromOverlay;
     const title=document.createElement('div');title.className='mathas-post-activity-title';title.textContent='Activité terminée !';
-    const sum=document.createElement('div');sum.className='mathas-post-activity-summary';sum.textContent=summaryText(zone);
+    const sum=document.createElement('div');sum.className='mathas-post-activity-summary';
+    sum.textContent=zone==='normal'&&proof?.phase==='verified'&&proof.receipt
+      ?'Résultat confirmé par Connect : '+proof.receipt.score+'/'+proof.receipt.total+
+       ' · +'+proof.receipt.xp+' XP'
+      :summaryText(zone);
     const grid=document.createElement('div');grid.className='mathas-post-activity-grid';
     const again=document.createElement('button');again.className='mathas-post-activity-btn restart';again.textContent=zone==='hard'&&current.mode==='sudden'?'Recommencer la Mort subite':'Recommencer';again.onclick=()=>zone==='hard'?launchHard({...current}):launchNormal({...current});grid.appendChild(again);
     follow.slice(0,3).forEach(x=>{const b=document.createElement('button');b.className='mathas-post-activity-btn follow';b.textContent=x.label;b.onclick=()=>x.a.zone==='hard'?launchHard(x.a):launchNormal(x.a);grid.appendChild(b)});
@@ -9172,6 +9210,12 @@ body.light-mode .mathas-post-activity-summary,body.light .mathas-post-activity-s
   }
   function observePrimary(btn,zone){if(!btn)return;const react=()=>{const t=norm(btn.textContent);if(/retour.*menu/i.test(t)){clearAuto();if(endTimer)clearTimeout(endTimer);endTimer=setTimeout(()=>afterCelebration(()=>showEndOverlay(zone)),100)}else if(/calculs? suivants?|nouveaux calculs|passer aux? .*calculs?|calcul suivant/i.test(t)){scheduleAuto(btn)}};new MutationObserver(react).observe(btn,{childList:true,subtree:true,characterData:true});react()}
   observePrimary($('#primaryBtn'),'normal');observePrimary($('#hardPrimary'),'hard');
+  window.addEventListener('mathas:school-proof-status',event=>{
+    if(event.detail?.phase!=='verified')return;
+    const btn=$('#primaryBtn');
+    if(btn&&/retour.*menu/i.test(norm(btn.textContent)))
+      afterCelebration(()=>showEndOverlay('normal'));
+  });
 })();
 </script>
 
