@@ -524,15 +524,24 @@ for(const item of examples){
       ruler:r('#gameScreen #scoreRulerBtn'),tens:r('#gameScreen .mathas-tens-first-during-game'),
       manual:r('#gameScreen .mathas-manual-validation-during-game'),
       points:r('#gameScreen .mathas-points-live'),
-      heartsHidden:d.getElementById('threeLivesHud')?.hidden};
+      heartsHidden:d.getElementById('threeLivesHud')?.hidden,
+      heartIconWidth:d.querySelector('#gameScreen #threeLivesHud .demo-heart')?.getBoundingClientRect().width,
+      manualText:d.querySelector('#gameScreen .mathas-manual-validation-during-game span')?.textContent,
+      manualOverflow:(()=>{const el=d.querySelector('#gameScreen .mathas-manual-validation-during-game');
+       return el?.scrollWidth>el?.clientWidth+2})()};
     });
     assert.ok(row.level.left>row.menu.right,'niveau déplacé à gauche mais après Menu : '+JSON.stringify(row));
     for(const [a,b] of [['level','progress'],['progress','score'],['score','ruler'],['ruler','tens'],['tens','manual'],['manual','points']]){
      assert.ok(row[b].left>=row[a].right-2,a+' doit précéder '+b+' : '+JSON.stringify(row));
     }
-    assert.ok(row.manual.width>=185,'Valider les réponses utilise un espace plus large : '+JSON.stringify(row));
+    assert.ok(Math.abs(row.manual.width-row.tens.width)<3,
+     'Valider les réponses doit avoir la même largeur que Dizaines d’abord : '+JSON.stringify(row));
+    assert.ok(row.manual.width<=160,'les deux cases doivent rester compactes : '+JSON.stringify(row));
+    assert.equal(row.manualOverflow,false,'la légende Valider les réponses ne doit pas être rognée');
+    assert.equal(row.manualText,'Valider les réponses');
     assert.ok(row.points.right<=row.bar.right+3,'le score de jeu tient dans la barre : '+JSON.stringify(row));
-    assert.ok(Math.abs(row.manual.mid-row.level.mid)<15,'validation et niveau sur la même ligne');
+    assert.ok(Math.abs(row.manual.mid-row.level.mid)<15,'toutes les commandes doivent être sur la même ligne');
+    assert.ok(Math.abs(row.manual.mid-row.points.mid)<15,'les points sont sur la même ligne');
     if(item.mode==='three-lives'){
      assert.equal(row.heartsHidden,false);
      assert.ok(row.hearts.left>=row.menu.right-2&&row.hearts.right<=row.level.left+2,
@@ -540,6 +549,29 @@ for(const item of examples){
      assert.ok(Math.abs(row.hearts.center-(row.menu.right+row.level.left)/2)<28,
       'les trois cœurs sont centrés dans cet espace : '+JSON.stringify(row));
      assert.ok(Math.abs(row.hearts.mid-row.level.mid)<16,'les trois cœurs sont sur la ligne principale');
+     assert.ok(row.heartIconWidth>=48,'les cœurs du mode 3 vies sont agrandis : '+JSON.stringify(row));
+    }
+    // A 1536px computer display must NEVER revert to the old second row.
+    await page.setViewportSize({width:1536,height:820});
+    const laptop=await page.evaluate(()=>{
+     const d=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+     const r=s=>d.querySelector(s)?.getBoundingClientRect();
+     const level=r('#gameScreen #sessionLevel'),manual=r('#gameScreen .mathas-manual-validation-during-game');
+     const points=r('#gameScreen .mathas-points-live');
+     const hearts=r('#gameScreen #threeLivesHud'),menu=r('#gameScreen #menuBtn');
+     return {levelTop:level?.top,manualTop:manual?.top,pointsTop:points?.top,
+      heartsTop:hearts?.top,heartsHidden:d.getElementById('threeLivesHud')?.hidden,
+      menuRight:menu?.right,levelLeft:level?.left,heartsLeft:hearts?.left,heartsRight:hearts?.right};
+    });
+    assert.ok(Math.abs(laptop.manualTop-laptop.levelTop)<18,
+     'à 1536px, Valider les réponses ne doit plus passer sur une deuxième ligne : '+JSON.stringify(laptop));
+    assert.ok(Math.abs(laptop.pointsTop-laptop.levelTop)<19,
+     'à 1536px, les points restent sur la ligne principale : '+JSON.stringify(laptop));
+    if(item.mode==='three-lives'){
+     assert.ok(Math.abs(laptop.heartsTop-laptop.levelTop)<20,
+      'à 1536px, les cœurs ne passent pas sur une deuxième ligne : '+JSON.stringify(laptop));
+     assert.ok(laptop.heartsLeft>=laptop.menuRight-3&&laptop.heartsRight<=laptop.levelLeft+3,
+      'à 1536px, les cœurs restent entre Menu et Niveau : '+JSON.stringify(laptop));
     }
     await page.setViewportSize({width:1160,height:820});
    }
