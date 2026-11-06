@@ -290,9 +290,17 @@ function watchGame(seq){
    // les points locaux (parfois > 1000 en N1) semblent être des points Connect.
    installNativeCertifiedLaunch(doc,activeApp,choice=>{
     if(seq!==generation||!pupilId)return;
-    if(typeof native!=='function'){
+    // Ce routeur s'installe dès que le DOM apparaît, parfois AVANT
+    // MathasLabV2Update. Vérifier la fonction en direct au moment du clic :
+    // conserver ici la valeur capturée lors de l'installation bloquait
+    // définitivement les parties de certains élèves.
+    const readyNow=inside.contentWindow?.MathasLabV2Update;
+    if(typeof readyNow!=='function'){
      message('Le jeu charge encore ses contrôles officiels. Réessaie dans un instant.');return;
     }
+    // Le pont d'essais doit également être prêt si le clic intervient
+    // entre deux contrôles périodiques du lanceur.
+    activeProofUI.bind(inside.contentWindow,doc);
     if(!schoolModeAllowed(lastOfficialProgress,choice.mode,choice.level)){
      message('🔒 '+schoolModeLockReason(choice.mode,choice.level));return;
     }
