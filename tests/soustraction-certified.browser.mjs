@@ -170,7 +170,15 @@ async function launchClassic(page,frame,{method='addBottom',count=4,useKeyboard=
   });
  });
  console.log('CERTIFIED CLASSIC GEOMETRY',JSON.stringify(geometry));
- if(useKeyboard)await target.press('Enter');else await target.click();
+ // Les animations de cartes/recharges XP peuvent encore déplacer les boutons
+ // entre la mesure de leurs coordonnées et pointerdown. Stabiliser le vrai
+ // clic souris, sans déclencher de .click() synthétique ou de doublon.
+ if(useKeyboard)await target.press('Enter');
+ else{
+  await target.evaluate(el=>el.scrollIntoView({block:'center',inline:'center'}));
+  await page.waitForTimeout(320);
+  await target.click({timeout:10000});
+ }
  console.log('CERTIFIED CLASSIC',JSON.stringify({requested:count,
   clicks:await frame.locator('body').evaluate(()=>window.__mathasClassicClicks)}));
  const lastClick=await frame.locator('body').evaluate(()=>window.__mathasClassicClicks?.at(-1));
