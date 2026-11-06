@@ -69,16 +69,20 @@ function card(app) {
   // En TEST, Multiplication utilise déjà son vrai moteur V7 certifié :
   // ne pas la renvoyer vers l'ancien hôte Objectif record des autres jeux.
   const testMultiplication=classId===LAB_CLASS&&app.app_key==='multiplication-ecrite-simple';
+  // Mélange dans « Toutes → Tests » pointe vers sa vraie version Connect et
+  // non vers l'ancien hôte expérimental Objectif record.
+  const testMixed=classId===LAB_CLASS&&app.app_key==='melange-calculs-ecrits';
   const schoolMultiplication=SCHOOL_CLASS_IDS.includes(classId)&&app.app_key==='multiplication-ecrite-simple';
-  const testSlug=classId===LAB_CLASS&&!testMultiplication?recordSlugByApp[app.app_key]:null;
-  const target = new URL(testMultiplication?'./apps/multiplication-simple/':
+  const testSlug=classId===LAB_CLASS&&!testMultiplication&&!testMixed?recordSlugByApp[app.app_key]:null;
+  const target = new URL(testMixed?'./apps/calculs-melanges/':
+    testMultiplication?'./apps/multiplication-simple/':
     schoolMultiplication?'./apps/multiplication-simple/':
     testSlug?SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(testSlug):
     schoolAdditionsLaunch({classId,appKey:app.app_key,legacyUrl:
       schoolRecordLaunch({classId,appKey:app.app_key,legacyUrl:app.launch_url})}),location.href);
   // Le HUB fournit la classe au jeu Connect ; les autorisations restent vérifiées côté serveur.
   if (classId && target.origin === location.origin) target.searchParams.set('class', classId);
-  if(testMultiplication && target.origin===location.origin)target.searchParams.set('requireConnect','1');
+  if((testMultiplication||testMixed) && target.origin===location.origin)target.searchParams.set('requireConnect','1');
   // En mode Connect scolaire, une carte officielle ne doit jamais ouvrir
   // silencieusement un 4/4 sans preuve et sans XP. Le mode Classique reste libre.
   if(schoolMultiplication && !inFreeMode() && target.origin===location.origin)

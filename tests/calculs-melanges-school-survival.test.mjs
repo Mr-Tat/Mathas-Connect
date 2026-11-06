@@ -88,3 +88,14 @@ test('Les scores trois vies alimentent le TOP mais pas les trophées Mort subite
  assert.match(engine,/if\(points\.sudden&&!points\.hard&&points\.correct>=25\)/);
  assert.match(read('supabase/migrations/20261106083400_mixed_certified_projection_game_points.sql'),/v_game_points/);
 });
+
+test('Toutes → Tests lance bien le Mélange officiel, jamais le vieux pilot',()=>{
+ const hub=read('hub.js');
+ const host=read('apps/calculs-melanges/index.html');
+ assert.match(hub,/const testMixed=classId===LAB_CLASS&&app\.app_key==='melange-calculs-ecrits'/);
+ assert.match(hub,/testMixed\?'\.\/apps\/calculs-melanges\/'/);
+ assert.match(hub,/\(testMultiplication\|\|testMixed\).*requireConnect/);
+ assert.match(host,/const requireConnect=launch\.get\('requireConnect'\)==='1'/);
+ assert.match(host,/!teacherPlayer&&!requireConnect&&localStorage/);
+ assert.doesNotMatch(read('hub-catalog.json'),/melange-calculs-ecrits/);
+});

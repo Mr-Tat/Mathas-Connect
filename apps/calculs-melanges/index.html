@@ -12,6 +12,7 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261106-share-certifi
  // Class launches require the native approved session and an enabled backend.
  const launch=new URLSearchParams(location.search);
  const simulate=launch.get('simulation')==='1';
+ const requireConnect=launch.get('requireConnect')==='1';
  const modeNote=document.getElementById('mode-note');
  if(simulate)modeNote.textContent='Laboratoire · simulation seulement — aucun envoi Supabase';
  let connected=null,host=null,consent=null,multiplierLock=null,multiplierLockVersion=null,tableAidAllowed=true,blockedSession=false;
@@ -39,7 +40,8 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261106-share-certifi
  // (or the separate teacher player session). Explicit free mode never queries.
  const classId=launch.get('class')||'';
  const teacherPlayer=launch.get('joueur')==='prof';
- const free=!teacherPlayer&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';
+ const free=!teacherPlayer&&!requireConnect&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';
+ if(requireConnect&&(!classId||simulate)){modeNote.textContent='Test Connect obligatoire';output.textContent='Cette version TEST ne se joue pas en mode libre. Connecte un élève fictif de la classe TEST.';return;}
  if(teacherPlayer&&!classId&&!simulate){modeNote.textContent='Classe manquante';output.textContent='Ouvrez le jeu depuis votre classe dans le HUB pour jouer avec Monsieur T.';return;}
  if((classId||teacherPlayer)&&!free&&!simulate&&!writeReady){modeNote.textContent='Intégration en préparation — Connect désactivé';output.textContent='Aucun résultat ni XP Connect. Ouvrez sans paramètre de classe pour jouer librement.';return;}
  if(writeReady&&classId&&!free&&!simulate){
