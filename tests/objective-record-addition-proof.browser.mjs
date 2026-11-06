@@ -182,7 +182,9 @@ for(const {level,total} of [{level:2,total:10},{level:3,total:20}]){
      result={ok:true,status:'approved',classId};
     }else if(r.request().url().includes('connect-results')){
      result=b.action==='student-load'?
-      {ok:true,revision:awarded?1:0,resetEpoch:0,state:{rewards},storageSubject:pupil}:
+      {ok:true,revision:awarded?1:0,resetEpoch:0,
+        state:{rewards,classic:[{'10':8},{'10':8},{}],progress:{level2:true,level3:true}},
+        storageSubject:pupil}:
       {ok:true,appXp:awarded,total:awarded,level:1};
     }else if(r.request().url().includes('/connect-projection-v2')){
      result={ok:true,events:[],bestThree:[],todayBest:null,boardBest:0};

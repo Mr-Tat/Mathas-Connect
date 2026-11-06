@@ -45,8 +45,9 @@ export function createNativeCertifiedMultiplication({
   },
   suspended(){
    if(sending)return;
+   if(run&&!stats()?.complete)queue?.clear();
    run=null;queue=null;contextKey=null;
-   show('Série conservée. Reprends le même défi depuis le menu.',true);
+   show('Exercice quitté : réponses incomplètes abandonnées. Les acquis restent sauvegardés.',true);
   },
   problem:message=>show(message,true)
  };
@@ -93,8 +94,8 @@ export function createNativeCertifiedMultiplication({
   if(!queue){show('Identité scolaire indisponible.');return false}
   const previous=queue.read(),restored=restoreMultiplicationTranscript(previous,mode);
   if(previous&&!restored){
-   show('⚠️ Ancienne série non réutilisable. Elle reste conservée ; préviens ton professeur.');
-   queue=null;return false;
+   // Une ancienne épreuve expirée/corrompue ne doit jamais bloquer un nouveau départ.
+   queue.clear();
   }
   contextKey=uid;starting=true;
   try{
@@ -129,6 +130,7 @@ export function createNativeCertifiedMultiplication({
  }
  function reset(){
   revision++;
+  if(run&&!stats()?.complete)queue?.clear();
   bridge()?.abandonView();
   run=null;queue=null;contextKey=null;sending=false;starting=false;notice.hidden=true;
  }

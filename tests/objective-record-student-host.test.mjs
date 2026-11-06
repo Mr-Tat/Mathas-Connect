@@ -111,7 +111,7 @@ test('le nouvel hôte obtient un consentement explicite après ACK, pas à la fi
  const atomic=read('apps/objective-record/atomic-test-recorder.mjs');
  const certified=read('apps/objective-record/certified-addition-ui.mjs');
  const consent=read('projection-consent.mjs');
- assert.match(host,/import \{createProjectionConsent\} from '\.\.\/\.\.\/projection-consent\.mjs'/);
+ assert.match(host,/import \{createProjectionConsent\} from '\.\.\/\.\.\/projection-consent\.mjs\?v=20261106-fullscreen-consent-v1'/);
  assert.match(host,/projectionConsent=createProjectionConsent\(/);
  assert.match(host,/getToken:verifiedToken/);
  assert.match(host,/studentKey:pupilId/);
@@ -124,7 +124,7 @@ test('le nouvel hôte obtient un consentement explicite après ACK, pas à la fi
  assert.ok(certified.indexOf('const ack=await call(\'finish-proof-v2\'')<
   certified.indexOf('onRecorded({eventId:current.sessionId,appKey:PROOF_APP'));
  assert.match(consent,/student-share-score/);
- assert.match(consent,/Non, merci/);
- assert.match(consent,/Oui, envoyer/);
+ assert.match(consent,/textContent='NON'/);
+ assert.match(consent,/textContent='OUI !'/);
  assert.doesNotMatch(host,/student-share-score['"]\s*,\s*\{/);
 });

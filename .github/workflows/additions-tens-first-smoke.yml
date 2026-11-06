@@ -13,7 +13,7 @@ permissions:
 jobs:
   browser-control:
     runs-on: ubuntu-24.04
-    timeout-minutes: 6
+    timeout-minutes: 9
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,6 +26,8 @@ jobs:
       - name: Install Chromium test dependencies
         run: |
           npm install --no-save --no-package-lock playwright@1.58.2
-          npx playwright install chromium --with-deps
+          # Les bibliothèques Chromium sont déjà présentes sur ubuntu-24.04.
+          # --with-deps relance apt et bloque sur 21 Mo de polices non nécessaires.
+          npx playwright install chromium
       - name: Test both certified additions and in-game tens-first checkbox
         run: node --test tests/objective-record-additions-real-keyboard.browser.mjs

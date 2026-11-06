@@ -6,11 +6,11 @@ const root=new URL('../',import.meta.url);
 const get=path=>readFileSync(new URL(path,root),'utf8');
 test('Consentement : question à chaque résultat, refus sans écriture et confirmation explicite',()=>{
  const s=get('projection-consent.mjs');
- assert.match(s,/Veux-tu envoyer ce score au tableau de projection/);
- assert.match(s,/Non, merci/);
- assert.match(s,/Oui, envoyer/);
- assert.match(s,/no.onclick=\(\)=>dismiss\(\)/);
- assert.match(s,/yes.onclick=\(\)=>/);
+ assert.match(s,/Nouveau meilleur score du jour/);
+ assert.match(s,/textContent='NON'/);
+ assert.match(s,/textContent='OUI !'/);
+ assert.match(s,/no.onclick=\(\)=>/);
+ assert.match(s,/yes.onclick=async\(\)=>/);
  assert.match(s,/student-share-score/);
  assert.match(s,/pending:\(\)=>read\(\).length/);
  const result=spawnSync(process.execPath,['--check','--input-type=module'],{input:s,encoding:'utf8'});
@@ -28,7 +28,8 @@ test('Consentement : multiplication ne partage que les preuves certifiées ; les
  assert.match(multi,/consent:\(\)=>certifiedConsent/);
  assert.doesNotMatch(multi,/consent\?\.offer\(eventId\)/,
   'Un score natif multiplication auto-déclaré ne suffit pas pour la projection');
- assert.match(sub,/consent\?\.offer\(eventId\)/);
+ assert.doesNotMatch(sub,/consent\?\.offer\(eventId\)/,'aucun score non certifié proposé');
+ assert.match(get('apps/soustraction-simple/certified-connect.mjs'),/scoreView\.recorded\(receipt\.eventId\)/);
  assert.match(addPilot,/onStatus\('pending',\{eventId:record\.eventId\}\)/);
  assert.match(mixedPilot,/onStatus\('pending',\{eventId:e\.eventId\}\)/);
  assert.doesNotMatch(add,/consent\?\.offer\(.*free/);
@@ -74,8 +75,8 @@ test('Consentement : refuser ne transmet rien ; accepter transmet exactement son
    return {ok:true,json:async()=>({ok:true,consentRecorded:true})}
   }
  });
- const no=elements.find(e=>e.textContent==='Non, merci');
- const yes=elements.find(e=>e.textContent==='Oui, envoyer');
+ const no=elements.find(e=>e.textContent==='NON');
+ const yes=elements.find(e=>e.textContent==='OUI !');
  const rejected='aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa';
  const accepted='aaaaaaaa-2222-4222-8222-aaaaaaaaaaaa';
  assert.equal(tool.offer(rejected),true);
@@ -118,24 +119,25 @@ test('Consentement : offres simultanées visibles, chaque Oui envoyé sans atten
   }
  });
  const dialog=elements.find(e=>e.className==='mathas-projection-offer');
- const yes=elements.find(e=>e.textContent==='Oui, envoyer');
+ const yes=elements.find(e=>e.textContent==='OUI !');
+ const no=elements.find(e=>e.textContent==='NON');
  const first='aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa';
  const second='aaaaaaaa-2222-4222-8222-aaaaaaaaaaaa';
- assert.equal(tool.offer(first),true);
- assert.equal(dialog.hidden,false,'la première proposition est visible');
- assert.equal(tool.offer(second),true);
- assert.equal(dialog.hidden,false,'la seconde proposition ne doit pas masquer la première');
- assert.equal(submitted.length,0,'aucun envoi avant consentement');
+ assert.equal(tool.offer(first,{points:27}),true);
+ assert.equal(dialog.hidden,false);
+ assert.equal(tool.offer(second,{points:42}),true);
+ assert.equal(submitted.length,0,'aucun partage avant consentement');
  yes.onclick();
- assert.equal(dialog.hidden,false,'la deuxième question apparaît après le premier Oui');
  await new Promise(resolve=>setImmediate(resolve));
  assert.deepEqual(submitted.map(x=>x.eventId),[first]);
- yes.onclick(); // Acceptation pendant que la première requête HTTP attend encore.
- assert.equal(dialog.hidden,true);
- assert.deepEqual(submitted.map(x=>x.eventId),[first]);
+ assert.equal(dialog.hidden,false,'attendre la confirmation serveur');
  finishFirst({ok:true,json:async()=>({ok:true})});
  await new Promise(resolve=>setImmediate(resolve));
- assert.deepEqual(submitted.map(x=>x.eventId),[first,second],
-  'le second Oui est transmis dès la fin de la première requête');
- assert.equal(tool.pending(),0,'aucun consentement accepté ne reste bloqué');
+ assert.equal(no.textContent,'Fermer');
+ no.onclick();
+ assert.equal(dialog.hidden,false,'deuxième proposition après fermeture');
+ yes.onclick();
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.deepEqual(submitted.map(x=>x.eventId),[first,second]);
+ assert.equal(tool.pending(),0);
 });

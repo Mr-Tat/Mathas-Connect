@@ -1,8 +1,8 @@
 // Soustraction écrite : raccord scolaire certifié, sans scores déclaratifs du navigateur.
 // Les épreuves sont émises et validées par connect-soustraction-school.
-import {createCertifiedSubtraction} from './certified-school.mjs';
-import {installSubtractionSchoolUi} from './school-ui.mjs?v=20261106-survival-40xp-v1';
-import {createSchoolScoreView} from '../objective-record/school-score-view.mjs?v=20261106-history-top3-v1';
+import {createCertifiedSubtraction} from './certified-school.mjs?v=20261106-abandon-safe-v2';
+import {installSubtractionSchoolUi} from './school-ui.mjs?v=20261106-stable-count-buttons-v2';
+import {createSchoolScoreView} from '../objective-record/school-score-view.mjs?v=20261106-fullscreen-share-v3';
 
 const NORMAL_LEVELS=Object.freeze({3:1,5:2,7:3});
 export function createSubtractionSchoolConnect({

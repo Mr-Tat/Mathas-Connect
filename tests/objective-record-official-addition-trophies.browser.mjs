@@ -142,10 +142,10 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
     top.click();
    },score);
    await clickTop(12);
-   await page.waitForTimeout(200);
-   assert.equal(await page.locator('.mathas-projection-offer:not([hidden])').count(),0,
-    'Un chiffre local différent du résultat certifié ne peut pas être proposé');
-   assert.equal(scoreShareWrites,0);
+   await page.locator('.mathas-projection-offer button.yes').waitFor({state:'visible'});
+   assert.equal(scoreShareWrites,0,
+    'Un chiffre local incorrect n envoie aucun score sans accord explicite');
+   await page.locator('.mathas-projection-offer button:not(.yes)').click();
    await clickTop(20);
    await page.locator('.mathas-projection-offer button.yes').waitFor({state:'visible'});
    assert.equal(scoreShareWrites,0,'Le clic ne partage pas le score sans Oui');
@@ -158,6 +158,7 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
    await page.locator('.mathas-projection-offer button.yes').click();
    await posted;
    assert.equal(scoreShareWrites,1,'La confirmation publie exactement une preuve officielle');
+   await page.locator('.mathas-projection-offer button:not(.yes)').click();
 
    await page.evaluate(width=>{
     const native=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;

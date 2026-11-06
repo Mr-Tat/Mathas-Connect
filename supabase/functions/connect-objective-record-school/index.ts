@@ -42,9 +42,13 @@ Deno.serve(async(req:Request)=>{
  if(!SCHOOL.has(cls)||!contract)return deny('school_class_not_allowed',403);
  const extendedStart=b.action==='start-extended-proof-v1';
  const extendedFinish=b.action==='finish-extended-proof-v1';
+ const extendedResume=b.action==='resume-extended-proof-v1';
  const start=b.action===contract.start,finish=b.action===contract.finish;
- if(!start&&!finish&&!extendedStart&&!extendedFinish)return deny('proof_only',403);
- if(start||extendedStart){
+ if(!start&&!finish&&!extendedStart&&!extendedFinish&&!extendedResume)return deny('proof_only',403);
+ if(extendedResume){
+  if(!valid(b.sessionId)||Object.keys(b).sort().join(',')!=='action,appKey,classId,sessionId')
+   return deny('invalid_configuration');
+ }else if(start||extendedStart){
   if(![1,2,3].includes(b.level))return deny('invalid_configuration');
   if(extendedStart){
    if(!['three-lives','sudden','hard-three-lives','hard-sudden'].includes(b.mode)
@@ -83,6 +87,31 @@ Deno.serve(async(req:Request)=>{
   if(!alive)return deny('inactive_student',403);
   const app=await one(db.from('connect_apps').select('enabled').eq('app_key',b.appKey));
   if(app?.enabled!==true)return deny('app_disabled',403);
+  if(extendedResume){
+   // Auth et appartenance à la classe validées ci-dessus ; le service-role
+   // ne doit jamais retrouver une session par son UUID seul.
+   const pending=await one(db.from('connect_objective_record_school_extended_sessions')
+    .select('session_id,mode,level,width,total,expected_revision,reset_epoch,questions,expires_at,consumed_at')
+    .eq('session_id',b.sessionId).eq('student_id',student)
+    .eq('class_id',cls).eq('app_key',b.appKey));
+   if(!pending)return deny('proof_not_found',404);
+   if(pending.consumed_at)return deny('proof_already_finished',409);
+   if(!Number.isFinite(Date.parse(pending.expires_at))||Date.parse(pending.expires_at)<=Date.now())
+    return deny('proof_expired',410);
+   const state=await one(db.from('connect_states').select('revision,reset_epoch')
+    .eq('student_id',student).eq('app_key',b.appKey));
+   const revision=Number(pending.expected_revision),epoch=Number(pending.reset_epoch);
+   if(!Number.isSafeInteger(revision)||!Number.isSafeInteger(epoch)||
+      revision!==Number(state?.revision??0)||epoch!==Number(state?.reset_epoch??0))
+    return deny('revision_conflict',409);
+   if(!Array.isArray(pending.questions)||pending.questions.length!==120||
+      !['three-lives','sudden','hard-three-lives','hard-sudden'].includes(pending.mode)||
+      ![1,2,3].includes(pending.level)||pending.total!==120)
+    return deny('invalid_proof_response',503);
+   return reply({ok:true,resumed:true,sessionId:pending.session_id,appKey:b.appKey,
+    mode:pending.mode,level:pending.level,width:pending.width,limit:pending.total,
+    revision,resetEpoch:epoch,questions:pending.questions,expiresAt:pending.expires_at});
+  }
   const args=extendedStart?
     {p_student:student,p_class:cls,p_app:b.appKey,p_mode:b.mode,p_level:b.level}:
    extendedFinish?

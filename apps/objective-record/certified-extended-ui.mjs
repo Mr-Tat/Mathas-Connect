@@ -15,12 +15,25 @@ export function createCertifiedExtendedUI({
  let run=null,queue=null,sending=false;
  let answerFields=[],carryFields=[];
  const active=seq=>seq===getContext().generation&&run?.appKey===getContext().activeApp;
+ // Une mise à jour du site ou un rechargement ne doit pas interrompre
+ // silencieusement une série certifiée. La preuve reste locale tant qu'elle
+ // n'est pas finalisée côté serveur ; prévenir avant de quitter l'onglet.
+ const warnWhilePlaying=event=>{
+  if(!run||run.invalid||!active(run.generation))return;
+  event.preventDefault();
+  event.returnValue='';
+ };
+ if(typeof window!=='undefined'&&typeof window.addEventListener==='function')
+  window.addEventListener('beforeunload',warnWhilePlaying);
  const info=text=>{status.textContent=text;notify(text)};
  function controlsBusy(busy){
   if(busy)button.dataset.extendedBusy='1';else delete button.dataset.extendedBusy;
   button.disabled=busy;modeSelect.disabled=busy;levelSelect.disabled=busy;
  }
  function reset(){
+  // Quitter volontairement une épreuve annule la progression non terminée,
+  // sans supprimer une fin complète en attente de synchronisation.
+  if(run&&!run.finished)try{queue?.clear()}catch{}
   run=null;queue=null;sending=false;root.hidden=true;
   frame.hidden=!frame.getAttribute('src');grid.replaceChildren();
   answerFields=[];carryFields=[];controlsBusy(false);
@@ -80,7 +93,7 @@ export function createCertifiedExtendedUI({
    for(const digit of padded)table.appendChild(makeCell(digit.trim(),lineClass.trim()));
   });
   // Trait de séparation continu, comme sur les calculs posés du moteur natif.
-  const rule=doc.createElement('div');rule.className='extended-result-bar';
+  const rule=document.createElement('div');rule.className='extended-result-bar';
   rule.setAttribute('aria-hidden','true');table.appendChild(rule);
   table.appendChild(makeCell('=','extended-equals'));
   answerFields=Array(columns).fill(null);
@@ -90,19 +103,19 @@ export function createCertifiedExtendedUI({
   }
   const wrapped=document.createElement('div');
   wrapped.className='extended-grid-scroll';wrapped.appendChild(table);
-  const exercise=doc.createElement('div');exercise.className='extended-calc-box';
-  const caption=doc.createElement('p');caption.className='extended-calc-label';
+  const exercise=document.createElement('div');exercise.className='extended-calc-box';
+  const caption=document.createElement('p');caption.className='extended-calc-label';
   caption.textContent='Calcul posé · '+(index+1);
   exercise.append(caption,wrapped);
-  const help=doc.createElement('p');help.className='extended-instructions';
+  const help=document.createElement('p');help.className='extended-instructions';
   help.textContent='💡 Commence par les unités : écris les chiffres du résultat et les retenues au-dessus des colonnes. '+
    'Une première réponse incorrecte coûte une vie (ou termine la Mort subite).';
-  const workspace=doc.createElement('div');workspace.className='extended-workspace';
-  const pad=doc.createElement('div');pad.className='extended-keypad';
-  const padTitle=doc.createElement('p');padTitle.className='extended-keypad-title';
+  const workspace=document.createElement('div');workspace.className='extended-workspace';
+  const pad=document.createElement('div');pad.className='extended-keypad';
+  const padTitle=document.createElement('p');padTitle.className='extended-keypad-title';
   padTitle.textContent='Clavier tactile';pad.appendChild(padTitle);
   for(const digit of ['1','2','3','4','5','6','7','8','9','⌫','0','✓']){
-   const b=doc.createElement('button');
+   const b=document.createElement('button');
    b.type='button';b.textContent=digit;b.className='extended-key';
    if(digit==='✓')b.classList.add('extended-key-confirm');
    b.addEventListener('click',()=>{
@@ -188,14 +201,30 @@ export function createCertifiedExtendedUI({
   }
   controlsBusy(true);
   try{
-   const received=await call('start-extended-proof-v1',ctx.activeApp,{level,mode});
-   if(seq!==getContext().generation)return;
-   const parsed=parseExtendedChallenge(received,ctx.activeApp,mode,level);
-   if(!parsed||Date.parse(parsed.expiresAt)<=Date.now())throw Error('Défi serveur invalide ou expiré');
+   // Lire la sauvegarde AVANT de demander une nouvelle session. Avant ce
+   // correctif, le serveur émettait une nouvelle session à chaque lancement,
+   // et les réponses locales ne correspondaient donc jamais à son UUID.
    queue=createExtendedQueue({storage:localStorage,studentId:ctx.pupilId,classId:ctx.classId,
     appKey:ctx.activeApp,mode,level});
    if(!queue)throw Error('Sauvegarde locale inaccessible');
    const previous=queue.read();
+   let received=null;
+   if(previous?.sessionId){
+    try{
+     received=await call('resume-extended-proof-v1',ctx.activeApp,{sessionId:previous.sessionId});
+    }catch(e){
+     // Reprendre un défi encore valide est prioritaire. Si le service est
+     // temporairement indisponible, conserver les réponses plutôt que les
+     // écraser avec une nouvelle partie.
+     const known=new Set(['proof_not_found','proof_expired','revision_conflict',
+      'stale_reset_epoch','proof_already_finished']);
+     if(!known.has(e?.message))throw Error('Reprise impossible : les réponses restent sauvegardées. '+e.message);
+    }
+   }
+   if(!received)received=await call('start-extended-proof-v1',ctx.activeApp,{level,mode});
+   if(seq!==getContext().generation)return;
+   const parsed=parseExtendedChallenge(received,ctx.activeApp,mode,level);
+   if(!parsed||Date.parse(parsed.expiresAt)<=Date.now())throw Error('Défi serveur invalide ou expiré');
    run={...parsed,appKey:ctx.activeApp,generation:seq,
      answers:[],finished:false,invalid:false};
    if(previous?.sessionId===parsed.sessionId&&previous.answers.every((x,i)=>
@@ -217,9 +246,10 @@ export function createCertifiedExtendedUI({
  }
  function exit(){
   if(sending)return;
+  if(run&&!run.finished)try{queue?.clear()}catch{}
   run=null;queue=null;root.hidden=true;frame.hidden=false;
   controlsBusy(false);verifyButton.disabled=true;nextButton.hidden=true;
-  info('Retour au jeu. Une série interrompue conserve ses réponses jusqu’à expiration.');
+  info('Retour au jeu. Exercice abandonné : les réponses non validées sont effacées.');
  }
  function startNative(mode,level){
   if(!EXTENDED_MODES.includes(mode)||![1,2,3].includes(level))return Promise.resolve();

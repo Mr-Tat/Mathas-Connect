@@ -24,7 +24,7 @@ export function schoolScoreSnapshot(remote,state={}){
  const top=(Array.isArray(remote?.bestThree)?remote.bestThree:recent)
   .map(cleanScoreEntry).filter(Boolean).sort((a,b)=>b.points-a.points||b.at.localeCompare(a.at)).slice(0,3);
  const remoteDay=cleanScoreEntry(remote?.todayBest);
- const localToday=state?.todayBest?.day===today()?points(state.todayBest.points):null;
+ const localToday=remote?.ok===true?null:state?.todayBest?.day===today()?points(state.todayBest.points):null;
  // Le serveur conserve le meilleur du jour même s'il est ancien et que
  // sa preuve ne figure plus dans les derniers événements. Ne pas l'inventer.
  const sameDay=recent.filter(x=>day(x.at)===today()).sort((a,b)=>b.points-a.points||b.at.localeCompare(a.at))[0]||null;
@@ -69,15 +69,45 @@ export function renderCertifiedHistoricalPodium(doc,history){
  }
  return true;
 }
+// Le TOP DU JOUR natif était encore calculé avec l'ancien localStorage et
+// pouvait afficher 0 malgré 27 points certifiés. Affichage exclusivement depuis
+// le résumé authentifié (aucune écriture de score ou de XP).
+export function renderCertifiedTodayPoints(doc,history,state={}){
+ if(history?.ok!==true||!doc?.querySelector)return false;
+ const box=doc.querySelector('#mathasPointsQuick [data-points="daily"]');
+ if(!box)return false;
+ const today=schoolScoreSnapshot(history,state).today;
+ const value=String(today?.points??0);
+ if(nativeDayPoints({querySelector:()=>box})===Number(value))return true;
+ // Le premier élément doit porter le nombre pour l'outil de projection.
+ // Aucun score local n'est converti en record officiel.
+ box.textContent='';
+ const num=doc.createElement('span');num.textContent=value;
+ box.append(num);
+ return true;
+}
 // Réutilise les cartes natives : Top du jour, coupes et podium historique.
 // Le clic ne propose que l'envoi volontaire d'un score certifié Connect.
 export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
  if(!['addition-ecrite-simple','addition-ecrite-multiple','multiplication-ecrite-simple','soustraction-ecrite-simple'].includes(appKey))
   throw Error('unsupported_score_app');
- let state={},remote=null,documentRef=null,loading=null,destroyed=false,clickTarget=null,podiumTarget=null,podiumObserver=null;
+ let state={},remote=null,documentRef=null,loading=null,destroyed=false,clickTarget=null,podiumTarget=null,podiumObserver=null,dailyTarget=null,dailyObserver=null;
  const autoOffered=new Set();
  const select=()=>schoolScoreSnapshot(remote,state);
  const renderPodium=()=>{if(documentRef)renderCertifiedHistoricalPodium(documentRef,remote)};
+ const renderToday=()=>{if(documentRef)renderCertifiedTodayPoints(documentRef,remote,state)};
+ function mountToday(doc){
+  const target=doc.querySelector('#mathasPointsQuick [data-points="daily"]');
+  if(!target)return;
+  if(target!==dailyTarget){
+   dailyObserver?.disconnect();dailyTarget=target;
+   if(typeof MutationObserver!=='undefined'){
+    dailyObserver=new MutationObserver(renderToday);
+    dailyObserver.observe(target,{childList:true,subtree:true,characterData:true});
+   }
+  }
+  renderToday();
+ }
  function mountPodium(doc){
   const target=doc.querySelector('#mathasPointsDetail [data-points="allThree"]');
   if(!target)return;
@@ -108,7 +138,7 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
    try{
     const result=await fetchHistory();
     if(result?.ok!==true||!Array.isArray(result.events)||destroyed)return false;
-    remote=result;renderPodium();return true;
+    remote=result;renderPodium();renderToday();return true;
    }catch{return false}
    finally{loading=null}
   })();
@@ -117,28 +147,25 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
  async function offerBest(){
   if(destroyed)return false;
   // L'élève choisit de proposer le score ; rien n'est publié sans Oui.
-  const displayed=nativeBestPoints();
-  await load(true);
+  if(!await load(true)){notify('Synchronisation du meilleur score indisponible. Réessaie.');return false;}
   const snapshot=select();
   if(!snapshot.today){notify('Aucun score certifié aujourd’hui.');return false;}
   if(!snapshot.official||!snapshot.today.eventId){
    notify('Le score est conservé, mais son envoi nécessite une preuve certifiée Connect.');return false;
   }
-  if(displayed===null||displayed!==snapshot.today.points){
-   notify('Le score affiché ne correspond pas au meilleur score certifié Connect. Vérifie la synchronisation.');return false;
-  }
   if(!canShareBestScore(snapshot)){
    notify('Ce score ne dépasse pas les points déjà présents au tableau de projection.');return false;
   }
-  return !!consent()?.offer(snapshot.today.eventId);
+  return !!consent()?.offer(snapshot.today.eventId,{points:snapshot.today.points,mode:snapshot.today.mode});
  }
  async function recorded(eventId){
   if(!UUID.test(eventId)||destroyed||autoOffered.has(eventId))return false;
   if(!await load(true))return false;
   const snapshot=select();
   const row=[...snapshot.recent,...snapshot.top,snapshot.today].find(e=>e?.eventId===eventId);
-  if(!row||snapshot.boardBest===null||row.points<=snapshot.boardBest)return false;
-  const offered=!!consent()?.offer(eventId);
+  if(!row||!snapshot.today||snapshot.today.eventId!==eventId
+   ||snapshot.boardBest===null||row.points<=snapshot.boardBest)return false;
+  const offered=!!consent()?.offer(eventId,{points:row.points,mode:row.mode});
   if(offered)autoOffered.add(eventId);
   return offered;
  }
@@ -161,6 +188,7 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
   if(destroyed||!doc?.getElementById('menuScreen'))return;
   documentRef=doc;
   mountPodium(doc);
+  mountToday(doc);
   const nativeTop=doc.getElementById('mathasPointsQuick');
   const target=nativeTop?.querySelector('.mathas-points-quick-item--best');
   if(!target)return;
@@ -187,10 +215,11 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
  function destroy(){
   destroyed=true;remote=null;state={};
   podiumObserver?.disconnect();podiumObserver=null;podiumTarget=null;
+  dailyObserver?.disconnect();dailyObserver=null;dailyTarget=null;
   unbind();
   documentRef?.getElementById('mathasSchoolScoreActionStyle')?.remove();
   documentRef=null;
  }
- return Object.freeze({updateState(value){state=value&&typeof value==='object'?value:{}},
+ return Object.freeze({updateState(value){state=value&&typeof value==='object'?value:{};renderToday()},
   load,recorded,mount,offerBest,destroy,read:select});
 }

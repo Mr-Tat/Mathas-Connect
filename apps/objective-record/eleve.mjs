@@ -5,11 +5,11 @@ import {createAtomicTestRecorder,isWritableTestApp} from './atomic-test-recorder
 import {MIXED_TEST_APP,isMixedTestTerminal} from './mixed-test-proof.mjs';
 import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
-import {createCertifiedExtendedUI} from './certified-extended-ui.mjs?v=20261106-native-survival-workspace-v3';
+import {createCertifiedExtendedUI} from './certified-extended-ui.mjs?v=20261106-abandon-safe-render-v5';
 import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs?v=20261106-survival-40xp-v1';
-import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs?v=20261106-record-80-v1';
-import {createProjectionConsent} from '../../projection-consent.mjs';
-import {createSchoolScoreView} from './school-score-view.mjs?v=20261106-history-top3-v1';
+import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs?v=20261106-certified-results-v2';
+import {createProjectionConsent} from '../../projection-consent.mjs?v=20261106-fullscreen-consent-v1';
+import {createSchoolScoreView} from './school-score-view.mjs?v=20261106-fullscreen-share-v3';
 import {installTensFirstDuringGame} from './in-game-tens-first.mjs?v=20261103-leading-carry-amber-v1';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
@@ -285,10 +285,22 @@ function watchGame(seq){
    const native=inside.contentWindow?.MathasLabV2Update;
    // The menu DOM may exist before the real script has installed its update
    // hook. Never enable certified launch until the native engine is ready.
-   if(typeof native!=='function')return;
-   activeProofUI.bind(inside.contentWindow,doc);
+   // Brancher l'interception AVANT que tous les scripts de l'ancienne UI
+   // finissent de charger : aucun clic ne doit lancer une partie libre dont
+   // les points locaux (parfois > 1000 en N1) semblent être des points Connect.
    installNativeCertifiedLaunch(doc,activeApp,choice=>{
     if(seq!==generation||!pupilId)return;
+    // Ce routeur s'installe dès que le DOM apparaît, parfois AVANT
+    // MathasLabV2Update. Vérifier la fonction en direct au moment du clic :
+    // conserver ici la valeur capturée lors de l'installation bloquait
+    // définitivement les parties de certains élèves.
+    const readyNow=inside.contentWindow?.MathasLabV2Update;
+    if(typeof readyNow!=='function'){
+     message('Le jeu charge encore ses contrôles officiels. Réessaie dans un instant.');return;
+    }
+    // Le pont d'essais doit également être prêt si le clic intervient
+    // entre deux contrôles périodiques du lanceur.
+    activeProofUI.bind(inside.contentWindow,doc);
     if(!schoolModeAllowed(lastOfficialProgress,choice.mode,choice.level)){
      message('🔒 '+schoolModeLockReason(choice.mode,choice.level));return;
     }
@@ -297,6 +309,8 @@ function watchGame(seq){
     if(choice.mode==='classic')void activeProofUI.startNative(choice.level,choice.total);
     else void extendedUI.startNative(choice.mode,choice.level);
    });
+   if(typeof native!=='function')return;
+   activeProofUI.bind(inside.contentWindow,doc);
    if(doc===visibleDoc)return;
    visibleDoc=doc;
    {
@@ -461,7 +475,7 @@ async function choose(){
   // aucune requête de validation XP ni privilège d'enregistrement.
   // Le repli libre est EXPLICITE pour ne jamais faire croire à un crédit Connect.
   if(SERVER_PROOF_ADDITIONS.has(activeApp)){
-   $('gameFrame').src=GAME_URLS[slug][1]+'?connect=1&ui=20261104-three-lives-half-xp-v1';
+   $('gameFrame').src=GAME_URLS[slug][1]+'?connect=1&ui=20261106-resumable-school-v1';
    $('gameFrame').hidden=false;
    $('guest-home').hidden=true; // le bouton HUB existe dans le moteur lui-même
    message('⚠️ Profil Connect indisponible : mode libre sans XP officiel. '+(e?.message||''));

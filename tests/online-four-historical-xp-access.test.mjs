@@ -17,7 +17,7 @@ test('les deux additions en ligne : un seul bouton XP, juste après le profil',(
  assert.match(host,/showXpPanel\(\)/);
  assert.match(host,/xp\?\.appXp/);
  assert.match(host,/xp\?\.max/);
- assert.match(page,/native-survival-workspace-v6/);
+ assert.match(page,/certification-safe-v9/);
 });
 test('soustraction et multiplication : mêmes deux lignes, largeur fixe et chiffre officiel',()=>{
  for(const [path,name] of [

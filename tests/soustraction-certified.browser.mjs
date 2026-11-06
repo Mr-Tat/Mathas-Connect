@@ -133,14 +133,18 @@ async function setup({viewport={width:1024,height:768},fixtureData=fixture()}={}
    await frame.locator('#menuScreen').waitFor({timeout:30000});
    await page.waitForFunction(()=>document.querySelector('iframe')?.contentDocument?.__mathasSubCertifiedRouter===true,
     null,{timeout:30000});
+   await frame.locator('#mathas-sous-connect-dock .mathas-sous-connect-person').waitFor({state:'attached',timeout:30000});
    return {page,frame};
   },
   async close(){await context.close();await browser.close();await new Promise(ok=>server.close(ok))}
  };
 }
 
-async function launchClassic(page,frame,{method='addBottom',count=4}={}){
+async function launchClassic(page,frame,{method='addBottom',count=4,useKeyboard=false}={}){
  await frame.locator('input[name="borrowMethod"][value="'+method+'"]').evaluate(input=>input.closest('label').click());
+ // Attendre les récompenses Connect avant le clic réel : aucun bouton ne doit
+ // changer de dimensions pendant le ciblage de 4, 10 ou 20 calculs.
+ await frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"] .mathas-sub-official-xp').waitFor({state:'attached',timeout:15000});
  await frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"]').evaluate(el=>{
   const w=el.ownerDocument.defaultView;
   w.__mathasClassicClicks=[];
@@ -151,9 +155,26 @@ async function launchClassic(page,frame,{method='addBottom',count=4}={}){
       trusted:event.isTrusted,phase:event.eventPhase,active:b.classList.contains('active')});
   },true);
  });
- await frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"]').click();
+ const target=frame.locator('#classicCountPicker .classic-count-btn[data-count="'+count+'"]');
+ // La reprise vérifie également le clavier : pas de clic géométrique
+ // pendant le re-rendu des boutons, et une activation utilisateur réelle.
+ const geometry=await frame.locator('body').evaluate(()=>{
+  const picker=document.getElementById('classicCountPicker');
+  return [...picker.querySelectorAll('.classic-count-btn[data-count]')].map(btn=>{
+   const r=btn.getBoundingClientRect();
+   const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+   return {count:btn.dataset.count,x:Math.round(r.x),y:Math.round(r.y),
+    w:Math.round(r.width),h:Math.round(r.height),
+    hit:hit?.closest('.classic-count-btn')?.dataset.count||hit?.tagName,
+    display:getComputedStyle(btn).display,active:btn.classList.contains('active')};
+  });
+ });
+ console.log('CERTIFIED CLASSIC GEOMETRY',JSON.stringify(geometry));
+ if(useKeyboard)await target.press('Enter');else await target.click();
  console.log('CERTIFIED CLASSIC',JSON.stringify({requested:count,
   clicks:await frame.locator('body').evaluate(()=>window.__mathasClassicClicks)}));
+ const lastClick=await frame.locator('body').evaluate(()=>window.__mathasClassicClicks?.at(-1));
+ assert.equal(lastClick?.count,String(count),'Le bouton activé doit correspondre au nombre choisi');
  await frame.locator('#gameScreen:not(.hidden) #calculationsPair .calc-box').first().waitFor({timeout:20000});
  assert.equal(await page.locator('.mathas-sub-proof:not([hidden])').count(),0,
   'Les exercices normaux restent dans les grilles originales, pas dans une interface parallèle');
@@ -203,6 +224,8 @@ test('Chromium scolaire natif : 4 soustractions, XP, consentement et projection'
   assert.equal(ctx.fixture.received.some(x=>x.action==='game-record'),false);
   assert.equal(ctx.fixture.shared,0);
   await page.locator('.mathas-projection-offer:not([hidden]) button.yes').click({timeout:16000});
+  await page.locator('.mathas-projection-offer:not([hidden])').getByText('Score bien envoyé au tableau').waitFor({timeout:15000});
+  await page.locator('.mathas-projection-offer:not([hidden]) button:not(.yes)').click();
   await page.waitForFunction(()=>document.querySelector('.mathas-projection-offer')?.hidden===true,null,{timeout:15000});
   assert.equal(ctx.fixture.shared,1);
   assert.deepEqual(errors,[]);
@@ -230,13 +253,13 @@ test('Chromium scolaire natif : reprise du même calcul après interruption', {t
  const ctx=await setup();
  try{
   const first=await ctx.page();
-  await launchClassic(first.page,first.frame,{method:'takeTop'});
+  await launchClassic(first.page,first.frame,{method:'takeTop',useKeyboard:true});
   const q=ctx.fixture.issued[0].questions;
   await fillCalc(first.frame,0,String(BigInt(q[0].a)-BigInt(q[0].b)));
   await first.frame.locator('#primaryBtn').click();
   await first.page.close();
   const second=await ctx.page();
-  await launchClassic(second.page,second.frame,{method:'takeTop'});
+  await launchClassic(second.page,second.frame,{method:'takeTop',useKeyboard:true});
   assert.equal(ctx.fixture.issued.length,1,'Une reprise réutilise les nombres serveur');
   await fillCalc(second.frame,1,String(BigInt(q[1].a)-BigInt(q[1].b)));
   await second.frame.locator('#primaryBtn').click();
@@ -355,6 +378,7 @@ test('Chromium scolaire : aucune barre extérieure et toutes les fonctions dans 
   assert.equal(await frame.locator('#mathas-sous-connect-xp').isVisible(),true);
   await frame.locator('#mathas-sous-connect-xp').click();
   await page.locator('#xp-details:not([hidden])').waitFor({timeout:15000});
+  await page.waitForFunction(()=>document.querySelector('#xp-details')?.textContent?.includes('XP acquis dans ce jeu'),null,{timeout:15000});
   assert.match(await page.locator('#xp-details').textContent(),/XP acquis dans ce jeu/);
  }finally{await ctx.close()}
 });
