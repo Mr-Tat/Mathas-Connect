@@ -29,6 +29,7 @@ export function createNativeCertifiedMultiplication({
   const state=stats();
   win.__mathasCertifiedSurvivalHud=run?.mode==='three-lives'&&state?.valid
    ?{mode:'three-lives',remaining:state.lives}:null;
+  win.dispatchEvent(new win.Event('mathas:survival-lives-updated'));
  };
  const receiver={
   progress:()=>stats(),
