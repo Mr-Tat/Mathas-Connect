@@ -18,7 +18,9 @@ for(const [name,path,check] of games){
    'le second calcul ne peut pas être validé avant le premier');
   assert.match(code,/mathasShowCalcVerified\(i\)/,'un badge signale le verdict du premier essai');
   assert.match(code,/states\[i\]\?\.firstTry===false/,'une correction conserve le verdict raté');
-  assert.match(code,/missed\?'Raté':'✓'/,'le ✓ est réservé aux premiers essais réussis');
+  assert.match(code,/missed\?'×':'✓'/,'le ✓ est réservé aux premiers essais réussis, la petite croix indique une correction');
+  assert.match(code,/mathas-calc-missed-badge\{width:25px;min-width:25px;height:25px/,'la croix reste plus petite que le ✓');
+  assert.match(code,/Calcul corrigé après une erreur/,'libellé accessible sans jugement');
   assert.match(code,/mathas-calc-missed-badge/,'badge rouge distinct après correction');
   assert.match(code,/prefers-reduced-motion:reduce/,'animation respectueuse des préférences');
   assert.match(code,/window\.__mathasManualValidation/,'validation manuelle conservée');
