@@ -205,12 +205,12 @@ async function fillCalc(frame,index,raw){
  },{index,raw});
 }
 async function solvePair(frame,questions){
- for(let i=0;i<questions.length;i++)
+ // La validation du premier rend le second accessible.
+ for(let i=0;i<questions.length;i++){
   await fillCalc(frame,i,String(BigInt(questions[i].a)-BigInt(questions[i].b)));
- // Le moteur natif peut valider automatiquement la paire lors de la dernière
- // saisie ; ne pas cliquer derrière le reçu officiel déjà affiché.
+  await frame.locator('#calculationsPair .calc-box[data-calc="'+i+'"].mathas-calc-verified').waitFor({timeout:8000});
+ }
  await frame.locator('#primaryBtn').evaluate(btn=>{
-  // La dernière case peut déclencher automatiquement la certification.
   if(!btn.closest('#gameScreen')?.classList.contains('hidden')&&btn.textContent.includes('Valider'))btn.click();
  });
 }
@@ -270,7 +270,7 @@ test('Chromium scolaire natif : 3 vies et trois erreurs', {timeout:120000},async
   }
   await page.setViewportSize({width:390,height:740});
   await fillCalc(frame,0,'0');
-  await frame.locator('#primaryBtn').click();
+  await page.waitForFunction(()=>document.querySelector('iframe')?.contentDocument?.querySelector('#calculationsPair .calc-box[data-calc="1"]')?.inert===false,null,{timeout:8000});
   // Sur le petit écran, la zone pédagogique est gérée par le mode portrait
   // du moteur historique. Vérifier l'état de la vie perdue dans le DOM, sans
   // imposer un rectangle visible pendant son animation/reflux.
@@ -283,10 +283,9 @@ test('Chromium scolaire natif : 3 vies et trois erreurs', {timeout:120000},async
   }));
   assert.deepEqual(lives,{marked:1,total:3});
   await fillCalc(frame,1,'0');
-  await frame.locator('#primaryBtn').click();
+  await frame.locator('#primaryBtn').filter({hasText:/Passer aux 2 calculs suivants/}).waitFor({timeout:8000});
   await frame.locator('#primaryBtn').click();
   await fillCalc(frame,0,'0');
-  await frame.locator('#primaryBtn').click();
   await page.getByRole('heading',{name:'Série vérifiée ✓'}).waitFor({timeout:25000});
   assert.deepEqual(ctx.fixture.checks[0],{mode:'three-lives',method:'addBottom',correct:0,attempts:3});
   assert.equal(ctx.fixture.received.some(x=>x.action==='game-record'),false);
@@ -299,13 +298,13 @@ test('Chromium scolaire natif : reprise du même calcul après interruption', {t
   await launchClassic(first.page,first.frame,{method:'takeTop',useKeyboard:true});
   const q=ctx.fixture.issued[0].questions;
   await fillCalc(first.frame,0,String(BigInt(q[0].a)-BigInt(q[0].b)));
-  await first.frame.locator('#primaryBtn').click();
+  await first.frame.locator('#calculationsPair .calc-box[data-calc="0"].mathas-calc-verified').waitFor({timeout:8000});
   await first.page.close();
   const second=await ctx.page();
   await launchClassic(second.page,second.frame,{method:'takeTop',useKeyboard:true});
   assert.equal(ctx.fixture.issued.length,1,'Une reprise réutilise les nombres serveur');
   await fillCalc(second.frame,1,String(BigInt(q[1].a)-BigInt(q[1].b)));
-  await second.frame.locator('#primaryBtn').click();
+  await second.frame.locator('#primaryBtn').filter({hasText:/Passer aux 2 calculs suivants/}).waitFor({timeout:8000});
   await second.frame.locator('#primaryBtn').click();
   await solvePair(second.frame,q.slice(2,4));
   try{
