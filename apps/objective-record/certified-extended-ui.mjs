@@ -15,6 +15,16 @@ export function createCertifiedExtendedUI({
  let run=null,queue=null,sending=false;
  let answerFields=[],carryFields=[];
  const active=seq=>seq===getContext().generation&&run?.appKey===getContext().activeApp;
+ // Une mise à jour du site ou un rechargement ne doit pas interrompre
+ // silencieusement une série certifiée. La preuve reste locale tant qu'elle
+ // n'est pas finalisée côté serveur ; prévenir avant de quitter l'onglet.
+ const warnWhilePlaying=event=>{
+  if(!run||run.finished||run.invalid||!active(run.generation))return;
+  event.preventDefault();
+  event.returnValue='';
+ };
+ if(typeof window!=='undefined'&&typeof window.addEventListener==='function')
+  window.addEventListener('beforeunload',warnWhilePlaying);
  const info=text=>{status.textContent=text;notify(text)};
  function controlsBusy(busy){
   if(busy)button.dataset.extendedBusy='1';else delete button.dataset.extendedBusy;
