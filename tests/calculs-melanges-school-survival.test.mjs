@@ -108,6 +108,19 @@ test('Mélange TEST : la bande ancienne reste cachée et le niveau/XP s’affich
  assert.match(host,/if\(connected&&officialUi&&!blockedSession&&connected\.pending\(\)<100\)/);
  assert.match(host,/frame\.contentDocument\?\.getElementById\('mathasMixedXp'\)/);
  assert.match(host,/if\(!connected\)document\.querySelector\('\.notice'\)\.hidden=false/);
- assert.match(ui,/Niveau '\+level/);
+ assert.match(ui,/Niveau '\+accountLevel/);
  assert.match(ui,/totalXp<300\?Math\.floor\(totalXp\/50\)\+1/);
+});
+
+test('Mélange Connect : historique Top 3, compteur stable et détails XP alimentés par serveur',()=>{
+ const host=read('apps/calculs-melanges/index.html');
+ const ui=read('apps/calculs-melanges/official-ui.mjs');
+ assert.match(host,/refreshOfficialHistory/);
+ assert.match(host,/verifiedHistory=history/);
+ assert.match(host,/officialUi\?\.update\(\{history:verifiedHistory/);
+ assert.match(ui,/renderCertifiedHistoricalPodium\(doc,currentHistory\)/);
+ assert.match(ui,/mathasMixedXpDetails/);
+ assert.match(ui,/mathas-xp-action-detail/);
+ assert.match(ui,/177px/);
+ assert.match(ui,/MAX_XP/);
 });
