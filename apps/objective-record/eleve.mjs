@@ -7,7 +7,7 @@ import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
 import {createCertifiedExtendedUI} from './certified-extended-ui.mjs';
 import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs?v=20261104-three-lives-half-xp-v1';
-import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs';
+import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs?v=20261106-record-80-v1';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 import {createSchoolScoreView} from './school-score-view.mjs?v=20261105-fit-arrow-v3';
 import {installTensFirstDuringGame} from './in-game-tens-first.mjs?v=20261103-leading-carry-amber-v1';
