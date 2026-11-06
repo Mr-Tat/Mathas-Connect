@@ -6146,10 +6146,35 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     menuScreen.classList.add('hidden');gameScreen.classList.remove('hidden');makePair()
   }
   function goMenu(){removeCelebrations();clearHint();showTrainingHint._step=0;showTrainingHint._key=null;setScoreRulerVisible(false);gameScreen.classList.add('hidden');menuScreen.classList.remove('hidden');refreshMenuScores();window.scrollTo({top:0,behavior:'smooth'})}
+  // Feedback visuel : validation d'un calcul, sans modifier la preuve ni les points.
+  function mathasGateSecondCalc(locked){
+    const box=calculationsPair.querySelector('.calc-box[data-calc="1"]');
+    if(!box)return;
+    box.inert=!!locked;
+    box.classList.toggle('mathas-awaits-first',!!locked);
+  }
+  function mathasShowCalcVerified(i){
+    const box=calculationsPair.querySelector('.calc-box[data-calc="'+i+'"]');
+    if(!box)return;
+    box.classList.add('mathas-calc-verified');
+    if(!document.getElementById('mathas-one-calc-badge-css')){
+      const style=document.createElement('style');style.id='mathas-one-calc-badge-css';
+      style.textContent='.calc-box.mathas-awaits-first{opacity:.58;transition:opacity .18s ease}.calc-box.mathas-calc-verified{opacity:1}.mathas-calc-ok-badge{position:absolute;top:8px;right:9px;z-index:5;display:inline-grid;place-items:center;width:37px;height:37px;box-sizing:border-box;border-radius:50%;background:linear-gradient(150deg,#21ba71,#0e7946);border:3px solid #e9fff2;box-shadow:0 3px 10px #092d2180,0 0 0 2px #51ce90;color:#fff;font:900 26px/1 system-ui;pointer-events:none;animation:mathas-calc-ok-enter .42s cubic-bezier(.2,1.5,.4,1) both}@keyframes mathas-calc-ok-enter{0%{opacity:0;transform:scale(.35) rotate(-22deg)}65%{opacity:1;transform:scale(1.18) rotate(3deg)}100%{transform:scale(1) rotate(0)}}@media(prefers-reduced-motion:reduce){.mathas-calc-ok-badge{animation:none!important}}';
+      document.head.appendChild(style);
+    }
+    if(getComputedStyle(box).position==='static')box.style.position='relative';
+    let badge=box.querySelector('.mathas-calc-ok-badge');
+    if(!badge){
+      badge=document.createElement('span');badge.className='mathas-calc-ok-badge';
+      badge.textContent='✓';badge.setAttribute('aria-label','Calcul correct');
+      badge.setAttribute('role','img');box.appendChild(badge);
+    }
+    if(i===0)mathasGateSecondCalc(false);
+  }
   function makePair(){
     removeCelebrations();clearHint();showTrainingHint._step=0;showTrainingHint._key=null;
     states=[0,1].map(()=>{const addendCount=randomAddendCount(session.level);const s=generateAddition(session.maxDigits,addendCount);s.addendCount=addendCount;return s});phase='answering';
-    active={kind:'answer',calc:0,col:0};calculationsPair.innerHTML='';states.forEach((s,i)=>renderCalc(s,i));
+    active={kind:'answer',calc:0,col:0};calculationsPair.innerHTML='';states.forEach((s,i)=>renderCalc(s,i));mathasGateSecondCalc(true);
     setPrimaryLabel('Valider');resetBtn.disabled=false;setNumpadDisabled(false);hintBtn.classList.remove('hidden');hintBtn.textContent=session.mode==='training'?'🧭 Guide':'💡 Indice';
     updateInstruction();updateBar();setFeedback('','');focusColumnStart(0,0)
   }
@@ -6246,7 +6271,7 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     if(tensFirstEnabled()&&c<s.count-1&&s.outgoing[c]>0&&s.carryValues[c+1]!==String(s.outgoing[c])){focusCarry(i,c+1);setFeedback('Écris d’abord la dizaine du report, puis le chiffre des unités.','info');return}
     focusAnswer(i,c)
   }
-  function nextCalcOrStay(i){if(i===0&&!states[1].solved){if(window.__mathasManualValidation){if(evaluateCalc(0).filled){setFeedback('Calcul 1 terminé. Clique sur Valider pour le vérifier avant le calcul 2.','info');primaryBtn.focus()}return}focusColumnStart(1,0)}}
+  function nextCalcOrStay(i){if(i===0&&!states[0].solved){if(window.__mathasManualValidation){if(evaluateCalc(0).filled){setFeedback('Calcul 1 terminé. Clique sur Valider pour le vérifier avant le calcul 2.','info');primaryBtn.focus()}return}setFeedback('Vérification du calcul 1 en cours…','info');return}if(i===0)focusColumnStart(1,0)}
   function afterAnswer(i,c){
     const s=states[i],carry=c<s.count-1?s.outgoing[c]:0;
     if(!tensFirstEnabled()&&carry>0&&s.carryValues[c+1]!==String(carry)){focusCarry(i,c+1);setFeedback('Retenue nécessaire : écris maintenant la retenue dans la petite case au-dessus de la colonne de gauche.','info');return}
@@ -6266,7 +6291,7 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     clearTimeout(mathasAutoNormalTimer);
     mathasAutoNormalTimer=setTimeout(()=>{
       if(window.__mathasManualValidation||phase!=='answering'||states!==work)return;
-      if(states.every((s,i)=>s.solved||evaluateCalc(i).filled))handlePrimary();
+      if((!states[0].solved&&evaluateCalc(0).filled)||(states[0].solved&&!states[1].solved&&evaluateCalc(1).filled))handlePrimary();
     },100);
   }
   function setAnswerDigit(i,c,d){
@@ -6373,7 +6398,7 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
   function lockCalc(i){
     const s=states[i],op=opFor(i);s.solved=true;
     op.querySelectorAll('.answer-input').forEach(x=>{x.disabled=true;x.classList.remove('incorrect');x.classList.add('correct')});
-    op.querySelectorAll('.carry-input').forEach(x=>{x.disabled=true;x.classList.remove('bad');if(x.value)x.classList.add('good')})
+    op.querySelectorAll('.carry-input').forEach(x=>{x.disabled=true;x.classList.remove('bad');if(x.value)x.classList.add('good')});mathasShowCalcVerified(i)
   }
   function firstUnsolvedTarget(){for(let i=0;i<states.length;i++){if(states[i].solved)continue;const s=states[i],seq=mathasEntrySequence(s,i);for(const target of seq)if(mathasEntryValue(s,target)==='')return target}return null}
   function focusTarget(t){if(!t)return;t.kind==='carry'?focusCarry(t.calc,t.col):focusAnswer(t.calc,t.col)}
@@ -6392,7 +6417,7 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
 
     // Le calcul 2 n'est corrigé que lorsque les deux calculs sont terminés
     // (ou lorsque le calcul 1 a déjà été validé auparavant).
-    if(secondReady&&bothFinished&&(!window.__mathasManualValidation||states[0].solved))candidates.push(1)
+    if(secondReady&&states[0].solved)candidates.push(1)
 
     // On peut vérifier un calcul terminé sans obliger l'élève à finir l'autre.
     if(!candidates.length){
