@@ -48,14 +48,48 @@ export function nativeDayPoints(top){
  const n=Number(value.replace(/\s/g,''));
  return Number.isSafeInteger(n)&&n>=0?n:null;
 }
+// Affichage DOM uniquement : le serveur reste l'autorité des records Connect.
+export function renderCertifiedHistoricalPodium(doc,history){
+ if(history?.ok!==true||!Array.isArray(history.bestThree)||!doc?.querySelector)return false;
+ const target=doc.querySelector('#mathasPointsDetail [data-points="allThree"]');
+ if(!target)return false;
+ const places=target.querySelectorAll('.mathas-v541-place');
+ if(places.length!==3)return false; // Attendre le rendu natif pour préserver coupes et médailles.
+ const records=history.bestThree.map(cleanScoreEntry).filter(Boolean)
+  .sort((a,b)=>b.points-a.points||b.at.localeCompare(a.at)).slice(0,3);
+ for(let i=0;i<3;i++){
+  const label=places[i].querySelector('.mathas-v541-place-score');
+  if(!label)continue;
+  const record=records[i];
+  const expected=record?record.points+' pts':'—';
+  if(label.textContent.replace(/\s+/g,' ').trim()===expected)continue;
+  label.textContent=record?String(record.points):'—';
+  label.classList.remove('mathas-points-aid');
+  if(record){const small=doc.createElement('small');small.textContent=' pts';label.append(small)}
+ }
+ return true;
+}
 // Réutilise les cartes natives : Top du jour, coupes et podium historique.
 // Le clic ne propose que l'envoi volontaire d'un score certifié Connect.
 export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
  if(!['addition-ecrite-simple','addition-ecrite-multiple','multiplication-ecrite-simple','soustraction-ecrite-simple'].includes(appKey))
   throw Error('unsupported_score_app');
- let state={},remote=null,documentRef=null,loading=null,destroyed=false,clickTarget=null;
+ let state={},remote=null,documentRef=null,loading=null,destroyed=false,clickTarget=null,podiumTarget=null,podiumObserver=null;
  const autoOffered=new Set();
  const select=()=>schoolScoreSnapshot(remote,state);
+ const renderPodium=()=>{if(documentRef)renderCertifiedHistoricalPodium(documentRef,remote)};
+ function mountPodium(doc){
+  const target=doc.querySelector('#mathasPointsDetail [data-points="allThree"]');
+  if(!target)return;
+  if(target!==podiumTarget){
+   podiumObserver?.disconnect();podiumTarget=target;
+   if(typeof MutationObserver!=='undefined'){
+    podiumObserver=new MutationObserver(renderPodium);
+    podiumObserver.observe(target,{childList:true,subtree:true,characterData:true});
+   }
+  }
+  renderPodium();
+ }
  const css='#mathasPointsQuick .mathas-points-quick-item--best.mathas-school-shareable{cursor:pointer;outline-offset:3px}'
   +'#mathasPointsQuick .mathas-points-quick-item--best.mathas-school-shareable:focus-visible{outline:3px solid #ffe3a1}'
   // Le cadre est un repère VISUEL dans la carte déjà cliquable : aucune nouvelle zone de clic.
@@ -74,7 +108,7 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
    try{
     const result=await fetchHistory();
     if(result?.ok!==true||!Array.isArray(result.events)||destroyed)return false;
-    remote=result;return true;
+    remote=result;renderPodium();return true;
    }catch{return false}
    finally{loading=null}
   })();
@@ -126,6 +160,7 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
  function mount(doc){
   if(destroyed||!doc?.getElementById('menuScreen'))return;
   documentRef=doc;
+  mountPodium(doc);
   const nativeTop=doc.getElementById('mathasPointsQuick');
   const target=nativeTop?.querySelector('.mathas-points-quick-item--best');
   if(!target)return;
@@ -151,6 +186,7 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
  }
  function destroy(){
   destroyed=true;remote=null;state={};
+  podiumObserver?.disconnect();podiumObserver=null;podiumTarget=null;
   unbind();
   documentRef?.getElementById('mathasSchoolScoreActionStyle')?.remove();
   documentRef=null;
