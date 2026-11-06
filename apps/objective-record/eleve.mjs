@@ -288,27 +288,31 @@ function watchGame(seq){
    // Brancher l'interception AVANT que tous les scripts de l'ancienne UI
    // finissent de charger : aucun clic ne doit lancer une partie libre dont
    // les points locaux (parfois > 1000 en N1) semblent être des points Connect.
-   installNativeCertifiedLaunch(doc,activeApp,choice=>{
-    if(seq!==generation||!pupilId)return;
-    // Ce routeur s'installe dès que le DOM apparaît, parfois AVANT
-    // MathasLabV2Update. Vérifier la fonction en direct au moment du clic :
-    // conserver ici la valeur capturée lors de l'installation bloquait
-    // définitivement les parties de certains élèves.
+   // Même chemin certifié pour les boutons natifs ET les raccourcis du
+   // menu « Activité terminée ». Ces derniers utilisent .click() en interne :
+   // ce clic n'est pas trusted, et contournait auparavant la preuve scolaire.
+   const launchOfficial=choice=>{
+    if(seq!==generation||!pupilId)return true;
+    // Le moteur peut afficher son écran de fin avant l'ACK du serveur.
+    // Empêcher toute nouvelle série avant la confirmation officielle.
+    if(['starting','playing','saving','failed'].includes(
+      inside.contentWindow?.__mathasSchoolProofState?.phase)){
+     message('Termine ou synchronise d’abord le résultat officiel.');return true;
+    }
     const readyNow=inside.contentWindow?.MathasLabV2Update;
     if(typeof readyNow!=='function'){
-     message('Le jeu charge encore ses contrôles officiels. Réessaie dans un instant.');return;
+     message('Le jeu charge encore ses contrôles officiels. Réessaie dans un instant.');return true;
     }
-    // Le pont d'essais doit également être prêt si le clic intervient
-    // entre deux contrôles périodiques du lanceur.
     activeProofUI.bind(inside.contentWindow,doc);
     if(!schoolModeAllowed(lastOfficialProgress,choice.mode,choice.level)){
-     message('🔒 '+schoolModeLockReason(choice.mode,choice.level));return;
+     message('🔒 '+schoolModeLockReason(choice.mode,choice.level));return true;
     }
-    // The familiar game buttons now enter the authenticated, server-issued
-    // proof. Never accept a native game score as an XP claim.
     if(choice.mode==='classic')void activeProofUI.startNative(choice.level,choice.total);
     else void extendedUI.startNative(choice.mode,choice.level);
-   });
+    return true;
+   };
+   inside.contentWindow.__mathasConnectOfficialLaunch=launchOfficial;
+   installNativeCertifiedLaunch(doc,activeApp,launchOfficial);
    if(typeof native!=='function')return;
    activeProofUI.bind(inside.contentWindow,doc);
    if(doc===visibleDoc)return;
@@ -357,7 +361,7 @@ const certifiedUI=createAdditionProofUI({
  call:(action,payload)=>call(classId===CLASS_TEST?'connect-objective-record-test':'connect-objective-record-school',action,'addition-ecrite-simple',payload),
  refresh:()=>refresh(generation),notify:message,
  onRecorded:receipt=>{
-  if(receipt.appKey===activeApp)void schoolScoreView?.recorded(receipt.eventId);
+  if(receipt.appKey===activeApp)return schoolScoreView?.recorded(receipt.eventId);
  }
 });
 const certifiedMultiUI=createMultipleProofUI({
@@ -367,7 +371,7 @@ const certifiedMultiUI=createMultipleProofUI({
  call:(action,payload)=>call(classId===CLASS_TEST?'connect-objective-record-test':'connect-objective-record-school',action,'addition-ecrite-multiple',payload),
  refresh:()=>refresh(generation),notify:message,
  onRecorded:receipt=>{
-  if(receipt.appKey===activeApp)void schoolScoreView?.recorded(receipt.eventId);
+  if(receipt.appKey===activeApp)return schoolScoreView?.recorded(receipt.eventId);
  }
 });
 const extendedUI=createCertifiedExtendedUI({
