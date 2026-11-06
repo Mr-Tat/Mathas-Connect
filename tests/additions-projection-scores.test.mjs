@@ -67,8 +67,8 @@ test('Les additions réutilisent les cartes natives et une invitation sécurisé
   assert.match(html,/id='mathasPointsDetail'/);
   assert.match(html,/mathas-v541-cup/);
  }
- assert.match(read('apps/objective-record/eleve.mjs'),/school-score-view\.mjs\?v=20261106-history-today-v2/);
- assert.match(read('apps/objective-record/eleve.html'),/eleve\.mjs\?v=20261106-certified-results-v8/);
+ assert.match(read('apps/objective-record/eleve.mjs'),/school-score-view\.mjs\?v=20261106-fullscreen-share-v3/);
+ assert.match(read('apps/objective-record/eleve.html'),/eleve\.mjs\?v=20261106-certification-safe-v9/);
 });
 test('Protection Edge: RPC atomique, identité élève et preuve du résultat',()=>{
  const edge=read('supabase/functions/connect-projection-v2/index.ts');
@@ -99,7 +99,7 @@ test('Cartouches sobres : TOP DU JOUR certifié et défis, sans modifier les zon
  assert.ok(score.includes('pointer-events:none'));
  assert.ok(score.includes("target.addEventListener('click',onClick)"));
  assert.ok(score.includes("target.setAttribute('role','button')"));
- assert.ok(read('apps/multiplication-simple/index.html').includes('school-score-view.mjs?v=20261106-history-today-v2'));
+ assert.ok(read('apps/multiplication-simple/index.html').includes('school-score-view.mjs?v=20261106-fullscreen-share-v3'));
 
  const games=[
   'apps/objective-record/engines/addition-simple/game-original.html',
