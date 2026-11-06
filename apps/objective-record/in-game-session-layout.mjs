@@ -289,6 +289,7 @@ export function installSessionToolbarLayout(doc,appKey){
   // Mise à jour immédiate dès que le moteur natif change le mode, le score
   // ou l'écran ; inutile d'attendre une boucle de 300ms après le clic.
   const view=doc.defaultView;
+  view?.addEventListener?.('mathas:survival-lives-updated',()=>syncSchoolSurvivalHearts(doc,appKey));
   if(view?.MutationObserver){
    const observer=new view.MutationObserver(()=>syncSchoolSurvivalHearts(doc,appKey));
    for(const id of ['sessionMode','sessionScore']){
