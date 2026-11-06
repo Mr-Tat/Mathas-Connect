@@ -9,7 +9,7 @@ import {createCertifiedExtendedUI} from './certified-extended-ui.mjs';
 import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs?v=20261106-survival-40xp-v1';
 import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs?v=20261106-record-80-v1';
 import {createProjectionConsent} from '../../projection-consent.mjs';
-import {createSchoolScoreView} from './school-score-view.mjs?v=20261105-fit-arrow-v3';
+import {createSchoolScoreView} from './school-score-view.mjs?v=20261106-history-top3-v1';
 import {installTensFirstDuringGame} from './in-game-tens-first.mjs?v=20261103-leading-carry-amber-v1';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
@@ -183,6 +183,7 @@ const clear=()=>{
   $('certified-tools').hidden=true;$('certify').disabled=true;
   bar.hidden=true;handle.hidden=true;$('guest-home').hidden=false;stopBarTimer();closePanels();
   lastOfficialXp=null;lastOfficialProgress=null;window.MathasConnectOfficialSchoolProgress=null;
+  $('xp-toggle-main').textContent='✨ XP à récupérer';
 };
 async function verifiedToken(){
  const {data:{session:local}}=await session.auth.getSession();
@@ -220,6 +221,9 @@ function showOfficial({xp,loaded,appKey}){
  const summary=studentHostContract({xp,loaded,appKey});
  if(!summary)throw Error('Réponse du profil officiel incomplète');
  $('app-xp').textContent=String(summary.appXp);
+ const earned=Number(xp?.appXp),max=Number(xp?.max);
+ $('xp-toggle-main').textContent=Number.isSafeInteger(earned)&&earned>=0&&Number.isSafeInteger(max)&&max>0
+  ?'✨ '+earned+' / '+max+' XP récupérés':'✨ XP à récupérer';
  $('level').textContent=String(summary.level);
  lastOfficialXp=xp;renderMeter(summary.total,summary.level);
  latestState=loaded.state||{};
