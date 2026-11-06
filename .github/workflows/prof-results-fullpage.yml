@@ -1,0 +1,34 @@
+name: Professeur — tableau résultats plein écran
+on:
+  pull_request:
+    paths:
+      - 'app.js'
+      - 'style.css'
+      - 'results-overview-sticky.mjs'
+      - 'tests/prof-results-fullpage.*'
+      - '.github/workflows/prof-results-fullpage.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.57.0
+          browser=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)
+          if [ -n "$browser" ]; then
+            echo "CHROME_BIN=$browser" >> "$GITHUB_ENV"
+          else
+            npx playwright install chromium --with-deps
+          fi
+      - name: Contrat et rendu réel en défilement vertical/horizontal
+        run: |
+          node --test tests/prof-results-fullpage.test.mjs
+          node --test tests/prof-results-fullpage.browser.mjs
