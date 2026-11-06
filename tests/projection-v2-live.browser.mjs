@@ -382,17 +382,21 @@ test('V2 — prénom en gras dans les exploits, jeu et texte normal, sans surtit
    ['Élève 1','Élève 2','Élève 3'],'Les noms seuls sont en gras');
   const results=await page.locator('#exploits .event-text').evaluateAll(elements=>elements.map(el=>({
    content:el.textContent,
-   initialNodeType:el.firstChild.nodeType,
-   nameWeight:getComputedStyle(el.querySelector('strong')).fontWeight,
-   name:el.querySelector('strong').textContent,
-   remainder:el.querySelector('strong').nextSibling.textContent
+   app:el.querySelector('.event-app')?.textContent,
+   name:el.querySelector('.event-student')?.textContent,
+   action:el.querySelector('.event-action')?.textContent,
+   nameSize:parseFloat(getComputedStyle(el.querySelector('.event-student')).fontSize),
+   actionSize:parseFloat(getComputedStyle(el.querySelector('.event-action')).fontSize),
+   appSize:parseFloat(getComputedStyle(el.querySelector('.event-app')).fontSize)
   })));
   assert.ok(results[0].content.startsWith('Addition écrite · Élève 1 gagne un nouveau trophée'));
   assert.ok(results[1].content.startsWith('Addition écrite · Élève 2 réussit une série parfaite'));
   assert.ok(results[2].content.startsWith('Soustraction écrite · Élève 3 réalise un score du Top 5'));
-  assert.ok(results.every(x=>x.initialNodeType===3),'Le titre du jeu reste en texte normal');
-  assert.ok(results.every(x=>Number(x.nameWeight)>=700),'Les noms ressortent en gras');
-  assert.ok(results.every(x=>x.remainder.startsWith(' ')),'La phrase après le prénom reste distincte');
+  assert.deepEqual(results.slice(0,3).map(x=>x.name),['Élève 1','Élève 2','Élève 3']);
+  assert.ok(results.every(x=>x.nameSize>=18&&x.actionSize>=18),'Nom et exploit visibles depuis la classe');
+  assert.ok(results.every(x=>x.appSize<x.actionSize),'Application discrète');
+  assert.ok(results[0].action.includes('trophée')&&results[1].action.includes('série parfaite'),
+   'La nature de chaque exploit reste explicite');
   assert.equal(await page.locator('.ranking-card .ranking-head .over').count(),0,'Surtitre supprimé');
   assert.deepEqual(await page.locator('.ranking-card .ranking-head h2').allTextContents(),
    ['Addition écrite','Soustraction écrite']);
