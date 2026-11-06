@@ -111,7 +111,7 @@ test('le nouvel hôte obtient un consentement explicite après ACK, pas à la fi
  const atomic=read('apps/objective-record/atomic-test-recorder.mjs');
  const certified=read('apps/objective-record/certified-addition-ui.mjs');
  const consent=read('projection-consent.mjs');
- assert.match(host,/import \{createProjectionConsent\} from '\.\.\/\.\.\/projection-consent\.mjs'/);
+ assert.match(host,/import \{createProjectionConsent\} from '\.\.\/\.\.\/projection-consent\.mjs\?v=20261106-fullscreen-consent-v1'/);
  assert.match(host,/projectionConsent=createProjectionConsent\(/);
  assert.match(host,/getToken:verifiedToken/);
  assert.match(host,/studentKey:pupilId/);
