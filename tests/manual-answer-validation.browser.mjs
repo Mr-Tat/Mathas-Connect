@@ -43,8 +43,8 @@ async function open(page,url,item,profile=PROFILE_A){
  await page.locator('#menuScreen:not(.hidden)').waitFor({timeout:20000});
  assert.equal(await mount(page,item,profile),true);
  await page.locator('#mathasManualValidationDuringGame-normal').waitFor({state:'attached'});
- assert.equal(await page.locator('#mathasManualValidationDuringGame-hard').count(),item.isMul?1:0,
-  'Soustraction crée sa barre HARD seulement lors du premier lancement HARD');
+ assert.equal(await page.locator('#mathasManualValidationDuringGame-hard').count(),1,
+  'Le moteur doit exposer ce réglage dans les barres normales et HARD');
  if(item.isMul){
   assert.equal(await page.locator('#mathasTensFirstDuringGame-normal').count(),1);
   assert.equal(await page.locator('#mathasTensFirstDuringGame-hard').count(),1);
@@ -117,7 +117,7 @@ for(const item of games){
    assert.equal(await manual.isChecked(),false,'automatic must remain default');
    await startFour(page,item);
    await manual.check();
-   if(item.isMul)assert.equal(await page.locator('#mathasManualValidationDuringGame-hard').isChecked(),true);
+   assert.equal(await page.locator('#mathasManualValidationDuringGame-hard').isChecked(),true);
    const key='mathas.manual-validation.v1.'+item.appKey+'.'+PROFILE_A;
    assert.equal(await page.evaluate(k=>localStorage.getItem(k),key),'1');
    await solve(page,item,0);
