@@ -67,7 +67,7 @@ export function createCertifiedExtendedUI({
   const nativeMode=hard?run.mode.slice(5):run.mode;
   let launch=null;
   if(hard){
-   launch=[...doc.querySelectorAll('#hardMenu .hard-start')]
+   launch=[...doc.querySelectorAll('#hardMenuScreen .hard-start')]
     .find(b=>Number(b.dataset.level)===run.level&&b.dataset.mode===nativeMode&&!b.disabled);
   }else{
    const sel=doc.getElementById('suddenMaxDigits');
