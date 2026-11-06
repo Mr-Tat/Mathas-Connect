@@ -285,10 +285,14 @@ function watchGame(seq){
    const native=inside.contentWindow?.MathasLabV2Update;
    // The menu DOM may exist before the real script has installed its update
    // hook. Never enable certified launch until the native engine is ready.
-   if(typeof native!=='function')return;
-   activeProofUI.bind(inside.contentWindow,doc);
+   // Brancher l'interception AVANT que tous les scripts de l'ancienne UI
+   // finissent de charger : aucun clic ne doit lancer une partie libre dont
+   // les points locaux (parfois > 1000 en N1) semblent être des points Connect.
    installNativeCertifiedLaunch(doc,activeApp,choice=>{
     if(seq!==generation||!pupilId)return;
+    if(typeof native!=='function'){
+     message('Le jeu charge encore ses contrôles officiels. Réessaie dans un instant.');return;
+    }
     if(!schoolModeAllowed(lastOfficialProgress,choice.mode,choice.level)){
      message('🔒 '+schoolModeLockReason(choice.mode,choice.level));return;
     }
@@ -297,6 +301,8 @@ function watchGame(seq){
     if(choice.mode==='classic')void activeProofUI.startNative(choice.level,choice.total);
     else void extendedUI.startNative(choice.mode,choice.level);
    });
+   if(typeof native!=='function')return;
+   activeProofUI.bind(inside.contentWindow,doc);
    if(doc===visibleDoc)return;
    visibleDoc=doc;
    {
