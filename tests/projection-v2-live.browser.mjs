@@ -415,9 +415,20 @@ test('V2 — prénom en gras dans les exploits, jeu et texte normal, sans surtit
    actionSize:parseFloat(getComputedStyle(el.querySelector('.event-action')).fontSize),
    appSize:parseFloat(getComputedStyle(el.querySelector('.event-app')).fontSize)
   })));
-  assert.ok(results[0].content.startsWith('Addition écrite · Élève 1 gagne un nouveau trophée'));
-  assert.ok(results[1].content.startsWith('Addition écrite · Élève 2 réussit une série parfaite'));
-  assert.ok(results[2].content.startsWith('Soustraction écrite · Élève 3 réalise un score du Top 5'));
+  assert.deepEqual(results.slice(0,3).map(x=>x.action),
+   ['Nouveau trophée !','Série parfaite !','Top 5 !']);
+  assert.deepEqual(results.slice(0,3).map(x=>x.app),
+   ['Addition écrite','Addition écrite','Soustraction écrite']);
+  const tags=await page.locator('#exploits .event-text').evaluateAll(elements=>elements.map(el=>
+   [...el.children].map(child=>child.className)));
+  assert.deepEqual(tags.slice(0,3),Array(3).fill(null).map(()=>['event-student','event-action','event-app']));
+  const colors=await page.locator('#exploits .event-text').first().evaluate(el=>({
+   name:getComputedStyle(el.querySelector('.event-student')).color,
+   action:getComputedStyle(el.querySelector('.event-action')).color
+  }));
+  assert.notEqual(colors.name,colors.action,'deux couleurs distinctes');
+  assert.ok((await page.locator('#exploits .event').first().getAttribute('title')).includes('gagne un nouveau trophée'),
+   'Le détail complet reste consultable');
   assert.deepEqual(results.slice(0,3).map(x=>x.name),['Élève 1','Élève 2','Élève 3']);
   assert.ok(results.every(x=>x.nameSize>=18&&x.actionSize>=18),'Nom et exploit visibles depuis la classe');
   assert.ok(results.every(x=>x.appSize<x.actionSize),'Application discrète');
