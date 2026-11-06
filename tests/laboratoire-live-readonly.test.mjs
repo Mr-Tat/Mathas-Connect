@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {legacyEdgePreviews} from './fixtures/laboratoire-edge-previews.mjs';
 
 // Tests HTTP PUBLICS uniquement : ne crée ni session, ni élève, ni XP.
 // Aucune donnée d'élève, aucun token personnel requis.
@@ -38,21 +37,11 @@ test('un POST sans session professeur est refusé',async()=>{
  assert.equal(data.ok,false);
 });
 
-test('déploiement LIVE : cinq liens Objectif record distincts, uniquement dans le catalogue TEST',async()=>{
+test('déploiement LIVE : aucune ancienne carte pilote dans le catalogue TEST',async()=>{
  const {status,data}=await get(base+'?class='+uuid);
  assert.equal(status,200,JSON.stringify(data));
  assert.equal(data.ok,true);
  assert.ok(Array.isArray(data.apps));
- for(const preview of legacyEdgePreviews){
-   const matches=data.apps.filter(app=>app.app_key==='lab-record-'+preview.id);
-   assert.equal(matches.length,1,'carte TEST manquante ou doublonnée : '+preview.id);
-   const card=matches[0];
-   assert.equal(card.launch_url,preview.url);
-   assert.match(card.title,/XP fictifs/);
-   assert.equal(card.hub_section,'calculs_ecrits');
-   assert.equal(card.enabled,true);
-   assert.equal(card.visible,true);
-   assert.equal(card.featured,false);
- }
- console.log('CONFIRMÉ via GET Supabase hébergé : cinq liens Objectif record de la classe TEST.');
+ assert.equal(data.apps.some(app=>app.app_key.startsWith('lab-record-')),false);
+ console.log('CONFIRMÉ : anciennes cartes retirées du catalogue de classe TEST.');
 });

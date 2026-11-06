@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {objectiveRecordLabPreviews} from '../objective-record-lab-previews.mjs';
-import {legacyEdgePreviews} from './fixtures/laboratoire-edge-previews.mjs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
@@ -37,34 +36,21 @@ test('six démos Pages distinctes, sans app_key ni attribut d’XP Connect',()=>
   assert.equal(expected.size,objectiveRecordLabPreviews.length);
 });
 
-test('les essais n’apparaissent que dans le HUB de la classe TEST',()=>{
-  const hub=read('hub.js'),home=read('hub.html'),catalogue=read('hub-catalog.json');
-  assert.match(hub,/import \{objectiveRecordLabPreviews\} from '\.\/objective-record-lab-previews\.mjs'/);
-  assert.match(hub,/const LAB_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'/);
-  assert.match(hub,/if\(classId===LAB_CLASS\)groups\.unshift\(labPreviewSection\(\)\)/);
-  assert.match(hub,/if\(classId===LAB_CLASS\)\$\('levels'\)\.replaceChildren\(labPreviewSection\(\)\)/);
-  assert.match(hub,/if\(classId===LAB_CLASS\)\{/);
-  assert.match(hub,/connect-lab-catalog/);
-  assert.match(hub,/test_catalog_unavailable/);
-  assert.match(hub,/Essai isolé · XP fictifs · aucun résultat Connect/);
-  assert.match(hub,/node\.dataset\.labPreview = preview\.id/);
-  assert.doesNotMatch(hub,/node\.dataset\.appKey\s*=\s*preview\.id/);
-  assert.doesNotMatch(catalogue,/essai-objectif-record|essai-mode-score-3-vies/);
-  assert.doesNotMatch(home,/essai-objectif-record|essai-mode-score-3-vies/);
+test('les démonstrations archivées ne sont plus affichées dans les HUB',()=>{
+ const hub=read('hub.js'),home=read('hub.html'),catalogue=read('hub-catalog.json');
+ assert.doesNotMatch(hub,/labPreviewSection|objectiveRecordLabPreviews|previewCard/);
+ assert.doesNotMatch(hub,/node\.dataset\.labPreview/);
+ assert.match(hub,/app\.app_key\.startsWith\('lab-record-'\)/);
+ assert.doesNotMatch(home,/essai-objectif-record|essai-mode-score-3-vies/);
+ assert.doesNotMatch(catalogue,/essai-objectif-record|essai-mode-score-3-vies/);
 });
 
-test('le laboratoire professeur affiche les mêmes démos après contrôle et consentement',()=>{
-  const lab=read('laboratoire.js'),html=read('laboratoire.html');
-  assert.match(lab,/import \{objectiveRecordLabPreviews\} from '\.\/objective-record-lab-previews\.mjs'/);
-  assert.match(lab,/const TEST_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'/);
-  assert.match(lab,/renderObjectiveRecordPreviews\(\);\s*await loadClass\(scoped\)/);
-  assert.match(lab,/if\(!verified\|\|!consent\(\)\)\{/);
-  assert.match(lab,/event\.preventDefault\(\)/);
-  assert.match(lab,/open\.href=preview\.url/);
-  assert.match(html,/id="record-previews"/);
-  assert.match(html,/XP ni sauvegarde de résultat Connect/);
-  assert.match(html,/id="lab" hidden/);
-  assert.doesNotMatch(lab,/objectiveRecordLabPreviews[^;]*\.forEach\([^)]*rpc\(/);
+test('le Laboratoire ne propose plus de liens vers les anciennes versions',()=>{
+ const lab=read('laboratoire.js'),html=read('laboratoire.html');
+ assert.doesNotMatch(lab,/objectiveRecordLabPreviews|renderObjectiveRecordPreviews/);
+ assert.doesNotMatch(html,/id="record-previews"|Tester la démo/);
+ assert.match(html,/id="lab" hidden/);
+ assert.match(html,/Ouvrir Tests dans le HUB Toutes/);
 });
 
 test('le guide explique l’essai sans XP, puis le pilote Connect authentifié',()=>{
@@ -76,26 +62,15 @@ test('le guide explique l’essai sans XP, puis le pilote Connect authentifié',
   assert.match(guide,/classe TEST/);
 });
 
-test('secours Edge limité au GET de la classe TEST, sans fausse activation Connect',()=>{
-  const edge=read('supabase/functions/connect-lab-catalog/index.ts');
-  const hub=read('hub.js');
-  assert.match(edge,/if\(query\.get\('class'\)!==TEST_CLASS\)return fail\('invalid_test_class',403\)/);
-  assert.match(edge,/apps:\[\.\.\.await catalogue\(false\),\.\.\.objectiveRecordDemoCards\]/);
-  assert.match(edge,/if\(body\.action==='list'\)return respond\(\{ok:true,apps:await catalogue\(true\)\}\)/);
-  assert.match(edge,/app_key:'lab-record-'\+id/);
-  assert.match(edge,/enabled:true,\s*visible:true,\s*featured:false/);
-  assert.match(edge,/Objectif record \(XP fictifs\)/);
-  // Preserve the deployed Edge contract without requiring any new deployment.
-  assert.equal(legacyEdgePreviews.length,5);
-  for(const p of legacyEdgePreviews){
-    assert.ok(edge.includes(p.url),p.id);
-    assert.equal(objectiveRecordLabPreviews.find(preview=>preview.id===p.id)?.url,p.url);
-  }
-  assert.equal(edge.includes('https://mr-tat.github.io/Mathas-Connect/apps/GRAN-abaque-m-1/'),false,'Abaque reste une carte statique, pas une activation Edge');
-  assert.match(hub,/apps=data\.apps\.filter\(app=>!labDemoKeys\.has\(app\.app_key\)\)/);
-  assert.match(edge,/\.from\('connect_hub_preset_entries'\)\.select\(/);
-  assert.doesNotMatch(edge,/\.from\('connect_hub_preset_entries'\)\.(?:update|upsert|insert|delete)\(/);
-  assert.doesNotMatch(edge,/\.from\('connect_xp_credits'\)/);
+test('Edge TEST ne réinjecte plus de démonstrations et ne modifie pas les classes',()=>{
+ const edge=read('supabase/functions/connect-lab-catalog/index.ts'),hub=read('hub.js');
+ assert.match(edge,/if\(query\.get\('class'\)!==TEST_CLASS\)return fail\('invalid_test_class',403\)/);
+ assert.match(edge,/return respond\(\{ok:true,apps:await catalogue\(false\)\}\)/);
+ assert.doesNotMatch(edge,/objectiveRecordDemoCards|app_key:'lab-record-'/);
+ assert.match(edge,/\.from\('connect_hub_preset_entries'\)\.select\(/);
+ assert.doesNotMatch(edge,/\.from\('connect_hub_preset_entries'\)\.(?:update|upsert|insert|delete)\(/);
+ assert.doesNotMatch(edge,/\.from\('connect_xp_credits'\)/);
+ assert.match(hub,/startsWith\('lab-record-'\)/);
 });
 
 test('le LAB et le HUB TEST ouvrent la multiplication V7 certifiée; les autres jeux gardent leur lanceur commun',()=>{
@@ -106,7 +81,7 @@ test('le LAB et le HUB TEST ouvrent la multiplication V7 certifiée; les autres 
  assert.match(hub,/testSlug=classId===LAB_CLASS&&!testMultiplication\?recordSlugByApp\[app\.app_key\]:null/);
  assert.match(hub,/testMultiplication\?'\.\/apps\/multiplication-simple\/'/);
  assert.match(hub,/if\(testMultiplication && target\.origin===location\.origin\)target\.searchParams\.set\('requireConnect','1'\)/);
- assert.match(hub,/if\(testSlug\)node\.dataset\.labSchool=testSlug/);
+ assert.match(hub,/if\(testSlug&&!allMode\)node\.dataset\.labSchool=testSlug/);
  assert.match(hub,/SCHOOL_RECORD_LAUNCHER\+'\?app='\+encodeURIComponent\(testSlug\)/);
  assert.doesNotMatch(hub,/essais\/objectif-record-pilote\.html/);
  assert.match(lab,/testSlug=recordSlugByApp\[app\.app_key\]/);
