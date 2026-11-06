@@ -125,7 +125,7 @@ body:has(.login-panel:not([hidden])) footer{color:#afc8d9}
 .teacher-panel #results-section #results-restore-summary{background:#17324b;color:#d4e6f7;border-color:#4d7698!important}
 .teacher-panel #results-section #results-app{min-height:46px}
 /* Résumé : en-têtes et prénoms figés, deux blocs rapprochés dans les cellules. */
-.results-overview-scroll{max-height:70vh;max-width:100%;overflow:auto;border:1px solid #53718d;border-radius:16px;background:#11243a;overscroll-behavior:contain}
+.results-overview-scroll{max-width:100%;overflow-x:auto;overflow-y:hidden;border:1px solid #53718d;border-radius:16px;background:#11243a;overscroll-behavior-x:contain}
 .results-overview-table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;font-size:14px;color:#e3edf7}
 .results-overview-table th,.results-overview-table td{border-right:1px solid #425c76;border-bottom:2px solid #354e69;padding:13px 12px;text-align:left;vertical-align:top}
 .results-overview-table thead th{position:sticky;top:0;background:#2a4a6b;color:#f1f7fe;z-index:3;min-height:64px}
@@ -601,3 +601,14 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
 #auth-feedback{min-height:22px}
 
 #teacher-authorizations #auth-student-wrap[hidden]{display:none!important}
+
+/* Résultats professeur : la hauteur du tableau appartient à la page (aucune sous-fenêtre verticale).
+   L'en-tête est dupliqué uniquement visuellement au bord supérieur de la fenêtre,
+   car un ancêtre en overflow-x:auto neutralise position:sticky vertical. */
+.results-overview-scroll{height:auto;max-height:none}
+.results-overview-floating-head{position:fixed;top:0;z-index:100;overflow:hidden;pointer-events:none;background:#2a4a6b;box-sizing:border-box;border:1px solid #53718d;border-bottom:2px solid #53718d}
+.results-overview-floating-head[hidden]{display:none!important}
+.results-overview-floating-track{width:max-content;will-change:transform}
+.results-overview-floating-table{min-width:0!important;table-layout:fixed;margin:0}
+.results-overview-floating-table thead th{position:relative;top:auto;box-sizing:border-box}
+.results-overview-floating-table thead th:first-child{position:relative;left:auto;z-index:6}
