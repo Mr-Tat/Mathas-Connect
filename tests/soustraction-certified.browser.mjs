@@ -246,6 +246,7 @@ test('Chromium scolaire natif : 3 vies et trois erreurs', {timeout:120000},async
   await frame.locator('#mathasSousThreeLives').click();
   await frame.locator('#gameScreen:not(.hidden) #calculationsPair .calc-box').first().waitFor({timeout:20000});
   await page.setViewportSize({width:1536,height:820});
+  await frame.locator('#gameScreen:not(.hidden) #threeLivesHud:not([hidden])').waitFor({state:'visible',timeout:6000});
   const row=await frame.locator('#gameScreen .session-bar').evaluate(bar=>{
    const box=s=>bar.querySelector(s)?.getBoundingClientRect();
    const fields={menu:box('#menuBtn'),level:box('#sessionLevel'),
