@@ -51,7 +51,7 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261106-survival40-v1
    const loaded=await host.load();
    const candidate=buildConnectPilot({storage:localStorage,classId:host.classId,studentId:host.studentId,pupilId:host.pupilId,post,onStatus:(status,reply)=>{
      // Jamais de proposition au tableau avant un accusé de réception serveur.
-     if(status==='saved'&&reply?.eventId){/* partage volontaire via l'interface, non automatique */}
+     if(status==='saved'&&reply?.eventId)consent?.offer(reply.eventId);
      if(['conflict','unauthorized','rejected'].includes(status))blockedSession=true;
      if(['conflict','unauthorized','rejected','offline'].includes(status))document.querySelector('.notice').hidden=false;
      if(status==='saved')blockedSession=false;

@@ -8,7 +8,10 @@
     "logo-m.png": "00e06c59b09af58793cf2237117998a0025f63755c5c7c3cb1001f5819575eba",
     "logo-mot.webp": "b51b5fe357cb1135588e806ae16632c352c9f2676b28fa89866a4b4788048bd6"
   },
+  "archiveOriginal": "game-original-v6-archive.html",
+  "currentOfficial": "game-original.html",
   "adaptations": [
+    "Modes 3 vies normal/HARD ajoutés dans la version définitive en TEST ; le moteur source V6 est conservé dans archiveOriginal",
     "begin after normal/HARD session creation",
     "solved before native lock, preserving firstTry",
     "finish after native final save in classic/sudden/HARD sudden",

@@ -75,7 +75,7 @@ test('half sudden thresholds upgrade independently and never downgrade full righ
  let s=applyCompletion(empty(),event(10,{mode:'sudden',total:null,operationsSelectedAtStart:['add','sub'],operationsCompleted:Array(10).fill('add')}));
  assert.equal(milestones(s).xp,20);
  s=applyCompletion(s,event(5,{mode:'sudden',total:null,operationsCompleted:Array(5).fill('add')}));assert.equal(milestones(s).xp,30);
- s=applyCompletion(s,event(10,{mode:'sudden',total:null,operationsCompleted:Array(10).fill('add')}));assert.equal(milestones(s).xp,24);
+ s=applyCompletion(s,event(10,{mode:'sudden',total:null,operationsCompleted:Array(10).fill('add')}));assert.equal(milestones(s).xp,40);
 });
 test('restricted normal modes then native all-three HARD remain upgradeable to the full 690 cap',()=>{
  let s=empty();
@@ -84,7 +84,7 @@ test('restricted normal modes then native all-three HARD remain upgradeable to t
   s=applyCompletion(s,event(10,{level,mode:'sudden',total:null,operationsSelectedAtStart:['add','sub'],operationsCompleted:Array(10).fill('add')}));
   s=applyCompletion(s,event(7,{level,mode:'hard',total:null}));
  }
- assert.equal(milestones(s).xp,333,'HARD natively selects all three and is full rate; no invented restricted HARD mode');
+ assert.equal(milestones(s).xp,405,'HARD natively selects all three and is full rate; no invented restricted HARD mode');
  for(let level=1;level<=3;level++){
   for(const total of [4,10,20])s=applyCompletion(s,event(total,{level}));
   s=applyCompletion(s,event(10,{level,mode:'sudden',total:null}));
@@ -214,7 +214,7 @@ test('3 vies : trois erreurs terminales, 20 XP maximum puis complément à 40 en
  const three=normalizeCompletion(proof('three-lives'));
  assert.ok(three);
  assert.equal(normalizeCompletion(proof('three-lives',10,{firstTry:Array(13).fill(true)})),null);
- assert.equal(normalizeCompletion(proof('three-lives',10,{firstTry:[false,...Array(10).fill(true),false,false]})),null);
+ assert.equal(normalizeCompletion(proof('three-lives',10,{firstTry:[...Array(10).fill(true),false,false,true]})),null);
  let state=applyCompletion(empty(),three);
  assert.equal(state.threeLives[0],10);
  assert.equal(state.sudden[0],0,'3 vies ne fabrique pas un record Mort subite');

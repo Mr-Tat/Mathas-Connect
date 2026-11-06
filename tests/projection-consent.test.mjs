@@ -22,7 +22,8 @@ test('Consentement : multiplication ne partage que les preuves certifiées ; les
  const addPilot=get('apps/addition-plusieurs/connect-pilot.mjs');
  const mixedPilot=get('apps/calculs-melanges/connect-pilot.mjs');
  assert.match(add,/consent\?\.offer\(reply\.eventId\)/);
- assert.match(mixed,/consent\?\.offer\(reply\.eventId\)/);
+ assert.match(mixed,/if\(status==='saved'&&reply\?\.eventId\)consent\?\.offer\(reply\.eventId\)/);
+ assert.doesNotMatch(mixed,/if\(status==='pending'&&reply\?\.eventId\)consent/);
  assert.match(multi,/certifiedScoreView\?\.recorded\(receipt\.eventId\)/);
  assert.match(multi,/consent:\(\)=>certifiedConsent/);
  assert.doesNotMatch(multi,/consent\?\.offer\(eventId\)/,
