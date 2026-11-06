@@ -3,6 +3,7 @@
 import {createProjectionConsent} from '../../projection-consent.mjs?v=20261106-fullscreen-consent-v1';
 import {createSubtractionSchoolConnect} from './certified-connect.mjs?v=20261106-stable-count-buttons-v5';
 import {injectNativeSubtractionProof} from './native-proof-adapter.mjs';
+import {installManualValidationForWrittenCalc} from '../objective-record/in-game-manual-validation.mjs?v=20261106-manual-validation-v1';
 const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM',APP='soustraction-ecrite-simple';
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
@@ -614,6 +615,7 @@ if(mode==='connected'){
 }else toolbar.append(hubLink);
 document.body.replaceChildren(toolbar,iframe);
 const refreshNativeHeader=()=>{
+ installManualValidationForWrittenCalc(iframe.contentDocument,APP,mode==='connected'?session?.user?.id:null);
  mountNativeConnectHeader();
  if(mode==='connected')school?.mount();
 };
