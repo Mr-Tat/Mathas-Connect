@@ -101,7 +101,7 @@ test('moteur Soustraction : version animée protégée par empreinte Git',async(
  const sha=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
  // Changement pédagogique approuvé du 06/11/2026 : gardes optionnelles
  // de validation manuelle, sans toucher aux animations ni au barème.
- assert.equal(sha,'b1e0955b4c443648872ab455eee5b13c127801d5');
+ assert.equal(sha,'17fed138c84fe458158cb5642d77287688c9db41');
 });
 
 test('Soustraction : animation forcée sur le jeu et son lanceur (sans toucher aux règles XP)',()=>{
