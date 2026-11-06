@@ -22,8 +22,8 @@ test('correct per-app XP pools: no invented credits for a session',()=>{
  assert.equal(xpStillAvailable(xp,'classic',1,4),22);
  assert.equal(xpStillAvailable(xp,'classic',1,10),36);
  assert.equal(xpStillAvailable(xp,'classic',1,20),60);
- assert.equal(xpStillAvailable(xp,'sudden',1),20);
- assert.equal(xpStillAvailable(xp,'hard',1),20);
+ assert.equal(xpStillAvailable(xp,'sudden',1),40);
+ assert.equal(xpStillAvailable(xp,'hard',1),40);
  assert.equal(xpStillAvailable({...xp,milestones:['classic:1:4:perfect']},'classic',1,4),0);
  assert.equal(xpStillAvailable({...xp,repeatXp:true,parcours:2,currentMilestones:[]},'classic',1,4),22);
  assert.equal(xpStillAvailable({...xp,repeatXp:true,parcours:2},'classic',1,4),null);

@@ -13,20 +13,20 @@ const future='2099-01-01T00:00:00Z',uuid='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const q=(i=1)=>({id:'q'+i,op:'mul',a:'345',m:8,width:3});
 const attempt=id=>({id,digits:['0','6','7','2'],carries:['','4','3']});
 const xp=(...milestones)=>({milestones});
-test('Multiplication — 3 vies gagne 5 XP par palier, la Mort subite finit les 10 XP',()=>{
- assert.equal(xpStillAvailable(xp(),'three-lives',1),10);
- assert.equal(xpStillAvailable(xp(),'sudden',1),20);
- assert.equal(xpStillAvailable(xp('sudden:1:5:half'),'three-lives',1),5);
- assert.equal(xpStillAvailable(xp('sudden:1:5:half'),'sudden',1),15);
- assert.equal(xpStillAvailable(xp('sudden:1:5:half','sudden:1:5:complement','sudden:1:10:half'),'sudden',1),5);
+test('Multiplication — 3 vies gagne 10 XP par palier, la Mort subite finit les 20 XP',()=>{
+ assert.equal(xpStillAvailable(xp(),'three-lives',1),20);
+ assert.equal(xpStillAvailable(xp(),'sudden',1),40);
+ assert.equal(xpStillAvailable(xp('sudden:1:5:half'),'three-lives',1),10);
+ assert.equal(xpStillAvailable(xp('sudden:1:5:half'),'sudden',1),30);
+ assert.equal(xpStillAvailable(xp('sudden:1:5:half','sudden:1:5:complement','sudden:1:10:half'),'sudden',1),10);
  assert.equal(xpStillAvailable(xp('sudden:1:5','sudden:1:10'),'sudden',1),0);
 });
 test('HARD Multiplication — 3 et 7 réussites, moitié puis complément',()=>{
- assert.equal(xpStillAvailable(xp(),'hard-three-lives',2),10);
- assert.equal(xpStillAvailable(xp(),'hard-sudden',2),20);
- assert.equal(xpStillAvailable(xp('hard:2:3:half'),'hard-three-lives',2),5);
- assert.equal(xpStillAvailable(xp('hard:2:3:half'),'hard-sudden',2),15);
- assert.equal(xpStillAvailable(xp('hard:2:3:half','hard:2:7:half'),'hard-sudden',2),10);
+ assert.equal(xpStillAvailable(xp(),'hard-three-lives',2),20);
+ assert.equal(xpStillAvailable(xp(),'hard-sudden',2),40);
+ assert.equal(xpStillAvailable(xp('hard:2:3:half'),'hard-three-lives',2),10);
+ assert.equal(xpStillAvailable(xp('hard:2:3:half'),'hard-sudden',2),30);
+ assert.equal(xpStillAvailable(xp('hard:2:3:half','hard:2:7:half'),'hard-sudden',2),20);
  assert.equal(xpStillAvailable(xp('hard:2:3:half','hard:2:3:complement','hard:2:7:half','hard:2:7:complement'),'hard-sudden',2),0);
 });
 test('Premier calcul : chiffres inversés et reports sont bien contrôlés et signés',()=>{
