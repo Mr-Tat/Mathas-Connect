@@ -225,7 +225,7 @@ function showOfficial({xp,loaded,appKey}){
  latestState=loaded.state||{};
  schoolScoreView?.updateState(latestState);
  if(schoolScoreView)void schoolScoreView.load();
- lastOfficialProgress=classId===CLASS_TEST?null:schoolProgressSnapshot(appKey,loaded.state);
+ lastOfficialProgress=schoolProgressSnapshot(appKey,loaded.state);
  window.MathasConnectOfficialSchoolProgress=lastOfficialProgress;
  if(SERVER_PROOF_ADDITIONS.has(appKey)){
   // A null official award snapshot is 'unavailable', never a local fake zero.
@@ -285,7 +285,7 @@ function watchGame(seq){
    activeProofUI.bind(inside.contentWindow,doc);
    installNativeCertifiedLaunch(doc,activeApp,choice=>{
     if(seq!==generation||!pupilId)return;
-    if(classId!==CLASS_TEST&&!schoolModeAllowed(lastOfficialProgress,choice.mode,choice.level)){
+    if(!schoolModeAllowed(lastOfficialProgress,choice.mode,choice.level)){
      message('🔒 '+schoolModeLockReason(choice.mode,choice.level));return;
     }
     // The familiar game buttons now enter the authenticated, server-issued

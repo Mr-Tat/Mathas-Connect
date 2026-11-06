@@ -82,7 +82,15 @@ function apply(state){
  put('soustraction_sudden_v6',sudden);
  put('soustraction_hard_sudden_v1',hard);
  put('soustraction_hard_three_v1',hardThree);
- put('mathas_progression_soustraction_ecrite_v1',state.progress||{});
+ // En mode Connect, l'affichage des deux défis ne dépend que des séries
+ // officielles 10 ou 20 de ce niveau ; ignorer les anciens drapeaux.
+ const progress={...(state.progress||{})};
+ for(let i=0;i<3;i++){
+  const classic10=state.classic?.[i]?.[10],classic20=state.classic?.[i]?.[20];
+  progress['sudden'+(i+1)]=(Number.isInteger(classic10)&&classic10>=8&&classic10<=10)
+   ||(Number.isInteger(classic20)&&classic20>=16&&classic20<=20);
+ }
+ put('mathas_progression_soustraction_ecrite_v1',progress);
  put('mathas_points_v1_soustraction-ecrite',{version:1,day:new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels'}).format(new Date()),top:[],bestOne:state.bestPoints==null?null:{points:state.bestPoints},bestThree:(state.topThree||[]).map(points=>({points}))});
 }
 function clearConnectedScoreCache(){
@@ -144,6 +152,15 @@ const scopedBootstrap=`<script>(function(){var ns=${JSON.stringify(ns)};var p=St
 // partir d'un trophée conservé. Le trophée reste acquis, mais ne doit jamais
 // rétablir un record Classique effacé dans le compte Connecté.
 let html=original.replaceAll('./logo-m.png','https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/logo-m.png').replaceAll('./logo-mot.webp','https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/logo-mot.webp').replaceAll('./illustration.webp','https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/illustration.webp');
+
+// Ne pas laisser la migration du moteur autonome re-déverrouiller les défis
+// via des anciens drapeaux level2/level3/perfect3 en session Connect.
+if(mode==='connected'){
+ const legacy="p.sudden1=!!(p.sudden1||p.level2);\n      p.sudden2=!!(p.sudden2||p.level3);\n      p.sudden3=!!(p.sudden3||p.perfect3);";
+ const strict="p.sudden1=!!p.sudden1;\n      p.sudden2=!!p.sudden2;\n      p.sudden3=!!p.sudden3;";
+ if(!html.includes(legacy))throw Error('Verrous natifs introuvables');
+ html=html.replace(legacy,strict);
+}
 
 // Extension native du mode 3 vies de Soustraction. Le moteur d'emprunt,
  // les validations et les fonctions de calcul existants restent les seuls utilisés.

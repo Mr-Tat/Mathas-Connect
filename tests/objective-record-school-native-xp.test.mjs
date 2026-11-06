@@ -1,6 +1,7 @@
 // No credentials and no student DB: pure contract for the native XP bridge.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {classifyNativeLaunch,xpStillAvailable} from '../apps/objective-record/native-connect-bridge.mjs';
 
 const xp={milestones:[],currentMilestones:[],parcours:1,repeatXp:false};
@@ -104,7 +105,7 @@ test('HARD requires one genuine 10/10 or 20/20 at each of three levels',()=>{
  assert.equal(schoolModeAllowed(b,'hard-sudden',1),false);
  const c=schoolProgressSnapshot('addition-ecrite-simple',{...one,hard:[2,3,0]});
  assert.equal(schoolModeAllowed(c,'hard-sudden',2),false);
- assert.equal(schoolUnlockProgress({progress:{sudden1:true}}).sudden1,true);
+ assert.equal(schoolUnlockProgress({progress:{sudden1:true}}).sudden1,false);
 });
 
 test('HARD score row must not advertise locked levels on either written addition',()=>{
@@ -119,5 +120,33 @@ test('HARD score row must not advertise locked levels on either written addition
   assert.deepEqual(visibleSchoolHardLevels(second),[1,2]);
   const third=schoolProgressSnapshot(app,{classic:perfection,hard:[3,3,0]});
   assert.deepEqual(visibleSchoolHardLevels(third),[1,2,3]);
+ }
+});
+
+test('le déverrouillage Objectif record ne dépend jamais de vieux drapeaux ou du 4/4',()=>{
+ for(const appKey of ['addition-ecrite-simple','addition-ecrite-multiple']){
+  const state={classic:[{'4':4,'10':7,'20':15},{'4':4},{'4':4}],progress:{sudden1:true,sudden2:true,sudden3:true,level2:true,level3:true,perfect3:true}};
+  const snapshot=schoolProgressSnapshot(appKey,state);
+  for(const level of [1,2,3]){
+   assert.equal(schoolModeAllowed(snapshot,'three-lives',level),false);
+   assert.equal(schoolModeAllowed(snapshot,'sudden',level),false);
+  }
+ }
+});
+test('le lanceur ne contourne plus les conditions de la classe TEST',()=>{
+ const host=readFileSync(new URL('../apps/objective-record/eleve.mjs',import.meta.url),'utf8');
+ assert.match(host,/lastOfficialProgress=schoolProgressSnapshot\(appKey,loaded\.state\)/);
+ assert.match(host,/if\(!schoolModeAllowed\(lastOfficialProgress,choice\.mode,choice\.level\)\)/);
+ assert.doesNotMatch(host,/classId!==CLASS_TEST&&!schoolModeAllowed/);
+});
+
+test('les versions Connect de soustraction et multiplication déduisent leurs verrous des 10/20',()=>{
+ for(const path of ['soustraction-simple','multiplication-simple']){
+  const game=readFileSync(new URL('../apps/'+path+'/index.html',import.meta.url),'utf8');
+  assert.match(game,/progress\['sudden'\+\(i\+1\)\]/);
+  assert.match(game,/classic10>=8/);
+  assert.match(game,/classic20>=16/);
+  assert.match(game,/if\(mode==='connected'\)\{/);
+  assert.match(game,/html=html.replace\(legacy,strict\)/);
  }
 });

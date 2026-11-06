@@ -94,7 +94,15 @@ function apply(state){
  const sudden={};(state.sudden||[]).forEach((v,i)=>{if(Number.isInteger(v))sudden[(i+1)+'|'+all]=v});put('multi1_sudden_v1',sudden);
  const hard={};(state.hard||[]).forEach((v,i)=>{if(Number.isInteger(v))hard[String(i+1)]=v});put('multi1_hard_sudden_v1',hard);
  const five={};(state.hardThree||[]).forEach((v,i)=>{if(Number.isInteger(v))five[String(i+1)]=v});put('multi1_hard_three_v1',five);
- put('mathas_progression_multiplication_simple_v1',state.progress||{});
+ // En mode Connect, l'affichage des deux défis ne dépend que des séries
+ // officielles 10 ou 20 de ce niveau ; ignorer les anciens drapeaux.
+ const progress={...(state.progress||{})};
+ for(let i=0;i<3;i++){
+  const classic10=state.classic?.[i]?.[10],classic20=state.classic?.[i]?.[20];
+  progress['sudden'+(i+1)]=(Number.isInteger(classic10)&&classic10>=8&&classic10<=10)
+   ||(Number.isInteger(classic20)&&classic20>=16&&classic20<=20);
+ }
+ put('mathas_progression_multiplication_simple_v1',progress);
  // Le moteur natif n'affiche le Top du jour que si `top` est renseigné.
  // Utiliser exclusivement les points conservés par Connect, jamais un score libre.
  const day=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels'}).format(new Date());
@@ -157,6 +165,15 @@ const scopedBootstrap=`<script>(function(){var ns=${JSON.stringify(ns)};var p=St
 // partir d'un trophée conservé. Le trophée reste acquis, mais ne doit jamais
 // rétablir un record Classique effacé dans le compte Connecté.
 let html=original.replaceAll('./logo-m.png','https://mr-tat.github.io/Mathas-Connect/apps/multiplication-simple/logo-m.png').replaceAll('./logo-mot.webp','https://mr-tat.github.io/Mathas-Connect/apps/multiplication-simple/logo-mot.webp').replaceAll('./illustration.webp','https://mr-tat.github.io/Mathas-Connect/apps/multiplication-simple/illustration.webp');
+// Ne pas laisser la migration du moteur autonome re-déverrouiller les défis
+// via des anciens drapeaux level2/level3/perfect3 en session Connect.
+if(mode==='connected'){
+ const legacy="p.sudden1=!!(p.sudden1||p.level2);\n      p.sudden2=!!(p.sudden2||p.level3);\n      p.sudden3=!!(p.sudden3||p.perfect3);";
+ const strict="p.sudden1=!!p.sudden1;\n      p.sudden2=!!p.sudden2;\n      p.sudden3=!!p.sudden3;";
+ if(!html.includes(legacy))throw Error('Verrous natifs introuvables');
+ html=html.replace(legacy,strict);
+}
+
 html=html.replace('<head>','<head>'+scopedBootstrap+multiplierBootstrap).replace('</body>',bridge+'</body>');
 // Connect : les calculs sont désormais montrés dans la vraie interface V7.
 // Aucun panneau de saisie parallèle ; seule la génération native et le suivi

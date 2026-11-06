@@ -18,9 +18,11 @@ export function schoolUnlockProgress(state){
  const p={
   level2:progress.level2===true||passed[0],
   level3:progress.level3===true||passed[1],
-  sudden1:progress.sudden1===true||progress.level2===true||passed[0],
-  sudden2:progress.sudden2===true||progress.level3===true||passed[1],
-  sudden3:progress.sudden3===true||perfect[2]||passed[2],
+  // Objectif record requires an actual 10- or 20-question best in THIS level.
+  // Legacy progression flags could be awarded by an unrelated level or a 4/4.
+  sudden1:passed[0],
+  sudden2:passed[1],
+  sudden3:passed[2],
   perfect1:perfect[0],perfect2:perfect[1],perfect3:perfect[2],
   hard:perfect.every(Boolean)
  };
