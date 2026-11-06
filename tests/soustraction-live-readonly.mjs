@@ -52,8 +52,14 @@ for(const space of ['observation','phase1','phase2','2eco']){
  assert.equal(data.ok,true,'catalogue '+space);
  assert.ok(Array.isArray(data.apps),'catalogue '+space);
  const cards=data.apps.filter(app=>app.app_key===SUB);
- assert.equal(cards.length,1,'Soustraction doit apparaître une seule fois dans '+space);
- assert.equal(cards[0].enabled,true,'Soustraction doit être activée dans '+space);
+ // L’enseignant peut masquer cette application pour une classe sans la désactiver.
+ // Une carte absente du catalogue public est normale si visible=false.
+ assert.ok(cards.length<=1,'Soustraction ne doit apparaître qu’une fois au plus dans '+space);
+ if(cards.length===0){
+  console.log('OK HUB '+space+' : aucune carte Soustraction dans la sélection visible');
+  continue;
+ }
+ assert.equal(cards[0].enabled,true,'Soustraction doit être activée si elle est visible dans '+space);
  assert.equal(cards[0].launch_url,SITE+'apps/soustraction-simple/','lien Soustraction incorrect');
  console.log('OK HUB '+space+' : Soustraction visible et activée');
 }
