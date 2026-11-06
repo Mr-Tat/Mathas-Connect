@@ -7,6 +7,12 @@ function labUI(){
     if(!d||!["classic","sudden","three-lives"].includes(d.mode))return;
     const target=document.getElementById(d.hard?"hardSessionScore":"sessionScore")||document.getElementById(d.hard?"hardScore":"scorePill");
     if(!target)return;
+    const proof=window.__mathasServerCertifiedExtended;
+    if(proof?.sessionId&&proof.mode===(d.hard?'hard-':'')+d.mode){
+      target.textContent='Score provisoire : '+d.score+' · Connect';
+      target.title='Le serveur doit encore confirmer le résultat et les XP';
+      return;
+    }
     const unit=d.mode==="sudden"?2:d.mode==="three-lives"?1:d.total===4?4:d.total===10?3:2;
     const value=Math.round(d.score*m(d)*unit);
     if(target.textContent!=="Score : "+value+" pts")target.textContent="Score : "+value+" pts";
