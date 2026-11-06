@@ -165,6 +165,14 @@ for(const item of examples){
      assert.equal(await page.evaluate(()=>document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow.__mathasManualValidation),true);
      assert.equal(await game.locator('#mathasManualValidationDuringGame-hard').isChecked(),true,
       'normal et HARD reflètent la même préférence');
+     assert.equal(await page.evaluate(profile=>{
+      const frame=document.getElementById('gameFrame').contentDocument.getElementById('game');
+      const app=new URL(location.href).searchParams.get('app')
+       .replace('addition-simple','addition-ecrite-simple')
+       .replace('addition-multiple','addition-ecrite-multiple');
+      return frame.contentWindow.localStorage.getItem(
+       'mathas.manual-validation.v1.'+app+'.'+profile);
+     },PUPIL),'1','préférence conservée uniquement pour ce profil');
     }
     for(let slot=0;slot<2;slot++){
      const q=item.questions[2*batch+slot],nums=numbers(q);

@@ -90,10 +90,22 @@ export function updateAmberFollower(doc,enabled){
  return follower;
 }
 
-export function installTensFirstDuringGame(doc,appKey){
+export function installTensFirstDuringGame(doc,appKey,pupilId=null){
  if(!['addition-ecrite-simple','addition-ecrite-multiple'].includes(appKey))return false;
  const home=doc?.getElementById?.('tensFirstToggle');
  if(!home)return false;
+ // Cette préférence n'appartient qu'au profil scolaire, pas au navigateur.
+ const profile=typeof pupilId==='string'&&/^[0-9a-f-]{36}$/i.test(pupilId)
+  ?pupilId.toLowerCase():null;
+ const manualScope=profile?'mathas.manual-validation.v1.'+appKey+'.'+profile:null;
+ if(doc.__mathasManualScope!==manualScope||!doc.__mathasManualScopeReady){
+  doc.__mathasManualScope=manualScope;doc.__mathasManualScopeReady=true;
+  let enabled=false;
+  if(manualScope)try{
+   enabled=doc.defaultView.localStorage.getItem(manualScope)==='1';
+  }catch{}
+  doc.defaultView.__mathasManualValidation=enabled;
+ }
  const normal=doc.querySelector('#gameScreen .session-bar');
  const hard=doc.querySelector('#hardGameScreen .hard-session-bar');
  if(!normal&&!hard)return false;
@@ -147,8 +159,7 @@ export function installTensFirstDuringGame(doc,appKey){
    updateInstructions();
   });
   // Opt-in pédagogique, immédiatement à droite de « Dizaines d’abord ».
-  // La préférence suit la clé de réglages native déjà isolée par application
-  // et, en Connect, par profil. Jamais de modification des scores / XP.
+  // La préférence appartient au profil Connect, jamais aux scores / XP.
   const manualId='mathasManualValidationDuringGame-'+kind;
   const manualLabel=doc.createElement('label');
   manualLabel.className=MANUAL_CLASS;manualLabel.htmlFor=manualId;
@@ -165,16 +176,9 @@ export function installTensFirstDuringGame(doc,appKey){
    const value=!!manualInput.checked;
    doc.defaultView.__mathasManualValidation=value;
    doc.querySelectorAll('.'+MANUAL_CLASS+' input').forEach(input=>{input.checked=value});
-   const key=doc.defaultView.MathasAppConfig?.storage?.normal?.settings;
-   if(typeof key==='string'){
-    try{
-     const settings=JSON.parse(doc.defaultView.localStorage.getItem(key)||'{}');
-     if(settings&&typeof settings==='object'&&!Array.isArray(settings)){
-      settings.manualValidation=value;
-      doc.defaultView.localStorage.setItem(key,JSON.stringify(settings));
-     }
-    }catch{ /* Interdire qu'un stockage inaccessible bloque le jeu. */ }
-   }
+   if(manualScope)try{
+    doc.defaultView.localStorage.setItem(manualScope,value?'1':'0');
+   }catch{ /* Un stockage inaccessible ne bloque pas le calcul. */ }
   });
  }
  sync();
