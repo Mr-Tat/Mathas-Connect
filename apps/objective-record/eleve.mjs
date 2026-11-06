@@ -10,7 +10,7 @@ import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-conn
 import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs?v=20261106-certified-results-v2';
 import {createProjectionConsent} from '../../projection-consent.mjs?v=20261106-fullscreen-consent-v1';
 import {createSchoolScoreView} from './school-score-view.mjs?v=20261106-fullscreen-share-v3';
-import {installTensFirstDuringGame} from './in-game-tens-first.mjs?v=20261103-leading-carry-amber-v1';
+import {installTensFirstDuringGame} from './in-game-tens-first.mjs?v=20261106-manual-validation-per-profile-v2';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
 
@@ -276,7 +276,7 @@ function watchGame(seq){
    hideFictionalXp(doc);
    renderNativeOfficialXp(doc,activeApp,lastOfficialXp);
    schoolScoreView?.mount(doc);
-   installTensFirstDuringGame(doc,activeApp);
+   installTensFirstDuringGame(doc,activeApp,pupilId);
    if(lastOfficialProgress){
     syncOfficialGameProgress(doc,lastOfficialProgress);
     syncOfficialHardSummary(doc,lastOfficialProgress);

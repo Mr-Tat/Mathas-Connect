@@ -120,6 +120,9 @@ for(const item of examples){
    // deux additions : un seul état sur l'accueil, le calcul et HARD.
    const inGame=game.locator('#mathasTensFirstDuringGame-normal');
    await inGame.waitFor({state:'visible',timeout:12000});
+   const manual=game.locator('#mathasManualValidationDuringGame-normal');
+   await manual.waitFor({state:'visible',timeout:12000});
+   assert.equal(await manual.isChecked(),false,'la correction automatique reste activée par défaut');
    await inGame.check();
    const enabled=await page.evaluate(()=>{
     const w=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
@@ -157,6 +160,20 @@ for(const item of examples){
    await inGame.check();
 
    for(let batch=0;batch<2;batch++){
+    if(batch===1){
+     await manual.check();
+     assert.equal(await page.evaluate(()=>document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow.__mathasManualValidation),true);
+     assert.equal(await game.locator('#mathasManualValidationDuringGame-hard').isChecked(),true,
+      'normal et HARD reflètent la même préférence');
+     assert.equal(await page.evaluate(profile=>{
+      const frame=document.getElementById('gameFrame').contentDocument.getElementById('game');
+      const app=new URL(location.href).searchParams.get('app')
+       .replace('addition-simple','addition-ecrite-simple')
+       .replace('addition-multiple','addition-ecrite-multiple');
+      return frame.contentWindow.localStorage.getItem(
+       'mathas.manual-validation.v1.'+app+'.'+profile);
+     },PUPIL),'1','préférence conservée uniquement pour ce profil');
+    }
     for(let slot=0;slot<2;slot++){
      const q=item.questions[2*batch+slot],nums=numbers(q);
      const digits=String(nums.reduce((s,n)=>s+n,0)).split('').reverse();
@@ -203,8 +220,19 @@ for(const item of examples){
       assert.equal(await input.inputValue(),digit,
        'actual keyboard carry did not reach native value');
      }
+     if(batch===1){
+      // Même le dernier chiffre ne doit pas déclencher la correction ou
+      // passer automatiquement au calcul 2 quand l'élève a opté pour Valider.
+      await page.waitForTimeout(300);
+      assert.equal((await game.locator('#primaryBtn').textContent()).trim(),'Valider');
+      await game.locator('#primaryBtn').click();
+      if(slot===0){
+       assert.equal((await game.locator('#primaryBtn').textContent()).trim(),'Valider',
+        'le premier clic vérifie seulement le calcul 1');
+      }
+     }
     }
-    // Native engine automatically checks when both calculations are complete.
+    // Le mode par défaut continue de valider les deux calculs tout seul.
     if(batch===0){
      await game.locator('#primaryBtn').filter({hasText:'Passer aux 2 calculs suivants'})
       .waitFor({state:'visible',timeout:13000});
@@ -213,6 +241,7 @@ for(const item of examples){
       .waitFor({state:'visible',timeout:13000});
     }
    }
+   assert.equal(await manual.isChecked(),true);
    await page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('XP Connect'),
     null,{timeout:25000});
    assert.equal(xp,22);

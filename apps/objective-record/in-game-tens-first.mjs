@@ -24,16 +24,17 @@ export function inGameCarryInstruction(current,enabled,appKey,level){
 
 const CONTROL_ID='mathasTensFirstDuringGame';
 const LABEL_CLASS='mathas-tens-first-during-game';
+const MANUAL_CLASS='mathas-manual-validation-during-game';
 const STYLE_ID='mathasTensFirstDuringGameStyle';
 const FOLLOWUP_CLASS='mathas-amber-followup';
 const CSS=`
-.${LABEL_CLASS}{display:inline-flex;flex:0 0 auto;gap:6px;align-items:center;
+.${LABEL_CLASS},.${MANUAL_CLASS}{display:inline-flex;flex:0 0 auto;gap:6px;align-items:center;
  cursor:pointer;border:1px solid rgba(118,191,236,.6);border-radius:10px;
  padding:5px 9px;background:rgba(28,116,180,.17);color:inherit;
  font:700 12px/1.1 system-ui;white-space:nowrap;user-select:none}
-.${LABEL_CLASS} input{width:17px;height:17px;margin:0;cursor:pointer;accent-color:#168ada}
-.${LABEL_CLASS}:focus-within{outline:2px solid #ffdc83;outline-offset:2px}
-#hardGameScreen .${LABEL_CLASS}{margin:0 6px}
+.${LABEL_CLASS} input,.${MANUAL_CLASS} input{width:17px;height:17px;margin:0;cursor:pointer;accent-color:#168ada}
+.${LABEL_CLASS}:focus-within,.${MANUAL_CLASS}:focus-within{outline:2px solid #ffdc83;outline-offset:2px}
+#hardGameScreen .${LABEL_CLASS},#hardGameScreen .${MANUAL_CLASS}{margin:0 6px}
 /* La case à remplir juste après une retenue est ambre, mais reste
    nettement plus discrète que la vraie case active (bleue). */
 #gameScreen input.answer-input.${FOLLOWUP_CLASS}:not(.active-entry):not(:focus),
@@ -50,8 +51,8 @@ body.light #hardGameScreen input.hard-answer.${FOLLOWUP_CLASS},
 body.light-mode #hardGameScreen input.hard-answer.${FOLLOWUP_CLASS}{
  background:rgba(255,194,83,.17)!important
 }
-@media(max-width:650px){.${LABEL_CLASS}{font-size:10px;padding:4px 6px;gap:4px}
-.${LABEL_CLASS} input{width:16px;height:16px}}
+@media(max-width:650px){.${LABEL_CLASS},.${MANUAL_CLASS}{font-size:10px;padding:4px 6px;gap:4px}
+.${LABEL_CLASS} input,.${MANUAL_CLASS} input{width:16px;height:16px}}
 `;
 
 
@@ -89,10 +90,22 @@ export function updateAmberFollower(doc,enabled){
  return follower;
 }
 
-export function installTensFirstDuringGame(doc,appKey){
+export function installTensFirstDuringGame(doc,appKey,pupilId=null){
  if(!['addition-ecrite-simple','addition-ecrite-multiple'].includes(appKey))return false;
  const home=doc?.getElementById?.('tensFirstToggle');
  if(!home)return false;
+ // Cette préférence n'appartient qu'au profil scolaire, pas au navigateur.
+ const profile=typeof pupilId==='string'&&/^[0-9a-f-]{36}$/i.test(pupilId)
+  ?pupilId.toLowerCase():null;
+ const manualScope=profile?'mathas.manual-validation.v1.'+appKey+'.'+profile:null;
+ if(doc.__mathasManualScope!==manualScope||!doc.__mathasManualScopeReady){
+  doc.__mathasManualScope=manualScope;doc.__mathasManualScopeReady=true;
+  let enabled=false;
+  if(manualScope)try{
+   enabled=doc.defaultView.localStorage.getItem(manualScope)==='1';
+  }catch{}
+  doc.defaultView.__mathasManualValidation=enabled;
+ }
  const normal=doc.querySelector('#gameScreen .session-bar');
  const hard=doc.querySelector('#hardGameScreen .hard-session-bar');
  if(!normal&&!hard)return false;
@@ -144,6 +157,28 @@ export function installTensFirstDuringGame(doc,appKey){
    home.dispatchEvent(new doc.defaultView.Event('change',{bubbles:true}));
    sync();
    updateInstructions();
+  });
+  // Opt-in pédagogique, immédiatement à droite de « Dizaines d’abord ».
+  // La préférence appartient au profil Connect, jamais aux scores / XP.
+  const manualId='mathasManualValidationDuringGame-'+kind;
+  const manualLabel=doc.createElement('label');
+  manualLabel.className=MANUAL_CLASS;manualLabel.htmlFor=manualId;
+  manualLabel.title='Vérifier ses réponses avant de passer au calcul suivant. Désactivé : correction automatique.';
+  const manualInput=doc.createElement('input');
+  manualInput.type='checkbox';manualInput.id=manualId;
+  manualInput.checked=!!doc.defaultView.__mathasManualValidation;
+  manualInput.setAttribute('aria-label','Valider les réponses manuellement');
+  const manualCaption=doc.createElement('span');
+  manualCaption.textContent='Valider les réponses';
+  manualLabel.append(manualInput,manualCaption);
+  label.after(manualLabel);
+  manualInput.addEventListener('change',()=>{
+   const value=!!manualInput.checked;
+   doc.defaultView.__mathasManualValidation=value;
+   doc.querySelectorAll('.'+MANUAL_CLASS+' input').forEach(input=>{input.checked=value});
+   if(manualScope)try{
+    doc.defaultView.localStorage.setItem(manualScope,value?'1':'0');
+   }catch{ /* Un stockage inaccessible ne bloque pas le calcul. */ }
   });
  }
  sync();

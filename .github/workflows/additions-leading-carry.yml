@@ -30,6 +30,7 @@ jobs:
       - name: Installer Chromium sans données d'élèves
         run: |
           npm install --no-save --no-package-lock playwright@1.58.2
-          npx playwright install chromium --with-deps
+          # Ubuntu 24.04 contient déjà les bibliothèques nécessaires ; éviter apt/fonts.
+          npx playwright install chromium
       - name: Report sortant, surbrillance ambre, corrections et XP fictifs
         run: node --test tests/objective-record-additions-real-keyboard.browser.mjs tests/additions-leading-hard.browser.mjs
