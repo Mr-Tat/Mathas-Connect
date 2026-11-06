@@ -48,3 +48,16 @@ test('les multiplicateurs des calculs mélangés gardent leur panneau historique
  assert.match(app,/if\(appKey==='melange-calculs-ecrits'\)return mixedMultiplierLockPanel/);
  assert.match(app,/function multiplierLockPanel\(/);
 });
+
+test('une consigne professeur remplace les tables cochées, sans effacer les ajouts à chaque lancement',()=>{
+ const native=read('apps/multiplication-simple/game-original.html');
+ const host=read('apps/multiplication-simple/index.html');
+ const edge=read('supabase/functions/connect-results/index.ts');
+ assert.match(edge,/multiplierLockVersion=activeMultiplierRule\?\.updated_at\?\?null/);
+ assert.match(edge,/select\('scope_key,multipliers,updated_at'\)/);
+ assert.match(host,/window\.__mathasMultiplierLockVersion=/);
+ assert.match(native,/s\.teacherMultiplierVersion===teacherMultiplierVersion&&list\.length/);
+ assert.match(native,/new Set\(teacherMultiplierLock\)/);
+ assert.match(native,/teacherMultiplierVersion:appliedMultiplierVersion/);
+ assert.match(native,/teacherMultiplierLock\.forEach\(n=>selectedMultipliers\.add\(n\)\)/);
+});

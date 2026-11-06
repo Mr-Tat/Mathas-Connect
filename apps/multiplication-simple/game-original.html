@@ -5433,17 +5433,32 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
   const safeSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
   const digitAt=(s,c)=>{const i=s.length-1-c;return i>=0?Number(s[i]):0};
   const teacherMultiplierLock=Array.isArray(window.__mathasMultiplierLock)&&window.__mathasMultiplierLock.length>0&&window.__mathasMultiplierLock.every(n=>Number.isInteger(n)&&n>=2&&n<=9)?[...new Set(window.__mathasMultiplierLock)]:null;
+  // Un changement de sélection du professeur redéfinit le point de départ UNE fois.
+  // Les tables ajoutées ensuite par l'élève sont conservées jusqu'au prochain
+  // changement de consigne. La clé de réglages est déjà isolée par profil Connect.
+  const teacherMultiplierVersion=teacherMultiplierLock?String(window.__mathasMultiplierLockVersion||teacherMultiplierLock.join('-')):null;
+  let appliedMultiplierVersion=null;
   const isAllMultipliers=()=>[2,3,4,5,6,7,8,9].every(n=>selectedMultipliers.has(n));
 
   function loadSettings(){
     const s=safeGet(SETTINGS_KEY,{});carryMethod=s.carryMethod==='side'?'side':'top';tensFirst=!!s.tensFirst;window.__mathasTensFirst=tensFirst;if(tensFirstToggle)tensFirstToggle.checked=tensFirst;
-    const list=Array.isArray(s.multipliers)?s.multipliers.map(Number).filter(n=>n>=2&&n<=9):[2,3,4,5,6,7,8,9];if(list.length)selectedMultipliers=new Set(list);if(teacherMultiplierLock)selectedMultipliers=new Set([...(Array.isArray(s.multipliers)&&s.multipliers.length?selectedMultipliers:[]),...teacherMultiplierLock]);
+    const list=Array.isArray(s.multipliers)?s.multipliers.map(Number).filter(n=>Number.isInteger(n)&&n>=2&&n<=9):[2,3,4,5,6,7,8,9];
+    appliedMultiplierVersion=teacherMultiplierVersion;
+    if(teacherMultiplierLock){
+      // Premier lancement ou modification du professeur : uniquement ses tables.
+      // Même version : garder les ajouts volontaires sauvegardés par l'élève.
+      selectedMultipliers=s.teacherMultiplierVersion===teacherMultiplierVersion&&list.length
+        ?new Set([...list,...teacherMultiplierLock])
+        :new Set(teacherMultiplierLock);
+    }else{
+      selectedMultipliers=new Set(list.length?list:[2,3,4,5,6,7,8,9]);
+    }
     selectedCount=[4,10,20].includes(+s.count)?+s.count:10;
     const level=[1,2,3].includes(+s.level)?+s.level:1;
     levelSelects.forEach(x=>x.dataset.initialLevel=String(level));
     document.querySelector(`input[name="carryMethod"][value="${carryMethod}"]`).checked=true;syncMultiplierUI();syncCountUI()
   }
-  function saveSettings(level=null){window.__mathasTensFirst=!!tensFirst;safeSet(SETTINGS_KEY,{carryMethod,multipliers:[...selectedMultipliers].sort((a,b)=>a-b),count:selectedCount,level:level??currentNormalLevel(),tensFirst:!!tensFirst})}
+  function saveSettings(level=null){window.__mathasTensFirst=!!tensFirst;safeSet(SETTINGS_KEY,{carryMethod,multipliers:[...selectedMultipliers].sort((a,b)=>a-b),teacherMultiplierVersion:appliedMultiplierVersion,count:selectedCount,level:level??currentNormalLevel(),tensFirst:!!tensFirst})}
   function currentNormalLevel(){const v=+($('classicLevel').value||1);return [1,2,3].includes(v)?v:1}
 
   function populateLevels(){

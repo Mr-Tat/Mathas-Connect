@@ -510,11 +510,14 @@ Deno.serve(async req=>{
    const current=await read(db.from('connect_states').select('revision,state_data,reset_epoch').eq('student_id',studentId).eq('app_key',selected));
    if(b.action==='student-load'){
     let multiplierLock=null;
+    let multiplierLockVersion=null;
     let tableAidAllowed=true;
     if(selected===mul){
-     const {data,error}=await db.from('connect_multiplier_locks').select('scope_key,multipliers').eq('class_id',b.classId).in('scope_key',['class',studentId]).limit(2);
+     const {data,error}=await db.from('connect_multiplier_locks').select('scope_key,multipliers,updated_at').eq('class_id',b.classId).in('scope_key',['class',studentId]).limit(2);
      if(error)throw Error('db_error');
-     multiplierLock=(data||[]).find((r:any)=>r.scope_key===studentId)?.multipliers??(data||[]).find((r:any)=>r.scope_key==='class')?.multipliers??null;
+     const activeMultiplierRule=(data||[]).find((r:any)=>r.scope_key===studentId)??(data||[]).find((r:any)=>r.scope_key==='class')??null;
+     multiplierLock=activeMultiplierRule?.multipliers??null;
+     multiplierLockVersion=activeMultiplierRule?.updated_at??null;
      const {data:tableSettings,error:aidError}=await db.from('connect_multiplier_table_aid')
       .select('scope_key,allowed').eq('class_id',b.classId).in('scope_key',['class',studentId]).limit(2);
      if(aidError)return deny('db_error',500);
@@ -529,7 +532,7 @@ Deno.serve(async req=>{
      const awards=permanent??(
       (selected===app||selected===addMulti)?EMPTY_SCHOOL_ADDITION_TROPHIES:null);
      const state=awards?{...(current?.state_data??{}),rewards:awards}:current?.state_data||null;
-     return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,state,storageSubject:studentId,...(selected===mul?{multiplierLock,tableAidAllowed}:{})});
+     return answer({ok:true,revision:current?.revision??0,resetEpoch:current?.reset_epoch??0,state,storageSubject:studentId,...(selected===mul?{multiplierLock,multiplierLockVersion,tableAidAllowed}:{})});
    }
    // Les jeux réels restent en lecture seule. Écriture exclusivement pour le laboratoire.
    if(b.action==='game-reset')return deny('teacher_only',403);

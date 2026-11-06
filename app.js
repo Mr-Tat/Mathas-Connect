@@ -904,7 +904,7 @@ async function authSave(action,data){
   await resultCall(action,{classId,appKey:'multiplication-ecrite-simple',
     studentId:scope==='class'?null:scope,...data});
   await loadAuthorizations(scope==='class'?null:scope);
-  authSay('Enregistré. Les réglages seront appliqués au prochain lancement Connect.');
+  authSay('Enregistré. Une nouvelle sélection de tables du professeur réinitialise les tables facultatives au prochain lancement ; l’élève pourra ensuite en ajouter et les conserver.');
  }catch(error){authSay('Échec de l’enregistrement : '+error.message)}
  finally{buttons.forEach(b=>b.disabled=false)}
 }
