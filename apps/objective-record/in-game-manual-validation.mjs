@@ -9,7 +9,7 @@ const CSS=[
   '.'+MANUAL_CLASS+',.'+TENS_CLASS+'{display:inline-flex;flex:0 0 auto;gap:6px;align-items:center;cursor:pointer;border:1px solid rgba(118,191,236,.6);border-radius:10px;padding:5px 9px;background:rgba(28,116,180,.17);color:inherit;font:700 12px/1.1 system-ui;white-space:nowrap;user-select:none}',
   '.'+MANUAL_CLASS+' input,.'+TENS_CLASS+' input{width:17px;height:17px;margin:0;cursor:pointer;accent-color:#168ada}',
   '.'+MANUAL_CLASS+':focus-within,.'+TENS_CLASS+':focus-within{outline:2px solid #ffdc83;outline-offset:2px}',
-  '#hardGameScreen .'+MANUAL_CLASS+',#hardGameScreen .'+TENS_CLASS+'{margin:0 6px}',
+  '#hardGameScreen .'+MANUAL_CLASS+',#hardGameScreen .'+TENS_CLASS+',#hardGame .'+MANUAL_CLASS+',#hardGame .'+TENS_CLASS+'{margin:0 6px}',
   '@media(max-width:650px){.'+MANUAL_CLASS+',.'+TENS_CLASS+'{font-size:10px;padding:4px 6px;gap:4px}.'+MANUAL_CLASS+' input,.'+TENS_CLASS+' input{width:16px;height:16px}}'
 ].join('\n');
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -17,7 +17,7 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 export function installManualValidationForWrittenCalc(doc,appKey,studentId=null){
  if(!ALLOWED.has(appKey)||!doc?.defaultView)return false;
  const normal=doc.querySelector('#gameScreen .session-bar');
- const hard=doc.querySelector('#hardGameScreen .hard-session-bar');
+ const hard=doc.querySelector((appKey==='multiplication-ecrite-simple'?'#hardGame':'#hardGameScreen')+' .hard-session-bar');
  if(!normal&&!hard)return false;
  const view=doc.defaultView;
  const profile=typeof studentId==='string'&&UUID.test(studentId)?studentId.toLowerCase():null;
