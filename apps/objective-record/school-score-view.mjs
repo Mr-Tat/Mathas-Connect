@@ -69,15 +69,45 @@ export function renderCertifiedHistoricalPodium(doc,history){
  }
  return true;
 }
+// Le TOP DU JOUR natif était encore calculé avec l'ancien localStorage et
+// pouvait afficher 0 malgré 27 points certifiés. Affichage exclusivement depuis
+// le résumé authentifié (aucune écriture de score ou de XP).
+export function renderCertifiedTodayPoints(doc,history,state={}){
+ if(history?.ok!==true||!doc?.querySelector)return false;
+ const box=doc.querySelector('#mathasPointsQuick [data-points="daily"]');
+ if(!box)return false;
+ const today=schoolScoreSnapshot(history,state).today;
+ const value=String(today?.points??0);
+ if(nativeDayPoints({querySelector:()=>box})===Number(value))return true;
+ // Le premier élément doit porter le nombre pour l'outil de projection.
+ // Aucun score local n'est converti en record officiel.
+ box.textContent='';
+ const num=doc.createElement('span');num.textContent=value;
+ box.append(num);
+ return true;
+}
 // Réutilise les cartes natives : Top du jour, coupes et podium historique.
 // Le clic ne propose que l'envoi volontaire d'un score certifié Connect.
 export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
  if(!['addition-ecrite-simple','addition-ecrite-multiple','multiplication-ecrite-simple','soustraction-ecrite-simple'].includes(appKey))
   throw Error('unsupported_score_app');
- let state={},remote=null,documentRef=null,loading=null,destroyed=false,clickTarget=null,podiumTarget=null,podiumObserver=null;
+ let state={},remote=null,documentRef=null,loading=null,destroyed=false,clickTarget=null,podiumTarget=null,podiumObserver=null,dailyTarget=null,dailyObserver=null;
  const autoOffered=new Set();
  const select=()=>schoolScoreSnapshot(remote,state);
  const renderPodium=()=>{if(documentRef)renderCertifiedHistoricalPodium(documentRef,remote)};
+ const renderToday=()=>{if(documentRef)renderCertifiedTodayPoints(documentRef,remote,state)};
+ function mountToday(doc){
+  const target=doc.querySelector('#mathasPointsQuick [data-points="daily"]');
+  if(!target)return;
+  if(target!==dailyTarget){
+   dailyObserver?.disconnect();dailyTarget=target;
+   if(typeof MutationObserver!=='undefined'){
+    dailyObserver=new MutationObserver(renderToday);
+    dailyObserver.observe(target,{childList:true,subtree:true,characterData:true});
+   }
+  }
+  renderToday();
+ }
  function mountPodium(doc){
   const target=doc.querySelector('#mathasPointsDetail [data-points="allThree"]');
   if(!target)return;
@@ -108,7 +138,7 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
    try{
     const result=await fetchHistory();
     if(result?.ok!==true||!Array.isArray(result.events)||destroyed)return false;
-    remote=result;renderPodium();return true;
+    remote=result;renderPodium();renderToday();return true;
    }catch{return false}
    finally{loading=null}
   })();
@@ -161,6 +191,7 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
   if(destroyed||!doc?.getElementById('menuScreen'))return;
   documentRef=doc;
   mountPodium(doc);
+  mountToday(doc);
   const nativeTop=doc.getElementById('mathasPointsQuick');
   const target=nativeTop?.querySelector('.mathas-points-quick-item--best');
   if(!target)return;
@@ -187,10 +218,11 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
  function destroy(){
   destroyed=true;remote=null;state={};
   podiumObserver?.disconnect();podiumObserver=null;podiumTarget=null;
+  dailyObserver?.disconnect();dailyObserver=null;dailyTarget=null;
   unbind();
   documentRef?.getElementById('mathasSchoolScoreActionStyle')?.remove();
   documentRef=null;
  }
- return Object.freeze({updateState(value){state=value&&typeof value==='object'?value:{}},
+ return Object.freeze({updateState(value){state=value&&typeof value==='object'?value:{};renderToday()},
   load,recorded,mount,offerBest,destroy,read:select});
 }
