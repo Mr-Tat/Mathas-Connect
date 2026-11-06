@@ -40,6 +40,8 @@ for(const item of examples){
   const questions=Array.from({length:120},(_,i)=>({id:'q'+(i+1),op:'add',width,
    addends:Array(terms).fill(number)}));
   const actions=[],errors=[];let recordUnlocked=item.slug!=='addition-simple';
+  const slowStart=item.slug==='addition-simple'&&item.mode==='sudden';
+  let releaseStart;const startGate=new Promise(resolve=>{releaseStart=resolve});
   let releaseFinish;
   const finishGate=new Promise(resolve=>{releaseFinish=resolve});
   try{
@@ -66,6 +68,7 @@ for(const item of examples){
     else if(part.includes('/connect-objective-record-school')){
      if(b.action==='start-extended-proof-v1'){
       assert.equal(b.mode,item.mode);assert.equal(b.level,item.level);
+      if(slowStart)await startGate; // keep network pending to test immediate click feedback
       ack={ok:true,sessionId:SESSION,questions,mode:item.mode,level:item.level,width,
        limit:120,revision:0,resetEpoch:0,expiresAt:'2090-12-31T23:59:59Z'};
      }else if(b.action==='finish-extended-proof-v1'){
@@ -442,6 +445,16 @@ for(const item of examples){
     assert.match(await nativeMenu.locator('#'+modeButton).textContent(),item.mode==='three-lives'?/Reste 20 XP/:/Reste 40 XP/);
     await nativeMenu.locator('#'+modeButton).click();
     assert.equal(await page.locator('#certified-mode').inputValue(),item.mode);
+    if(slowStart){
+     const feedback=nativeMenu.locator('#mathas-official-launch-feedback');
+     await feedback.waitFor({state:'visible',timeout:4000});
+     assert.match(await feedback.textContent(),/Préparation des calculs Connect/);
+     // A second real click must NOT start another independent proof.
+     await nativeMenu.locator('#'+modeButton).click();
+     assert.equal(actions.filter(a=>a.action==='start-extended-proof-v1').length,1,
+      'second click during loading must not create a second challenge');
+     releaseStart();
+    }
    }else{
     // Ouvrir le VRAI menu HARD et utiliser son bouton d'origine.
     await page.evaluate(()=>{
@@ -467,6 +480,8 @@ for(const item of examples){
      !host.hidden && document.getElementById('extended-certified').hidden &&
      !!screen && !screen.classList.contains('hidden');
    },item.mode,{timeout:18000});
+   assert.equal(await nativeMenu.locator('#mathas-official-launch-feedback').count(),0,
+    'loading status disappears as soon as the original game starts');
    await page.evaluate(()=>{
     const win=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
     win.__mathasManualValidation=true; // Real keypresses, deliberate checking.

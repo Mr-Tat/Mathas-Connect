@@ -40,7 +40,10 @@ test('lancement TEST ou deux additions scolaires : JWT approuvé, classe stricte
  const code=read('apps/objective-record/eleve.mjs');
  const html=read('apps/objective-record/eleve.html');
  assert.match(code,/classId!==CLASS_TEST/);
- assert.match(code,/session\.auth\.getUser\(\)/);
+ assert.match(code,/createVerifiedSessionToken\(\{auth:session\.auth,teacher\}\)/);
+ const tokenCache=read('apps/objective-record/verified-session-token.mjs');
+ assert.match(tokenCache,/auth\.getUser\(token\)/);
+ assert.match(tokenCache,/local\?\.user\?\.id/);
  assert.match(code,/profile\.status!=='approved'\|\|profile\.classId!==classId/);
  assert.match(code,/student-me/);
  assert.match(code,/teacher-player/);
