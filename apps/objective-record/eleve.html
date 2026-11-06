@@ -89,25 +89,104 @@ html.mathas-native-connect-hud #guest-home{display:none!important}
  #bar-actions button,#bar-actions a{padding:4px 7px;min-height:30px;font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){#connect-bar,#level-fill{transition:none!important}}
-#extended-certified{padding:16px;display:flex;flex-direction:column;gap:12px;background:#092c3c;flex:1;min-height:370px}
-#extended-certified h2{margin:0;font-size:clamp(18px,3vw,24px);color:#ffe0a6}
-#extended-status{font-weight:650;color:#c6f4e7;min-height:24px}
-#extended-grid{display:flex;flex-direction:column;align-items:center;gap:10px}
-.extended-grid-scroll{overflow-x:auto;max-width:100%;padding:15px 10px;background:#092131;border:1px solid #496e84;border-radius:14px}
-.extended-operations{display:grid;gap:3px;align-items:center;width:max-content;font-size:18px;font-variant-numeric:tabular-nums}
-.extended-digit{min-height:34px;min-width:34px;display:flex;align-items:center;justify-content:center;font-weight:700}
-.extended-digit.extended-operator{color:#ffe0a6;font-size:22px}
-.extended-digit.extended-equals{color:#c8f6f0}
-.extended-digit-input{width:34px;height:36px;border-radius:6px;border:1px solid #7babb4;background:#194b62;color:#fff;font:700 19px system-ui;text-align:center;padding:0}
-.extended-digit-input.carry{width:28px;height:28px;margin:auto;background:#324459;border-color:#e5ab6b;color:#ffdcaa;font-size:14px}
-.extended-digit-input:focus{outline:3px solid #f6d777;outline-offset:1px}
-.extended-instructions{margin:5px 0;color:#d5e6eb;font-size:13px;text-align:center}
-.extended-keypad{display:grid;grid-template-columns:repeat(6,minmax(32px,50px));gap:7px;justify-content:center}
-.extended-key{min-height:42px;font-size:18px;font-weight:750;background:#1a5b77}
-.extended-actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
-.extended-actions button{min-height:43px;padding:9px 14px;font-weight:700}
-.extended-finished{font-size:20px;max-width:600px;padding:22px 14px;text-align:center;color:#d8f5e1}
+/* Même ambiance visuelle que le jeu natif, sans toucher aux preuves certifiées.
+   Les gros calculs HARD restent accessibles via défilement horizontal. */
+#extended-certified{
+  box-sizing:border-box;display:flex;flex:1 1 auto;min-height:0;min-width:0;
+  flex-direction:column;align-items:center;gap:12px;padding:clamp(12px,2.1vw,24px);
+  overflow-y:auto;overflow-x:hidden;
+  background:radial-gradient(ellipse at 50% 0%,#173b57 0%,#0d273e 54%,#091d31 100%);
+}
+#extended-certified h2{
+  margin:4px auto 0;max-width:min(960px,100%);text-align:center;
+  font-size:clamp(20px,2.7vw,30px);line-height:1.15;color:#ffe0a6;
+}
+#extended-status{
+  box-sizing:border-box;max-width:min(960px,100%);width:max-content;
+  padding:8px 14px;margin:0 auto;min-height:32px;text-align:center;
+  border:1px solid #597b91;border-radius:12px;
+  background:#142f46;color:#d9f6ec;font-size:clamp(12px,1.55vw,15px);
+  font-weight:750;
+}
+#extended-grid{
+  box-sizing:border-box;display:flex;flex-direction:column;align-items:center;
+  gap:12px;width:100%;max-width:100%;min-width:0;
+}
+.extended-grid-scroll{
+  --extended-column-width:clamp(39px,4.4vw,54px);
+  --extended-operator-width:34px;
+  box-sizing:border-box;display:block;max-width:100%;width:max-content;
+  padding:17px clamp(12px,2.7vw,28px) 20px;overflow-x:auto;
+  border:1px solid #547a98;border-radius:17px;
+  background:linear-gradient(160deg,#173e5b,#102d46);
+  box-shadow:inset 0 1px 0 #ffffff1f,0 8px 24px #0005;
+  scrollbar-color:#7da9c6 #0c2c44;
+}
+.extended-operations{
+  display:grid;gap:4px;align-items:center;justify-content:center;
+  width:max-content;max-width:none;margin:0 auto;
+  font-size:clamp(21px,2.7vw,28px);
+  font-variant-numeric:tabular-nums;
+}
+.extended-digit{
+  display:flex;align-items:center;justify-content:center;box-sizing:border-box;
+  min-width:0;min-height:48px;padding:0;
+  font:850 inherit;color:#f2f8ff;
+}
+.extended-digit.extended-indicator{color:#edba76;opacity:.8;font-size:19px}
+.extended-digit.extended-operator{color:#ffe0a6;font-size:30px;font-weight:900}
+.extended-digit.extended-equals{color:#c8f6f0;font-size:24px;font-weight:900}
+.extended-digit.extended-last-addend{
+  border-bottom:3px solid #d1e8f5;min-height:52px;
+}
+.extended-digit-input{
+  box-sizing:border-box;width:100%;height:48px;min-width:0;padding:0;
+  border-radius:8px;border:2px solid #86b7d4;
+  background:#245a7b;color:#fff7d8;
+  font:850 25px/1 system-ui;text-align:center;font-variant-numeric:tabular-nums;
+}
+.extended-digit-input.carry{
+  width:75%;max-width:38px;height:32px;margin:auto;
+  background:#3d4a61;border-color:#e3aa68;color:#ffdcaa;font-size:17px;
+}
+.extended-digit-input:focus{outline:3px solid #ffdd77;outline-offset:2px}
+.extended-instructions{
+  margin:0;max-width:670px;padding:0 9px;color:#d3e7f4;
+  font-size:clamp(12px,1.5vw,14px);line-height:1.4;text-align:center;
+}
+.extended-keypad{
+  display:grid;grid-template-columns:repeat(3,minmax(52px,74px));
+  gap:8px;justify-content:center;max-width:100%;
+}
+.extended-key{
+  min-height:46px;padding:5px!important;font-size:20px;font-weight:800;
+  background:linear-gradient(180deg,#266a91,#194a6e)!important;
+  border:1px solid #78a7c6!important;border-radius:10px!important;
+  box-shadow:0 3px 0 #0b253d;
+}
+.extended-actions{
+  display:flex;gap:9px;justify-content:center;align-items:center;
+  flex-wrap:wrap;box-sizing:border-box;max-width:100%;padding:8px 0 14px;
+}
+.extended-actions button{min-height:43px;padding:9px 14px;font-weight:750}
+.extended-finished{
+  max-width:600px;padding:22px 14px;text-align:center;
+  font-size:clamp(17px,2.4vw,22px);color:#d8f5e1;
+}
 #extended-next[hidden]{display:none}
+@media(max-width:520px){
+  .extended-grid-scroll{
+    --extended-column-width:37px;--extended-operator-width:25px;
+    padding:12px 8px;
+  }
+  .extended-digit{min-height:40px;font-size:21px}
+  .extended-digit.extended-last-addend{min-height:44px}
+  .extended-digit-input{height:41px;font-size:22px}
+  .extended-digit-input.carry{height:28px;font-size:15px}
+  .extended-operations{gap:2px}
+  .extended-keypad{grid-template-columns:repeat(3,minmax(48px,65px));gap:7px}
+  .extended-actions button{font-size:12px}
+}
 
 #notice{padding:7px 14px;background:#24334b;color:#ffdaa2;font-size:12px}
 #gameFrame{width:100%;flex:1;min-height:250px;border:0;background:#071e31}#gameFrame[hidden]{display:none}
