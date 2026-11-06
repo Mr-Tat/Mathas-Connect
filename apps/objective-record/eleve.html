@@ -40,7 +40,10 @@ button{cursor:pointer}button:disabled{opacity:.5}
 #level-fill{display:block;height:100%;width:0;background:linear-gradient(90deg,#d9a336,#ffe18b);transition:width .6s ease}
 #bar-actions{display:flex;gap:7px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
 #bar-actions button,#bar-actions a{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;min-height:34px;white-space:nowrap;border-radius:9px;border:1px solid #82a6be;padding:6px 10px;font-size:12px;font-weight:700;background:#245472;color:#f8fcff}
-#bar-actions #xp-toggle{border-color:#caac63;background:#61491f;color:#ffedbd}
+#bar-actions #xp-toggle{border-color:#caac63;background:#61491f;color:#ffedbd;box-sizing:border-box;display:inline-flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;width:177px;flex:0 0 177px;height:51px;min-height:51px;padding:6px 7px;font-size:11px;line-height:1.14;white-space:nowrap}
+#xp-toggle-main{font-weight:850;font-variant-numeric:tabular-nums}
+#xp-toggle-hint{font-size:9.5px;font-weight:650;opacity:.76}
+@media(max-width:680px){#bar-actions #xp-toggle{width:158px;flex-basis:158px;font-size:10px}#xp-toggle-hint{font-size:9px}}
 #bar-actions #bar-home{background:#2c435d}
 #bar-actions button[aria-expanded="true"]{outline:2px solid #ffda75}
 #bar-handle{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:1201;min-height:20px;padding:1px 16px 3px;border-radius:0 0 12px 12px;background:#1b4a68;color:#ffedae;border:1px solid #5789a5;border-top:0;font-size:11px;font-weight:800;box-shadow:0 4px 9px #0008}
@@ -123,7 +126,7 @@ html.mathas-native-connect-hud #guest-home{display:none!important}
   </div>
  </div>
  <nav id="bar-actions" aria-label="Commandes Connect">
-  <button id="xp-toggle" type="button" aria-controls="xp-panel" aria-expanded="false">✨ XP à récupérer</button>
+  <button id="xp-toggle" type="button" aria-controls="xp-panel" aria-expanded="false" title="Voir les XP gagnés et à gagner"><span id="xp-toggle-main">✨ XP à récupérer</span><span id="xp-toggle-hint">Voir le détail ›</span></button>
   <a id="bar-home" href="../../hub.html">⌂ Accueil</a>
  </nav>
 </header>
@@ -170,4 +173,4 @@ html.mathas-native-connect-hud #guest-home{display:none!important}
 </div>
 </section>
 <iframe id="gameFrame" hidden title="Jeu Objectif record" allow="fullscreen" referrerpolicy="no-referrer"></iframe>
-</main><script type="module" src="./eleve.mjs?v=20261106-survival-40xp-v1"></script></body></html>
+</main><script type="module" src="./eleve.mjs?v=20261106-xp-historical-podium-v2"></script></body></html>
