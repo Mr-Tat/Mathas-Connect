@@ -345,14 +345,8 @@ function exploit(type,message,appTitle=null){
  const el=document.createElement('div');el.className='event '+style;
  const icon=document.createElement('span');icon.className='event-icon';icon.textContent=symbol;icon.setAttribute('aria-hidden','true');
  const text=document.createElement('span');text.className='event-text';
- // Garder le contexte (application) discret. Le nom et l'exploit sont
- // les deux informations principales visibles depuis le fond de la classe.
- if(appTitle){
-  const context=document.createElement('span');context.className='event-app';context.textContent=appTitle+' · ';
-  text.append(context);
- }
- // Seules les phrases reconnues et confirmées par le serveur sont segmentées.
- // Aucun trophée, score ou événement n'est déduit ou inventé dans l'interface.
+ // Ces phrases proviennent du serveur (ou d'un dépassement de rang confirmé).
+ // Ne jamais inventer un métal de trophée : la réponse ne fournit pas ce niveau.
  const actions={
   trophy:' gagne un nouveau trophée',
   perfect:' réussit une série parfaite',
@@ -360,16 +354,30 @@ function exploit(type,message,appTitle=null){
   top:' réalise un score du Top 5',
   rise:' remonte de '
  };
+ const labels={
+  trophy:'Nouveau trophée !',
+  perfect:'Série parfaite !',
+  sudden:'Exploit en Mort subite !',
+  top:'Top 5 !',
+  rise:'Belle remontée !'
+ };
  const marker=actions[type],split=marker?message.indexOf(marker):-1;
  if(split>0&&split<=80){
   const name=document.createElement('strong');name.className='event-student';
   name.textContent=message.slice(0,split);
   const action=document.createElement('strong');action.className='event-action';
-  action.textContent=message.slice(split);
+  action.textContent=labels[type];
   text.append(name,action);
+  // Phrase complète conservée dans le titre, avec score et précision éventuels.
+  el.title=(appTitle?appTitle+' · ':'')+message;
+  el.setAttribute('aria-label',(appTitle?appTitle+' · ':'')+message);
  }else{
-  const fallback=document.createElement('span');fallback.className='event-action';
+  const fallback=document.createElement('span');fallback.className='event-description';
   fallback.textContent=message;text.append(fallback);
+ }
+ if(appTitle){
+  const context=document.createElement('small');context.className='event-app';
+  context.textContent=appTitle;text.append(context);
  }
  el.append(icon,text);return el;
 }
