@@ -2,7 +2,7 @@
 // SAME server-issued arithmetic proofs. This module never grants XP itself.
 const APPS=new Set(['addition-ecrite-simple','addition-ecrite-multiple']);
 const CLASSIC={4:[['perfect',22]],10:[['pass',30],['bonus',6]],20:[['pass',50],['bonus',10]]};
-const OTHER={sudden:[[5,10],[10,10]],hard:[[3,10],[7,10]]};
+const OTHER={sudden:[[5,20],[10,20]],hard:[[3,20],[7,20]]};
 function nativeLevel(select,fallback=1){
  const chosen=select?.selectedOptions?.[0]?.textContent||'';
  const match=chosen.match(/Niveau\s*([123])/i);

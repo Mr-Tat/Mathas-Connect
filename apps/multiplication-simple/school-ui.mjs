@@ -1,6 +1,6 @@
 // Interface additionnelle pour la multiplication existante : aucun calcul
 // de récompense n'est fait ici. Les jalons proviennent de Connect.
-import {xpStillAvailable} from '../objective-record/native-connect-bridge.mjs';
+import {xpStillAvailable} from '../objective-record/native-connect-bridge.mjs?v=20261106-survival-40xp-v1';
 
 const STYLE='mathas-multi-school-style';
 const BADGE='mathas-multi-official-xp';

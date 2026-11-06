@@ -1,5 +1,5 @@
 // HABILLAGE scolaire de Soustraction : fonds et moteur graphique natifs intacts.
-import {xpStillAvailable} from '../objective-record/native-connect-bridge.mjs';
+import {xpStillAvailable} from '../objective-record/native-connect-bridge.mjs?v=20261106-survival-40xp-v1';
 const CSSID='mathas-sub-school-css';
 const XP='mathas-sub-official-xp';
 const CUP='mathas-sub-cups';
