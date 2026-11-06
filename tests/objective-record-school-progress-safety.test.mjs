@@ -21,7 +21,7 @@ test('les deux additions utilisent les trophées certifiés dans le moteur natif
   const override=patched.slice(at,at+850);
   assert.match(override,/window\.parent\.parent\.MathasConnectOfficialTrophies/);
   assert.ok(override.includes("official.appKey==='"+app+"'"));
-  assert.match(override,/return official\.rewards/);
+  assert.match(override,/return JSON\.parse\(JSON\.stringify\(official\.rewards\)\)/);
   assert.match(override,/if\(school\)/);
   assert.match(override,/return freshTrophies\(\)/);
   assert.ok(override.indexOf('return freshTrophies()')<
