@@ -21,6 +21,7 @@ const files={
  '/apps/multiplication-simple/school-record-eligibility.mjs':['../apps/multiplication-simple/school-record-eligibility.mjs','text/javascript'],
  '/apps/objective-record/native-connect-bridge.mjs':['../apps/objective-record/native-connect-bridge.mjs','text/javascript'],
  '/apps/objective-record/in-game-manual-validation.mjs':['../apps/objective-record/in-game-manual-validation.mjs','text/javascript'],
+ '/apps/objective-record/in-game-session-layout.mjs':['../apps/objective-record/in-game-session-layout.mjs','text/javascript'],
  '/apps/objective-record/school-score-view.mjs':['../apps/objective-record/school-score-view.mjs','text/javascript'],
  '/projection-consent.mjs':['../projection-consent.mjs','text/javascript']
 };
@@ -337,7 +338,50 @@ try{
    assert.equal(await page.evaluate(()=>window.MathasPilotBridge?.mode),'connected');
    const frame=page.frameLocator('iframe');
    assert.equal(await frame.locator('#menuScreen .classic-count-btn[data-count="4"]').count(),1);
-   await playFour(page);
+   await frame.locator('#menuScreen .classic-count-btn[data-count="4"]').click();
+   await frame.locator('#gameScreen:not(.hidden)').waitFor();
+   for(const width of [1920,1536]){
+    await page.setViewportSize({width,height:830});
+    const row=await frame.locator('#gameScreen .session-bar').evaluate(bar=>{
+     const box=s=>bar.querySelector(s)?.getBoundingClientRect();
+     const items={menu:box('#menuBtn'),level:box('#sessionLevel'),
+      progress:box('#sessionProgress'),score:box('#sessionScore'),tables:box('#tablesBtn'),
+      tens:box('.mathas-multi-tens-control'),manual:box('.mathas-manual-validation-during-game'),
+      hearts:box('#threeLivesHud'),points:box('.mathas-points-live')};
+     const out=Object.fromEntries(Object.entries(items).map(([k,x])=>
+      [k,x?{left:x.left,right:x.right,top:x.top,bottom:x.bottom,width:x.width,
+       mid:(x.top+x.bottom)/2}:null]));
+     return {...out,rows:getComputedStyle(bar).gridTemplateRows,
+      hudOwned:bar.querySelector('#threeLivesHud')?.dataset.mathasLayoutOwned};
+    });
+    assert.equal(row.hudOwned,'1','la vraie barre de multiplication prévoit les cœurs');
+    assert.ok(row.menu.right<row.level.left,'Menu précède Niveau : '+JSON.stringify(row));
+    for(const key of ['progress','score','tables','tens','manual']){
+     assert.ok(row[key]&&Math.abs(row[key].mid-row.level.mid)<15,
+      key+' ne doit pas descendre à la deuxième ligne : '+JSON.stringify(row));
+    }
+    assert.ok(row.points&&Math.abs(row.points.mid-row.level.mid)<15,
+     'les points restent sur la première ligne : '+JSON.stringify(row));
+    assert.ok(Math.abs(row.manual.width-row.tens.width)<3,
+     'les cases de validation et dizaines ont la même largeur : '+JSON.stringify(row));
+   }
+   await frame.locator('#gameScreen').evaluate(screen=>{
+    const w=screen.ownerDocument.defaultView;
+    w.__mathasCertifiedSurvivalHud={mode:'three-lives',remaining:2};
+   });
+   await page.waitForTimeout(420);
+   const hud=await frame.locator('#threeLivesHud').evaluate(h=>({
+    visible:!h.hidden,hearts:h.querySelectorAll('.demo-heart').length,
+    lost:h.querySelectorAll('.demo-heart.lost').length,
+    width:h.querySelector('.demo-heart')?.getBoundingClientRect().width
+   }));
+   assert.deepEqual(hud.visible,true);
+   assert.equal(hud.hearts,3);assert.equal(hud.lost,1);
+   assert.ok(hud.width>=46,'les cœurs sont agrandis');
+   await page.setViewportSize({width:390,height:820});
+   await fillTwoNativeProducts(frame);
+   await frame.locator('#primaryBtn').click();
+   await fillTwoNativeProducts(frame);
    // Même après un meilleur score certifié, aucune publication automatique.
    const consent=page.locator('.mathas-projection-offer:not([hidden])');
    await consent.waitFor({timeout:9000});
