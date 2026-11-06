@@ -22,6 +22,7 @@ function setup(){
  const restartCalls=[];
  const context=vm.createContext({
   document:{createElement:node},$,mixedAllowed:()=>false,
+  detachResultsOverviewSticky:()=>{},
   makeOverviewCell:()=>node('summary'),
   addParcoursControls:(...a)=>restartCalls.push(a),
   String

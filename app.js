@@ -1,4 +1,5 @@
 import {avatarGlyph,avatarColor} from './avatar-catalog.js';
+import {attachResultsOverviewSticky} from './results-overview-sticky.mjs';
 import {hubUrl} from './connect-context.js';
 import {listRecentProfiles,rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
 import {beginJoinAvatar,useApprovedAvatar,clearJoinAvatarDraft} from './join-avatar.js?v=20261103-profile-rewards-v1';
@@ -594,7 +595,9 @@ const mixedTeacherMeta={app_key:'melange-calculs-ecrits',title:'Calculs écrits 
 const additionMultipleAllowed=appKey=>ADD_MULTI_TEACHER_READY&&appKey==='addition-ecrite-multiple';
 const multiTeacherMeta={app_key:'addition-ecrite-multiple',title:'Addition de plusieurs nombres',
  display_order:40,image_url:'./assets/miniatures/addition-ecrite-multiple.webp?v=20261030-officiel'};
+let detachResultsOverviewSticky=()=>{};
 async function showOverview(){
+ detachResultsOverviewSticky();
  const [catalogRes,exported]=await Promise.all([fetch('./hub-catalog.json'),resultCall('teacher-overview')]);
  if(!catalogRes.ok)throw Error('Catalogue indisponible');
  const {apps=[]}=await catalogRes.json();
@@ -630,9 +633,11 @@ async function showOverview(){
   body.append(row);
  }
  table.append(body);scroll.append(table);container.append(scroll);
+ detachResultsOverviewSticky=attachResultsOverviewSticky(scroll,table);
  showResultMessage(people.length+' élèves · '+ordered.length+' applications');
 }
 function showOverviewDetail(person,apps,focusedApp=false){
+ detachResultsOverviewSticky();
  $('results-student-name').textContent=person.displayName+(focusedApp&&apps[0]?' · '+apps[0].title:' · Toutes les applications');
  $('results-back').textContent='← Retour au tableau récapitulatif';
  $('results-list').hidden=true;$('results-detail').hidden=false;
@@ -834,7 +839,10 @@ $('results-class-restart').onclick=()=>run(async()=>{
 
 $('results-refresh').onclick=()=>run(showResults);
 $('results-app').onchange=()=>run(showResults);
-$('results-back').onclick=()=>{$('results-detail').hidden=true;$('results-list').hidden=false};
+$('results-back').onclick=()=>{$('results-detail').hidden=true;$('results-list').hidden=false;
+ const scroll=$('results-list').querySelector('.results-overview-scroll');
+ if(scroll)detachResultsOverviewSticky=attachResultsOverviewSticky(scroll,scroll.querySelector('table'));
+};
 
 /* B1 : navigation visuelle professeur (sans changer les API éprouvées). */
 
@@ -924,6 +932,7 @@ $('auth-aid-clear').onclick=()=>void authSave('teacher-table-aid-set',{allowed:n
 const teacherTabs=['home','apps','authorizations','results','management'];
 function showTeacherTab(tab){
  const selected=teacherTabs.includes(tab)?tab:'home';
+ if(selected!=='results')detachResultsOverviewSticky();
  for(const t of teacherTabs){
   const node=document.getElementById('teacher-'+t);
   if(node)node.hidden=t!==selected;
