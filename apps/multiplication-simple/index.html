@@ -5,7 +5,7 @@ import {createNativeCertifiedMultiplication} from './native-certified.mjs';
 import {injectNativeMultiplicationProof} from './native-proof-adapter.mjs';
 import {isNewCertifiedMultiplicationDailyBest} from './school-record-eligibility.mjs';
 import {createProjectionConsent} from '../../projection-consent.mjs';
-import {createSchoolScoreView} from '../objective-record/school-score-view.mjs?v=20261105-fit-arrow-v3';
+import {createSchoolScoreView} from '../objective-record/school-score-view.mjs?v=20261106-history-top3-v1';
 const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM',APP='multiplication-ecrite-simple';
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
