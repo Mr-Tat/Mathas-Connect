@@ -286,7 +286,18 @@ export function installSessionToolbarLayout(doc,appKey){
    for(let i=0;i<3;i++)hud.append(createHeart(doc,i));
    bar.append(hud);
   }
-  doc.defaultView?.setInterval?.(()=>syncSchoolSurvivalHearts(doc,appKey),300);
+  // Mise à jour immédiate dès que le moteur natif change le mode, le score
+  // ou l'écran ; inutile d'attendre une boucle de 300ms après le clic.
+  const view=doc.defaultView;
+  if(view?.MutationObserver){
+   const observer=new view.MutationObserver(()=>syncSchoolSurvivalHearts(doc,appKey));
+   for(const id of ['sessionMode','sessionScore']){
+    const target=doc.getElementById(id);
+    if(target)observer.observe(target,{subtree:true,childList:true,characterData:true});
+   }
+   const screen=doc.getElementById('gameScreen');
+   if(screen)observer.observe(screen,{attributes:true,attributeFilter:['class','hidden']});
+  }
  }
  if(special)syncSchoolSurvivalHearts(doc,appKey);
  return true;
