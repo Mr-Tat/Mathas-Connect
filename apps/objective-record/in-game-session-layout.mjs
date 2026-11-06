@@ -207,6 +207,29 @@ const CSS=`
   font-size:clamp(.76rem,1vw,.95rem)!important;padding-left:8px!important;padding-right:8px!important
  }
 }
+/* Les contrôles du moteur Multiplication incluent deux synchroniseurs de
+   préférence. La vraie commande scolaire reste visible sur TOUS les formats. */
+html.mathas-toolbar-mul #gameScreen .session-bar .mathas-tens-first-during-game{
+ display:none!important
+}
+/* Sur GSM, le bandeau et les trois pastilles sont répartis par le moteur
+   historique ; les cœurs utilisent leur propre emplacement (sans overlay). */
+html.mathas-handheld-portrait.mathas-toolbar-sub #gameScreen .session-bar #threeLivesHud,
+html.mathas-handheld-portrait.mathas-toolbar-mul #gameScreen .session-bar #threeLivesHud{
+ position:static!important;left:auto!important;top:auto!important;
+ transform:none!important;box-sizing:border-box!important;
+ grid-area:2/1/3/7!important;justify-self:center!important;align-self:center!important;
+ margin:5px auto 0!important;min-height:46px!important;
+ display:flex!important;justify-content:center!important;align-items:center!important;gap:5px!important
+}
+html.mathas-handheld-portrait.mathas-toolbar-sub #gameScreen .session-bar #threeLivesHud[hidden],
+html.mathas-handheld-portrait.mathas-toolbar-mul #gameScreen .session-bar #threeLivesHud[hidden]{
+ display:none!important
+}
+html.mathas-handheld-portrait.mathas-toolbar-sub #gameScreen #threeLivesHud .demo-heart,
+html.mathas-handheld-portrait.mathas-toolbar-mul #gameScreen #threeLivesHud .demo-heart{
+ display:inline-block;width:36px!important;height:36px!important;flex:0 0 36px!important
+}
 /* Source visuelle des trois cœurs du mode 3 vies : décorative, le nombre
    vient des tentatives déjà vérifiées par le moteur, jamais du compteur local XP. */
 /* Le moteur historique reste maître de la présentation portrait et de son
