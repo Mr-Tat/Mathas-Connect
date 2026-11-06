@@ -28,7 +28,8 @@ test('Consentement : multiplication ne partage que les preuves certifiées ; les
  assert.match(multi,/consent:\(\)=>certifiedConsent/);
  assert.doesNotMatch(multi,/consent\?\.offer\(eventId\)/,
   'Un score natif multiplication auto-déclaré ne suffit pas pour la projection');
- assert.match(sub,/consent\?\.offer\(eventId\)/);
+ assert.doesNotMatch(sub,/consent\?\.offer\(eventId\)/,'aucun score non certifié proposé');
+ assert.match(get('apps/soustraction-simple/certified-connect.mjs'),/scoreView\.recorded\(receipt\.eventId\)/);
  assert.match(addPilot,/onStatus\('pending',\{eventId:record\.eventId\}\)/);
  assert.match(mixedPilot,/onStatus\('pending',\{eventId:e\.eventId\}\)/);
  assert.doesNotMatch(add,/consent\?\.offer\(.*free/);
