@@ -281,6 +281,24 @@ function patch(game,kind){
       "  }"
     ].join('\n')+'\n';
     swap("function readTrophies(){",authoritative,'trophées scolaires toujours issus du serveur');
+    // Le récapitulatif natif conserve son HTML, ses couleurs et ses 3 niveaux,
+    // mais prend ses scores exclusivement dans le profil certifié Connect.
+    // Sur les démonstrations non connectées, son stockage local reste intact.
+    const nativeRecords=[
+      " function records(){",
+      "   let school=false,profile=null;",
+      "   try{school=new URL(window.parent.location.href).searchParams.get('connect')==='1';",
+      "       profile=window.parent.parent.MathasConnectOfficialSchoolProgress}catch{}",
+      "   if(school){",
+      "     if(profile?.active===true&&profile.appKey==='"+officialApp+"'&&",
+      "        Array.isArray(profile.records?.classics)&&profile.records.classics.length===3&&",
+      "        Array.isArray(profile.records?.suddens)&&profile.records.suddens.length===3)",
+      "       return JSON.parse(JSON.stringify(profile.records));",
+      "     return {classics:[{},{},{}],suddens:[null,null,null],hardRows:[],",
+      "       visibleLevels:[true,false,false],hardUnlocked:false};",
+      "   }"
+    ].join('\n')+'\n';
+    swap(" function records(){",nativeRecords,'tableau des scores scolaires');
   }
   const hookNormal="queueMicrotask(()=>window.MathasLabV2Update?.({mode:session.mode,level:session.level,score:session.score,total:session.total??session.totalCalculs??null,ops:session.ops??null,phase,completed:session.completed??null,hearts:session.hearts??null,hard:false}));";
   const hookHard="queueMicrotask(()=>window.MathasLabV2Update?.({mode:hardSession.mode,level:hardSession.level,score:hardSession.score,hearts:hardSession.hearts,ops:hardSession.ops??null,phase:hardPhase,hard:true}));";
