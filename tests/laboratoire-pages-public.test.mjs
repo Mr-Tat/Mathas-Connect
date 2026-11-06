@@ -51,10 +51,13 @@ test('Pages hébergées : cinq essais disponibles, isolés et au style V5',async
 test('Pages hébergées : le catalogue du laboratoire reste séparé des jeux officiels',async()=>{
   const hub=await get('https://mr-tat.github.io/Mathas-Connect/hub.js');
   const list=await get('https://mr-tat.github.io/Mathas-Connect/objective-record-lab-previews.mjs');
-  assert.match(hub,/objectiveRecordLabPreviews/);
+  assert.doesNotMatch(hub,/objectiveRecordLabPreviews/);
   assert.match(hub,/classId===LAB_CLASS/);
+  assert.match(hub,/startsWith\('lab-record-'\)/);
+  // Les anciens fichiers peuvent encore exister sur leurs dépôts d'origine,
+  // mais ne doivent plus être proposés depuis le HUB Math'as Connect.
   assert.match(list,/XP fictifs|Démonstrations publiées sur Pages/);
-  for(const {url} of previews)assert.ok(list.includes(url),'Carte absente du HUB en ligne : '+url);
+  for(const {url} of previews)assert.ok(list.includes(url),'Référence historique conservée : '+url);
 });
 
 

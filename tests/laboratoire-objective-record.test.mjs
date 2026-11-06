@@ -40,7 +40,7 @@ test('les démonstrations archivées ne sont plus affichées dans les HUB',()=>{
  const hub=read('hub.js'),home=read('hub.html'),catalogue=read('hub-catalog.json');
  assert.doesNotMatch(hub,/labPreviewSection|objectiveRecordLabPreviews|previewCard/);
  assert.doesNotMatch(hub,/node\.dataset\.labPreview/);
- assert.match(hub,/app\.app_key\.startsWith\('lab-record-'\)/);
+ assert.match(hub,/startsWith\('lab-record-'\)/);
  assert.doesNotMatch(home,/essai-objectif-record|essai-mode-score-3-vies/);
  assert.doesNotMatch(catalogue,/essai-objectif-record|essai-mode-score-3-vies/);
 });
