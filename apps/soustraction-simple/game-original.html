@@ -9676,7 +9676,7 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
     box.classList.add('mathas-calc-verified');
     if(!document.getElementById('mathas-one-calc-badge-css')){
       const style=document.createElement('style');style.id='mathas-one-calc-badge-css';
-      style.textContent='.calc-box.mathas-awaits-first{opacity:.58;transition:opacity .18s ease}.calc-box.mathas-calc-verified{opacity:1}.mathas-calc-ok-badge{position:absolute;top:8px;right:9px;z-index:5;display:inline-grid;place-items:center;width:37px;height:37px;box-sizing:border-box;border-radius:50%;background:linear-gradient(150deg,#21ba71,#0e7946);border:3px solid #e9fff2;box-shadow:0 3px 10px #092d2180,0 0 0 2px #51ce90;color:#fff;font:900 26px/1 system-ui;pointer-events:none;animation:mathas-calc-ok-enter .42s cubic-bezier(.2,1.5,.4,1) both}@keyframes mathas-calc-ok-enter{0%{opacity:0;transform:scale(.35) rotate(-22deg)}65%{opacity:1;transform:scale(1.18) rotate(3deg)}100%{transform:scale(1) rotate(0)}}.mathas-calc-ok-badge.mathas-calc-missed-badge{width:auto;min-width:50px;height:32px;padding:0 8px;background:linear-gradient(150deg,#d94e58,#9e223a);border:2px solid #ffe3e8;box-shadow:0 3px 10px #39101c66,0 0 0 2px #ed8995;font:800 13px/1 system-ui;letter-spacing:.01em}@media(prefers-reduced-motion:reduce){.mathas-calc-ok-badge{animation:none!important}}';
+      style.textContent='.calc-box.mathas-awaits-first{opacity:.58;transition:opacity .18s ease}.calc-box.mathas-calc-verified{opacity:1}.mathas-calc-ok-badge{position:absolute;top:8px;right:9px;z-index:5;display:inline-grid;place-items:center;width:37px;height:37px;box-sizing:border-box;border-radius:50%;background:linear-gradient(150deg,#21ba71,#0e7946);border:3px solid #e9fff2;box-shadow:0 3px 10px #092d2180,0 0 0 2px #51ce90;color:#fff;font:900 26px/1 system-ui;pointer-events:none;animation:mathas-calc-ok-enter .42s cubic-bezier(.2,1.5,.4,1) both}@keyframes mathas-calc-ok-enter{0%{opacity:0;transform:scale(.35) rotate(-22deg)}65%{opacity:1;transform:scale(1.18) rotate(3deg)}100%{transform:scale(1) rotate(0)}}.mathas-calc-ok-badge.mathas-calc-missed-badge{width:25px;min-width:25px;height:25px;padding:0;background:#b9525d;border:2px solid #ffe3e8;box-shadow:0 2px 5px #39101c40;font:800 18px/1 system-ui;letter-spacing:0}@media(prefers-reduced-motion:reduce){.mathas-calc-ok-badge{animation:none!important}}';
       document.head.appendChild(style);
     }
     if(getComputedStyle(box).position==='static')box.style.position='relative';
@@ -9686,8 +9686,8 @@ function enregistrerResultatMathas(score, total, niveau, niveauRang) {
       badge.setAttribute('role','img');box.appendChild(badge);
     }
     badge.classList.toggle('mathas-calc-missed-badge',missed);
-    badge.textContent=missed?'Raté':'✓';
-    badge.setAttribute('aria-label',missed?'Calcul raté au premier essai':'Calcul réussi au premier essai');
+    badge.textContent=missed?'×':'✓';
+    badge.setAttribute('aria-label',missed?'Calcul corrigé après une erreur':'Calcul réussi au premier essai');
     if(i===0)mathasGateSecondCalc(false);
   }
   function makePair(){
