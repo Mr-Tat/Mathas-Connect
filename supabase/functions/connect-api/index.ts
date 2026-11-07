@@ -67,8 +67,7 @@ async function handle(req:Request){
      const abaqueProject=new URL(url).hostname==='awmhpfofacaglewammxt.supabase.co';
      const abaquePilot=(abaqueSetting==='pilot'||(abaqueSetting==null&&abaqueProject))&&
        b.classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
-     const abaqueOpen=abaqueSetting==='open'&&U.test(b.classId||'');
-     const query=(abaquePilot||abaqueOpen)
+     const query=abaquePilot
        ?db.rpc('connect_abaque_profile_progress_v1',{p_student:studentId})
        :db.rpc('connect_profile_progress_v1',{p_student:studentId});
      const {data,error}=await query;
