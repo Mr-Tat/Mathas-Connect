@@ -699,3 +699,16 @@ body.theme-partage {
 
 /* L'attribut hidden reste prioritaire sur les styles de boutons dans les deux rôles. */
 .toutes-auth [hidden]{display:none!important}
+
+/* Abaque exclusivement dans Toutes : autorisation Connect par le professeur TEST. */
+.toutes-abaque-controls{margin-top:12px;padding:9px 12px;border:1px solid #b4d1c9;border-radius:13px;background:linear-gradient(120deg,#effbf7,#f8faf1);color:#264e56;max-width:100%}
+.toutes-abaque-controls summary{cursor:pointer;font-weight:850;list-style-position:inside;padding:5px;outline-offset:3px}
+.toutes-abaque-details{display:grid;gap:9px;padding:8px 5px 5px;line-height:1.4}
+.toutes-abaque-details p{margin:0;font-size:.85rem}
+.toutes-abaque-consent{display:flex;align-items:flex-start;gap:7px;font-size:.85rem;font-weight:700}
+.toutes-abaque-consent input{margin-top:3px;flex-shrink:0}
+.toutes-abaque-actions{display:flex;flex-wrap:wrap;gap:8px}
+.toutes-abaque-actions button{white-space:normal;text-align:center;min-height:38px}
+.toutes-abaque-actions button:disabled{opacity:.55;cursor:not-allowed}
+#toutes-abaque-status{min-height:1.5em;color:#346576;overflow-wrap:anywhere}
+@media(max-width:520px){.toutes-abaque-actions{flex-direction:column}.toutes-abaque-actions button{width:100%}}

@@ -32,7 +32,7 @@ async function fixture(authorized){
  const page=await browser.newPage({viewport:{width:1200,height:900}});
   page.on('pageerror',error=>console.error('HUB_TOUTES_PAGEERROR',error.message));
  let allRequests=0;
- const approvals=[];const apiActions=[];let pending=true;
+ const approvals=[];const abaqueApprovals=[];const apiActions=[];let pending=true;
  const base='https://mr-tat.github.io/Mathas-Connect';
  await page.route('**/*',async route=>{
    const url=route.request().url();
@@ -50,6 +50,14 @@ async function fixture(authorized){
      assert.equal(body.action,'all');
      return route.fulfill({status:authorized?200:403,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(authorized?{ok:true,apps}:{ok:false,error:'professor_required'})});
    }
+   if(url.includes('/functions/v1/connect-abaque')){
+     const body=JSON.parse(route.request().postData()||'{}');
+     assert.equal(body.appKey,'abaque-longueurs');
+     assert.equal(body.classId,testClass);
+     if(body.action==='teacher-pilot-approve')abaqueApprovals.push(body);
+     const answer=body.action==='teacher-pilot-status'?{ok:true,ready:true}:{ok:true,approvedCount:body.studentIds?.length+(body.includeTeacher?1:0)};
+     return route.fulfill({status:authorized?200:403,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(authorized?answer:{ok:false,error:'professor_required'})});
+   }
    if(url.includes('/functions/v1/connect-api')){
      const body=JSON.parse(route.request().postData()||'{}');
      apiActions.push(body.action);
@@ -62,10 +70,10 @@ async function fixture(authorized){
    }
    return route.abort();
  });
- return {browser,page,server,base,getRequests:()=>allRequests,getApprovals:()=>approvals,getApiActions:()=>apiActions};
+ return {browser,page,server,base,getRequests:()=>allRequests,getApprovals:()=>approvals,getAbaqueApprovals:()=>abaqueApprovals,getApiActions:()=>apiActions};
 }
 async function close(f){await f.browser.close();await new Promise(done=>f.server.close(done))}
-test('HUB Toutes : six app_key réparties entre calculs écrits et Tests, sans doublons scolaires', {timeout:60000},async()=>{
+test('HUB Toutes : Abaque connecté dans Tests uniquement, sans doublons scolaires', {timeout:60000},async()=>{
  const f=await fixture(true);
  try{
    await f.page.goto(f.base+'/hub.html?toutes=1&joueur=prof&class='+testClass+'&name=Toutes',{waitUntil:'domcontentloaded'});
@@ -78,14 +86,16 @@ test('HUB Toutes : six app_key réparties entre calculs écrits et Tests, sans d
     }
    const sections=await f.page.locator('#levels .level-title').allTextContents();
    assert.match(sections[0],/Tests/);
-    assert.equal(await f.page.locator('#levels .level').first().locator('.app-card').count(),3,'trois applications dont l Abaque sont en TEST, les autres sont publiees');
+    assert.equal(await f.page.locator('#levels .level').first().locator('.app-card').count(),3,'l Abaque est dans Tests de Toutes');
+   assert.equal(await f.page.locator('#levels .app-card[data-app-key="abaque-longueurs"]').count(),1);
+   assert.equal(await f.page.locator('#levels .app-card[data-app-key="abaque-longueurs"]').count(),1);
    assert.equal(await f.page.locator('#levels .app-card').count(),6);
    assert.equal(await f.page.locator('#levels .level').first().getAttribute('aria-expanded'),null);
    assert.equal(await f.page.locator('#levels .level').first().locator('button.level-toggle').getAttribute('aria-expanded'),'true');
    assert.equal(await f.page.locator('.daily-section').isVisible(),false);
    const hrefs=await f.page.locator('#levels .app-card').evaluateAll(elements=>elements.map(a=>a.href));
    assert.equal(new Set(hrefs).size,6);
-   for(const link of hrefs){assert.ok(link.includes('class='+testClass));assert.ok(!link.includes('joueur=prof'))}
+   for(const link of hrefs){assert.ok(link.includes('class='+testClass));if(link.includes('/abaque-longueurs/'))assert.ok(link.includes('joueur=prof'));else assert.ok(!link.includes('joueur=prof'))}
    assert.equal(f.getRequests(),1);
  }finally{await close(f)}
 });
@@ -174,6 +184,27 @@ test('Sans session professeur, ni profils fictifs ni contrôle des demandes ne s
  }finally{await close(f)}
 });
 
+test('Toutes : autorisation Abaque ciblée uniquement après consentement explicite', {timeout:60000},async()=>{
+ const f=await fixture(true);
+ try{
+  f.page.on('dialog',d=>d.accept());
+  await f.page.goto(f.base+'/hub.html?toutes=1&joueur=prof&class='+testClass,{waitUntil:'domcontentloaded'});
+  await f.page.locator('#toutes-abaque-controls').waitFor({timeout:20000});
+  await f.page.locator('#toutes-abaque-controls summary').click();
+  const pupil=f.page.locator('#toutes-abaque-approve-student');
+  await f.page.waitForFunction(()=>document.querySelector('#toutes-abaque-status')?.textContent?.includes('actif'));
+  assert.equal(await pupil.isDisabled(),true,'aucune autorisation sans consentement');
+  await f.page.locator('#toutes-abaque-fictive').check();
+  assert.equal(await pupil.isDisabled(),false);
+  await pupil.click();
+  await f.page.waitForFunction(()=>document.querySelector('#toutes-abaque-status')?.textContent?.includes('autorisé'));
+  assert.deepEqual(f.getAbaqueApprovals().map(({action,classId,studentIds,includeTeacher,fictiveConfirmed})=>({action,classId,studentIds,includeTeacher,fictiveConfirmed})),[{
+   action:'teacher-pilot-approve',classId:testClass,studentIds:['22222222-2222-4222-8222-222222222222'],includeTeacher:false,fictiveConfirmed:true
+  }]);
+  assert.equal(f.getApprovals().length,0,'autoriser l Abaque n approuve pas un appareil');
+ }finally{await close(f)}
+});
+
 test('Côté élève, seul le retour vers Monsieur T est proposé ; approbations cachées', {timeout:60000},async()=>{
  const f=await fixture(true);
  try{
@@ -183,6 +214,9 @@ test('Côté élève, seul le retour vers Monsieur T est proposé ; approbations
    assert.equal(await f.page.locator('#toutes-connect-student').isVisible(),false);
    assert.equal(await f.page.locator('#toutes-requests-open').isVisible(),false);
    assert.equal(await f.page.locator('#levels .app-card').count(),6);
+   const abaqueHref=await f.page.locator('#levels .app-card[data-app-key="abaque-longueurs"]').getAttribute('href');
+   assert.ok(!abaqueHref.includes('joueur=prof'),'un élève de Toutes ne joue jamais avec Monsieur T');
+   assert.equal(await f.page.locator('#toutes-abaque-controls').count(),0,'administration cachée côté élève');
    assert.equal(f.getApiActions().includes('teacher-dashboard'),false,'aucune lecture de code ou demande professeur sur la page élève');
    assert.equal(await f.page.locator('#toutes-pending-requests').textContent(),'');
    await f.page.locator('#toutes-switch').click();

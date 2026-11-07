@@ -215,7 +215,8 @@ async function loadApps(){
    throw e;
  }
  abaquePilotPanel?.dispose();abaquePilotPanel=null;
- apps=includeAbaquePilot(list).filter(a=>linkFor(a));
+ // L'Abaque Connect est exclusivement lancé et autorisé depuis Toutes → Tests.
+ apps=list.filter(a=>a.app_key!=='abaque-longueurs'&&linkFor(a));
  for(const app of apps){
    const card=el('article','','game'),name=el('h3',app.title||app.app_key);card.dataset.onlineApp=app.app_key;
    card.append(name);

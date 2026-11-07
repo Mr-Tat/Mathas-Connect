@@ -61,7 +61,13 @@ async function handle(req:Request){
  // ne doit pas masquer un profil pourtant autorisé.
  const optionalProgress=async(studentId:string)=>{
    try{
-     const query=(Deno.env.get('CONNECT_ABAQUE_ACCESS')==='pilot'&&b.classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9')||(Deno.env.get('CONNECT_ABAQUE_ACCESS')==='open'&&U.test(b.classId||''))
+     // Mirroir du garde-fou de connect-abaque : tout réglage explicite
+     // 'closed' refuse, et l'absence de réglage n'autorise que le projet Connect.
+     const abaqueSetting=Deno.env.get('CONNECT_ABAQUE_ACCESS');
+     const abaqueProject=new URL(url).hostname==='awmhpfofacaglewammxt.supabase.co';
+     const abaquePilot=(abaqueSetting==='pilot'||(abaqueSetting==null&&abaqueProject))&&
+       b.classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
+     const query=abaquePilot
        ?db.rpc('connect_abaque_profile_progress_v1',{p_student:studentId})
        :db.rpc('connect_profile_progress_v1',{p_student:studentId});
      const {data,error}=await query;

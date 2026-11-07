@@ -87,7 +87,10 @@ function card(app) {
   // silencieusement un 4/4 sans preuve et sans XP. Le mode Classique reste libre.
   if(schoolMultiplication && !inFreeMode() && target.origin===location.origin)
     target.searchParams.set('requireConnect','1');
-   if (playingAsTeacher && !allMode && ['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
+   // Le comportement des jeux existants ne change pas en mode hors « Toutes ».
+  if (playingAsTeacher && !allMode && ['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
+  // Dans Toutes, seule l'Abaque utilise explicitement le compte joueur Monsieur T.
+  if (playingAsTeacher && allMode && app.app_key==='abaque-longueurs') target.searchParams.set('joueur','prof');
   node.href = target.href;
   if(testSlug&&!allMode)node.dataset.labSchool=testSlug;
   else node.dataset.appKey=app.app_key;
@@ -476,7 +479,7 @@ async function showIdentity(refresh=false) {
 
 // Retour d'un onglet de jeu : un seul résumé à la demande, jamais de polling.
 window.addEventListener('focus',()=>{if(activeProfile)void showIdentity(true)});
-if(allMode)import('./hub-toutes-auth.mjs?v=20261105-v1')
+if(allMode)import('./hub-toutes-auth.mjs?v=20261107-abaque-toutes-v1')
  .then(({mountHubToutesAuth})=>mountHubToutesAuth({
    teacherClient:getTeacherSupabase, studentClient:getSupabase, isTeacherMode:playingAsTeacher,
    testClass:LAB_CLASS,baseUrl:url,publicKey:key

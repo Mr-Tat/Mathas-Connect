@@ -424,7 +424,7 @@ test('GRAN : ancienne adresse conservée, paramètres et acquis de la démo pré
  }finally{await h.close();}
 });
 
-test('Laboratoire : carte Abaque en ligne, attente serveur puis autorisation fictive, avec Auth et transports simulés',async()=>{
+test('Laboratoire : pas de doublon Abaque Connect, uniquement une démo hors ligne et le HUB Toutes',async()=>{
  // Full portal UI coverage only. Real Auth/Edge are covered by abaque-auth-local.e2e.mjs.
  const pupil='10000000-0000-4000-8000-000000000001';
  const archived='10000000-0000-4000-8000-000000000002';
@@ -457,51 +457,20 @@ test('Laboratoire : carte Abaque en ligne, attente serveur puis autorisation fic
  }),{page}=h;
  try{
   await page.goto(h.origin+'/laboratoire.html');
-  const card=page.locator('#abaque-pilot-controls [data-online-app="abaque-longueurs"]');
-  try{await card.waitFor();}
-  catch(error){
-   const state=await page.evaluate(()=>({labHidden:document.querySelector('#lab')?.hidden,hasControls:!!document.querySelector('#abaque-pilot-controls'),controlsChildren:document.querySelector('#abaque-pilot-controls')?.children.length,hiddenAppsChildren:document.querySelector('#apps')?.children.length,status:document.querySelector('#status')?.textContent,heading:document.querySelector('#apps-title')?.textContent,ready:document.readyState}));
-   console.error('LAB_ABAQUE_DIAGNOSTIC',JSON.stringify({state,errors:h.errors,external:h.external}));
-   throw error;
-  }
+  await page.locator('#lab').waitFor({timeout:12000});
   assert.equal(await page.locator('#apps-title').textContent(),'Essais Connect — HUB « Toutes »');
-  assert.equal(await page.getByRole('link',{name:/Ouvrir Tests dans le HUB Toutes/}).count(),1);
-  assert.match(await card.locator('[data-abaque-pilot-status]').textContent(),/Activation Connect en attente/);
-  const link=card.getByRole('link',{name:'Tester côté élève'});
-  const href=new URL(await link.getAttribute('href'));
-  assert.equal(href.pathname,'/apps/GRAN-abaque-m-1/');assert.equal(href.searchParams.get('connect'),'1');
-  assert.equal(href.searchParams.get('class'),labClass);assert.equal(href.searchParams.has('demo'),false);
-  assert.equal(await link.getAttribute('aria-disabled'),'true');
-  assert.equal(await card.getByRole('link',{name:'Résultats Abaque'}).getAttribute('aria-disabled'),'true');
-  await page.locator('#teacher-mode').click();
-  await page.waitForFunction(()=>document.querySelector('#teacher-status').textContent.includes('approuvé'));
-  assert.equal(await card.getByRole('button',{name:'Monsieur T',exact:true}).isDisabled(),true,'l’activation commune ne doit pas débloquer un backend absent');
-  catalogue='disabled';await card.getByRole('button',{name:'Vérifier la connexion'}).click();
-  await page.waitForFunction(()=>document.querySelector('#abaque-pilot-controls [data-online-app="abaque-longueurs"]')?.textContent.includes('Application désactivée côté serveur')===true);
-  assert.equal(await card.locator('[data-abaque-pilot-approve]').isDisabled(),true);
-  catalogue='enabled';await card.getByRole('button',{name:'Vérifier la connexion'}).click();
-  await page.waitForFunction(()=>{
-   const card=document.querySelector('#abaque-pilot-controls [data-online-app="abaque-longueurs"]');
-   return !!card&&!card.textContent.includes('Application désactivée côté serveur');
-  });
-  assert.equal(await link.getAttribute('aria-disabled'),'true','catalogue activé mais pilote fermé');
-  serverReady=true;await card.getByRole('button',{name:'Vérifier la connexion'}).click();
-  await page.waitForFunction(()=>document.querySelector('#abaque-pilot-controls [data-online-app="abaque-longueurs"] a').getAttribute('aria-disabled')==='false');
-  assert.equal(await card.locator('[data-abaque-pilot-approve]').isDisabled(),true,'pas d’autorisation sans confirmation fictive');
-  assert.equal(await card.getByRole('button',{name:'Monsieur T',exact:true}).isDisabled(),false);
-  await page.locator('#fictive-confirm').check();
-  await card.locator('[data-abaque-pilot-approve]').click();
-  await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('2 profil(s) fictif(s) autorisé(s)'));
-  assert.deepEqual(approvals,[{action:'teacher-pilot-approve',appKey:'abaque-longueurs',classId:labClass,fictiveConfirmed:true,studentIds:[pupil],includeTeacher:true}]);
-  assert.deepEqual(visibility,[],'ni activation ni publication HUB pendant une autorisation de profils');
+  const hubLink=page.getByRole('link',{name:/Ouvrir Tests dans le HUB Toutes/});
+  assert.equal(await hubLink.count(),1);
+  const url=new URL(await hubLink.getAttribute('href'),h.origin);
+  assert.equal(url.pathname,'/hub.html');assert.equal(url.searchParams.get('toutes'),'1');
+  assert.equal(await page.locator('#abaque-pilot-controls [data-online-app="abaque-longueurs"]').count(),0);
+  assert.equal(await page.locator('#apps [data-online-app="abaque-longueurs"]').count(),0);
+  assert.equal(await page.locator('#abaque-pilot-controls').isVisible(),false);
   const demo=page.locator('#abaque-offline-demo');
-  assert.equal(await demo.count(),1,'la démo reste dans la rubrique hors ligne');
+  assert.equal(await demo.count(),1);
   assert.equal(new URL(await demo.getAttribute('href'),h.origin).searchParams.has('connect'),false);
-  await page.locator('#fictive-confirm').uncheck();
-  assert.equal(await card.locator('[data-abaque-pilot-approve]').isDisabled(),true);
   await page.setViewportSize({width:320,height:900});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
-  await page.screenshot({path:resolve(tmpdir(),'abaque-laboratoire-online-mobile.png'),fullPage:true});
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });
