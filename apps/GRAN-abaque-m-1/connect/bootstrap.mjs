@@ -73,15 +73,17 @@ async function connect(){
    return value;
   }finally{clearTimeout(timer);}
  }
- function handleState(state,value){
+ function handleState(state,value,event){
   retry.hidden=false;
   if(state==='saved'){
    if(!sessionActive){hideRemaining();return;}
    if(!validSnapshot(value,subject,pupil)){hideRemaining();queue.halt();setInert(true);details.textContent='Réponse de synchronisation invalide. Réessaie la connexion.';return;}
+   const prior=latest;
    window.MATHAS_PROGRESS.applyServer(value);draw(value,true);
    details.textContent=queue.pending()?'Résultats en cours de synchronisation…':'Résultats enregistrés.';
    if(queue.pending()<100)setInert(false);
-   if(value.xp.delta>0&&!value.duplicate)window.MATHAS_CELEBRATE?.toast('+'+value.xp.delta+' XP');
+   const celebrated=window.MATHAS_ABAQUE_HIGHLIGHT?.fromServer(prior,value,event);
+   if(value.xp.delta>0&&!value.duplicate&&!celebrated)window.MATHAS_CELEBRATE?.toast('+'+value.xp.delta+' XP');
   }else if(state==='pending'){details.textContent='Résultat conservé en attente de synchronisation.';if(queue.pending()>=100){setInert(true);details.textContent='100 résultats en attente. Reconnecte-toi avant une nouvelle partie.';}}
   else if(state==='offline'){hideRemaining();details.textContent='Hors connexion : résultats conservés sur cet appareil.';}
   else if(state==='quarantined')details.textContent='Les résultats antérieurs à la remise à zéro restent archivés et ne seront pas recrédités.';
