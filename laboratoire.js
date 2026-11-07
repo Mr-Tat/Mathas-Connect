@@ -199,8 +199,7 @@ function renderRequests(){
     });
     buttons.append(btn);
   }
-  card.append(buttons);
-    (app.app_key==='abaque-longueurs'?abaqueControls:container).append(card);
+  card.append(buttons);container.append(card);
  }
 }
 async function loadApps(){
@@ -258,7 +257,8 @@ async function loadApps(){
      const results=el('a','Résultats Abaque','action');results.href='./apps/GRAN-abaque-m-1/professeur.html?class='+TEST_CLASS;results.target='_blank';results.rel='noopener noreferrer';
      results.onclick=event=>{if(!verified||!consent()){event.preventDefault();display('Confirme d’abord que les profils sont fictifs.',true)}};buttons.append(results);
    }
-   card.append(buttons);container.append(card);
+   card.append(buttons);
+   (app.app_key==='abaque-longueurs'?abaqueControls:container).append(card);
    if(app.app_key==='abaque-longueurs'){
      abaquePilotPanel=mountAbaquePilot({card,app,launches:[...buttons.querySelectorAll('a')],teacherButton:buttons.querySelector('.teacher-game'),
        request:(action,data={})=>rpc('connect-abaque',action,{appKey:'abaque-longueurs',classId:TEST_CLASS,...data}),
