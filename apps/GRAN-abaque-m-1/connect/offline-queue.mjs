@@ -26,7 +26,7 @@ export function createAbaqueQueue({storage,classId,authSubject,studentId,post,on
      if(ack?.ok!==true||ack.eventId!==item.event.eventId||ack.studentId!==studentId||ack.appKey!==APP_KEY||
       ack.authSubject!==authSubject||ack.resetEpoch!==epoch||!index(ack.revision)||ack.revision<revision||
       (!ack.duplicate&&ack.revision!==revision+1))throw Error('invalid_ack');
-     revision=ack.revision;pending.shift();persist();onState('saved',ack);
+     revision=ack.revision;pending.shift();persist();onState('saved',ack,item.event);
     }catch(error){
      if([401,403].includes(error.status)||error.code==='identity_binding_conflict')blocked='auth';
      if(error.code==='identity_binding_conflict'){blocked='auth';onState('unauthorized',error);}

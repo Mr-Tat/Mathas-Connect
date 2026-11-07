@@ -35,7 +35,7 @@ GRANT SELECT,INSERT,DELETE ON public.connect_abaque_pilot_students TO service_ro
 
 CREATE TABLE public.connect_abaque_rights(
  student_id uuid NOT NULL REFERENCES public.connect_students(id) ON DELETE CASCADE,
- milestone text NOT NULL CHECK(milestone IN ('build:1','build:2','build:perfect','moves:1','moves:2','moves:perfect','one:perfect','three:pass','three:perfect','five:pass','five:perfect','record:5','record:10')),
+ milestone text NOT NULL CHECK(milestone IN ('build:1','build:2','build:perfect','moves:1','moves:2','moves:perfect','one:pass','one:perfect','three:pass','three:perfect','five:pass','five:perfect','record:5','record:10')),
  amount integer NOT NULL CHECK(amount BETWEEN 0 AND 28),achieved_at timestamptz NOT NULL DEFAULT now(),
  PRIMARY KEY(student_id,milestone)
 );
@@ -85,7 +85,7 @@ DECLARE maximum integer;
 BEGIN
  maximum:=CASE p_key WHEN 'build:1' THEN 8 WHEN 'build:2' THEN 6 WHEN 'build:perfect' THEN 6
  WHEN 'moves:1' THEN 8 WHEN 'moves:2' THEN 6 WHEN 'moves:perfect' THEN 6
- WHEN 'one:perfect' THEN 20 WHEN 'three:pass' THEN 18 WHEN 'three:perfect' THEN 10
+ WHEN 'one:pass' THEN 12 WHEN 'one:perfect' THEN 8 WHEN 'three:pass' THEN 18 WHEN 'three:perfect' THEN 10
  WHEN 'five:pass' THEN 28 WHEN 'five:perfect' THEN 12 WHEN 'record:5' THEN 12 WHEN 'record:10' THEN 20 END;
  IF maximum IS NULL OR p_amount IS NULL OR p_amount<=0 OR p_amount>maximum THEN RAISE EXCEPTION 'invalid_award'; END IF;
  INSERT INTO public.connect_abaque_rights AS r(student_id,milestone,amount) VALUES(p_student,p_key,p_amount)
@@ -105,7 +105,7 @@ BEGIN
  remaining:=jsonb_build_object(
  'build',20-coalesce((rights->>'build:1')::int,0)-coalesce((rights->>'build:2')::int,0)-coalesce((rights->>'build:perfect')::int,0),
  'moves',20-coalesce((rights->>'moves:1')::int,0)-coalesce((rights->>'moves:2')::int,0)-coalesce((rights->>'moves:perfect')::int,0),
- 'one',20-coalesce((rights->>'one:perfect')::int,0),
+ 'one',20-coalesce((rights->>'one:pass')::int,0)-coalesce((rights->>'one:perfect')::int,0),
  'three',28-coalesce((rights->>'three:pass')::int,0)-coalesce((rights->>'three:perfect')::int,0),
  'five',40-coalesce((rights->>'five:pass')::int,0)-coalesce((rights->>'five:perfect')::int,0),
  'lives',greatest(6-coalesce((rights->>'record:5')::int,0),0)+greatest(10-coalesce((rights->>'record:10')::int,0),0),
@@ -200,7 +200,8 @@ BEGIN
    scores:=scores||jsonb_build_object(kind,greatest(coalesce((scores->>kind)::int,0),first_good));
    grade:=CASE WHEN (scores->>kind)::int=total THEN 'green' WHEN (scores->>kind)::int*5>=total*4 THEN 'orange' ELSE 'red' END;
    native:=native||jsonb_build_object('modeScores',scores,'modes',coalesce(native->'modes','{}'::jsonb)||jsonb_build_object(kind,grade));
-   IF kind='one' AND first_good=4 THEN PERFORM public.connect_abaque_award_v1(pupil,'one:perfect',20); END IF;
+   IF kind='one' AND first_good>=3 THEN PERFORM public.connect_abaque_award_v1(pupil,'one:pass',12); END IF;
+    IF kind='one' AND first_good=4 THEN PERFORM public.connect_abaque_award_v1(pupil,'one:perfect',8); END IF;
    IF kind='three' AND first_good>=10 THEN PERFORM public.connect_abaque_award_v1(pupil,'three:pass',18); END IF;
    IF kind='three' AND first_good=12 THEN PERFORM public.connect_abaque_award_v1(pupil,'three:perfect',10); END IF;
    IF kind='five' AND first_good>=16 THEN PERFORM public.connect_abaque_award_v1(pupil,'five:pass',28); END IF;

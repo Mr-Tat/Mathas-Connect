@@ -75,11 +75,23 @@ test('PostgreSQL réel : installation désactivée et autorisations publiques fe
  await assert.rejects(send(identity,moves()),/activity_locked/);
 });
 
+test('PostgreSQL réel : format 4 calculs, 3/4 donne 12 XP et 4/4 complète de 8 XP une fois',async()=>{
+ const identity=await pupil();
+ for(const event of [build(10),build(10),moves(7),moves(7)])await send(identity,event);
+ const before=(await load(identity)).xp.appXp;
+ const low=await send(identity,classic('one',2));assert.equal(low.xp.delta,0);
+ const partial=await send(identity,classic('one',3));assert.equal(partial.xp.delta,12);assert.equal(partial.xp.remaining.one,8);
+ const repeated=await send(identity,classic('one',3));assert.equal(repeated.xp.delta,0);
+ const perfect=await send(identity,classic('one'));assert.equal(perfect.xp.delta,8);assert.equal(perfect.xp.remaining.one,0);
+ const again=await send(identity,classic('one'));assert.equal(again.xp.delta,0);
+ assert.equal((await load(identity)).xp.appXp,before+20);
+});
+
 test('PostgreSQL réel : 160 XP, compléments, six trophées, abandons sans XP et autres applications intactes',async()=>{
  const identity=await pupil();
  await pool.query("insert into connect_xp_credits(student_id,app_key,xp_credited) values($1,'addition-ecrite-multiple',50)",[identity.student]);
  await pool.query("insert into connect_states(student_id,app_key,schema_version,revision,reset_epoch,state_data) values($1,'addition-ecrite-multiple',1,3,2,'{\"sentinel\":true}')",[identity.student]);
- const steps=[[build(10),8],[build(10),6],[build(),6],[moves(7),8],[moves(7),6],[moves(),6],[classic('one'),20],[classic('three',10),18],[classic('three'),10],[classic('five',16),28],[classic('five'),12]];
+ const steps=[[build(10),8],[build(10),6],[build(),6],[moves(7),8],[moves(7),6],[moves(),6],[classic('one',3),12],[classic('one'),8],[classic('three',10),18],[classic('three'),10],[classic('five',16),28],[classic('five'),12]];
  let total=0;const first=steps[0][0];
  for(const [event,delta] of steps){const ack=await send(identity,event);total+=delta;assert.equal(ack.xp.delta,delta,event.kind);assert.equal(ack.xp.appXp,total,event.kind);}
  assert.equal(total,128);

@@ -1,0 +1,21 @@
+/* Bigger personal-best celebration, never another blocking dialog. */
+#abaque-personal-celebration{position:fixed;z-index:8500;left:50%;top:clamp(65px,12vh,130px);width:min(90vw,470px);transform:translate(-50%,-12px) scale(.9);opacity:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;padding:22px 24px 24px;border-radius:24px;background:linear-gradient(142deg,#102f49,#165b68 65%,#277e72);color:white;border:3px solid #ffe59a;box-shadow:0 12px 0 #bc8736,0 28px 68px #102e4c8c;isolation:isolate}
+#abaque-personal-celebration[hidden]{display:none}
+#abaque-personal-celebration.show{animation:abaque-record-pop .48s cubic-bezier(.15,1.4,.34,1) both}
+#abaque-personal-celebration .abaque-personal-icon{font-size:3.35rem;filter:drop-shadow(0 5px 10px #142e4c);animation:abaque-record-bounce 1s ease-in-out 2}
+#abaque-personal-celebration strong{font-size:clamp(1.4rem,4vw,1.9rem);line-height:1.12;color:#fff0bd;text-shadow:0 2px 7px #122b4588}
+#abaque-personal-celebration span:not(.abaque-personal-icon){font-weight:750;line-height:1.45}
+#abaque-personal-celebration b{padding:8px 15px;background:#ffffff26;border:1px solid #ffffff55;border-radius:999px;font-size:.95rem}
+#celebrateDialog .celebrateCard.abaque-personal-spotlight{border:3px solid #ebba4c;box-shadow:0 0 0 7px #ffd76d45,0 24px 70px #092b4188;overflow:hidden}
+#celebrateDialog .abaque-personal-recap{position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;padding:17px 14px;margin:13px auto 18px;max-width:480px;border:2px solid #e9bd56;border-radius:18px;background:linear-gradient(125deg,#fff3c4,#dbf4ef 68%,#fff8dd);color:#194154;box-shadow:0 7px 18px #32556624;animation:abaque-record-reveal .5s ease-out both}
+#celebrateDialog .abaque-personal-recap strong{font-size:clamp(1.15rem,3vw,1.6rem);color:#81501f}
+#celebrateDialog .abaque-personal-recap span{font-size:.96rem;font-weight:740}
+#celebrateDialog .abaque-personal-recap b{padding:6px 11px;border-radius:999px;background:#ffffffa8;color:#14614f;font-size:.91rem}
+.abaque-personal-confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1}
+.abaque-personal-confetti i{position:absolute;top:-5px;left:var(--x);width:10px;height:17px;background:hsl(calc(var(--i)*57) 85% 62%);border-radius:2px;transform:rotate(var(--angle));opacity:0;animation:abaque-confetti-fall 1.9s ease-in calc(var(--i)*55ms) both}
+@keyframes abaque-record-pop{0%{opacity:0;transform:translate(-50%,-12px) scale(.88)}75%{opacity:1;transform:translate(-50%,2px) scale(1.04)}100%{opacity:1;transform:translate(-50%,0) scale(1)}}
+@keyframes abaque-record-bounce{50%{transform:translateY(-8px) scale(1.1)}}
+@keyframes abaque-record-reveal{0%{opacity:0;transform:scale(.92)}100%{opacity:1;transform:scale(1)}}
+@keyframes abaque-confetti-fall{8%{opacity:1}70%{opacity:.9}100%{opacity:0;transform:translate(var(--shift),175px) rotate(620deg)}}
+@media(prefers-reduced-motion:reduce){#abaque-personal-celebration.show,#abaque-personal-celebration .abaque-personal-icon,#celebrateDialog .abaque-personal-recap,.abaque-personal-confetti i{animation:none!important}#abaque-personal-celebration.show{opacity:1;transform:translate(-50%,0)}}
+@media(max-width:480px){#abaque-personal-celebration{padding:17px 15px;top:68px}#abaque-personal-celebration .abaque-personal-icon{font-size:2.5rem}}
