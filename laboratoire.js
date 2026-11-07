@@ -199,11 +199,13 @@ function renderRequests(){
     });
     buttons.append(btn);
   }
-  card.append(buttons);container.append(card);
+  card.append(buttons);
+    (app.app_key==='abaque-longueurs'?abaqueControls:container).append(card);
  }
 }
 async function loadApps(){
  const container=$('apps');container.replaceChildren();
+ const abaqueControls=$('abaque-pilot-controls');abaqueControls.replaceChildren();
  let list;
  try{
    const r=await labCatalog('list');
