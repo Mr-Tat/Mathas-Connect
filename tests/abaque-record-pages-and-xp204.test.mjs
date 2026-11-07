@@ -10,7 +10,7 @@ assert.ok(a>=0&&b>a,'Le validateur de conversions record est présent');
 const code=html.slice(a,b);
 
 function simulate(variant){
- const build=new Function(`
+ const build=new Function('variant',`
  let locked=false,selectedMode='sudden',recordStep=0,runCorrect=0,runQuestions=0,suddenStreak=0,runScore=0,runFinished=false,lives=3,pageNumber=0,recordVariant=variant;
  const nodes=new Map(), $=id=>{if(!nodes.has(id))nodes.set(id,{textContent:'',classList:{add(){},remove(){}}});return nodes.get(id)};
  const proof={first:[],page:[],complete:0};
@@ -23,7 +23,7 @@ function simulate(variant){
  return {answer(value){series[recordStep].answer=String(value);finishRecordAnswer()},
   state(){return {locked,recordStep,runCorrect,runQuestions,suddenStreak,runScore,runFinished,lives,proof}}};
  `);
- return build()(variant);
+ return build(variant);
 }
 
 test('Record : exactement cinq conversions par page, validées une à une',()=>{
