@@ -8,13 +8,14 @@ import {createProjectionConsent} from '../../projection-consent.mjs?v=20261106-f
 import {createSchoolScoreView} from '../objective-record/school-score-view.mjs?v=20261106-fullscreen-share-v3';
 import {installManualValidationForWrittenCalc} from '../objective-record/in-game-manual-validation.mjs?v=20261106-manual-validation-v1';
 import {installSessionToolbarLayout} from '../objective-record/in-game-session-layout.mjs?v=20261106-all-confirmed-v3';
+import {paintConnectedAvatar} from '../objective-record/profile-avatar-badge.mjs?v=20261107-v1';
 const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM',APP='multiplication-ecrite-simple';
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
 // Les lancements depuis « Tests en ligne » ne sont PAS des démos sans XP.
 const requireConnect=query.get('requireConnect')==='1';
 const isTestClass=classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
-const free=!teacherPlayer&&!requireConnect&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,multiplierLock=null,multiplierLockVersion=null,tableAidAllowed=true,studentName='',connectionCheckRequired=false;
+const free=!teacherPlayer&&!requireConnect&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,multiplierLock=null,multiplierLockVersion=null,tableAidAllowed=true,studentName='',studentAvatar=null,connectionCheckRequired=false;
 const status=s=>document.getElementById('message').textContent=s;
 const originalPromise=fetch('./game-original.html').then(r=>{if(!r.ok)throw Error('Copie du jeu non disponible');return r.text()});
 // Un visiteur sans profil approuvé ouvre directement le jeu classique.
@@ -38,8 +39,10 @@ try{
     mode='connected';revision=x.revision;resetEpoch=x.resetEpoch??0;initial=x.state;multiplierLock=Array.isArray(x.multiplierLock)?x.multiplierLock:null;multiplierLockVersion=typeof x.multiplierLockVersion==='string'?x.multiplierLockVersion:null;tableAidAllowed=x.tableAidAllowed!==false;cloud=sb;
     try{
       const profile=await profilePromise;
-      if(profile?.ok&&profile.status==='approved'&&profile.classId===classId&&typeof profile.displayName==='string')
+      if(profile?.ok&&profile.status==='approved'&&profile.classId===classId&&typeof profile.displayName==='string'){
         studentName=profile.displayName.trim().slice(0,70);
+        studentAvatar=profile.avatar??null;
+      }
     }catch(err){console.info('Nom du compte momentanément indisponible.')}
    }else if(r.status===403&&['forbidden','not_enrolled','not_registered'].includes(x.error)){
     // L'utilisateur n'a pas d'accès Connect à cette classe : aucun écran de connexion.
@@ -211,8 +214,9 @@ function mountNativeConnectHeader(doc){
   .mathas-brand-row>.mathas-header-wordmark{flex:none!important}
   .mathas-multi-connect-dock{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:0!important;position:relative;z-index:4;font:700 12px system-ui;color:#e7faff}
   .mathas-multi-connect-person{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;background:rgba(19,65,80,.87);border:1px solid rgba(80,200,213,.43);border-radius:13px;padding:8px 11px}
-  .mathas-multi-connect-identity::before{content:'●';color:#70e3ae;margin-right:5px}
-  .mathas-multi-connect-identity{max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mathas-multi-connect-identity::before{content:'●';color:#70e3ae;flex:none}
+  .mathas-multi-connect-identity{display:inline-flex;align-items:center;gap:5px;max-width:210px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .mathas-multi-connect-name{overflow:hidden;min-width:0;text-overflow:ellipsis;white-space:nowrap}
   /* Badge récupéré de #ce-xp-level-badge : fond bleu, filet or et chiffre XXL. */
   .mathas-multi-connect-level{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:90px;box-sizing:border-box;padding:3px 8px;border:1px solid #efc56a;border-radius:99px;background:linear-gradient(140deg,#325f90,#1b4678);box-shadow:inset 0 1px 0 #ffffff30;white-space:nowrap}
   .mathas-multi-connect-level-label{display:inline-flex;align-items:center;justify-content:center;height:25px;font:750 10px/1 system-ui;letter-spacing:.025em;color:#f7d996;transform:translateY(2px)}
@@ -251,6 +255,9 @@ function mountNativeConnectHeader(doc){
   dock=doc.createElement('div');dock.id='mathas-multi-connect-dock';dock.className='mathas-multi-connect-dock';
   const person=doc.createElement('div');person.className='mathas-multi-connect-person';
   const identity=doc.createElement('span');identity.id='mathas-multi-connect-identity';identity.className='mathas-multi-connect-identity';
+  const identityAvatar=doc.createElement('span');identityAvatar.className='mathas-connect-avatar';identityAvatar.setAttribute('aria-hidden','true');
+  const identityName=doc.createElement('strong');identityName.className='mathas-multi-connect-name';
+  identity.append(identityAvatar,identityName);
   const level=doc.createElement('span');level.id='mathas-multi-connect-level';level.className='mathas-multi-connect-level';
   const levelLabel=doc.createElement('span');levelLabel.className='mathas-multi-connect-level-label';levelLabel.textContent='Niveau';
   const levelNumber=doc.createElement('strong');levelNumber.className='mathas-multi-connect-level-number';levelNumber.textContent='…';
@@ -278,7 +285,8 @@ function mountNativeConnectHeader(doc){
   link.href=document.getElementById('ce-hub-link')?.href||'../../hub.html';
   actions.prepend(link);
  }
- doc.getElementById('mathas-multi-connect-identity').textContent=document.getElementById('ce-identity')?.textContent||'Compte élève';
+ doc.querySelector('#mathas-multi-connect-identity .mathas-multi-connect-name').textContent=document.getElementById('ce-identity')?.textContent||'Compte élève';
+  paintConnectedAvatar(doc.querySelector('#mathas-multi-connect-identity .mathas-connect-avatar'),studentAvatar,studentName);
  doc.getElementById('mathas-multi-connect-level').querySelector('strong').textContent=document.getElementById('ce-xp-level-number')?.textContent||'…';
  doc.getElementById('mathas-multi-connect-count').textContent=document.getElementById('ce-xp-meter-count')?.textContent||'… / 50 XP';
  const originalTrack=document.getElementById('ce-xp-meter-track');
