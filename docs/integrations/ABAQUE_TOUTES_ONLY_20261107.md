@@ -5,7 +5,7 @@ Intégrer la **même application Abaque connectée** dans la rubrique **Tests** 
 
 ## Changement de configuration hébergée ciblé
 - `connect_hub_all_settings` : pour `abaque-longueurs`, `section='test'`, `stage='test'`, `all_order=70` (valeurs déjà en place ; à conserver sans migration).
-- `connect_lab_hub_visibility` : `visible=false` pour sortir la carte du HUB TEST ordinaire. Le panneau d'administration du Laboratoire (fonction `list`) reste accessible au professeur.
+- `connect_lab_hub_visibility` : `visible=false` pour sortir la carte du HUB TEST ordinaire. Le Laboratoire ne présente plus de carte Connect Abaque ; il conserve uniquement la démo hors ligne. L'autorisation des profils fictifs est transférée dans « Toutes ».
 - `connect_apps.enabled=true` et `connect_abaque_classes` TEST inchangés ; **aucun INSERT** dans `connect_hub_preset_entries` ou dans une classe scolaire ; aucun droit XP ou succès modifié.
 - Les URL publiques de démonstration restent accessibles, mais **l'accès Connect exige toujours un JWT, un appareil ou profil autorisé, et la classe TEST**.
 
