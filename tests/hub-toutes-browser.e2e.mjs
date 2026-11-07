@@ -95,7 +95,7 @@ test('HUB Toutes : Abaque connecté dans Tests uniquement, sans doublons scolair
    assert.equal(await f.page.locator('.daily-section').isVisible(),false);
    const hrefs=await f.page.locator('#levels .app-card').evaluateAll(elements=>elements.map(a=>a.href));
    assert.equal(new Set(hrefs).size,6);
-   for(const link of hrefs){assert.ok(link.includes('class='+testClass));if(link.includes('/abaque-longueurs/'))assert.ok(link.includes('joueur=prof'));else assert.ok(!link.includes('joueur=prof'))}
+   for(const link of hrefs){assert.ok(link.includes('class='+testClass));assert.ok(link.includes('joueur=prof'),'tous les jeux Connect gardent le profil Monsieur T : '+link)}
    assert.equal(f.getRequests(),1);
  }finally{await close(f)}
 });
