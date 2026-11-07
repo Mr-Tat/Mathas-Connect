@@ -22,6 +22,8 @@ const files={
  '/apps/objective-record/native-connect-bridge.mjs':['../apps/objective-record/native-connect-bridge.mjs','text/javascript'],
  '/apps/objective-record/in-game-manual-validation.mjs':['../apps/objective-record/in-game-manual-validation.mjs','text/javascript'],
  '/apps/objective-record/in-game-session-layout.mjs':['../apps/objective-record/in-game-session-layout.mjs','text/javascript'],
+ '/apps/objective-record/profile-avatar-badge.mjs':['../apps/objective-record/profile-avatar-badge.mjs','text/javascript'],
+ '/avatar-catalog.js':['../avatar-catalog.js','text/javascript'],
  '/apps/objective-record/school-score-view.mjs':['../apps/objective-record/school-score-view.mjs','text/javascript'],
  '/projection-consent.mjs':['../projection-consent.mjs','text/javascript']
 };
@@ -71,7 +73,7 @@ async function connectedPage(teacher=false,failFirstFinish=false,cls=CLS){
   let response={ok:false,error:'unexpected_action'},status=200;
   if(url.endsWith('/connect-api')){
    assert.equal(b.action,teacher?'teacher-player':'student-me');
-   response={ok:true,status:'approved',classId:cls,displayName:teacher?'Monsieur T · navigateur':'Élève fictif · navigateur'};
+   response={ok:true,status:'approved',classId:cls,displayName:teacher?'Monsieur T · navigateur':'Élève fictif · navigateur',avatar:teacher?{kind:'letter',value:'T',color:'transparent'}:{kind:'animal',value:'fox',color:'ocean'}};
   }else if(url.endsWith('/connect-results')){
    if(b.action==='student-load')
     response={ok:true,revision:state?1:0,resetEpoch:0,state,multiplierLock:[9]};
@@ -337,6 +339,9 @@ try{
   try{
    assert.equal(await page.evaluate(()=>window.MathasPilotBridge?.mode),'connected');
    const frame=page.frameLocator('iframe');
+   await frame.locator('#mathas-multi-connect-identity .mathas-connect-avatar').waitFor({state:'visible',timeout:12000});
+   assert.equal(await frame.locator('#mathas-multi-connect-identity .mathas-connect-avatar').textContent(),'🦊');
+   assert.equal(await frame.locator('#mathas-multi-connect-identity .mathas-multi-connect-name').textContent(),'Élève fictif · navigateur');
    assert.equal(await frame.locator('#menuScreen .classic-count-btn[data-count="4"]').count(),1);
    await frame.locator('#menuScreen .classic-count-btn[data-count="4"]').click();
    await frame.locator('#gameScreen:not(.hidden)').waitFor();
