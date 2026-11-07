@@ -296,6 +296,9 @@ html[data-abaque-connected][data-abaque-online="true"] .demo-notice{
   flex:0 0 auto;font-size:1.18rem;font-weight:950;line-height:1;
   overflow:visible;white-space:nowrap;color:#fff;
 }
+#homeScreen .home-connect-account #homeConnectXp{
+  margin:0;flex:none;display:block;min-width:0;
+}
 #homeScreen .home-connect-app-xp{
   grid-area:app;display:block;min-width:0;margin:0;
   font-size:.65rem;line-height:1.15;color:#386f65;font-weight:850;
