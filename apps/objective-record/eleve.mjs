@@ -490,7 +490,7 @@ async function choose(){
    for(const option of $('certified-mode').options)option.disabled=option.value!=='classic';
   }
   updateCertifiedModeControls();
-  $('gameFrame').src=GAME_URLS[slug][1]+(nativeConnectHud?'?connect=1&ui=20261105-sous-native-hud':'');
+  $('gameFrame').src=GAME_URLS[slug][1]+(nativeConnectHud?'?connect=1&ui=20261107-profile-hud-restored-v2':'');
   $('gameFrame').hidden=false;$('refresh').disabled=false;
   watchGame(seq);
   message(SERVER_PROOF_ADDITIONS.has(activeApp)
