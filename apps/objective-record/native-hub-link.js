@@ -15,6 +15,9 @@
  function installEmbeddedConnectHud(frame){
   const doc=frame?.contentDocument;
   if(!doc||new URL(location.href).searchParams.get('connect')!=='1')return;
+  // The nested game can load before its native action buttons are created.
+  // The official profile must NOT depend on those buttons or a hub link.
+  if(doc.getElementById('mathas-embedded-connect-hud-style'))return;
   let host;
   try{
     host=parent.document;
@@ -170,6 +173,9 @@
       row.append(profile);
     }
     const profileAnchor=doc.getElementById('mathas-native-connect-profile');
+    // Native header reconstruction can move the brand row without discarding
+    // the old profile. Always put the official profile back in the live row.
+    if(row&&profileAnchor&&profileAnchor.parentElement!==row)row.append(profileAnchor);
     // Aucun bouton XP en mode libre : on le crée uniquement après validation du compte.
     const available=!host.getElementById('connect-bar')?.hidden;
     if(profileAnchor&&available&&!doc.getElementById('mathas-native-connect-xp')){
@@ -189,6 +195,8 @@
     }
     const profile=doc.getElementById('mathas-native-connect-profile');
     const button=doc.getElementById('mathas-native-connect-xp');
+    if(button&&profile&&button.previousElementSibling!==profile)
+      profile.insertAdjacentElement('afterend',button);
     if(profile){
       profile.hidden=!available;
       if(available){
@@ -217,7 +225,11 @@
 }
  function install(frame){
   const doc=frame?.contentDocument;
-  const actions=doc?.querySelector('.mathas-top-actions');
+  if(!doc)return;
+  // Install the profile FIRST and separately from the HUB shortcut. Previously
+  // a missing Fullscreen button or an existing link skipped the whole profile.
+  installEmbeddedConnectHud(frame);
+  const actions=doc.querySelector('.mathas-top-actions');
   const fullscreen=actions?.querySelector('#fullscreenBtn');
   if(!actions||!fullscreen||doc.getElementById('mathas-game-hub-return'))return;
   const link=doc.createElement('a');
@@ -268,13 +280,29 @@
   `;
   doc.head.append(style);
   actions.insertBefore(link,fullscreen);
-  installEmbeddedConnectHud(frame);
  }
  window.MathasAttachNativeHubLink=function(frame){
-  if(!frame)return;
+  if(!frame||frame.__mathasNativeHubLinkWatcher)return;
+  frame.__mathasNativeHubLinkWatcher=true;
   // Navigation requires a real click; scripts may never auto-navigate the top page.
   frame.sandbox?.add('allow-top-navigation-by-user-activation');
-  frame.addEventListener('load',()=>install(frame));
-  try{install(frame)}catch{}
+  let retryTimer=null;
+  const tryInstall=()=>{
+   try{install(frame)}catch(error){console.warn('Bandeau Connect natif : nouveau montage nécessaire',error)}
+   const doc=frame.contentDocument;
+   const needsHud=new URL(location.href).searchParams.get('connect')==='1';
+   return !!doc?.getElementById('mathas-game-hub-return')&&
+    (!needsHud||!!doc?.getElementById('mathas-embedded-connect-hud-style'));
+  };
+  const start=()=>{
+   clearInterval(retryTimer);
+   let tries=0;
+   if(tryInstall())return;
+   retryTimer=setInterval(()=>{
+    if(tryInstall()||++tries>=80)clearInterval(retryTimer);
+   },250);
+  };
+  frame.addEventListener('load',start);
+  start();
  };
 })();
