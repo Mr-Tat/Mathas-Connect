@@ -103,7 +103,7 @@ for(const item of examples){
    if(item.slug==='addition-simple'&&item.mode==='sudden'){
     await page.evaluate(()=>{
      const d=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
-     d.querySelector('main.app > header .mathas-brand-row').style.display='none';
+     d.querySelector('main.app > header .mathas-brand-row').style.setProperty('display','none','important');
     });
     await page.waitForFunction(()=>document.documentElement.classList.contains('mathas-native-connect-fallback'),null,{timeout:11000});
     assert.equal(await page.locator('#connect-bar').isVisible(),true,
