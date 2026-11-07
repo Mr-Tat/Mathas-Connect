@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {judgeCompletion,recordPoints} from '../apps/GRAN-abaque-m-1/connect/completion-contract.mjs';
 import {createAbaqueQueue} from '../apps/GRAN-abaque-m-1/connect/offline-queue.mjs';
 import {createAbaqueHandler} from '../supabase/functions/connect-abaque/handler.mjs';
+import {resolveAbaqueAccess} from '../supabase/functions/connect-abaque/access-policy.mjs';
 import {build,moves,classic,record,pilotClass} from './fixtures/abaque-events.mjs';
 const authId='00000000-0000-4000-8000-000000000011',studentId='00000000-0000-4000-8000-000000000012';
 const storage=()=>{const data=new Map();return {getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v)}};
@@ -89,4 +90,15 @@ test('Abaque pilote, Auth simulée : gestion réservée au professeur TEST et co
  assert.equal((await handler(request({action:'teacher-pilot-status'}))).status,200);assert.equal(last.name,'connect_abaque_pilot_status_v1');
  const open=createAbaqueHandler({auth,db,access:'open'});
  assert.equal((await open(request({action:'teacher-pilot-status',classId:studentId}))).status,403);
+});
+
+test('Abaque activation 07/11: seulement TEST sur Connect, toute fermeture explicite prioritaire',()=>{
+ const project='https://awmhpfofacaglewammxt.supabase.co';
+ assert.equal(resolveAbaqueAccess(undefined,project),'pilot','l activation TEST autorisee ne depend pas d un secret absent');
+ assert.equal(resolveAbaqueAccess(null,project),'pilot');
+ assert.equal(resolveAbaqueAccess('pilot',project),'pilot');
+ for(const flag of ['closed','open','', 'unsafe'])assert.equal(resolveAbaqueAccess(flag,project),'closed');
+ assert.equal(resolveAbaqueAccess(undefined,'https://bzdflehyuowbawdzuawh.supabase.co'),'closed');
+ assert.equal(resolveAbaqueAccess(undefined,'http://localhost:54321'),'closed');
+ assert.equal(resolveAbaqueAccess(undefined,'not a url'),'closed');
 });

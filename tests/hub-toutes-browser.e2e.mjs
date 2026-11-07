@@ -16,7 +16,7 @@ const apps=[
  ['addition-ecrite-multiple','Addition de plusieurs nombres','calculs_ecrits','published'],
  ['melange-calculs-ecrits','Calculs écrits mélangés','calculs_ecrits','test'],
  ['abaque-longueurs','Abaque des longueurs','outil','test']
-].map(([app_key,title,hub_section,stage],i)=>({app_key,title,hub_section,stage,all_order:10+i*10,display_order:10+i*10,enabled:true,visible:true,in_test:true,featured:false,launch_url:'https://mr-tat.github.io/Mathas-Connect/apps/'+app_key+'/',image_url:null}));
+].map(([app_key,title,hub_section,stage],i)=>({app_key,title,hub_section,stage,all_order:10+i*10,display_order:10+i*10,enabled:true,visible:true,in_test:true,all_section:stage==='test'?'test':hub_section,featured:false,launch_url:'https://mr-tat.github.io/Mathas-Connect/apps/'+app_key+'/',image_url:null}));
 const session={user:{id:'11111111-1111-4111-8111-111111111111',is_anonymous:false},access_token:'FAKE_TEST_ONLY_TEACHER_JWT'};
 const sdk=(authorized)=>'export function createClient(url,key,options){return {auth:{getSession:async()=>({data:{session:options?.auth?.storageKey?'+JSON.stringify(authorized?session:null)+':null}}),signOut:async()=>({error:null})}}}';
 async function fixture(authorized){
@@ -30,6 +30,7 @@ async function fixture(authorized){
  await new Promise(done=>server.listen(0,'127.0.0.1',done));
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  const page=await browser.newPage({viewport:{width:1200,height:900}});
+  page.on('pageerror',error=>console.error('HUB_TOUTES_PAGEERROR',error.message));
  let allRequests=0;
  const approvals=[];const apiActions=[];let pending=true;
  const base='https://mr-tat.github.io/Mathas-Connect';
@@ -64,14 +65,20 @@ async function fixture(authorized){
  return {browser,page,server,base,getRequests:()=>allRequests,getApprovals:()=>approvals,getApiActions:()=>apiActions};
 }
 async function close(f){await f.browser.close();await new Promise(done=>f.server.close(done))}
-test('HUB Toutes: six vrais app_key dans Tests, sans carte en double ni modification des HUB scolaires', {timeout:60000},async()=>{
+test('HUB Toutes : six app_key réparties entre calculs écrits et Tests, sans doublons scolaires', {timeout:60000},async()=>{
  const f=await fixture(true);
  try{
    await f.page.goto(f.base+'/hub.html?toutes=1&joueur=prof&class='+testClass+'&name=Toutes',{waitUntil:'domcontentloaded'});
    await f.page.locator('.level-title').first().waitFor({timeout:20000});
-   await f.page.waitForFunction(()=>document.querySelectorAll('#levels .app-card').length===6);
+   try{await f.page.waitForFunction(()=>document.querySelectorAll('#levels .app-card').length===6,null,{timeout:15000});}
+    catch(error){
+      const state=await f.page.evaluate(()=>({appCount:document.querySelectorAll('#levels .app-card').length,sectionTitles:[...document.querySelectorAll('#levels .level-title')].map(el=>el.textContent),daily:document.querySelector('#dailyApps')?.textContent,levelsSnippet:document.querySelector('#levels')?.textContent?.slice(0,300),url:location.href}));
+      console.error('HUB_TOUTES_DIAGNOSTIC',JSON.stringify({state,requests:f.getRequests()}));
+      throw error;
+    }
    const sections=await f.page.locator('#levels .level-title').allTextContents();
    assert.match(sections[0],/Tests/);
+    assert.equal(await f.page.locator('#levels .level').first().locator('.app-card').count(),3,'trois applications dont l Abaque sont en TEST, les autres sont publiees');
    assert.equal(await f.page.locator('#levels .app-card').count(),6);
    assert.equal(await f.page.locator('#levels .level').first().getAttribute('aria-expanded'),null);
    assert.equal(await f.page.locator('#levels .level').first().locator('button.level-toggle').getAttribute('aria-expanded'),'true');
@@ -97,7 +104,12 @@ test('Le HUB Toutes reste lisible sur un petit écran de téléphone', {timeout:
  try{
    await f.page.setViewportSize({width:390,height:844});
    await f.page.goto(f.base+'/hub.html?toutes=1&joueur=prof&class='+testClass+'&name=Toutes',{waitUntil:'domcontentloaded'});
-   await f.page.waitForFunction(()=>document.querySelectorAll('#levels .app-card').length===6);
+   try{await f.page.waitForFunction(()=>document.querySelectorAll('#levels .app-card').length===6,null,{timeout:15000});}
+    catch(error){
+      const state=await f.page.evaluate(()=>({appCount:document.querySelectorAll('#levels .app-card').length,sectionTitles:[...document.querySelectorAll('#levels .level-title')].map(el=>el.textContent),daily:document.querySelector('#dailyApps')?.textContent,levelsSnippet:document.querySelector('#levels')?.textContent?.slice(0,300),url:location.href}));
+      console.error('HUB_TOUTES_DIAGNOSTIC',JSON.stringify({state,requests:f.getRequests()}));
+      throw error;
+    }
    assert.equal(await f.page.locator('#levels .level-title').first().textContent(),'🧪 Tests');
    const layout=await f.page.evaluate(()=>({
      viewport:innerWidth,
