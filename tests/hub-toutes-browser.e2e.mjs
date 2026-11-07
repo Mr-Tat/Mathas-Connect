@@ -78,7 +78,7 @@ test('HUB Toutes : six app_key réparties entre calculs écrits et Tests, sans d
     }
    const sections=await f.page.locator('#levels .level-title').allTextContents();
    assert.match(sections[0],/Tests/);
-    assert.equal(await f.page.locator('#levels .level').first().locator('.app-card').count(),2,'seules les deux applications de l étape TEST figurent dans Tests');
+    assert.equal(await f.page.locator('#levels .level').first().locator('.app-card').count(),3,'trois applications dont l Abaque sont en TEST, les autres sont publiees');
    assert.equal(await f.page.locator('#levels .app-card').count(),6);
    assert.equal(await f.page.locator('#levels .level').first().getAttribute('aria-expanded'),null);
    assert.equal(await f.page.locator('#levels .level').first().locator('button.level-toggle').getAttribute('aria-expanded'),'true');
