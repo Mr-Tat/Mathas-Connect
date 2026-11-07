@@ -2011,7 +2011,7 @@ function renderLives(){
  box.querySelector('.heart-status').textContent=lives+' vies restantes';
 }
 $('homeBtn').addEventListener('click',()=>$('recordLives').classList.add('hidden'));
-let selectedMode=null, pageNumber=0, totalPages=1, runCorrect=0, runQuestions=0, suddenStreak=0, runFinished=false, runScore=0;
+let selectedMode=null, pageNumber=0, recordStep=0, totalPages=1, runCorrect=0, runQuestions=0, suddenStreak=0, runFinished=false, runScore=0;
 const helpRestricted=()=>selectedMode==='sudden'&&suddenStreak>=3;
 const unitsRestricted=()=>selectedMode==='sudden'&&suddenStreak>=1;
 const calcPoints=ex=>{
@@ -2095,10 +2095,14 @@ function makeTask(from,to,kind='simple'){
 }
 function kindsForPage(){
  if(selectedMode==='sudden'){
-  const phase=suddenStreak;
-  if(phase<3)return [phase===2?'trailing':'simple'];
-  if(phase<7)return [['simple'],['three'],['trailing'],['inner']][(phase-3)%4];
-  return [['mixed'],['inner'],['three'],['trailing'],['simple']][(phase-7)%5];
+  // Cinq conversions distinctes sont visibles sur chaque page de record.
+  // Elles se valident l'une après l'autre pour respecter la fin immédiate en Mort subite.
+  return Array.from({length:5},(_,index)=>{
+   const phase=suddenStreak+index;
+   if(phase<3)return phase===2?'trailing':'simple';
+   if(phase<7)return ['simple','three','trailing','inner'][(phase-3)%4];
+   return ['mixed','inner','three','trailing','simple'][(phase-7)%5];
+  });
  }
  if(pageNumber===0)return shuffle(['simple','simple','simple','trailing']);
  if(pageNumber===1)return shuffle(['simple','trailing','three','inner']);
@@ -2135,9 +2139,9 @@ function choosePageTask(kind,usedPairs,usedSteps,usedDirections){
 function makeSeries(){
  const usedPairs=new Set(),usedSteps=new Set(),usedDirections=new Set();
  series=kindsForPage().map(kind=>choosePageTask(kind,usedPairs,usedSteps,usedDirections));
- activeIndex=0;locked=false;correctionMode=false;
- $('t3Summary').textContent='';$('t3Progress').textContent='';$('t3Progress').classList.add('hidden');$('t3Verify').textContent=selectedMode==='sudden'?'✓ Valider':'✓ Vérifier les 4 réponses';
- $('t3PageLabel').textContent=selectedMode==='sudden'?`${recordVariant==='lives'?'3 vies':'Mort subite'} · question ${pageNumber+1}`:`Page ${pageNumber+1} / ${totalPages}`;
+ activeIndex=0;recordStep=0;locked=false;correctionMode=false;
+ $('t3Summary').textContent='';$('t3Progress').textContent='';$('t3Progress').classList.add('hidden');$('t3Verify').textContent=selectedMode==='sudden'?'✓ Valider cet exercice':'✓ Vérifier les 4 réponses';
+ $('t3PageLabel').textContent=selectedMode==='sudden'?`${recordVariant==='lives'?'3 vies':'Mort subite'} · Page ${pageNumber+1} · Exercice 1/5`:`Page ${pageNumber+1} / ${totalPages}`;
  $('t3Instructions').textContent=selectedMode==='sudden'&&recordVariant==='lives'?'3 vies : une réponse fausse termine cette conversion et retire un cœur. Les aides se retirent progressivement.':selectedMode!=='sudden'?'Écris les réponses. Utilise les aides si nécessaire.':suddenStreak===0?'Mort subite : aucune erreur permise. Les aides se retirent progressivement.':suddenStreak<3?'Mort subite : unités verrouillées, manipulation de la virgule autorisée.':'Mort subite : autonomie totale, aucune aide disponible.';
  $('t3Verify').classList.remove('hidden');$('t3New').classList.add('hidden');
  scoreView();renderAll();
@@ -2166,7 +2170,7 @@ function renderOne(i){
  el.classList.toggle('t3corrected',ex.status==='corrected');
  el.classList.toggle('unitsGuideActive',ex.open&&ex.units);
  const input=el.querySelector('.t3Answer');if(input.value!==ex.answer)input.value=ex.answer;
- input.disabled=locked||!['pending','retry'].includes(ex.status);input.classList.toggle('active',i===activeIndex&&!input.disabled);
+ input.disabled=locked||(selectedMode==='sudden'&&i!==recordStep)||!['pending','retry'].includes(ex.status);input.classList.toggle('active',i===activeIndex&&!input.disabled);
  const manipulate=el.querySelector('.t3Open'),unitsBtn=el.querySelector('.t3UnitsBtn');
  manipulate.disabled=helpRestricted();unitsBtn.disabled=unitsRestricted();
  manipulate.title=helpRestricted()?'Manipulation impossible dès la 4e question en Mort subite':'';
@@ -2211,19 +2215,19 @@ function renderAll(){
 function updateKeypadAction(){
  const nextBtn=document.querySelector('#convertScreen [data-t3key="next"]');
  if(!nextBtn)return;
- const editable=series.filter(ex=>['pending','retry'].includes(ex.status));
+ const editable=selectedMode==='sudden'?[series[recordStep]].filter(ex=>ex&&['pending','retry'].includes(ex.status)):series.filter(ex=>['pending','retry'].includes(ex.status));
  const allFilled=editable.length>0 && editable.every(ex=>String(ex.answer).trim()!=='');
  nextBtn.textContent=allFilled?'✓ Valider':'Réponse suivante →';
  nextBtn.setAttribute('aria-label',allFilled?'Valider les réponses':'Passer à la réponse suivante');
  nextBtn.dataset.action=allFilled?'validate':'next';
 }
 function setActive(i){
- if(locked||!series[i]||!['pending','retry'].includes(series[i].status))return;activeIndex=i;
+ if(locked||!series[i]||(selectedMode==='sudden'&&i!==recordStep)||!['pending','retry'].includes(series[i].status))return;activeIndex=i;
  $('t3KeyInfo').textContent=`Réponse de l'exercice ${i+1}`;
  document.querySelectorAll('#t3ExList .t3Answer').forEach((inp,j)=>inp.classList.toggle('active',j===i));
  updateKeypadAction();
 }
-function nextAnswer(){if(locked)return;const available=series.map((ex,i)=>['pending','retry'].includes(ex.status)?i:-1).filter(i=>i>=0);if(!available.length)return;let next=available.find(i=>i>activeIndex);if(next===undefined)next=available.find(i=>!series[i].answer)??available[0];setActive(next);$('t3ExList').children[next].querySelector('input').focus()}
+function nextAnswer(){if(locked)return;const available=series.map((ex,i)=>(selectedMode!=='sudden'||i===recordStep)&&['pending','retry'].includes(ex.status)?i:-1).filter(i=>i>=0);if(!available.length)return;let next=available.find(i=>i>activeIndex);if(next===undefined)next=available.find(i=>!series[i].answer)??available[0];setActive(next);$('t3ExList').children[next].querySelector('input').focus()}
 /* Associe chaque unité de l'énoncé à la même unité dans l'abaque,
    sans dessiner de déplacement ni révéler la direction à suivre. */
 function drawUnitCorrespondences(article){
@@ -2410,6 +2414,72 @@ function renderBoard(i){
  const end=e=>{if(e.pointerId===pointer){pointer=null;try{if(commas.hasPointerCapture(e.pointerId))commas.releasePointerCapture(e.pointerId)}catch{}}};
  commas.onpointerup=end;commas.onpointercancel=end;
 }
+// En modes record, chaque page montre cinq exercices. Pour respecter les vies,
+// chaque réponse est validée individuellement : les suivantes restent verrouillées.
+function finishRecordAnswer(){
+ if(locked||selectedMode!=='sudden')return;
+ const ex=series[recordStep];
+ if(!ex?.answer?.trim()){
+  $('t3Summary').textContent=`Il manque la réponse de l'exercice ${recordStep+1}.`;
+  setActive(recordStep);
+  return;
+ }
+ window.MATHAS_ABAQUE_PROOF.first([ex]);
+ const good=Number(ex.answer)===ex.result;
+ ex.status=good?'good':'badFinal';
+ ex.earnedPoints=good?calcPoints(ex):0;
+ window.MATHAS_ABAQUE_PROOF.page([ex]);
+ runCorrect+=Number(good);
+ runQuestions++;
+ if(good){
+  suddenStreak++;
+  runScore+=ex.earnedPoints;
+  if(recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak);
+ }else lives=recordVariant==='lives'?lives-1:0;
+ runFinished=lives===0;
+ renderLives();
+ renderOne(recordStep);
+ scoreView(good?`+${ex.earnedPoints} point${ex.earnedPoints>1?'s':''}`:'Aucun point pour cette réponse');
+ const label=recordVariant==='lives'?'3 vies':'Mort subite';
+ const completedPage=recordStep+1===5;
+ $('t3Progress').textContent=`Page ${pageNumber+1} · ${recordStep+1}/5 exercices · ${suddenStreak} réussites`;
+ $('t3Progress').classList.remove('hidden');
+ if(good){
+  window.MATHAS_PROGRESS.recordScore(runScore,recordMode());
+  window.MATHAS_CELEBRATE?.toast(`+${ex.earnedPoints} point${ex.earnedPoints>1?'s':''}`);
+ }
+ if(runFinished){
+  locked=true;
+  window.MATHAS_ABAQUE_PROOF.complete();
+  if(recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak);
+  $('t3Summary').textContent=`Fin de partie : ${suddenStreak} conversions réussies · ${runScore} points.`;
+  $('t3PageLabel').textContent=`${label} · ${suddenStreak} conversions réussies`;
+  $('t3Verify').classList.add('hidden');
+  $('t3New').textContent='↻ Rejouer';
+  $('t3New').classList.remove('hidden');
+  updateKeypadAction();
+  window.MATHAS_CELEBRATE?.modal({title:'Fin de partie',emoji:'🏁',text:$('t3Summary').textContent,
+   buttons:[{label:'Accueil',action:()=>$('homeBtn').click()},{label:'Recommencer',primary:true,action:()=>startMode('sudden',recordVariant)}]});
+  return;
+ }
+ if(completedPage){
+  locked=true;
+  $('t3Verify').classList.add('hidden');
+  $('t3New').textContent='Page suivante →';
+  $('t3New').classList.remove('hidden');
+  $('t3PageLabel').textContent=`${label} · Page ${pageNumber+1} terminée`;
+  $('t3Summary').textContent=`Page ${pageNumber+1} terminée · ${suddenStreak} conversions réussies · ${runScore} points.`;
+  updateKeypadAction();
+  window.MATHAS_CELEBRATE?.modal({title:'Page terminée',emoji:'✨',text:$('t3Summary').textContent,
+   buttons:[{label:'Accueil',action:()=>$('homeBtn').click()},{label:'Page suivante',primary:true,action:()=>$('t3New').click()}]});
+  return;
+ }
+ recordStep++;
+ $('t3PageLabel').textContent=`${label} · Page ${pageNumber+1} · Exercice ${recordStep+1}/5`;
+ $('t3Summary').textContent=good?'Bonne réponse !':`Un cœur perdu · ${lives} vie${lives>1?'s':''} restante${lives>1?'s':''}.`;
+ setActive(recordStep);
+ updateKeypadAction();
+}
 function finishPage(firstGood,corrected=0){
  window.MATHAS_ABAQUE_PROOF.page(series);
  locked=true;runCorrect+=firstGood;runQuestions+=series.length;
@@ -2425,22 +2495,6 @@ function finishPage(firstGood,corrected=0){
  $('t3Progress').classList.remove('hidden');
  $('t3Verify').classList.add('hidden');$('t3New').classList.remove('hidden');updateKeypadAction();
  if(firstGood===series.length)window.MATHAS_CELEBRATE?.toast();
- if(selectedMode==='sudden'){
-   if(firstGood===1){
-     suddenStreak++;
-     if(recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak);
-     notifyRecord(window.MATHAS_PROGRESS.recordScore(runScore,recordMode()));
-   }else{lives=recordVariant==='lives'?lives-1:0;}
-   runFinished=lives===0;renderLives();
-   if(runFinished)window.MATHAS_ABAQUE_PROOF.complete();
-   if(runFinished&&recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak);
-   const label=recordVariant==='lives'?'3 vies':'Mort subite';
-   $('t3Summary').textContent=`${suddenStreak} conversions réussies · ${runScore} points${recordVariant==='lives'?' · '+lives+' vies restantes':''}.`;
-   $('t3New').textContent=runFinished?'↻ Rejouer':'Conversion suivante →';
-   $('t3PageLabel').textContent=label+' · '+suddenStreak+' réussites';
-   window.MATHAS_CELEBRATE?.modal({title:runFinished?'Fin de partie':firstGood?'Bravo !':'Un cœur perdu',emoji:runFinished?'🏁':firstGood?'⚡':'💔',text:$('t3Summary').textContent,buttons:[{label:'Accueil',action:()=>{$('homeBtn').click()}},{label:'Recommencer',action:()=>startMode('sudden',recordVariant)},...(!runFinished?[{label:'Suivante',primary:true,action:()=>$('t3New').click()}]:[])]});
-   return;
- }
 
  const total=totalPages*4;
  if(pageNumber+1<totalPages){$('t3Summary').textContent=`Page ${pageNumber+1}/${totalPages} · ${firstGood}/4 au premier essai.`;$('t3New').textContent='Page suivante →'; window.MATHAS_CELEBRATE?.modal({title:'Bravo !',emoji:'🎉',text:`Page ${pageNumber+1} terminée.`,buttons:[{label:'Accueil',action:()=>{$('homeBtn').click()}},{label:'Recommencer',action:()=>startMode(selectedMode)},{label:'Page suivante',primary:true,action:()=>$('t3New').click()}]});}
@@ -2460,16 +2514,11 @@ function finishPage(firstGood,corrected=0){
 }
 function verify(){
  if(locked)return;
- const editable=series.map((ex,i)=>['pending','retry'].includes(ex.status)?i:-1).filter(i=>i>=0);
+ const editable=series.map((ex,i)=>(selectedMode!=='sudden'||i===recordStep)&&['pending','retry'].includes(ex.status)?i:-1).filter(i=>i>=0);
  const blank=editable.find(i=>!series[i].answer.trim());
  if(blank!==undefined){$('t3Summary').textContent=`Il manque la réponse ${blank+1}.`;setActive(blank);$('t3ExList').children[blank].querySelector('input').focus();return}
+ if(selectedMode==='sudden'){finishRecordAnswer();return}
  if(!correctionMode)window.MATHAS_ABAQUE_PROOF.first(series);
- if(selectedMode==='sudden'){
-   const good=Number(series[0].answer)===series[0].result;
-   series[0].status=good?'good':'badFinal';
-   series[0].earnedPoints=good?calcPoints(series[0]):0;
-   finishPage(Number(good));return;
- }
  if(!correctionMode){
   const wrong=[];
   series.forEach((ex,i)=>{if(Number(ex.answer)===ex.result){ex.status='good';ex.earnedPoints=calcPoints(ex)}else{ex.status='retry';wrong.push(i)}});
