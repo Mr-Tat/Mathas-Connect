@@ -120,3 +120,98 @@ html:not([data-abaque-xp-approved]) .abaque-xp-remaining:not(.abaque-demo-xp){di
 @media(max-width:1100px){#homeScreen .homeGrid{grid-template-columns:repeat(2,minmax(0,1fr))}#homeScreen #convertLaunchCard{grid-column:1/-1}}
 @media(max-width:600px){#homeScreen .homeGrid{grid-template-columns:minmax(0,1fr)}#homeScreen #recordChoice{padding:18px}#homeScreen #recordChoice .record-buttons{gap:12px}#homeScreen #recordChoice .t3Mode{padding:14px 12px 55px!important}#homeScreen #convertLaunchCard .homeModeGrid{gap:7px}#homeScreen #convertLaunchCard .homeModeBtn{padding:10px 7px 25px}#homeScreen #convertLaunchCard .homeModeBtn strong{font-size:.93rem}}
 @media(max-width:480px){#homeScreen #recordChoice .record-buttons{grid-template-columns:minmax(0,1fr)}#homeScreen #recordChoice .t3Mode{min-height:180px}#homeScreen #convertLaunchCard .homeModeGrid{grid-template-columns:minmax(0,1fr)}#homeScreen #convertLaunchCard .homeModeBtn{min-height:95px}}
+
+
+/* Abaque / option A — disposition compacte : score et trophées à gauche des activités.
+   Les cartes et leurs zones cliquables restent inchangées. */
+header .brand{
+  margin:0;min-width:0;max-width:calc(100% - 140px);
+  color:#f3fbfa;font-size:clamp(1.26rem,2.35vw,1.95rem);
+  letter-spacing:-.028em;line-height:1.18;font-weight:950;
+}
+#homeScreen .home-layout{
+  display:grid;grid-template-columns:minmax(228px,266px) minmax(0,1fr);
+  align-items:start;gap:17px;margin:6px 0 22px;
+}
+#homeScreen .home-sidebar{
+  display:flex;flex-direction:column;gap:14px;min-width:0;
+}
+#homeScreen .home-connect-account{
+  display:flex;align-items:center;flex-wrap:wrap;gap:7px;
+  padding:9px 11px;border:1px solid #bddbd2;border-radius:12px;
+  background:#f1f8f5;color:#1d4c52;font-size:.8rem;
+}
+#homeScreen .home-connect-account[hidden]{display:none!important}
+#homeScreen .home-connect-account strong{
+  flex:1 1 auto;min-width:0;overflow-wrap:anywhere;font-size:.81rem;
+}
+#homeScreen .home-connect-account #homeConnectXp{
+  flex:1 1 100%;margin-left:33px;color:#386f65;font-size:.73rem;font-weight:850;
+}
+#homeScreen .personal-records{
+  width:100%;max-width:none;
+  grid-template-columns:minmax(0,1fr);
+  align-items:stretch;gap:15px;padding:20px 19px;
+}
+#homeScreen .personal-best{min-width:0}
+#homeScreen .personal-collection{
+  padding:16px 0 0;border-left:0;border-top:1px solid #b0e5de3a;
+}
+#homeScreen .collection-cups{margin-top:11px}
+#homeScreen .scorePanel{margin:0;padding:10px;min-width:0}
+#homeScreen .scorePanelRecords{
+  grid-template-columns:minmax(0,1fr);gap:8px;
+}
+#homeScreen .scoreRecord{padding:10px 12px}
+#homeScreen .homeGrid{
+  width:100%;min-width:0;max-width:none;margin:0;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;align-items:stretch;
+}
+#homeScreen #convertLaunchCard{grid-column:auto}
+#homeScreen .homeCard{min-width:0}
+#homeScreen .homeCard>strong{overflow-wrap:break-word}
+#homeScreen #recordChoice{grid-column:1/-1;max-width:850px}
+
+/* La barre Connect reste fonctionnelle en cas de coupure/échec, mais quitte la
+   présentation normale dès que la session est saine : le compte et les XP sont
+   présentés dans la colonne des scores. */
+html[data-abaque-connected][data-abaque-online="true"]:not([data-abaque-blocked]):not([data-abaque-attention]) #abaque-connect-panel{
+  display:none!important;
+}
+html[data-abaque-connected][data-abaque-online="true"] .demo-notice{
+  display:none!important;
+}
+#abaque-connect-panel:not([hidden]){max-width:1420px;margin:0 auto}
+@media(max-width:1190px){
+  #homeScreen .home-layout{grid-template-columns:minmax(218px,245px) minmax(0,1fr)}
+  #homeScreen .homeGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #homeScreen #convertLaunchCard{grid-column:1/-1}
+}
+@media(max-width:890px){
+  #homeScreen .home-layout{grid-template-columns:minmax(0,1fr);gap:18px}
+  #homeScreen .home-sidebar{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch;gap:12px}
+  #homeScreen .home-connect-account{grid-column:1/-1}
+  #homeScreen .personal-records{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(140px,.8fr);gap:14px;max-width:none}
+  #homeScreen .personal-collection{padding:0 0 0 14px;border-top:0;border-left:1px solid #b0e5de3a}
+  #homeScreen .scorePanel{grid-column:1/-1}
+  #homeScreen .scorePanelRecords{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #homeScreen .homeGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:600px){
+  header .brand{max-width:100%;font-size:clamp(1.16rem,5vw,1.5rem)}
+  #homeScreen .home-layout{gap:13px;margin-top:4px}
+  #homeScreen .home-sidebar{display:flex;gap:9px}
+  #homeScreen .home-connect-account{padding:6px 10px}
+  #homeScreen .personal-records{padding:15px 13px;grid-template-columns:minmax(0,1fr) minmax(115px,.8fr);gap:10px}
+  #homeScreen .personal-collection{padding-left:11px}
+  #homeScreen .scorePanelRecords{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #homeScreen .homeGrid{grid-template-columns:minmax(0,1fr);gap:13px}
+  #homeScreen #convertLaunchCard{grid-column:1}
+  #homeScreen .homeCard{min-height:165px}
+}
+@media(max-width:350px){
+  #homeScreen .personal-records{grid-template-columns:minmax(0,1fr)}
+  #homeScreen .personal-collection{border-left:0;border-top:1px solid #b0e5de3a;padding:12px 0 0}
+  #homeScreen .scorePanelRecords{grid-template-columns:minmax(0,1fr)}
+}
