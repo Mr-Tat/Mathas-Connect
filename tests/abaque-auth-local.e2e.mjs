@@ -62,6 +62,24 @@ async function browserPage(identity,{teacher=false}={}){
   const url=route.request().url();
   if(url.startsWith(config.static+'/')||url.startsWith(config.api+'/'))return route.continue();
   if(url==='https://esm.sh/@supabase/supabase-js@2.95.0')return route.fulfill({status:200,contentType:'text/javascript',headers:{'access-control-allow-origin':'*'},body:readFileSync(config.lab+'/browser-sdk.mjs')});
+  // Les choix visuels de profil sont fournis par Connect API en production.
+  // Ce banc d'essai démarre volontairement uniquement connect-abaque en local :
+  // répondre avec un avatar fictif SEULEMENT pour la session approuvée par
+  // le vrai Edge testé plus haut, sans appeler un Supabase hébergé.
+  if(url==='https://awmhpfofacaglewammxt.supabase.co/functions/v1/connect-api'){
+   const body=route.request().postDataJSON();
+   const expected=teacher?'teacher-player':'student-me';
+   assert.equal(body.action,expected,'avatar lecture seule liée au bon rôle');
+   assert.equal(body.classId,pilotClass);
+   const bearer=route.request().headers().authorization;
+   assert.equal(bearer,'Bearer '+identity?.session?.access_token);
+   const profile={ok:true,status:'approved',classId:pilotClass,
+    displayName:teacher?'Monsieur T fictif Abaque':'Élève fictif Abaque',
+    avatar:teacher?{kind:'letter',value:'T',color:'transparent'}
+       :{kind:'animal',value:'fox',color:'ocean'}};
+   return route.fulfill({status:200,contentType:'application/json',
+    headers:{'access-control-allow-origin':'*'},body:JSON.stringify(profile)});
+  }
   if(url==='https://awmhpfofacaglewammxt.supabase.co/functions/v1/connect-abaque'){
    if(offline)return route.abort();
    const response=await route.fetch({url:endpoint});

@@ -48,7 +48,7 @@ function fixture(){
   async handle(route){
    const data=JSON.parse(route.request().postData()||'{}');
    received.push(data);
-   if(data.action==='student-me')return reply(route,{ok:true,status:'approved',classId:klass,displayName:'Élève test'});
+   if(data.action==='student-me')return reply(route,{ok:true,status:'approved',classId:klass,displayName:'Élève test',avatar:{kind:'smiley',value:'party',color:'rose'}});
    if(data.action==='student-load')return reply(route,{ok:true,state,revision,resetEpoch:0});
    if(data.action==='student-xp')return reply(route,{
     ok:true,appXp:revision?22:0,total:revision?22:0,level:1,next:50,
@@ -219,6 +219,9 @@ test('Chromium scolaire natif : 4 soustractions, XP, consentement et projection'
  try{
   const {page,frame}=await ctx.page();
   page.on('pageerror',e=>errors.push(e.message));
+  await frame.locator('#mathas-sous-connect-identity .mathas-connect-avatar').waitFor({state:'visible',timeout:10000});
+  assert.equal(await frame.locator('#mathas-sous-connect-identity .mathas-connect-avatar').textContent(),'🥳');
+  assert.equal(await frame.locator('#mathas-sous-connect-identity .mathas-sous-connect-name').textContent(),'Élève test');
   await launchClassic(page,frame,{method:'takeTop',count:4});
   assert.equal(ctx.fixture.issued[0]?.method,'takeTop');
   assert.equal(ctx.fixture.issued[0]?.total,4);

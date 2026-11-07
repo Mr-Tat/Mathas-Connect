@@ -29,8 +29,9 @@ button{cursor:pointer}button:disabled{opacity:.5}
 /* L'attribut hidden doit primer sur le display:flex auteur, dès le premier rendu. */
 #connect-bar[hidden],#bar-handle[hidden]{display:none!important}
 #connect-bar .connect-ident{display:flex;align-items:center;gap:13px;flex:1 1 auto;min-width:0}
-#connected-name-wrap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:650;color:#d6f3ff}
-#connected-dot{color:#79e3b2;margin-right:5px}
+#connected-name-wrap{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:650;color:#d6f3ff}
+#connected-name{min-width:0;overflow:hidden;text-overflow:ellipsis}
+#connected-dot{color:#79e3b2;flex:none}
 #connect-xp-meter{display:flex;align-items:center;gap:10px;min-width:177px;background:#173d59;border:1px solid #486f86;border-radius:12px;padding:4px 9px}
 #level-label{white-space:nowrap;font-size:11px;color:#ffe4a0}
 #level{font-size:22px;color:#fff5cd;margin-left:3px}
@@ -294,7 +295,7 @@ html.mathas-native-connect-hud #guest-home{display:none!important}
 <body><main>
 <header id="connect-bar" hidden aria-label="Profil Math’as Connect">
  <div class="connect-ident">
-  <span id="connected-name-wrap"><span id="connected-dot">●</span><strong id="connected-name">Élève</strong></span>
+  <span id="connected-name-wrap"><span id="connected-dot">●</span><span id="connected-avatar" aria-hidden="true"></span><strong id="connected-name">Élève</strong></span>
   <div id="connect-xp-meter" aria-label="Progression Connect">
    <span id="level-label">Niveau <strong id="level">—</strong></span>
    <div id="meter-progress"><small id="level-xp">— / — XP</small>
@@ -350,4 +351,4 @@ html.mathas-native-connect-hud #guest-home{display:none!important}
 </div>
 </section>
 <iframe id="gameFrame" hidden title="Jeu Objectif record" allow="fullscreen" referrerpolicy="no-referrer"></iframe>
-</main><script type="module" src="./eleve.mjs?v=20261106-four-confirmed-v3"></script></body></html>
+</main><script type="module" src="./eleve.mjs?v=20261107-profile-avatar-v1"></script></body></html>

@@ -1,6 +1,7 @@
 import {createAbaqueQueue} from './offline-queue.mjs';
 import {APP_KEY} from './completion-contract.mjs';
 import {createXpHints} from '../xp-hints.mjs';
+import {paintConnectedAvatar} from '../../objective-record/profile-avatar-badge.mjs?v=20261107-v1';
 const BASE='https://awmhpfofacaglewammxt.supabase.co';
 const KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const PILOT='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
@@ -26,11 +27,14 @@ function validSnapshot(value,subject,pupil=null){
 async function connect(){
  const panel=element('aside','','abaque-connect-panel');panel.id='abaque-connect-panel';
  const label=element('strong','Vérification de la connexion…');
+ const dot=element('span','●');dot.setAttribute('aria-hidden','true');dot.style.color='#70e3ae';dot.hidden=true;
+ const face=element('span');face.setAttribute('aria-hidden','true');face.hidden=true;
+ let chosenAvatar=null;
  const details=element('span');details.setAttribute('role','status');details.setAttribute('aria-live','polite');
  const xp=element('span','','abaque-account-xp');
  const retry=element('button','Réessayer','btn');retry.type='button';retry.hidden=true;
  const demo=element('a','Ouvrir la démo isolée');demo.href='./';
- panel.append(label,details,xp,retry,demo);document.body.prepend(panel);setInert(true);
+ panel.append(dot,face,label,details,xp,retry,demo);document.body.prepend(panel);setInert(true);
  const nativeModal=window.MATHAS_CELEBRATE.modal;
  window.MATHAS_CELEBRATE.modal=options=>{if(!document.documentElement.dataset.abaqueBlocked)nativeModal(options);};
  if(!uuid.test(CLASS||'')){label.textContent='Classe manquante';details.textContent='Ouvre ce jeu depuis le HUB de ta classe.';return;}
@@ -45,6 +49,7 @@ async function connect(){
   document.documentElement.dataset.abaqueConnected='true';
   document.querySelector('.demo-notice').textContent=online?(CLASS===PILOT?'Laboratoire connecté · résultats liés à ton compte':'Mode Connect · résultats liés à ton compte'):'Hors connexion · résultats conservés en attente de synchronisation';
   label.textContent=snapshot.displayName||'Compte Connect';
+  dot.hidden=false;face.hidden=false;paintConnectedAvatar(face,chosenAvatar,snapshot.displayName);face.style.display='inline-grid';
   xp.textContent=online?snapshot.xp.appXp+' / 160 XP acquis · '+snapshot.trophies.length+' / 6 trophées':'Connexion à confirmer';
   hints.render(snapshot.xp.remaining,showRemaining);
   if(online){
@@ -88,7 +93,7 @@ async function connect(){
   else if(state==='offline'){hideRemaining();details.textContent='Hors connexion : résultats conservés sur cet appareil.';}
   else if(state==='quarantined')details.textContent='Les résultats antérieurs à la remise à zéro restent archivés et ne seront pas recrédités.';
   else if(state==='conflict'){hideRemaining();setInert(true);details.textContent='Le parcours a changé sur le serveur. Réessaie la connexion avant de continuer.';}
-  else if(state==='unauthorized'){hideRemaining();setInert(true);document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';xp.textContent='';details.textContent='La session ou l’appareil n’est plus approuvé. Reconnecte-toi depuis le HUB.';}
+  else if(state==='unauthorized'){hideRemaining();setInert(true);document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';dot.hidden=true;face.hidden=true;face.style.display='none';xp.textContent='';details.textContent='La session ou l’appareil n’est plus approuvé. Reconnecte-toi depuis le HUB.';}
   else if(state==='rejected'){hideRemaining();setInert(true);details.textContent='Un résultat n’a pas été accepté. Il reste conservé sur cet appareil. Réessaie la connexion.';}
   else if(state==='storage-error'){hideRemaining();setInert(true);details.textContent='Stockage indisponible. Garde cette page ouverte pour réessayer sans perdre le résultat.';}
   else if(state==='queue-full'){setInert(true);details.textContent='100 résultats sont en attente. Reconnecte-toi avant une nouvelle partie.';}
@@ -120,13 +125,13 @@ async function connect(){
   subject=session.user.id;
   sessionActive=true;
   client.auth.onAuthStateChange((_event,updated)=>{
-   if(subject&&(!updated?.access_token||updated.user?.id!==subject)){sessionActive=false;sessionVersion++;queue?.halt();setInert(true);hideRemaining();document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';xp.textContent='';details.textContent='La session a changé. Ouvre à nouveau le jeu depuis le HUB.';}
+   if(subject&&(!updated?.access_token||updated.user?.id!==subject)){sessionActive=false;sessionVersion++;queue?.halt();setInert(true);hideRemaining();document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';dot.hidden=true;face.hidden=true;face.style.display='none';xp.textContent='';details.textContent='La session a changé. Ouvre à nouveau le jeu depuis le HUB.';}
    else if(updated?.user?.id===subject)sessionActive=true;
   });
   retry.onclick=async()=>{
    retry.disabled=true;
    try{await queue?.flush();const loaded=await post({action:'load'});if(pupil&&loaded.studentId!==pupil)throw Error('identity_changed');await initialize(loaded,true);}
-   catch(error){hideRemaining();if([401,403,409].includes(error.status)||error.message==='identity_changed'){queue?.halt();setInert(true);document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';xp.textContent='';}details.textContent='Connexion indisponible : '+error.message;}
+   catch(error){hideRemaining();if([401,403,409].includes(error.status)||error.message==='identity_changed'){queue?.halt();setInert(true);document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';dot.hidden=true;face.hidden=true;face.style.display='none';xp.textContent='';}details.textContent='Connexion indisponible : '+error.message;}
    finally{retry.disabled=false;}
   };
   try{await initialize(await post({action:'load'}),true);}
@@ -139,6 +144,23 @@ async function connect(){
    pupil=binding.studentId;cacheKey='mathas.abaque.approved.'+[CLASS,subject,pupil].join('.')+'.v1';
    const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');await initialize(cached,false);handleState('offline');
   }
+  // Lecture facultative de l'avatar officiel : le jeu et ses résultats ne
+  // dépendent jamais de ce second appel. Ne persister aucune identité locale.
+  void (async()=>{
+   try{
+    const bearer=await token();
+    const action=params.get('joueur')==='prof'?'teacher-player':'student-me';
+    const response=await fetch(BASE+'/functions/v1/connect-api',{method:'POST',
+     headers:{apikey:KEY,authorization:'Bearer '+bearer,'content-type':'application/json'},
+     body:JSON.stringify({action,classId:CLASS})});
+    if(!response.ok)return;
+    const profile=await response.json();
+    if(!profile?.ok||profile.status!=='approved'||profile.classId!==CLASS||!sessionActive)return;
+    await token();
+    chosenAvatar=profile.avatar??null;
+    paintConnectedAvatar(face,chosenAvatar,profile.displayName||latest?.displayName);
+   }catch{/* La fiche avatar n'empêche pas les exercices authentifiés. */}
+  })();
   window.addEventListener('online',()=>{if(!retry.disabled)retry.click();});
   window.addEventListener('offline',()=>handleState('offline'));
  }catch(error){label.textContent='Connexion non disponible';details.textContent='Aucun résultat Connect envoyé. '+error.message;retry.hidden=!client;hideRemaining();setInert(true);}

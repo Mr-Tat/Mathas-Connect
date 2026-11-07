@@ -6,6 +6,8 @@
 
 > **Principe : ajouter un jeu, pas réécrire Math’as Connect.** Préserver son moteur, ses modes et sa pédagogie ; brancher un adaptateur minimal au système Connect. Un outil pédagogique peut être intégré **sans XP**.
 
+**Suivi actuel des décisions encore ouvertes (07/11/2026) :** [à faire / à contrôler en conditions réelles](SUIVI_DECISIONS_OUVERTES_20261107.md). Une décision déjà livrée y est distinguée d’un test de classe restant à effectuer.
+
 ## Priorité du 4 novembre 2026 : construire directement pour les élèves
 
 Le [rapport complet de référence](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) rassemble la ligne pédagogique, les XP visibles sur les boutons, les coupes restantes dans les exercices, les scores facultatifs, la projection, les problèmes résolus et les raccourcis. Pour démarrer rapidement, utiliser la [fiche express](DOCTRINE_EFFICACITE_INTEGRATION_20261104.md), qui **résume** ce rapport et ne constitue pas une doctrine concurrente. Concevoir une seule version finale ; utiliser le Laboratoire avec un profil fictif lorsqu’un contrôle authentifié est indispensable, sans multiplier les variantes.
