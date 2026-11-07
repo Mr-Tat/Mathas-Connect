@@ -1,4 +1,5 @@
 // HUB Toutes: aucun passe-droit. Deux sessions Supabase déjà utilisées par Connect.
+import {mountAbaqueAllHubControls} from './apps/GRAN-abaque-m-1/connect/hub-all-controls.mjs';
 export async function mountHubToutesAuth({teacherClient,studentClient,isTeacherMode,testClass,baseUrl,publicKey}){
  const host=document.querySelector('main.page-shell');if(!host)return;
  const panel=document.createElement('section');panel.id='toutes-auth';panel.className='panel toutes-auth';
@@ -20,7 +21,7 @@ export async function mountHubToutesAuth({teacherClient,studentClient,isTeacherM
  const route=(teacher)=>{const u=new URL('./hub.html',location.href);u.searchParams.set('toutes','1');u.searchParams.set('class',testClass);u.searchParams.set('name','Toutes');if(teacher)u.searchParams.set('joueur','prof');else u.searchParams.delete('joueur');return u.href};
  const normalized=x=>String(x||'').normalize('NFC').toLocaleLowerCase('fr').replace(/[.\s]+/g,'');
  const parts=x=>String(x||'').trim().match(/^([\p{L}][\p{L} '-]{0,39})[.\s]+([\p{L}])$/u);
- let people=[],requests=[],busy=false;
+ let people=[],requests=[],busy=false,abaqueControl=null;
  async function teacherCall(action,data={}){
    const sb=await teacherClient();const {data:{session}}=await sb.auth.getSession();
    if(!session?.access_token||session.user?.is_anonymous)throw Error('Connecte-toi d’abord comme professeur.');
@@ -97,6 +98,10 @@ export async function mountHubToutesAuth({teacherClient,studentClient,isTeacherM
    people=Array.isArray(data.students)?data.students:[];
    requests=Array.isArray(data.requests)?data.requests:[];
    drawProfiles();drawRequests();
+   if(isTeacherMode){
+     if(!abaqueControl)abaqueControl=mountAbaqueAllHubControls({panel,teacherClient,getProfiles:()=>people,baseUrl,publicKey,testClass});
+     await abaqueControl.refresh();
+   }
  }
  $('toutes-fictive-confirm').onchange=()=>{for(const b of panel.querySelectorAll('[data-needs-consent]'))b.disabled=!$('toutes-fictive-confirm').checked};
  $('toutes-switch').onclick=()=>location.assign(route(!isTeacherMode));
