@@ -329,3 +329,18 @@ html[data-abaque-connected][data-abaque-online="true"] .demo-notice{
 @media(prefers-reduced-motion:reduce){
   #homeScreen .home-connect-progress-rail>span{transition:none}
 }
+
+
+/* Abaque : trophées à débloquer en silhouettes très sombres. */
+#homeScreen .collection-trophy:not(.earned),
+#homeScreen .homeCard .trophy-hint:not(.earned),
+#homeScreen #recordChoice .trophy-hint:not(.earned){
+  opacity:1;
+  filter:grayscale(1) brightness(.22) contrast(1.25);
+}
+#homeScreen .collection-trophy.earned,
+#homeScreen .homeCard .trophy-hint.earned,
+#homeScreen #recordChoice .trophy-hint.earned{
+  opacity:1;
+  filter:none;
+}
