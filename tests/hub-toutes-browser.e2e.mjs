@@ -70,7 +70,12 @@ test('HUB Toutes: six vrais app_key dans Tests, sans carte en double ni modifica
  try{
    await f.page.goto(f.base+'/hub.html?toutes=1&joueur=prof&class='+testClass+'&name=Toutes',{waitUntil:'domcontentloaded'});
    await f.page.locator('.level-title').first().waitFor({timeout:20000});
-   await f.page.waitForFunction(()=>document.querySelectorAll('#levels .app-card').length===6);
+   try{await f.page.waitForFunction(()=>document.querySelectorAll('#levels .app-card').length===6,null,{timeout:15000});}
+    catch(error){
+      const state=await f.page.evaluate(()=>({appCount:document.querySelectorAll('#levels .app-card').length,sectionTitles:[...document.querySelectorAll('#levels .level-title')].map(el=>el.textContent),daily:document.querySelector('#dailyApps')?.textContent,levelsSnippet:document.querySelector('#levels')?.textContent?.slice(0,300),url:location.href}));
+      console.error('HUB_TOUTES_DIAGNOSTIC',JSON.stringify({state,requests:f.getRequests()}));
+      throw error;
+    }
    const sections=await f.page.locator('#levels .level-title').allTextContents();
    assert.match(sections[0],/Tests/);
    assert.equal(await f.page.locator('#levels .app-card').count(),6);
@@ -98,7 +103,12 @@ test('Le HUB Toutes reste lisible sur un petit écran de téléphone', {timeout:
  try{
    await f.page.setViewportSize({width:390,height:844});
    await f.page.goto(f.base+'/hub.html?toutes=1&joueur=prof&class='+testClass+'&name=Toutes',{waitUntil:'domcontentloaded'});
-   await f.page.waitForFunction(()=>document.querySelectorAll('#levels .app-card').length===6);
+   try{await f.page.waitForFunction(()=>document.querySelectorAll('#levels .app-card').length===6,null,{timeout:15000});}
+    catch(error){
+      const state=await f.page.evaluate(()=>({appCount:document.querySelectorAll('#levels .app-card').length,sectionTitles:[...document.querySelectorAll('#levels .level-title')].map(el=>el.textContent),daily:document.querySelector('#dailyApps')?.textContent,levelsSnippet:document.querySelector('#levels')?.textContent?.slice(0,300),url:location.href}));
+      console.error('HUB_TOUTES_DIAGNOSTIC',JSON.stringify({state,requests:f.getRequests()}));
+      throw error;
+    }
    assert.equal(await f.page.locator('#levels .level-title').first().textContent(),'🧪 Tests');
    const layout=await f.page.evaluate(()=>({
      viewport:innerWidth,
