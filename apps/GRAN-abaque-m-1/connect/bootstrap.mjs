@@ -27,7 +27,7 @@ function validSnapshot(value,subject,pupil=null){
 async function connect(){
  const panel=element('aside','','abaque-connect-panel');panel.id='abaque-connect-panel';
  const label=element('strong','Vérification de la connexion…');
- const dot=element('span','●');dot.setAttribute('aria-hidden','true');dot.style.color='#70e3ae';
+ const dot=element('span','●');dot.setAttribute('aria-hidden','true');dot.style.color='#70e3ae';dot.hidden=true;
  const face=element('span');face.setAttribute('aria-hidden','true');face.hidden=true;
  let chosenAvatar=null;
  const details=element('span');details.setAttribute('role','status');details.setAttribute('aria-live','polite');
@@ -49,7 +49,7 @@ async function connect(){
   document.documentElement.dataset.abaqueConnected='true';
   document.querySelector('.demo-notice').textContent=online?(CLASS===PILOT?'Laboratoire connecté · résultats liés à ton compte':'Mode Connect · résultats liés à ton compte'):'Hors connexion · résultats conservés en attente de synchronisation';
   label.textContent=snapshot.displayName||'Compte Connect';
-  face.hidden=false;paintConnectedAvatar(face,chosenAvatar,snapshot.displayName);
+  dot.hidden=false;face.hidden=false;paintConnectedAvatar(face,chosenAvatar,snapshot.displayName);
   xp.textContent=online?snapshot.xp.appXp+' / 160 XP acquis · '+snapshot.trophies.length+' / 6 trophées':'Connexion à confirmer';
   hints.render(snapshot.xp.remaining,showRemaining);
   if(online){
@@ -93,7 +93,7 @@ async function connect(){
   else if(state==='offline'){hideRemaining();details.textContent='Hors connexion : résultats conservés sur cet appareil.';}
   else if(state==='quarantined')details.textContent='Les résultats antérieurs à la remise à zéro restent archivés et ne seront pas recrédités.';
   else if(state==='conflict'){hideRemaining();setInert(true);details.textContent='Le parcours a changé sur le serveur. Réessaie la connexion avant de continuer.';}
-  else if(state==='unauthorized'){hideRemaining();setInert(true);document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';xp.textContent='';details.textContent='La session ou l’appareil n’est plus approuvé. Reconnecte-toi depuis le HUB.';}
+  else if(state==='unauthorized'){hideRemaining();setInert(true);document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';dot.hidden=true;face.hidden=true;xp.textContent='';details.textContent='La session ou l’appareil n’est plus approuvé. Reconnecte-toi depuis le HUB.';}
   else if(state==='rejected'){hideRemaining();setInert(true);details.textContent='Un résultat n’a pas été accepté. Il reste conservé sur cet appareil. Réessaie la connexion.';}
   else if(state==='storage-error'){hideRemaining();setInert(true);details.textContent='Stockage indisponible. Garde cette page ouverte pour réessayer sans perdre le résultat.';}
   else if(state==='queue-full'){setInert(true);details.textContent='100 résultats sont en attente. Reconnecte-toi avant une nouvelle partie.';}
@@ -125,13 +125,13 @@ async function connect(){
   subject=session.user.id;
   sessionActive=true;
   client.auth.onAuthStateChange((_event,updated)=>{
-   if(subject&&(!updated?.access_token||updated.user?.id!==subject)){sessionActive=false;sessionVersion++;queue?.halt();setInert(true);hideRemaining();document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';xp.textContent='';details.textContent='La session a changé. Ouvre à nouveau le jeu depuis le HUB.';}
+   if(subject&&(!updated?.access_token||updated.user?.id!==subject)){sessionActive=false;sessionVersion++;queue?.halt();setInert(true);hideRemaining();document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';dot.hidden=true;face.hidden=true;xp.textContent='';details.textContent='La session a changé. Ouvre à nouveau le jeu depuis le HUB.';}
    else if(updated?.user?.id===subject)sessionActive=true;
   });
   retry.onclick=async()=>{
    retry.disabled=true;
    try{await queue?.flush();const loaded=await post({action:'load'});if(pupil&&loaded.studentId!==pupil)throw Error('identity_changed');await initialize(loaded,true);}
-   catch(error){hideRemaining();if([401,403,409].includes(error.status)||error.message==='identity_changed'){queue?.halt();setInert(true);document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';xp.textContent='';}details.textContent='Connexion indisponible : '+error.message;}
+   catch(error){hideRemaining();if([401,403,409].includes(error.status)||error.message==='identity_changed'){queue?.halt();setInert(true);document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';dot.hidden=true;face.hidden=true;xp.textContent='';}details.textContent='Connexion indisponible : '+error.message;}
    finally{retry.disabled=false;}
   };
   try{await initialize(await post({action:'load'}),true);}
