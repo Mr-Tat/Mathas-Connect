@@ -17,11 +17,11 @@ function setInert(value){
  else delete document.documentElement.dataset.abaqueBlocked;
  for(const node of document.body.children)if(node.id!=='abaque-connect-panel'&&node.tagName!=='SCRIPT')node.inert=value;}
 function validSnapshot(value,subject,pupil=null){
- const caps={build:20,moves:20,one:20,three:28,five:40,lives:16,sudden:32};
+ const caps={build:20,moves:20,one:20,three:32,five:40,lives:72,sudden:72};
  return value?.ok===true&&value.status==='approved'&&value.ruleset===1&&value.appKey===APP_KEY&&value.classId===CLASS&&value.authSubject===subject&&
   uuid.test(value.studentId)&&(!pupil||value.studentId===pupil)&&integer(value.revision)&&integer(value.resetEpoch)&&
   value.state&&typeof value.state==='object'&&!Array.isArray(value.state)&&Array.isArray(value.trophies)&&
-  value.xp?.max===160&&integer(value.xp.appXp)&&value.xp.appXp<=160&&integer(value.xp.total)&&
+  value.xp?.max===204&&integer(value.xp.appXp)&&value.xp.appXp<=204&&integer(value.xp.total)&&
   Object.entries(caps).every(([kind,cap])=>integer(value.xp.remaining?.[kind])&&value.xp.remaining[kind]<=cap);
 }
 async function connect(){
@@ -63,13 +63,13 @@ async function connect(){
   if(homeAccount&&homeName&&homeXp){
    homeAccount.hidden=false;
    homeName.textContent=snapshot.displayName||'Compte Connect';
-   homeXp.textContent=online?snapshot.xp.appXp+' / 160 XP acquis':'Hors connexion · XP en attente';
+   homeXp.textContent=online?snapshot.xp.appXp+' / 204 XP acquis':'Hors connexion · XP en attente';
    paintConnectedAvatar(homeAvatar,chosenAvatar,snapshot.displayName);
   }
   document.querySelector('.demo-notice').textContent=online?(CLASS===PILOT?'Laboratoire connecté · résultats liés à ton compte':'Mode Connect · résultats liés à ton compte'):'Hors connexion · résultats conservés en attente de synchronisation';
   label.textContent=snapshot.displayName||'Compte Connect';
   dot.hidden=false;face.hidden=false;paintConnectedAvatar(face,chosenAvatar,snapshot.displayName);face.style.display='inline-grid';
-  xp.textContent=online?snapshot.xp.appXp+' / 160 XP acquis · '+snapshot.trophies.length+' / 6 trophées':'Connexion à confirmer';
+  xp.textContent=online?snapshot.xp.appXp+' / 204 XP acquis · '+snapshot.trophies.length+' / 6 trophées':'Connexion à confirmer';
   hints.render(snapshot.xp.remaining,showRemaining);
   if(online){
    try{localStorage.setItem(cacheKey,JSON.stringify(snapshot));localStorage.setItem(cachedBindingKey+subject,JSON.stringify({studentId:pupil}));}
@@ -196,7 +196,7 @@ async function connect(){
      const xpProfile=profile.xp;
      if(xpProfile?.active===true&&integer(xpProfile.total)&&Number.isSafeInteger(xpProfile.level)&&xpProfile.level>=1&&integer(xpProfile.next)){
       // Même découpage de niveaux que le HUB : 50 XP jusqu'au niveau 7,
-      // puis 100 XP par niveau, sans confondre ces XP avec les 160 XP de l'Abaque.
+      // puis 100 XP par niveau, sans confondre ces XP avec les 204 XP de l'Abaque.
       const from=xpProfile.level<=7?(xpProfile.level-1)*50:300+(xpProfile.level-7)*100;
       const max=xpProfile.next-from;
       if(max>0&&xpProfile.total>=from&&homeLevel&&homeLevelNumber&&homeProgress&&homeProgressLabel&&homeProgressRail&&homeProgressFill){
