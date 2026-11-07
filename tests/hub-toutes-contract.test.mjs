@@ -56,7 +56,8 @@ test('Abaque officiel : cartes de Toutes et session Monsieur T sans ouverture sc
  const panel=read('hub-toutes-auth.mjs');
  assert.match(hub,/playingAsTeacher\s*&&\s*allMode\s*&&\s*app\.app_key==='abaque-longueurs'/);
  assert.match(api,/abaqueSetting==null&&abaqueProject/);
- assert.match(api,/abaquePilot\|\|abaqueOpen/);
+ assert.match(api,/const query=abaquePilot/);
+ assert.doesNotMatch(api,/abaqueOpen/);
  assert.match(controls,/teacher-pilot-approve/);
  assert.match(controls,/fictiveConfirmed:true/);
  assert.match(controls,/teacher-pilot-status/);
