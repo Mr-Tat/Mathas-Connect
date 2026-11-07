@@ -92,7 +92,7 @@ function card(app) {
   // session anonyme de l'élève au lieu du stockage Auth professeur, et le
   // bandeau niveau/XP disparaît malgré la connexion dans le HUB.
   // Les liens externes du catalogue ne reçoivent jamais la session TEST.
-  if(playingAsTeacher&&connectedGameKeys.has(app.app_key)&&(!allMode||target.origin===location.origin))
+  if(playingAsTeacher&&connectedGameKeys.has(app.app_key)&&(!allMode||target.origin===location.origin||app.app_key==='abaque-longueurs'))
     target.searchParams.set('joueur','prof');
   node.href = target.href;
   if(testSlug&&!allMode)node.dataset.labSchool=testSlug;
