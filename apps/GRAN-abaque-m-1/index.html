@@ -1482,7 +1482,7 @@ window.MATHAS_ITEMS = [
  let demoPreviewActive=false,demoPreviewBackup=null;
  const allowDemoPreview=isolatedDemo&&new URLSearchParams(location.search).get('connect')!=='1';
  const $=id=>document.getElementById(id);
- const blank=()=>({stage1:{passes:[],passScores:[],failed:false,failedScore:null},stage2:{passes:[],passScores:[],failed:false,failedScore:null},recordsByMode:{},modes:{one:null,three:null,five:null,sudden:null},modeScores:{one:null,three:null,five:null},suddenBest:0,scoreRecords:{dayDate:"",dayBest:0,dayMode:"",allBest:0,allMode:"",medals:[]}});
+ const blank=()=>({stage1:{passes:[],passScores:[],perfectRuns:0,failed:false,failedScore:null},stage2:{passes:[],passScores:[],perfectRuns:0,failed:false,failedScore:null},recordsByMode:{},modes:{one:null,three:null,five:null,sudden:null},modeScores:{one:null,three:null,five:null},suddenBest:0,scoreRecords:{dayDate:"",dayBest:0,dayMode:"",allBest:0,allMode:"",medals:[]}});
  const TROPHY_DEFINITIONS=[['bronze','launchBtn','Architecte de l’abaque'],['silver','moveLaunchBtn','Maître des déplacements'],['gold','convertLaunchCard','Expert des conversions'],['sudden-bronze','sudden-bronze','Mort subite · bronze'],['sudden-silver','sudden-silver','Mort subite · argent'],['sudden-gold','sudden-gold','Mort subite · or']];
  const trophyKeys=TROPHY_DEFINITIONS.map(([key])=>key);
  const SUDDEN_TROPHIES=[[3,'sudden-bronze'],[5,'sudden-silver'],[8,'sudden-gold']];
@@ -1499,6 +1499,10 @@ window.MATHAS_ITEMS = [
        const v=Array.isArray(old.passScores)?old.passScores[i]:null;
        return Number.isInteger(v)&&v>=0&&v<=(key==='stage1'?12:8)?v:null;
      });
+     const recordedPerfects=data[key].passScores.filter(score=>score===(key==='stage1'?12:8)).length;
+     data[key].perfectRuns=Number.isSafeInteger(old.perfectRuns)&&old.perfectRuns>=0
+       ?Math.min(2,Math.max(recordedPerfects,old.perfectRuns))
+       :Math.min(2,recordedPerfects);
      data[key].failed=!!old.failed;
      const fail=old.failedScore;data[key].failedScore=Number.isInteger(fail)&&fail>=0&&fail<=(key==='stage1'?12:8)?fail:null;
    }
@@ -1522,8 +1526,9 @@ window.MATHAS_ITEMS = [
  }}
  try{restoreNative(JSON.parse(localStorage.getItem(STORAGE)))}catch(e){}
  // Reconcile only this demo's existing local results; never import native or Connect storage.
- if(data.stage1.passes.includes('green')||data.stage1.passScores.includes(12))earnTrophy('bronze');
- if(data.stage2.passes.includes('green')||data.stage2.passScores.includes(8))earnTrophy('silver');
+ earnedTrophies=earnedTrophies.filter(key=>(key!=='bronze'||data.stage1.perfectRuns>=2)&&(key!=='silver'||data.stage2.perfectRuns>=2));
+ if(data.stage1.perfectRuns>=2)earnTrophy('bronze');
+ if(data.stage2.perfectRuns>=2)earnTrophy('silver');
  if(['one','three','five'].every(mode=>data.modes[mode]==='green'))earnTrophy('gold');
  for(const [pages,key] of SUDDEN_TROPHIES)if(data.suddenBest>=pages)earnTrophy(key);
  try{master=sessionStorage.getItem(SESSION)==='1'}catch(e){}
@@ -1554,7 +1559,10 @@ window.MATHAS_ITEMS = [
   if(!canRecord())return {grade:color(correct,total),count:passes(key)};
   const previous=Math.max(0,...data[key].passScores.filter(Number.isSafeInteger),Number.isSafeInteger(data[key].failedScore)?data[key].failedScore:0);
   const beforeTrophies=earnedTrophies.length,grade=color(correct,total);
-  if(correct===total)earnTrophy(key==='stage1'?'bronze':'silver');
+  if(correct===total){
+   data[key].perfectRuns=Math.min(2,(data[key].perfectRuns||0)+1);
+   if(data[key].perfectRuns>=2)earnTrophy(key==='stage1'?'bronze':'silver');
+  }
   if(grade==='red'){if(passes(key)<2){data[key].failed=true;data[key].failedScore=correct}}
   else if(passes(key)<2){data[key].passes.push(grade);data[key].passScores.push(correct);data[key].failed=false;data[key].failedScore=null}
   save();render();
@@ -1596,7 +1604,7 @@ window.MATHAS_ITEMS = [
     const badge=$('trophy-'+id),earned=earnedTrophies.includes(key);
     badge.classList.toggle('earned',earned);badge.dataset.earned=String(earned);
     badge.setAttribute('aria-label',name+' — '+(earned?'obtenu':'à obtenir'));
-    badge.title=name+' — '+(earned?'obtenu':'à obtenir');
+    badge.title=name+' — '+(earned?'obtenu':(['bronze','silver'].includes(key)?(data[key==='bronze'?'stage1':'stage2'].perfectRuns||0)+'/2 séries à 100 %':'à obtenir'));
     const collected=document.querySelector('[data-collected="'+key+'"]');
     collected.classList.toggle('earned',earned);
     collected.setAttribute('aria-label',name+' — '+(earned?'obtenu':'non obtenu'));
