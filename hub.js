@@ -87,7 +87,8 @@ function card(app) {
   // silencieusement un 4/4 sans preuve et sans XP. Le mode Classique reste libre.
   if(schoolMultiplication && !inFreeMode() && target.origin===location.origin)
     target.searchParams.set('requireConnect','1');
-   if (playingAsTeacher && !allMode && ['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
+   // Dans le HUB Toutes, l'Abaque garde la véritable identité Monsieur T ; les autres jeux ne changent pas.
+  if (playingAsTeacher && (app.app_key==='abaque-longueurs'||(!allMode&&['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)))) target.searchParams.set('joueur','prof');
   node.href = target.href;
   if(testSlug&&!allMode)node.dataset.labSchool=testSlug;
   else node.dataset.appKey=app.app_key;
