@@ -1,6 +1,7 @@
 // UI scolaire de Mélange : contrôles officiels ajoutés SANS remplacer le moteur.
 import {milestones,MAX_XP,RULES,HALF_RULES,QUARTER_RULES} from './xp-model.mjs';
 import {renderCertifiedHistoricalPodium} from '../objective-record/school-score-view.mjs?v=20261106-history-top3-v1';
+import {createConnectedAvatar} from '../objective-record/profile-avatar-badge.mjs?v=20261107-v1';
 const COUNT=[2,3,4,5,6,7,8,9];
 const scoreNumber=(v)=>Number.isSafeInteger(v)&&v>=0?v:0;
 const rateRules=n=>n===3?RULES:n===2?HALF_RULES:QUARTER_RULES;
@@ -19,10 +20,10 @@ export function mixedRemainingXp(state,mode,level,total=0,operationCount=3){
  const levels=isHard?[[3,rules.hard3],[7,rules.hard7]]:[[5,rules.sudden5],[10,rules.sudden10]];
  return levels.reduce((s,[n,max])=>s+Math.max(0,(three?Math.round(max/2):max)-scoreAt(points,key+':'+level+':'+n)),0);
 }
-export function installMixedOfficialUi(doc,{connected=false,returnHref='../../hub.html',className='',state=null,xp=null,onShare=null}={}){
+export function installMixedOfficialUi(doc,{connected=false,profile=null,returnHref='../../hub.html',className='',state=null,xp=null,onShare=null}={}){
  if(!doc?.body||!doc.getElementById('menuScreen'))return null;
  const style=doc.createElement('style');style.id='mixed-connect-school-ui';style.textContent=`
- #mathasMixedConnected{display:inline-flex;align-items:center;padding:5px 9px;border-radius:8px;
+ #mathasMixedConnected{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:8px;
   border:1px solid #568ba1;background:#15374b;color:#c5edf8;font:750 11px system-ui;white-space:nowrap}
  #mathasMixedXp{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
   box-sizing:border-box;flex:0 0 177px;width:177px;height:51px;padding:6px 7px;border-radius:10px;
@@ -79,7 +80,11 @@ export function installMixedOfficialUi(doc,{connected=false,returnHref='../../hu
  const back=doc.createElement('a');back.id='mathasMixedReturn';back.href=returnHref;back.textContent='← HUB';
  actions.prepend(back);
  const connectedLabel=doc.createElement('span');connectedLabel.id='mathasMixedConnected';
- connectedLabel.textContent=connected?'● Connecté'+(className?' · '+className:''):'Mode libre';
+ const presence=doc.createElement('span');presence.className='mathas-mixed-presence';presence.textContent='●';presence.style.color='#70e3ae';presence.setAttribute('aria-hidden','true');
+ const face=createConnectedAvatar(doc,profile?.avatar,profile?.displayName);
+ const connectedName=doc.createElement('strong');connectedName.className='mathas-mixed-name';connectedName.textContent=String(profile?.displayName||'Élève');
+ const connectedMeta=doc.createElement('span');connectedMeta.className='mathas-mixed-meta';
+ connectedLabel.replaceChildren(...(connected?[presence,face,connectedName,connectedMeta]:[doc.createTextNode('Mode libre')]));
  const xpLabel=doc.createElement('button');xpLabel.id='mathasMixedXp';xpLabel.type='button';
  xpLabel.title='Voir les XP acquis et les récompenses encore possibles';
  const xpMain=doc.createElement('span');xpMain.className='mathas-xp-action-main';
@@ -147,7 +152,7 @@ export function installMixedOfficialUi(doc,{connected=false,returnHref='../../hu
   const totalXp=Number(currentXp?.total);
   const accountLevel=Number.isFinite(totalXp)&&totalXp>=0
    ?(totalXp<300?Math.floor(totalXp/50)+1:Math.floor((totalXp-300)/100)+7):null;
-  connectedLabel.textContent=connected?'● Connecté'+(className?' · '+className:'')+(accountLevel!==null?' · Niveau '+accountLevel:''):'Mode libre';
+  if(connected)connectedMeta.textContent=(className?' · '+className:'')+(accountLevel!==null?' · Niveau '+accountLevel:'');
   xpLabel.disabled=!connected;
   xpMain.textContent=connected?'✨ '+scoreNumber(currentXp?.appXp)+' / '+MAX_XP+' XP récupérés':'XP : mode libre';
   renderXpDetails();
