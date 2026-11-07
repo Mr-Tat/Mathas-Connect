@@ -14,6 +14,7 @@ import {createSchoolScoreView} from './school-score-view.mjs?v=20261106-fullscre
 import {installTensFirstDuringGame} from './in-game-tens-first.mjs?v=20261106-manual-validation-per-profile-v2';
 import {installManualValidationForWrittenCalc} from './in-game-manual-validation.mjs?v=20261106-manual-validation-v1';
 import {installSessionToolbarLayout} from './in-game-session-layout.mjs?v=20261106-all-confirmed-v3';
+import {paintConnectedAvatar} from './profile-avatar-badge.mjs?v=20261107-v1';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
 
@@ -103,6 +104,7 @@ function closePanels(){
 }
 function showConnectedBar(profile){
  $('connected-name').textContent=String(profile?.displayName||'Élève');
+ paintConnectedAvatar($('connected-avatar'),profile?.avatar,profile?.displayName);
  bar.hidden=false;$('guest-home').hidden=true;
  revealBar();
 }
