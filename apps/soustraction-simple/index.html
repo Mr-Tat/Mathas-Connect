@@ -5,11 +5,12 @@ import {createSubtractionSchoolConnect} from './certified-connect.mjs?v=20261106
 import {injectNativeSubtractionProof} from './native-proof-adapter.mjs';
 import {installManualValidationForWrittenCalc} from '../objective-record/in-game-manual-validation.mjs?v=20261106-manual-validation-v1';
 import {installSessionToolbarLayout} from '../objective-record/in-game-session-layout.mjs?v=20261106-all-confirmed-v3';
+import {paintConnectedAvatar} from '../objective-record/profile-avatar-badge.mjs?v=20261107-v1';
 const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM',APP='soustraction-ecrite-simple';
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
 const requireConnect=query.get('requireConnect')==='1';
-const free=!teacherPlayer&&!requireConnect&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,studentName='',connectionCheckRequired=false,consent=null;
+const free=!teacherPlayer&&!requireConnect&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,studentName='',studentAvatar=null,connectionCheckRequired=false,consent=null;
 const status=s=>document.getElementById('message').textContent=s;
 const originalPromise=fetch('./game-original.html').then(r=>{if(!r.ok)throw Error('Copie du jeu non disponible');return r.text()});
 // Un visiteur sans profil approuvé ouvre directement le jeu classique.
@@ -33,8 +34,10 @@ try{
     mode='connected';revision=x.revision;resetEpoch=x.resetEpoch??0;initial=x.state;cloud=sb;
     try{
       const profile=await profilePromise;
-      if(profile?.ok&&profile.status==='approved'&&profile.classId===classId&&typeof profile.displayName==='string')
+      if(profile?.ok&&profile.status==='approved'&&profile.classId===classId&&typeof profile.displayName==='string'){
         studentName=profile.displayName.trim().slice(0,70);
+        studentAvatar=profile.avatar??null;
+      }
     }catch(err){console.info('Nom du compte momentanément indisponible.')}
    }else if(r.status===403&&['forbidden','not_enrolled','not_registered'].includes(x.error)){
     // L'utilisateur n'a pas d'accès Connect à cette classe : aucun écran de connexion.
@@ -221,8 +224,9 @@ function mountNativeConnectHeader(){
   main.app > header .mathas-brand-row>.app-version-pill{display:none!important}
   .mathas-sous-connect-dock{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:0!important;min-width:0;position:relative;z-index:4;font:700 12px system-ui;color:#e7faff}
   .mathas-sous-connect-person{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;padding:8px 11px;border:1px solid rgba(80,200,213,.43);border-radius:12px;background:rgba(19,65,80,.87)}
-  .mathas-sous-connect-identity::before{content:'●';color:#70e3ae;margin-right:5px}
-  .mathas-sous-connect-identity{max-width:210px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .mathas-sous-connect-identity::before{content:'●';color:#70e3ae;flex:none}
+  .mathas-sous-connect-identity{display:inline-flex;align-items:center;gap:5px;max-width:210px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .mathas-sous-connect-name{overflow:hidden;min-width:0;text-overflow:ellipsis;white-space:nowrap}
   /* Badge récupéré de #ce-xp-level-badge : fond bleu, filet or et chiffre XXL. */
   .mathas-sous-connect-level{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:90px;box-sizing:border-box;padding:3px 8px;border:1px solid #efc56a;border-radius:99px;background:linear-gradient(140deg,#325f90,#1b4678);box-shadow:inset 0 1px 0 #ffffff30;white-space:nowrap}
   .mathas-sous-connect-level-label{display:inline-flex;align-items:center;justify-content:center;height:25px;font:750 10px/1 system-ui;letter-spacing:.025em;color:#f7d996;transform:translateY(2px)}
@@ -264,6 +268,9 @@ function mountNativeConnectHeader(){
   dock=doc.createElement('div');dock.id='mathas-sous-connect-dock';dock.className='mathas-sous-connect-dock';
   const person=doc.createElement('div');person.className='mathas-sous-connect-person';
   const identity=doc.createElement('span');identity.id='mathas-sous-connect-identity';identity.className='mathas-sous-connect-identity';
+  const identityAvatar=doc.createElement('span');identityAvatar.className='mathas-connect-avatar';identityAvatar.setAttribute('aria-hidden','true');
+  const identityName=doc.createElement('strong');identityName.className='mathas-sous-connect-name';
+  identity.append(identityAvatar,identityName);
   const level=doc.createElement('span');level.id='mathas-sous-connect-level';level.className='mathas-sous-connect-level';
   const levelLabel=doc.createElement('span');levelLabel.className='mathas-sous-connect-level-label';levelLabel.textContent='Niveau';
   const levelNumber=doc.createElement('strong');levelNumber.className='mathas-sous-connect-level-number';levelNumber.textContent='…';
@@ -293,7 +300,8 @@ function mountNativeConnectHeader(){
   link.textContent='↩ Retour au HUB';link.href=document.getElementById('ce-hub-link')?.href||'../../hub.html';actions.prepend(link);
  }
  if(mode==='connected'){
-  doc.getElementById('mathas-sous-connect-identity').textContent=document.getElementById('ce-identity')?.textContent||'Compte élève';
+  doc.querySelector('#mathas-sous-connect-identity .mathas-sous-connect-name').textContent=document.getElementById('ce-identity')?.textContent||'Compte élève';
+  paintConnectedAvatar(doc.querySelector('#mathas-sous-connect-identity .mathas-connect-avatar'),studentAvatar,studentName);
   doc.getElementById('mathas-sous-connect-level').querySelector('strong').textContent=document.getElementById('ce-xp-level-number')?.textContent||'…';
   doc.getElementById('mathas-sous-connect-count').textContent=document.getElementById('ce-xp-meter-count')?.textContent||'… / 50 XP';
   const total=doc.getElementById('mathas-sous-connect-total');
