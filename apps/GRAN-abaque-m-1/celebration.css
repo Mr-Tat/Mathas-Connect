@@ -12,10 +12,10 @@
 #celebrateDialog .abaque-personal-recap span{font-size:.96rem;font-weight:740}
 #celebrateDialog .abaque-personal-recap b{padding:6px 11px;border-radius:999px;background:#ffffffa8;color:#14614f;font-size:.91rem}
 .abaque-personal-confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1}
-.abaque-personal-confetti i{position:absolute;top:-5px;left:calc(5% + var(--i)*6%);width:10px;height:17px;background:hsl(calc(var(--i)*57) 85% 62%);border-radius:2px;transform:rotate(var(--angle));opacity:0;animation:abaque-confetti-fall 1.9s ease-in calc(var(--i)*55ms) both}
+.abaque-personal-confetti i{position:absolute;top:-5px;left:var(--x);width:10px;height:17px;background:hsl(calc(var(--i)*57) 85% 62%);border-radius:2px;transform:rotate(var(--angle));opacity:0;animation:abaque-confetti-fall 1.9s ease-in calc(var(--i)*55ms) both}
 @keyframes abaque-record-pop{0%{opacity:0;transform:translate(-50%,-12px) scale(.88)}75%{opacity:1;transform:translate(-50%,2px) scale(1.04)}100%{opacity:1;transform:translate(-50%,0) scale(1)}}
 @keyframes abaque-record-bounce{50%{transform:translateY(-8px) scale(1.1)}}
 @keyframes abaque-record-reveal{0%{opacity:0;transform:scale(.92)}100%{opacity:1;transform:scale(1)}}
-@keyframes abaque-confetti-fall{8%{opacity:1}70%{opacity:.9}100%{opacity:0;transform:translate(calc((var(--i) - 8)*12px),175px) rotate(620deg)}}
+@keyframes abaque-confetti-fall{8%{opacity:1}70%{opacity:.9}100%{opacity:0;transform:translate(var(--shift),175px) rotate(620deg)}}
 @media(prefers-reduced-motion:reduce){#abaque-personal-celebration.show,#abaque-personal-celebration .abaque-personal-icon,#celebrateDialog .abaque-personal-recap,.abaque-personal-confetti i{animation:none!important}#abaque-personal-celebration.show{opacity:1;transform:translate(-50%,0)}}
 @media(max-width:480px){#abaque-personal-celebration{padding:17px 15px;top:68px}#abaque-personal-celebration .abaque-personal-icon{font-size:2.5rem}}
