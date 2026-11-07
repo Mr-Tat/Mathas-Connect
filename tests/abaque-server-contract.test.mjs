@@ -12,8 +12,8 @@ test('Abaque serveur : vrais seuils, scores et preuves de fin ; aucune récompen
  assert.equal(judgeCompletion(build(10)).firstTry,10);
  assert.equal(judgeCompletion(moves(7)).firstTry,7);
  for(const [kind,points] of [['one',100],['three',324],['five',580]])assert.equal(judgeCompletion(classic(kind)).points,points);
- assert.equal(judgeCompletion(record('lives',5)).points,129);
- assert.equal(judgeCompletion(record('sudden',5)).points,155);
+ assert.equal(judgeCompletion(record('lives',5)).points,5);
+ assert.equal(judgeCompletion(record('sudden',5)).points,10);
  assert.equal(judgeCompletion(record('sudden',10,{abandoned:true})).eligible,false);
  for(const altered of [{...build(),master:true},{...build(),xp:160},{...build(),trophies:['gold']},{...record(),completed:false},{...classic(),tasks:[]}])assert.throws(()=>judgeCompletion(altered));
  const proof=record('sudden',4);proof.tasks[3].manip=true;
@@ -61,12 +61,10 @@ test('Abaque contrat Edge avec Auth simulée : fermeture, identité fournie par 
 });
 
 
-test('Abaque record long : mémoire de preuve bornée, formule native exacte et aucun plafond de 10 000 conversions',()=>{
+test('Abaque record long : mémoire de preuve bornée, barème 1/2 points et aucun plafond de 10 000 conversions',()=>{
  for(const kind of ['lives','sudden']){
-  let native=0;
   for(let count=0;count<1000;count++){
-   assert.equal(recordPoints(kind,count),native,kind+' '+count);
-   const base=30+5*Math.floor(count/4);native+=kind==='lives'?Math.round(base/1.2):base;
+   assert.equal(recordPoints(kind,count),count*(kind==='sudden'?2:1),kind+' '+count);
   }
   const event=record(kind,10,{abandoned:true});event.completed=true;delete event.abandoned;
   event.tailSegments=kind==='lives'?[100000,0,0,0]:[100000,0];
