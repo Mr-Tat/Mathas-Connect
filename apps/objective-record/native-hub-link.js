@@ -63,6 +63,7 @@
       max-width:190px!important;min-width:0!important;white-space:nowrap!important
     }
     #mathas-native-connect-profile .connect-presence{color:#70e3ae!important;flex:none!important}
+    #mathas-native-connect-profile .connect-avatar{display:inline-grid!important;place-items:center!important;box-sizing:border-box!important;width:26px!important;height:26px!important;min-width:26px!important;flex:none!important;border-radius:50%!important;border:1px solid rgba(164,205,228,.85)!important;color:#fff!important;font:800 18px/1 system-ui,sans-serif!important;text-align:center!important;box-shadow:0 1px 4px #0005!important}
     #mathas-native-connect-profile .connect-person{
       max-width:140px!important;overflow:hidden!important;text-overflow:ellipsis!important
     }
@@ -165,7 +166,7 @@
       const profile=doc.createElement('div');
       profile.id='mathas-native-connect-profile';
       profile.setAttribute('aria-label','Profil et progression Math’as Connect');
-      profile.innerHTML='<span class="connect-identity"><span class="connect-presence" aria-hidden="true">●</span><strong class="connect-person"></strong></span><span class="connect-level">Niveau <strong></strong></span><span class="connect-meter"><span class="connect-earned"></span><span class="connect-track"><span class="connect-fill"></span></span></span>';
+      profile.innerHTML='<span class="connect-identity"><span class="connect-presence" aria-hidden="true">●</span><span class="connect-avatar" aria-hidden="true"></span><strong class="connect-person"></strong></span><span class="connect-level">Niveau <strong></strong></span><span class="connect-meter"><span class="connect-earned"></span><span class="connect-track"><span class="connect-fill"></span></span></span>';
       row.append(profile);
     }
     const profileAnchor=doc.getElementById('mathas-native-connect-profile');
@@ -192,6 +193,12 @@
       profile.hidden=!available;
       if(available){
         profile.querySelector('.connect-person').textContent=host.getElementById('connected-name')?.textContent||'Élève';
+        const badge=profile.querySelector('.connect-avatar'),sourceAvatar=host.getElementById('connected-avatar');
+        if(badge&&sourceAvatar){
+          if(badge.textContent!==sourceAvatar.textContent)badge.textContent=sourceAvatar.textContent;
+          const color=sourceAvatar.style.backgroundColor;
+          if(badge.style.backgroundColor!==color)badge.style.backgroundColor=color;
+        }
         profile.querySelector('.connect-level strong').textContent=host.getElementById('level')?.textContent||'—';
         profile.querySelector('.connect-earned').textContent=host.getElementById('level-xp')?.textContent||'— / — XP';
         profile.querySelector('.connect-fill').style.width=host.getElementById('level-fill')?.style.width||'0%';
