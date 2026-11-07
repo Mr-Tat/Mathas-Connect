@@ -30,7 +30,7 @@
   if(pending.reward){const extra=document.createElement('b');extra.textContent=pending.reward;section.append(extra);}
   const confetti=document.createElement('div');confetti.className='abaque-personal-confetti';confetti.setAttribute('aria-hidden','true');
   for(let i=0;i<16;i++){
-   const piece=document.createElement('i');piece.style.setProperty('--i',String(i));piece.style.setProperty('--angle',((i*137)%360)+'deg');confetti.append(piece);
+   const piece=document.createElement('i');piece.style.setProperty('--i',String(i));piece.style.setProperty('--angle',((i*137)%360)+'deg');piece.style.setProperty('--x',(5+i*5)+'%');piece.style.setProperty('--shift',((i-8)*12)+'px');confetti.append(piece);
   }
   section.append(confetti);
   card.insertBefore(section,card.querySelector('.celebrateActions'));
@@ -57,7 +57,7 @@
   banner.append(trophy,title,detail);
   if(next.reward){const reward=document.createElement('b');reward.textContent=next.reward;banner.append(reward);}
   const confetti=document.createElement('div');confetti.className='abaque-personal-confetti';confetti.setAttribute('aria-hidden','true');
-  for(let i=0;i<18;i++){const piece=document.createElement('i');piece.style.setProperty('--i',String(i));piece.style.setProperty('--angle',((i*139)%360)+'deg');confetti.append(piece);}
+  for(let i=0;i<18;i++){const piece=document.createElement('i');piece.style.setProperty('--i',String(i));piece.style.setProperty('--angle',((i*139)%360)+'deg');piece.style.setProperty('--x',(5+i*5)+'%');piece.style.setProperty('--shift',((i-9)*12)+'px');confetti.append(piece);}
   banner.append(confetti);banner.hidden=false;banner.classList.remove('show');void banner.offsetWidth;banner.classList.add('show');
   expiry=window.setTimeout(()=>{banner.classList.remove('show');banner.hidden=true;pending=null;},3600);
   return true;
