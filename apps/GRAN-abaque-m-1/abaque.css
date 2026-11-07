@@ -262,3 +262,67 @@ html[data-abaque-connected][data-abaque-online="true"] .demo-notice{
     padding:10px 0 0;border-top:1px solid #b0e5de3a;border-left:0
   }
 }
+
+/* Abaque : niveau et XP Connect à côté du profil, en deux lignes compactes. */
+#homeScreen .home-connect-account{
+  display:grid;grid-template-columns:minmax(0,1fr) 108px;
+  grid-template-areas:"identity level" "app progress";
+  align-items:center;column-gap:8px;row-gap:5px;
+  padding:8px 10px;min-height:66px;
+}
+#homeScreen .home-connect-identity{
+  grid-area:identity;display:flex;align-items:center;min-width:0;gap:6px;
+}
+#homeScreen .home-connect-identity .home-connect-avatar{
+  display:inline-flex;flex:none;align-items:center;justify-content:center;
+  width:27px;min-width:27px;height:27px;
+}
+#homeScreen .home-connect-identity>strong{
+  min-width:0;flex:1 1 auto;font-size:.78rem;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#homeScreen .home-connect-level{
+  grid-area:level;display:flex;align-items:center;justify-content:space-between;gap:5px;
+  min-height:32px;padding:4px 10px;border:1px solid #d5a641;border-radius:22px;
+  background:linear-gradient(140deg,#285a7e,#153b5a);
+  box-shadow:inset 0 1px 0 #ffffff36;color:#fff;
+}
+#homeScreen .home-connect-level[hidden],
+#homeScreen .home-connect-progress[hidden]{display:none!important}
+#homeScreen .home-connect-level>span{
+  flex:0 0 auto;font-size:.63rem;font-weight:750;
+}
+#homeScreen .home-connect-level>strong{
+  flex:0 0 auto;font-size:1.18rem;font-weight:950;line-height:1;
+  overflow:visible;white-space:nowrap;color:#fff;
+}
+#homeScreen .home-connect-app-xp{
+  grid-area:app;display:block;min-width:0;margin:0;
+  font-size:.65rem;line-height:1.15;color:#386f65;font-weight:850;
+  overflow-wrap:anywhere;
+}
+#homeScreen .home-connect-progress{
+  grid-area:progress;display:grid;min-width:0;gap:3px;
+}
+#homeScreen .home-connect-progress>strong{
+  display:block;min-width:0;font-size:.73rem;font-weight:850;
+  line-height:1.1;color:#153f55;white-space:nowrap;
+}
+#homeScreen .home-connect-progress-rail{
+  display:block;width:100%;height:8px;overflow:hidden;
+  border-radius:9px;background:#b4cbd0;box-shadow:inset 0 1px 3px #11384927;
+}
+#homeScreen .home-connect-progress-rail>span{
+  display:block;height:100%;width:0%;
+  background:linear-gradient(90deg,#c69a32,#f8ce58);border-radius:9px;
+  transition:width .3s ease;
+}
+@media(max-width:350px){
+  #homeScreen .home-connect-account{
+    grid-template-columns:minmax(0,1fr) 102px;column-gap:5px;padding:8px;
+  }
+  #homeScreen .home-connect-level{padding:4px 7px}
+}
+@media(prefers-reduced-motion:reduce){
+  #homeScreen .home-connect-progress-rail>span{transition:none}
+}
