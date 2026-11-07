@@ -56,7 +56,7 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 const SERVER_PROOF_ADDITIONS=new Set(['addition-ecrite-simple','addition-ecrite-multiple']);
 const nativeRecordAllowed=appKey=>isWritableTestApp(appKey)&&!SERVER_PROOF_ADDITIONS.has(appKey);
 
-let statusTimer=null,barTimer=null,lastOfficialXp=null,lastOfficialProgress=null;
+let statusTimer=null,barTimer=null,lastOfficialXp=null,lastOfficialProgress=null,missingNativeProfileSince=0;
 const bar=$('connect-bar'),handle=$('bar-handle'),xpPanel=$('xp-panel'),challengePanel=$('challenge-panel');
 function message(s){
  const status=$('status');
@@ -85,12 +85,12 @@ function updateBarHeight(){
 const aPanelOpen=()=>!xpPanel.hidden||!challengePanel.hidden;
 function stopBarTimer(){clearTimeout(barTimer);barTimer=null}
 function retractBar(){
- if(bar.hidden||aPanelOpen()||bar.contains(document.activeElement))return;
+ if(bar.hidden||document.documentElement.classList.contains('mathas-native-connect-fallback')||aPanelOpen()||bar.contains(document.activeElement))return;
  bar.classList.add('retracted');handle.hidden=false;
 }
 function scheduleBar(){
  stopBarTimer();
- if(!bar.hidden&&!aPanelOpen())barTimer=setTimeout(retractBar,3200);
+ if(!bar.hidden&&!document.documentElement.classList.contains('mathas-native-connect-fallback')&&!aPanelOpen())barTimer=setTimeout(retractBar,3200);
 }
 function revealBar(){
  if(bar.hidden)return;
@@ -187,6 +187,7 @@ const clear=()=>{
   $('gameFrame').hidden=true;$('gameFrame').removeAttribute('src');$('refresh').disabled=true;
   $('certified-tools').hidden=true;$('certify').disabled=true;
   bar.hidden=true;handle.hidden=true;$('guest-home').hidden=false;stopBarTimer();closePanels();
+  missingNativeProfileSince=0;document.documentElement.classList.remove('mathas-native-connect-fallback');
   lastOfficialXp=null;lastOfficialProgress=null;window.MathasConnectOfficialSchoolProgress=null;
   $('xp-toggle-main').textContent='✨ XP à récupérer';
 };
@@ -259,6 +260,28 @@ function watchGame(seq){
    const inside=outer?.getElementById('game');
    const doc=inside?.contentDocument;
    if(!doc?.querySelector('#menuScreen'))return;
+   // The native application may rebuild its header after iframe.onload. If it
+   // cannot show the official profile, NEVER leave a connected pupil with no
+   // identity/level/XP. Restore the already authenticated host bar temporarily.
+   if(document.documentElement.classList.contains('mathas-native-connect-hud')&&!bar.hidden){
+    const nativeProfile=doc.getElementById('mathas-native-connect-profile');
+    const nativeXp=doc.getElementById('mathas-native-connect-xp');
+    const brand=doc.querySelector('main.app > header .mathas-brand-row');
+    const rect=nativeProfile?.getBoundingClientRect();
+    const xpRect=nativeXp?.getBoundingClientRect();
+    const mounted=!!(brand?.contains(nativeProfile)&&rect?.width>0&&rect?.height>0
+      &&xpRect?.width>0&&xpRect?.height>0&&!nativeProfile.hidden&&!nativeXp.hidden);
+    if(mounted){
+     missingNativeProfileSince=0;
+     document.documentElement.classList.remove('mathas-native-connect-fallback');
+    }else{
+     if(!missingNativeProfileSince)missingNativeProfileSince=Date.now();
+     if(Date.now()-missingNativeProfileSince>2800){
+      document.documentElement.classList.add('mathas-native-connect-fallback');
+      revealBar();
+     }
+    }
+   }
    for(const surface of [outer,doc]){
     if(surface.__mathasToolbarActivity)continue;
     surface.__mathasToolbarActivity=true;
