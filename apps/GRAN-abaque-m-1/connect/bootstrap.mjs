@@ -41,12 +41,24 @@ async function connect(){
  let client,subject,pupil,queue,latest=null,cacheKey=null,sessionActive=false,sessionVersion=0;
  const cachedBindingKey='mathas.abaque.binding.'+CLASS+'.';
  const hints=createXpHints();
+ const homeAccount=document.getElementById('homeConnectAccount');
+ const homeAvatar=document.getElementById('homeConnectAvatar');
+ const homeName=document.getElementById('homeConnectName');
+ const homeXp=document.getElementById('homeConnectXp');
  function hideRemaining(){delete document.documentElement.dataset.abaqueXpApproved;hints.hide();}
  function draw(snapshot,online){
   latest=snapshot;
   const showRemaining=online&&sessionActive&&navigator.onLine;
   if(showRemaining)document.documentElement.dataset.abaqueXpApproved='true';else hideRemaining();
   document.documentElement.dataset.abaqueConnected='true';
+  document.documentElement.dataset.abaqueOnline=online?'true':'false';
+  if(!online)document.documentElement.dataset.abaqueAttention='true';
+  if(homeAccount&&homeName&&homeXp){
+   homeAccount.hidden=false;
+   homeName.textContent=snapshot.displayName||'Compte Connect';
+   homeXp.textContent=online?snapshot.xp.appXp+' / 160 XP acquis · '+snapshot.trophies.length+' / 6 trophées':'Hors connexion · XP en attente';
+   paintConnectedAvatar(homeAvatar,chosenAvatar,snapshot.displayName);
+  }
   document.querySelector('.demo-notice').textContent=online?(CLASS===PILOT?'Laboratoire connecté · résultats liés à ton compte':'Mode Connect · résultats liés à ton compte'):'Hors connexion · résultats conservés en attente de synchronisation';
   label.textContent=snapshot.displayName||'Compte Connect';
   dot.hidden=false;face.hidden=false;paintConnectedAvatar(face,chosenAvatar,snapshot.displayName);face.style.display='inline-grid';
@@ -80,12 +92,15 @@ async function connect(){
  }
  function handleState(state,value,event){
   retry.hidden=false;
+  if(state!=='saved')document.documentElement.dataset.abaqueAttention='true';
   if(state==='saved'){
    if(!sessionActive){hideRemaining();return;}
    if(!validSnapshot(value,subject,pupil)){hideRemaining();queue.halt();setInert(true);details.textContent='Réponse de synchronisation invalide. Réessaie la connexion.';return;}
    const prior=latest;
    window.MATHAS_PROGRESS.applyServer(value);draw(value,true);
    details.textContent=queue.pending()?'Résultats en cours de synchronisation…':'Résultats enregistrés.';
+   if(queue.pending())document.documentElement.dataset.abaqueAttention='true';
+   else delete document.documentElement.dataset.abaqueAttention;
    if(queue.pending()<100)setInert(false);
    const celebrated=window.MATHAS_ABAQUE_HIGHLIGHT?.fromServer(prior,value,event);
    if(value.xp.delta>0&&!value.duplicate&&!celebrated)window.MATHAS_CELEBRATE?.toast('+'+value.xp.delta+' XP');
@@ -113,6 +128,7 @@ async function connect(){
    catch(error){handleState(error.message==='invalid_completion'?'rejected':'storage-error');}
   },()=>queue.version().resetEpoch);
   draw(snapshot,online);delete document.documentElement.dataset.abaquePending;
+  if(online&&!queue.pending())delete document.documentElement.dataset.abaqueAttention;
   retry.hidden=false;setInert(false);
   if(online)await queue.flush();
  }
@@ -131,7 +147,7 @@ async function connect(){
   retry.onclick=async()=>{
    retry.disabled=true;
    try{await queue?.flush();const loaded=await post({action:'load'});if(pupil&&loaded.studentId!==pupil)throw Error('identity_changed');await initialize(loaded,true);}
-   catch(error){hideRemaining();if([401,403,409].includes(error.status)||error.message==='identity_changed'){queue?.halt();setInert(true);document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';dot.hidden=true;face.hidden=true;face.style.display='none';xp.textContent='';}details.textContent='Connexion indisponible : '+error.message;}
+   catch(error){hideRemaining();document.documentElement.dataset.abaqueAttention='true';if([401,403,409].includes(error.status)||error.message==='identity_changed'){queue?.halt();setInert(true);document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';dot.hidden=true;face.hidden=true;face.style.display='none';xp.textContent='';}details.textContent='Connexion indisponible : '+error.message;}
    finally{retry.disabled=false;}
   };
   try{await initialize(await post({action:'load'}),true);}
@@ -159,6 +175,7 @@ async function connect(){
     await token();
     chosenAvatar=profile.avatar??null;
     paintConnectedAvatar(face,chosenAvatar,profile.displayName||latest?.displayName);
+    paintConnectedAvatar(homeAvatar,chosenAvatar,profile.displayName||latest?.displayName);
    }catch{/* La fiche avatar n'empêche pas les exercices authentifiés. */}
   })();
   window.addEventListener('online',()=>{if(!retry.disabled)retry.click();});
