@@ -9,10 +9,12 @@ export const MAX_TASKS=20;
 export function recordPoints(kind,count){
  if(!Number.isSafeInteger(count)||count<0)fail();
  const blocks=Math.floor(count/4),rest=count%4;
- if(kind==='sudden')return 4*(30*blocks+5*blocks*(blocks-1)/2)+rest*(30+5*blocks);
+ // Mort subite : exactement le double des points du mode 3 vies.
+ // Les arrondis de 3 vies sont appliqués avant le doublement.
  const cycles=Math.floor(blocks/6),remaining=blocks%6;
  const roundedSum=3*cycles*cycles+remaining*cycles+Math.max(0,remaining-3);
- return 4*(25*blocks+2*blocks*(blocks-1)+roundedSum)+rest*(25+4*blocks+Math.floor((blocks+3)/6));
+ const livesPoints=4*(25*blocks+2*blocks*(blocks-1)+roundedSum)+rest*(25+4*blocks+Math.floor((blocks+3)/6));
+ return kind==='sudden'?2*livesPoints:livesPoints;
 }
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const allUnits=['km','hm','dam','m','dm','cm','mm'];
@@ -61,8 +63,9 @@ export function judgeCompletion(raw){
     if(errors===(kind==='lives'?3:1)||task.correctedAnswer!=null||
      (successes>=1&&judged.units)||(successes>=3&&judged.manip))fail();
     if(judged.good){
-     const native=30+5*Math.floor(successes/4),base=kind==='lives'?Math.round(native/1.2):native;
-     points+=judged.units?Math.round(base*.6):judged.manip?Math.round(base*.8):base;
+     const native=30+5*Math.floor(successes/4),livesBase=Math.round(native/1.2);
+     const livesPoints=judged.units?Math.round(livesBase*.6):judged.manip?Math.round(livesBase*.8):livesBase;
+     points+=kind==='sudden'?2*livesPoints:livesPoints;
      successes++;
     }else errors++;
    }else{
