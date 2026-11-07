@@ -342,6 +342,15 @@ try{
    await frame.locator('#mathas-multi-connect-identity .mathas-connect-avatar').waitFor({state:'visible',timeout:12000});
    assert.equal(await frame.locator('#mathas-multi-connect-identity .mathas-connect-avatar').textContent(),'🦊');
    assert.equal(await frame.locator('#mathas-multi-connect-identity .mathas-multi-connect-name').textContent(),'Élève fictif · navigateur');
+   const header=await frame.locator('#mathas-multi-connect-dock').evaluate(el=>{
+    const b=el.getBoundingClientRect(),xp=el.querySelector('#mathas-multi-connect-xp')?.getBoundingClientRect();
+    return {visible:b.width>0&&b.height>0,level:el.querySelector('#mathas-multi-connect-level')?.textContent,
+     meter:el.querySelector('#mathas-multi-connect-count')?.textContent,xpVisible:!!xp&&xp.width>0&&xp.height>0};
+   });
+   assert.equal(header.visible,true,'profil Connect réel visible dans la barre native');
+   assert.match(header.level||'',/Niveau/);
+   assert.match(header.meter||'',/XP/);
+   assert.equal(header.xpVisible,true,'bouton XP doré visible en Multiplication');
    assert.equal(await frame.locator('#menuScreen .classic-count-btn[data-count="4"]').count(),1);
    await frame.locator('#menuScreen .classic-count-btn[data-count="4"]').click();
    await frame.locator('#gameScreen:not(.hidden)').waitFor();
