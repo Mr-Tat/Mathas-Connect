@@ -189,6 +189,29 @@ test('Abaque : Master au départ ou pendant une partie exclut résultats et trop
  }finally{await h.close();}
 });
 
+test('Abaque : record personnel spectaculaire, sans seconde fenêtre et sans répéter au score égal',async()=>{
+ const h=await setup(),{page}=h;
+ try{
+  await page.goto(h.url);await fixture(page,{modes:{one:'red'},modeScores:{one:2}});
+  await page.locator('[data-mode="one"]').click();
+  await inputConversion(page,i=>i===0,{expectModal:false});
+  await inputConversion(page);
+  const celebration=page.locator('#celebrateDialog .abaque-personal-recap');
+  await celebration.waitFor();
+  assert.match(await celebration.innerText(),/Nouveau record personnel/);
+  assert.match(await celebration.innerText(),/2 \/ 4 → 3 \/ 4/);
+  assert.equal(await page.locator('#celebrateDialog').count(),1,'aucune nouvelle fenêtre modale');
+  await modal(page,'Accueil');
+  await page.locator('[data-mode="one"]').click();await inputConversion(page);
+  assert.match(await celebration.innerText(),/3 \/ 4 → 4 \/ 4/);
+  await modal(page,'Accueil');
+  await page.locator('[data-mode="one"]').click();await inputConversion(page);
+  assert.equal(await celebration.count(),0,'résultat identique : aucune nouvelle célébration');
+  await modal(page,'Accueil');
+  assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
+ }finally{await h.close();}
+});
+
 test('Abaque : correction au deuxième essai et aides conservent les points natifs',async()=>{
  const h=await setup(),{page}=h;
  try{
