@@ -435,7 +435,12 @@ test('Laboratoire : carte Abaque en ligne, attente serveur puis autorisation fic
  try{
   await page.goto(h.origin+'/laboratoire.html');
   const card=page.locator('#abaque-pilot-controls [data-online-app="abaque-longueurs"]');
-  await card.waitFor();
+  try{await card.waitFor();}
+  catch(error){
+   const state=await page.evaluate(()=>({labHidden:document.querySelector('#lab')?.hidden,hasControls:!!document.querySelector('#abaque-pilot-controls'),controlsChildren:document.querySelector('#abaque-pilot-controls')?.children.length,hiddenAppsChildren:document.querySelector('#apps')?.children.length,status:document.querySelector('#status')?.textContent,heading:document.querySelector('#apps-title')?.textContent,ready:document.readyState}));
+   console.error('LAB_ABAQUE_DIAGNOSTIC',JSON.stringify({state,errors:h.errors,external:h.external}));
+   throw error;
+  }
   assert.equal(await page.locator('#apps-title').textContent(),'Essais Connect — HUB « Toutes »');
   assert.equal(await page.getByRole('link',{name:/Ouvrir Tests dans le HUB Toutes/}).count(),1);
   assert.match(await card.locator('[data-abaque-pilot-status]').textContent(),/Activation Connect en attente/);
