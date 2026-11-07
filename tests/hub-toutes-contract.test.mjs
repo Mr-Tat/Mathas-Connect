@@ -49,3 +49,19 @@ test('page Toutes uses its own section selector, independent of classes',()=>{
  assert.match(edge,/all_section:/);
  assert.match(migration,/ADD COLUMN IF NOT EXISTS section/);
 });
+
+test('Abaque officiel : cartes de Toutes et session Monsieur T sans ouverture scolaire',()=>{
+ const hub=read('hub.js'),api=read('supabase/functions/connect-api/index.ts');
+ const controls=read('apps/GRAN-abaque-m-1/connect/hub-all-controls.mjs');
+ const panel=read('hub-toutes-auth.mjs');
+ assert.match(hub,/playingAsTeacher\s*&&\s*\(app\.app_key==='abaque-longueurs'/);
+ assert.match(api,/abaqueSetting==null&&abaqueProject/);
+ assert.match(api,/abaquePilot\|\|abaqueOpen/);
+ assert.match(controls,/teacher-pilot-approve/);
+ assert.match(controls,/fictiveConfirmed:true/);
+ assert.match(controls,/teacher-pilot-status/);
+ assert.match(controls,/checkbox\.checked/);
+ assert.match(panel,/if\(isTeacherMode\)/);
+ assert.match(panel,/mountAbaqueAllHubControls/);
+ assert.doesNotMatch(hub,/connect_hub_preset_entries/);
+});
