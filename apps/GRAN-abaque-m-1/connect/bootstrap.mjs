@@ -45,6 +45,13 @@ async function connect(){
  const homeAvatar=document.getElementById('homeConnectAvatar');
  const homeName=document.getElementById('homeConnectName');
  const homeXp=document.getElementById('homeConnectXp');
+ const homeLevel=document.getElementById('homeConnectLevel');
+ const homeLevelNumber=document.getElementById('homeConnectLevelNumber');
+ const homeProgress=document.getElementById('homeConnectProgress');
+ const homeProgressLabel=document.getElementById('homeConnectProgressLabel');
+ const homeProgressRail=document.getElementById('homeConnectProgressRail');
+ const homeProgressFill=document.getElementById('homeConnectProgressFill');
+ let profileRead=null,profileReadAgain=false;
  function hideRemaining(){delete document.documentElement.dataset.abaqueXpApproved;hints.hide();}
  function draw(snapshot,online){
   latest=snapshot;
@@ -56,7 +63,7 @@ async function connect(){
   if(homeAccount&&homeName&&homeXp){
    homeAccount.hidden=false;
    homeName.textContent=snapshot.displayName||'Compte Connect';
-   homeXp.textContent=online?snapshot.xp.appXp+' / 160 XP acquis · '+snapshot.trophies.length+' / 6 trophées':'Hors connexion · XP en attente';
+   homeXp.textContent=online?snapshot.xp.appXp+' / 160 XP acquis':'Hors connexion · XP en attente';
    paintConnectedAvatar(homeAvatar,chosenAvatar,snapshot.displayName);
   }
   document.querySelector('.demo-notice').textContent=online?(CLASS===PILOT?'Laboratoire connecté · résultats liés à ton compte':'Mode Connect · résultats liés à ton compte'):'Hors connexion · résultats conservés en attente de synchronisation';
@@ -103,6 +110,11 @@ async function connect(){
    else delete document.documentElement.dataset.abaqueAttention;
    if(queue.pending()<100)setInert(false);
    const celebrated=window.MATHAS_ABAQUE_HIGHLIGHT?.fromServer(prior,value,event);
+   if(value.xp.delta>0&&!value.duplicate){
+    // Une nouvelle récompense Connect peut faire progresser le niveau global.
+    // Relire la progression uniquement après confirmation serveur, sans polling.
+    void refreshConnectProfile();
+   }
    if(value.xp.delta>0&&!value.duplicate&&!celebrated)window.MATHAS_CELEBRATE?.toast('+'+value.xp.delta+' XP');
   }else if(state==='pending'){details.textContent='Résultat conservé en attente de synchronisation.';if(queue.pending()>=100){setInert(true);details.textContent='100 résultats en attente. Reconnecte-toi avant une nouvelle partie.';}}
   else if(state==='offline'){hideRemaining();details.textContent='Hors connexion : résultats conservés sur cet appareil.';}
@@ -160,24 +172,53 @@ async function connect(){
    pupil=binding.studentId;cacheKey='mathas.abaque.approved.'+[CLASS,subject,pupil].join('.')+'.v1';
    const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');await initialize(cached,false);handleState('offline');
   }
-  // Lecture facultative de l'avatar officiel : le jeu et ses résultats ne
-  // dépendent jamais de ce second appel. Ne persister aucune identité locale.
-  void (async()=>{
-   try{
-    const bearer=await token();
-    const action=params.get('joueur')==='prof'?'teacher-player':'student-me';
-    const response=await fetch(BASE+'/functions/v1/connect-api',{method:'POST',
-     headers:{apikey:KEY,authorization:'Bearer '+bearer,'content-type':'application/json'},
-     body:JSON.stringify({action,classId:CLASS})});
-    if(!response.ok)return;
-    const profile=await response.json();
-    if(!profile?.ok||profile.status!=='approved'||profile.classId!==CLASS||!sessionActive)return;
-    await token();
-    chosenAvatar=profile.avatar??null;
-    paintConnectedAvatar(face,chosenAvatar,profile.displayName||latest?.displayName);
-    paintConnectedAvatar(homeAvatar,chosenAvatar,profile.displayName||latest?.displayName);
-   }catch{/* La fiche avatar n'empêche pas les exercices authentifiés. */}
-  })();
+  // Identité, avatar et XP globaux du profil Connect, facultatifs :
+  // la lecture n'autorise jamais un jeu ni l'attribution de points.
+  // Elle utilise les données calculées côté serveur pour le HUB.
+  async function refreshConnectProfile(){
+   if(profileRead){profileReadAgain=true;return profileRead;}
+   profileRead=(async()=>{
+    try{
+     const version=sessionVersion;
+     const bearer=await token();
+     const action=params.get('joueur')==='prof'?'teacher-player':'student-me';
+     const response=await fetch(BASE+'/functions/v1/connect-api',{method:'POST',
+      headers:{apikey:KEY,authorization:'Bearer '+bearer,'content-type':'application/json'},
+      body:JSON.stringify({action,classId:CLASS,includeXp:true})});
+     if(!response.ok)return;
+     const profile=await response.json();
+     if(!profile?.ok||profile.status!=='approved'||profile.classId!==CLASS||!sessionActive||version!==sessionVersion)return;
+     await token();
+     chosenAvatar=profile.avatar??null;
+     paintConnectedAvatar(face,chosenAvatar,profile.displayName||latest?.displayName);
+     paintConnectedAvatar(homeAvatar,chosenAvatar,profile.displayName||latest?.displayName);
+     if(homeName&&profile.displayName)homeName.textContent=profile.displayName;
+     const xpProfile=profile.xp;
+     if(xpProfile?.active===true&&integer(xpProfile.total)&&Number.isSafeInteger(xpProfile.level)&&xpProfile.level>=1&&integer(xpProfile.next)){
+      // Même découpage de niveaux que le HUB : 50 XP jusqu'au niveau 7,
+      // puis 100 XP par niveau, sans confondre ces XP avec les 160 XP de l'Abaque.
+      const from=xpProfile.level<=7?(xpProfile.level-1)*50:300+(xpProfile.level-7)*100;
+      const max=xpProfile.next-from;
+      if(max>0&&xpProfile.total>=from&&homeLevel&&homeLevelNumber&&homeProgress&&homeProgressLabel&&homeProgressRail&&homeProgressFill){
+       const current=Math.max(0,Math.min(max,xpProfile.total-from));
+       homeLevelNumber.textContent=String(xpProfile.level);
+       homeProgressLabel.textContent=current+' / '+max+' XP';
+       homeProgressFill.style.width=Math.max(0,Math.min(100,100*current/max))+'%';
+       homeProgressRail.setAttribute('aria-valuenow',String(current));
+       homeProgressRail.setAttribute('aria-valuemax',String(max));
+       homeLevel.hidden=false;
+       homeProgress.hidden=false;
+      }
+     }
+    }catch{/* L'avatar et les XP de profil ne bloquent pas la pratique connectée. */}
+   })();
+   try{await profileRead;}
+   finally{
+    profileRead=null;
+    if(profileReadAgain){profileReadAgain=false;void refreshConnectProfile();}
+   }
+  }
+  void refreshConnectProfile();
   window.addEventListener('online',()=>{if(!retry.disabled)retry.click();});
   window.addEventListener('offline',()=>handleState('offline'));
  }catch(error){label.textContent='Connexion non disponible';details.textContent='Aucun résultat Connect envoyé. '+error.message;retry.hidden=!client;hideRemaining();setInert(true);}
