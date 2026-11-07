@@ -9,6 +9,7 @@ import {createMultipleProofUI} from './certified-multiple-ui.mjs';
 import {createCertifiedExtendedUI} from './certified-extended-ui.mjs?v=20261106-native-survival-v1';
 import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs?v=20261106-survival-40xp-v1';
 import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs?v=20261106-certified-results-v2';
+import {avatarGlyph,avatarColor} from '../../avatar-catalog.js';
 import {createProjectionConsent} from '../../projection-consent.mjs?v=20261106-fullscreen-consent-v1';
 import {createSchoolScoreView} from './school-score-view.mjs?v=20261106-fullscreen-share-v3';
 import {installTensFirstDuringGame} from './in-game-tens-first.mjs?v=20261106-manual-validation-per-profile-v2';
@@ -103,6 +104,14 @@ function closePanels(){
 }
 function showConnectedBar(profile){
  $('connected-name').textContent=String(profile?.displayName||'Élève');
+ // Avatar officiel du même profil approuvé que le nom Connect.
+ const avatar=$('connected-avatar');
+ if(profile?.avatar){
+  avatar.textContent=avatarGlyph(profile.avatar);
+  avatar.style.background=avatarColor(profile.avatar.color);
+  avatar.hidden=false;
+ }else{avatar.hidden=true;avatar.textContent='';}
+
  bar.hidden=false;$('guest-home').hidden=true;
  revealBar();
 }
