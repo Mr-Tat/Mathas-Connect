@@ -72,6 +72,6 @@ test('Abaque SQL : 2 preuves distinctes de 100 %, remise à zéro et XP préserv
  assert.match(sql,/receipt\.judgement->>'firstTry'/);
  assert.match(sql,/receipt\.judgement->>'total'/);
  assert.match(sql,/CASE count_passes WHEN 1 THEN 8 ELSE 6 END/);
- assert.match(sql,/'perfect',6\)/);
+ assert.match(sql,/:perfect',6\)/);
  assert.match(sql,/segment:=segment\|\|jsonb_build_object\('perfectRuns',perfect_count\)/);
 });
