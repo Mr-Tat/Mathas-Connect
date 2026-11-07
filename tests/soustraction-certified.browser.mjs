@@ -222,6 +222,15 @@ test('Chromium scolaire natif : 4 soustractions, XP, consentement et projection'
   await frame.locator('#mathas-sous-connect-identity .mathas-connect-avatar').waitFor({state:'visible',timeout:10000});
   assert.equal(await frame.locator('#mathas-sous-connect-identity .mathas-connect-avatar').textContent(),'🥳');
   assert.equal(await frame.locator('#mathas-sous-connect-identity .mathas-sous-connect-name').textContent(),'Élève test');
+  const header=await frame.locator('#mathas-sous-connect-dock').evaluate(el=>{
+   const b=el.getBoundingClientRect(),xp=el.querySelector('#mathas-sous-connect-xp')?.getBoundingClientRect();
+   return {visible:b.width>0&&b.height>0,level:el.querySelector('#mathas-sous-connect-level')?.textContent,
+    meter:el.querySelector('#mathas-sous-connect-count')?.textContent,xpVisible:!!xp&&xp.width>0&&xp.height>0};
+  });
+  assert.equal(header.visible,true,'profil Connect réel visible dans la barre native');
+  assert.match(header.level||'',/Niveau/);
+  assert.match(header.meter||'',/XP/);
+  assert.equal(header.xpVisible,true,'bouton XP doré visible en Soustraction');
   await launchClassic(page,frame,{method:'takeTop',count:4});
   assert.equal(ctx.fixture.issued[0]?.method,'takeTop');
   assert.equal(ctx.fixture.issued[0]?.total,4);
