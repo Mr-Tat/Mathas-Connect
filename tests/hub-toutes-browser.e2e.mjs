@@ -30,6 +30,7 @@ async function fixture(authorized){
  await new Promise(done=>server.listen(0,'127.0.0.1',done));
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  const page=await browser.newPage({viewport:{width:1200,height:900}});
+  page.on('pageerror',error=>console.error('HUB_TOUTES_PAGEERROR',error.message));
  let allRequests=0;
  const approvals=[];const apiActions=[];let pending=true;
  const base='https://mr-tat.github.io/Mathas-Connect';
