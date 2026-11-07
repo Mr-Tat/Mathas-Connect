@@ -477,7 +477,7 @@ async function showIdentity(refresh=false) {
 
 // Retour d'un onglet de jeu : un seul résumé à la demande, jamais de polling.
 window.addEventListener('focus',()=>{if(activeProfile)void showIdentity(true)});
-if(allMode)import('./hub-toutes-auth.mjs?v=20261105-v1')
+if(allMode)import('./hub-toutes-auth.mjs?v=20261107-abaque-toutes-v1')
  .then(({mountHubToutesAuth})=>mountHubToutesAuth({
    teacherClient:getTeacherSupabase, studentClient:getSupabase, isTeacherMode:playingAsTeacher,
    testClass:LAB_CLASS,baseUrl:url,publicKey:key
