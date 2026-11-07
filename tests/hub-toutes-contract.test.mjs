@@ -54,7 +54,8 @@ test('Abaque officiel : cartes de Toutes et session Monsieur T sans ouverture sc
  const hub=read('hub.js'),api=read('supabase/functions/connect-api/index.ts');
  const controls=read('apps/GRAN-abaque-m-1/connect/hub-all-controls.mjs');
  const panel=read('hub-toutes-auth.mjs');
- assert.match(hub,/playingAsTeacher\s*&&\s*allMode\s*&&\s*app\.app_key==='abaque-longueurs'/);
+ assert.match(hub,/playingAsTeacher&&connectedGameKeys\.has\(app\.app_key\)/);
+ assert.match(hub,/target\.origin===location\.origin\|\|app\.app_key==='abaque-longueurs'/);
  assert.match(api,/abaqueSetting==null&&abaqueProject/);
  assert.match(api,/const query=abaquePilot/);
  assert.doesNotMatch(api,/abaqueOpen/);

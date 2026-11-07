@@ -87,10 +87,13 @@ function card(app) {
   // silencieusement un 4/4 sans preuve et sans XP. Le mode Classique reste libre.
   if(schoolMultiplication && !inFreeMode() && target.origin===location.origin)
     target.searchParams.set('requireConnect','1');
-   // Le comportement des jeux existants ne change pas en mode hors « Toutes ».
-  if (playingAsTeacher && !allMode && ['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'].includes(app.app_key)) target.searchParams.set('joueur','prof');
-  // Dans Toutes, seule l'Abaque utilise explicitement le compte joueur Monsieur T.
-  if (playingAsTeacher && allMode && app.app_key==='abaque-longueurs') target.searchParams.set('joueur','prof');
+   // Un lancement dans Toutes conserve l'identité approuvée Monsieur T
+  // pour TOUS les jeux Connect. Sans « joueur=prof », leurs hôtes lisent la
+  // session anonyme de l'élève au lieu du stockage Auth professeur, et le
+  // bandeau niveau/XP disparaît malgré la connexion dans le HUB.
+  // Les liens externes du catalogue ne reçoivent jamais la session TEST.
+  if(playingAsTeacher&&connectedGameKeys.has(app.app_key)&&(!allMode||target.origin===location.origin||app.app_key==='abaque-longueurs'))
+    target.searchParams.set('joueur','prof');
   node.href = target.href;
   if(testSlug&&!allMode)node.dataset.labSchool=testSlug;
   else node.dataset.appKey=app.app_key;

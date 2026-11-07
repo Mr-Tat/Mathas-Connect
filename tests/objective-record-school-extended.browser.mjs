@@ -97,6 +97,26 @@ for(const item of examples){
      !!doc?.getElementById('mathas-native-connect-profile')&&
      !!doc?.getElementById('mathas-native-connect-xp');
    },null,{timeout:16000});
+   // Native engines can reconstruct or delay their header. With it hidden,
+   // the authenticated host MUST still show a working profile/XP fallback;
+   // once it returns, the native badge resumes without two duplicate bars.
+   if(item.slug==='addition-simple'&&item.mode==='sudden'){
+    await page.evaluate(()=>{
+     const d=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+     d.querySelector('main.app > header .mathas-brand-row').style.setProperty('display','none','important');
+    });
+    await page.waitForFunction(()=>document.documentElement.classList.contains('mathas-native-connect-fallback'),null,{timeout:11000});
+    assert.equal(await page.locator('#connect-bar').isVisible(),true,
+     'profil, niveau et XP restent visibles pendant une reconstruction native');
+    assert.equal(await page.locator('#connected-name').textContent(),'Élève');
+    await page.evaluate(()=>{
+     const d=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;
+     d.querySelector('main.app > header .mathas-brand-row').style.removeProperty('display');
+    });
+    await page.waitForFunction(()=>!document.documentElement.classList.contains('mathas-native-connect-fallback'),null,{timeout:11000});
+    assert.equal(await page.locator('#connect-bar').isVisible(),false,
+     'une fois restauré, seul le profil du vrai jeu est affiché');
+   }
    for(const viewportWidth of [1160,620,390,320]){
     await page.setViewportSize({width:viewportWidth,height:820});
     await page.waitForTimeout(550);

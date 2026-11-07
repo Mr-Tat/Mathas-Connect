@@ -53,6 +53,12 @@ button{cursor:pointer}button:disabled{opacity:.5}
    Le bandeau Connect et sa poignée ne prennent plus aucune hauteur visible. */
 html.mathas-native-connect-hud #connect-bar,
 html.mathas-native-connect-hud #bar-handle{display:none!important}
+/* Safe, authenticated fallback only if the native iframe fails to mount its
+   identity. A missing native HUD must not make school XP/profile invisible. */
+html.mathas-native-connect-hud.mathas-native-connect-fallback #connect-bar{
+ display:flex!important;position:fixed!important;z-index:1200!important
+}
+html.mathas-native-connect-hud.mathas-native-connect-fallback #bar-handle{display:none!important}
 html.mathas-native-connect-hud #xp-panel{
  top:12px;right:12px;max-height:calc(100dvh - 24px);z-index:1500
 }
@@ -351,4 +357,4 @@ html.mathas-native-connect-hud #guest-home{display:none!important}
 </div>
 </section>
 <iframe id="gameFrame" hidden title="Jeu Objectif record" allow="fullscreen" referrerpolicy="no-referrer"></iframe>
-</main><script type="module" src="./eleve.mjs?v=20261107-profile-avatar-v1"></script></body></html>
+</main><script type="module" src="./eleve.mjs?v=20261107-profile-hud-restored-v2"></script></body></html>

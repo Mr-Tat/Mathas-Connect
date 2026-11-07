@@ -56,7 +56,7 @@ test('deux additions : Objectif record garde son sous-titre et sa couronne ; com
   assert.doesNotMatch(source,/score-mode-cup" aria-hidden="true">🏆/);
   assert.match(source,/if\(suddenDesc&&!suddenDesc\.textContent\.trim\(\)\)/,
     'le script moteur ne doit plus écraser le sous-titre après le chargement');
-  assert.match(source,/native-hub-link\.js\?v=20261107-profile-avatar-v1/,
+  assert.match(source,/native-hub-link\.js\?v=20261107-hud-restore-v2/,
     'le nouvel emplacement natif charge le fichier actualisé');
  }
  assert.match(nav,/function installEmbeddedConnectHud\(frame\)/);

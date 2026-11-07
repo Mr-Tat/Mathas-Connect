@@ -315,7 +315,13 @@ function applySchoolUi(){
  finally{
   if(mode==='connected'){
    const toolbar=document.getElementById('ce-toolbar');
-   if(iframe.contentDocument?.getElementById('mathas-multi-connect-dock')){
+   const nativeDoc=iframe.contentDocument;
+   const dock=nativeDoc?.getElementById('mathas-multi-connect-dock');
+   const brandRow=nativeDoc?.querySelector('main.app > header .mathas-brand-row');
+   const dockRect=dock?.getBoundingClientRect();
+   // Existing nodes can be detached or hidden during a native header rebuild.
+   // The backup profile must remain visible until the REAL one is visible.
+   if(dock&&brandRow?.contains(dock)&&dockRect?.width>0&&dockRect?.height>0){
     nativeHeaderMissingSince=0;
     if(toolbar)toolbar.style.display='none';
     iframe.style.height='100dvh';

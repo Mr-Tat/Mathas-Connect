@@ -623,11 +623,34 @@ if(mode==='connected'){
  toolbar.append(globalInfo,appInfo);
 }else toolbar.append(hubLink);
 document.body.replaceChildren(toolbar,iframe);
+let nativeHeaderMissingSince=0;
 const refreshNativeHeader=()=>{
  installManualValidationForWrittenCalc(iframe.contentDocument,APP,mode==='connected'?session?.user?.id:null);
  installSessionToolbarLayout(iframe.contentDocument,APP);
  mountNativeConnectHeader();
- if(mode==='connected')school?.mount();
+ if(mode==='connected'){
+  school?.mount();
+  const doc=iframe.contentDocument;
+  const dock=doc?.getElementById('mathas-sous-connect-dock');
+  const brand=doc?.querySelector('main.app > header .mathas-brand-row');
+  const bounds=dock?.getBoundingClientRect();
+  const visible=!!(dock&&brand?.contains(dock)&&bounds?.width>0&&bounds?.height>0);
+  if(visible){
+   nativeHeaderMissingSince=0;
+   toolbar.hidden=true;
+   toolbar.style.setProperty('display','none','important');
+   iframe.style.height='100dvh';
+  }else if(doc?.readyState==='complete'){
+   if(!nativeHeaderMissingSince)nativeHeaderMissingSince=Date.now();
+   // Never leave a connected pupil without an identity, level or XP when
+   // the native engine has rebuilt its toolbar too late or unexpectedly.
+   if(Date.now()-nativeHeaderMissingSince>=2700){
+    toolbar.hidden=false;
+    toolbar.style.cssText='display:flex!important;box-sizing:border-box;width:100%;min-height:46px;height:auto;padding:5px 10px;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;background:#102f46;color:#fff;font:600 13px system-ui;border-bottom:1px solid #286180';
+    iframe.style.height='calc(100dvh - var(--ce-toolbar-height,46px))';
+   }
+  }
+ }
 };
 iframe.addEventListener('load',refreshNativeHeader);
 // Le placement est idempotent, aucun retour au bandeau extérieur.
