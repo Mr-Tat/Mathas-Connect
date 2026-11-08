@@ -1,6 +1,7 @@
 import {avatarGlyph,avatarColor} from './avatar-catalog.js';
 import {attachResultsOverviewSticky} from './results-overview-sticky.mjs';
 import {hubUrl} from './connect-context.js';
+import {summarizeSavedAuthorizations} from './authorization-summary.mjs?v=20261109-v1';
 import {listRecentProfiles,rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
 import {beginJoinAvatar,useApprovedAvatar,clearJoinAvatarDraft} from './join-avatar.js?v=20261103-profile-rewards-v1';
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.95.0';
@@ -905,7 +906,7 @@ for(let n=2;n<=9;n++){
 for(const [id,{name}] of Object.entries(CLASS_SPACES))
  $('auth-class').add(new Option(name,CLASS_SPACES[id].id));
 $('auth-class').add(new Option('Classe TEST',labTestClass));
-let authLocks=[],authAid=[],authLoadSequence=0;
+let authLocks=[],authAid=[],authLoadSequence=0,authSettingsLoaded=false;
 const authSay=(message)=>{$('auth-feedback').textContent=message};
 const authSelected=()=>$('auth-scope').value==='student' ? $('auth-student').value : 'class';
 function authRender(){
@@ -923,9 +924,18 @@ function authRender(){
  const aid=authAid.find(x=>x.scope_key===scope)??(student?authAid.find(x=>x.scope_key==='class'):null);
  document.querySelectorAll('input[name="auth-aid"]').forEach(input=>{input.checked=input.value===(aid?.allowed===false?'deny':'allow')});
  $('auth-aid-clear').hidden=!student&&!authAid.some(x=>x.scope_key==='class');
+ const saved=$('auth-saved-summary');
+ if(saved){
+  saved.hidden=!authSettingsLoaded||(student&&!scope);
+  if(!saved.hidden)saved.textContent='✓ Enregistré : '+summarizeSavedAuthorizations({
+   multipliers:authLocks,aids:authAid,studentId:student?scope:null
+  });
+ }
 }
 async function loadAuthorizations(requestedStudent=null){
  const seq=++authLoadSequence;
+ authSettingsLoaded=false;
+ $('auth-saved-summary').hidden=true;
  const cls=$('auth-class');if(!cls.value)cls.value=$('class-selector').value||CLASS_SPACES.observation.id;
  authSay('Chargement des autorisations…');
  $('auth-student').replaceChildren();
@@ -936,8 +946,9 @@ async function loadAuthorizations(requestedStudent=null){
    resultCall('teacher-multipliers-get',{classId,appKey}),
    resultCall('teacher-table-aid-get',{classId,appKey})
   ]);
-  if(seq!==authLoadSequence||cls.value!==classId)return;
+  if(seq!==authLoadSequence||cls.value!==classId||$('auth-app').value!==appKey)return false;
   authLocks=locks.locks||[];authAid=aid.locks||[];
+  authSettingsLoaded=true;
   const students=(dashboard.students||[]).slice().sort((a,b)=>String(a.display_name).localeCompare(String(b.display_name),'fr'));
   for(const student of students)$('auth-student').add(new Option(student.display_name,student.id));
   if(requestedStudent&&students.some(s=>s.id===requestedStudent))$('auth-student').value=requestedStudent;
@@ -946,7 +957,14 @@ async function loadAuthorizations(requestedStudent=null){
    authSay('Aucun élève dans cette classe. Tu peux déjà préparer ses autorisations.');
   }else authSay('Réglages chargés · application aux nouvelles parties.');
   authRender();
- }catch(error){if(seq!==authLoadSequence)return;authSay('Impossible de charger les autorisations : '+error.message)}
+  return true;
+ }catch(error){
+  if(seq!==authLoadSequence)return false;
+  authSettingsLoaded=false;
+  $('auth-saved-summary').hidden=true;
+  authSay('Impossible de charger les autorisations : '+error.message);
+  return false;
+ }
 }
 $('auth-class').onchange=()=>void loadAuthorizations();
 $('auth-app').onchange=()=>void loadAuthorizations();
@@ -960,8 +978,8 @@ async function authSave(action,data){
  try{
   await resultCall(action,{classId,appKey:$('auth-app').value,
     studentId:scope==='class'?null:scope,...data});
-  await loadAuthorizations(scope==='class'?null:scope);
-  authSay('Enregistré. Une nouvelle sélection de tables du professeur réinitialise les tables facultatives au prochain lancement ; l’élève pourra ensuite en ajouter et les conserver.');
+  const confirmed=await loadAuthorizations(scope==='class'?null:scope);
+  authSay(confirmed?'Enregistré.':'Enregistrement envoyé, mais vérification des réglages indisponible.');
  }catch(error){authSay('Échec de l’enregistrement : '+error.message)}
  finally{buttons.forEach(b=>b.disabled=false)}
 }
