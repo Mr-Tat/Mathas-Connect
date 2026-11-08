@@ -37,7 +37,13 @@ test('permission de tables transmise à la session certifiée avec héritage cla
  assert.match(host,/tableAidAllowed=x\.tableAidAllowed!==false/);
  assert.match(host,/window\.__mathasTablesAidAllowed=/);
  assert.match(native,/function openTables\(\)\{if\(window\.__mathasTablesAidAllowed===false\)return;/);
- assert.match(native,/hardTablesBtn\.style\.display='none'/);
+ assert.match(native,/tablesBtn\.style\.setProperty\('display','none','important'\)/);
+ assert.match(native,/hardTablesBtn\.style\.setProperty\('display','none','important'\)/);
+ assert.match(native,/tablesBtn\.hidden=true/);
+ assert.match(native,/hardTablesBtn\.hidden=true/);
+ // Les règles responsive utilisent parfois display:flex!important :
+ // l'inline !important garantit l'occultation même sur GSM.
+ assert.match(native,/#gameScreen \.activity-session-left #tablesBtn,[\s\S]*?display:inline-flex!important/);
  assert.match(migration,/ENABLE ROW LEVEL SECURITY/);
  assert.match(migration,/REVOKE ALL/);
 });
