@@ -77,7 +77,7 @@ BEGIN
  RETURN jsonb_build_object('ok',true,'sessionId',v_id,'revision',v_rev,
   'resetEpoch',v_epoch,'level',p_level,'total',p_total,
   'questions',v_q,'expiresAt',v_expires,'reused',false);
-END $function$
+END $function$;
 
 REVOKE ALL ON FUNCTION public.connect_objective_record_school_mul_issue_classic_v1(uuid,uuid,integer,integer,integer[]) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.connect_objective_record_school_mul_issue_classic_v1(uuid,uuid,integer,integer,integer[]) TO service_role;
@@ -179,7 +179,7 @@ BEGIN
  RETURN jsonb_build_object('ok',true,'sessionId',v_id,'questions',v_questions,
   'level',p_level,'width',v_width,'mode',p_mode,'limit',v_total,
   'revision',v_rev,'resetEpoch',v_epoch,'expiresAt',v_expires,'reused',false);
-END $function$
+END $function$;
 
 REVOKE ALL ON FUNCTION public.connect_objective_record_school_mul_issue_extended_v1(uuid,uuid,text,integer,integer[]) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.connect_objective_record_school_mul_issue_extended_v1(uuid,uuid,text,integer,integer[]) TO service_role;
