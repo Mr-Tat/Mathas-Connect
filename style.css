@@ -247,6 +247,14 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
 .teacher-header-actions{display:flex;gap:12px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
 .teacher-player-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:#fff;background:linear-gradient(140deg,#125c86,#174275);border:1px solid #7cb8e2;border-radius:13px;min-height:48px;padding:12px 18px;font-weight:850;white-space:nowrap;box-shadow:0 7px 22px #0004}
 .teacher-player-link:hover{filter:brightness(1.18)}
+.teacher-test-student-link{
+ display:inline-flex;align-items:center;justify-content:center;
+ min-height:36px;padding:7px 11px;border:1px solid #54708a;border-radius:10px;
+ background:#182c40;color:#c2d5e5;font-size:12px;font-weight:650;
+ box-shadow:none;opacity:.87;white-space:nowrap;
+}
+.teacher-test-student-link:hover{opacity:1;background:#233d53}
+.teacher-test-student-link[hidden]{display:none!important}
 .teacher-requests-feedback{padding:12px 15px;background:#dff5e9;color:#195c40;border:1px solid #a6ddbb;border-radius:10px;font-weight:650}
 .teacher-requests-feedback[hidden]{display:none!important}
 @media(max-width:650px){.teacher-header-actions{flex-direction:column;align-items:stretch}.teacher-player-link{font-size:13px;padding:9px 12px}}
@@ -415,14 +423,10 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
   .teacher-panel .teacher-header-actions .teacher-logout {
     font-weight: 700;
   }
-  /* Quand Monsieur T est déjà connecté, le seul bouton restant
-     garde sa place à droite sans laisser une grande zone vide. */
-  .teacher-panel .teacher-header-actions:has(.teacher-player-link[hidden]) {
-    grid-template-columns: 1fr;
-    justify-items: end;
-  }
-  .teacher-panel .teacher-header-actions:has(.teacher-player-link[hidden]) .teacher-logout {
-    width: min(100%, 120px);
+  /* Sans choix : Élève A à gauche de Monsieur T, puis déconnexion à droite. */
+  .teacher-panel .teacher-header-actions:has(#teacher-student-connect:not([hidden])):has(.teacher-player-link:not([hidden])) .teacher-logout {
+    grid-column: 2;
+    justify-self: end;
   }
 }
 
