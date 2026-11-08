@@ -2017,13 +2017,12 @@ const unitsRestricted=()=>selectedMode==='sudden'&&suddenStreak>=1;
 const calcPoints=ex=>{
  if(Number.isInteger(ex.earnedPoints))return ex.earnedPoints;
  if(ex.status==='badFinal')return 0;
- if(ex.status==='corrected')return 6;
+ if(ex.status==='corrected')return 0;
  if(ex.status!=='good')return 0;
  if(selectedMode==='sudden')return recordVariant==='sudden'?2:1;
- const base=25+2*pageNumber;
- if(ex.usedUnits)return base-10;
- if(ex.usedManip)return base-5;
- return base;
+ // Activité 3 classique : chaque conversion juste au premier essai vaut 2 points.
+ // Aides autorisées ; aucune seconde attribution lors d'une correction.
+ return 2;
 };
 function scoreView(message){
  $('t3ScoreNow').textContent=`${runScore} ${runScore===1?'point':'points'}`;
