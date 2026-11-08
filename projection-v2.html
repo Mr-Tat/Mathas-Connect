@@ -394,6 +394,9 @@ header.projection-header .score-mode-switch button[aria-pressed="true"]{
 header.projection-header .score-mode-switch button:focus-visible{
  outline:3px solid #ffe18e;outline-offset:2px
 }
+html[data-projection-score-mode="today"] .projection-main .ranking-board .ranking-list:empty::after{
+ content:"Aucun score partagé aujourd’hui pour cette application."
+}
 header.projection-header .header-tools{
  grid-area:refresh;display:flex;align-items:center;justify-content:flex-end;
  justify-self:stretch;gap:9px;margin:0;min-width:0;max-width:none;
