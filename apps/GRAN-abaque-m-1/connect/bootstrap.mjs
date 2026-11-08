@@ -1,5 +1,5 @@
-import {createAbaqueQueue} from './offline-queue.mjs';
-import {APP_KEY} from './completion-contract.mjs';
+import {createAbaqueQueue} from './offline-queue.mjs?v=20261108-classic-two';
+import {APP_KEY} from './completion-contract.mjs?v=20261108-classic-two';
 import {createXpHints} from '../xp-hints.mjs';
 import {paintConnectedAvatar} from '../../objective-record/profile-avatar-badge.mjs?v=20261107-v1';
 const BASE='https://awmhpfofacaglewammxt.supabase.co';
