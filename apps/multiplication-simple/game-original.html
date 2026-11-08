@@ -6379,8 +6379,14 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
   function openTables(){if(window.__mathasTablesAidAllowed===false)return;const inHard=hardTablesActive();if(!inHard&&!session)return;tablesOpen=true;tablePicker.value='';renderTable();if(inHard){hardSession.tablesUsed=true;hardSessionScore?.classList.add('tables-aid-active');hardSessionScore.title='Aide utilisée : tables de multiplication affichées'}else{session.tablesUsed=true;updateBar()}tablesPanel.classList.remove('hidden');tablesPanel.setAttribute('aria-hidden','false');document.body.classList.add('tables-open');syncTablesButtons();requestAnimationFrame(updateScrollArrow)}
   function closeTables(update=true){tablesOpen=false;tablesPanel.classList.add('hidden');tablesPanel.setAttribute('aria-hidden','true');document.body.classList.remove('tables-open');syncTablesButtons();if(update)requestAnimationFrame(updateScrollArrow)}
   if(window.__mathasTablesAidAllowed===false){
-   tablesBtn.hidden=true;tablesBtn.style.display='none';
-   if(hardTablesBtn){hardTablesBtn.hidden=true;hardTablesBtn.style.display='none'}
+   // Certaines mises en page utilisent display:flex!important, plus fort que
+   // [hidden] ou style.display='none'. L'autorisation du professeur prime.
+   tablesBtn.hidden=true;
+   tablesBtn.style.setProperty('display','none','important');
+   if(hardTablesBtn){
+    hardTablesBtn.hidden=true;
+    hardTablesBtn.style.setProperty('display','none','important');
+   }
    closeTables(false);
   }
   tablesBtn.onclick=()=>tablesOpen?closeTables():openTables();
