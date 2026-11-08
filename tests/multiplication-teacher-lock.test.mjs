@@ -27,7 +27,8 @@ test('teacher required tables are always selected and cannot be unchecked, inclu
  assert.match(game,/teacherMultiplierLock\.includes\(n\)/);
  assert.match(game,/b\.disabled=required/);
  assert.match(game,/teacherMultiplierLock\.forEach\(n=>selectedMultipliers\.add\(n\)\)/);
- assert.match(game,/hardState=generateMultiplication\(hardSession\.digits,\[\.\.\.selectedMultipliers\],false\)/);
+ assert.match(game,/hardSession=\{\.\.\.spec,[^\n]*multiplierChoices:\[\.\.\.selectedMultipliers\]/);
+ assert.match(game,/hardState=generateMultiplication\(hardSession\.digits,\[takeBalancedMultiplier\(hardSession,hardSession\.multiplierChoices\)\],false\)/);
 });
 test('teacher controls in results for class and individual pupil',()=>{
  assert.match(teacher,/function multiplierLockPanel/);
