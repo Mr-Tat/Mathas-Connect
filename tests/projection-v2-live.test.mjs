@@ -100,7 +100,7 @@ test('Projection V2 : thème à gauche, classe centrée plus visible, MAJ et bar
  assert.ok(header.indexOf('id="header-class"')<header.indexOf('id="load-real"'));
  assert.ok(header.indexOf('id="load-real"')<header.indexOf('id="projection-refresh-progress"'));
  assert.doesNotMatch(header,/settings-top|⚙ Applications/);
- assert.match(html,/grid-template-areas:"theme class scoremode refresh"/);
+ assert.match(html,/grid-template-areas:"theme class refresh" ". scoremode ."/);
  assert.match(html,/font-size:clamp\(22px,2\.1vw,31px\);font-weight:950/);
  assert.match(html,/MAJ auto/);
  assert.match(html,/\.projection-auto-refresh\{\s*display:flex;flex:0 0 104px/);
