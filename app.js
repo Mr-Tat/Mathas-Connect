@@ -34,8 +34,46 @@ const CLASS_SPACES={
  '2eco':{id:'a9195199-0a28-4e86-99ce-47b36dd6e646',name:'2 ECO'}
 };
 let currentTeacherSpace=null;
-let teacherPlayerActive=false;
+let teacherPlayerActive=false,testStudentASelected=false,testStudentClient=null;
 const teacherPlayerKey=id=>'mathas.connect.teacher-player-enabled.v1:'+id;
+const testStudentModeKey=id=>'mathas.connect.test-student-a-selected.v1:'+id;
+// Sessions professeur et élève séparées par leur clé de stockage Supabase.
+function getTestStudentClient(){
+ if(!testStudentClient)testStudentClient=createClient(url,key,{auth:{
+  persistSession:true,autoRefreshToken:true,detectSessionInUrl:false
+ }});
+ return testStudentClient;
+}
+async function approvedTestStudentA(){
+ const {data:{session},error}=await getTestStudentClient().auth.getSession();
+ if(error||!session?.access_token||!session.user?.is_anonymous)return false;
+ try{
+  const response=await fetch(url+'/functions/v1/connect-api',{method:'POST',cache:'no-store',
+   headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
+   body:JSON.stringify({action:'student-me',classId:labTestClass})});
+  if(!response.ok)return false;
+  const profile=await response.json();
+  return profile.ok===true&&profile.status==='approved'&&profile.classId===labTestClass
+   &&normalizedProfileName(profile.displayName)==='elevea';
+ }catch{return false}
+}
+function testStudentADestination(approved){
+ const target=new URL(approved?'./hub.html':'./index.html',location.href);
+ if(approved){
+  target.searchParams.set('toutes','1');
+  target.searchParams.set('class',labTestClass);
+  target.searchParams.set('name','Toutes');
+ }else{
+  // Préremplissage uniquement, sans créer ni approuver une session élève.
+  target.searchParams.set('class',labTestClass);
+  target.searchParams.set('name','Classe démo - TEST');
+  target.searchParams.set('lab','1');
+  target.searchParams.set('testFirst','Eleve');
+  target.searchParams.set('testInitial','A');
+  target.searchParams.set('toutesReturn','1');
+ }
+ return target.href;
+}
 
 let busy=false;
 function show(v){if(!teacherPortal&&['teacher','login','welcome','checking'].includes(v)){location.replace(hubLink);return}if(teacherPortal&&!['teacher','login','checking'].includes(v))v='login';document.documentElement.classList.remove('prof-initial-loading');const loading=document.getElementById('prof-initial-loading');if(loading)loading.hidden=v!=='checking';document.querySelectorAll('[data-view]').forEach(e=>e.hidden=e.dataset.view!==v);msg('')}
@@ -76,7 +114,14 @@ async function teacher(){
  renderGlobalRequests(r);
  const currentTeacher=(await sb.auth.getSession()).data.session?.user;
  teacherPlayerActive=!!currentTeacher&&localStorage.getItem(teacherPlayerKey(currentTeacher.id))==='1';
+ const storedStudentChoice=!!currentTeacher&&!teacherPlayerActive&&localStorage.getItem(testStudentModeKey(currentTeacher.id))==='1';
+ testStudentASelected=storedStudentChoice;
  applyTeacherPlayerMode();
+ if(storedStudentChoice&&!await approvedTestStudentA()){
+  testStudentASelected=false;
+  try{localStorage.removeItem(testStudentModeKey(currentTeacher.id))}catch{}
+  applyTeacherPlayerMode();
+ }
  // Le raccourci Master Mode mène à la classe concernée, après authentification.
  const linkedClass=params.get('profClass');
  if(teacherPortal&&linkedClass&&[...box.options].some(o=>o.value===linkedClass)){
@@ -346,8 +391,11 @@ $('student-entry').onclick=()=>run(student);
 $('login-form').onsubmit=e=>{e.preventDefault();run(async()=>{const r=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(r.error)throw Error('Identifiants incorrects');$('password').value='';await teacher()})};
 $('logout').onclick=()=>run(async()=>{
  const account=(await sb.auth.getSession()).data.session?.user;
- if(account)try{localStorage.removeItem(teacherPlayerKey(account.id))}catch{}
- teacherPlayerActive=false;
+ if(account)try{
+  localStorage.removeItem(teacherPlayerKey(account.id));
+  localStorage.removeItem(testStudentModeKey(account.id));
+ }catch{}
+ teacherPlayerActive=false;testStudentASelected=false;
  applyTeacherPlayerMode();
  await sb.auth.signOut();show('login');
 });
@@ -951,8 +999,9 @@ document.querySelectorAll('[data-results]').forEach(b=>b.addEventListener('click
  showTeacherTab('results'); refresh().then(showResults).catch(e=>msg(e.message));
 }));
 function applyTeacherPlayerMode(){
- const btn=$('teacher-player-connect');
+ const btn=$('teacher-player-connect'),studentBtn=$('teacher-student-connect');
  if(btn)btn.hidden=teacherPlayerActive;
+ if(studentBtn)studentBtn.hidden=testStudentASelected&&!teacherPlayerActive;
  document.querySelectorAll('.teacher-space-main[data-space]').forEach(link=>{
   const target=new URL(link.href);
   if(teacherPlayerActive)target.searchParams.set('joueur','prof');
@@ -960,6 +1009,18 @@ function applyTeacherPlayerMode(){
   link.href=target.href;
  });
 }
+$('teacher-student-connect').onclick=()=>run(async()=>{
+ const owner=(await sb.auth.getSession()).data.session?.user;
+ if(!owner||owner.is_anonymous)throw Error('Session professeur requise.');
+ const approved=await approvedTestStudentA();
+ try{
+  localStorage.removeItem(teacherPlayerKey(owner.id));
+  localStorage.setItem(testStudentModeKey(owner.id),'1');
+ }catch{throw Error('Impossible d’enregistrer le choix du profil de test.')}
+ teacherPlayerActive=false;testStudentASelected=approved;
+ applyTeacherPlayerMode();
+ location.assign(testStudentADestination(approved));
+});
 $('teacher-player-connect').onclick=()=>run(async()=>{
  const classroom=$('class-selector').value;
  if(!classroom)throw Error('Aucune classe professeur disponible.');
@@ -969,10 +1030,13 @@ $('teacher-player-connect').onclick=()=>run(async()=>{
   throw Error('Le profil Monsieur T n’est pas disponible pour ce compte professeur.');
  const owner=(await sb.auth.getSession()).data.session?.user;
  if(!owner||owner.is_anonymous)throw Error('Session professeur requise.');
- try{localStorage.setItem(teacherPlayerKey(owner.id),'1')}catch{
+ try{
+  localStorage.setItem(teacherPlayerKey(owner.id),'1');
+  localStorage.removeItem(testStudentModeKey(owner.id));
+ }catch{
   throw Error('Impossible d’enregistrer la connexion joueur sur cet appareil.');
  }
- teacherPlayerActive=true;
+ teacherPlayerActive=true;testStudentASelected=false;
  applyTeacherPlayerMode();
  alert('Connecté à Monsieur T');
 });
