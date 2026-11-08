@@ -150,7 +150,7 @@ test('V2 — Score du jour par défaut, retour au relevé historique et rafraîc
   const rects=await page.evaluate(()=>{
    const a=document.querySelector('#header-class').getBoundingClientRect(),
     b=document.querySelector('#score-mode-switch').getBoundingClientRect(),
-    c=document.querySelector('.header-tools').getBoundingClientRect();
+    c=document.querySelector('#load-real').getBoundingClientRect();
    return {classRight:a.right,choiceLeft:b.left,choiceRight:b.right,refreshLeft:c.left,choiceHeight:b.height};
   });
   assert.ok(rects.choiceLeft>rects.classRight&&rects.choiceRight<rects.refreshLeft,
