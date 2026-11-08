@@ -35,9 +35,9 @@ function fakeStudent(i){
   avatar:i===0?{kind:'letter',value:'É',color:'transparent'}:
    i===1?{kind:'animal',value:'fox',color:'fuchsia'}:
    i===2?{kind:'object',value:'rocket',color:'electric'}:null,
-  scores:[{appKey:'addition-ecrite-simple',bestScore:220-i*10},
-  {appKey:'multiplication-ecrite-simple',bestScore:90-i*3},
-  {appKey:'soustraction-ecrite-simple',bestScore:120-i*5}]};
+  scores:[{appKey:'addition-ecrite-simple',bestScore:220-i*10,todayScore:220-i*10},
+  {appKey:'multiplication-ecrite-simple',bestScore:90-i*3,todayScore:90-i*3},
+  {appKey:'soustraction-ecrite-simple',bestScore:120-i*5,todayScore:120-i*5}]};
 }
 
 const ADD='addition-ecrite-simple',MUL='multiplication-ecrite-simple',SUB='soustraction-ecrite-simple';
@@ -64,10 +64,16 @@ async function openBoard(page,url,state){
     const students=Array.from({length:state.count},(_,i)=>{
      const p=fakeStudent(i);
      if(Array.isArray(state.tieScores)){
-      p.scores.find(x=>x.appKey===ADD).bestScore=state.tieScores[i]??220-i*10;
+      const s=p.scores.find(x=>x.appKey===ADD);
+      s.bestScore=state.tieScores[i]??220-i*10;
+      s.todayScore=s.bestScore;
      }
      if(state.longName&&i===0)p.name=state.longName;
-     if(state.improved&&i===4)p.scores.find(x=>x.appKey===SUB).bestScore=210;
+     if(state.improved&&i===4){
+      const s=p.scores.find(x=>x.appKey===SUB);s.bestScore=210;s.todayScore=210;
+     }
+     if(Array.isArray(state.todayScores))
+      p.scores.find(x=>x.appKey===ADD).todayScore=state.todayScores[i]??null;
      return p;
     });
     const counted=state.exerciseCounts;
@@ -87,7 +93,8 @@ async function openBoard(page,url,state){
     });
     return route.fulfill({status:200,contentType:'application/json',
      headers:{'access-control-allow-origin':'*'},
-     body:JSON.stringify({ok:true,classes,exploits:fakeExploitEvents,exploitsStatus:'available'})});
+     body:JSON.stringify({ok:true,classes,exploits:fakeExploitEvents,exploitsStatus:'available',
+      todayDate:'2026-11-08',todayStatus:state.dailyStatus||'available'})});
    }
    if(input.action==='teacher-save-options'){
     assert.equal(input.classId,A);
@@ -113,6 +120,58 @@ async function openBoard(page,url,state){
  await page.waitForFunction(()=>document.querySelector('.ranking-card'));
  return {errors,unknown};
 }
+
+test('V2 — Score du jour par défaut, retour au relevé historique et rafraîchissement conservé',{timeout:60000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1880,height:900}});
+  const state=sampleState([ADD]);state.todayScores=[12,86,...Array(14).fill(null)];
+  const {errors,unknown}=await openBoard(page,url,state);
+  const today=page.locator('#score-mode-switch button[data-score-mode="today"]');
+  const best=page.locator('#score-mode-switch button[data-score-mode="best"]');
+  assert.equal(await today.getAttribute('aria-pressed'),'true','Score du jour au démarrage');
+  assert.equal(await best.getAttribute('aria-pressed'),'false');
+  await page.waitForFunction(()=>document.querySelector('.ranking-card .entry .points')?.textContent==='86 pts');
+  assert.equal(await page.locator(card(ADD)+' .entry').count(),2,'aucun score historique injecté dans le jour');
+  const loads=state.loads;
+  await best.click();
+  await page.waitForFunction(()=>document.querySelector('.ranking-card .entry .points')?.textContent==='220 pts');
+  assert.equal(state.loads,loads,'changer de mode ne sollicite ni score ni relevé Supabase');
+  assert.equal(await page.locator(card(ADD)+' .entry').count(),16,'le relevé historique reste intact');
+  assert.equal(await best.getAttribute('aria-pressed'),'true');
+  await page.locator('#load-real').click();
+  await page.waitForFunction(n=>document.querySelector('.ranking-card .entry .points')?.textContent==='220 pts'&&
+   document.querySelector('#score-mode-switch button[data-score-mode="best"]')?.getAttribute('aria-pressed')==='true',
+   null,{timeout:15000});
+  assert.ok(state.loads>loads,'bouton actualiser et relevés historiques conservés');
+  await today.click();
+  await page.waitForFunction(()=>document.querySelector('.ranking-card .entry .points')?.textContent==='86 pts');
+  assert.equal(await today.getAttribute('aria-pressed'),'true','sélection du jour maintenue au prochain affichage');
+  const rects=await page.evaluate(()=>{
+   const a=document.querySelector('#header-class').getBoundingClientRect(),
+    b=document.querySelector('#score-mode-switch').getBoundingClientRect(),
+    c=document.querySelector('.header-tools').getBoundingClientRect();
+   return {classRight:a.right,choiceLeft:b.left,choiceRight:b.right,refreshLeft:c.left,choiceHeight:b.height};
+  });
+  assert.ok(rects.choiceLeft>rects.classRight&&rects.choiceRight<rects.refreshLeft,
+   'le choix occupe bien l’espace de la croix mauve, entre classe et actualisation : '+JSON.stringify(rects));
+  assert.ok(rects.choiceHeight>=38);
+  assert.deepEqual(errors,[]);assert.deepEqual(unknown,[]);
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
+
+test('V2 — scores quotidiens indisponibles : repli visible vers Meilleur score',{timeout:50000},async()=>{
+ const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ try{
+  const page=await browser.newPage({viewport:{width:1366,height:768}});
+  const state=sampleState([ADD]);state.dailyStatus='unavailable';
+  const {errors}=await openBoard(page,url,state);
+  assert.equal(await page.locator('#score-mode-switch button[data-score-mode="best"]').getAttribute('aria-pressed'),'true');
+  assert.match(await page.locator('#live-status').textContent(),/Scores du jour indisponibles/);
+  assert.equal(await page.locator(card(ADD)+' .entry').count(),16);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
 
 test('V2 — 1, 2 et 3 panneaux, colonnes, séparation, scroll et limite de sélection',{timeout:80000},async()=>{
  const {server,url}=await serve(),browser=await chromium.launch({headless:true,args:['--no-sandbox']});
