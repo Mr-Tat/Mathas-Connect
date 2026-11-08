@@ -63,9 +63,9 @@ export function judgeCompletion(raw){
      successes++;
     }else errors++;
    }else{
-    const base=25+2*Math.floor(index/4);
-    if(judged.good){firstTry++;points+=judged.units?base-10:judged.manip?base-5:base;}
-    else if(judged.corrected)points+=6;
+    // Activité 3 classique : 2 points par conversion correcte au premier essai.
+    // Les aides et les corrections ne créent aucun point supplémentaire.
+    if(judged.good){firstTry++;points+=2;}
    }
   }
   if(record&&raw.tailSegments!=null){
