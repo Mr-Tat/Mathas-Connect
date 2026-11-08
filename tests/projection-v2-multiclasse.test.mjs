@@ -76,3 +76,19 @@ test('Projection : scores égaux dans une même classe ou entre classes => même
  ]);
  assert.deepEqual(rows.map(x=>x.classId),['A','B','A','B','A','B','A']);
 });
+
+test('Projection : Score du jour et Meilleur score sont deux classements indépendants',()=>{
+ const people=[{classId:'A',name:'Phase 2 A',students:[
+  {id:'a',name:'Alice',scores:[{appKey:'addition-ecrite-simple',bestScore:120,todayScore:25}]},
+  {id:'b',name:'Bob',scores:[{appKey:'addition-ecrite-simple',bestScore:60,todayScore:45}]},
+  {id:'c',name:'Camille',scores:[{appKey:'addition-ecrite-simple',bestScore:200,todayScore:null}]}
+ ]}];
+ const history=rankMultiClass({classes:people,primaryClassId:'A',appKey:'addition-ecrite-simple'});
+ assert.deepEqual(history.map(p=>[p.id,p.score]),[['c',200],['a',120],['b',60]]);
+ const today=rankMultiClass({classes:people,primaryClassId:'A',appKey:'addition-ecrite-simple',
+  scoreField:'todayScore'});
+ assert.deepEqual(today.map(p=>[p.id,p.score]),[['b',45],['a',25]]);
+ assert.equal(today.every(p=>p.id!=='c'),true,'une ancienne victoire ne compte pas aujourd’hui');
+ // The view switch never changes the raw server records.
+ assert.equal(people[0].students[0].scores[0].bestScore,120);
+});
