@@ -603,6 +603,11 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
 #teacher-authorizations .authorization-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 #teacher-authorizations .authorization-actions button{min-height:40px}
 #auth-feedback{min-height:22px}
+#teacher-authorizations .authorization-saved-summary{
+ margin:-8px 0 0;color:#bfdbeb;font-size:13px;line-height:1.45;
+ font-weight:550;overflow-wrap:anywhere
+}
+#teacher-authorizations .authorization-saved-summary[hidden]{display:none!important}
 
 #teacher-authorizations #auth-student-wrap[hidden]{display:none!important}
 
