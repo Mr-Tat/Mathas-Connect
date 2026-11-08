@@ -22,6 +22,7 @@ export function brusselsDaySearchWindow(nowMs=Date.now()){
 }
 const key=(classId,studentId,appKey)=>[classId,studentId,appKey].join('|');
 const eventKey=e=>[e.student_id,e.class_id,e.app_key,e.event_id].join('|');
+/** @param {{events?:any[],consents?:any[],periods?:any[],nowMs?:number}} input */
 export function summarizeDailyPublishedScores({events=[],consents=[],periods=[],nowMs=Date.now()}={}){
  const today=brusselsDayKey(nowMs),byPeriod=new Map();
  for(const period of periods){
