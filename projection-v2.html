@@ -348,8 +348,8 @@ html[data-proj-da="studio"] .ranking-board .ranking-head h2{font-family:Impact,"
 <style>
 html[data-proj-da] header.projection-header,
 header.projection-header{
- display:grid;grid-template-columns:minmax(210px,1fr) minmax(210px,1.15fr) minmax(340px,1fr);
- grid-template-areas:"theme class refresh";align-items:center;gap:14px;
+ display:grid;grid-template-columns:minmax(200px,1fr) minmax(245px,1.13fr) minmax(222px,.85fr) minmax(275px,1fr);
+ grid-template-areas:"theme class scoremode refresh";align-items:center;gap:12px;
  padding:9px 16px;min-height:65px;
 }
 header.projection-header .projection-theme-picker{
@@ -371,6 +371,28 @@ header.projection-header .header-class{
  font-size:clamp(22px,2.1vw,31px);font-weight:950;line-height:1.14;
  letter-spacing:.015em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
  color:var(--v-text,#f6fbff)
+}
+header.projection-header .score-mode-switch{
+ grid-area:scoremode;display:inline-flex;align-items:center;justify-self:center;
+ max-width:100%;box-sizing:border-box;gap:3px;padding:4px;
+ border:1px solid color-mix(in srgb,var(--v-accent,#d3b15d) 65%,transparent);
+ border-radius:12px;background:color-mix(in srgb,var(--v-button,#1b4262) 84%,#071525);
+ box-shadow:0 3px 12px #0003
+}
+header.projection-header .score-mode-switch button{
+ appearance:none;flex:0 0 auto;min-width:102px;max-width:145px;
+ min-height:38px;padding:7px 9px;
+ border:1px solid transparent;border-radius:9px;background:transparent;
+ color:var(--v-text,#f3faff);font:800 12px/1.2 system-ui;
+ white-space:nowrap;cursor:pointer
+}
+header.projection-header .score-mode-switch button[aria-pressed="true"]{
+ color:var(--v-button-ink,#fff);border-color:var(--v-accent,#ffc860);
+ background:var(--v-button,#295c85);
+ box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--v-accent,#ffc860) 44%,transparent),0 2px 8px #0004
+}
+header.projection-header .score-mode-switch button:focus-visible{
+ outline:3px solid #ffe18e;outline-offset:2px
 }
 header.projection-header .header-tools{
  grid-area:refresh;display:flex;align-items:center;justify-content:flex-end;
@@ -405,7 +427,7 @@ header.projection-header .projection-refresh-progress.is-paused{opacity:.35}
 @media(max-width:950px){
  html[data-proj-da] header.projection-header,header.projection-header{
   grid-template-columns:minmax(170px,1fr) minmax(320px,1fr);
-  grid-template-areas:"theme refresh" "class class";row-gap:7px
+  grid-template-areas:"theme scoremode" "class class" "refresh refresh";row-gap:7px
  }
  html[data-proj-da] header.projection-header .header-class,
  header.projection-header .header-class{
@@ -415,7 +437,7 @@ header.projection-header .projection-refresh-progress.is-paused{opacity:.35}
 @media(max-width:570px){
  html[data-proj-da] header.projection-header,header.projection-header{
   grid-template-columns:minmax(0,1fr);
-  grid-template-areas:"theme" "class" "refresh";
+  grid-template-areas:"theme" "class" "scoremode" "refresh";
   justify-items:center;gap:8px;padding:9px 10px
  }
  header.projection-header .projection-theme-picker{justify-self:center}
@@ -560,6 +582,10 @@ html[data-proj-da="papier"] .projection-main .right .event-action{color:#865209}
     </select>
   </label>
   <div id="header-class" class="header-class" aria-label="Classe projetée">Classe</div>
+  <div id="score-mode-switch" class="score-mode-switch" role="group" aria-label="Choisir le classement projeté">
+    <button type="button" data-score-mode="today" aria-pressed="true" title="Meilleur score partagé aujourd’hui, heure de Bruxelles">Score du jour</button>
+    <button type="button" data-score-mode="best" aria-pressed="false" title="Meilleur score du relevé historique, toujours actualisable depuis Applications">Meilleur score</button>
+  </div>
   <div class="header-tools" aria-label="Actualisation des classements">
     <button id="load-real" type="button">Afficher / Actualiser</button>
     <div class="projection-auto-refresh" aria-label="Actualisation automatique toutes les 20 secondes">
@@ -597,6 +623,6 @@ html[data-proj-da="papier"] .projection-main .right .event-action{color:#865209}
   <section class="options"><strong>Comparaison avec les autres classes</strong><p class="note">Pour chaque classe, affiche le score de l’application en cours, le pourcentage de réussite, ou les deux.</p><table class="comparison-table"><thead><tr><th>Classe</th><th>Score</th><th>%</th></tr></thead><tbody id="comparison-options"></tbody></table><label><input id="show-teacher" type="checkbox"> Afficher Monsieur T (décoché au lancement)</label></section>
   <div id="reset-confirm" class="options" hidden><strong id="reset-heading">Réinitialiser le score projeté</strong><label>Mot de passe professeur <input id="reset-password" type="password" autocomplete="current-password" maxlength="160" placeholder="Mot de passe"/></label><div class="controls"><button id="reset-apply" type="button">Confirmer uniquement ce score</button><button id="reset-cancel" type="button">Annuler</button></div></div><p class="note">Une réinitialisation n’affecte qu’une application et une classe. Jamais les %, les résultats réels, les XP, les trophées ou les parcours des élèves.</p>
 </dialog>
-<script type="module" src="./projection-v2-live.js?v=20261106-exploits-brefs-v2"></script>
+<script type="module" src="./projection-v2-live.js?v=20261108-daily-v1"></script>
 </body>
 </html>
