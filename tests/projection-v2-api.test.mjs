@@ -48,3 +48,17 @@ test('projection V2 API : réglages isolés à la classe et validés',()=>{
  assert.match(src,/onConflict:'class_id'/);
  assert.doesNotMatch(src,/service_role.*respond|password.*console\./);
 });
+
+test('projection V2 : classement quotidien distinct, secret et non publié par défaut',()=>{
+ assert.match(src,/brusselsDaySearchWindow/);
+ assert.match(src,/summarizeDailyPublishedScores/);
+ assert.match(src,/connect_projection_score_events/);
+ assert.match(src,/connect_projection_score_consents/);
+ assert.match(src,/dailyBest\.get\(publishedScoreKey\(row\.id,id,x\.app_key\)\)\?\?null/);
+ assert.match(src,/todayDate:dailyWindow\.day,todayStatus/);
+ assert.match(src,/if\(!await ownClasses\(user\.id,classIds\)\)/);
+ // Manual relaunch and historical record are not replaced by the day view.
+ assert.match(src,/connect_projection_best_scores_v1/);
+ assert.match(src,/b\.action==='student-share-score'/);
+ assert.match(src,/connect_projection_reset_score_v1/);
+});

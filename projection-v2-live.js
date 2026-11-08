@@ -25,6 +25,7 @@ const apps=[
 const allKeys=apps.map(a=>a.key);
 let client=null,classesAvailable=[],data=null,fetching=false,refreshTicket=0;
 let hasLoaded=false,connected=false,optionsLoaded=false,pendingReset=null;
+let scoreMode='today'; // new default; the manually shared historical score stays available
 let nextRefreshAt=0,refreshCycleStartedAt=0,refreshPausedAt=0;
 const tracker=createOvertakeTracker(),localRises=new Map();
 const playingKeys=new Map();let animationEpoch=0;
@@ -47,6 +48,24 @@ const note=message=>{
   /erreur|refus|expir|nécessaire|indisponible|ne gères|saisis ton|ouvre cette page|clique d’abord/i.test(message));
 };
 const enabled=()=>apps.filter(a=>options.scoreApps.includes(a.key)).slice(0,MAX_VISIBLE_APPS);
+const rankingField=()=>scoreMode==='today'?'todayScore':'bestScore';
+function paintScoreMode(){
+ for(const button of document.querySelectorAll('#score-mode-switch button[data-score-mode]'))
+  button.setAttribute('aria-pressed',String(button.dataset.scoreMode===scoreMode));
+ document.documentElement.dataset.projectionScoreMode=scoreMode;
+}
+function chooseScoreMode(next){
+ if(!['today','best'].includes(next)||next===scoreMode)return;
+ if(next==='today'&&data&&data.todayStatus!=='available')
+  return note('Scores du jour indisponibles pour le moment. Le relevé « Meilleur score » reste accessible.');
+ scoreMode=next;paintScoreMode();
+ if(data){
+  // A view switch is NOT a new score, so never announce it as an exploit.
+  cancelPlayback();tracker.clear();localRises.clear();
+  observeRankings(data);render();
+ }
+}
+
 const cardFor=key=>[...$('ranking-board').querySelectorAll('.ranking-card')].find(card=>card.dataset.appKey===key)||null;
 function clearBoard(message){
  cancelPlayback();tracker.clear();localRises.clear();
@@ -112,6 +131,13 @@ async function refresh(){
     }
    }
   }
+  // A failed daily query must not look like an empty class or leak private
+  // results. Fall back explicitly to the unchanged manual historical board.
+  const dailyUnavailable=scoreMode==='today'&&result.todayStatus!=='available';
+  if(dailyUnavailable){
+   scoreMode='best';paintScoreMode();
+   cancelPlayback();tracker.clear();localRises.clear();
+  }
   // Observe every enabled app, including those not currently on screen.
   // A new verified score can queue an animation, but cannot play on another app.
   observeRankings(result);
@@ -119,7 +145,7 @@ async function refresh(){
   hasLoaded=true;
   for(const id of ['settings-left'])$(id).disabled=false;
   render();
-  note('Actualisé à '+clockFormatter.format(new Date()));
+  note(dailyUnavailable?'Scores du jour indisponibles · Affichage « Meilleur score »':('Actualisé à '+clockFormatter.format(new Date())));
   updateRefreshProgress();
  }catch(error){
   if(ticket!==refreshTicket)return;
@@ -161,9 +187,11 @@ function snapshotFor(appKey,result){
   const c=result.classes.find(x=>x.classId===id);
   return [id,c?.scorePeriods?.find(p=>p.appKey===appKey)?.since||''];
  });
- return {appKey,context:JSON.stringify({classIds,periodStates,teacher:$('show-teacher').checked}),
+ return {appKey,context:JSON.stringify({classIds,periodStates,teacher:$('show-teacher').checked,
+   scoreMode,calendarDay:scoreMode==='today'?result.todayDate:null}),
   rows:rankMultiClass({classes:result.classes,primaryClassId:classId,
-   scoreClassIds:compared,appKey,limit:16,includeTeacher:$('show-teacher').checked})};
+   scoreClassIds:compared,appKey,limit:16,includeTeacher:$('show-teacher').checked,
+   scoreField:rankingField()})};
 }
 function observeRankings(result){
  for(const app of enabled()){
@@ -318,6 +346,7 @@ function render(){
  for(const app of active){
   let card=cardFor(app.key);
   if(!card){card=createRankingCard(app);board.append(card)}
+  card.setAttribute('aria-label','Classement '+app.title+' · '+(scoreMode==='today'?'Score du jour':'Meilleur score'));
   const visual=tracker.shown(app.key)||snapshotFor(app.key,data);
   if(!playingKeys.has(app.key))paintRanking(app.key,visual.rows);
  }
@@ -620,6 +649,10 @@ $('reset-apply').onclick=async()=>{
  }catch(error){$('reset-password').value='';note('Réinitialisation refusée : '+(error?.message||'Erreur'))}
  finally{$('reset-apply').disabled=false}
 };
+for(const button of document.querySelectorAll('#score-mode-switch button[data-score-mode]')){
+ button.addEventListener('click',()=>chooseScoreMode(button.dataset.scoreMode));
+}
+paintScoreMode();
 $('load-real').onclick=refresh;
 window.addEventListener('pagehide',()=>{stopRefreshTicker();clearBoard('Projection masquée en quittant la page.')});
 async function initialize(){

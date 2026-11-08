@@ -1,6 +1,7 @@
 import {createClient} from 'npm:@supabase/supabase-js@2.95.0';
 import {buildProjectionExploits,EXPLOIT_WINDOW_HOURS} from './exploits.mjs';
 import {summarizeCompletedGames} from './percentages.mjs';
+import {brusselsDaySearchWindow,summarizeDailyPublishedScores,publishedScoreKey} from './daily-scores.mjs';
 
 // Teacher-only Projection V2 API. Every read and write checks verified JWT,
 // teacher status, and class-specific management permissions.
@@ -162,6 +163,44 @@ Deno.serve(async(req:Request)=>{
     if(error)throw Error('best_scores_unavailable');
     bestByClass.set(id,data??[]);
    }));
+   // Independent daily board: only explicit, matching publication consents.
+   // Never derive a projected score from stored (but unpublished) class work.
+   // The legacy best-score RPC, reset period and student-share-score action
+   // remain completely unchanged and continue to power "Meilleur score".
+   const dailyWindow=brusselsDaySearchWindow();
+   let todayStatus='available';
+   let dailyBest=new Map<string,number>();
+   try{
+    const dailyEvents:any[]=[];
+    if(memberIds.length){
+     const pageSize=800,maxPages=12;
+     for(let page=0;page<maxPages;page++){
+      const rows=await records(db.from('connect_projection_score_events')
+       .select('student_id,class_id,app_key,event_id,game_score,game_points,played_at,captured_at')
+       .in('class_id',classIds).in('student_id',memberIds).in('app_key',keys)
+       .gte('played_at',dailyWindow.start).lt('played_at',dailyWindow.end)
+       .order('played_at',{ascending:false}).order('event_id',{ascending:false})
+       .range(page*pageSize,(page+1)*pageSize-1));
+      dailyEvents.push(...rows);
+      if(rows.length<pageSize)break;
+      if(page===maxPages-1)throw Error('daily_event_limit');
+     }
+    }
+    const shared:any[]=[];
+    const eventIds=distinct(dailyEvents.map(e=>e.event_id));
+    for(let i=0;i<eventIds.length;i+=150){
+     shared.push(...await records(db.from('connect_projection_score_consents')
+      .select('student_id,class_id,app_key,event_id')
+      .in('event_id',eventIds.slice(i,i+150)).in('class_id',classIds).limit(300)));
+    }
+    dailyBest=summarizeDailyPublishedScores({
+     events:dailyEvents,consents:shared,periods:periodRows,nowMs:Date.now()
+    });
+   }catch{
+    // Never silently pass a partial or unverified list off as today's scores.
+    // The historical board is still fully usable if this secondary query fails.
+    todayStatus='unavailable';
+   }
    // Exact counts of attempted/correct exercises from COMPLETE Classique games
    // only. Never infer incomplete sessions from unplayed question totals.
    // SQL accepts class IDs but is executable solely by service_role; teacher
@@ -181,7 +220,10 @@ Deno.serve(async(req:Request)=>{
     const membersSet=new Set(members);
     const totals=keys.map(appKey=>({appKey,
      bestSum:best.filter((x:any)=>x.app_key===appKey&&membersSet.has(x.student_id))
-      .reduce((sum:number,x:any)=>sum+Math.max(0,Number(x.best_score)||0),0)}));
+      .reduce((sum:number,x:any)=>sum+Math.max(0,Number(x.best_score)||0),0),
+     todaySum:best.filter((x:any)=>x.app_key===appKey&&membersSet.has(x.student_id))
+      .reduce((sum:number,x:any)=>sum+
+       Math.max(0,dailyBest.get(publishedScoreKey(row.id,x.student_id,appKey))??0),0)}));
     const students=members.map((id:string)=>{
      const p:any=profileMap.get(id);
      if(!p)return null;
@@ -196,7 +238,8 @@ Deno.serve(async(req:Request)=>{
       // unapproved pupil, archived profile or excluded teacher player.
       avatar:{kind:p.avatar_kind||'letter',value:p.avatar_value||null,color:p.avatar_color||'transparent'},
       isTeacher:id===teacherId,scores:best.filter((x:any)=>x.student_id===id&&membersSet.has(id))
-       .map((x:any)=>({appKey:x.app_key,bestScore:x.best_score,at:x.best_event_at}))};
+       .map((x:any)=>({appKey:x.app_key,bestScore:x.best_score,at:x.best_event_at,
+        todayScore:dailyBest.get(publishedScoreKey(row.id,id,x.app_key))??null}))};
     }).filter(Boolean);
     const percentages=completedRows===null?null:summarizeCompletedGames(completedRows,
      {classId:row.id,appKeys:keys,globalKeys:globalPercentApps});
@@ -234,7 +277,8 @@ Deno.serve(async(req:Request)=>{
       scoreEvents,consents,scorePeriods:periodRows,nowMs:Date.now()});
     }catch{exploitsStatus='unavailable';}
    }
-   return respond({ok:true,classes,appKeys:keys,exploits,exploitsStatus});
+   return respond({ok:true,classes,appKeys:keys,exploits,exploitsStatus,
+    todayDate:dailyWindow.day,todayStatus});
   }
   if(b.action==='teacher-save-options'){
    if(!classOptions(b.options))return deny('invalid_options',400);

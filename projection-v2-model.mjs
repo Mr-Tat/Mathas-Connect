@@ -84,7 +84,8 @@ export function resetScorePeriod(periods=[],classId,appKey,when){
 // Combine only the class selected for projection and classes explicitly
 // checked in the Score column. % comparison choices have no effect here.
 export function rankMultiClass({
- classes=[],primaryClassId,scoreClassIds=[],appKey,limit=16,includeTeacher=false
+ classes=[],primaryClassId,scoreClassIds=[],appKey,limit=16,includeTeacher=false,
+ scoreField='bestScore'
 }={}){
  if(!validClass(primaryClassId)||!validApp(appKey))return [];
  const allowed=new Set([primaryClassId,...(Array.isArray(scoreClassIds)?scoreClassIds:[])]);
@@ -94,7 +95,8 @@ export function rankMultiClass({
   for(const p of Array.isArray(group.students)?group.students:[]){
    if(!p||p.visible===false||p.isTeacher&&!includeTeacher)continue;
    const row=Array.isArray(p.scores)?p.scores.find(x=>x.appKey===appKey):undefined;
-   const score=numeric(row?.bestScore)?row.bestScore:null;
+   const selectedField=scoreField==='todayScore'?'todayScore':'bestScore';
+   const score=numeric(row?.[selectedField])?row[selectedField]:null;
    // Each game has its own public leaderboard. A student with no published
    // score for THIS app must not appear, even as an unplayed placeholder:
    // otherwise cards from another game seem to carry over.
