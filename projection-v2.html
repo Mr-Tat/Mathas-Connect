@@ -348,9 +348,13 @@ html[data-proj-da="studio"] .ranking-board .ranking-head h2{font-family:Impact,"
 <style>
 html[data-proj-da] header.projection-header,
 header.projection-header{
- display:grid;grid-template-columns:minmax(210px,1fr) minmax(210px,1.15fr) minmax(340px,1fr);
- grid-template-areas:"theme class refresh" ". scoremode .";align-items:center;gap:7px 14px;
+ display:grid;grid-template-columns:minmax(205px,1fr) max-content minmax(310px,1fr);
+ grid-template-areas:"theme class refresh";align-items:center;gap:7px 14px;
  padding:9px 16px;min-height:65px;
+}
+header.projection-header .projection-class-and-mode{
+ grid-area:class;display:flex;align-items:center;justify-content:center;
+ justify-self:center;min-width:0;max-width:100%;gap:clamp(8px,.85vw,14px);
 }
 header.projection-header .projection-theme-picker{
  grid-area:theme;display:flex;align-items:center;justify-self:start;gap:8px;
@@ -365,7 +369,7 @@ header.projection-header .projection-theme-picker select{
 }
 html[data-proj-da] header.projection-header .header-class,
 header.projection-header .header-class{
- grid-area:class;position:static;left:auto;top:auto;transform:none;order:0;
+ grid-area:auto;position:static;left:auto;top:auto;transform:none;order:0;
  margin:0;max-width:100%;width:auto;flex:initial;min-width:0;
  justify-self:center;text-align:center;
  font-size:clamp(22px,2.1vw,31px);font-weight:950;line-height:1.14;
@@ -373,37 +377,30 @@ header.projection-header .header-class{
  color:var(--v-text,#f6fbff)
 }
 header.projection-header .score-mode-switch{
- grid-area:scoremode;display:inline-flex;align-items:center;justify-self:center;
- max-width:100%;box-sizing:border-box;gap:3px;padding:4px;
- border:1px solid color-mix(in srgb,var(--v-accent,#d3b15d) 65%,transparent);
- border-radius:12px;background:color-mix(in srgb,var(--v-button,#1b4262) 84%,#071525);
- box-shadow:0 3px 12px #0003
+ display:flex;flex:0 0 auto;flex-direction:column;align-items:stretch;
+ gap:2px;padding:3px;max-width:100%;box-sizing:border-box;
+ border:1px solid color-mix(in srgb,var(--v-accent,#d3b15d) 42%,transparent);
+ border-radius:11px;background:color-mix(in srgb,var(--v-button,#1b4262) 78%,#071525);
+ box-shadow:0 2px 7px #0002;
 }
 header.projection-header .score-mode-switch button{
- appearance:none;flex:0 0 auto;min-width:102px;max-width:145px;
- min-height:38px;padding:7px 9px;
- border:1px solid transparent;border-radius:9px;background:transparent;
- color:var(--v-text,#f3faff);font:800 12px/1.2 system-ui;
- white-space:nowrap;cursor:pointer
+ appearance:none;flex:0 0 auto;min-width:123px;max-width:140px;
+ min-height:30px;padding:6px 8px;
+ border:1px solid transparent;border-radius:8px;background:transparent;
+ color:var(--v-text,#f3faff);font:750 11px/1.2 system-ui;
+ white-space:nowrap;cursor:pointer;
+}
+header.projection-header .score-mode-switch button:hover{
+ background:color-mix(in srgb,var(--v-button,#295c85) 80%,transparent);
 }
 header.projection-header .score-mode-switch button[aria-pressed="true"]{
- color:var(--v-button-ink,#fff);border-color:var(--v-accent,#ffc860);
+ color:var(--v-button-ink,#fff);
+ border-color:color-mix(in srgb,var(--v-accent,#ffc860) 66%,transparent);
  background:var(--v-button,#295c85);
- box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--v-accent,#ffc860) 44%,transparent),0 2px 8px #0004
+ box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--v-accent,#ffc860) 24%,transparent);
 }
 header.projection-header .score-mode-switch button:focus-visible{
- outline:3px solid #ffe18e;outline-offset:2px
-}
-/* Le projecteur large laisse un espace libre à droite de la classe.
-   Sur les PC plus petits, préserver le centrage et tous les boutons. */
-@media(min-width:1720px){
- html[data-proj-da] header.projection-header,header.projection-header{
-  position:relative;grid-template-areas:"theme class refresh";row-gap:0
- }
- header.projection-header .score-mode-switch{
-  position:absolute;left:calc(50% + 252px);top:50%;
-  transform:translateY(-50%)
- }
+ outline:3px solid #ffe18e;outline-offset:2px;
 }
 html[data-projection-score-mode="today"] .projection-main .ranking-board .ranking-list:empty::after{
  content:"Aucun score partagé aujourd’hui pour cette application."
@@ -438,22 +435,23 @@ header.projection-header .projection-refresh-fill{
 }
 header.projection-header .projection-refresh-progress.is-inactive{opacity:.26}
 header.projection-header .projection-refresh-progress.is-paused{opacity:.35}
-@media(max-width:950px){
+@media(max-width:1180px){
  html[data-proj-da] header.projection-header,header.projection-header{
-  grid-template-columns:minmax(170px,1fr) minmax(320px,1fr);
-  grid-template-areas:"theme refresh" "class class" "scoremode scoremode";row-gap:7px
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  grid-template-areas:"theme refresh" "class class";row-gap:7px;
  }
  html[data-proj-da] header.projection-header .header-class,
  header.projection-header .header-class{
-  justify-self:center;max-width:100%;font-size:clamp(22px,3vw,28px)
+  justify-self:center;max-width:100%;font-size:clamp(22px,3vw,28px);
  }
 }
 @media(max-width:570px){
  html[data-proj-da] header.projection-header,header.projection-header{
   grid-template-columns:minmax(0,1fr);
-  grid-template-areas:"theme" "class" "scoremode" "refresh";
-  justify-items:center;gap:8px;padding:9px 10px
+  grid-template-areas:"theme" "class" "refresh";
+  justify-items:center;gap:8px;padding:9px 10px;
  }
+ header.projection-header .projection-class-and-mode{flex-direction:column;gap:7px}
  header.projection-header .projection-theme-picker{justify-self:center}
  header.projection-header .header-tools{justify-self:center;max-width:100%;gap:8px}
  header.projection-header #load-real{min-width:0}
@@ -595,10 +593,12 @@ html[data-proj-da="papier"] .projection-main .right .event-action{color:#865209}
       <option value="ardoise">Ardoise scolaire</option><option value="studio">Studio compétition</option>
     </select>
   </label>
-  <div id="header-class" class="header-class" aria-label="Classe projetée">Classe</div>
-  <div id="score-mode-switch" class="score-mode-switch" role="group" aria-label="Choisir le classement projeté">
-    <button type="button" data-score-mode="today" aria-pressed="true" title="Meilleur score partagé aujourd’hui, heure de Bruxelles">Score du jour</button>
-    <button type="button" data-score-mode="best" aria-pressed="false" title="Meilleur score du relevé historique, toujours actualisable depuis Applications">Meilleur score</button>
+  <div class="projection-class-and-mode">
+    <div id="header-class" class="header-class" aria-label="Classe projetée">Classe</div>
+    <div id="score-mode-switch" class="score-mode-switch" role="group" aria-label="Choisir le classement projeté">
+      <button type="button" data-score-mode="today" aria-pressed="true" title="Meilleur score partagé aujourd’hui, heure de Bruxelles">Score du jour</button>
+      <button type="button" data-score-mode="best" aria-pressed="false" title="Meilleur score du relevé historique, toujours actualisable depuis Applications">Meilleur score</button>
+    </div>
   </div>
   <div class="header-tools" aria-label="Actualisation des classements">
     <button id="load-real" type="button">Afficher / Actualiser</button>
