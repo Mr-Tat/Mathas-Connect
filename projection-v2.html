@@ -348,8 +348,8 @@ html[data-proj-da="studio"] .ranking-board .ranking-head h2{font-family:Impact,"
 <style>
 html[data-proj-da] header.projection-header,
 header.projection-header{
- display:grid;grid-template-columns:minmax(200px,1fr) minmax(245px,1.13fr) minmax(222px,.85fr) minmax(275px,1fr);
- grid-template-areas:"theme class scoremode refresh";align-items:center;gap:12px;
+ display:grid;grid-template-columns:minmax(210px,1fr) minmax(210px,1.15fr) minmax(340px,1fr);
+ grid-template-areas:"theme class refresh" ". scoremode .";align-items:center;gap:7px 14px;
  padding:9px 16px;min-height:65px;
 }
 header.projection-header .projection-theme-picker{
@@ -394,6 +394,17 @@ header.projection-header .score-mode-switch button[aria-pressed="true"]{
 header.projection-header .score-mode-switch button:focus-visible{
  outline:3px solid #ffe18e;outline-offset:2px
 }
+/* Le projecteur large laisse un espace libre à droite de la classe.
+   Sur les PC plus petits, préserver le centrage et tous les boutons. */
+@media(min-width:1720px){
+ html[data-proj-da] header.projection-header,header.projection-header{
+  position:relative;grid-template-areas:"theme class refresh";row-gap:0
+ }
+ header.projection-header .score-mode-switch{
+  position:absolute;left:calc(50% + 252px);top:50%;
+  transform:translateY(-50%)
+ }
+}
 html[data-projection-score-mode="today"] .projection-main .ranking-board .ranking-list:empty::after{
  content:"Aucun score partagé aujourd’hui pour cette application."
 }
@@ -430,7 +441,7 @@ header.projection-header .projection-refresh-progress.is-paused{opacity:.35}
 @media(max-width:950px){
  html[data-proj-da] header.projection-header,header.projection-header{
   grid-template-columns:minmax(170px,1fr) minmax(320px,1fr);
-  grid-template-areas:"theme scoremode" "class class" "refresh refresh";row-gap:7px
+  grid-template-areas:"theme refresh" "class class" "scoremode scoremode";row-gap:7px
  }
  html[data-proj-da] header.projection-header .header-class,
  header.projection-header .header-class{
