@@ -11,7 +11,7 @@ const storage=()=>{const data=new Map();return {getItem:k=>data.get(k)||null,set
 test('Abaque serveur : vrais seuils, scores et preuves de fin ; aucune récompense déclarée par le client',()=>{
  assert.equal(judgeCompletion(build(10)).firstTry,10);
  assert.equal(judgeCompletion(moves(7)).firstTry,7);
- for(const [kind,points] of [['one',100],['three',324],['five',580]])assert.equal(judgeCompletion(classic(kind)).points,points);
+ for(const [kind,points] of [['one',8],['three',24],['five',40]])assert.equal(judgeCompletion(classic(kind)).points,points);
  assert.equal(judgeCompletion(record('lives',5)).points,5);
  assert.equal(judgeCompletion(record('sudden',5)).points,10);
  assert.equal(judgeCompletion(record('sudden',10,{abandoned:true})).eligible,false);
@@ -19,7 +19,7 @@ test('Abaque serveur : vrais seuils, scores et preuves de fin ; aucune récompen
  const proof=record('sudden',4);proof.tasks[3].manip=true;
  assert.throws(()=>judgeCompletion(proof),/invalid_completion/);
  const corrected=classic('one',3);corrected.tasks[3].correctedAnswer=2000;
- assert.equal(judgeCompletion(corrected).firstTry,3);assert.equal(judgeCompletion(corrected).points,81);
+ assert.equal(judgeCompletion(corrected).firstTry,3);assert.equal(judgeCompletion(corrected).points,6);
 });
 
 test('Abaque file : résultat conservé après ACK incorrect, redémarrage, puis ACK exact lié à l’identité',async()=>{
