@@ -1,55 +1,16 @@
-# Passage de flambeau — [APP / SUJET] — [DATE]
+# Passage de flambeau — version légère
 
-> **Nouvelle règle de passation depuis le 09/11/2026 :** lire [la synthèse express](00_DEMARRER_ICI.md), puis la section A et la dernière entrée utile du [suivi courant inter-conversations](SUIVI_COURANT.md). Le [contrat complet](CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md) et la [doctrine/RETEX](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) se lisent par section au besoin. Reprendre **le candidat final pour les élèves**, pas reconstruire un pilote LAB.
+> **Ne pas créer un deuxième journal.** Pour une nouvelle app, conserver sa **fiche unique** dans [applications/](applications/README.md), construite depuis [TEMPLATE_FICHE_APPLICATION.md](TEMPLATE_FICHE_APPLICATION.md). Le [suivi actif](SUIVI_COURANT.md) n'en recopie qu'une ligne.
 
-Ce modèle contient les détails **propres à une intégration** ; inscrire son résumé (3 à 8 lignes + lien) dans `SUIVI_COURANT.md`. Ne pas charger systématiquement toutes les anciennes passations. Ne pas transmettre tokens, exports d'élèves ou dumps personnels.
+## À transmettre à la conversation suivante (copiable en 5–8 lignes)
 
-## Références immuables
+- **Application / `app_key` / PR et branche ACTIVE / SHA `main` / lien de fiche SUR CETTE BRANCHE si PR ouverte :** …
+- **Audit réalisé et objectif :** …
+- **Brainstorm professeur :** XP APPROUVÉ/EN ATTENTE/SANS OBJET (date/source) ; trophées … ; scores … . **Ne pas coder des barèmes en attente.**
+- **Faits vérifiés :** REPO … ; CI locale … ; Pages … ; SQL/Edge … ; RECETTE HÉBERGÉE FICTIVE … ; NON VÉRIFIÉ …
+- **Derniers changements et test de non-régression :** …
+- **Incident / cause / correctif / raccourci / lien éventuel [RETEX](RETEX_OPERATIONNEL.md) :** …
+- **Prochaine action exacte, autorisation requise, critère de succès :** …
+- **Ne pas faire :** aucun test avec élève réel, secret, migration, activation ou reset hors périmètre approuvé.
 
-- **Guide :** [docs/integrations/README.md](README.md) — relire d'abord `AGENTS.md`.
-- **Dépôt et branche de travail :** `Mr-Tat/Mathas-Connect` / […].
-- **MAIN SHA constaté :** […] à [date] ; **HEAD branche :** […] ; **PR :** […] ; **autres branches concurrentes :** […].
-- **Moteur source :** repo/commit/SHA-256 […] ; **app_key :** […] ; **versions contrat, état, barème :** […].
-- **Migrations :** fichier + SHA-256 + statut réellement constaté […] ; **Edge :** source + version live + `verify_jwt` réellement observé […] ; **Pages :** commit réellement servi […].
-- **Capacités agent :** Git lecture/écriture/PR/fusion […], Supabase lecture/écriture/Edge […], tests locaux […], navigateur **authentifié Pages** […]. Vérifier à nouveau les accès avant de demander des identifiants.
-
-## Validation pédagogique à transmettre (obligatoire pour une nouvelle intégration)
-
-**Brainstorm avec le professeur effectué ?** OUI / NON ; **Date et preuve de l'échange :** […].
-**XP proposés / validés :** […] / EN ATTENTE / SANS OBJET.
-**Trophées proposés / validés :** […] / EN ATTENTE / SANS OBJET.
-**Scores proposés / validés :** […] / EN ATTENTE / SANS OBJET.
-**Blocage :** tant que ces décisions ne sont pas explicites, aucune logique nouvelle de barème, trophée ou classement à coder/déployer ; poursuivre au besoin l'audit ou les tâches indépendantes.
-
-## Faits, décisions, incertitudes — ne pas mélanger
-
-| Sujet | Statut de preuve | Source/date | Conclusion |
-| --- | --- | --- | --- |
-| Mode et score natifs | REPO / NAVIGATEUR local | | |
-| XP et compléments | DÉCISION professeur / SQL | | |
-| Publication | GitHub / Supabase LIVE / Pages | | |
-| Parcours, reçus, reset | CI locale / LAB authentifié | | |
-| Réglages professeur et sécurité | tests / LIVE | | |
-| Points non vérifiés | NON EXÉCUTÉ | | |
-
-## Capacités et état de livraison élève
-
-**XP / badges « Reste N XP » sur les boutons :** […] / SANS OBJET ; **trophées dans les cases d’exercice :** […] / SANS OBJET ; **score personnel :** […] / SANS OBJET ; **projection + consentement :** […] / SANS OBJET ; **HUB/professeur/Monsieur T :** […] ; **candidat final :** […] ; **vraie publication élève :** OK / ÉCHEC / NON EXÉCUTÉ. Aucun test LAB supplémentaire ne doit être créé sans besoin explicite.
-
-## Déjà réalisé
-
-[Commits exacts, fichiers modifiés, tests lancés (pass/skip/fail), vrai résultat, décisions, problèmes résolus. Ne pas recopier des commandes anciennes comme des ordres.]
-
-## Prochaine action précise
-
-**But :** […]  
-**Préconditions :** […]  
-**Exécution permise :** […]  
-**Ce qu'il est interdit de faire :** pas d'élèves réels, pas de reset global ni migration/activation hors autorisation.  
-**Tests/critère de succès :** […]  
-**Plan d'arrêt non destructif :** […]  
-**Question réellement bloquante pour le professeur (le cas échéant) :** […].
-
-## Journal concis à laisser à la prochaine conversation
-
-[3 à 8 points max : preuve, changement, résultat, manque. Les détails restent dans la PR et la fiche de l'app.]
+**Lire dans l'ordre :** [instructions IA](../../AGENTS.md) → [synthèse](00_DEMARRER_ICI.md) → [ligne active du suivi](SUIVI_COURANT.md) → fiche de l'app. Consulter le [contrat détaillé](CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md) et les incidents **uniquement selon le besoin**.

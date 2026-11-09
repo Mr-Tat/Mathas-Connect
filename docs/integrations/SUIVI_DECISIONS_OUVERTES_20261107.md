@@ -1,4 +1,9 @@
 # Math’as Connect — décisions ouvertes et vérifications restant à faire
+
+## Archive des décisions observées au 07/11/2026
+
+> **INSTANTANÉ HISTORIQUE, plus le suivi actif.** Ne pas présumer qu'une tâche y est encore ouverte ou terminée aujourd'hui. Le [suivi courant](SUIVI_COURANT.md) est un index des nouveaux chantiers ; vérifier l'état réel des anciennes PR/Pages/Supabase avant d'y toucher. Ne pas effacer les engagements encore non vérifiés.
+
 *Mise à jour : 7 novembre 2026. Document vivant du dossier `docs/integrations`.*
 
 Cette liste sépare **travail encore à réaliser** et **code déjà en place mais à vérifier en vraie session**. Les archives historiques et les PR fusionnées ne sont pas, à elles seules, la preuve qu'une classe a testé le rendu. Avant toute modification, relire le `main` actuel, les déploiements Pages/Edge et les décisions plus récentes du professeur.

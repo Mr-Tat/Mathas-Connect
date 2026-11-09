@@ -1,5 +1,10 @@
 # Fiche express — intégrer une application dans Math’as Connect
 
+## Archive du 04/11/2026 — ancienne fiche express
+
+> **HISTORIQUE, remplacée comme point de départ obligatoire** par [00_DEMARRER_ICI.md](00_DEMARRER_ICI.md) et [SUIVI_COURANT.md](SUIVI_COURANT.md). Conserver les raccourcis techniques de ce fichier, mais ne pas appliquer ses instructions de lecture intégrale ou ses anciens chiffres sans vérifier l'état actuel.
+
+
 **Actualisé le 4 novembre 2026.** Cette page est le **résumé de démarrage**. La seule source de référence complète est la [doctrine d’efficacité et son RETEX transversal](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md). Les deux anciens rapports, leurs commits et leurs détails restent consultables dans Git ; ne pas maintenir deux doctrines parallèles.
 
 ## La règle qui prime

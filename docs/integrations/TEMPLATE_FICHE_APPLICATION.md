@@ -1,114 +1,41 @@
-# Fiche d’intégration — [NOM DE L’APPLICATION]
+# Fiche vivante d'application — [JEU] / [app_key]
 
-> Lire d'abord [la synthèse express](00_DEMARRER_ICI.md) et l'en-tête du [suivi courant](SUIVI_COURANT.md) ; consulter uniquement les sections pertinentes du [contrat fonctionnel complet](CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md) et de la [doctrine/RETEX](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md). **Concevoir la version finale élève**, pas une architecture LAB qui sera remplacée. Utiliser une seule chaîne de recette fictive du même candidat avant ouverture.
+> **Copier une fois** vers `docs/integrations/applications/<app-key>.md` puis tenir **cette même fiche** à jour entre conversations. Ne pas créer plusieurs comptes rendus parallèles. Lire au besoin la [synthèse](00_DEMARRER_ICI.md), la [procédure](README.md) et le [modèle historique détaillé](archives/TEMPLATE_FICHE_APPLICATION_DETAILLE_20261109.md).
 
-**Statut :** BROUILLON / COPIE LIBRE / LOCAL VALIDÉ / PILOTE HÉBERGÉ / OUVERT — **Date :** [AAAA-MM-JJ]  
-**Responsable de la PR :** [agent/conversation] — **Branche/PR :** [liens]
+**État :** AUDIT / ARBITRAGE / CODE / CI / PAGES / EDGE-SQL / RECETTE / OUVERT / EN ATTENTE · **Date de vérification :** …  
+**Références :** `app_key` … · dépôt/moteur source + commit/empreinte … · `main` SHA … · branche/PR … · classes visées … · source des décisions …
 
-## 1. Source / périmètre et capacités (lot 0, avant code)
+## 1. Audit de l'application (faits, pas suppositions)
 
-| Élément | Valeur / preuve |
-| --- | --- |
-| App Connect `app_key` (unique, stable) | |
-| Dépôt original et commit HEAD | |
-| Version moteur / SHA-256 original / licence | |
-| Dossier `apps/<slug>/` et URL libre / URL Connect | |
-| Commit `main` de départ et PR concurrentes | |
-| Miniature officielle / source / dimensions / taille | |
-| Git lecture / push / PR / fusion (vérifié ou indisponible) | |
-| Supabase lecture / migration / Edge (chacun séparément) | |
-| PostgreSQL/GoTrue/Chromium locaux (disponibles ?) | |
-| Navigateur Pages avec session fictive approuvée (disponible ?) | |
-| Opérations réellement autorisées par le professeur | |
-| Jeux/Edge/RPC partagés à risque | |
+- **Objectif pédagogique** et unité de réussite : …
+- **Modes/méthodes/niveaux, aides, verrous, fin de partie, abandon/reprise** : …
+- **Capacités possibles** XP / trophées / score / projection / réglages : applicables, absentes ou à décider ; **pas de droits fictifs**.
+- **État des accès et du serveur** : code REPO vérifié … ; SQL/Edge LIVE vérifié … ; Pages … ; PR concurrentes … ; **NON VÉRIFIÉ** pour le reste.
 
-**Ne pas demander de PAT/secret par réflexe.** Aucun secret dans la fiche.
+## 2. Verrou professeur — brainstorming AVANT les récompenses
 
-## 2. Audit du moteur (mettre « absent » quand nécessaire)
+**L'IA propose** avec exemples chiffrés, comparaisons et alternatives ; le professeur **décide séparément**. `[PROPOSÉ]` ≠ `[APPROUVÉ]`. Même un barème connu d'une autre app doit être discuté.
 
-| Point | Découverte / source / essai |
-| --- | --- |
-| Objectif pédagogique, unité d'activité terminée | |
-| Modes **réellement accessibles** ; menus / Master / entraînement | |
-| Niveaux, difficulté, tables ou opérations sélectionnées | |
-| Score, premier essai, aides, erreurs, méthodes | |
-| Déblocages, trophées, records (par durée/niveau/méthode) | |
-| Hook réel début/fin, branches abandon/erreur/retour, ordre trophées | |
-| Clés localStorage/sessionStorage et cache libre/Connect | |
-| Écran étroit, clavier/reports/emprunts, performance | |
-| Diff minimal du moteur intégré et manifest source | |
-
-## 2 bis. Étape obligatoire : brainstorm et validation des récompenses / scores
-
-**[DÉCISION PROFESSEUR, 09/11/2026] Après l'audit du moteur et AVANT de coder XP, trophées, points, classements, jalons ou crédits serveur : présenter au professeur les trois propositions ci-dessous, avec exemples concrets et alternatives. Attendre sa décision explicite pour chacune ; `SANS OBJET` est une décision légitime.**
-
-| Sujet | Proposition argumentée de l'IA (modes, critères, chiffres, exemples) | Décision explicite du professeur + date | Statut |
+| Sujet | Proposition IA | Décision explicite du professeur + date / source | Statut |
 | --- | --- | --- | --- |
-| **XP** : seuils, paliers, montants, plafonds, compléments, rejouabilité | À PROPOSER | EN ATTENTE | EN ATTENTE D'ARBITRAGE |
-| **Trophées** : noms/`trophy_key`, critères, total visuel, permanence | À PROPOSER | EN ATTENTE | EN ATTENTE D'ARBITRAGE |
-| **Scores** : opportunité, formule, coefficients, comparabilité, jour/historique, projection | À PROPOSER | EN ATTENTE | EN ATTENTE D'ARBITRAGE |
+| **XP** : exercices, seuils, paliers, plafonds, compléments, rejouabilité | … | … | EN ATTENTE / APPROUVÉ / SANS OBJET |
+| **Trophées** : `trophy_key`, coupes, nombre visible, critères, persistance | … | … | EN ATTENTE / APPROUVÉ / SANS OBJET |
+| **Scores** : pertinence, formule, coefficients, records/compatibilité/projection | … | … | EN ATTENTE / APPROUVÉ / SANS OBJET |
 
-**Règle de blocage :** les mentions `[PROPOSÉ]` ne sont **pas** des instructions d'implémentation. Le code des règles et le déploiement attendent les trois validations explicites. Les audits, travaux techniques indépendants et tests non créditants peuvent commencer. Résumer les arbitrages et leurs liens de conversation/PR dans [le suivi courant](SUIVI_COURANT.md), sans noms ni données d'élèves.
+**Interdiction :** ne pas coder ou déployer les nouvelles règles XP/trophées/scores dont le statut n'est pas **APPROUVÉ** ou **SANS OBJET explicitement validé**. Les tâches techniques indépendantes peuvent avancer.
 
-## 2 ter. Capacités optionnelles et sortie élèves
+## 3. Contrat retenu, technique et tests
 
-| Élément | Décision / preuve |
-| --- | --- |
-| XP pertinents ou sans XP ? | Indicateur serveur « Reste N XP » sur chaque bouton admissible, sinon sans objet |
-| Trophées réellement atteignables ? | Coupes restantes/acquises visibles dans les cases correspondantes ; total HUB exact |
-| Score pédagogique pertinent ? | Oui/non ; ne pas inventer de score ni de projection chiffrée si non |
-| Exploits sans score ? | Événements serveur et consentements nécessaires, le cas échéant |
-| Parcours de publication cible | **Une version finale élèves** ; laboratoire seulement pour la recette sécurisée du même candidat |
+- **Règles approuvées** : liens/barème versionné ; exemples de cas limites et résultat attendu (premier gain, répétition, erreurs, reset) … ; `SANS OBJET` si absent.
+- **Connect** : `app_key`, identité/session, limites serveur, preuve de fin + UUID/ACK et restauration, état/trophées permanents … .
+- **Parcours** : HUB → jeu → score/XP/coupes → professeur → projection volontaire si existante ; interface et petits écrans … .
+- **Tests** : contrat logique … ; Auth/Edge/SQL … ; Chromium vrai moteur … ; isolement autres apps … ; **recette Pages authentifiée fictive** … . Pour chaque case : OK/ÉCHEC/NON EXÉCUTÉ/SANS OBJET, date, run et SHA.
 
-## 3. Contrat propre à cette application
+## 4. Livraison et prochaine conversation
 
-### Capacités pédagogiques explicites (SANS OBJET si absent)
+- **PR et commit** … ; **`main`** … ; **Pages servi** … ; **Edge/version et JWT** … ; **SQL/migration** … ; **catalogue et classes réellement ouverts** … . Distinguer **NON VÉRIFIÉ** de **SANS OBJET**.
+- **Incidents / leçons** : symptôme … → cause vérifiée … → solution … → test/PR … → **raccourci pour le prochain jeu** … ; lien au [RETEX](RETEX_OPERATIONNEL.md) si récurrent dans plusieurs apps.
+- **Prochaine action exacte / blocage / autorisation nécessaire** : …
+- **Passation** : 3–8 lignes de conclusion, avec liens, tests et statut ; mettre **une seule ligne** dans [l'index actif](SUIVI_COURANT.md). Ne pas recopier ce fichier en entier dans la conversation suivante.
 
-| Capacité | Décision / preuve |
-| --- | --- |
-| XP (oui/non) ; modes et barème | |
-| « Reste N XP » au bas de **chaque bouton concerné** ; 0 officiel et indisponible | |
-| Trophées (oui/non) ; total de **coupes visuelles** réellement gagnables | |
-| Trophées **à récupérer directement dans la case de l’exercice/mode**, état acquis/restant | |
-| Score (oui/non) ; meilleur jour, historique, comparaison entre modes si pertinent | |
-| Projection (sans objet/classement/exploits/% mesuré) ; consentement et classe | |
-| HUB, résultats professeur, réglages, Monsieur T et bascule finale élève | |
-
-
-
-- **Schéma événement version :** […] ; **schéma état version :** […] ; **barème version :** […].
-- **Fin admissible :** […] ; **preuve bornée :** […] ; **modes sans droit :** […].
-- **Identité :** `app_key` / classe / sujet Auth / fiche résolue / `expectedStudentId` ; **époque :** `resetEpoch`.
-- **Records / trophées / déblocages / hydratation :** […] ; **trophées permanents malgré reset** : registre/clé unique […], maximum réellement atteignable […], source du total HUB […], traitement des archives et animations de trophées déjà acquis […].
-- **Offline :** démarrage disponible ? fin hors ligne ? file max […] / ACK […] / gestion 409/quarantaine […].
-- **Sans XP ou XP validés (décision explicite) :** […].
-- **Table des exemples chiffrés :** première réussite […], amélioration […], répétition 0 […], sélection plus exigeante […], reset sans recollection […], éventuel rejeu autorisé […] ; **plafond théorique vérifié :** […].
-- **Serveur :** route, RPC, receipt, RLS/grants et transaction […] ; contrôles anti-triche raisonnables […].
-- **Professeur :** GLOBAL […], résumé/détail […], tables minimums si concerné […], reset app-scoped […], Monsieur T […].
-- **Visuels :** WebP poids […], URL serveur […], rendu 320 px […].
-
-## 4. Preuves de test — ne jamais confondre les couches
-
-| Scénario / risque majeur | Statut OK/ÉCHEC/NON EXÉCUTÉ/SANS OBJET | Run / SHA / date / lieu |
-| --- | --- | --- |
-| Node et logique native | | |
-| PostgreSQL local, rollback tardif, concurrence, ACL | | |
-| Auth locale, Edge réel local, JWT/appareil révoqué | | |
-| Chromium sur vraie saisie et petits écrans | | |
-| Cas XP complémentaires + idempotence | | |
-| Offline, mauvaise ACK, file pleine, resetEpoch | | |
-| Professeur/GLOBAL/tables/Monsieur T | | |
-| Tests de non-régression autres apps | | |
-| Pages URL/miniature/catalogues HTTP publics | | |
-| **Navigateur Pages authentifié avec fiche fictive** | | |
-| Test PC scolaire / GSM | | |
-
-## 5. Livraison / risques et retour
-
-- **Manifest SQL** : chemin/hash/version/méthode d'installation […] ; **Edge** : chemin/hash/version JWT […] ; **Pages** : SHA servi […].
-- **État catalogue prévu / vérifié** : désactivé → pilote masqué → ouverture décidée […].
-- **Porte A/B/C** ([recette](RECETTE_ET_PUBLICATION.md)) : […].
-- **Anomalies connues / incidents classés P0, P1, P2** : […].
-- **Retrait app seule sans perte de données** : script/conditions […].
-- **Décisions pédagogiques encore à confirmer** : […].
-- **Enseignements à reporter au guide** : […].
+**Sécurité :** aucun secret, nom d'élève réel, export privé, reset global ou activation non autorisée.

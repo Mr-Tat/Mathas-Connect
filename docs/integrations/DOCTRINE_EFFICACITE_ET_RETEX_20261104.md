@@ -1,4 +1,9 @@
 # Math’as Connect — Doctrine d’intégration efficace et retour d’expérience transversal
+
+## Archive doctrinale et RETEX du 04/11/2026
+
+> **RÉFÉRENCE HISTORIQUE DÉTAILLÉE** ; lire par rubrique utile, jamais obligatoirement en entier au démarrage. La [synthèse courante](00_DEMARRER_ICI.md) et le [RETEX opérationnel/tendances](RETEX_OPERATIONNEL.md) déterminent le parcours actuel ; les anciens constats de livraison doivent être vérifiés dans le repo et les services LIVE.
+
 **Décision du professeur : 4 novembre 2026.** Document opérationnel pérenne, fondé sur les rapports et incidents du dépôt jusqu’aux PR #169 et #170. **Objectif : réaliser directement la future version élève**, la valider en sécurité puis la publier, sans multiplier les prototypes, les LAB parallèles ni les conversations qui recommencent le même travail.
 
 **Ordre de préséance :** décision pédagogique récente du professeur → contrats techniques réellement déployés et code actuel → guide permanent → archives datées. Les audits historiques ne valent pas preuve LIVE. Relire AGENTS.md et docs/integrations/README.md. La présente doctrine précise la priorité de livraison ; elle ne supprime ni les vérifications serveur ni l’interdiction de tester sur des élèves réels.
