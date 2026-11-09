@@ -13,6 +13,14 @@ Ce modèle contient les détails **propres à une intégration** ; inscrire son 
 - **Migrations :** fichier + SHA-256 + statut réellement constaté […] ; **Edge :** source + version live + `verify_jwt` réellement observé […] ; **Pages :** commit réellement servi […].
 - **Capacités agent :** Git lecture/écriture/PR/fusion […], Supabase lecture/écriture/Edge […], tests locaux […], navigateur **authentifié Pages** […]. Vérifier à nouveau les accès avant de demander des identifiants.
 
+## Validation pédagogique à transmettre (obligatoire pour une nouvelle intégration)
+
+**Brainstorm avec le professeur effectué ?** OUI / NON ; **Date et preuve de l'échange :** […].
+**XP proposés / validés :** […] / EN ATTENTE / SANS OBJET.
+**Trophées proposés / validés :** […] / EN ATTENTE / SANS OBJET.
+**Scores proposés / validés :** […] / EN ATTENTE / SANS OBJET.
+**Blocage :** tant que ces décisions ne sont pas explicites, aucune logique nouvelle de barème, trophée ou classement à coder/déployer ; poursuivre au besoin l'audit ou les tâches indépendantes.
+
 ## Faits, décisions, incertitudes — ne pas mélanger
 
 | Sujet | Statut de preuve | Source/date | Conclusion |
