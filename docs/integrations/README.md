@@ -2,6 +2,8 @@
 
 > **Priorité professeur du 4 novembre 2026 :** lire la [Doctrine d’efficacité et RETEX transversal](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) **avant** les recettes historiques. Construire dès le départ le jeu final pour les élèves (ses capacités XP, trophées, score facultatif, projection et HUB), puis valider ce même candidat avec les profils fictifs déjà disponibles ; éviter les versions tests parallèles et ne pas laisser une publication validée en brouillon. Cela ne dispense pas des tests de sécurité ni du contrôle Pages/Edge/SQL.
 
+**Contrat fonctionnel commun des applications — décision du 09/11/2026 :** lire [le cahier des charges commun](CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md) pour les éléments d'interface, l'intégration HUB/professeur, les droits XP/trophées, et la règle **Mort subite = 2 fois les points de 3 vies (avant arrondi)** et **plein droit XP contre demi-droit**. Les archives parlant de « +20 % de points » ne sont pas la référence du scoring certifié actuel.
+
 **Guide initial du 31 octobre 2026, priorité de sortie élève actualisée le 4 novembre 2026.** Destiné au professeur, à ChatGPT et à Codex. **Cette page est la procédure à suivre**, pas l'historique d'un jeu. Le dépôt et les services évoluent : vérifier leurs versions à chaque mission.
 
 > **Principe : ajouter un jeu, pas réécrire Math’as Connect.** Préserver son moteur, ses modes et sa pédagogie ; brancher un adaptateur minimal au système Connect. Un outil pédagogique peut être intégré **sans XP**.

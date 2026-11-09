@@ -1,5 +1,7 @@
 # Instructions pour ChatGPT, Codex et autres agents — Math’as Connect
 
+**Nouveau contrat fonctionnel commun (09/11/2026) :** lire impérativement [CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md](docs/integrations/CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md) pour le bandeau identité/XP, les trophées, le suivi prof, la projection et les barèmes Objectif record. **Mort subite = x2 les points de 3 vies (avant arrondi) et droit XP plein contre demi-droit** ; ignorer les anciennes mentions « +20 % ». Vérifier l'état LIVE avant toute adaptation.
+
 **Avant toute nouvelle intégration : commencer par la [fiche express (1 minute)](docs/integrations/DOCTRINE_EFFICACITE_INTEGRATION_20261104.md), puis utiliser la [doctrine complète et RETEX du 04/11/2026](docs/integrations/DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) comme référence et le [guide d’intégration](docs/integrations/README.md) pour l’exécution.** Cette entrée renvoie aux contrats techniques, à la recette, aux erreurs connues et aux modèles à remplir. Une conversation neuve n'a pas besoin des ZIP historiques.
 
 - Travail dans **Mr-Tat/Mathas-Connect** ; vérifier HEAD de `main` et état Supabase Connect avant d'affirmer un statut actuel. Les anciens audits ne sont pas une source de vérité.
