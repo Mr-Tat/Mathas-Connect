@@ -1,6 +1,6 @@
 # Contrat fonctionnel commun des applications Math'as Connect — version 2026-11-09
 
-> **DOCUMENT DE RÉFÉRENCE POUR IA / CHATGPT / CODEX — lire lors de chaque nouvelle intégration.**
+> **RÉFÉRENCE DÉTAILLÉE POUR IA / CHATGPT / CODEX — consulter les sections utiles après la [synthèse express](00_DEMARRER_ICI.md) et le [suivi courant](SUIVI_COURANT.md), sans charger automatiquement l'intégralité.**
 >
 > **[DÉCISION professeur, 09/11/2026]** Construire un socle d'expérience Connect cohérent d'une application à l'autre ; les capacités `XP`, `trophées`, `scores`, `Objectif record` et `projection` sont déclarées, pas simulées ni imposées quand elles n'ont pas de sens pédagogique. **Mort subite = coefficient de POINTS x2 par rapport à 3 vies**, à difficulté et nombre de bonnes réponses identiques, **et droit XP entier contre demi-droit XP en 3 vies** lorsque ces modes partagent les mêmes jalons. **Ne pas reproduire l'ancien « +20 % de points ».**
 >
@@ -10,12 +10,28 @@
 
 ## 0. Mode d'emploi pour une nouvelle conversation d'intégration
 
-1. Lire `AGENTS.md`, `docs/integrations/README.md`, la doctrine `DOCTRINE_EFFICACITE_ET_RETEX_20261104.md`, puis **ce contrat** et `TEMPLATE_FICHE_APPLICATION.md`.
+1. Lire d'abord `AGENTS.md`, la [synthèse express](00_DEMARRER_ICI.md) et l'en-tête du [suivi courant](SUIVI_COURANT.md). **Consulter par section** ce contrat et les guides/RETEX techniques quand le travail le justifie, sans tout charger systématiquement.
 2. Identifier le moteur **original**, sa version et son empreinte ; ne pas réécrire sa pédagogie. Travailler sur **une seule** version scolaire finale, recette en classe TEST fictive au besoin.
 3. Déclarer explicitement les capacités de la nouvelle application : `connect=true`, `xp=true|false`, `trophies=true|false`, `score=true|false`, `survival=true|false`, `projection=score|exploit|pourcentage|none`, `teacherSettings=true|false`. Les capacités absentes sont **SANS OBJET**.
-4. Définir les événements de réussite, l'unité de score et les paliers XP spécifiques **avant** d'ajouter l'affichage.
+4. **Proposer et faire valider par le professeur** les événements de réussite éligibles, l'unité/formule de score, les paliers XP et les trophées (voir étape obligatoire **0 bis**) **avant de coder leurs règles** et leur affichage.
 5. Câbler un parcours réel complet : HUB → compte approuvé → activité → preuve serveur → reçu → sauvegarde → XP/trophées → HUB professeur → projection si admissible.
 6. Tester avec des profils fictifs ; mettre à jour la fiche et le passage de flambeau, puis obtenir l'autorisation d'ouverture des classes. **Une PR fusionnée n'est pas une preuve de déploiement Pages ni Edge.**
+
+## 0 bis. [DÉCISION PROFESSEUR, 09/11/2026] Brainstorm pédagogique obligatoire AVANT XP / trophées / scores
+
+**Point d'arrêt obligatoire pour CHAQUE nouvelle intégration**, après l'audit réel des exercices et au plus tard **avant l'implémentation des règles de récompenses, des formules de points, des jalons, des trophées et de leurs écritures serveur**. L'IA **propose** ; le professeur **arbitre** les trois sujets. Le fait que ce document présente des règles observées sur les anciens jeux **ne vaut jamais autorisation de les recopier**.
+
+**L'IA prépare une proposition structurée, idéalement courte et chiffrée :**
+
+| Sujet | Proposition à soumettre au professeur | Validation explicite attendue |
+| --- | --- | --- |
+| **XP** | Inventaire des exercices/sections/modes éligibles, niveau de difficulté, objectifs et seuils (80 %, 100 %, nombres de pages...), montants par palier, plafond par niveau et par app, cas de compléments, répétition et reset ; exemples de gains et comparaison aux autres apps. Prévoir aussi **sans XP** si approprié. | Modes concernés, barème, conditions et plafonds acceptés/ajustés, ou **SANS OBJET**. |
+| **Trophées** | Tableau des coupes proposées avec `trophy_key`, nom/visuel, critères exacts, difficulté, éventuels ensembles à maîtriser, nombre réel de coupes visibles, état acquis/restant et conservation. Distinguer coupe **liée au score** (accessible aussi en 3 vies) et coupe **réservée à un mode**. | Chaque catégorie, les conditions et le total de coupes acceptés/ajustés, ou **SANS OBJET**. |
+| **Scores** | Définir **s'il faut un classement** ; points distincts du taux de réussite et des XP, équivalence 4/10/20 vs défis éventuels, pondération niveau/difficulté/aides, arrondi, records du jour/historiques, top personnel, comparabilité pour projection. Montrer 2–3 exemples concrets. Prévoir **pas de score** pour un outil non compétitif. | Principe, unité, coefficients, comparaisons et projection acceptés/ajustés, ou **SANS OBJET**. |
+
+**Séquence :** (1) auditer le moteur natif et les contraintes Connect, (2) préparer ces propositions **et les présenter réellement au professeur dans la conversation**, (3) échanger/ajuster jusqu'à décision explicite, (4) documenter le tableau retenu sous **[DÉCISION PROFESSEUR]** avec date dans `TEMPLATE_FICHE_APPLICATION.md` et `SUIVI_COURANT.md`, (5) implémenter et tester **seulement** les éléments validés. En l'absence d'accord, annoter **EN ATTENTE D'ARBITRAGE** et **ne pas coder/déployer de nouveaux barèmes XP/trophées/scores** ; les travaux indépendants (audit, sécurisation de l'identité, adaptations non récompensantes) peuvent avancer.
+
+**Cette validation est systématique et non facultative, y compris lorsque les calculs paraissent identiques à une app précédente.** Elle concerne aussi les déblocages pédagogiques, modes 3 vies/Mort subite et effets de projection dès lors qu'ils influencent les trois barèmes. Ne pas multiplier les consultations pendant la phase d'audit si les éléments ne sont pas encore identifiés ; organiser **un véritable brainstorm préalable unique et complet**, puis solliciter seulement les arbitrages restés ouverts.
 
 ## 1. Socle attendu dans chaque nouvelle application Connect
 

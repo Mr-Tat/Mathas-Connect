@@ -38,7 +38,19 @@
 | Écran étroit, clavier/reports/emprunts, performance | |
 | Diff minimal du moteur intégré et manifest source | |
 
-## 2 bis. Capacités optionnelles et sortie élèves
+## 2 bis. Étape obligatoire : brainstorm et validation des récompenses / scores
+
+**[DÉCISION PROFESSEUR, 09/11/2026] Après l'audit du moteur et AVANT de coder XP, trophées, points, classements, jalons ou crédits serveur : présenter au professeur les trois propositions ci-dessous, avec exemples concrets et alternatives. Attendre sa décision explicite pour chacune ; `SANS OBJET` est une décision légitime.**
+
+| Sujet | Proposition argumentée de l'IA (modes, critères, chiffres, exemples) | Décision explicite du professeur + date | Statut |
+| --- | --- | --- | --- |
+| **XP** : seuils, paliers, montants, plafonds, compléments, rejouabilité | À PROPOSER | EN ATTENTE | EN ATTENTE D'ARBITRAGE |
+| **Trophées** : noms/`trophy_key`, critères, total visuel, permanence | À PROPOSER | EN ATTENTE | EN ATTENTE D'ARBITRAGE |
+| **Scores** : opportunité, formule, coefficients, comparabilité, jour/historique, projection | À PROPOSER | EN ATTENTE | EN ATTENTE D'ARBITRAGE |
+
+**Règle de blocage :** les mentions `[PROPOSÉ]` ne sont **pas** des instructions d'implémentation. Le code des règles et le déploiement attendent les trois validations explicites. Les audits, travaux techniques indépendants et tests non créditants peuvent commencer. Résumer les arbitrages et leurs liens de conversation/PR dans [le suivi courant](SUIVI_COURANT.md), sans noms ni données d'élèves.
+
+## 2 ter. Capacités optionnelles et sortie élèves
 
 | Élément | Décision / preuve |
 | --- | --- |
