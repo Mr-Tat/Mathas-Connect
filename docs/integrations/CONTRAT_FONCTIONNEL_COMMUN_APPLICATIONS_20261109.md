@@ -17,6 +17,22 @@
 5. Câbler un parcours réel complet : HUB → compte approuvé → activité → preuve serveur → reçu → sauvegarde → XP/trophées → HUB professeur → projection si admissible.
 6. Tester avec des profils fictifs ; mettre à jour la fiche et le passage de flambeau, puis obtenir l'autorisation d'ouverture des classes. **Une PR fusionnée n'est pas une preuve de déploiement Pages ni Edge.**
 
+## 0 bis. [DÉCISION PROFESSEUR, 09/11/2026] Brainstorm pédagogique obligatoire AVANT XP / trophées / scores
+
+**Point d'arrêt obligatoire pour CHAQUE nouvelle intégration**, après l'audit réel des exercices et au plus tard **avant l'implémentation des règles de récompenses, des formules de points, des jalons, des trophées et de leurs écritures serveur**. L'IA **propose** ; le professeur **arbitre** les trois sujets. Le fait que ce document présente des règles observées sur les anciens jeux **ne vaut jamais autorisation de les recopier**.
+
+**L'IA prépare une proposition structurée, idéalement courte et chiffrée :**
+
+| Sujet | Proposition à soumettre au professeur | Validation explicite attendue |
+| --- | --- | --- |
+| **XP** | Inventaire des exercices/sections/modes éligibles, niveau de difficulté, objectifs et seuils (80 %, 100 %, nombres de pages...), montants par palier, plafond par niveau et par app, cas de compléments, répétition et reset ; exemples de gains et comparaison aux autres apps. Prévoir aussi **sans XP** si approprié. | Modes concernés, barème, conditions et plafonds acceptés/ajustés, ou **SANS OBJET**. |
+| **Trophées** | Tableau des coupes proposées avec `trophy_key`, nom/visuel, critères exacts, difficulté, éventuels ensembles à maîtriser, nombre réel de coupes visibles, état acquis/restant et conservation. Distinguer coupe **liée au score** (accessible aussi en 3 vies) et coupe **réservée à un mode**. | Chaque catégorie, les conditions et le total de coupes acceptés/ajustés, ou **SANS OBJET**. |
+| **Scores** | Définir **s'il faut un classement** ; points distincts du taux de réussite et des XP, équivalence 4/10/20 vs défis éventuels, pondération niveau/difficulté/aides, arrondi, records du jour/historiques, top personnel, comparabilité pour projection. Montrer 2–3 exemples concrets. Prévoir **pas de score** pour un outil non compétitif. | Principe, unité, coefficients, comparaisons et projection acceptés/ajustés, ou **SANS OBJET**. |
+
+**Séquence :** (1) auditer le moteur natif et les contraintes Connect, (2) préparer ces propositions **et les présenter réellement au professeur dans la conversation**, (3) échanger/ajuster jusqu'à décision explicite, (4) documenter le tableau retenu sous **[DÉCISION PROFESSEUR]** avec date dans `TEMPLATE_FICHE_APPLICATION.md` et `SUIVI_COURANT.md`, (5) implémenter et tester **seulement** les éléments validés. En l'absence d'accord, annoter **EN ATTENTE D'ARBITRAGE** et **ne pas coder/déployer de nouveaux barèmes XP/trophées/scores** ; les travaux indépendants (audit, sécurisation de l'identité, adaptations non récompensantes) peuvent avancer.
+
+**Cette validation est systématique et non facultative, y compris lorsque les calculs paraissent identiques à une app précédente.** Elle concerne aussi les déblocages pédagogiques, modes 3 vies/Mort subite et effets de projection dès lors qu'ils influencent les trois barèmes. Ne pas multiplier les consultations pendant la phase d'audit si les éléments ne sont pas encore identifiés ; organiser **un véritable brainstorm préalable unique et complet**, puis solliciter seulement les arbitrages restés ouverts.
+
 ## 1. Socle attendu dans chaque nouvelle application Connect
 
 | Domaine | Contrat fonctionnel commun | Exception/nuance |
