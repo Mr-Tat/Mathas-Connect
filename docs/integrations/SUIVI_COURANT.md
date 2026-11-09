@@ -6,7 +6,7 @@
 
 - **Point de départ documentaire :** 09/11/2026 ; nouveau suivi initialisé. **Aucune nouvelle intégration enregistrée dans CE journal** à cette date (ceci ne signifie PAS qu'il n'existe aucune PR ouverte ni aucun chantier ancien).
 - **Intégration en cours dans ce suivi :** À INITIALISER au prochain travail. `app_key` : — ; branche/PR : —.
-- **Dernière décision importante :** Mort subite = x2 points 3 vies avant arrondi ; XP plein contre demi sur les mêmes jalons. Trophées **de score** accessibles depuis 3 vies ; coupes propres à Mort subite réservées à ce mode. Référence : [contrat complet](CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md).
+- **Dernière décision importante :** **Brainstorm obligatoire avec le professeur pour CHAQUE nouvelle app avant de coder les règles XP/trophées/scores** : propositions argumentées de l'IA → décisions explicites du professeur → implémentation. Rappels existants : Mort subite = x2 points 3 vies avant arrondi ; XP plein contre demi ; trophées **de score** accessibles depuis 3 vies. Référence : [synthèse](00_DEMARRER_ICI.md) et [contrat complet](CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md).
 - **État de publication/recette de la future intégration :** NON DÉMARRÉ dans ce suivi.
 - **Prochaine action :** identifier la prochaine application ou le prochain correctif demandé ; vérifier GitHub `main`, PR ouvertes, Pages et Supabase pertinents **avant d'ouvrir une PR d'intégration**.
 - **Blocage :** aucun identifié pour le démarrage documentaire ; l'absence de tests live ne vaut pas validation.
@@ -33,6 +33,7 @@ Copier le mini-gabarit suivant à la fin de chaque session ou PR de code :
 - **Objet/périmètre et décision pédagogique :** […]
 - **app_key, moteur source et SHA, branche/PR :** […]
 - **Fait réellement et preuve :** [… fichiers/commit, tests pass/fail/skip, SHA et environnement ; distinction [REPO] / [LIVE] / [TEST LOCAL] / [RECETTE HÉBERGÉE]]
+- **Brainstorm pédagogique XP / trophées / scores :** [propositions présentées le … ; décisions explicites du professeur du … par sujet / EN ATTENTE D'ARBITRAGE ; source …].
 - **XP/trophées/scores/enseignant/projection :** [… oui / non / SANS OBJET, attesté ou non]
 - **Publication :** GitHub `main` […], Pages […], SQL […], Edge […], classes […]. Si non contrôlé, écrire **NON VÉRIFIÉ**.
 - **Risques, tickets, PR concurrentes à éviter :** […]
