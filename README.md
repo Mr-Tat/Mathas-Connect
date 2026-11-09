@@ -1,10 +1,9 @@
 # Math’as Connect — documentation, applications et intégrations
 
-> 📘 **PROCHAINES INTÉGRATIONS — À LIRE EN PRIORITÉ (04/11/2026)**  
-> **[Fiche express : 1 minute pour démarrer](docs/integrations/DOCTRINE_EFFICACITE_INTEGRATION_20261104.md)** · **[Rapport complet : doctrine, incidents, solutions et raccourcis](docs/integrations/DOCTRINE_EFFICACITE_ET_RETEX_20261104.md)** · **[Guide et contrats](docs/integrations/README.md)**  
-> Ce rapport est la **référence pédagogique et technique actuelle** pour chaque nouvelle application : version élève finale dès le départ, XP restants visibles sur les boutons, trophées à récupérer dans les cases, score facultatif, projection adaptée, HUB/professeur et livraison réellement publiée. Lire aussi [AGENTS.md](AGENTS.md) (agents/Codex) et [.github/copilot-instructions.md](.github/copilot-instructions.md) (GitHub Copilot). Les anciens bilans restent des archives datées, pas des statuts LIVE.
-
-> **Nouvelle référence permanente pour toutes les prochaines intégrations :** [Guide d’intégration Math’as Connect](docs/integrations/README.md) · [Instructions pour agents ChatGPT/Codex](AGENTS.md). Une nouvelle conversation commence par ces liens, pas par les audits historiques.
+> 📘 **PROCHAINES INTÉGRATIONS — LECTURE ÉCONOMIQUE (09/11/2026)**  
+> **1. [Synthèse express obligatoire pour IA](docs/integrations/00_DEMARRER_ICI.md)** · **2. [Suivi courant des discussions et intégrations](docs/integrations/SUIVI_COURANT.md)** (*l'en-tête et la dernière passation utile seulement*).  
+> **3. [Contrat fonctionnel complet issu de la PR #272](docs/integrations/CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md)** · [Doctrine/RETEX historiques](docs/integrations/DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) · [Guide permanent](docs/integrations/README.md) : **consulter par section uniquement quand le problème le nécessite.**  
+> Les anciennes fiches et le contrat intégral restent conservés. [Instructions agents](AGENTS.md) et [Copilot](.github/copilot-instructions.md) appliquent ce parcours progressif. **Ne pas charger tous les documents à la fois.**
 >
 > **Attention aux dates :** les tableaux d’état ci-dessous sont un instantané rédigé le 29 octobre ; les statuts et déploiements peuvent avoir changé. Vérifier systématiquement les sources GitHub, Supabase et Pages actuelles avant toute intervention. Le guide permanent décrit la méthode, pas une confirmation automatique de production.
 
