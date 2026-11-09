@@ -1,6 +1,6 @@
 # Contrat fonctionnel commun des applications Math'as Connect — version 2026-11-09
 
-> **DOCUMENT DE RÉFÉRENCE POUR IA / CHATGPT / CODEX — lire lors de chaque nouvelle intégration.**
+> **RÉFÉRENCE DÉTAILLÉE POUR IA / CHATGPT / CODEX — consulter les sections utiles après la [synthèse express](00_DEMARRER_ICI.md) et le [suivi courant](SUIVI_COURANT.md), sans charger automatiquement l'intégralité.**
 >
 > **[DÉCISION professeur, 09/11/2026]** Construire un socle d'expérience Connect cohérent d'une application à l'autre ; les capacités `XP`, `trophées`, `scores`, `Objectif record` et `projection` sont déclarées, pas simulées ni imposées quand elles n'ont pas de sens pédagogique. **Mort subite = coefficient de POINTS x2 par rapport à 3 vies**, à difficulté et nombre de bonnes réponses identiques, **et droit XP entier contre demi-droit XP en 3 vies** lorsque ces modes partagent les mêmes jalons. **Ne pas reproduire l'ancien « +20 % de points ».**
 >
@@ -10,10 +10,10 @@
 
 ## 0. Mode d'emploi pour une nouvelle conversation d'intégration
 
-1. Lire `AGENTS.md`, `docs/integrations/README.md`, la doctrine `DOCTRINE_EFFICACITE_ET_RETEX_20261104.md`, puis **ce contrat** et `TEMPLATE_FICHE_APPLICATION.md`.
+1. Lire d'abord `AGENTS.md`, la [synthèse express](00_DEMARRER_ICI.md) et l'en-tête du [suivi courant](SUIVI_COURANT.md). **Consulter par section** ce contrat et les guides/RETEX techniques quand le travail le justifie, sans tout charger systématiquement.
 2. Identifier le moteur **original**, sa version et son empreinte ; ne pas réécrire sa pédagogie. Travailler sur **une seule** version scolaire finale, recette en classe TEST fictive au besoin.
 3. Déclarer explicitement les capacités de la nouvelle application : `connect=true`, `xp=true|false`, `trophies=true|false`, `score=true|false`, `survival=true|false`, `projection=score|exploit|pourcentage|none`, `teacherSettings=true|false`. Les capacités absentes sont **SANS OBJET**.
-4. Définir les événements de réussite, l'unité de score et les paliers XP spécifiques **avant** d'ajouter l'affichage.
+4. **Proposer et faire valider par le professeur** les événements de réussite éligibles, l'unité/formule de score, les paliers XP et les trophées (voir étape obligatoire **0 bis**) **avant de coder leurs règles** et leur affichage.
 5. Câbler un parcours réel complet : HUB → compte approuvé → activité → preuve serveur → reçu → sauvegarde → XP/trophées → HUB professeur → projection si admissible.
 6. Tester avec des profils fictifs ; mettre à jour la fiche et le passage de flambeau, puis obtenir l'autorisation d'ouverture des classes. **Une PR fusionnée n'est pas une preuve de déploiement Pages ni Edge.**
 
