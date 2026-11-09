@@ -1,6 +1,6 @@
 # Fiche d’intégration — [NOM DE L’APPLICATION]
 
-> Ouvrir avec la [doctrine d’efficacité](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md). **Concevoir la version finale élève**, pas une architecture LAB qui sera remplacée. Utiliser une seule chaîne de recette fictive du même candidat avant ouverture.
+> Lire d'abord [la synthèse express](00_DEMARRER_ICI.md) et l'en-tête du [suivi courant](SUIVI_COURANT.md) ; consulter uniquement les sections pertinentes du [contrat fonctionnel complet](CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md) et de la [doctrine/RETEX](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md). **Concevoir la version finale élève**, pas une architecture LAB qui sera remplacée. Utiliser une seule chaîne de recette fictive du même candidat avant ouverture.
 
 **Statut :** BROUILLON / COPIE LIBRE / LOCAL VALIDÉ / PILOTE HÉBERGÉ / OUVERT — **Date :** [AAAA-MM-JJ]  
 **Responsable de la PR :** [agent/conversation] — **Branche/PR :** [liens]

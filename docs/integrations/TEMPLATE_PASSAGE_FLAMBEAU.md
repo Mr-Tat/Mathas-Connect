@@ -1,8 +1,8 @@
 # Passage de flambeau — [APP / SUJET] — [DATE]
 
-> Référence pédagogique : [Doctrine d’efficacité et RETEX du 04/11/2026](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md). La prochaine conversation doit reprendre **le candidat final pour les élèves**, pas reconstruire un nouveau pilote LAB.
+> **Nouvelle règle de passation depuis le 09/11/2026 :** lire [la synthèse express](00_DEMARRER_ICI.md), puis la section A et la dernière entrée utile du [suivi courant inter-conversations](SUIVI_COURANT.md). Le [contrat complet](CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md) et la [doctrine/RETEX](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) se lisent par section au besoin. Reprendre **le candidat final pour les élèves**, pas reconstruire un pilote LAB.
 
-Ce fichier est **la seule synthèse de continuation**, pour ChatGPT/Codex dans une conversation neuve. Ne pas transmettre tokens, exports d'élèves ou dumps personnels.
+Ce modèle contient les détails **propres à une intégration** ; inscrire son résumé (3 à 8 lignes + lien) dans `SUIVI_COURANT.md`. Ne pas charger systématiquement toutes les anciennes passations. Ne pas transmettre tokens, exports d'élèves ou dumps personnels.
 
 ## Références immuables
 

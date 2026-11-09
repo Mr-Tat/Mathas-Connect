@@ -1,18 +1,18 @@
 # Guide permanent — intégrer une application dans Math’as Connect
 
-> **Priorité professeur du 4 novembre 2026 :** lire la [Doctrine d’efficacité et RETEX transversal](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) **avant** les recettes historiques. Construire dès le départ le jeu final pour les élèves (ses capacités XP, trophées, score facultatif, projection et HUB), puis valider ce même candidat avec les profils fictifs déjà disponibles ; éviter les versions tests parallèles et ne pas laisser une publication validée en brouillon. Cela ne dispense pas des tests de sécurité ni du contrôle Pages/Edge/SQL.
+> **NOUVEAU POINT D'ENTRÉE depuis le 09/11/2026 :** lire [la synthèse express commune](00_DEMARRER_ICI.md) puis **l'en-tête et la dernière entrée utile** du [suivi courant inter-conversations](SUIVI_COURANT.md). **Ne pas charger d'office le présent guide ni les longues doctrines.** Lire le détail strictement nécessaire à la tâche. Toutes les références anciennes sont conservées.
 
-**Contrat fonctionnel commun des applications — décision du 09/11/2026 :** lire [le cahier des charges commun](CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md) pour les éléments d'interface, l'intégration HUB/professeur, les droits XP/trophées, et la règle **Mort subite = 2 fois les points de 3 vies (avant arrondi)** et **plein droit XP contre demi-droit**. Les archives parlant de « +20 % de points » ne sont pas la référence du scoring certifié actuel.
+**Contrat fonctionnel complet des applications (PR #272, fusionnée et conservée) :** [référence approfondie avec code, SQL et tests](CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md). Consulter **les sections pertinentes** pour chaque fonction (XP, interface, Objectif record, trophées, projection). Mort subite = **x2 points** des 3 vies à niveau/bonnes réponses identiques avant arrondi, **plein droit XP** contre **demi-droit** sur les mêmes jalons ; les **trophées de score** restent possibles en 3 vies. Les anciens « +20 % » sont historiques.
 
 **Guide initial du 31 octobre 2026, priorité de sortie élève actualisée le 4 novembre 2026.** Destiné au professeur, à ChatGPT et à Codex. **Cette page est la procédure à suivre**, pas l'historique d'un jeu. Le dépôt et les services évoluent : vérifier leurs versions à chaque mission.
 
 > **Principe : ajouter un jeu, pas réécrire Math’as Connect.** Préserver son moteur, ses modes et sa pédagogie ; brancher un adaptateur minimal au système Connect. Un outil pédagogique peut être intégré **sans XP**.
 
-**Suivi actuel des décisions encore ouvertes (07/11/2026) :** [à faire / à contrôler en conditions réelles](SUIVI_DECISIONS_OUVERTES_20261107.md). Une décision déjà livrée y est distinguée d’un test de classe restant à effectuer.
+**Suivi courant depuis le 09/11/2026 :** [journal inter-conversations réinitialisé](SUIVI_COURANT.md), à maintenir à chaque nouvelle intégration. **Héritage antérieur conservé :** [décisions ouvertes et contrôles constatés au 07/11/2026](SUIVI_DECISIONS_OUVERTES_20261107.md), à revalider avant de toucher à ces sujets. Une nouvelle série de journal **n'annule aucune anomalie ni PR déjà ouverte**.
 
 ## Priorité du 4 novembre 2026 : construire directement pour les élèves
 
-Le [rapport complet de référence](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) rassemble la ligne pédagogique, les XP visibles sur les boutons, les coupes restantes dans les exercices, les scores facultatifs, la projection, les problèmes résolus et les raccourcis. Pour démarrer rapidement, utiliser la [fiche express](DOCTRINE_EFFICACITE_INTEGRATION_20261104.md), qui **résume** ce rapport et ne constitue pas une doctrine concurrente. Concevoir une seule version finale ; utiliser le Laboratoire avec un profil fictif lorsqu’un contrôle authentifié est indispensable, sans multiplier les variantes.
+Le [rapport complet de référence](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) rassemble la ligne pédagogique, les XP visibles sur les boutons, les coupes restantes dans les exercices, les scores facultatifs, la projection, les problèmes résolus et les raccourcis. Pour démarrer rapidement, préférer [la nouvelle synthèse](00_DEMARRER_ICI.md). L'[ancienne fiche express](DOCTRINE_EFFICACITE_INTEGRATION_20261104.md) reste disponible comme **archive de contexte**, non comme second point d'entrée obligatoire. Concevoir une seule version finale ; utiliser le Laboratoire avec un profil fictif lorsqu’un contrôle authentifié est indispensable, sans multiplier les variantes.
 
 ## Démarrage rapide : huit étapes, trois véritables portes
 

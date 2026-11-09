@@ -2,11 +2,11 @@
 
 > À appliquer à **toute modification ou intégration d'application** dans ce dépôt. Ces instructions complètent `AGENTS.md` et ne remplacent pas les permissions de l'utilisateur.
 
-## Documents à consulter AVANT de coder
+## Documents à consulter AVANT de coder — chargement progressif
 
-1. **Résumé obligatoire de démarrage :** [docs/integrations/DOCTRINE_EFFICACITE_INTEGRATION_20261104.md](../docs/integrations/DOCTRINE_EFFICACITE_INTEGRATION_20261104.md).
-2. **Source de référence complète (RETEX, erreurs, solutions, raccourcis) :** [docs/integrations/DOCTRINE_EFFICACITE_ET_RETEX_20261104.md](../docs/integrations/DOCTRINE_EFFICACITE_ET_RETEX_20261104.md).
-3. [AGENTS.md](../AGENTS.md), [guide permanent](../docs/integrations/README.md), [contrat scores/XP/trophées](../docs/integrations/CONTRAT_COMMUN_SCORES_XP_TROPHEES.md), [recette](../docs/integrations/RECETTE_ET_PUBLICATION.md), puis fiche de l'application.
+1. **TOUJOURS** : [synthèse express nouvelle génération](../docs/integrations/00_DEMARRER_ICI.md), puis uniquement **l'en-tête de reprise et la dernière passation utile** du [suivi courant](../docs/integrations/SUIVI_COURANT.md), plus ce fichier et [AGENTS.md](../AGENTS.md). Vérifier HEAD, PR et déploiement avant d'affirmer un statut.
+2. **SELON LA FONCTION TRAVAILLÉE** : rubriques utiles du [contrat complet PR #272](../docs/integrations/CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md), [guide](../docs/integrations/README.md), [contrat XP/scores/trophées](../docs/integrations/CONTRAT_COMMUN_SCORES_XP_TROPHEES.md), [recette](../docs/integrations/RECETTE_ET_PUBLICATION.md) et fiche de l'application. **Ne pas lire intégralement tous ces documents par défaut.**
+3. **SI INCIDENT OU ARBITRAGE** : [doctrine/RETEX historiques](../docs/integrations/DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) ou [ancienne fiche express](../docs/integrations/DOCTRINE_EFFICACITE_INTEGRATION_20261104.md), seules sections pertinentes. Les originaux sont conservés. Le suivi inter-conversations se met à jour **dans la PR de l'intégration**, pas dans une PR globale ouverte en permanence.
 
 Ne pas utiliser un ancien compte rendu comme état actuel. Relire HEAD de `main`, PR concurrentes, catalogue, GitHub Pages, SQL et versions Edge effectivement déployées. Ne pas prétendre qu'une vérification simulée vaut une partie hébergée authentifiée.
 
