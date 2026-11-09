@@ -6,34 +6,34 @@
 
 # Guide permanent — intégrer une application dans Math’as Connect
 
-> **NOUVEAU POINT D'ENTRÉE depuis le 09/11/2026 :** lire [la synthèse express commune](00_DEMARRER_ICI.md) puis **l'en-tête et la dernière entrée utile** du [suivi courant inter-conversations](SUIVI_COURANT.md). **Ne pas charger d'office le présent guide ni les longues doctrines.** Lire le détail strictement nécessaire à la tâche. Toutes les références anciennes sont conservées.
+> **NOUVEAU POINT D'ENTRÉE depuis le 09/11/2026 :** lire [la synthèse express commune](../00_DEMARRER_ICI.md) puis **l'en-tête et la dernière entrée utile** du [suivi courant inter-conversations](../SUIVI_COURANT.md). **Ne pas charger d'office le présent guide ni les longues doctrines.** Lire le détail strictement nécessaire à la tâche. Toutes les références anciennes sont conservées.
 
-**Contrat fonctionnel complet des applications (PR #272, fusionnée et conservée) :** [référence approfondie avec code, SQL et tests](CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md). Consulter **les sections pertinentes** pour chaque fonction (XP, interface, Objectif record, trophées, projection). Mort subite = **x2 points** des 3 vies à niveau/bonnes réponses identiques avant arrondi, **plein droit XP** contre **demi-droit** sur les mêmes jalons ; les **trophées de score** restent possibles en 3 vies. Les anciens « +20 % » sont historiques.
+**Contrat fonctionnel complet des applications (PR #272, fusionnée et conservée) :** [référence approfondie avec code, SQL et tests](../CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md). Consulter **les sections pertinentes** pour chaque fonction (XP, interface, Objectif record, trophées, projection). Mort subite = **x2 points** des 3 vies à niveau/bonnes réponses identiques avant arrondi, **plein droit XP** contre **demi-droit** sur les mêmes jalons ; les **trophées de score** restent possibles en 3 vies. Les anciens « +20 % » sont historiques.
 
 **Guide initial du 31 octobre 2026, priorité de sortie élève actualisée le 4 novembre 2026.** Destiné au professeur, à ChatGPT et à Codex. **Cette page est la procédure à suivre**, pas l'historique d'un jeu. Le dépôt et les services évoluent : vérifier leurs versions à chaque mission.
 
 > **Principe : ajouter un jeu, pas réécrire Math’as Connect.** Préserver son moteur, ses modes et sa pédagogie ; brancher un adaptateur minimal au système Connect. Un outil pédagogique peut être intégré **sans XP**.
 
-**Suivi courant depuis le 09/11/2026 :** [journal inter-conversations réinitialisé](SUIVI_COURANT.md), à maintenir à chaque nouvelle intégration. **Héritage antérieur conservé :** [décisions ouvertes et contrôles constatés au 07/11/2026](SUIVI_DECISIONS_OUVERTES_20261107.md), à revalider avant de toucher à ces sujets. Une nouvelle série de journal **n'annule aucune anomalie ni PR déjà ouverte**.
+**Suivi courant depuis le 09/11/2026 :** [journal inter-conversations réinitialisé](../SUIVI_COURANT.md), à maintenir à chaque nouvelle intégration. **Héritage antérieur conservé :** [décisions ouvertes et contrôles constatés au 07/11/2026](../SUIVI_DECISIONS_OUVERTES_20261107.md), à revalider avant de toucher à ces sujets. Une nouvelle série de journal **n'annule aucune anomalie ni PR déjà ouverte**.
 
 ## Priorité du 4 novembre 2026 : construire directement pour les élèves
 
-Le [rapport complet de référence](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) rassemble la ligne pédagogique, les XP visibles sur les boutons, les coupes restantes dans les exercices, les scores facultatifs, la projection, les problèmes résolus et les raccourcis. Pour démarrer rapidement, préférer [la nouvelle synthèse](00_DEMARRER_ICI.md). L'[ancienne fiche express](DOCTRINE_EFFICACITE_INTEGRATION_20261104.md) reste disponible comme **archive de contexte**, non comme second point d'entrée obligatoire. Concevoir une seule version finale ; utiliser le Laboratoire avec un profil fictif lorsqu’un contrôle authentifié est indispensable, sans multiplier les variantes.
+Le [rapport complet de référence](../DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) rassemble la ligne pédagogique, les XP visibles sur les boutons, les coupes restantes dans les exercices, les scores facultatifs, la projection, les problèmes résolus et les raccourcis. Pour démarrer rapidement, préférer [la nouvelle synthèse](../00_DEMARRER_ICI.md). L'[ancienne fiche express](../DOCTRINE_EFFICACITE_INTEGRATION_20261104.md) reste disponible comme **archive de contexte**, non comme second point d'entrée obligatoire. Concevoir une seule version finale ; utiliser le Laboratoire avec un profil fictif lorsqu’un contrôle authentifié est indispensable, sans multiplier les variantes.
 
 ## Point d'arrêt pédagogique obligatoire avant récompenses et scores (09/11/2026)
 
-Pour **chaque application**, auditer d'abord les exercices, modes, niveaux, résultats et difficultés. **Avant de programmer les XP, trophées ou scores** (et a fortiori avant toute nouvelle migration/Edge de récompenses), organiser un **brainstorm dans la conversation avec le professeur**. Lui proposer trois éléments distincts : **1. XP** (activités, seuils, montants, plafonds et compléments), **2. trophées** (réussites requises, noms/nombre de coupes visibles), **3. scores** (faut-il un classement, formule de points, comparabilité entre modes et projection). Expliquer avec **des exemples chiffrés, des alternatives et le cas `SANS OBJET`** ; attendre ses choix. Inscrire les trois décisions datées dans [la fiche](TEMPLATE_FICHE_APPLICATION.md) et [le suivi](SUIVI_COURANT.md). **Une ancienne application n'est pas un barème par défaut approuvé.** Les étapes techniques indépendantes peuvent être engagées avant validation, mais pas la logique de récompense/score.
+Pour **chaque application**, auditer d'abord les exercices, modes, niveaux, résultats et difficultés. **Avant de programmer les XP, trophées ou scores** (et a fortiori avant toute nouvelle migration/Edge de récompenses), organiser un **brainstorm dans la conversation avec le professeur**. Lui proposer trois éléments distincts : **1. XP** (activités, seuils, montants, plafonds et compléments), **2. trophées** (réussites requises, noms/nombre de coupes visibles), **3. scores** (faut-il un classement, formule de points, comparabilité entre modes et projection). Expliquer avec **des exemples chiffrés, des alternatives et le cas `SANS OBJET`** ; attendre ses choix. Inscrire les trois décisions datées dans [la fiche](../TEMPLATE_FICHE_APPLICATION.md) et [le suivi](../SUIVI_COURANT.md). **Une ancienne application n'est pas un barème par défaut approuvé.** Les étapes techniques indépendantes peuvent être engagées avant validation, mais pas la logique de récompense/score.
 
 ## Démarrage rapide : huit étapes, trois véritables portes
 
-1. **Lire l'état réel et fixer les capacités.** Identifier `main`, PR concurrentes, repo moteur, sa version/empreinte, état serveur de la nouvelle `app_key`, Git push/PR, lecture Supabase, écriture Supabase, navigateur local et navigateur **hébergé authentifié**. Tester l'accès existant avant de réclamer un token. Aucune écriture pour cet audit. Remplir la [fiche d'application](TEMPLATE_FICHE_APPLICATION.md).
+1. **Lire l'état réel et fixer les capacités.** Identifier `main`, PR concurrentes, repo moteur, sa version/empreinte, état serveur de la nouvelle `app_key`, Git push/PR, lecture Supabase, écriture Supabase, navigateur local et navigateur **hébergé authentifié**. Tester l'accès existant avant de réclamer un token. Aucune écriture pour cet audit. Remplir la [fiche d'application](../TEMPLATE_FICHE_APPLICATION.md).
 2. **Auditer le moteur avant de coder.** Jouer ses modes réellement atteignables, comparer 4/10/20 ou autres durées, scores, aides, Master, méthodes, déblocages, trophées différés, chemins de fin, callbacks, cache natif et réglages. Choisir ce qu'est **une unité terminée**. Décider avec le professeur uniquement les points pédagogiques réellement ambigus.
 3. **Copier sans casser.** Figurer dans `apps/<slug>/` avec manifeste source (commit et SHA-256), copie du moteur, lanceur/bridge propres et miniatures officielles optimisées. Ne modifier la copie native que pour des hooks ou bugs indispensables, documentés ; le dépôt d'origine reste intact. Mode libre sans identité/XP/réseau Connect.
 4. **Créer le contrat et les tests.** `app_key` stable, fin émise une fois, UUID, schéma/version, session approuvée, options prises **au départ**, bornes du score, preuve des modes et aides. Stockage par app + libre/Connect + identité serveur + époque. Définir état/hydratation et tests vrais clavier avant SQL.
-5. **Appliquer les décisions pédagogiques validées XP/scores/trophées, puis synchroniser.** Après le brainstorm obligatoire, documenter le barème approuvé **par application** : jalons uniques, compléments, arrondis cumulés, répétition à 0, cas Master/reset, ou la décision `SANS OBJET`. Écriture atomique serveur état + reçu + XP, comparaison révision/époque, file locale bornée jusqu'à ACK exact. Voir [référence](REFERENCE_TECHNIQUE.md).
+5. **Appliquer les décisions pédagogiques validées XP/scores/trophées, puis synchroniser.** Après le brainstorm obligatoire, documenter le barème approuvé **par application** : jalons uniques, compléments, arrondis cumulés, répétition à 0, cas Master/reset, ou la décision `SANS OBJET`. Écriture atomique serveur état + reçu + XP, comparaison révision/époque, file locale bornée jusqu'à ACK exact. Voir [référence](../REFERENCE_TECHNIQUE.md).
 6. **Fermer les boucles professeur/HUB.** Résultats compacts et détail, réglages de classe/élève et minimums de tables s'ils existent, GLOBAL (4 espaces), séparation Monsieur T, historique/reset limité à **la seule** application. Le catalogue du laboratoire est indépendant. Miniature, poids et contrôle 320 px.
 7. **Tout prouver avant publication.** Node/contrats → PostgreSQL jetable (atomicité, droits, concurrence, échec tardif) → Auth + Edge locaux → Chromium **sur vrai moteur au clavier** → régression existante. Préparer migration/version/manifestes, plan d'arrêt. Créer une PR au diff étroit. **Porte A :** aucun risque P0, contrats et CI réussis sur SHA exact.
-8. **Livrer sans surprises.** Installation SQL gardée **désactivée et masquée**, Edge du SHA approuvé, publication Pages contrôlée ; recette de **vraie session navigateur authentifiée fictive** dans le laboratoire puis accès scolaire selon décision. **Porte B :** essai hébergé prouvé, pas de simple mock ; **porte C :** feu vert pédagogique d'ouverture, quatre catalogues et caches vérifiés. À la fin : RETEX et [passage de flambeau](TEMPLATE_PASSAGE_FLAMBEAU.md).
+8. **Livrer sans surprises.** Installation SQL gardée **désactivée et masquée**, Edge du SHA approuvé, publication Pages contrôlée ; recette de **vraie session navigateur authentifiée fictive** dans le laboratoire puis accès scolaire selon décision. **Porte B :** essai hébergé prouvé, pas de simple mock ; **porte C :** feu vert pédagogique d'ouverture, quatre catalogues et caches vérifiés. À la fin : RETEX et [passage de flambeau](../TEMPLATE_PASSAGE_FLAMBEAU.md).
 
 Ces étapes sont des **lots de travail**, pas huit demandes d'accord : mener les audits et le travail indépendant permis en autonomie. **Exception systématique et obligatoire : le brainstorm XP / trophées / scores de CHAQUE nouvelle app, à valider par le professeur avant d'implémenter ces règles.** Hors ce point, solliciter le professeur pour un choix pédagogique encore ouvert, une session réelle qu'aucun outil ne peut ouvrir, une permission/secret indispensable, une opération de production non autorisée ou une anomalie bloquante.
 
@@ -62,9 +62,9 @@ Ces étapes sont des **lots de travail**, pas huit demandes d'accord : mener les
 
 ## Décision réutilisable : Objectif record, 3 vies, XP restants
 
-Pour les futures applications qui disposent des capacités correspondantes, suivre le [patron commun Objectif record](PATRON_REUTILISABLE_OBJECTIF_RECORD_3_VIES_XP_20261101.md) : carte renommée, deux modes 3 vies et Mort subite, cœurs animés, petits cadres, badge +20 % de points, et « Reste N XP » en bas à droite des boutons exclusivement quand le serveur confirme une session Connect approuvée et les droits restants. Ne pas copier les XP du prototype fictif dans le jeu vivant. Les mécanismes de score et les crédits sont par application, sur preuves serveur.
+Pour les futures applications qui disposent des capacités correspondantes, suivre le [patron commun Objectif record](../PATRON_REUTILISABLE_OBJECTIF_RECORD_3_VIES_XP_20261101.md) : carte renommée, deux modes 3 vies et Mort subite, cœurs animés, petits cadres, badge +20 % de points, et « Reste N XP » en bas à droite des boutons exclusivement quand le serveur confirme une session Connect approuvée et les droits restants. Ne pas copier les XP du prototype fictif dans le jeu vivant. Les mécanismes de score et les crédits sont par application, sur preuves serveur.
 
-**Pour Mélange, la sélection exacte des opérations + / − / ×, le nombre de types sélectionnés, le nombre de calculs 4/10/20 et le niveau influencent potentiellement les XP restant accessibles.** Ne pas appliquer une simple multiplication ou division par le nombre de types ; vérifier les jalons du contrat Mélange. Voir le [prompt de mise en œuvre pour les cinq jeux](PROMPT_DEPLOIEMENT_OBJECTIF_RECORD_5_APPS_20261101.md). Le patron reste au stade de prototype isolé, sans mise en production des nouveaux XP.
+**Pour Mélange, la sélection exacte des opérations + / − / ×, le nombre de types sélectionnés, le nombre de calculs 4/10/20 et le niveau influencent potentiellement les XP restant accessibles.** Ne pas appliquer une simple multiplication ou division par le nombre de types ; vérifier les jalons du contrat Mélange. Voir le [prompt de mise en œuvre pour les cinq jeux](../PROMPT_DEPLOIEMENT_OBJECTIF_RECORD_5_APPS_20261101.md). Le patron reste au stade de prototype isolé, sans mise en production des nouveaux XP.
 
 ## Contrat de sortie : quand une intégration est terminée
 
@@ -72,19 +72,19 @@ Le moteur libre et ses variantes pédagogiques fonctionnent ; le nouveau jeu et 
 
 ## Navigation
 
-- [Doctrine d’efficacité et RETEX transversal — lignes rouges XP/trophées/score/projection et objectif de livraison élève](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md)
-- [Référence technique : architecture, XP, états, sécurité, professeur, performances](REFERENCE_TECHNIQUE.md)
-- [Contrat commun scores, XP et trophées permanents](CONTRAT_COMMUN_SCORES_XP_TROPHEES.md)
-- [Projet « Objectif record » : prototype Addition simple (01/11/2026)](PROJET_DEFIS_SCORE_3_VIES_20261101.md)
-- [Patron réutilisable Objectif record : 3 vies, XP restants et Mélange](PATRON_REUTILISABLE_OBJECTIF_RECORD_3_VIES_XP_20261101.md)
-- [Prompt de travail : intégrer Objectif record aux cinq calculs écrits](PROMPT_DEPLOIEMENT_OBJECTIF_RECORD_5_APPS_20261101.md)
-- [Déploiement des compteurs trophées / XP du parcours (31/10/2026)](DEPLOIEMENT_TROPHEES_20261031.md)
-- [Erreurs connues, causes et contre-mesures](RETEX_ERREURS.md)
-- [Tests, preuves, publication et retour arrière](RECETTE_ET_PUBLICATION.md)
-- [Fiche à remplir pour une nouvelle application](TEMPLATE_FICHE_APPLICATION.md)
-- [Passage de flambeau entre conversations](TEMPLATE_PASSAGE_FLAMBEAU.md)
-- [Feuille de route de mutualisation et automatisation](AUTOMATISATION.md)
-- [Sources vérifiées, contradictions et statut des anciens conseils](SOURCES_ET_STATUT.md)
+- [Doctrine d’efficacité et RETEX transversal — lignes rouges XP/trophées/score/projection et objectif de livraison élève](../DOCTRINE_EFFICACITE_ET_RETEX_20261104.md)
+- [Référence technique : architecture, XP, états, sécurité, professeur, performances](../REFERENCE_TECHNIQUE.md)
+- [Contrat commun scores, XP et trophées permanents](../CONTRAT_COMMUN_SCORES_XP_TROPHEES.md)
+- [Projet « Objectif record » : prototype Addition simple (01/11/2026)](../PROJET_DEFIS_SCORE_3_VIES_20261101.md)
+- [Patron réutilisable Objectif record : 3 vies, XP restants et Mélange](../PATRON_REUTILISABLE_OBJECTIF_RECORD_3_VIES_XP_20261101.md)
+- [Prompt de travail : intégrer Objectif record aux cinq calculs écrits](../PROMPT_DEPLOIEMENT_OBJECTIF_RECORD_5_APPS_20261101.md)
+- [Déploiement des compteurs trophées / XP du parcours (31/10/2026)](../DEPLOIEMENT_TROPHEES_20261031.md)
+- [Erreurs connues, causes et contre-mesures](../RETEX_ERREURS.md)
+- [Tests, preuves, publication et retour arrière](../RECETTE_ET_PUBLICATION.md)
+- [Fiche à remplir pour une nouvelle application](../TEMPLATE_FICHE_APPLICATION.md)
+- [Passage de flambeau entre conversations](../TEMPLATE_PASSAGE_FLAMBEAU.md)
+- [Feuille de route de mutualisation et automatisation](../AUTOMATISATION.md)
+- [Sources vérifiées, contradictions et statut des anciens conseils](../SOURCES_ET_STATUT.md)
 
 ## Entretien du guide
 
