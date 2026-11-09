@@ -7,9 +7,9 @@
 # Math’as Connect — documentation, applications et intégrations
 
 > 📘 **PROCHAINES INTÉGRATIONS — LECTURE ÉCONOMIQUE (09/11/2026)**  
-> **1. [Synthèse express obligatoire pour IA](docs/integrations/00_DEMARRER_ICI.md)** · **2. [Suivi courant des discussions et intégrations](docs/integrations/SUIVI_COURANT.md)** (*l'en-tête et la dernière passation utile seulement*).  
-> **3. [Contrat fonctionnel complet issu de la PR #272](docs/integrations/CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md)** · [Doctrine/RETEX historiques](docs/integrations/DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) · [Guide permanent](docs/integrations/README.md) : **consulter par section uniquement quand le problème le nécessite.**  
-> Les anciennes fiches et le contrat intégral restent conservés. [Instructions agents](AGENTS.md) et [Copilot](.github/copilot-instructions.md) appliquent ce parcours progressif. **Ne pas charger tous les documents à la fois.**
+> **1. [Synthèse express obligatoire pour IA](../../../docs/integrations/00_DEMARRER_ICI.md)** · **2. [Suivi courant des discussions et intégrations](../../../docs/integrations/SUIVI_COURANT.md)** (*l'en-tête et la dernière passation utile seulement*).  
+> **3. [Contrat fonctionnel complet issu de la PR #272](../../../docs/integrations/CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md)** · [Doctrine/RETEX historiques](../../../docs/integrations/DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) · [Guide permanent](../../../docs/integrations/README.md) : **consulter par section uniquement quand le problème le nécessite.**  
+> Les anciennes fiches et le contrat intégral restent conservés. [Instructions agents](../../../AGENTS.md) et [Copilot](../../../.github/copilot-instructions.md) appliquent ce parcours progressif. **Ne pas charger tous les documents à la fois.**
 >
 > **Attention aux dates :** les tableaux d’état ci-dessous sont un instantané rédigé le 29 octobre ; les statuts et déploiements peuvent avoir changé. Vérifier systématiquement les sources GitHub, Supabase et Pages actuelles avant toute intervention. Le guide permanent décrit la méthode, pas une confirmation automatique de production.
 
@@ -73,7 +73,7 @@ La projection montre uniquement des nombres collectifs : inscrits, participants 
 
 ## Références pour les prochaines applications
 
-Une première lecture des moteurs autonomes existants et un protocole d'intégration progressive figurent dans [la préparation des prochains calculs écrits](docs/PREPARATION_PROCHAINES_INTEGRATIONS_20261029.md). Le premier candidat technique est **Addition de plusieurs nombres**, puis **Multiplication à plusieurs chiffres** et enfin **Mélange** ; aucun de ces jeux n'est encore connecté ni annoncé aux élèves.
+Une première lecture des moteurs autonomes existants et un protocole d'intégration progressive figurent dans [la préparation des prochains calculs écrits](../../../docs/PREPARATION_PROCHAINES_INTEGRATIONS_20261029.md). Le premier candidat technique est **Addition de plusieurs nombres**, puis **Multiplication à plusieurs chiffres** et enfin **Mélange** ; aucun de ces jeux n'est encore connecté ni annoncé aux élèves.
 
 ## Notes anciennes / historique
 
