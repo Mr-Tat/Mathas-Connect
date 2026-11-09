@@ -9,6 +9,16 @@
 - Déclarer par jeu : XP, trophées, score, Objectif record, projection et réglages prof = **oui / SANS OBJET**. Ne rien inventer pour obtenir une interface uniforme ; barèmes et coupes propres au jeu.
 - **Aucun test sur élèves réels**, aucun secret dans Git, aucune remise à zéro massive, ouverture de classe ni modification SQL/Edge implicite. Les décisions pédagogiques récentes et l'état serveur vérifié priment sur les archives.
 
+## 1 bis. POINT D'ARRÊT OBLIGATOIRE — brainstorm avec le professeur
+
+**[DÉCISION PROFESSEUR, 09/11/2026] Chaque nouvelle application doit faire l'objet d'un brainstorming pédagogique avec le professeur AVANT d'implémenter ses règles XP, trophées et scores.** L'IA analyse d'abord le moteur et propose une solution argumentée, mais **le professeur décide**. Même si un jeu existant ressemble au nouveau, **ne jamais importer automatiquement ses barèmes ni supposer leur approbation**.
+
+- **XP :** proposer quels exercices/modes donnent des XP, la difficulté, les conditions de réussite, paliers, montants, plafonds, compléments et rejouabilité ; expliquer la comparaison avec les jeux déjà intégrés.
+- **Trophées :** proposer les coupes et leurs noms, critères exacts (sans-faute, maîtrise de section, record, exploits), nombre de coupes visibles, progression et permanence après reset.
+- **Scores :** proposer s'il faut des points de classement, leur unité et formule, coefficients par niveau/mode, comparabilité entre exercices et records (jour/historique/projection). Vérifier la cohérence avec les XP, sans les confondre.
+
+**Déroulement :** audit du moteur → propositions chiffrées et alternatives simples pour les trois sujets (ou `SANS OBJET` motivé) → **échange avec le professeur** → validation/ajustements explicites → seulement ensuite programmation des règles de récompense/score et de leur serveur. L'IA peut réaliser auparavant l'audit et les parties techniques indépendantes. Inscrire la décision et sa date dans la [fiche de l'application](TEMPLATE_FICHE_APPLICATION.md) et le [suivi courant](SUIVI_COURANT.md). **Aucune validation implicite par la présente synthèse.**
+
 ## 2. Socle fonctionnel commun
 
 | Élément | Attendu si applicable |
