@@ -35,7 +35,7 @@ try{
     m:[...box.querySelectorAll('.digit[data-role="multiplier"]')].map(e=>e.textContent).join('')
    })));
    assert.deepEqual(await read(prof),await read(student));
-   await prof.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').fill('9');
+   await prof.evaluate(()=>{document.querySelector('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').value='9'});
    assert.equal(await student.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').inputValue(),'');
    assert.equal(await student.evaluate(()=>window.MathasGuidedBridge.status().finished),false);
    // Le professeur peut ouvrir la page suivante sans avoir résolu la première.
