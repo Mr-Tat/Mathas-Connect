@@ -19,7 +19,7 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
    sessionStorage.setItem(hostKey,hostId);
   }catch{hostId=crypto.randomUUID()}
  }
- // Plus de mode « Élève au tableau » : le professeur garde ses propres commandes.
+ // Les commandes du professeur restent visibles dans son propre guidé.
  // Les corrigés demandent une confirmation neutre, indépendante du score.
  const say=msg=>{lastError=msg;if(notice)notice.textContent=msg;};
  const el=(tag,cls,text)=>{const x=doc.createElement(tag);if(cls)x.className=cls;if(text!==undefined)x.textContent=text;return x};
