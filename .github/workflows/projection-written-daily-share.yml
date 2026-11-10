@@ -1,0 +1,37 @@
+name: Quatre calculs — publication du score du jour (PostgreSQL jetable)
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261110120000_projection_written_daily_best_consent.sql'
+      - 'tests/postgres/projection-written-daily-*.sql'
+      - '.github/workflows/projection-written-daily-share.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  daily-share-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: projection_daily_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d projection_daily_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/projection_daily_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer uniquement des données fictives
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/projection-written-daily-fixture.sql
+      - name: Vérifier les fonctions proposées sans aucun accès Supabase LIVE
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261110120000_projection_written_daily_best_consent.sql
+      - name: Tester les 4 jeux, survies, consentement, record et reset
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/postgres/projection-written-daily-share.test.sql
