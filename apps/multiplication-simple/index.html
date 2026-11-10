@@ -11,6 +11,18 @@ import {installSessionToolbarLayout} from '../objective-record/in-game-session-l
 import {paintConnectedAvatar} from '../objective-record/profile-avatar-badge.mjs?v=20261107-v1';
 const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM',APP='multiplication-ecrite-simple';
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
+// Le nom affiché vient de l'ID de classe qui est également envoyé au serveur.
+ // « Toutes » est une rubrique du HUB, mais son ID correspond à la classe TEST.
+const CONNECT_CLASS_NAMES=Object.freeze({
+ '8fe170fa-9e8f-4e80-885a-b0ba68026f64':'Observation',
+ '71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'Phase 1',
+ '1b021ed9-4846-4203-9c7b-4b5fa8d7adab':'Phase 2 A',
+ '0d8ba828-59cc-468b-a4b8-7b2a1af10b88':'Phase 2 B',
+ 'a9195199-0a28-4e86-99ce-47b36dd6e646':'2 ECO',
+ '4bf3400d-a315-4ea4-a2f3-afaca24dc9b9':'TEST'
+});
+const actualClassName=CONNECT_CLASS_NAMES[classId]||(UUID.test(classId)?'ID '+classId.slice(0,8):'');
+const classTag=actualClassName?(actualClassName==='TEST'?'Classe TEST':'Classe : '+actualClassName):'';
 const teacherPlayer=query.get('joueur')==='prof';
 // Les lancements depuis « Tests en ligne » ne sont PAS des démos sans XP.
 const requireConnect=query.get('requireConnect')==='1';
@@ -217,6 +229,8 @@ function mountNativeConnectHeader(doc){
   .mathas-multi-connect-identity::before{content:'●';color:#70e3ae;flex:none}
   .mathas-multi-connect-identity{display:inline-flex;align-items:center;gap:5px;max-width:210px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
   .mathas-multi-connect-name{overflow:hidden;min-width:0;text-overflow:ellipsis;white-space:nowrap}
+  /* Classe effectivement consultée, indépendante du niveau et du nom de joueur. */
+  .mathas-multi-connect-class{display:inline-flex;align-items:center;justify-content:center;flex:none;box-sizing:border-box;max-width:138px;min-height:25px;padding:4px 8px;border:1px solid rgba(122,198,218,.62);border-radius:999px;background:rgba(6,38,53,.8);color:#d8f4ff;font:800 10px/1.2 system-ui;white-space:normal;text-align:center}
   /* Badge récupéré de #ce-xp-level-badge : fond bleu, filet or et chiffre XXL. */
   .mathas-multi-connect-level{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:90px;box-sizing:border-box;padding:3px 8px;border:1px solid #efc56a;border-radius:99px;background:linear-gradient(140deg,#325f90,#1b4678);box-shadow:inset 0 1px 0 #ffffff30;white-space:nowrap}
   .mathas-multi-connect-level-label{display:inline-flex;align-items:center;justify-content:center;height:25px;font:750 10px/1 system-ui;letter-spacing:.025em;color:#f7d996;transform:translateY(2px)}
@@ -242,6 +256,7 @@ function mountNativeConnectHeader(doc){
   .mathas-multi-hub-link:active{transform:translateY(3px)}
   body.light .mathas-multi-connect-person,body.light-mode .mathas-multi-connect-person{background:#e8f5f5;color:#123e47;border-color:#79bfc8}
   body.light .mathas-multi-connect-count,body.light-mode .mathas-multi-connect-count{color:#255365}
+  body.light .mathas-multi-connect-class,body.light-mode .mathas-multi-connect-class{background:#e7f6f9;color:#175369;border-color:#75b8ca}
   /* Le cartouche reste bleu et son numéro crème reste contrasté en mode clair. */
   body.light .mathas-multi-connect-level-label,body.light-mode .mathas-multi-connect-level-label{color:#f7d996}
   body.light .mathas-multi-connect-level-number,body.light-mode .mathas-multi-connect-level-number{color:#fff8d4}
@@ -262,11 +277,15 @@ function mountNativeConnectHeader(doc){
   const levelLabel=doc.createElement('span');levelLabel.className='mathas-multi-connect-level-label';levelLabel.textContent='Niveau';
   const levelNumber=doc.createElement('strong');levelNumber.className='mathas-multi-connect-level-number';levelNumber.textContent='…';
   level.append(levelLabel,levelNumber);
+  const classBadge=doc.createElement('span');classBadge.id='mathas-multi-connect-class';
+  classBadge.className='mathas-multi-connect-class';classBadge.textContent=classTag;
+  classBadge.title=classTag+' · classe utilisée pour le guidé collectif';
+  classBadge.hidden=!classTag;
   const progress=doc.createElement('div');progress.className='mathas-multi-connect-progress';
   const count=doc.createElement('span');count.id='mathas-multi-connect-count';count.className='mathas-multi-connect-count';
   const track=doc.createElement('div');track.className='mathas-multi-connect-track';
   const fill=doc.createElement('i');fill.id='mathas-multi-connect-fill';fill.className='mathas-multi-connect-fill';
-  track.append(fill);progress.append(count,track);person.append(identity,level,progress);
+  track.append(fill);progress.append(count,track);person.append(identity,level,classBadge,progress);
   const button=doc.createElement('button');button.id='mathas-multi-connect-xp';button.type='button';button.className='mathas-multi-connect-xp';button.innerHTML='<span class="mathas-xp-action-main">✨ XP à récupérer</span><span class="mathas-xp-action-detail">Voir le détail ›</span>';button.title='Afficher les XP acquis et les récompenses encore possibles';
   button.addEventListener('click',()=>document.getElementById('xp-toolbar-button')?.click());
   dock.append(person,button);brandRow.append(dock);
@@ -287,6 +306,8 @@ function mountNativeConnectHeader(doc){
  }
  doc.querySelector('#mathas-multi-connect-identity .mathas-multi-connect-name').textContent=document.getElementById('ce-identity')?.textContent||'Compte élève';
   paintConnectedAvatar(doc.querySelector('#mathas-multi-connect-identity .mathas-connect-avatar'),studentAvatar,studentName);
+ const visibleClass=doc.getElementById('mathas-multi-connect-class');
+ if(visibleClass){visibleClass.textContent=classTag;visibleClass.title=classTag+' · classe utilisée pour le guidé collectif';visibleClass.hidden=!classTag;}
  doc.getElementById('mathas-multi-connect-level').querySelector('strong').textContent=document.getElementById('ce-xp-level-number')?.textContent||'…';
  doc.getElementById('mathas-multi-connect-count').textContent=document.getElementById('ce-xp-meter-count')?.textContent||'… / 50 XP';
  const originalTrack=document.getElementById('ce-xp-meter-track');
@@ -581,7 +602,7 @@ if(mode==='connected'&&classroomBridgeReady){
  try{
   const {createMultiplicationCollective}=await import('./collective-ui.mjs?v=20261110-classroom-v3');
   guidedCollective=createMultiplicationCollective({
- iframe,teacher:teacherPlayer,classId,
+ iframe,teacher:teacherPlayer,classId,classLabel:classTag,
  call:async(action,payload={})=>{
   const current=(await cloud.auth.getSession()).data.session;
   if(!current?.access_token||current.user?.id!==session.user.id)throw Error('Session Connect remplacée');
