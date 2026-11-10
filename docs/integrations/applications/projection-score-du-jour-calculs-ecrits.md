@@ -15,9 +15,9 @@
 
 ## Publication / tests / prochaine action
 - **Code GitHub :** branche `fix/written-daily-projection-feedback-20261110` ; PR séparée de reprise.
-- **CI :** exécuter `node --test tests/*.test.mjs` via workflow, puis recette fictive.
-- **Migration SQL :** `20261110120000_projection_written_daily_best_consent.sql` ; **NON appliquée**. Accord explicite et vérification préalable indispensables. La nouvelle UI désactive le bouton du jour tant que le serveur ne renvoie pas `boardTodayBest`.
+- **CI (HEAD `df148822`, 10/11/2026) :** 11 workflows réussis, dont tests PostgreSQL 16 jetable et Chromium des quatre jeux. Une suite générale reste en échec pour 4 cas hors périmètre : 3 miniatures et un guide Laboratoire ancien ; les trois miniatures échouaient déjà sur `main` le 09/11.
+- **Migration SQL :** `20261110120000_projection_written_daily_best_consent.sql` **APPLIQUÉE le 10/11/2026**, historique Supabase `20261110110523` / `projection_written_daily_best_consent_20261110`, sur `awmhpfofacaglewammxt`. Six fonctions inspectées après installation (propriétaire et ACL inchangés), quatre appels de lecture sur UUID fictifs ont renvoyé `boardTodayBest`. Aucune modification de résultats/XP/trophées.
 - **GitHub Pages :** non publié dans ce chantier avant fusion / recette.
 - **Recette attendue :** classe TEST, profil fictif, une série mort subite et 3 vies moins élevée que son record historique ; Oui / Non, publication avec retour serveur, relancement du jeu et état « Déjà envoyé », lendemain, reset, réseau absent puis rétabli. Vérifier l'envoi par clic sur les cartes des quatre applications.
-- **Prochaine action :** revue CI, autorisation SQL distincte, recette avec profil fictif, fusion + publication Pages, puis recontrôle Supabase.
+- **Prochaine action :** fusion contrôlée de la PR #277, publication Pages vérifiée au SHA de `main`, recontrôle lecture seule de Supabase puis recette hébergée avec profil fictif approuvé. Aucun déploiement Edge requis (fichier Edge inchangé).
 - **RETEX émergent :** un classement quotidien et un classement historique peuvent utiliser la même liste de consentements mais pas le même seuil de publication. Contrôler simultanément client + SQL + projection avant de corriger les symptômes dans chaque moteur.
