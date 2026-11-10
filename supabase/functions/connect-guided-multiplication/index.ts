@@ -30,7 +30,9 @@ const makePage=(l:number,m:number[])=>[operation(l,m),operation(l,m)];
 const view=(x:any)=>!x?.active?{ok:true,active:false}:
  {ok:true,active:true,sessionId:x.session_id,revision:Number(x.revision),level:x.level,
  carryMethod:x.carry_method,multipliers:x.multipliers,pages:x.pages,
- pageIndex:x.page_index,allowSkip:x.allow_skip,updatedAt:x.updated_at};
+ pageIndex:x.page_index,teacherPageIndex:x.teacher_page_index??x.page_index,
+ requiredPages:Array.isArray(x.required_pages)?x.required_pages:[],
+ allowSkip:x.allow_skip,updatedAt:x.updated_at};
 Deno.serve(async(req:Request)=>{
  if(req.method==='OPTIONS')return new Response('',{headers});
  if(req.method!=='POST')return fail('method_not_allowed',405);
@@ -42,7 +44,7 @@ Deno.serve(async(req:Request)=>{
  const raw=await req.text();if(raw.length>5000)return fail('payload_too_large',413);
  let b:any;try{b=JSON.parse(raw)}catch{return fail('invalid_json')}
  if(!b||typeof b!=='object'||Array.isArray(b)||!UUID.test(b.classId||''))return fail('invalid_request');
- if(!['status','resume','start','next','set-skip','stop','heartbeat','closing'].includes(b.action))return fail('invalid_action');
+ if(!['status','resume','start','next','set-page','set-required','stop','heartbeat','closing'].includes(b.action))return fail('invalid_action');
  if(b.action!=='status'&&user.is_anonymous===true)return fail('teacher_only',403);
  const cls=String(b.classId).toLowerCase();
  try{
@@ -122,7 +124,8 @@ Deno.serve(async(req:Request)=>{
    const row={class_id:cls,teacher_id:user.id,session_id:crypto.randomUUID(),active:true,
     host_client_id:b.hostId,host_page_id:b.pageId,host_seen_at:now,close_requested_at:null,
     level:b.level,carry_method:b.carryMethod,multipliers:b.multipliers,
-    pages:[makePage(b.level,b.multipliers)],page_index:0,allow_skip:false,
+    pages:[makePage(b.level,b.multipliers)],page_index:0,teacher_page_index:0,
+    required_pages:[],allow_skip:true,
     revision:Number(current?.revision||0)+1,updated_at:new Date().toISOString()};
    const {data,error:writeError}=current
     ?await db.from(TABLE).update(row).eq('class_id',cls).eq('revision',current.revision).select().maybeSingle()
@@ -159,9 +162,18 @@ Deno.serve(async(req:Request)=>{
    if(!Array.isArray(current.pages)||current.pages.length>=120)return fail('page_limit',409);
    patch.pages=[...current.pages,makePage(current.level,current.multipliers)];
    patch.page_index=patch.pages.length-1;
-  }else if(b.action==='set-skip'){
-   if(typeof b.allowSkip!=='boolean')return fail('invalid_configuration');
-   patch.allow_skip=b.allowSkip;
+   patch.teacher_page_index=patch.page_index;
+  }else if(b.action==='set-page'){
+   if(!Number.isInteger(b.pageIndex)||b.pageIndex<0||b.pageIndex>current.page_index)
+    return fail('invalid_page',409);
+   patch.teacher_page_index=b.pageIndex;
+  }else if(b.action==='set-required'){
+   if(!Number.isInteger(b.pageIndex)||b.pageIndex<0||b.pageIndex>current.page_index
+      ||typeof b.required!=='boolean')return fail('invalid_configuration');
+   const currentRequired=Array.isArray(current.required_pages)?current.required_pages:[];
+   patch.required_pages=b.required
+    ?[...new Set([...currentRequired,b.pageIndex])].sort((a:number,b:number)=>a-b)
+    :currentRequired.filter((x:number)=>x!==b.pageIndex);
   }else if(b.action==='stop')patch.active=false;
   const {data,error:writeError}=await db.from(TABLE).update(patch)
    .eq('class_id',cls).eq('session_id',current.session_id).eq('revision',current.revision).select().maybeSingle();
