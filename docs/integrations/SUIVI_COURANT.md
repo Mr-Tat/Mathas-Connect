@@ -5,17 +5,17 @@
 ## Reprise en 30 secondes
 
 - **Travail documentaire initialisé le 09/11/2026.** Aucune nouvelle intégration enregistrée dans cet index à sa création ; cela **ne signifie pas** absence de PR anciennes ou de chantiers antérieurs.
-- **Chantier actif :** PR #277, projection des quatre calculs écrits. SQL du jour installé sur Supabase (10/11/2026) ; Pages et recette authentifiée restent à attester. Voir uniquement la fiche associée.
+- **Chantier actif :** projection du jour des quatre calculs écrits : [PR #277](https://github.com/Mr-Tat/Mathas-Connect/pull/277) fusionnée, SQL et GitHub Pages publiés le 10/11/2026. **Recette hébergée avec profil fictif approuvé non exécutée** ; voir la fiche.
 - **Verrou pédagogique :** XP, trophées et scores d'une **nouvelle** app nécessitent chacun une proposition de l'IA et **l'accord explicite du professeur avant codage** ; état de décision dans la fiche.
 - **Signal transversal à traiter :** aucun nouveau signal classé à la création ; voir [les tendances et raccourcis](RETEX_OPERATIONNEL.md) si incident similaire.
 - **Chantiers hérités** : cinq PR anciennes **toujours ouvertes et non fusionnées lors de la vérification GitHub du 10/11/2026** ; voir le bref inventaire plus bas. L'ancien [suivi du 07/11](SUIVI_DECISIONS_OUVERTES_20261107.md) reste à revalider, sans présumer ses tâches terminées.
-- **Dernière consolidation** : 10/11/2026 — inventaire GitHub documentaire et correction des liens des modèles ; aucune recette, fusion d'ancienne PR ou visibilité élève certifiée.
+- **Dernière consolidation** : 10/11/2026 — chantier #277 fusionné (`0572059a`) ; SQL live `20261110110523` et déploiement Pages [réussi](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/42804980643). Recette de bout en bout sur profil fictif hébergé encore non exécutée ; cinq PR héritées inchangées.
 
 ## Applications en cours depuis cette nouvelle série
 
 | Application / `app_key` | Étape | XP / coupes / scores approuvés ? | PR et prochaine action | Fiche |
 | --- | --- | --- | --- | --- |
-| Projection Score du jour — quatre calculs écrits | SQL LIVE vérifié ; Pages en attente | Barèmes inchangés ; consentement du jour validé 10/11 | [PR #277](https://github.com/Mr-Tat/Mathas-Connect/pull/277) : fusion → Pages → recette TEST | [Fiche](applications/projection-score-du-jour-calculs-ecrits.md) |
+| Projection Score du jour — quatre calculs écrits | `main` + SQL + Pages publiés 10/11 ; recette TEST à faire | Barèmes inchangés ; consentement quotidien validé | [PR #277](https://github.com/Mr-Tat/Mathas-Connect/pull/277) fusionnée ; prochaine action : recette sur profil fictif | [Fiche](applications/projection-score-du-jour-calculs-ecrits.md) |
 
 **Étapes distinctes** : `AUDIT` → `ARBITRAGE PROF` → `CODE` → `CI` → `PAGES` → `EDGE/SQL` → `RECETTE FICTIVE` → `OUVERTURE AUTORISÉE`. N'afficher une étape comme franchie qu'avec **date + preuve** ; `SANS OBJET` si le jeu n'a pas cette capacité. Une fusion GitHub ne certifie pas le reste.
 
