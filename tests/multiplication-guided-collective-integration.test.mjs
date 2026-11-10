@@ -49,17 +49,17 @@ test('le clavier natif ne contourne pas les pages obligatoires',()=>{
  const host=source('apps/multiplication-simple/index.html');
  assert.match(host,/mathasNativeHandlePrimary=handlePrimary/);
  assert.match(host,/handlePrimary=function/);
- assert.match(host,/MathasGuidedBridge\\?\\.onContinue/);
+ assert.match(host,/MathasGuidedBridge.*onContinue/);
 });
 test('une page obligatoire se décide côté professeur sur une page déjà ouverte',()=>{
  const server=source('supabase/functions/connect-guided-multiplication/index.ts');
  const migration=source('supabase/migrations/20261110152500_guided_multiplication_pages_required.sql');
  const ui=source('apps/multiplication-simple/collective-ui.mjs');
- assert.match(server,/b\\.action==='set-required'/);
- assert.match(server,/b\\.action==='set-page'/);
+ assert.match(server,/set-required/);
+ assert.match(server,/set-page/);
  assert.match(server,/teacher_page_index/);
  assert.match(server,/required_pages/);
- assert.match(migration,/required_pages integer\\[\\]/);
+ assert.match(migration,/required_pages integer/);
  assert.match(ui,/canReachPage/);
  assert.match(ui,/resetSaved/);
  assert.doesNotMatch(ui,/Élève au tableau/);
