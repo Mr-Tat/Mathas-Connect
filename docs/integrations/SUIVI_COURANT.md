@@ -17,6 +17,8 @@
 | --- | --- | --- | --- | --- |
 | Projection Score du jour — quatre calculs écrits | `main` + SQL + Pages publiés 10/11 ; recette TEST à faire | Barèmes inchangés ; consentement quotidien validé | [PR #277](https://github.com/Mr-Tat/Mathas-Connect/pull/277) fusionnée ; prochaine action : recette sur profil fictif | [Fiche](applications/projection-score-du-jour-calculs-ecrits.md) |
 
+| Multiplication simple — Guidé collectif | `CODE` + Chromium réussis ; SQL + Edge actifs, Pages en attente | XP, trophées, scores : SANS OBJET | [PR #279](https://github.com/Mr-Tat/Mathas-Connect/pull/279) ; prochain contrôle : fusion/Pages, recette fictive | [Fiche](applications/multiplication-guide-collectif.md) |
+
 **Étapes distinctes** : `AUDIT` → `ARBITRAGE PROF` → `CODE` → `CI` → `PAGES` → `EDGE/SQL` → `RECETTE FICTIVE` → `OUVERTURE AUTORISÉE`. N'afficher une étape comme franchie qu'avec **date + preuve** ; `SANS OBJET` si le jeu n'a pas cette capacité. Une fusion GitHub ne certifie pas le reste.
 
 ## Chantiers hérités — PR ouvertes constatées sur GitHub le 10/11/2026
