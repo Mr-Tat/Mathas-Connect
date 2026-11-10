@@ -101,6 +101,30 @@ try{
    await page.waitForFunction(()=>window.__sharedPages.length===1&&window.MathasGuidedBridge.status().collective);
    const toolbar=guided.locator('[data-role="teacher"]');
    assert.equal(await page.locator('#mc-guided-slot').count(),0,'le lancement est dans Exercice guidé, pas au menu');
+   // Le badge est aligné à droite du titre, l'ancienne ligne est supprimée.
+   const teacherLayout=await guided.evaluate(el=>{
+    const title=el.querySelector('.mc-notice').getBoundingClientRect();
+    const badge=el.querySelector('.mc-guided-class-badge').getBoundingClientRect();
+    const bar=el.getBoundingClientRect();
+    const controls=el.querySelector('[data-role="teacher"]').getBoundingClientRect();
+    const entry=el.querySelector('.mc-guided-entry');
+    const groups=[...el.querySelectorAll('[data-role="teacher"] .mc-control-group')];
+    return {titleRight:title.right,titleTop:title.top,badgeLeft:badge.left,badgeTop:badge.top,
+     barHeight:bar.height,controlsTop:controls.top,badgeBottom:badge.bottom,
+     entryHidden:entry.hidden,groupCount:groups.length,
+     dividerWidths:groups.slice(1).map(x=>parseFloat(getComputedStyle(x).borderLeftWidth)),
+     dividerColors:groups.slice(1).map(x=>getComputedStyle(x).borderLeftColor),
+     buttonGap:getComputedStyle(groups[0]).gap};
+   });
+   assert.equal(teacherLayout.entryHidden,true,'la ligne vide de lancement doit disparaître après connexion');
+   assert.equal(teacherLayout.groupCount,3,'navigation | pédagogie | fin de séance');
+   assert.ok(teacherLayout.badgeLeft>=teacherLayout.titleRight+4,'badge à droite du titre');
+   assert.ok(Math.abs(teacherLayout.badgeTop-teacherLayout.titleTop)<8,'badge sur la même ligne');
+   assert.ok(teacherLayout.controlsTop-teacherLayout.badgeBottom<18,'sans grand vide sous le titre');
+   assert.ok(teacherLayout.barHeight<110,'bandeau compact : '+JSON.stringify(teacherLayout));
+   assert.deepEqual(teacherLayout.dividerWidths,[4,4]);
+   assert.deepEqual(teacherLayout.dividerColors,['rgb(246, 140, 54)','rgb(246, 140, 54)']);
+   assert.equal(teacherLayout.buttonGap,'11px');
    await toolbar.getByRole('button',{name:/Nouvelle page/}).click();
    assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),1);
    assert.equal(await page.evaluate(()=>window.__sharedPages.length),2);
@@ -308,6 +332,16 @@ try{
    await page.locator('#mc-guided-bar').getByRole('button',{name:'Rejoindre la classe'}).click();
    assert.equal(await page.evaluate(()=>window.__statusCalls),1);
    const controls=page.locator('#mc-guided-bar [data-role="student"]');
+   const pupilLayout=await controls.evaluate(el=>{
+    const groups=[...el.querySelectorAll('.mc-control-group')];
+    return {count:groups.length,gap:getComputedStyle(groups[0]).gap,
+     border:parseFloat(getComputedStyle(groups[1]).borderLeftWidth),
+     color:getComputedStyle(groups[1]).borderLeftColor};
+   });
+   assert.equal(pupilLayout.count,2,'navigation | entraînement / retour');
+   assert.equal(pupilLayout.gap,'11px');
+   assert.equal(pupilLayout.border,4);
+   assert.equal(pupilLayout.color,'rgb(246, 140, 54)');
    assert.equal(await controls.getByRole('button',{name:/En attente/}).isDisabled(),true);
    await page.evaluate(p=>{window.__classroom={...window.__classroom,revision:2,
     pages:[...window.__classroom.pages,p],requiredPages:[false,false],pageIndex:1}},page2);
