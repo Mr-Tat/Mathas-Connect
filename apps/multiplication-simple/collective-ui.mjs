@@ -175,8 +175,9 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
   const gameVisible=doc.getElementById('gameScreen')?.classList.contains('hidden')===false;
   const inGuided=gameVisible&&bridge?.status()?.training===true;
   const startHere=teacher&&!active&&inGuided;
-  const joinHere=active&&inGuided&&!practicing&&!joined;
-  if(bar)bar.hidden=!((active&&(joined||inGuided))||startHere);
+  const studentJoinHere=!teacher&&inGuided&&!practicing&&!joined;
+  const joinHere=(active&&inGuided&&!practicing&&!joined)||studentJoinHere;
+  if(bar)bar.hidden=!((active&&(joined||inGuided))||startHere||studentJoinHere);
   if(btnStartHere){btnStartHere.hidden=!startHere;btnStartHere.disabled=busy}
   if(btnJoinHere){btnJoinHere.hidden=!joinHere;btnJoinHere.disabled=busy;
    btnJoinHere.textContent=teacher?'Reprendre la séance':'Rejoindre la classe'}
