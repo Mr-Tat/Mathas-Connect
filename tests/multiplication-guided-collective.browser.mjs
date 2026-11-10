@@ -94,6 +94,65 @@ try{
    await toolbar.getByRole('button',{name:/Suivant/}).waitFor({state:'visible'});
   }finally{await page.close()}
  });
+
+ await test('professeur : bouton sur la même ligne à droite d’Exercice guidé',async()=>{
+  const page=await browser.newPage({viewport:{width:1160,height:840}});
+  try{
+   await page.goto(origin,{waitUntil:'domcontentloaded'});
+   await page.waitForFunction(()=>!!window.MathasGuidedBridge);
+   await page.evaluate(async()=>{
+    const {createMultiplicationCollective}=await import('/apps/multiplication-simple/collective-ui.mjs');
+    window.__controller=createMultiplicationCollective({
+     iframe:{contentDocument:document,contentWindow:window},teacher:true,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',
+     call:async()=>({ok:true,active:false})
+    });
+    window.__controller.mount();
+   });
+   for(const width of [1160,390,320]){
+    await page.setViewportSize({width,height:850});
+    await page.locator('#mc-guided-slot button').waitFor({state:'visible'});
+    const geometry=await page.evaluate(()=>{
+     const guided=document.querySelector('#startTraining').getBoundingClientRect();
+     const collective=document.querySelector('#mc-guided-slot button').getBoundingClientRect();
+     const group=document.querySelector('.mc-guided-launch-row').getBoundingClientRect();
+     return {guided:{left:guided.left,top:guided.top,right:guided.right,bottom:guided.bottom},
+      collective:{left:collective.left,top:collective.top,right:collective.right,bottom:collective.bottom},
+      group:{left:group.left,right:group.right},innerWidth:window.innerWidth};
+    });
+    assert.ok(geometry.collective.left>=geometry.guided.right-1,
+      'bouton à droite : '+JSON.stringify({width,geometry}));
+    assert.ok(Math.abs(geometry.collective.top-geometry.guided.top)<25,
+      'boutons sur la même ligne : '+JSON.stringify({width,geometry}));
+    assert.ok(geometry.group.left>=-1&&geometry.group.right<=geometry.innerWidth+1,
+      'pas de débordement : '+JSON.stringify({width,geometry}));
+   }
+  }finally{await page.close()}
+ });
+ await test('élève : aucune recherche au chargement, bouton manuel même sans classe active',async()=>{
+  const page=await browser.newPage();
+  try{
+   await page.goto(origin,{waitUntil:'domcontentloaded'});
+   await page.waitForFunction(()=>!!window.MathasGuidedBridge);
+   await page.evaluate(async()=>{
+    const {createMultiplicationCollective}=await import('/apps/multiplication-simple/collective-ui.mjs');
+    window.__statusCalls=0;
+    window.__controller=createMultiplicationCollective({
+     iframe:{contentDocument:document,contentWindow:window},teacher:false,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',
+     call:async()=>{window.__statusCalls++;return {ok:true,active:false}}
+    });
+    window.__controller.mount();
+   });
+   await page.waitForTimeout(1100);
+   assert.equal(await page.evaluate(()=>window.__statusCalls),0);
+   await page.locator('#startTraining').click();
+   await page.getByRole('button',{name:'Rejoindre la classe'}).waitFor({state:'visible'});
+   assert.equal(await page.evaluate(()=>window.__statusCalls),0);
+   await page.getByRole('button',{name:'Rejoindre la classe'}).click();
+   assert.equal(await page.evaluate(()=>window.__statusCalls),1);
+   await page.getByText('Aucune séance collective lancée pour ta classe.').waitFor();
+   await page.getByRole('button',{name:'Rejoindre la classe'}).waitFor({state:'visible'});
+  }finally{await page.close()}
+ });
  await test('élève : page verrouillée, autorisation de passer et entraînement libre',async()=>{
   const page=await browser.newPage();
   try{
@@ -104,15 +163,19 @@ try{
     window.__classroom={ok:true,active:true,sessionId:'11111111-1111-4111-8111-111111111111',
      revision:1,level:1,carryMethod:'top',multipliers:config.multipliers,
      pages:[page1],pageIndex:0,allowSkip:false};
+    window.__statusCalls=0;
     window.__controller=createMultiplicationCollective({
      iframe:{contentDocument:document,contentWindow:window},teacher:false,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',
-     call:async()=>window.__classroom
+     call:async(action)=>{window.__statusCalls++;return window.__classroom}
     });
     window.__controller.mount();
    },{page1,page2,config});
    // L'élève peut rejoindre une séance depuis son exercice guidé déjà ouvert.
    await page.evaluate(()=>window.MathasGuidedBridge.practice());
-   await page.locator('#mc-guided-bar').getByRole('button',{name:/Rejoindre le guidé collectif/}).click();
+   // La découverte ne démarre PAS au chargement, ni à l'entrée en guidé.
+   assert.equal(await page.evaluate(()=>window.__statusCalls),0);
+   await page.locator('#mc-guided-bar').getByRole('button',{name:'Rejoindre la classe'}).click();
+   assert.equal(await page.evaluate(()=>window.__statusCalls),1);
    let next=page.locator('#mc-guided-bar .mc-controls').last().getByRole('button',{name:/En attente/});
    assert.equal(await next.isDisabled(),true);
    await page.evaluate(p=>{window.__classroom={...window.__classroom,revision:2,pages:[...window.__classroom.pages,p],pageIndex:1}},page2);
