@@ -14,6 +14,9 @@ const files={
  '/apps/multiplication-simple/':['../apps/multiplication-simple/index.html','text/html'],
  '/apps/multiplication-simple/index.html':['../apps/multiplication-simple/index.html','text/html'],
  '/apps/multiplication-simple/game-original.html':['../apps/multiplication-simple/game-original.html','text/html'],
+ '/apps/multiplication-simple/collective-native-bridge.js':['../apps/multiplication-simple/collective-native-bridge.js','text/javascript'],
+ '/apps/multiplication-simple/collective-ui.mjs':['../apps/multiplication-simple/collective-ui.mjs','text/javascript'],
+ '/apps/multiplication-simple/collective-contract.mjs':['../apps/multiplication-simple/collective-contract.mjs','text/javascript'],
  '/apps/multiplication-simple/school-ui.mjs':['../apps/multiplication-simple/school-ui.mjs','text/javascript'],
  '/apps/multiplication-simple/certified-classic.mjs':['../apps/multiplication-simple/certified-classic.mjs','text/javascript'],
  '/apps/multiplication-simple/native-proof-adapter.mjs':['../apps/multiplication-simple/native-proof-adapter.mjs','text/javascript'],
@@ -104,6 +107,8 @@ async function connectedPage(teacher=false,failFirstFinish=false,cls=CLS){
     response={ok:true,proofVerified:true,verifiedScore:4,duplicate:false,state,
      xp:{delta:22,appXp:22,total:22,level:1}};
    }
+  }else if(url.endsWith('/connect-guided-multiplication')){
+   response={ok:true,active:false};
   }else if(url.endsWith('/connect-projection-v2')){
    if(b.action==='student-score-history'){
     const record=state?.recent?.[0];
