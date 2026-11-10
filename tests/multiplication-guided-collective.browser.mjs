@@ -51,7 +51,7 @@ try{
   }finally{await prof.close();await student.close()}
  });
 
- await test('commandes professeur : création, page suivante, passage libre, verrou tableau',async()=>{
+ await test('professeur : pages mémorisées, précédentes, obligation et réponses',async()=>{
   const page=await browser.newPage();
   try{
    await page.goto(origin,{waitUntil:'domcontentloaded'});
@@ -60,41 +60,57 @@ try{
     const {createMultiplicationCollective}=await import('/apps/multiplication-simple/collective-ui.mjs');
     const state=()=>({ok:true,active:true,sessionId:'11111111-1111-4111-8111-111111111111',
      revision:window.__sharedRevision,level:1,carryMethod:'top',multipliers:config.multipliers,
-     pages:window.__sharedPages,pageIndex:window.__sharedPages.length-1,
-     allowSkip:window.__sharedSkip,updatedAt:new Date().toISOString()});
-    window.__sharedPages=[];window.__sharedRevision=0;window.__sharedSkip=false;
+     pages:window.__sharedPages,pageIndex:window.__sharedIndex,requiredPages:window.__requiredPages,
+     updatedAt:new Date().toISOString()});
+    window.__sharedPages=[];window.__sharedIndex=0;window.__requiredPages=[];window.__sharedRevision=0;
     window.__controller=createMultiplicationCollective({
-     iframe:{contentDocument:document,contentWindow:window},teacher:true,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',classLabel:'Classe TEST',
+     iframe:{contentDocument:document,contentWindow:window},teacher:true,
+     classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',classLabel:'Classe TEST',
      call:async(action,payload)=>{
-      if(action==='status')return window.__sharedPages.length?state():{ok:true,active:false};
-      if(action==='start'){window.__sharedPages=[page1];window.__sharedRevision++;return state()}
-      if(action==='next'){window.__sharedPages.push(page2);window.__sharedRevision++;return state()}
-      if(action==='set-skip'){window.__sharedSkip=payload.allowSkip;window.__sharedRevision++;return state()}
+      if(action==='status'||action==='resume')return window.__sharedPages.length?state():{ok:true,active:false};
+      if(action==='start'){window.__sharedPages=[page1];window.__requiredPages=[false];window.__sharedRevision++;return state()}
+      if(action==='next'){
+       if(window.__sharedIndex===window.__sharedPages.length-1){
+        window.__sharedPages.push(page2);window.__requiredPages.push(false);
+       }
+       window.__sharedIndex++;window.__sharedRevision++;return state();
+      }
+      if(action==='previous'){window.__sharedIndex--;window.__sharedRevision++;return state()}
+      if(action==='set-required'){
+       window.__requiredPages[payload.pageIndex]=payload.required;window.__sharedRevision++;return state();
+      }
       if(action==='stop'){window.__sharedPages=[];return {ok:true,active:false}}
       return {ok:false,error:'unknown'};
      }
     });
     window.__controller.mount();
    },{page1,page2,config});
-   // Le professeur est déjà dans le guidé, sans retour au menu.
    await page.evaluate(()=>window.MathasGuidedBridge.practice());
-   await page.locator('#mc-guided-bar').getByRole('button',{name:/Démarrer avec la classe/}).click();
+   const guided=page.locator('#mc-guided-bar');
+   await guided.getByRole('button',{name:/Lancer la séance/}).click();
    await page.waitForFunction(()=>window.__sharedPages.length===1&&window.MathasGuidedBridge.status().collective);
-   const toolbar=page.locator('#mc-guided-bar [data-role="teacher"]');
-   await toolbar.getByRole('button',{name:/Suivant/}).click();
+   const toolbar=guided.locator('[data-role="teacher"]');
+   assert.equal(await page.locator('#mc-guided-slot').count(),0,'le lancement est dans Exercice guidé, pas au menu');
+   await toolbar.getByRole('button',{name:/Nouvelle page/}).click();
    assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),1);
-   await toolbar.getByRole('button',{name:/passer sans finir/i}).click();
-   assert.equal(await page.evaluate(()=>window.__sharedSkip),true);
-   page.once('dialog',dialog=>dialog.accept('1234'));
-   await toolbar.getByRole('button',{name:/Élève au tableau/}).click();
-   await page.waitForFunction(()=>document.querySelector('#mc-guided-answers')?.hidden===true);
-   assert.equal(await toolbar.getByRole('button',{name:/Suivant/}).isHidden(),true);
-   page.once('dialog',dialog=>dialog.accept('1234'));
-   await toolbar.getByRole('button',{name:/Déverrouiller professeur/}).click();
-   await toolbar.getByRole('button',{name:/Suivant/}).waitFor({state:'visible'});
+   assert.equal(await page.evaluate(()=>window.__sharedPages.length),2);
+   await toolbar.getByRole('button',{name:/Précédente/}).click();
+   assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),0);
+   await toolbar.getByRole('button',{name:/Page suivante/}).click();
+   assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),1);
+   assert.equal(await page.evaluate(()=>window.__sharedPages.length),2,'la page ouverte est retrouvée, pas régénérée');
+   await toolbar.getByRole('button',{name:/Page obligatoire/}).click();
+   assert.deepEqual(await page.evaluate(()=>window.__requiredPages),[false,true]);
+   assert.equal(await toolbar.getByRole('button',{name:/Page obligatoire/}).getAttribute('aria-pressed'),'true');
+   await toolbar.getByRole('button',{name:'Afficher les réponses'}).click();
+   await guided.getByRole('button',{name:'Oui'}).click();
+   assert.match(await guided.locator('.mc-answer-line').first().textContent(),/247 × 6 = 1482/);
+   assert.match(await guided.locator('.mc-answer-line').last().textContent(),/139 × 8 = 1112/);
+   await toolbar.getByRole('button',{name:'Masquer les réponses'}).click();
+   assert.equal(await guided.locator('.mc-answer-line').count(),0);
+   assert.equal(await toolbar.getByRole('button',{name:/Élève au tableau/}).count(),0);
   }finally{await page.close()}
  });
-
 
  await test('onglet professeur : changer d’onglet conserve la séance, quitter la page la ferme',async()=>{
   const first=await browser.newPage(),other=await browser.newPage();
@@ -107,7 +123,7 @@ try{
     const {createMultiplicationCollective}=await import('/apps/multiplication-simple/collective-ui.mjs');
     const state=()=>({ok:true,active:true,sessionId:'11111111-1111-4111-8111-111111111111',
      revision:1,level:config.level,carryMethod:'top',multipliers:config.multipliers,
-     pages:[page1],pageIndex:0,allowSkip:false,updatedAt:new Date().toISOString()});
+     pages:[page1],pageIndex:0,requiredPages:[false],updatedAt:new Date().toISOString()});
     window.__teacherActions=[];
     window.__teacherHasStarted=false;
     window.__lifeController=createMultiplicationCollective({
@@ -124,7 +140,8 @@ try{
     });
     window.__lifeController.mount();
    },{page1,config});
-   await first.getByRole('button',{name:/Lancer avec la classe/}).click();
+   await first.evaluate(()=>window.MathasGuidedBridge.practice());
+   await first.getByRole('button',{name:/Lancer la séance/}).click();
    await first.waitForFunction(()=>window.__teacherHasStarted&&window.MathasGuidedBridge.status().collective);
    assert.equal(departures.length,0);
    await other.goto(origin,{waitUntil:'domcontentloaded'});
@@ -143,7 +160,7 @@ try{
    assert.match(departures[0].pageId,/^[0-9a-f]{8}-[0-9a-f-]{27}$/i);
   }finally{await first.close();await other.close()}
  });
- await test('professeur : bouton sur la même ligne à droite d’Exercice guidé',async()=>{
+ await test('professeur et élève : lancement depuis Exercice guidé sur petits écrans',async()=>{
   const page=await browser.newPage({viewport:{width:1160,height:840}});
   try{
    await page.goto(origin,{waitUntil:'domcontentloaded'});
@@ -151,34 +168,26 @@ try{
    await page.evaluate(async()=>{
     const {createMultiplicationCollective}=await import('/apps/multiplication-simple/collective-ui.mjs');
     window.__controller=createMultiplicationCollective({
-     iframe:{contentDocument:document,contentWindow:window},teacher:true,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',classLabel:'Classe TEST',
+     iframe:{contentDocument:document,contentWindow:window},teacher:true,
+     classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',classLabel:'Classe TEST',
      call:async()=>({ok:true,active:false})
     });
     window.__controller.mount();
    });
-   const teacherBadge=page.locator('#mc-guided-slot .mc-guided-class-badge');
-   assert.equal(await teacherBadge.textContent(),'Classe TEST');
-   assert.equal(await teacherBadge.isVisible(),true);
+   assert.equal(await page.locator('#mc-guided-slot').count(),0,'aucun raccourci prof externe au guidé');
+   await page.locator('#startTraining').click();
    for(const width of [1160,390,320]){
     await page.setViewportSize({width,height:850});
-    await page.locator('#mc-guided-slot button').waitFor({state:'visible'});
-    const geometry=await page.evaluate(()=>{
-     const guided=document.querySelector('#startTraining').getBoundingClientRect();
-     const collective=document.querySelector('#mc-guided-slot button').getBoundingClientRect();
-     const group=document.querySelector('.mc-guided-launch-row').getBoundingClientRect();
-     return {guided:{left:guided.left,top:guided.top,right:guided.right,bottom:guided.bottom},
-      collective:{left:collective.left,top:collective.top,right:collective.right,bottom:collective.bottom},
-      group:{left:group.left,right:group.right},innerWidth:window.innerWidth};
-    });
-    assert.ok(geometry.collective.left>=geometry.guided.right-1,
-      'bouton à droite : '+JSON.stringify({width,geometry}));
-    assert.ok(Math.abs(geometry.collective.top-geometry.guided.top)<25,
-      'boutons sur la même ligne : '+JSON.stringify({width,geometry}));
-    assert.ok(geometry.group.left>=-1&&geometry.group.right<=geometry.innerWidth+1,
-      'pas de débordement : '+JSON.stringify({width,geometry}));
+    const launch=page.locator('#mc-guided-bar').getByRole('button',{name:'👥 Lancer la séance'});
+    await launch.waitFor({state:'visible'});
+    assert.equal(await launch.isVisible(),true);
+    const badge=page.locator('#mc-guided-bar .mc-guided-class-badge');
+    assert.equal(await badge.textContent(),'Classe TEST');
+    assert.equal(await badge.isVisible(),true);
    }
   }finally{await page.close()}
  });
+
  await test('élève : aucune recherche au chargement, bouton manuel même sans classe active',async()=>{
   const page=await browser.newPage();
   try{
@@ -207,39 +216,48 @@ try{
    await page.getByRole('button',{name:'Rejoindre la classe'}).waitFor({state:'visible'});
   }finally{await page.close()}
  });
- await test('élève : page verrouillée, autorisation de passer et entraînement libre',async()=>{
+ await test('élève : avance libre par défaut, page obligatoire et retour arrière',async()=>{
   const page=await browser.newPage();
   try{
    await page.goto(origin,{waitUntil:'domcontentloaded'});
    await page.waitForFunction(()=>!!window.MathasGuidedBridge);
-   await page.evaluate(async({page1,page2,config})=>{
+   await page.evaluate(async({page1,config})=>{
     const {createMultiplicationCollective}=await import('/apps/multiplication-simple/collective-ui.mjs');
     window.__classroom={ok:true,active:true,sessionId:'11111111-1111-4111-8111-111111111111',
      revision:1,level:1,carryMethod:'top',multipliers:config.multipliers,
-     pages:[page1],pageIndex:0,allowSkip:false};
+     pages:[page1],pageIndex:0,requiredPages:[false]};
     window.__statusCalls=0;
     window.__controller=createMultiplicationCollective({
-     iframe:{contentDocument:document,contentWindow:window},teacher:false,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',classLabel:'Classe TEST',
-     call:async(action)=>{window.__statusCalls++;return window.__classroom}
+     iframe:{contentDocument:document,contentWindow:window},teacher:false,
+     classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',classLabel:'Classe TEST',
+     call:async()=>{window.__statusCalls++;return window.__classroom}
     });
     window.__controller.mount();
-   },{page1,page2,config});
-   // L'élève peut rejoindre une séance depuis son exercice guidé déjà ouvert.
+   },{page1,config});
    await page.evaluate(()=>window.MathasGuidedBridge.practice());
-   // La découverte ne démarre PAS au chargement, ni à l'entrée en guidé.
-   assert.equal(await page.evaluate(()=>window.__statusCalls),0);
+   assert.equal(await page.evaluate(()=>window.__statusCalls),0,'pas de découverte avant clic élève');
    await page.locator('#mc-guided-bar').getByRole('button',{name:'Rejoindre la classe'}).click();
    assert.equal(await page.evaluate(()=>window.__statusCalls),1);
-   assert.equal(await page.locator('#mc-guided-bar .mc-guided-class-badge').textContent(),'Classe TEST');
-   let next=page.locator('#mc-guided-bar .mc-controls').last().getByRole('button',{name:/En attente/});
-   assert.equal(await next.isDisabled(),true);
-   await page.evaluate(p=>{window.__classroom={...window.__classroom,revision:2,pages:[...window.__classroom.pages,p],pageIndex:1}},page2);
+   const controls=page.locator('#mc-guided-bar [data-role="student"]');
+   assert.equal(await controls.getByRole('button',{name:/En attente/}).isDisabled(),true);
+   await page.evaluate(p=>{window.__classroom={...window.__classroom,revision:2,
+    pages:[...window.__classroom.pages,p],requiredPages:[false,false],pageIndex:1}},page2);
    await page.evaluate(()=>window.__controller.refresh());
-   next=page.locator('#mc-guided-bar .mc-controls').last().getByRole('button',{name:/Termine/});
-   assert.equal(await next.isDisabled(),true);
-   await page.evaluate(()=>{window.__classroom={...window.__classroom,revision:3,allowSkip:true}});
+   const next=controls.getByRole('button',{name:/Suivant/});
+   await next.waitFor({state:'visible'});
+   assert.equal(await next.isEnabled(),true,'page ordinaire : on avance sans avoir fini');
+   await next.click();
+   assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),1);
+   await controls.getByRole('button',{name:/Précédente/}).click();
+   assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),0);
+   await page.evaluate(()=>{window.__classroom={...window.__classroom,revision:3,requiredPages:[true,false]}});
    await page.evaluate(()=>window.__controller.refresh());
-   await page.locator('#mc-guided-bar .mc-controls').last().getByRole('button',{name:/Suivant/}).click();
+   const locked=controls.getByRole('button',{name:/Termine la page obligatoire/});
+   await locked.waitFor({state:'visible'});
+   assert.equal(await locked.isDisabled(),true);
+   await page.evaluate(()=>{window.MathasGuidedBridge.finishedAt=()=>true});
+   await controls.getByRole('button',{name:/Suivant/}).waitFor({state:'visible'});
+   await controls.getByRole('button',{name:/Suivant/}).click();
    assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),1);
    await page.getByRole('button',{name:/M’entraîner/}).click();
    assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().collective),false);
@@ -247,6 +265,7 @@ try{
    assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),1);
   }finally{await page.close()}
  });
+
  await test('entraînement libre puis retour à la même opération collective',async()=>{
   const pupil=await browser.newPage();
   try{

@@ -586,7 +586,7 @@ window.MathasPilotBridge={mode,openTeacherParcours:()=>{
 let classroomBridgeReady=false;
 if(mode==='connected'){
  try{
-  const response=await fetch('./collective-native-bridge.js?v=20261110-classroom-v1');
+  const response=await fetch('./collective-native-bridge.js?v=20261110-classroom-v2');
   if(!response.ok)throw Error('pont de guidé collectif non disponible');
   const source=await response.text();
   const marker='primaryBtn.onclick=handlePrimary;';
@@ -601,7 +601,7 @@ if(mode==='connected'){
 let guidedCloseToken=session?.access_token||null;
 if(mode==='connected'&&classroomBridgeReady){
  try{
-  const {createMultiplicationCollective}=await import('./collective-ui.mjs?v=20261110-classroom-v5');
+  const {createMultiplicationCollective}=await import('./collective-ui.mjs?v=20261110-classroom-v6');
   guidedCollective=createMultiplicationCollective({
  iframe,teacher:teacherPlayer,classId,classLabel:classTag,
  call:async(action,payload={})=>{

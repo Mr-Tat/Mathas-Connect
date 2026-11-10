@@ -15,6 +15,10 @@ on:
       - 'tests/multiplication-approved-journey.browser.mjs'
       - 'tests/multiplication-guided-collective.browser.mjs'
       - 'apps/multiplication-simple/collective-ui.mjs'
+      - 'apps/multiplication-simple/collective-contract.mjs'
+      - 'apps/multiplication-simple/collective-native-bridge.js'
+      - 'supabase/migrations/20261110152000_guided_multiplication_page_requirements.sql'
+      - 'tests/multiplication-guided-collective.test.mjs'
       - 'supabase/functions/connect-guided-multiplication/index.ts'
       - 'supabase/functions/connect-guided-multiplication/lease.mjs'
       - 'supabase/migrations/20261110142000_guided_multiplication_host_presence.sql'
@@ -34,4 +38,4 @@ jobs:
       - run: npm install --no-save --no-package-lock playwright@1.58.2
       # Ubuntu 24.04 already has Chromium libraries; --with-deps can stall on apt fonts.
       - run: npx playwright install chromium
-      - run: node --test --test-concurrency=1 tests/multiplication-certified-keyboard.browser.mjs tests/multiplication-native-presentation.browser.mjs tests/multiplication-approved-journey.browser.mjs tests/multiplication-guided-collective.browser.mjs tests/multiplication-guided-presence.test.mjs
+      - run: node --test --test-concurrency=1 tests/multiplication-certified-keyboard.browser.mjs tests/multiplication-native-presentation.browser.mjs tests/multiplication-approved-journey.browser.mjs tests/multiplication-guided-collective.browser.mjs tests/multiplication-guided-presence.test.mjs tests/multiplication-guided-collective.test.mjs

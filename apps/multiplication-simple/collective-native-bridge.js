@@ -2,8 +2,21 @@
   // Ne modifie ni l'exercice individuel, ni les preuves scolaires, ni les XP.
   const mathasGuidedAnswers=new Map();
   const mathasGuidedBridge={
-   active:false,pageIndex:-1,onContinue:null,
+   active:false,pageIndex:-1,onContinue:null,currentSessionId:null,
    isCollectiveActive(){return this.active;},
+   useSession(sessionId){
+    if(!sessionId||sessionId===this.currentSessionId)return;
+    // Une nouvelle séance collective n'hérite jamais des réponses d'une autre séance.
+    mathasGuidedAnswers.clear();
+    this.currentSessionId=sessionId;this.active=false;this.pageIndex=-1;
+   },
+   finishedAt(index){
+    if(!Number.isInteger(index)||index<0)return false;
+    if(this.active&&this.pageIndex===index&&session?.mode==='training')
+     return states.length===2&&states.every(s=>s.solved);
+    const saved=mathasGuidedAnswers.get(index);
+    return Array.isArray(saved)&&saved.length===2&&saved.every(s=>s.solved===true);
+   },
    getConfig(){return {level:Number($('trainingLevel').value),
     carryMethod:document.querySelector('input[name="carryMethod"]:checked')?.value||'top',
     multipliers:[...selectedMultipliers]};},
