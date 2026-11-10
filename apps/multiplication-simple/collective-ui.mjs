@@ -87,8 +87,16 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
     say('Aucune séance collective lancée pour ta classe. Continue le guidé individuel.');
     return;
    }
-   if(!joined)index=session.pageIndex;
-   else if(index>session.pageIndex)index=session.pageIndex;
+   if(!joined){
+    index=session.pageIndex;
+    // Une arrivée tardive commence à la première page obligatoire non réussie.
+    // Sinon, elle rejoint directement la page que le professeur affiche.
+    if(!teacher){
+     for(let p=0;p<index;p++){
+      if(session.requiredPages[p]&&bridge?.finishedAt?.(p)!==true){index=p;break}
+     }
+    }
+   }else if(index>latestUnlockedPage(session))index=latestUnlockedPage(session);
    joined=true;practicing=false;
    if(!displayCurrent()){
     say('Moteur guidé indisponible. Recharge la page.');
