@@ -6,7 +6,7 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
  let doc=null,bridge=null,session=null,joined=false,practicing=false,index=-1,busy=false;
  let bar=null,notice=null,teacherRow=null,pupilRow=null,barClassBadge=null;
  let btnNext=null,btnPrevious=null,teacherNextButton=null,teacherPreviousButton=null,btnStartHere=null,btnJoinHere=null,btnRequired=null,btnStop=null,btnAnswers=null,btnPractice=null,btnReturn=null;
- let answerPanel=null,answerResult=null,answerVisible=false,confirmPanel=null,started=false,lastError='';
+ let answerPanel=null,answerVisible=false,confirmPanel=null,started=false,lastError='';
  // Clé propre à l'onglet. Elle survit à F5, pas à une ouverture ordinaire
  // dans un nouvel onglet (aucune donnée élève stockée ici).
  const hostKey='mathas.mul.guided.host-tab.'+classId;
@@ -146,33 +146,86 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
   else {practicing=false;displayCurrent()}
   render();
  }
+ // Corrigé visuel : lignes ajoutées APRÈS les cases de saisie, sans jamais
+ // écrire dans un input ou dans l'état de correction du moteur natif.
+ function removeAnswerComparison(){
+  doc?.querySelectorAll('#calculationsPair .mc-guided-answer-overlay').forEach(node=>node.remove());
+ }
+ function showAnswerComparison(){
+  if(!teacher||!joined||practicing||!validSession(session))return false;
+  const current=session.pages[index];
+  if(!Array.isArray(current)||current.length!==2)return false;
+  const rows=[];
+  for(let i=0;i<2;i++){
+   const op=doc.querySelector('#calculationsPair .operation[data-calc="'+i+'"]');
+   if(!op)return false;
+   const {a,m}=current[i];
+   const answer=(BigInt(a)*BigInt(m)).toString();
+   const inputs=op.querySelectorAll('.answer-input');
+   if(!inputs.length||inputs.length<answer.length)return false;
+   const length=inputs.length;
+   const count=a.length;
+   const incoming=Array(count).fill(0);
+   let carry=0;
+   for(let c=0;c<count;c++){
+    incoming[c]=carry;
+    carry=Math.floor((Number(a[count-1-c])*m+carry)/10);
+   }
+   const resultMarker=el('div','mc-guided-answer-overlay mc-guided-answer-marker','=');
+   resultMarker.title='Résultat correct à comparer avec les cases au-dessus';
+   const reportMarker=el('div','mc-guided-answer-overlay mc-guided-report-marker','r');
+   reportMarker.title='Reports corrects, alignés sur les mêmes colonnes';
+   const elements=[resultMarker];
+   for(let c=length-1;c>=0;c--){
+    const digit=answer[answer.length-1-c]||'';
+    const cell=el('div','mc-guided-answer-overlay mc-guided-answer-digit group-shift',digit);
+    cell.dataset.calc=String(i);cell.dataset.col=String(c);
+    cell.style.setProperty('--group-step',String(Math.floor(c/3)));
+    cell.setAttribute('aria-label','Résultat correct, colonne '+(c+1)+': '+(digit||'vide'));
+    elements.push(cell);
+   }
+   elements.push(reportMarker);
+   for(let c=length-1;c>=0;c--){
+    // Les reports du moteur sont les retenues entrantes dans la colonne c.
+    // Pas de report pour l'unité ni de zéro affiché inutilement.
+    const digit=c>=1&&c<count&&incoming[c]>0?String(incoming[c]):'';
+    const cell=el('div','mc-guided-answer-overlay mc-guided-report-digit group-shift',digit);
+    cell.dataset.calc=String(i);cell.dataset.col=String(c);
+    cell.style.setProperty('--group-step',String(Math.floor(c/3)));
+    cell.setAttribute('aria-label','Report correct, colonne '+(c+1)+': '+(digit||'aucun'));
+    elements.push(cell);
+   }
+   rows.push({op,elements});
+  }
+  removeAnswerComparison();
+  rows.forEach(({op,elements})=>op.append(...elements));
+  return true;
+ }
  function clearAnswers(){
   answerVisible=false;
-  if(answerResult)answerResult.replaceChildren();
+  removeAnswerComparison();
   if(confirmPanel)confirmPanel.replaceChildren();
   if(answerPanel)answerPanel.hidden=true;
  }
  function toggleAnswers(){
   if(!teacher||busy||!joined||practicing||!validSession(session))return;
-  if(answerVisible){clearAnswers();render();return;}
+  if(answerVisible){clearAnswers();render();return}
   if(!confirmPanel)return;
   confirmPanel.replaceChildren();
-  const label=el('span','', 'Afficher les réponses des deux calculs de cette page ?');
+  const label=el('span','', 'Afficher le résultat et les reports sous les cases des deux calculs ?');
   const yes=button('Oui',()=>{
    if(!teacher||!validSession(session))return;
-   const page=session.pages[index];
-   if(!page)return;
-   answerVisible=true;confirmPanel.replaceChildren();
-   if(answerResult){
-    answerResult.replaceChildren();
-    page.forEach((op,i)=>answerResult.append(el('div','mc-answer-line',
-     'Calcul '+(index*2+i+1)+' : '+op.a+' × '+op.m+' = '+String(BigInt(op.a)*BigInt(op.m)))));
+   confirmPanel.replaceChildren();
+   if(!showAnswerComparison()){
+    clearAnswers();
+    say('Impossible d’afficher les réponses sur cette page. Recharge le jeu.');
+    render();return;
    }
-   render();
+   answerVisible=true;render();
   });
   const no=button('Non',()=>{clearAnswers();render()});
   yes.classList.add('mc-neutral');no.classList.add('mc-neutral');
-  // Oui et Non ont le même style ; l'ordre peut changer.
+  // Oui et Non : même présentation, ordre non constant.
   const pair=crypto.getRandomValues(new Uint8Array(1))[0]%2?[yes,no]:[no,yes];
   confirmPanel.append(label,...pair);
   render();
@@ -195,7 +248,7 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
     :inGuided&&!teacher?'Guidé individuel · rejoins la classe quand tu le souhaites':'');
    if(teacherRow)teacherRow.hidden=true;
    if(pupilRow)pupilRow.hidden=true;
-   if(answerPanel)answerPanel.hidden=true;
+   if(answerVisible||confirmPanel?.childNodes.length)clearAnswers();
    return;
   }
   if(notice){
@@ -218,7 +271,7 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
    }
    if(btnAnswers){btnAnswers.disabled=busy;btnAnswers.textContent=answerVisible?'Masquer les réponses':'Afficher les réponses'}
    if(btnStop)btnStop.disabled=busy;
-   if(answerPanel)answerPanel.hidden=!joined||practicing||(!answerVisible&&!confirmPanel?.childNodes.length);
+   if(answerPanel)answerPanel.hidden=!joined||practicing||!confirmPanel?.childNodes.length;
   }else{
    const unlocked=latestUnlockedPage(session);
    const allowed=joined&&!practicing&&index<unlocked&&
@@ -249,7 +302,15 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
    +'.mc-controls{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.mc-controls .mathas-collective-button{font-size:12px}'
    +'.mc-notice{font:700 13px system-ui;min-height:18px}'
    +'.mc-guided-answers{margin:10px 0 0;padding:12px;border:1px solid #355c65;border-radius:10px;background:#08252b}'
-   +'.mc-answer-line{font-weight:800;color:#f6dc9b;padding:4px 0}'
+   +'.mc-guided-answer-overlay{box-sizing:border-box;pointer-events:none;user-select:text;text-align:center;align-self:center}'
+   +'.mc-guided-answer-marker,.mc-guided-answer-digit{min-height:36px;display:flex;align-items:center;justify-content:center;color:#ffe08a;font:900 1.45rem/1 system-ui}'
+   +'.mc-guided-answer-marker{font-size:1.2rem;opacity:.75}'
+   +'.mc-guided-answer-digit{width:var(--cell);min-width:var(--cell);padding:2px;border-bottom:2px solid rgba(255,224,138,.65);border-radius:7px;background:rgba(177,126,35,.14)}'
+   +'.mc-guided-report-marker,.mc-guided-report-digit{min-height:22px;display:flex;align-items:center;justify-content:center;color:#a7d8e2;font:750 .92rem/1 system-ui}'
+   +'.mc-guided-report-marker{font-size:.73rem;opacity:.75}'
+   +'.mc-guided-report-digit{min-width:var(--cell);font-size:.88rem;opacity:.9}'
+   +'body.light .mc-guided-answer-digit,body.light-mode .mc-guided-answer-digit{background:#fff2ce;color:#6f410a;border-bottom-color:#ba8a2f}'
+   +'body.light .mc-guided-report-digit,body.light-mode .mc-guided-report-digit{color:#175369}'
    +'.mc-confirm{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:6px 0}'
    +'.mc-neutral{background:#193d48;border-color:#456b77;color:#e8f1f4}'
    +'.mathas-collective-button[aria-pressed="true"]{border-color:#f6dc9b;color:#fff0ba}'
@@ -283,9 +344,8 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
   entry.append(btnStartHere,btnJoinHere,barClassBadge);
   bar.append(notice,entry,teacherRow,pupilRow);
   answerPanel=el('div','mc-guided-answers');answerPanel.id='mc-guided-answers';
-  answerResult=el('div');
   confirmPanel=el('div','mc-confirm');
-  answerPanel.append(confirmPanel,answerResult);answerPanel.hidden=true;
+  answerPanel.append(confirmPanel);answerPanel.hidden=true;
   bar.append(answerPanel);
   doc.getElementById('gameScreen')?.prepend(bar);
   setInterval(render,950);
