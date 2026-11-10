@@ -606,7 +606,7 @@ if(mode==='connected'){
 let guidedCloseToken=session?.access_token||null;
 if(mode==='connected'&&classroomBridgeReady){
  try{
-  const {createMultiplicationCollective}=await import('./collective-ui.mjs?v=20261110-classroom-v8');
+  const {createMultiplicationCollective}=await import('./collective-ui.mjs?v=20261110-classroom-v9');
   guidedCollective=createMultiplicationCollective({
  iframe,teacher:teacherPlayer,classId,classLabel:classTag,
  call:async(action,payload={})=>{
