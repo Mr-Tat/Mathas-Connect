@@ -1,13 +1,14 @@
 // Injecté dans la fermeture du moteur V7 UNIQUEMENT pour le jeu Connect.
   // Ne modifie ni l'exercice individuel, ni les preuves scolaires, ni les XP.
   const mathasGuidedAnswers=new Map();
+  const mathasGuidedPageSpecs=new Map();
   const mathasGuidedBridge={
    active:false,pageIndex:-1,onContinue:null,currentSessionId:null,
    isCollectiveActive(){return this.active;},
    useSession(sessionId){
     if(!sessionId||sessionId===this.currentSessionId)return;
     // Une nouvelle séance collective n'hérite jamais des réponses d'une autre séance.
-    mathasGuidedAnswers.clear();
+    mathasGuidedAnswers.clear();mathasGuidedPageSpecs.clear();
     this.currentSessionId=sessionId;this.active=false;this.pageIndex=-1;
    },
    finishedAt(index){
@@ -30,6 +31,66 @@
      sideCarryValues:[...s.sideCarryValues],wrongHistory:[...s.wrongHistory],
      carryWrong:[...s.carryWrong],firstTry:s.firstTry,solved:s.solved
     })));
+   },
+   // Capture tous les états pédagogiques du guidé, pas ceux de l'entraînement libre.
+   // Les pages et leur ordre proviennent du serveur lors du retour en séance.
+   snapshot(){
+    this.save();
+    return [...mathasGuidedAnswers.entries()].map(([index,parts])=>({
+     index,operations:mathasGuidedPageSpecs.get(index),
+     states:parts.map(part=>({
+      answerValues:[...part.answerValues],carryValues:[...part.carryValues],
+      sideCarryValues:[...part.sideCarryValues],wrongHistory:[...part.wrongHistory],
+      carryWrong:[...part.carryWrong],firstTry:part.firstTry,solved:part.solved
+     }))
+    })).filter(item=>Array.isArray(item.operations));
+   },
+   restoreSnapshot(items,serverSession){
+    if(this.currentSessionId!==serverSession?.sessionId||!Array.isArray(items)||items.length>120
+      ||!Array.isArray(serverSession.pages)||!['top','side'].includes(serverSession.carryMethod))return 0;
+    let restored=0;
+    const digitArray=(value,size)=>{
+     if(!Array.isArray(value)||value.length!==size)return null;
+     return value.every(v=>typeof v==='string'&&/^[0-9]?$/.test(v))?[...value]:null;
+    };
+    for(const item of items){
+     const index=item?.index,page=serverSession.pages[index];
+     if(!Number.isInteger(index)||index<0||!Array.isArray(page)||page.length!==2
+       ||mathasGuidedAnswers.has(index)||!Array.isArray(item.operations)
+       ||item.operations.length!==2||!Array.isArray(item.states)||item.states.length!==2
+       ||!page.every((op,i)=>item.operations[i]?.a===op.a&&item.operations[i]?.m===op.m))continue;
+     const statesToRestore=[];
+     for(let i=0;i<2;i++){
+      const {a,m}=page[i],part=item.states[i],answer=(BigInt(a)*BigInt(m)).toString();
+      if(!part||typeof part!=='object'){statesToRestore.length=0;break}
+      const size=a.length,cols=answer.length;
+      const answerValues=digitArray(part.answerValues,cols);
+      const carryValues=digitArray(part.carryValues,size);
+      const sideCarryValues=digitArray(part.sideCarryValues,size);
+      const wrongHistory=digitArray(part.wrongHistory,cols);
+      const carryWrong=digitArray(part.carryWrong,size);
+      if(!answerValues||!carryValues||!sideCarryValues||!wrongHistory||!carryWrong){
+       statesToRestore.length=0;break;
+      }
+      let carry=0,carryOk=true;
+      for(let c=0;c<size;c++){
+       const expected=c>=1&&carry>0?String(carry):'';
+       const raw=serverSession.carryMethod==='top'?carryValues[c]:sideCarryValues[c];
+       if(c>=1&&raw!==''&&raw!==expected&&!(expected===''&&raw==='0'))carryOk=false;
+       carry=Math.floor((Number(a[size-1-c])*m+carry)/10);
+      }
+      // Ne restaurer « réussi » que si les chiffres restent réellement justes.
+      const answerOk=answerValues.every((v,c)=>v===answer[answer.length-1-c]);
+      statesToRestore.push({answerValues,carryValues,sideCarryValues,wrongHistory,
+       carryWrong,firstTry:part.firstTry!==false,
+       solved:part.solved===true&&answerOk&&carryOk});
+     }
+     if(statesToRestore.length!==2)continue;
+     mathasGuidedAnswers.set(index,statesToRestore);
+     mathasGuidedPageSpecs.set(index,page.map(({a,m})=>({a,m})));
+     restored++;
+    }
+    return restored;
    },
    enter(page,index,config){
     if(![1,2,3].includes(config?.level)||!['top','side'].includes(config?.carryMethod))return false;
@@ -60,6 +121,7 @@
        sideCarryValues:Array(count).fill(''),wrongHistory:Array(answerCount).fill(''),
        carryWrong:Array(count).fill(''),firstTry:true,solved:false};
     };
+    mathasGuidedPageSpecs.set(index,page.map(({a,m})=>({a,m})));
     this.pageIndex=index;states=page.map(makeFixed);
     if(Array.isArray(old)&&old.length===2)for(let i=0;i<2;i++){
      for(const key of ['answerValues','carryValues','sideCarryValues','wrongHistory','carryWrong'])
