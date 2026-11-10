@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {CLOSE_GRACE_MS,HEARTBEAT_TIMEOUT_MS,guidedSessionLive,mayRenewGuidedHost} from '../supabase/functions/connect-guided-multiplication/lease.mjs';
 const now=Date.parse('2026-11-10T13:00:00Z');
 const row={active:true,host_seen_at:new Date(now-12000).toISOString(),updated_at:new Date(now-12000).toISOString(),close_requested_at:null,
- teacher_id:'teacher',session_id:'session',host_client_id:'tab'};
+ teacher_id:'teacher',session_id:'session',host_client_id:'tab',host_page_id:'page-1'};
 test('un changement d’onglet ne ferme pas une classe vivante',()=>{
  assert.equal(guidedSessionLive(row,now),true);
  assert.equal(guidedSessionLive({...row,close_requested_at:null},now+40000),true);
@@ -21,7 +21,7 @@ test('onglet disparu sans signal : expiration de présence, et ne touche pas aux
  assert.equal(guidedSessionLive({...row,active:false},now),false);
 });
 test('seul le même professeur, la même séance ET le même onglet peut prolonger la présence',()=>{
- assert.equal(mayRenewGuidedHost(row,{teacherId:'teacher',sessionId:'session',hostId:'tab'}),true);
- for(const changed of [{teacherId:'élève'}, {sessionId:'autre'}, {hostId:'autre'}])
-  assert.equal(mayRenewGuidedHost(row,{teacherId:'teacher',sessionId:'session',hostId:'tab',...changed}),false);
+ assert.equal(mayRenewGuidedHost(row,{teacherId:'teacher',sessionId:'session',hostId:'tab',pageId:'page-1'}),true);
+ for(const changed of [{teacherId:'élève'}, {sessionId:'autre'}, {hostId:'autre'},{pageId:'old-page'}])
+  assert.equal(mayRenewGuidedHost(row,{teacherId:'teacher',sessionId:'session',hostId:'tab',pageId:'page-1',...changed}),false);
 });
