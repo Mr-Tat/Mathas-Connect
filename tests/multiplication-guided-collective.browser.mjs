@@ -16,7 +16,7 @@ const html=original.replace(marker,bridge+
 const server=createServer((req,res)=>{
  const path=(req.url||'').split('?')[0];
  if(path==='/'){res.writeHead(200,{'content-type':'text/html; charset=utf-8'});res.end(html);return}
- if(['/apps/multiplication-simple/collective-ui.mjs','/apps/multiplication-simple/collective-contract.mjs'].includes(path)){
+ if(['/apps/multiplication-simple/collective-ui.mjs','/apps/multiplication-simple/collective-contract.mjs','/apps/multiplication-simple/collective-draft.mjs'].includes(path)){
   res.writeHead(200,{'content-type':'text/javascript; charset=utf-8'});
   res.end(readFileSync(new URL('../'+path.slice(1),import.meta.url)));return;
  }
@@ -283,6 +283,66 @@ try{
    await page.getByText('Aucune séance collective lancée pour ta classe.').waitFor();
    await page.getByRole('button',{name:'Rejoindre la classe'}).waitFor({state:'visible'});
   }finally{await page.close()}
+ });
+
+ await test('élève : F5 récupère les réponses et sa page, sans requête avant Rejoindre',async()=>{
+  const pupil=await browser.newPage();
+  const studentId='a0000000-0000-4000-8000-000000000001';
+  const setup=async (id=studentId,sessionId='33333333-3333-4333-8333-333333333333')=>{
+   await pupil.waitForFunction(()=>!!window.MathasGuidedBridge);
+   await pupil.evaluate(async({page1,page2,config,id,sessionId})=>{
+    const {createMultiplicationCollective}=await import('/apps/multiplication-simple/collective-ui.mjs');
+    window.__backupCalls=[];
+    window.__backupSession={ok:true,active:true,sessionId,revision:1,
+     level:1,carryMethod:'top',multipliers:config.multipliers,
+     pages:[page1,page2],pageIndex:1,requiredPages:[false,false]};
+    window.__backupController=createMultiplicationCollective({
+     iframe:{contentDocument:document,contentWindow:window},
+     teacher:false,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',classLabel:'Classe TEST',
+     storage:sessionStorage,studentId:id,
+     call:async(action)=>{window.__backupCalls.push(action);return window.__backupSession}
+    });
+    window.__backupController.mount();
+    window.MathasGuidedBridge.practice();
+   },{page1,page2,config,id,sessionId});
+   assert.deepEqual(await pupil.evaluate(()=>window.__backupCalls),[],
+    'aucune découverte automatique avant de rejoindre');
+   await pupil.getByRole('button',{name:'Rejoindre la classe'}).first().click();
+   await pupil.waitForFunction(()=>window.MathasGuidedBridge.status().collective);
+  };
+  try{
+   await pupil.goto(origin,{waitUntil:'domcontentloaded'});
+   await setup();
+   const controls=pupil.locator('#mc-guided-bar [data-role="student"]');
+   await controls.getByRole('button',{name:/Précédente/}).click();
+   await pupil.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').click();
+   await pupil.locator('#numpad .num-key[data-key="9"]').click();
+   assert.equal(await pupil.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').inputValue(),'9');
+   await controls.getByRole('button',{name:/Suivant/}).click();
+   await pupil.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').click();
+   await pupil.locator('#numpad .num-key[data-key="7"]').click();
+   const stored=await pupil.evaluate(()=>{
+    const key=Object.keys(sessionStorage).find(k=>k.startsWith('mathas.mul.guided.draft.v1.'));
+    return key?JSON.parse(sessionStorage.getItem(key)):null;
+   });
+   assert.equal(stored?.pageIndex,1);
+   assert.equal(stored?.pages.length,2);
+   assert.ok(stored?.pages.every(p=>p.states.every(st=>Array.isArray(st.answerValues))));
+   await pupil.reload({waitUntil:'domcontentloaded'});
+   await setup();
+   assert.equal(await pupil.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),1,'F5 retrouve la page de travail');
+   assert.equal(await pupil.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').inputValue(),'7','F5 retrouve la saisie de page 2');
+   await pupil.locator('#mc-guided-bar [data-role="student"]').getByRole('button',{name:/Précédente/}).click();
+   assert.equal(await pupil.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').inputValue(),'9','F5 retrouve aussi les pages précédentes');
+   // Autre compte sur le même ordinateur/onglet : n'accède pas au travail du premier.
+   await pupil.reload({waitUntil:'domcontentloaded'});
+   await setup('b0000000-0000-4000-8000-000000000002');
+   assert.equal(await pupil.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').inputValue(),'','Élève B ne récupère pas Élève A');
+   // Nouvelle séance : l'ancien brouillon ne peut être appliqué à de nouveaux calculs.
+   await pupil.reload({waitUntil:'domcontentloaded'});
+   await setup(studentId,'44444444-4444-4444-8444-444444444444');
+   assert.equal(await pupil.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').inputValue(),'','nouvelle séance repart à zéro');
+  }finally{await pupil.close()}
  });
  await test('élève arrivant en retard : commence par une page obligatoire non réussie',async()=>{
   const page=await browser.newPage();
