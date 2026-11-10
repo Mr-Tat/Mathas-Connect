@@ -42,12 +42,23 @@ try{
    assert.deepEqual(await read(prof),await read(student));
    await prof.evaluate(()=>{document.querySelector('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').value='9'});
    assert.equal(await student.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').inputValue(),'');
+   // Saisie via le véritable pavé numérique, et non modification DOM fictive.
+   await student.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').click();
+   await student.locator('#numpad .num-key[data-key="9"]').click();
+   assert.equal(await student.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').inputValue(),'9');
    assert.equal(await student.evaluate(()=>window.MathasGuidedBridge.status().finished),false);
    // Le professeur peut ouvrir la page suivante sans avoir résolu la première.
    assert.equal(await prof.evaluate(p=>window.MathasGuidedBridge.show(p,1),page2),true);
    assert.equal(await student.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),0);
    assert.equal(await student.evaluate(p=>window.MathasGuidedBridge.show(p,1),page2),true);
    assert.deepEqual(await read(prof),await read(student));
+   assert.equal(await student.evaluate(p=>window.MathasGuidedBridge.show(p,0),page1),true);
+   assert.equal(await student.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').inputValue(),'9',
+    'retour à la page 1 : chiffre élève conservé');
+   await student.evaluate(()=>window.MathasGuidedBridge.resetSaved());
+   assert.equal(await student.evaluate(({page1,config})=>window.MathasGuidedBridge.enter(page1,0,config),{page1,config}),true);
+   assert.equal(await student.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').inputValue(),'',
+    'nouvelle séance : aucune ancienne réponse réutilisée');
   }finally{await prof.close();await student.close()}
  });
 
