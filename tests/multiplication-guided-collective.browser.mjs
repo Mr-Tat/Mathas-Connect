@@ -112,12 +112,46 @@ try{
    await toolbar.getByRole('button',{name:/Page obligatoire/}).click();
    assert.deepEqual(await page.evaluate(()=>window.__requiredPages),[false,true]);
    assert.equal(await toolbar.getByRole('button',{name:/Page obligatoire/}).getAttribute('aria-pressed'),'true');
+   // Une ancienne saisie du professeur ne doit jamais être remplacée par le corrigé.
+   await page.evaluate(()=>{
+    document.querySelector('#calculationsPair .operation[data-calc="0"] .answer-input[data-col="0"]').value='9';
+   });
+   const snapshot=()=>page.evaluate(()=>[...document.querySelectorAll('#calculationsPair .answer-input')].map(e=>e.value));
+   const before=await snapshot();
    await toolbar.getByRole('button',{name:'Afficher les réponses'}).click();
    await guided.getByRole('button',{name:'Oui'}).click();
-   assert.match(await guided.locator('.mc-answer-line').first().textContent(),/247 × 6 = 1482/);
-   assert.match(await guided.locator('.mc-answer-line').last().textContent(),/139 × 8 = 1112/);
+   const comparisons=await page.evaluate(()=>[0,1].map(i=>{
+    const op=document.querySelector('#calculationsPair .operation[data-calc="'+i+'"]');
+    const read=(cls)=>[...op.querySelectorAll(cls)].map(e=>e.textContent).join('');
+    const answerInputs=[...op.querySelectorAll('.answer-input')];
+    const answerCells=[...op.querySelectorAll('.mc-guided-answer-digit')];
+    const reportCells=[...op.querySelectorAll('.mc-guided-report-digit')];
+    const offsets=answerCells.map(cell=>{
+     const original=answerInputs.find(x=>x.dataset.col===cell.dataset.col);
+     const report=reportCells.find(x=>x.dataset.col===cell.dataset.col);
+     return {col:cell.dataset.col,
+      answerX:cell.getBoundingClientRect().x,originalX:original?.getBoundingClientRect().x,
+      reportX:report?.getBoundingClientRect().x};
+    });
+    return {answer:read('.mc-guided-answer-digit'),reports:read('.mc-guided-report-digit'),offsets,
+     carryFont:parseFloat(getComputedStyle(reportCells[0]).fontSize),
+     answerFont:parseFloat(getComputedStyle(answerCells[0]).fontSize)};
+   }));
+   assert.equal(comparisons[0].answer,'1482','247 × 6 : chiffres sur la ligne inférieure');
+   assert.equal(comparisons[0].reports,'24','247 × 6 : reports 2 et 4 dans les colonnes correctes');
+   assert.equal(comparisons[1].answer,'1112','139 × 8 : chiffres sur la ligne inférieure');
+   assert.equal(comparisons[1].reports,'37','139 × 8 : reports 3 et 7 dans les colonnes correctes');
+   for(const calc of comparisons){
+    assert.ok(calc.carryFont<calc.answerFont,'la ligne de reports est visiblement plus petite');
+    for(const c of calc.offsets){
+     assert.ok(Math.abs(c.answerX-c.originalX)<3,'résultat aligné sous la case : '+JSON.stringify(c));
+     assert.ok(Math.abs(c.reportX-c.originalX)<3,'report aligné sur la même colonne : '+JSON.stringify(c));
+    }
+   }
+   assert.deepEqual(await snapshot(),before,'la comparaison ne doit jamais remplir les champs natifs');
    await toolbar.getByRole('button',{name:'Masquer les réponses'}).click();
-   assert.equal(await guided.locator('.mc-answer-line').count(),0);
+   assert.equal(await page.locator('#calculationsPair .mc-guided-answer-overlay').count(),0);
+   assert.deepEqual(await snapshot(),before,'masquer doit retrouver exactement la saisie initiale');
    assert.equal(await toolbar.getByRole('button',{name:/Élève au tableau/}).count(),0);
   }finally{await page.close()}
  });
