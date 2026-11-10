@@ -9,6 +9,7 @@ import {createSchoolScoreView} from '../objective-record/school-score-view.mjs?v
 import {installManualValidationForWrittenCalc} from '../objective-record/in-game-manual-validation.mjs?v=20261106-manual-validation-v1';
 import {installSessionToolbarLayout} from '../objective-record/in-game-session-layout.mjs?v=20261106-all-confirmed-v3';
 import {paintConnectedAvatar} from '../objective-record/profile-avatar-badge.mjs?v=20261107-v1';
+import {createMultiplicationCollective} from './collective-ui.mjs?v=20261110-classroom-v1';
 const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM',APP='multiplication-ecrite-simple';
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
@@ -338,6 +339,23 @@ function applySchoolUi(){
  }
 }
 iframe.addEventListener('load',applySchoolUi);
+// L'accès enseignant est confirmé côté Edge pour chaque action, pas par l'URL seule.
+const guidedCollective=mode==='connected'?createMultiplicationCollective({
+ iframe,teacher:teacherPlayer,classId,
+ call:async(action,payload={})=>{
+  const current=(await cloud.auth.getSession()).data.session;
+  if(!current?.access_token||current.user?.id!==session.user.id)throw Error('Session Connect remplacée');
+  const response=await fetch(URL+'/functions/v1/connect-guided-multiplication',{
+   method:'POST',
+   headers:{apikey:KEY,authorization:'Bearer '+current.access_token,'content-type':'application/json'},
+   body:JSON.stringify({action,classId,...payload})
+  });
+  const result=await response.json().catch(()=>({ok:false,error:'réponse illisible'}));
+  if(!response.ok||result?.ok!==true)throw Error(result?.error||'séance indisponible');
+  return result;
+ }
+}):null;
+iframe.addEventListener('load',()=>guidedCollective?.mount());
 // XP Connect : overlay non bloquant et consultation permanente des jalons.
 let lastXp=null,xpUiVersion=0,xpVisualQueue=Promise.resolve(),xpVisualPending=0;
 let certifiedClassic=null,certifiedConsent=null,certifiedScoreView=null;
@@ -557,6 +575,19 @@ window.MathasPilotBridge={mode,openTeacherParcours:()=>{
   // server-issued arithmetic challenge and atomic mathematical receipt.
   return;
  },points:item=>{const m=String(item.score||'').match(/^(\d+)(?:\s*[/]\s*(\d+))?$/);if(!m)return 0;const hard=/HARD/i.test(item.label),sudden=/Mort subite/i.test(item.label),n=Number(m[1]),total=m[2]?Number(m[2]):0;const level=Number((String(item.label).match(/(?:Niveau|NIV|Hard)\s*([123])/i)||[])[1]||1);const ml=[1,1.2,1.4,1.6,1.8,2][hard?level+2:level-1],mf=sudden?1.6:total===20?1.6:total===10?1.3:1;let weighted=n;if(sudden){weighted=0;for(let i=0;i<n;i++)weighted+=Math.min(4,Math.pow(1.035,i))}return 5*ml*mf*weighted*(item.allTables?1.15:1)}};
+// Connect seulement : greffer un pont minimal dans la fermeture du guidé natif V7.
+if(mode==='connected'){
+ const source=await fetch('./collective-native-bridge.js?v=20261110-classroom-v1').then(r=>{
+  if(!r.ok)throw Error('Pont du guidé collectif indisponible');return r.text()});
+ const marker='primaryBtn.onclick=handlePrimary;';
+ if(html.split(marker).length!==2)throw Error('Point de branchement du moteur guidé introuvable');
+ const hooked=source+'\nprimaryBtn.onclick=(event)=>{if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"){if(event?.isTrusted)window.MathasGuidedBridge.onContinue?.();return;}handlePrimary()};';
+ html=html.replace(marker,hooked);
+ // Le clic automatique de la célébration native ne doit jamais ouvrir une page de classe.
+ const nativeLabel="primaryBtn.textContent=session.mode==='training'?'Nouveaux calculs':'Calculs suivants';";
+ if(html.split(nativeLabel).length!==2)throw Error('Contrôle natif des calculs suivants introuvable');
+ html=html.replace(nativeLabel,"primaryBtn.textContent=session.mode==='training'&&window.MathasGuidedBridge?.isCollectiveActive()?'Suite : barre Classe ↑':session.mode==='training'?'Nouveaux calculs':'Calculs suivants';");
+}
 iframe.srcdoc=html;
 const toolbar=document.createElement('header');toolbar.id='ce-toolbar';
 // Ne pas réécrire display:flex après display:none : cela faisait apparaître
