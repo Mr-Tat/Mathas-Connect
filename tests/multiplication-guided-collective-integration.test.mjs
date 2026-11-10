@@ -43,3 +43,15 @@ test('fin de séance : action fermée à la génération du professeur, sans dé
  assert.doesNotMatch(ui,/auth\.signOut|student-save|student-xp|connect_xp_credits/);
  assert.match(migration,/host_page_id uuid/);
 });
+
+
+test('Entrée et ✓ du clavier respectent le verrou des pages obligatoires',()=>{
+ const host=source('apps/multiplication-simple/index.html');
+ assert.match(host,/mathasNativeHandlePrimary=handlePrimary/);
+ assert.match(host,/handlePrimary=function/);
+ assert.match(host,/MathasGuidedBridge.*onContinue/);
+ const bridge=source('apps/multiplication-simple/collective-native-bridge.js');
+ assert.match(bridge,/side-carry-used-list/);
+ assert.match(bridge,/carry-wrong/);
+ assert.match(bridge,/wrong-history/);
+});

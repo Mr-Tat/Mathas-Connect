@@ -62,6 +62,12 @@
 - Le système de présence/fermeture de l'onglet professeur (#284), les classes et l'authentification, les barèmes et les preuves de résultats sont inchangés.
 - **Livraison vérifiée** : [PR #286](https://github.com/Mr-Tat/Mathas-Connect/pull/286) fusionnée, Chromium et tests Multiplication réussis ; migration `guided_multiplication_page_requirements_20261110` appliquée et contrôlée ; Edge `connect-guided-multiplication` **v3 ACTIVE / JWT obligatoire** ; GitHub Pages [#42840487880](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/42840487880) réussie. [PR #288](https://github.com/Mr-Tat/Mathas-Connect/pull/288) fusionnée après tests Chromium, pour empêcher le contournement d'une page obligatoire par un élève arrivé en retard ou une obligation ajoutée ultérieurement. GitHub Pages [#42842075805](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/42842075805) **réussie** pour le commit `66519561`. La recette réelle Monsieur T + Élève A reste nécessaire.
 
+## Protection des chemins natifs de navigation — correctif complémentaire
+- Le guidé collectif bloque aussi la touche **Entrée** et la touche **✓** du pavé numérique dans les pages terminées : ces actions ne peuvent plus générer des opérations hors des pages ouvertes par le professeur, ni contourner une page obligatoire.
+- Lors du retour à une page, afficher aussi les reports latéraux, les chiffres déjà saisis et les traces de corrections, afin que l'état visuel corresponde à la mémoire locale.
+- Aucun changement aux règles Supabase, aux comptes, XP, trophées ou résultats de jeu ; uniquement le pont Connect Multiplication et ses tests navigateur.
+- Tests Chromium à confirmer sur le SHA final ; ensuite contrôler le déploiement GitHub Pages et la recette réelle en classe.
+
 ## Retour d'expérience à compléter
 - Source de divergence : chaque navigateur tire aléatoirement ses propres opérations ; la séance doit porter les nombres déterminés côté serveur.
 - Ne pas déclencher les clics natifs automatiques « Nouveaux calculs » pendant le guidé collectif.

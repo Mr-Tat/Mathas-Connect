@@ -9,7 +9,10 @@ const original=readFileSync(new URL('../apps/multiplication-simple/game-original
 const bridge=readFileSync(new URL('../apps/multiplication-simple/collective-native-bridge.js',import.meta.url),'utf8');
 const marker='primaryBtn.onclick=handlePrimary;';
 assert.equal(original.split(marker).length,2,'ancrage unique à maintenir');
-const html=original.replace(marker,bridge+'\nprimaryBtn.onclick=(event)=>{if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"){if(event?.isTrusted)window.MathasGuidedBridge.onContinue?.();return;}handlePrimary()};');
+const html=original.replace(marker,bridge+
+ '\nconst mathasNativeHandlePrimary=handlePrimary;'
+ +'\nhandlePrimary=function(...args){if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"){window.MathasGuidedBridge.onContinue?.();return;}return mathasNativeHandlePrimary(...args)};'
+ +'\nprimaryBtn.onclick=(event)=>{if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"&&!event?.isTrusted)return;handlePrimary()};');
 const server=createServer((req,res)=>{
  const path=(req.url||'').split('?')[0];
  if(path==='/'){res.writeHead(200,{'content-type':'text/html; charset=utf-8'});res.end(html);return}
@@ -42,12 +45,19 @@ try{
    assert.deepEqual(await read(prof),await read(student));
    await prof.evaluate(()=>{document.querySelector('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').value='9'});
    assert.equal(await student.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').inputValue(),'');
+   // Vraie saisie par pavé, conservée en revenant à la page précédente.
+   await student.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').click();
+   await student.locator('#numpad .num-key[data-key="9"]').click();
+   assert.equal(await student.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').inputValue(),'9');
    assert.equal(await student.evaluate(()=>window.MathasGuidedBridge.status().finished),false);
    // Le professeur peut ouvrir la page suivante sans avoir résolu la première.
    assert.equal(await prof.evaluate(p=>window.MathasGuidedBridge.show(p,1),page2),true);
    assert.equal(await student.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),0);
    assert.equal(await student.evaluate(p=>window.MathasGuidedBridge.show(p,1),page2),true);
    assert.deepEqual(await read(prof),await read(student));
+   await student.evaluate(p=>window.MathasGuidedBridge.show(p,0),page1);
+   assert.equal(await student.locator('#calculationsPair .calc-box:first-child .answer-input[data-col="0"]').inputValue(),'9',
+    'retour à la page 1 : chiffre saisi auparavant restauré');
   }finally{await prof.close();await student.close()}
  });
 

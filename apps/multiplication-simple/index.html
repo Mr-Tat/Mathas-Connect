@@ -586,13 +586,18 @@ window.MathasPilotBridge={mode,openTeacherParcours:()=>{
 let classroomBridgeReady=false;
 if(mode==='connected'){
  try{
-  const response=await fetch('./collective-native-bridge.js?v=20261110-classroom-v2');
+  const response=await fetch('./collective-native-bridge.js?v=20261110-classroom-v4');
   if(!response.ok)throw Error('pont de guidé collectif non disponible');
   const source=await response.text();
   const marker='primaryBtn.onclick=handlePrimary;';
   const nativeLabel="primaryBtn.textContent=session.mode==='training'?'Nouveaux calculs':'Calculs suivants';";
   if(html.split(marker).length!==2||html.split(nativeLabel).length!==2)throw Error('moteur natif non compatible avec le guidé collectif');
-  const hooked=source+'\nprimaryBtn.onclick=(event)=>{if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"){if(event?.isTrusted)window.MathasGuidedBridge.onContinue?.();return;}handlePrimary()};';
+  // Tous les contrôles natifs (Entrée, ✓ et Suivant) respectent les pages
+  // ouvertes et les obligations, même lorsque le moteur appelle directement
+  // handlePrimary() plutôt que de cliquer sur primaryBtn.
+  const hooked=source+'\nconst mathasNativeHandlePrimary=handlePrimary;'
+   +'\nhandlePrimary=function(...args){if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"){window.MathasGuidedBridge.onContinue?.();return;}return mathasNativeHandlePrimary(...args)};'
+   +'\nprimaryBtn.onclick=(event)=>{if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"&&!event?.isTrusted)return;handlePrimary()};';
   html=html.replace(marker,hooked).replace(nativeLabel,"primaryBtn.textContent=session.mode==='training'&&window.MathasGuidedBridge?.isCollectiveActive()?'Suite : barre Classe ↑':session.mode==='training'?'Nouveaux calculs':'Calculs suivants';");
   classroomBridgeReady=true;
  }catch(error){console.warn('Guidé collectif indisponible : le jeu habituel reste accessible.',error)}
