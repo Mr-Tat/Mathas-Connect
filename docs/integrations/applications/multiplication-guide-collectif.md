@@ -74,6 +74,12 @@
 - « Masquer les réponses » supprime les deux lignes et conserve exactement les saisies existantes. Changer de page cache également le corrigé. Les élèves ne voient jamais ces lignes.
 - Tests Chromium : résultats 247×6 et 139×8, retenues correctes, polices plus petites, alignement avec cases, aucun changement de saisie après révélation/masquage. Aucun SQL, Edge, XP, trophée ni visibilité modifiés.
 
+## Bandeau collectif compact — PR #293 (10/11/2026)
+- Badge de classe déplacé **à droite du titre** « Guidé collectif · page X/Y · Professeur/Élève », même ligne sur grand écran, retour à la ligne propre sur écran étroit.
+- Le badge est retiré de la rangée des commandes, qui devient complètement masquée quand ses boutons « Lancer / Rejoindre » sont inactifs ; suppression de la hauteur vide et réduction des marges.
+- Trois groupes de commandes professeur, séparés d'orange : « Précédente / Suivante » | « Page obligatoire / Afficher les réponses » | « Terminer la séance ». Deux groupes élèves : navigation | entraînement/retour. Espacement accru entre boutons ; retour à la ligne autorisé sur mobile.
+- Aucun changement des permissions, des séances, des exercices, des résultats ni des XP. À confirmer séparément : tests Chromium, fusion PR, Pages et recette visuelle.
+
 ## Retour d'expérience à compléter
 - Source de divergence : chaque navigateur tire aléatoirement ses propres opérations ; la séance doit porter les nombres déterminés côté serveur.
 - Ne pas déclencher les clics natifs automatiques « Nouveaux calculs » pendant le guidé collectif.
