@@ -2,11 +2,23 @@ import {validSession,canAdvance} from './collective-contract.mjs?v=20261110-v1';
 
 // Contrôleur visuel du guidé collectif : mêmes nombres, copies individuelles.
 // Il ne transmet jamais les chiffres saisis par les élèves.
-export function createMultiplicationCollective({iframe,teacher,call,classId,classLabel=''}){
+export function createMultiplicationCollective({iframe,teacher,call,onClose,classId,classLabel=''}){
  let doc=null,bridge=null,session=null,joined=false,practicing=false,index=-1,busy=false;
  let menuSlot=null,menuButton=null,bar=null,notice=null,teacherRow=null,pupilRow=null,barClassBadge=null;
  let btnNext=null,teacherNextButton=null,btnStartHere=null,btnJoinHere=null,btnSkip=null,btnStop=null,btnBoard=null,btnPractice=null,btnReturn=null,btnCatchup=null;
  let answerPanel=null,teacherAnswers=[],confirmPanel=null,boardLock=null,started=false,lastError='';
+ // Clé propre à l'onglet. Elle survit à F5, pas à une ouverture ordinaire
+ // dans un nouvel onglet (aucune donnée élève stockée ici).
+ const hostKey='mathas.mul.guided.host-tab.'+classId;
+ let hostId=null;
+ const pageId=teacher?crypto.randomUUID():null;
+ if(teacher){
+  try{
+   const stored=sessionStorage.getItem(hostKey);
+   hostId=/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(stored||'')?stored:crypto.randomUUID();
+   sessionStorage.setItem(hostKey,hostId);
+  }catch{hostId=crypto.randomUUID()}
+ }
  const lockKey='mathas.mul.guided.board-lock.'+classId;
  try{const v=JSON.parse(sessionStorage.getItem(lockKey)||'null');if(v?.salt&&v?.hash)boardLock=v}catch{}
  const say=msg=>{lastError=msg;if(notice)notice.textContent=msg;};
@@ -41,7 +53,7 @@ export function createMultiplicationCollective({iframe,teacher,call,classId,clas
   if(!teacher&&!joined)return;
   if(busy||doc?.hidden||document.hidden)return;
   try{
-   const s=await call('status');
+   const s=await call('status',{hostId});
    if(s?.ok!==true)throw Error(s?.error||'synchronisation_indisponible');
    lastError='';
    if(!sameSession(s)||session?.revision!==s.revision||!s.active)updateSession(s);
@@ -51,7 +63,7 @@ export function createMultiplicationCollective({iframe,teacher,call,classId,clas
   if(!teacher||isLocked()||busy||!session||!validSession(session))return false;
   busy=true;render();
   try{
-   const result=await call(action,{sessionId:session.sessionId,revision:session.revision,...payload});
+   const result=await call(action,{sessionId:session.sessionId,revision:session.revision,hostId,pageId,...payload});
    if(result?.ok!==true)throw Error(result?.error||'opération refusée');
    const previouslyJoined=joined;
    updateSession(result);
@@ -71,7 +83,7 @@ export function createMultiplicationCollective({iframe,teacher,call,classId,clas
   busy=true;render();
   try{
    // Contrôle de la séance uniquement au clic, jamais à l'ouverture élève.
-   const current=await call('status');
+   const current=await call('status',{hostId});
    if(current?.ok!==true)throw Error(current?.error||'vérification indisponible');
    updateSession(current);
    if(!validSession(session)){
@@ -95,12 +107,19 @@ export function createMultiplicationCollective({iframe,teacher,call,classId,clas
   if(![1,2,3].includes(cfg.level)||!['top','side'].includes(cfg.carryMethod)||!Array.isArray(cfg.multipliers)||!cfg.multipliers.length){say('Choisis le niveau, la méthode et les tables.');return}
   busy=true;render();
   try{
-   const result=await call('start',cfg);
+   const result=await call('start',{...cfg,hostId,pageId});
    if(!validSession(result))throw Error(result?.error||'démarrage impossible');
    updateSession(result);index=0;joined=true;practicing=false;
    displayCurrent();lastError='';
   }catch(e){say('La séance n’a pas démarré : '+String(e.message||e))}
   finally{busy=false;render()}
+ }
+ // La présence continue pendant qu'un autre onglet est au premier plan :
+ // NE PAS déduire une fermeture de document.hidden / visibilitychange.
+ async function keepTeacherPresence(){
+  if(!teacher||!hostId||!session?.active)return;
+  try{await call('heartbeat',{sessionId:session.sessionId,hostId,pageId})}
+  catch{ /* Une microcoupure n'arrête pas la classe ; délai de secours serveur. */ }
  }
  function studentNext(toLatest=false){
   if(!joined||practicing||busy||!validSession(session))return;
@@ -299,10 +318,30 @@ export function createMultiplicationCollective({iframe,teacher,call,classId,clas
   }else setInterval(render,950);
   if(!started){
    started=true;setInterval(()=>{if(!document.hidden)void poll()},8000);
-   document.addEventListener('visibilitychange',()=>{if(!document.hidden)void poll()});
+   document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden)void poll();
+    else if(teacher)void keepTeacherPresence();
+   });
    window.addEventListener('focus',()=>void poll());
+   if(teacher){
+    setInterval(()=>{void keepTeacherPresence()},25000);
+    window.addEventListener('pagehide',event=>{
+     if(event.persisted||!session?.active||!hostId)return;
+     // Page vraiment quittée ou fermée : un changement d'onglet n'émet
+     // PAS pagehide. Recharger conserve la session grâce au délai serveur.
+     try{onClose?.({sessionId:session.sessionId,hostId,pageId})}catch{}
+    });
+   }
   }
-  void poll();render();
+  if(teacher){
+   // Seul un VRAI nouveau chargement relance l'onglet après F5.
+   // Un statut déjà en vol ne peut pas annuler une fermeture de page.
+   void call('resume',{hostId,pageId})
+    .then(s=>{if(s?.ok===true)updateSession(s)})
+    .catch(()=>{})
+    .finally(()=>{void poll()});
+  }else void poll();
+  render();
  }
  return {mount,refresh:poll};
 }

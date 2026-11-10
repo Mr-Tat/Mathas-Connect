@@ -95,6 +95,54 @@ try{
   }finally{await page.close()}
  });
 
+
+ await test('onglet professeur : changer d’onglet conserve la séance, quitter la page la ferme',async()=>{
+  const first=await browser.newPage(),other=await browser.newPage();
+  const departures=[];
+  try{
+   await first.exposeFunction('__guidedReportClose',data=>{departures.push(data)});
+   await first.goto(origin,{waitUntil:'domcontentloaded'});
+   await first.waitForFunction(()=>!!window.MathasGuidedBridge);
+   await first.evaluate(async({page1,config})=>{
+    const {createMultiplicationCollective}=await import('/apps/multiplication-simple/collective-ui.mjs');
+    const state=()=>({ok:true,active:true,sessionId:'11111111-1111-4111-8111-111111111111',
+     revision:1,level:config.level,carryMethod:'top',multipliers:config.multipliers,
+     pages:[page1],pageIndex:0,allowSkip:false,updatedAt:new Date().toISOString()});
+    window.__teacherActions=[];
+    window.__teacherHasStarted=false;
+    window.__lifeController=createMultiplicationCollective({
+     iframe:{contentDocument:document,contentWindow:window},
+     teacher:true,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',classLabel:'Classe TEST',
+     onClose:payload=>window.__guidedReportClose(payload),
+     call:async(action,params)=>{
+      window.__teacherActions.push(action);
+      if(action==='start'){window.__teacherHasStarted=true;return state()}
+      if(action==='status'||action==='resume')return window.__teacherHasStarted?state():{ok:true,active:false};
+      if(action==='heartbeat')return {ok:true,active:true};
+      return {ok:false,error:'unexpected'};
+     }
+    });
+    window.__lifeController.mount();
+   },{page1,config});
+   await first.getByRole('button',{name:/Lancer avec la classe/}).click();
+   await first.waitForFunction(()=>window.__teacherHasStarted&&window.MathasGuidedBridge.status().collective);
+   assert.equal(departures.length,0);
+   await other.goto(origin,{waitUntil:'domcontentloaded'});
+   await other.bringToFront();
+   await other.waitForTimeout(600);
+   assert.equal(departures.length,0,'simple changement d’onglet : pas de fermeture');
+   await first.bringToFront();
+   assert.equal(departures.length,0);
+   await first.evaluate(()=>window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:true})));
+   assert.equal(departures.length,0,'bfcache : ne pas considérer la page comme détruite');
+   await first.evaluate(()=>window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:false})));
+   await other.waitForTimeout(100);
+   assert.equal(departures.length,1,'pagehide réel (non bfcache) avertit le serveur');
+   assert.equal(departures[0].sessionId,'11111111-1111-4111-8111-111111111111');
+   assert.match(departures[0].hostId,/^[0-9a-f]{8}-[0-9a-f-]{27}$/i);
+   assert.match(departures[0].pageId,/^[0-9a-f]{8}-[0-9a-f-]{27}$/i);
+  }finally{await first.close();await other.close()}
+ });
  await test('professeur : bouton sur la même ligne à droite d’Exercice guidé',async()=>{
   const page=await browser.newPage({viewport:{width:1160,height:840}});
   try{

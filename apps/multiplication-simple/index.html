@@ -598,14 +598,16 @@ if(mode==='connected'){
  }catch(error){console.warn('Guidé collectif indisponible : le jeu habituel reste accessible.',error)}
 }
 // Le pont natif est évalué avant d'initialiser les commandes : pas de TDZ.
+let guidedCloseToken=session?.access_token||null;
 if(mode==='connected'&&classroomBridgeReady){
  try{
-  const {createMultiplicationCollective}=await import('./collective-ui.mjs?v=20261110-classroom-v4');
+  const {createMultiplicationCollective}=await import('./collective-ui.mjs?v=20261110-classroom-v5');
   guidedCollective=createMultiplicationCollective({
  iframe,teacher:teacherPlayer,classId,classLabel:classTag,
  call:async(action,payload={})=>{
   const current=(await cloud.auth.getSession()).data.session;
   if(!current?.access_token||current.user?.id!==session.user.id)throw Error('Session Connect remplacée');
+  guidedCloseToken=current.access_token;
   const response=await fetch(URL+'/functions/v1/connect-guided-multiplication',{
    method:'POST',
    headers:{apikey:KEY,authorization:'Bearer '+current.access_token,'content-type':'application/json'},
@@ -614,6 +616,19 @@ if(mode==='connected'&&classroomBridgeReady){
   const result=await response.json().catch(()=>({ok:false,error:'réponse illisible'}));
   if(!response.ok||result?.ok!==true)throw Error(result?.error||'séance indisponible');
   return result;
+ },
+ // L'onglet n'a pas le temps d'attendre Supabase Auth pendant pagehide.
+ // Le dernier JWT du professeur est conservé en mémoire uniquement ; jamais
+ // stocké dans le document, dans l'URL ou dans la base de séance.
+ onClose:({sessionId,hostId,pageId})=>{
+  if(!teacherPlayer||!guidedCloseToken||!sessionId||!hostId||!pageId)return;
+  try{
+   void fetch(URL+'/functions/v1/connect-guided-multiplication',{
+    method:'POST',keepalive:true,cache:'no-store',
+    headers:{apikey:KEY,authorization:'Bearer '+guidedCloseToken,'content-type':'application/json'},
+    body:JSON.stringify({action:'closing',classId,sessionId,hostId,pageId})
+   }).catch(()=>{});
+  }catch{}
  }
 });
  }catch(error){console.warn('Commandes collectives désactivées ; le jeu reste utilisable.',error)}
