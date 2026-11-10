@@ -80,7 +80,7 @@ Deno.serve(async(req:Request)=>{
       .is('host_client_id',null).eq('active',true).select().maybeSingle();
     if(adoptError)throw Error('adoption_failed');
     if(adopted)current=adopted;
-   }else if(current.host_client_id===b.hostId){
+   }else if(current.host_client_id===b.hostId&&current.host_page_id!==b.pageId){
     // Un nouveau chargement reçoit un ID de page différent. Une requête
     // « closing » envoyée en retard depuis l'ancienne page sera alors refusée.
     let query=db.from(TABLE).update({
