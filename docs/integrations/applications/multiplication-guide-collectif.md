@@ -48,6 +48,8 @@
 - Champs SQL privés ajoutés : `host_client_id`, `host_page_id`, `host_seen_at`, `close_requested_at` ; aucune donnée élèves. Actions Edge : `resume`, `heartbeat`, `closing`, verrouillées au professeur, même onglet et même génération. La révision pédagogique reste inchangée par la présence.
 - Preuves attendues : tests du contrat temporel, Chromium (passage autre onglet / pagehide non persisted), intégration native inchangée, SQL vérifié, Edge publiée, Pages publiée, puis recette réelle Monsieur T / Élève A. Déploiements SQL, Edge et Pages à suivre séparément.
 - **Limite navigateur** : un signal de fermeture n'est jamais garanti à 100 % (particulièrement sur mobile), d'où le délai de secours de 10 minutes ; on ne prétend pas à une détection instantanée universelle.
+- **Livraison vérifiée** : [PR #284](https://github.com/Mr-Tat/Mathas-Connect/pull/284) fusionnée, commit `e34ca844` ; [Chromium et contrat temporel réussis](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/42828269673) ; migration SQL `guided_multiplication_host_presence_20261110` appliquée, 4 colonnes confirmées ; Edge `connect-guided-multiplication` **v2 ACTIVE**, JWT obligatoire ; [GitHub Pages réussi](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/42828591893). Les 8 échecs globaux sont préexistants et hors périmètre, pas de nouvelle défaillance Multiplication.
+- **État réel** : code + CI + Pages + SQL + Edge livrés ; **recette de fermeture/rechargement avec Monsieur T et Élève A sur navigateurs réels encore à effectuer**.
 
 ## Retour d'expérience à compléter
 - Source de divergence : chaque navigateur tire aléatoirement ses propres opérations ; la séance doit porter les nombres déterminés côté serveur.
