@@ -61,6 +61,12 @@
 - Le système de présence/fermeture de l'onglet professeur (#284), les classes et l'authentification, les barèmes et les preuves de résultats sont inchangés.
 - Livraison à confirmer séparément : code GitHub, tests unitaires + Chromium, migration `required_pages`, Edge, Pages, puis recette réelle Monsieur T + Élève A.
 
+## Protection des chemins natifs de navigation — correctif complémentaire
+- Le guidé collectif bloque aussi la touche **Entrée** et la touche **✓** du pavé numérique dans les pages terminées : ces actions ne peuvent plus générer des opérations hors des pages ouvertes par le professeur, ni contourner une page obligatoire.
+- Lors du retour à une page, afficher aussi les reports latéraux, les chiffres déjà saisis et les traces de corrections, afin que l'état visuel corresponde à la mémoire locale.
+- Aucun changement aux règles Supabase, aux comptes, XP, trophées ou résultats de jeu ; uniquement le pont Connect Multiplication et ses tests navigateur.
+- Tests Chromium à confirmer sur le SHA final ; ensuite contrôler le déploiement GitHub Pages et la recette réelle en classe.
+
 ## Retour d'expérience à compléter
 - Source de divergence : chaque navigateur tire aléatoirement ses propres opérations ; la séance doit porter les nombres déterminés côté serveur.
 - Ne pas déclencher les clics natifs automatiques « Nouveaux calculs » pendant le guidé collectif.
