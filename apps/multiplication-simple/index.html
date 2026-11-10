@@ -620,13 +620,13 @@ if(mode==='connected'&&classroomBridgeReady){
  // L'onglet n'a pas le temps d'attendre Supabase Auth pendant pagehide.
  // Le dernier JWT du professeur est conservé en mémoire uniquement ; jamais
  // stocké dans le document, dans l'URL ou dans la base de séance.
- onClose:({sessionId,hostId})=>{
-  if(!teacherPlayer||!guidedCloseToken||!sessionId||!hostId)return;
+ onClose:({sessionId,hostId,pageId})=>{
+  if(!teacherPlayer||!guidedCloseToken||!sessionId||!hostId||!pageId)return;
   try{
    void fetch(URL+'/functions/v1/connect-guided-multiplication',{
     method:'POST',keepalive:true,cache:'no-store',
     headers:{apikey:KEY,authorization:'Bearer '+guidedCloseToken,'content-type':'application/json'},
-    body:JSON.stringify({action:'closing',classId,sessionId,hostId})
+    body:JSON.stringify({action:'closing',classId,sessionId,hostId,pageId})
    }).catch(()=>{});
   }catch{}
  }
