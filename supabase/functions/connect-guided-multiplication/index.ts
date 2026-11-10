@@ -33,7 +33,7 @@ const flags=(x:any)=>Array.from({length:Array.isArray(x.pages)?x.pages.length:0}
 const view=(x:any)=>!x?.active?{ok:true,active:false}:
  {ok:true,active:true,sessionId:x.session_id,revision:Number(x.revision),level:x.level,
  carryMethod:x.carry_method,multipliers:x.multipliers,pages:x.pages,
- pageIndex:x.page_index,requiredPages:flags(x),allowSkip:false,updatedAt:x.updated_at};
+ pageIndex:x.page_index,requiredPages:flags(x),allowSkip:x.allow_skip===true,updatedAt:x.updated_at};
 Deno.serve(async(req:Request)=>{
  if(req.method==='OPTIONS')return new Response('',{headers});
  if(req.method!=='POST')return fail('method_not_allowed',405);
@@ -45,7 +45,7 @@ Deno.serve(async(req:Request)=>{
  const raw=await req.text();if(raw.length>5000)return fail('payload_too_large',413);
  let b:any;try{b=JSON.parse(raw)}catch{return fail('invalid_json')}
  if(!b||typeof b!=='object'||Array.isArray(b)||!UUID.test(b.classId||''))return fail('invalid_request');
- if(!['status','resume','start','next','previous','set-required','stop','heartbeat','closing'].includes(b.action))return fail('invalid_action');
+ if(!['status','resume','start','next','previous','set-required','set-skip','stop','heartbeat','closing'].includes(b.action))return fail('invalid_action');
  if(b.action!=='status'&&user.is_anonymous===true)return fail('teacher_only',403);
  const cls=String(b.classId).toLowerCase();
  try{
@@ -172,6 +172,10 @@ Deno.serve(async(req:Request)=>{
   }else if(b.action==='previous'){
    if(current.page_index<=0)return fail('first_page',409);
    patch.page_index=current.page_index-1;
+  }else if(b.action==='set-skip'){
+   // Compatibilité des onglets encore ouverts sur l'ancienne interface.
+   if(typeof b.allowSkip!=='boolean')return fail('invalid_configuration');
+   patch.allow_skip=b.allowSkip;
   }else if(b.action==='set-required'){
    if(!Number.isInteger(b.pageIndex)||b.pageIndex!==current.page_index
      ||b.pageIndex<0||b.pageIndex>=current.pages.length||typeof b.required!=='boolean')
