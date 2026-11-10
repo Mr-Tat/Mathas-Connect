@@ -591,7 +591,7 @@ if(mode==='connected'){
   const marker='primaryBtn.onclick=handlePrimary;';
   const nativeLabel="primaryBtn.textContent=session.mode==='training'?'Nouveaux calculs':'Calculs suivants';";
   if(html.split(marker).length!==2||html.split(nativeLabel).length!==2)throw Error('moteur natif non compatible avec le guidé collectif');
-  const hooked=source+'\\nprimaryBtn.onclick=(event)=>{if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"){if(event?.isTrusted)window.MathasGuidedBridge.onContinue?.();return;}handlePrimary()};';
+  const hooked=source+'\nprimaryBtn.onclick=(event)=>{if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"){if(event?.isTrusted)window.MathasGuidedBridge.onContinue?.();return;}handlePrimary()};';
   html=html.replace(marker,hooked).replace(nativeLabel,"primaryBtn.textContent=session.mode==='training'&&window.MathasGuidedBridge?.isCollectiveActive()?'Suite : barre Classe ↑':session.mode==='training'?'Nouveaux calculs':'Calculs suivants';");
   classroomBridgeReady=true;
  }catch(error){console.warn('Guidé collectif indisponible : le jeu habituel reste accessible.',error)}
