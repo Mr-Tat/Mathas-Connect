@@ -30,6 +30,9 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
   render();
  };
  async function poll(){
+  // Aucun appel de découverte côté élève avant son clic explicite.
+  // Une fois dans la séance, le suivi léger permet d'activer « Suivant ».
+  if(!teacher&&!joined)return;
   if(busy||doc?.hidden||document.hidden)return;
   try{
    const s=await call('status');
@@ -53,17 +56,32 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
   }catch(e){say('Action non enregistrée : '+String(e.message||e));await poll();return false}
   finally{busy=false;render()}
  }
- function join(){
-  if(!validSession(session)||busy)return;
-  const isGuide=bridge?.status()?.training;
-  if(!joined&&isGuide===false&&doc?.getElementById('gameScreen')?.classList.contains('hidden')===false){
+ async function join(){
+  if(busy)return;
+  const inGame=doc?.getElementById('gameScreen')?.classList.contains('hidden')===false;
+  if(!joined&&inGame&&bridge?.status()?.training===false){
    if(!confirm('Quitter l’exercice en cours pour rejoindre le guidé collectif ?'))return;
   }
-  if(!joined)index=session.pageIndex;
-  else if(index>session.pageIndex)index=session.pageIndex;
-  joined=true;practicing=false;
-  if(!displayCurrent()){say('Moteur guidé indisponible. Recharge la page.');joined=false;}
-  render();
+  busy=true;render();
+  try{
+   // Contrôle de la séance uniquement au clic, jamais à l'ouverture élève.
+   const current=await call('status');
+   if(current?.ok!==true)throw Error(current?.error||'vérification indisponible');
+   updateSession(current);
+   if(!validSession(session)){
+    say('Aucune séance collective lancée pour ta classe. Continue le guidé individuel.');
+    return;
+   }
+   if(!joined)index=session.pageIndex;
+   else if(index>session.pageIndex)index=session.pageIndex;
+   joined=true;practicing=false;
+   if(!displayCurrent()){
+    say('Moteur guidé indisponible. Recharge la page.');
+    joined=false;
+   }else lastError='';
+  }catch(e){
+   say('Impossible de vérifier la séance pour le moment. Réessaie.');
+  }finally{busy=false;render()}
  }
  async function start(){
   if(!teacher||isLocked()||busy||!bridge||session?.active)return;
@@ -141,18 +159,21 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
   const active=validSession(session),locked=isLocked();
   if(menuSlot){
    const inMenu=!doc.getElementById('menuScreen')?.classList.contains('hidden');
-   menuSlot.hidden=!inMenu||(!teacher&&!active);
-   menuButton.disabled=busy;
-   menuButton.textContent=active?(teacher?'Reprendre le guidé collectif':'Rejoindre le guidé collectif')
-    :(teacher?'👥 Lancer avec la classe':'');
+   menuSlot.hidden=!teacher||!inMenu;
+   menuButton.disabled=busy||locked;
+   menuButton.textContent=active?'Reprendre la classe':'👥 Lancer avec la classe';
   }
   const gameVisible=doc.getElementById('gameScreen')?.classList.contains('hidden')===false;
-  const startHere=teacher&&!active&&gameVisible&&bridge?.status()?.training===true;
-  if(bar)bar.hidden=!((active&&(joined||gameVisible))||startHere);
-  if(btnStartHere){btnStartHere.hidden=!startHere;btnStartHere.disabled=busy||isLocked()}
-  if(btnJoinHere){btnJoinHere.hidden=!active||joined;btnJoinHere.disabled=busy}
+  const inGuided=gameVisible&&bridge?.status()?.training===true;
+  const startHere=teacher&&!active&&inGuided;
+  const studentJoinHere=!teacher&&inGuided&&!practicing&&(!joined||bridge?.status()?.collective!==true);
+  if(bar)bar.hidden=!((active&&(joined||gameVisible))||startHere||studentJoinHere);
+  if(btnStartHere){btnStartHere.hidden=!startHere;btnStartHere.disabled=busy||locked}
+  if(btnJoinHere){btnJoinHere.hidden=!studentJoinHere;btnJoinHere.disabled=busy}
   if(!active){
-   if(notice&&startHere)notice.textContent='Guidé individuel · prêt à lancer avec la classe';
+   if(notice)notice.textContent=lastError||(startHere
+    ?'Guidé individuel · prêt à lancer avec la classe'
+    :studentJoinHere?'Guidé individuel · rejoins la classe quand tu le souhaites':'');
    if(teacherRow)teacherRow.hidden=true;
    if(pupilRow)pupilRow.hidden=true;
    if(answerPanel)answerPanel.hidden=true;
@@ -189,6 +210,11 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
   if(!doc.getElementById('mc-guided-styles')){
    const style=el('style');style.id='mc-guided-styles';style.textContent=
     '.mc-guided-slot{display:flex;justify-content:center;padding:10px;margin:5px 0 12px}'
+   +'#menuScreen .classic-launch-grid > .mc-guided-launch-row{grid-column:1/-1!important;display:grid!important;grid-template-columns:minmax(0,340px) minmax(135px,175px);align-items:stretch;justify-content:center;gap:10px;width:100%!important;min-width:0!important;margin:0 0 4px!important}'
+   +'#menuScreen .classic-launch-grid > .mc-guided-launch-row > #startTraining{grid-column:auto!important;grid-row:auto!important;justify-self:stretch!important;width:100%!important;max-width:340px!important;min-width:0!important;margin:0!important}'
+   +'#menuScreen .classic-launch-grid > .mc-guided-launch-row > .mc-guided-slot{grid-column:auto!important;min-width:0!important;margin:0!important;padding:0!important;align-items:stretch!important}'
+   +'#menuScreen .mc-guided-launch-row .mc-guided-slot > button{width:100%;min-height:58px;line-height:1.25;white-space:normal}'
+
    +'.mathas-collective-button{padding:10px 13px;border:1px solid #76a8b6;border-radius:11px;background:#173f4c;color:#eaffff;font:700 13px system-ui;cursor:pointer;max-width:100%}'
    +'.mathas-collective-button:disabled{opacity:.44;cursor:not-allowed}'
    +'#mc-guided-bar{position:relative;z-index:9;margin:8px auto;padding:10px;border:1px solid #40aa9e;border-radius:12px;background:#092f35;color:#e8fffc;max-width:1130px}'
@@ -200,13 +226,22 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
    +'.mc-answer-item{display:flex;gap:8px;align-items:center;margin:15px 0}'
    +'.mc-result{font-weight:800;color:#f6dc9b}.mc-confirm{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:12px 0}'
    +'.mc-neutral{background:#193d48;border-color:#456b77;color:#e8f1f4}'
-   +'@media(max-width:700px){#mc-guided-bar{margin:6px;padding:8px}.mc-controls{gap:5px}.mathas-collective-button{padding:9px 10px}}';
+   +'@media(max-width:700px){#mc-guided-bar{margin:6px;padding:8px}.mc-controls{gap:5px}.mathas-collective-button{padding:9px 10px}}'
+   +'@media(max-width:520px){#menuScreen .classic-launch-grid > .mc-guided-launch-row{grid-template-columns:minmax(0,1fr) minmax(100px,41%);gap:6px}#menuScreen .mc-guided-launch-row .mc-guided-slot > button{font-size:clamp(.7rem,2.7vw,.82rem);padding:6px!important;min-height:49px}}';
    doc.head.append(style);
   }
-  menuSlot=el('div','mc-guided-slot');menuSlot.id='mc-guided-slot';
-  menuButton=button('',()=>session?.active?join():void start());
-  menuSlot.append(menuButton);
-  doc.getElementById('startTraining')?.insertAdjacentElement('afterend',menuSlot);
+  // Le menu des élèves reste identique ; seule la version professeur possède
+  // un deuxième bouton, aligné à droite du grand « Exercice guidé ».
+  const training=doc.getElementById('startTraining');
+  if(teacher&&training){
+   menuSlot=el('div','mc-guided-slot');menuSlot.id='mc-guided-slot';
+   menuButton=button('',()=>session?.active?void join():void start());
+   menuSlot.append(menuButton);
+   const layout=el('div','mc-guided-launch-row');
+   training.replaceWith(layout);
+   layout.append(training,menuSlot);
+  }
+  training?.addEventListener('click',()=>requestAnimationFrame(render));
   bar=el('div');bar.id='mc-guided-bar';
   notice=el('div','mc-notice');
   teacherRow=el('div','mc-controls');
@@ -230,7 +265,7 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
   // La rangée du professeur utilise sa commande propre, jamais le bouton élève.
   teacherRow.dataset.role='teacher';
   btnStartHere=button('👥 Démarrer avec la classe',()=>void start());
-  btnJoinHere=button('Rejoindre le guidé collectif',join);
+  btnJoinHere=button('Rejoindre la classe',()=>void join());
   bar.append(notice,btnStartHere,btnJoinHere,teacherRow,pupilRow);
   doc.getElementById('gameScreen')?.prepend(bar);
   answerPanel=el('details');answerPanel.id='mc-guided-answers';
