@@ -4,7 +4,7 @@ import {validSession,mayMoveForward,latestUnlockedPage} from './collective-contr
 // Il ne transmet jamais les chiffres saisis par les élèves.
 export function createMultiplicationCollective({iframe,teacher,call,onClose,classId,classLabel=''}){
  let doc=null,bridge=null,session=null,joined=false,practicing=false,index=-1,busy=false;
- let bar=null,notice=null,teacherRow=null,pupilRow=null,barClassBadge=null;
+ let bar=null,notice=null,entry=null,teacherRow=null,pupilRow=null,barClassBadge=null;
  let btnNext=null,btnPrevious=null,teacherNextButton=null,teacherPreviousButton=null,btnStartHere=null,btnJoinHere=null,btnRequired=null,btnStop=null,btnAnswers=null,btnPractice=null,btnReturn=null;
  let answerPanel=null,answerVisible=false,confirmPanel=null,started=false,lastError='';
  // Clé propre à l'onglet. Elle survit à F5, pas à une ouverture ordinaire
@@ -242,6 +242,8 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
   if(btnStartHere){btnStartHere.hidden=!startHere;btnStartHere.disabled=busy}
   if(btnJoinHere){btnJoinHere.hidden=!joinHere;btnJoinHere.disabled=busy;
    btnJoinHere.textContent=teacher?'Reprendre la séance':'Rejoindre la classe'}
+  // Ne pas réserver de hauteur pour une ligne dont les commandes sont masquées.
+  if(entry)entry.hidden=!startHere&&!joinHere;
   if(!active){
    if(notice)notice.textContent=lastError||(startHere
     ?'Guidé individuel · lance la séance collective pour ta classe'
@@ -292,15 +294,20 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
    !teacher?studentNext():say('La classe avance uniquement sur décision du professeur.');
   if(!doc.getElementById('mc-guided-styles')){
    const style=el('style');style.id='mc-guided-styles';style.textContent=
-    '.mc-guided-class-badge{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;flex:none;min-height:22px;max-width:100%;padding:3px 8px;border:1px solid #6db2c4;border-radius:999px;background:#153f4a;color:#dcf7ff;font:800 11px/1.25 system-ui;text-align:center;white-space:normal}'
+    '.mc-guided-head{display:flex;align-items:center;justify-content:flex-start;gap:12px;flex-wrap:wrap;min-width:0}'
+   +'.mc-guided-class-badge{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;flex:none;min-height:22px;max-width:100%;padding:3px 8px;border:1px solid #6db2c4;border-radius:999px;background:#153f4a;color:#dcf7ff;font:800 11px/1.25 system-ui;text-align:center;white-space:normal}'
    +'.mc-guided-class-badge[hidden]{display:none!important}'
    +'.mc-guided-entry{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:7px}'
+   +'.mc-guided-entry[hidden]{display:none!important}'
    +'.mathas-collective-button{padding:10px 13px;border:1px solid #76a8b6;border-radius:11px;background:#173f4c;color:#eaffff;font:700 13px system-ui;cursor:pointer;max-width:100%}'
    +'.mathas-collective-button:disabled{opacity:.44;cursor:not-allowed}'
-   +'#mc-guided-bar{position:relative;z-index:9;margin:8px auto;padding:10px;border:1px solid #40aa9e;border-radius:12px;background:#092f35;color:#e8fffc;max-width:1130px}'
+   +'#mc-guided-bar{position:relative;z-index:9;margin:8px auto;padding:8px 12px;border:1px solid #40aa9e;border-radius:12px;background:#092f35;color:#e8fffc;max-width:1130px}'
    +'#mc-guided-bar[hidden],#mc-guided-answers[hidden],.mc-controls[hidden]{display:none!important}'
-   +'.mc-controls{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.mc-controls .mathas-collective-button{font-size:12px}'
-   +'.mc-notice{font:700 13px system-ui;min-height:18px}'
+   +'.mc-controls{display:flex;gap:16px;flex-wrap:wrap;align-items:stretch;margin-top:8px}'
+   +'.mc-control-group{display:flex;gap:11px;flex-wrap:wrap;align-items:stretch}'
+   +'.mc-control-group+.mc-control-group{border-left:4px solid #f68c36;padding-left:16px}'
+   +'.mc-controls .mathas-collective-button{font-size:12px}'
+   +'.mc-notice{font:700 13px/1.25 system-ui;min-height:0}'
    +'.mc-guided-answers{margin:10px 0 0;padding:12px;border:1px solid #355c65;border-radius:10px;background:#08252b}'
    +'.mc-guided-answer-overlay{box-sizing:border-box;pointer-events:none;user-select:text;text-align:center;align-self:center}'
    +'.mc-guided-answer-marker,.mc-guided-answer-digit{min-height:36px;display:flex;align-items:center;justify-content:center;color:#ffe08a;font:900 1.45rem/1 system-ui}'
@@ -315,7 +322,7 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
    +'.mc-neutral{background:#193d48;border-color:#456b77;color:#e8f1f4}'
    +'.mathas-collective-button[aria-pressed="true"]{border-color:#f6dc9b;color:#fff0ba}'
    +'body.light .mc-guided-class-badge,body.light-mode .mc-guided-class-badge{background:#e7f6f9;color:#175369;border-color:#75b8ca}'
-   +'@media(max-width:700px){#mc-guided-bar{margin:6px;padding:8px}.mc-controls{gap:5px}.mathas-collective-button{padding:9px 10px}}';
+   +'@media(max-width:700px){#mc-guided-bar{margin:6px;padding:8px}.mc-guided-head{gap:8px}.mc-controls{gap:10px}.mc-control-group{gap:8px}.mc-control-group+.mc-control-group{padding-left:10px;border-left-width:3px}.mathas-collective-button{padding:9px 10px}}';
    doc.head.append(style);
   }
   // Un parcours identique : le professeur ET l'élève ouvrent d'abord « Exercice guidé ».
@@ -332,17 +339,23 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
   btnStop=button('Terminer la séance',()=>{
    if(confirm('Terminer le guidé collectif pour toute la classe ?'))void write('stop');
   });
-  teacherRow.append(teacherPreviousButton,teacherNextButton,btnRequired,btnAnswers,btnStop);
+  // Trois groupes lisibles : navigation | outils pédagogiques | fin de séance.
+  const group=(...controls)=>{const row=el('div','mc-control-group');row.append(...controls);return row};
+  teacherRow.append(group(teacherPreviousButton,teacherNextButton),
+   group(btnRequired,btnAnswers),group(btnStop));
   btnPrevious=button('← Précédente',studentPrevious);
   btnNext=button('Suivant →',studentNext);
   btnPractice=button('M’entraîner en attendant',practice);
   btnReturn=button('Rejoindre la classe',practice);
-  pupilRow.append(btnPrevious,btnNext,btnPractice,btnReturn);
+  // Même séparation orange : navigation | entraînement / retour à la classe.
+  pupilRow.append(group(btnPrevious,btnNext),group(btnPractice,btnReturn));
   btnStartHere=button('👥 Lancer la séance',()=>void start());
   btnJoinHere=button('Rejoindre la classe',()=>void join());
-  const entry=el('div','mc-guided-entry');barClassBadge=classBadge();
-  entry.append(btnStartHere,btnJoinHere,barClassBadge);
-  bar.append(notice,entry,teacherRow,pupilRow);
+  const heading=el('div','mc-guided-head');barClassBadge=classBadge();
+  heading.append(notice,barClassBadge);
+  entry=el('div','mc-guided-entry');
+  entry.append(btnStartHere,btnJoinHere);
+  bar.append(heading,entry,teacherRow,pupilRow);
   answerPanel=el('div','mc-guided-answers');answerPanel.id='mc-guided-answers';
   confirmPanel=el('div','mc-confirm');
   answerPanel.append(confirmPanel);answerPanel.hidden=true;
