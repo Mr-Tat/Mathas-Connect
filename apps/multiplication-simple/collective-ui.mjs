@@ -11,6 +11,7 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
  // dans un nouvel onglet (aucune donnée élève stockée ici).
  const hostKey='mathas.mul.guided.host-tab.'+classId;
  let hostId=null;
+ const pageId=teacher?crypto.randomUUID():null;
  if(teacher){
   try{
    const stored=sessionStorage.getItem(hostKey);
@@ -62,7 +63,7 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
   if(!teacher||isLocked()||busy||!session||!validSession(session))return false;
   busy=true;render();
   try{
-   const result=await call(action,{sessionId:session.sessionId,revision:session.revision,hostId,...payload});
+   const result=await call(action,{sessionId:session.sessionId,revision:session.revision,hostId,pageId,...payload});
    if(result?.ok!==true)throw Error(result?.error||'opération refusée');
    const previouslyJoined=joined;
    updateSession(result);
@@ -106,7 +107,7 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
   if(![1,2,3].includes(cfg.level)||!['top','side'].includes(cfg.carryMethod)||!Array.isArray(cfg.multipliers)||!cfg.multipliers.length){say('Choisis le niveau, la méthode et les tables.');return}
   busy=true;render();
   try{
-   const result=await call('start',{...cfg,hostId});
+   const result=await call('start',{...cfg,hostId,pageId});
    if(!validSession(result))throw Error(result?.error||'démarrage impossible');
    updateSession(result);index=0;joined=true;practicing=false;
    displayCurrent();lastError='';
@@ -117,7 +118,7 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
  // NE PAS déduire une fermeture de document.hidden / visibilitychange.
  async function keepTeacherPresence(){
   if(!teacher||!hostId||!session?.active)return;
-  try{await call('heartbeat',{sessionId:session.sessionId,hostId})}
+  try{await call('heartbeat',{sessionId:session.sessionId,hostId,pageId})}
   catch{ /* Une microcoupure n'arrête pas la classe ; délai de secours serveur. */ }
  }
  function studentNext(toLatest=false){
@@ -328,14 +329,14 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
      if(event.persisted||!session?.active||!hostId)return;
      // Page vraiment quittée ou fermée : un changement d'onglet n'émet
      // PAS pagehide. Recharger conserve la session grâce au délai serveur.
-     try{onClose?.({sessionId:session.sessionId,hostId})}catch{}
+     try{onClose?.({sessionId:session.sessionId,hostId,pageId})}catch{}
     });
    }
   }
   if(teacher){
    // Seul un VRAI nouveau chargement relance l'onglet après F5.
    // Un statut déjà en vol ne peut pas annuler une fermeture de page.
-   void call('resume',{hostId})
+   void call('resume',{hostId,pageId})
     .then(s=>{if(s?.ok===true)updateSession(s)})
     .catch(()=>{})
     .finally(()=>{void poll()});
