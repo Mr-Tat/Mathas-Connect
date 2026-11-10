@@ -13,8 +13,9 @@ export function guidedSessionLive(row,now=Date.now()){
  }
  return true;
 }
-export function mayRenewGuidedHost(row,{teacherId,sessionId,hostId}){
+export function mayRenewGuidedHost(row,{teacherId,sessionId,hostId,pageId}){
  return !!(row&&row.active===true&&typeof teacherId==='string'
   &&row.teacher_id===teacherId&&row.session_id===sessionId
-  &&typeof hostId==='string'&&row.host_client_id===hostId);
+  &&typeof hostId==='string'&&row.host_client_id===hostId
+  &&typeof pageId==='string'&&row.host_page_id===pageId);
 }
