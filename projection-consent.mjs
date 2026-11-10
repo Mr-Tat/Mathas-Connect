@@ -40,7 +40,8 @@ export function createProjectionConsent({classId,appKey,studentKey,getToken,
  const yes=documentRef.createElement('button');yes.type='button';yes.className='yes';yes.textContent='OUI !';
  const status=documentRef.createElement('small');status.setAttribute('role','status');
  actions.append(no,yes);dialog.append(heading,score,question,status,actions);documentRef.body.append(dialog);
- let showing=null,flushing=false;const waiting=[];
+ let showing=null,flushing=false;const waiting=[],resultListeners=new Set();
+ const emit=(eventId,result)=>{for(const fn of resultListeners){try{fn({eventId,result})}catch{/* Le reçu serveur prime. */}}};
  function showNext(){
   if(showing)return;
   if(!waiting.length){dialog.hidden=true;return}
@@ -67,6 +68,7 @@ export function createProjectionConsent({classId,appKey,studentKey,getToken,
     if(['not_improved','score_reset','event_not_found'].includes(body?.error)){
      if(!save(read().filter(v=>v!==eventId)))break;
      if(eventId===wanted)result=body.error;
+     emit(eventId,body.error);
      continue;
     }
     if(eventId===wanted)result=body?.error||'network_error';
@@ -74,6 +76,7 @@ export function createProjectionConsent({classId,appKey,studentKey,getToken,
    }
    if(!save(read().filter(v=>v!==eventId)))break;
    if(eventId===wanted)result='sent';
+   emit(eventId,'sent');
   }}catch{result='network_error'}
   finally{flushing=false}
   return result;
@@ -87,6 +90,7 @@ export function createProjectionConsent({classId,appKey,studentKey,getToken,
   }}
   yes.disabled=true;no.disabled=true;status.textContent='Envoi sécurisé au tableau…';
   const outcome=await flush(eventId);
+  if(outcome==='network_error'||outcome==='queued')emit(eventId,'queued');
   yes.disabled=false;no.disabled=false;
   if(!showing||showing.eventId!==eventId)return;
   if(outcome==='sent'){
@@ -112,8 +116,9 @@ export function createProjectionConsent({classId,appKey,studentKey,getToken,
    waiting.push({eventId,points:Number.isSafeInteger(points)&&points>=0?points:null});
    showNext();return true},
   retry:()=>flush(),pending:()=>read().length,
+  onResult(fn){if(typeof fn!=='function')return ()=>{};resultListeners.add(fn);return ()=>resultListeners.delete(fn)},
   destroy(){ // Hide old-app offers on a change of pupil/app; keep explicitly opted-in retries.
-   showing=null;waiting.length=0;dialog.remove();css.remove();
+   showing=null;waiting.length=0;resultListeners.clear();dialog.remove();css.remove();
    windowRef.removeEventListener('online',onOnline);
   }
  });
