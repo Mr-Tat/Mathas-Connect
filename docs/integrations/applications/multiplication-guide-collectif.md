@@ -51,6 +51,16 @@
 - **Livraison vérifiée** : [PR #284](https://github.com/Mr-Tat/Mathas-Connect/pull/284) fusionnée, commit `e34ca844` ; [Chromium et contrat temporel réussis](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/42828269673) ; migration SQL `guided_multiplication_host_presence_20261110` appliquée, 4 colonnes confirmées ; Edge `connect-guided-multiplication` **v2 ACTIVE**, JWT obligatoire ; [GitHub Pages réussi](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/42828591893). Les 8 échecs globaux sont préexistants et hors périmètre, pas de nouvelle défaillance Multiplication.
 - **État réel** : code + CI + Pages + SQL + Edge livrés ; **recette de fermeture/rechargement avec Monsieur T et Élève A sur navigateurs réels encore à effectuer**.
 
+## Navigation par pages et lancement uniquement dans le guidé — 10/11/2026
+- **Même chemin au menu** : professeur et élèves ouvrent d'abord « Exercice guidé ». Le professeur trouve ensuite « Lancer la séance » ou « Reprendre la séance », l'élève « Rejoindre la classe ». Pas de bouton collectif supplémentaire au menu.
+- Le professeur voit ← Précédente et Page suivante → pour revisiter des pages déjà ouvertes ; Nouvelle page → uniquement depuis la dernière page créée. Les mêmes opérations restent enregistrées au serveur jusqu'à la fin de la séance.
+- Les élèves disposent de ← Précédente, Suivant → et « Dernière page ». Le moteur garde localement leurs chiffres, retenues, erreurs et états de réussite par page pendant la séance, jamais dans la table de scores. Une nouvelle séance efface l'ancienne mémoire.
+- **Par défaut, passage libre** vers toute page déjà ouverte, même sans avoir terminé les deux calculs précédents.
+- Le professeur marque « Page obligatoire » sur la page affichée. Pour franchir cette page, l'élève doit faire **réussir les deux calculs**. L'interdiction s'applique aussi au raccourci « Dernière page ». Les retours en arrière restent possibles.
+- Suppression du mode « Élève au tableau ». Bouton professeur « Afficher les réponses » / « Masquer les réponses » pour les deux calculs, après confirmation neutre Oui/Non, sans envoyer les corrections aux élèves.
+- SQL : colonnes `teacher_page_index` et `required_pages`, aucune réponse élève. Edge : `set-page` et `set-required` avec contrôle JWT de professeur et révision optimiste.
+- Livraisons à confirmer distinctement : Chromium et contrats, intégration Multiplication, migration SQL, Edge puis GitHub Pages. La recette réelle TEST n'est pas remplacée par ces tests.
+
 ## Retour d'expérience à compléter
 - Source de divergence : chaque navigateur tire aléatoirement ses propres opérations ; la séance doit porter les nombres déterminés côté serveur.
 - Ne pas déclencher les clics natifs automatiques « Nouveaux calculs » pendant le guidé collectif.
