@@ -31,6 +31,7 @@
 - Les fixtures de test ne servaient pas les nouveaux modules : ajout explicite aux routes du serveur HTTP de Chromium.
 - Le clavier natif utilise des champs `readonly` remplis par le pavé virtuel ; les essais Playwright ne doivent pas recourir à `locator.fill()` sur ces champs.
 - Le besoin de pouvoir démarrer et rejoindre depuis le guidé ouvert a entraîné la PR #280, testée avec de vrais moteurs Chromium simulés.
+- PR #282 (ergonomie demandée en classe) : bouton professeur aligné à droite du grand « Exercice guidé » ; bouton élève « Rejoindre la classe » dans le guidé individuel, visible même sans séance. La vérification de l'existence de la séance ne part **que sur son clic**. Une fois inscrit à la séance, une synchronisation légère suit les pages débloquées. Tests Chromium sur 320/390/1160 px et vérification qu'aucun appel collectif n'a lieu avant le clic. Déploiement Pages à confirmer séparément.
 
 ## Retour d'expérience à compléter
 - Source de divergence : chaque navigateur tire aléatoirement ses propres opérations ; la séance doit porter les nombres déterminés côté serveur.
