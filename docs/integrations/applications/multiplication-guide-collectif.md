@@ -51,6 +51,16 @@
 - **Livraison vérifiée** : [PR #284](https://github.com/Mr-Tat/Mathas-Connect/pull/284) fusionnée, commit `e34ca844` ; [Chromium et contrat temporel réussis](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/42828269673) ; migration SQL `guided_multiplication_host_presence_20261110` appliquée, 4 colonnes confirmées ; Edge `connect-guided-multiplication` **v2 ACTIVE**, JWT obligatoire ; [GitHub Pages réussi](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/42828591893). Les 8 échecs globaux sont préexistants et hors périmètre, pas de nouvelle défaillance Multiplication.
 - **État réel** : code + CI + Pages + SQL + Edge livrés ; **recette de fermeture/rechargement avec Monsieur T et Élève A sur navigateurs réels encore à effectuer**.
 
+## Navigation et page obligatoire — 10/11/2026
+- **Deux interfaces, même chemin** : Monsieur T et l'élève ouvrent tous deux **Exercice guidé**. Le professeur y voit « Lancer la séance » et l'élève « Rejoindre la classe ». Le raccourci de lancement sur le menu professeur est retiré.
+- **Pages conservées pendant toute la séance** : deux opérations par page, ajoutées côté serveur ; le professeur peut revenir à une page déjà ouverte et la reprendre sans fabriquer de nouveaux calculs. « Nouvelle page » n'en crée une que lorsque le professeur est déjà sur la dernière.
+- **Élèves** : « Précédente » toujours autorisé, « Suivant » autorisé **par défaut** dès que le professeur a ouvert la page suivante, sans obligation de réussir la page courante. Aucune avance automatique forcée ni publication de réponses.
+- **Page obligatoire** : le professeur active/désactive cette obligation sur la page qu'il affiche. Un élève doit avoir **réussi les deux calculs** de toute page obligatoire avant de la quitter vers l'avant. Il ne peut pas sauter une page obligatoire en empruntant un raccourci ; les autres pages restent libres. Ce réglage est conservé au serveur et synchronisé après la jonction.
+- **Mémoire élève** : les chiffres saisis, retenues, corrections et statuts « réussis » restent locaux à son ordinateur et indexés par page. Ils sont préservés lors des retours arrière et de « M'entraîner en attendant », sans stockage dans les données de score. La mémoire est réinitialisée lors d'une nouvelle séance collective.
+- **Corrigés professeur** : bouton « Afficher les réponses » dans les contrôles de professeur, avec confirmation « Oui / Non » neutre avant de montrer les deux résultats de la page. « Masquer les réponses » les cache ; ils sont automatiquement masqués lors d'un changement de page. Le mode « Élève au tableau » et le code associé sont retirés.
+- Le système de présence/fermeture de l'onglet professeur (#284), les classes et l'authentification, les barèmes et les preuves de résultats sont inchangés.
+- Livraison à confirmer séparément : code GitHub, tests unitaires + Chromium, migration `required_pages`, Edge, Pages, puis recette réelle Monsieur T + Élève A.
+
 ## Retour d'expérience à compléter
 - Source de divergence : chaque navigateur tire aléatoirement ses propres opérations ; la séance doit porter les nombres déterminés côté serveur.
 - Ne pas déclencher les clics natifs automatiques « Nouveaux calculs » pendant le guidé collectif.
