@@ -9,7 +9,7 @@ const SERVICE=Deno.env.get('SUPABASE_'+'SERVICE_ROLE_KEY')!;
 const db=createClient(BASE,SERVICE,{auth:{persistSession:false,autoRefreshToken:false}});
 const APP='multiplication-ecrite-simple',TABLE='connect_guided_multiplication_sessions';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const headers={'content-type':'application/json','cache-control':'no-store','access-control-allow-origin':'*','access-control-allow-methods':'POST,OPTIONS','access-control-allow-headers':'authorization,apikey,content-type'};
+const headers={'content-type':'application/json','cache-control':'no-store','access-control-allow-origin':'*','access-control-allow-methods':'POST,OPTIONS','access-control-allow-headers':'authorization,apikey,content-type','access-control-max-age':'600'};
 const reply=(x:any,status=200)=>new Response(JSON.stringify(x),{status,headers});
 const fail=(code:string,status=400)=>reply({ok:false,error:code},status);
 async function one(q:any){const {data,error}=await q.maybeSingle();if(error)throw Error('database_read_failed');return data}
@@ -42,7 +42,7 @@ Deno.serve(async(req:Request)=>{
  const raw=await req.text();if(raw.length>5000)return fail('payload_too_large',413);
  let b:any;try{b=JSON.parse(raw)}catch{return fail('invalid_json')}
  if(!b||typeof b!=='object'||Array.isArray(b)||!UUID.test(b.classId||''))return fail('invalid_request');
- if(!['status','start','next','set-skip','stop','heartbeat','closing'].includes(b.action))return fail('invalid_action');
+ if(!['status','resume','start','next','set-skip','stop','heartbeat','closing'].includes(b.action))return fail('invalid_action');
  if(b.action!=='status'&&user.is_anonymous===true)return fail('teacher_only',403);
  const cls=String(b.classId).toLowerCase();
  try{
@@ -68,9 +68,9 @@ Deno.serve(async(req:Request)=>{
   }
   let current=await one(db.from(TABLE).select('*').eq('class_id',cls).limit(1));
   const now=new Date().toISOString();
-  // L'onglet d'origine peut être rechargé : 15 secondes pour annuler sa demande
-  // de fermeture. Un deuxième onglet / un élève ne peut pas prolonger la séance.
-  if(b.action==='status'&&teacher&&current?.active&&current.teacher_id===user.id
+  // Seul le chargement initial de l'onglet d'origine envoie « resume ».
+  // Un status déjà en vol lors de la fermeture ne doit JAMAIS annuler sa fermeture.
+  if(b.action==='resume'&&teacher&&current?.active&&current.teacher_id===user.id
    &&UUID.test(b.hostId||'')&&guidedSessionLive(current)){
    if(!current.host_client_id){
     // Adoption des séances antérieures à cette livraison, sans supprimer leurs pages.
@@ -104,11 +104,11 @@ Deno.serve(async(req:Request)=>{
     const {error:cleanupError}=await query;
     if(cleanupError)throw Error('cleanup_failed');
    }
-   if(b.action==='status')return reply(view(null));
+   if(b.action==='status'||b.action==='resume')return reply(view(null));
    // start() peut remplacer une séance périmée en réutilisant sa ligne.
    if(b.action!=='start')return fail('session_not_active',409);
   }
-  if(b.action==='status')return reply(view(current));
+  if(b.action==='status'||b.action==='resume')return reply(view(current));
   if(!teacher)return fail('teacher_only',403);
   if(b.action==='start'){
    if(![1,2,3].includes(b.level)||!['top','side'].includes(b.carryMethod)
