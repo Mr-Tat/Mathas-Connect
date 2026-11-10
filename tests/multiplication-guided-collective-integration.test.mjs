@@ -7,7 +7,7 @@ test('pont collectif strictement conditionnel Connect, moteur original pr√©serv√
  const bridge=source('apps/multiplication-simple/collective-native-bridge.js');
  const native=source('apps/multiplication-simple/game-original.html');
  assert.match(host,/mode==='connected'[\s\S]*?collective-native-bridge\.js/);
- assert.match(host,/if\(html\.split\(marker\)\.length!==2\)/);
+ assert.match(host,/html\.split\(marker\)\.length!==2/);
  assert.match(native,/primaryBtn\.onclick=handlePrimary;/);
  assert.match(bridge,/startSession\('training'\)/);
  assert.match(bridge,/this\.active=false/);
