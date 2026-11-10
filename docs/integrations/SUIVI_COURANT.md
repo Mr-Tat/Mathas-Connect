@@ -15,7 +15,7 @@
 
 | Application / `app_key` | Étape | XP / coupes / scores approuvés ? | PR et prochaine action | Fiche |
 | --- | --- | --- | --- | --- |
-| _Aucune nouvelle intégration inscrite_ | — | — | — | — |
+| Projection Score du jour — quatre calculs écrits | CODE / CI à vérifier | Aucun nouveau barème ; consentement du jour confirmé le 10/11 | PR à ouvrir, puis autorisation SQL et recette TEST | [Fiche de chantier](applications/projection-score-du-jour-calculs-ecrits.md) |
 
 **Étapes distinctes** : `AUDIT` → `ARBITRAGE PROF` → `CODE` → `CI` → `PAGES` → `EDGE/SQL` → `RECETTE FICTIVE` → `OUVERTURE AUTORISÉE`. N'afficher une étape comme franchie qu'avec **date + preuve** ; `SANS OBJET` si le jeu n'a pas cette capacité. Une fusion GitHub ne certifie pas le reste.
 
