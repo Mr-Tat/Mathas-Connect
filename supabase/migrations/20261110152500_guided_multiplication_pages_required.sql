@@ -5,6 +5,11 @@ alter table public.connect_guided_multiplication_sessions
    check (teacher_page_index >= 0),
  add column if not exists required_pages integer[] not null default '{}';
 
+-- Conserver la page actuellement ouverte dans les anciennes séances.
+update public.connect_guided_multiplication_sessions
+ set teacher_page_index=page_index
+ where teacher_page_index=0 and page_index>0;
+
 comment on column public.connect_guided_multiplication_sessions.teacher_page_index is
  'Page actuellement montrée au tableau, indépendante de la dernière page ouverte.';
 comment on column public.connect_guided_multiplication_sessions.required_pages is
