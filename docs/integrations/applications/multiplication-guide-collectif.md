@@ -33,6 +33,12 @@
 - Le besoin de pouvoir démarrer et rejoindre depuis le guidé ouvert a entraîné la PR #280, testée avec de vrais moteurs Chromium simulés.
 - PR #282 (ergonomie demandée en classe) : bouton professeur aligné à droite du grand « Exercice guidé » ; bouton élève « Rejoindre la classe » dans le guidé individuel, visible même sans séance. La vérification de l'existence de la séance ne part **que sur son clic**. Une fois inscrit à la séance, une synchronisation légère suit les pages débloquées. Tests Chromium sur 320/390/1160 px et vérification qu'aucun appel collectif n'a lieu avant le clic. Déploiement Pages à confirmer séparément.
 
+## Identification visible de la classe — PR #283 (10/11/2026)
+- Le lancement collectif et la recherche élève continuent à utiliser l'**ID de classe Connect** validé côté serveur. Le nom visible est déduit de cette ID, pas de l'étiquette de rubrique « Toutes » du HUB.
+- Le professeur voit le badge près du lancement collectif ; l'élève le voit près de « Rejoindre la classe » ; le profil Connect visible dans la partie affiche la classe juste après le niveau, en mode professeur comme en mode élève.
+- Classe TEST (rubrique « Toutes ») et Phase 1 sont explicitement distinguées ; les autres classes officielles ont leurs libellés habituels. Une nouvelle classe non reconnue affichera son préfixe d'ID, sans inventer un nom.
+- Contrôles : Chromium du guidé et des comptes simulés TEST / Phase 1 / Monsieur T, y compris la version compacte. SQL/Edge : aucun changement. Recette réelle des deux comptes : encore à faire.
+
 ## Retour d'expérience à compléter
 - Source de divergence : chaque navigateur tire aléatoirement ses propres opérations ; la séance doit porter les nombres déterminés côté serveur.
 - Ne pas déclencher les clics natifs automatiques « Nouveaux calculs » pendant le guidé collectif.

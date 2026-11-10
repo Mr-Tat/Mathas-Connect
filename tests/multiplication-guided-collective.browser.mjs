@@ -64,7 +64,7 @@ try{
      allowSkip:window.__sharedSkip,updatedAt:new Date().toISOString()});
     window.__sharedPages=[];window.__sharedRevision=0;window.__sharedSkip=false;
     window.__controller=createMultiplicationCollective({
-     iframe:{contentDocument:document,contentWindow:window},teacher:true,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',
+     iframe:{contentDocument:document,contentWindow:window},teacher:true,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',classLabel:'Classe TEST',
      call:async(action,payload)=>{
       if(action==='status')return window.__sharedPages.length?state():{ok:true,active:false};
       if(action==='start'){window.__sharedPages=[page1];window.__sharedRevision++;return state()}
@@ -103,11 +103,14 @@ try{
    await page.evaluate(async()=>{
     const {createMultiplicationCollective}=await import('/apps/multiplication-simple/collective-ui.mjs');
     window.__controller=createMultiplicationCollective({
-     iframe:{contentDocument:document,contentWindow:window},teacher:true,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',
+     iframe:{contentDocument:document,contentWindow:window},teacher:true,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',classLabel:'Classe TEST',
      call:async()=>({ok:true,active:false})
     });
     window.__controller.mount();
    });
+   const teacherBadge=page.locator('#mc-guided-slot .mc-guided-class-badge');
+   assert.equal(await teacherBadge.textContent(),'Classe TEST');
+   assert.equal(await teacherBadge.isVisible(),true);
    for(const width of [1160,390,320]){
     await page.setViewportSize({width,height:850});
     await page.locator('#mc-guided-slot button').waitFor({state:'visible'});
@@ -137,7 +140,7 @@ try{
     const {createMultiplicationCollective}=await import('/apps/multiplication-simple/collective-ui.mjs');
     window.__statusCalls=0;
     window.__controller=createMultiplicationCollective({
-     iframe:{contentDocument:document,contentWindow:window},teacher:false,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',
+     iframe:{contentDocument:document,contentWindow:window},teacher:false,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',classLabel:'Classe TEST',
      call:async()=>{window.__statusCalls++;return {ok:true,active:false}}
     });
     window.__controller.mount();
@@ -146,6 +149,9 @@ try{
    assert.equal(await page.evaluate(()=>window.__statusCalls),0);
    await page.locator('#startTraining').click();
    await page.getByRole('button',{name:'Rejoindre la classe'}).waitFor({state:'visible'});
+   const pupilBadge=page.locator('#mc-guided-bar .mc-guided-class-badge');
+   assert.equal(await pupilBadge.textContent(),'Classe TEST');
+   assert.equal(await pupilBadge.isVisible(),true);
    assert.equal(await page.evaluate(()=>window.__statusCalls),0);
    await page.getByRole('button',{name:'Rejoindre la classe'}).click();
    assert.equal(await page.evaluate(()=>window.__statusCalls),1);
@@ -165,7 +171,7 @@ try{
      pages:[page1],pageIndex:0,allowSkip:false};
     window.__statusCalls=0;
     window.__controller=createMultiplicationCollective({
-     iframe:{contentDocument:document,contentWindow:window},teacher:false,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',
+     iframe:{contentDocument:document,contentWindow:window},teacher:false,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',classLabel:'Classe TEST',
      call:async(action)=>{window.__statusCalls++;return window.__classroom}
     });
     window.__controller.mount();
@@ -176,6 +182,7 @@ try{
    assert.equal(await page.evaluate(()=>window.__statusCalls),0);
    await page.locator('#mc-guided-bar').getByRole('button',{name:'Rejoindre la classe'}).click();
    assert.equal(await page.evaluate(()=>window.__statusCalls),1);
+   assert.equal(await page.locator('#mc-guided-bar .mc-guided-class-badge').textContent(),'Classe TEST');
    let next=page.locator('#mc-guided-bar .mc-controls').last().getByRole('button',{name:/En attente/});
    assert.equal(await next.isDisabled(),true);
    await page.evaluate(p=>{window.__classroom={...window.__classroom,revision:2,pages:[...window.__classroom.pages,p],pageIndex:1}},page2);

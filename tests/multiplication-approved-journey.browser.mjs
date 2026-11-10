@@ -207,6 +207,15 @@ try{
    assert.equal(profile.text.includes('Connecté'),false,'nom sans mention redondante');
    assert.ok(profile.bullet.includes('●'),'point de connexion présent');
    assert.equal(profile.color,'rgb(112, 227, 174)','point de connexion vert');
+   const classContext=await page.frameLocator('iframe').locator('#mathas-multi-connect-class').evaluate(el=>({
+    text:el.textContent,visible:el.getBoundingClientRect().height>0,
+    afterLevel:el.previousElementSibling?.id==='mathas-multi-connect-level',
+    title:el.title
+   }));
+   assert.equal(classContext.text,'Classe TEST','Toutes doit afficher sa vraie classe TEST');
+   assert.equal(classContext.visible,true,'classe affichée dans la carte nom/niveau');
+   assert.equal(classContext.afterLevel,true,'classe placée juste après le niveau');
+   assert.match(classContext.title,/classe utilisée pour le guidé collectif/);
    const badge=await page.frameLocator('iframe').locator('#mathas-multi-connect-level').evaluate(el=>{
     const css=getComputedStyle(el),digit=el.querySelector('strong'),numberCss=getComputedStyle(digit);
     return {text:el.textContent,number:digit.textContent,color:css.borderTopColor,
@@ -315,6 +324,9 @@ try{
   const {page,proofCalls,projectionCalls,calls}=await connectedPage(false,false,school);
   try{
    assert.equal(await page.evaluate(()=>window.MathasPilotBridge?.mode),'connected');
+   const schoolClass=page.frameLocator('iframe').locator('#mathas-multi-connect-class');
+   await schoolClass.waitFor({state:'visible'});
+   assert.equal(await schoolClass.textContent(),'Classe : Phase 1');
    await playFour(page);
    assert.deepEqual(proofCalls.map(x=>x.action),['start-classic-v1','finish-classic-v1']);
    assert.ok(calls.some(x=>x.action==='student-xp'));
@@ -478,6 +490,9 @@ try{
   try{
    assert.equal(await page.evaluate(()=>window.MathasPilotBridge?.mode),'connected');
    assert.ok(calls.some(x=>x.action==='teacher-player'));
+   const classBadge=page.frameLocator('iframe').locator('#mathas-multi-connect-class');
+   await classBadge.waitFor({state:'visible'});
+   assert.equal(await classBadge.textContent(),'Classe TEST','Monsieur T en mode Toutes doit rester en classe TEST');
    await page.frameLocator('iframe').locator('.classic-count-btn[data-count="4"]').click();
    await page.frameLocator('iframe').locator('#gameScreen:not(.hidden)').waitFor();
    assert.equal(proofCalls[0].action,'start-classic-v1');
