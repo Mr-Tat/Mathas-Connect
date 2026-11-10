@@ -71,22 +71,24 @@ Deno.serve(async(req:Request)=>{
   // Seul le chargement initial de l'onglet d'origine envoie « resume ».
   // Un status déjà en vol lors de la fermeture ne doit JAMAIS annuler sa fermeture.
   if(b.action==='resume'&&teacher&&current?.active&&current.teacher_id===user.id
-   &&UUID.test(b.hostId||'')&&guidedSessionLive(current)){
+   &&UUID.test(b.hostId||'')&&UUID.test(b.pageId||'')&&guidedSessionLive(current)){
    if(!current.host_client_id){
     // Adoption des séances antérieures à cette livraison, sans supprimer leurs pages.
     const {data:adopted,error:adoptError}=await db.from(TABLE).update({
-     host_client_id:b.hostId,host_seen_at:now,close_requested_at:null
+     host_client_id:b.hostId,host_page_id:b.pageId,host_seen_at:now,close_requested_at:null
     }).eq('class_id',cls).eq('session_id',current.session_id)
       .is('host_client_id',null).eq('active',true).select().maybeSingle();
     if(adoptError)throw Error('adoption_failed');
     if(adopted)current=adopted;
-   }else if(current.host_client_id===b.hostId&&current.close_requested_at){
-    const {data:resumed,error:resumeError}=await db.from(TABLE).update({
-     host_seen_at:now,close_requested_at:null
+   }else if(current.host_client_id===b.hostId){
+    // Un nouveau chargement reçoit un ID de page différent. Une requête
+    // « closing » envoyée en retard depuis l'ancienne page sera alors refusée.
+    let query=db.from(TABLE).update({
+     host_page_id:b.pageId,host_seen_at:now,close_requested_at:null
     }).eq('class_id',cls).eq('session_id',current.session_id)
-      .eq('host_client_id',b.hostId)
-      .eq('close_requested_at',current.close_requested_at).eq('active',true)
-      .select().maybeSingle();
+      .eq('host_client_id',b.hostId).eq('active',true);
+    query=current.host_page_id?query.eq('host_page_id',current.host_page_id):query.is('host_page_id',null);
+    const {data:resumed,error:resumeError}=await query.select().maybeSingle();
     if(resumeError)throw Error('resume_failed');
     if(resumed)current=resumed;
    }
@@ -116,9 +118,9 @@ Deno.serve(async(req:Request)=>{
     ||new Set(b.multipliers).size!==b.multipliers.length
     ||b.multipliers.some((v:any)=>!Number.isInteger(v)||v<2||v>9))return fail('invalid_configuration');
    if(current?.active&&guidedSessionLive(current))return fail('session_already_active',409);
-   if(!UUID.test(b.hostId||''))return fail('teacher_tab_required',409);
+   if(!UUID.test(b.hostId||'')||!UUID.test(b.pageId||''))return fail('teacher_tab_required',409);
    const row={class_id:cls,teacher_id:user.id,session_id:crypto.randomUUID(),active:true,
-    host_client_id:b.hostId,host_seen_at:now,close_requested_at:null,
+    host_client_id:b.hostId,host_page_id:b.pageId,host_seen_at:now,close_requested_at:null,
     level:b.level,carry_method:b.carryMethod,multipliers:b.multipliers,
     pages:[makePage(b.level,b.multipliers)],page_index:0,allow_skip:false,
     revision:Number(current?.revision||0)+1,updated_at:new Date().toISOString()};
@@ -134,8 +136,10 @@ Deno.serve(async(req:Request)=>{
   if(!UUID.test(b.sessionId||'')||b.sessionId!==current.session_id)return fail('session_changed',409);
   if(current.host_client_id&&(!UUID.test(b.hostId||'')||b.hostId!==current.host_client_id))
    return fail('session_owned_by_other_tab',403);
+  if(current.host_page_id&&(!UUID.test(b.pageId||'')||b.pageId!==current.host_page_id))
+   return fail('session_owned_by_other_page',403);
   if(b.action==='heartbeat'||b.action==='closing'){
-   if(!mayRenewGuidedHost(current,{teacherId:user.id,sessionId:b.sessionId,hostId:b.hostId}))
+   if(!mayRenewGuidedHost(current,{teacherId:user.id,sessionId:b.sessionId,hostId:b.hostId,pageId:b.pageId}))
     return fail('session_owned_by_other_tab',403);
    // Présence et fermeture ne changent PAS la révision pédagogique des pages.
    // Le heartbeat ne lève pas une fermeture : seul un chargement (status)
@@ -143,7 +147,8 @@ Deno.serve(async(req:Request)=>{
    const patch=b.action==='heartbeat'?{host_seen_at:now}:{close_requested_at:now};
    const {data,error:writeError}=await db.from(TABLE).update(patch)
     .eq('class_id',cls).eq('session_id',current.session_id)
-    .eq('host_client_id',b.hostId).eq('active',true).select().maybeSingle();
+    .eq('host_client_id',b.hostId).eq('host_page_id',b.pageId)
+    .eq('active',true).select().maybeSingle();
    if(writeError)throw Error('presence_write_failed');
    if(!data)return fail('session_changed',409);
    return reply({ok:true,active:true});
