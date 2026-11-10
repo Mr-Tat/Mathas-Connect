@@ -10,6 +10,12 @@
    status(){return{training:session?.mode==='training',collective:this.active,
     finished:session?.mode==='training'&&states.length===2&&states.every(s=>s.solved),
     pageIndex:this.pageIndex,phase};},
+   isFinished(index){
+    if(this.active&&this.pageIndex===index&&session?.mode==='training')return states.length===2&&states.every(v=>v.solved);
+    const saved=mathasGuidedAnswers.get(index);
+    return Array.isArray(saved)&&saved.length===2&&saved.every(v=>v.solved===true);
+   },
+   resetSaved(){mathasGuidedAnswers.clear();this.active=false;this.pageIndex=-1;},
    save(){
     if(!this.active||this.pageIndex<0||session?.mode!=='training')return;
     mathasGuidedAnswers.set(this.pageIndex,states.map(s=>({
