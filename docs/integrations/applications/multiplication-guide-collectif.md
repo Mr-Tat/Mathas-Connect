@@ -3,10 +3,9 @@
 ## Décisions pédagogiques validées
 - Première étape : **multiplication simple seulement**, puis retour d’expérience avant les trois autres jeux.
 - Même paire d'opérations par classe, réponses et corrections **individuelles**, sans synchroniser les chiffres du professeur.
-- Seul le professeur lance/arrête la séance et ouvre de nouvelles pages ; les élèves ne peuvent passer qu'après l'ouverture et normalement après correction.
-- Le professeur peut activer « passage libre » pour permettre de rejoindre la page ouverte sans terminer.
+- Seul le professeur lance/arrête la séance, ouvre de nouvelles pages ou choisit une page déjà enregistrée. Les élèves avancent **librement par défaut** dès que la suivante est ouverte ; une **Page obligatoire** exige la validation des deux calculs, correction après erreur acceptée.
 - « M'entraîner en attendant » utilise le guidé individuel, puis « Rejoindre la classe » rétablit les opérations partagées.
-- Corrigés uniquement côté professeur, sous les opérations, plus bas dans la page, confirmation Oui/Non neutre. « Élève au tableau » masque/verrouille les commandes et corrigés, PIN local provisoire pour en sortir.
+- Corrigés exclusivement professeur sous les cases, avec ligne de résultats et ligne de petits reports, confirmation Oui/Non neutre. **Pas de mode « Élève au tableau » ni de PIN** (options abandonnées).
 - XP : **SANS OBJET** ; trophées : **SANS OBJET** ; scores : **SANS OBJET** (aucun nouveau barème ni résultat scolaire).
 
 ## Architecture
@@ -15,7 +14,12 @@
 - Table RLS privée de séance : deux opérations par page, config, progression des pages et version ; aucune réponse, score, XP ou donnée de résultat élève.
 - Poll léger et reprise après réseau absent.
 
-## État et preuves à distinguer
+## État actuel et reprise après incident
+- **Décision validée du 10/11/2026** : une sauvegarde de secours locale élève doit survivre à F5/couac dans le même onglet. Réalisation : [PR #294](https://github.com/Mr-Tat/Mathas-Connect/pull/294). `collective-draft.mjs` et extensions du pont natif ; namespace `sessionStorage` par classe / utilisateur / séance, contrôle des calculs, 120 Kio et 12 h maximum ; aucun écrit élève sur le réseau ; aucun changement de mode obligatoire ou de navigation.
+- **Preuve ciblée sur #294** : [Chromium + tests Node](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/42856327937) : 31 tests réussis, 0 échec ; vérification F5, réponses sur deux pages, isolation A/B, UUID nouveau, expiration, quota bloqué. **À vérifier après fusion : Pages sur SHA exact, puis recette hébergée réelle.** SQL/Edge non modifiés par #294.
+- **Passation aux trois autres calculs écrits** : [document de transfert final](PASSATION_GUIDE_COLLECTIF_AUTRES_CALCULS_20261110.md) ; suivre ses décisions finales plutôt que les variantes anciennes décrites plus bas.
+
+## Historique initial et preuves à distinguer
 - Code fusionné sur `main` : [PR #279](https://github.com/Mr-Tat/Mathas-Connect/pull/279) (pilote), [PR #280](https://github.com/Mr-Tat/Mathas-Connect/pull/280) (lancer/rejoindre depuis un guidé déjà ouvert). Dernier SHA fonctionnel `c0fa401c`.
 - Code : PR #279 ; tests navigateur Chromium **13+ cas réussis** au SHA `55854831` (run [42813878262](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/42813878262)). Tests d'intégration et de validation manuelle existants réussis. La suite globale comporte 4 échecs de référence hors périmètre (3 miniatures, guide Laboratoire), plus une assertion de test du pilote corrigée ensuite.
 - SQL : migration `guided_multiplication_classroom_20261110` **appliquée** le 10/11/2026 sur le projet Connect ; RLS et grants service_role vérifiés, table vide.
@@ -23,7 +27,7 @@
 - GitHub Pages : **publication réussie le 10/11/2026** pour SHA `c0fa401c`, [workflow #42815242183](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/42815242183).
 - Tests navigateur Chromium : le pilote et le correctif #280 réussis, dont prof/élève, copie des opérations, pages, passage libre, entraînement et mode Élève au tableau ; recette authentifiée en classe **non encore exécutée**.
 - Les quatre échecs récurrents du test de régression global concernent des miniatures et le guide de laboratoire hors de ce chantier ; ne pas les présenter comme des tests du guidé collectif.
-- Recette fictive à faire : Monsieur T / Élève A ou B (classe TEST), questions identiques, saisies indépendantes, page suivante, passage libre, entraînement/rejoint, verrouillage tableau, petit écran, réseau intermittent.
+- Recette fictive encore à réaliser en vrai navigateur connecté : Monsieur T / Élève A ou B (classe TEST), mêmes calculs et réponses indépendantes, pages ordinaires libres / obligatoires, entraînement puis retour, F5 et sauvegarde de secours, fermeture de l'onglet professeur, petit écran, réseau intermittent.
 - Ne modifier aucune visibilité de classe, aucun résultat de vrais élèves et aucune application autre que Multiplication simple.
 
 ## Incidents corrigés et raccourcis
@@ -79,6 +83,13 @@
 - Le badge est retiré de la rangée des commandes, qui devient complètement masquée quand ses boutons « Lancer / Rejoindre » sont inactifs ; suppression de la hauteur vide et réduction des marges.
 - Trois groupes de commandes professeur, séparés d'orange : « Précédente / Suivante » | « Page obligatoire / Afficher les réponses » | « Terminer la séance ». Deux groupes élèves : navigation | entraînement/retour. Espacement accru entre boutons ; retour à la ligne autorisé sur mobile.
 - Aucun changement des permissions, des séances, des exercices, des résultats ni des XP. À confirmer séparément : tests Chromium, fusion PR, Pages et recette visuelle.
+
+## Sauvegarde de secours locale — PR #294
+- **Portée** : uniquement élèves connectés en guidé collectif. Enregistrement `sessionStorage` dans l'onglet de l'élève ; `studentId` = UUID du compte Connect authentifié, avec classe et UUID de séance pour l'isolation. Aucun impact sur compte, XP, scores, autres modes ou affichage professeur.
+- **État conservé** : les deux opérations par page, chiffres de réponse et reports saisis, traces de correction, indicateur de réussite vérifié, et page affichée. Capture à chaque action native de clavier/pavé/validation, avant navigation et `pagehide`.
+- **Restauration** : après F5, cliquer explicitement « Rejoindre la classe » ; une lecture du serveur valide la séance ; les nombres sont comparés à ceux du serveur ; les valeurs sont restaurées seulement si elles sont cohérentes et sous les bornes. Pages obligatoires antérieures gardent leur priorité. Les sauvegardes d'une autre séance sont purgées.
+- **Limitations honnêtes** : sauvegarde locale de confort (même onglet / appareil), pas de synchronisation entre appareils ; si les données locales sont effacées/bloquées ou navigateur fermé sans reprise de session, la restauration peut ne plus être possible. Le jeu reste fonctionnel.
+- **Recette** : test automatique réussie à 31/31 sur Chromium et Node ; recette connectée réelle avec Élève A/Monsieur T encore à exécuter.
 
 ## Retour d'expérience à compléter
 - Source de divergence : chaque navigateur tire aléatoirement ses propres opérations ; la séance doit porter les nombres déterminés côté serveur.
