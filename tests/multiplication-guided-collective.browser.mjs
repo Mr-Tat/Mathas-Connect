@@ -140,6 +140,7 @@ try{
    assert.equal(departures.length,1,'pagehide réel (non bfcache) avertit le serveur');
    assert.equal(departures[0].sessionId,'11111111-1111-4111-8111-111111111111');
    assert.match(departures[0].hostId,/^[0-9a-f]{8}-[0-9a-f-]{27}$/i);
+   assert.match(departures[0].pageId,/^[0-9a-f]{8}-[0-9a-f-]{27}$/i);
   }finally{await first.close();await other.close()}
  });
  await test('professeur : bouton sur la même ligne à droite d’Exercice guidé',async()=>{
