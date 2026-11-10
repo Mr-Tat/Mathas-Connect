@@ -65,7 +65,7 @@ test('Chromium: 4 vraies additions émises par Connect, écritures natives et AC
     if(b.action==='student-score-history'){
      const recorded=xp>0?{eventId:sessionId,mode:'classic',score:4,total:4,points:22,at:new Date().toISOString()}:null;
      response={ok:true,events:recorded?[recorded]:[],bestThree:recorded?[recorded]:[],
-      todayBest:recorded,boardBest:0};
+      todayBest:recorded,boardBest:0,boardTodayBest:0};
     }else response={ok:true,consentRecorded:true};
    }else if(request.url().includes('/connect-objective-record-test')){
     if(b.action==='start-proof-v2'){

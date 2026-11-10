@@ -5,7 +5,7 @@
 ## Reprise en 30 secondes
 
 - **Travail documentaire initialisé le 09/11/2026.** Aucune nouvelle intégration enregistrée dans cet index à sa création ; cela **ne signifie pas** absence de PR anciennes ou de chantiers antérieurs.
-- **Intégration active :** aucune encore renseignée. **Prochain geste** : vérifier le HEAD de `main`, les PR ouvertes et l'application demandée, puis créer/actualiser sa fiche.
+- **Chantier actif :** PR #277, projection des quatre calculs écrits. SQL du jour installé sur Supabase (10/11/2026) ; Pages et recette authentifiée restent à attester. Voir uniquement la fiche associée.
 - **Verrou pédagogique :** XP, trophées et scores d'une **nouvelle** app nécessitent chacun une proposition de l'IA et **l'accord explicite du professeur avant codage** ; état de décision dans la fiche.
 - **Signal transversal à traiter :** aucun nouveau signal classé à la création ; voir [les tendances et raccourcis](RETEX_OPERATIONNEL.md) si incident similaire.
 - **Chantiers hérités** : cinq PR anciennes **toujours ouvertes et non fusionnées lors de la vérification GitHub du 10/11/2026** ; voir le bref inventaire plus bas. L'ancien [suivi du 07/11](SUIVI_DECISIONS_OUVERTES_20261107.md) reste à revalider, sans présumer ses tâches terminées.
@@ -15,7 +15,7 @@
 
 | Application / `app_key` | Étape | XP / coupes / scores approuvés ? | PR et prochaine action | Fiche |
 | --- | --- | --- | --- | --- |
-| _Aucune nouvelle intégration inscrite_ | — | — | — | — |
+| Projection Score du jour — quatre calculs écrits | SQL LIVE vérifié ; Pages en attente | Barèmes inchangés ; consentement du jour validé 10/11 | [PR #277](https://github.com/Mr-Tat/Mathas-Connect/pull/277) : fusion → Pages → recette TEST | [Fiche](applications/projection-score-du-jour-calculs-ecrits.md) |
 
 **Étapes distinctes** : `AUDIT` → `ARBITRAGE PROF` → `CODE` → `CI` → `PAGES` → `EDGE/SQL` → `RECETTE FICTIVE` → `OUVERTURE AUTORISÉE`. N'afficher une étape comme franchie qu'avec **date + preuve** ; `SANS OBJET` si le jeu n'a pas cette capacité. Une fusion GitHub ne certifie pas le reste.
 

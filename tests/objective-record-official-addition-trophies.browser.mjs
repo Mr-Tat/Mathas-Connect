@@ -52,7 +52,8 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
       ?{ok:true,revision:0,resetEpoch:0,storageSubject:pupil,state:{rewards:serverRewards===null?rewards(false):serverRewards}}
       :{ok:true,appXp:0,total:0,level:1};
     else if(r.request().url().includes('/connect-projection-v2')&&b.action==='student-score-history')
-     data={ok:true,events:[todayEvent],bestThree:[todayEvent],todayBest:todayEvent,boardBest:0};
+     data={ok:true,events:[todayEvent],bestThree:[todayEvent],todayBest:todayEvent,boardBest:scoreShareWrites?20:0,
+      boardTodayBest:scoreShareWrites?20:0};
     else if(r.request().url().includes('/connect-projection-v2')&&b.action==='student-share-score'){
      scoreShareWrites++;
      assert.equal(b.eventId,todayEvent.eventId,'Seule la preuve certifiée correspondante est envoyée');
@@ -122,7 +123,7 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
      stripTag:strip.tagName
     };
    });
-   assert.equal(discreet.shareText,'Proposer ce score à la projection');
+   assert.equal(discreet.shareText,'Envoyer au tableau');
    assert.equal(discreet.sharePointer,'none','l encadré partage la zone clic du TOP DU JOUR');
    assert.equal(discreet.shareBorder,'1px');
    assert.ok(discreet.shareHeight<35,'contour de projection discret');

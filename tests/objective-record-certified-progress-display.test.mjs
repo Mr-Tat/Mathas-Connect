@@ -87,9 +87,9 @@ test('l hôte actualise et met en cache la grille et le score du jour',()=>{
  const html=source('apps/objective-record/eleve.html');
  const scoreboard=source('apps/objective-record/school-score-view.mjs');
  assert.match(host,/school-official-unlocks\.mjs\?v=20261106-certified-results-v2/);
- assert.match(host,/school-score-view\.mjs\?v=20261106-fullscreen-share-v3/);
+ assert.match(host,/school-score-view\.mjs\?v=20261110-daily-share-v1/);
  assert.match(host,/window\.MathasConnectOfficialSchoolProgress=lastOfficialProgress/);
- assert.match(html,/eleve\.mjs\?v=20261107-profile-hud-restored-v2/);
+ assert.match(html,/eleve\.mjs\?v=20261110-daily-share-v1/);
  assert.match(scoreboard,/MutationObserver\(renderToday\)/);
  assert.match(scoreboard,/renderCertifiedTodayPoints\(documentRef,remote,state\)/);
 });

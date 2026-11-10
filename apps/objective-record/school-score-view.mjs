@@ -31,14 +31,19 @@ export function schoolScoreSnapshot(remote,state={}){
  const best=(remoteDay&&day(remoteDay.at)===today()?remoteDay:sameDay);
  const current=localToday!==null&&localToday>(best?.points??-1)
   ?{points:localToday,mode:'',eventId:null,score:0,at:''}:best;
- const boardBest=points(remote?.boardBest);
- return {recent,top,today:current,boardBest,official:remote?.ok===true};
+ const boardBest=points(remote?.boardBest),boardTodayBest=points(remote?.boardTodayBest);
+ return {recent,top,today:current,boardBest,boardTodayBest,official:remote?.ok===true};
 }
 export function canShareBestScore(snapshot){
  return !!(snapshot?.official&&snapshot.today?.eventId
-  &&snapshot.boardBest!==null&&snapshot.today.points>snapshot.boardBest);
+  &&snapshot.boardTodayBest!==null&&snapshot.today.points>snapshot.boardTodayBest);
 }
 
+export function scoreShareStatus(snapshot){
+ if(!snapshot?.official||!snapshot.today?.eventId||snapshot.boardTodayBest===null)return 'unavailable';
+ if(canShareBestScore(snapshot))return 'send';
+ return snapshot.today.points>0&&snapshot.today.points===snapshot.boardTodayBest?'sent':'unavailable';
+}
 export function nativeDayPoints(top){
  // Le moteur met le nombre dans le premier span, puis ajoute parfois un
  // macaron RECORD. Ne jamais lire la concaténation « 20RECORD ».
@@ -91,11 +96,25 @@ export function renderCertifiedTodayPoints(doc,history,state={}){
 export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
  if(!['addition-ecrite-simple','addition-ecrite-multiple','multiplication-ecrite-simple','soustraction-ecrite-simple'].includes(appKey))
   throw Error('unsupported_score_app');
- let state={},remote=null,documentRef=null,loading=null,destroyed=false,clickTarget=null,podiumTarget=null,podiumObserver=null,dailyTarget=null,dailyObserver=null;
+ let state={},remote=null,documentRef=null,loading=null,destroyed=false,clickTarget=null,podiumTarget=null,podiumObserver=null,dailyTarget=null,dailyObserver=null,confirmedEvent=null;
  const autoOffered=new Set();
  const select=()=>schoolScoreSnapshot(remote,state);
  const renderPodium=()=>{if(documentRef)renderCertifiedHistoricalPodium(documentRef,remote)};
  const renderToday=()=>{if(documentRef)renderCertifiedTodayPoints(documentRef,remote,state)};
+ function renderShareHint(){
+  const hint=clickTarget?.querySelector('.mathas-school-share-hint');if(!hint)return;
+  const snapshot=select(),status=scoreShareStatus(snapshot);
+  const confirmed=confirmedEvent!==null&&confirmedEvent===snapshot.today?.eventId;
+  hint.textContent=confirmed?'✓ Score envoyé au tableau':status==='sent'?'✓ Meilleur score déjà envoyé':
+   status==='send'?'Envoyer au tableau':'Envoi indisponible';
+  clickTarget.classList.toggle('mathas-school-shareable',status==='send'&&!confirmed);
+  clickTarget.classList.toggle('mathas-school-share-sent',status==='sent'||confirmed);
+  clickTarget.title=hint.textContent;
+ }
+ const unsubscribeResult=consent()?.onResult?.(({eventId,result})=>{
+  if(destroyed)return;
+  if(result==='sent'){confirmedEvent=eventId;renderShareHint();void load(true)}
+ });
  function mountToday(doc){
   const target=doc.querySelector('#mathasPointsQuick [data-points="daily"]');
   if(!target)return;
@@ -126,6 +145,7 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
   +'#mathasPointsQuick .mathas-school-share-hint{display:inline-flex;align-items:center;justify-content:center;align-self:flex-start;flex:0 0 auto;width:max-content;max-width:calc(100% - 76px);box-sizing:border-box;padding:3px 6px;margin-top:4px;border:1px solid rgba(143,199,218,.36);border-radius:6px;background:rgba(35,83,110,.30);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);font:750 10px/1.25 system-ui;color:#c5e7f6;white-space:normal;text-align:center;pointer-events:none}'
   +'#mathasPointsQuick .mathas-school-share-hint::after{content:"›";margin-left:7px;flex:none;font-size:1.12em;line-height:1;color:#eed48d}'
   +'#mathasPointsQuick .mathas-school-shareable:hover .mathas-school-share-hint,#mathasPointsQuick .mathas-school-shareable:focus-visible .mathas-school-share-hint{border-color:rgba(172,220,235,.64);background:rgba(40,100,125,.40)}'
+  +'#mathasPointsQuick .mathas-school-share-sent .mathas-school-share-hint{border-color:#64c99a;color:#d0ffde;background:#16573c}'
   +'body.light #mathasPointsQuick .mathas-school-share-hint,body.light-mode #mathasPointsQuick .mathas-school-share-hint{color:#24536c;background:rgba(215,238,247,.72);border-color:rgba(69,127,153,.35)}';
  function nativeBestPoints(){return nativeDayPoints(clickTarget)}
  async function load(force=false){
@@ -138,7 +158,7 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
    try{
     const result=await fetchHistory();
     if(result?.ok!==true||!Array.isArray(result.events)||destroyed)return false;
-    remote=result;renderPodium();renderToday();return true;
+    remote=result;renderPodium();renderToday();renderShareHint();return true;
    }catch{return false}
    finally{loading=null}
   })();
@@ -154,7 +174,8 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
    notify('Le score est conservé, mais son envoi nécessite une preuve certifiée Connect.');return false;
   }
   if(!canShareBestScore(snapshot)){
-   notify('Ce score ne dépasse pas les points déjà présents au tableau de projection.');return false;
+   notify(scoreShareStatus(snapshot)==='sent'?'Meilleur score du jour déjà envoyé au tableau.':
+    'Envoi indisponible : connexion ou publication du jour à vérifier.');return false;
   }
   return !!consent()?.offer(snapshot.today.eventId,{points:snapshot.today.points,mode:snapshot.today.mode});
  }
@@ -164,7 +185,7 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
   const snapshot=select();
   const row=[...snapshot.recent,...snapshot.top,snapshot.today].find(e=>e?.eventId===eventId);
   if(!row||!snapshot.today||snapshot.today.eventId!==eventId
-   ||snapshot.boardBest===null||row.points<=snapshot.boardBest)return false;
+   ||!canShareBestScore(snapshot))return false;
   const offered=!!consent()?.offer(eventId,{points:row.points,mode:row.mode});
   if(offered)autoOffered.add(eventId);
   return offered;
@@ -177,7 +198,7 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
   if(!clickTarget)return;
   clickTarget.removeEventListener('click',onClick);
   clickTarget.removeEventListener('keydown',onKeydown);
-  clickTarget.classList.remove('mathas-school-shareable');
+  clickTarget.classList.remove('mathas-school-shareable','mathas-school-share-sent');
   clickTarget.removeAttribute('role');
   clickTarget.removeAttribute('tabindex');
   clickTarget.removeAttribute('title');
@@ -205,8 +226,8 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
   target.setAttribute('tabindex','0');
   target.setAttribute('title','Vérifier et proposer le meilleur score du jour au tableau');
   const hint=doc.createElement('span');hint.className='mathas-school-share-hint';
-  hint.textContent='Proposer ce score à la projection';
-  target.append(hint);
+  hint.textContent='Vérification…';
+  target.append(hint);renderShareHint();
   target.addEventListener('click',onClick);
   target.addEventListener('keydown',onKeydown);
   // Ne PAS masquer mathasPointsQuick ni mathasPointsDetail, et ne pas
@@ -214,12 +235,13 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
  }
  function destroy(){
   destroyed=true;remote=null;state={};
+  if(typeof unsubscribeResult==='function')unsubscribeResult();
   podiumObserver?.disconnect();podiumObserver=null;podiumTarget=null;
   dailyObserver?.disconnect();dailyObserver=null;dailyTarget=null;
   unbind();
   documentRef?.getElementById('mathasSchoolScoreActionStyle')?.remove();
   documentRef=null;
  }
- return Object.freeze({updateState(value){state=value&&typeof value==='object'?value:{};renderToday()},
+ return Object.freeze({updateState(value){state=value&&typeof value==='object'?value:{};renderToday();renderShareHint()},
   load,recorded,mount,offerBest,destroy,read:select});
 }

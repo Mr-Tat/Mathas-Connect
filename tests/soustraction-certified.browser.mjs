@@ -55,7 +55,8 @@ function fixture(){
     milestones:[],currentMilestones:[],parcours:1,repeatXp:false,max:474});
    if(data.action==='student-score-history'){
     const events=state?.recent||[];
-    return reply(route,{ok:true,events,bestThree:events,todayBest:events[0]||null,boardBest:0});
+    return reply(route,{ok:true,events,bestThree:events,todayBest:events[0]||null,
+     boardBest:shared?events[0]?.points||0:0,boardTodayBest:shared?events[0]?.points||0:0});
    }
    if(data.action==='student-share-score'){
     assert.equal(data.eventId,UUID);

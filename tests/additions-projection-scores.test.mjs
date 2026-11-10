@@ -15,7 +15,7 @@ test('Les 2 additions : exercices, 3 vies et Mort subite participent tous au top
  const sudden=event('3333','sudden',6,50);
  const hard=event('4444','hard-three-lives',5,70);
  const score=schoolScoreSnapshot({ok:true,events:[classic,lives,sudden,hard],
-  bestThree:[hard,sudden,lives],todayBest:hard,boardBest:45},{});
+  bestThree:[hard,sudden,lives],todayBest:hard,boardBest:45,boardTodayBest:45},{});
  assert.deepEqual(score.top.map(r=>r.points),[70,50,45]);
  assert.equal(score.today.mode,'hard-three-lives');
  assert.equal(score.today.points,70);
@@ -26,7 +26,7 @@ test('Les 2 additions : exercices, 3 vies et Mort subite participent tous au top
 test('Egal ou inférieur au score du tableau : aucun nouvel envoi',()=>{
  const best=event('5555','sudden',8,90);
  for(const value of [90,100]){
-  const score=schoolScoreSnapshot({ok:true,events:[best],todayBest:best,bestThree:[best],boardBest:value},{});
+  const score=schoolScoreSnapshot({ok:true,events:[best],todayBest:best,bestThree:[best],boardBest:value,boardTodayBest:value},{});
   assert.equal(canShareBestScore(score),false);
  }
  const noEvent=schoolScoreSnapshot({ok:true,events:[],bestThree:[],todayBest:null,boardBest:0},{});
@@ -69,8 +69,8 @@ test('Les additions réutilisent les cartes natives et une invitation sécurisé
   assert.match(html,/id='mathasPointsDetail'/);
   assert.match(html,/mathas-v541-cup/);
  }
- assert.match(read('apps/objective-record/eleve.mjs'),/school-score-view\.mjs\?v=20261106-fullscreen-share-v3/);
- assert.match(read('apps/objective-record/eleve.html'),/eleve\.mjs\?v=20261107-profile-hud-restored-v2/);
+ assert.match(read('apps/objective-record/eleve.mjs'),/school-score-view\.mjs\?v=20261110-daily-share-v1/);
+ assert.match(read('apps/objective-record/eleve.html'),/eleve\.mjs\?v=20261110-daily-share-v1/);
 });
 test('Protection Edge: RPC atomique, identité élève et preuve du résultat',()=>{
  const edge=read('supabase/functions/connect-projection-v2/index.ts');
@@ -95,13 +95,14 @@ test('Protection Edge: RPC atomique, identité élève et preuve du résultat',(
 
 test('Cartouches sobres : TOP DU JOUR certifié et défis, sans modifier les zones cliquables',()=>{
  const score=read('apps/objective-record/school-score-view.mjs');
- assert.ok(score.includes("hint.textContent='Proposer ce score à la projection'"));
+ assert.ok(score.includes("hint.textContent='Vérification…'"));
+ assert.ok(score.includes("'Envoyer au tableau'"));
  assert.ok(!score.includes('Cliquer pour proposer ce score'));
  assert.ok(score.includes('mathas-school-share-hint{display:inline-flex'));
  assert.ok(score.includes('pointer-events:none'));
  assert.ok(score.includes("target.addEventListener('click',onClick)"));
  assert.ok(score.includes("target.setAttribute('role','button')"));
- assert.ok(read('apps/multiplication-simple/index.html').includes('school-score-view.mjs?v=20261106-fullscreen-share-v3'));
+ assert.ok(read('apps/multiplication-simple/index.html').includes('school-score-view.mjs?v=20261110-daily-share-v1'));
 
  const games=[
   'apps/objective-record/engines/addition-simple/game-original.html',
