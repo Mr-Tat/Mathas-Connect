@@ -2,6 +2,7 @@
 // Séparée des preuves SQL de calcul, XP, trophées et projection.
 import {createClient} from 'npm:@supabase/supabase-js@2.95.0';
 import {MULTIPLICATION_TEST_CLASS,multiplicationSchoolPreset,mayStartMultiplicationSchoolProof} from './school-visibility.mjs';
+import {guidedSessionLive,mayRenewGuidedHost} from './lease.mjs';
 const BASE=Deno.env.get('SUPABASE_URL')!;
 const ANON=Deno.env.get('SUPABASE_ANON_KEY')!;
 const SERVICE=Deno.env.get('SUPABASE_'+'SERVICE_ROLE_KEY')!;
@@ -41,7 +42,7 @@ Deno.serve(async(req:Request)=>{
  const raw=await req.text();if(raw.length>5000)return fail('payload_too_large',413);
  let b:any;try{b=JSON.parse(raw)}catch{return fail('invalid_json')}
  if(!b||typeof b!=='object'||Array.isArray(b)||!UUID.test(b.classId||''))return fail('invalid_request');
- if(!['status','start','next','set-skip','stop'].includes(b.action))return fail('invalid_action');
+ if(!['status','start','next','set-skip','stop','heartbeat','closing'].includes(b.action))return fail('invalid_action');
  if(b.action!=='status'&&user.is_anonymous===true)return fail('teacher_only',403);
  const cls=String(b.classId).toLowerCase();
  try{
@@ -65,7 +66,48 @@ Deno.serve(async(req:Request)=>{
    const visible=await one(db.from('connect_hub_preset_entries').select('visible').eq('preset_slug',preset).eq('app_key',APP).limit(1));
    if(!mayStartMultiplicationSchoolProof(cls,visible?.visible===true))return fail('school_app_not_open_for_class',403);
   }
-  const current=await one(db.from(TABLE).select('*').eq('class_id',cls).limit(1));
+  let current=await one(db.from(TABLE).select('*').eq('class_id',cls).limit(1));
+  const now=new Date().toISOString();
+  // L'onglet d'origine peut être rechargé : 15 secondes pour annuler sa demande
+  // de fermeture. Un deuxième onglet / un élève ne peut pas prolonger la séance.
+  if(b.action==='status'&&teacher&&current?.active&&current.teacher_id===user.id
+   &&UUID.test(b.hostId||'')&&guidedSessionLive(current)){
+   if(!current.host_client_id){
+    // Adoption des séances antérieures à cette livraison, sans supprimer leurs pages.
+    const {data:adopted,error:adoptError}=await db.from(TABLE).update({
+     host_client_id:b.hostId,host_seen_at:now,close_requested_at:null
+    }).eq('class_id',cls).eq('session_id',current.session_id)
+      .is('host_client_id',null).eq('active',true).select().maybeSingle();
+    if(adoptError)throw Error('adoption_failed');
+    if(adopted)current=adopted;
+   }else if(current.host_client_id===b.hostId&&current.close_requested_at){
+    const {data:resumed,error:resumeError}=await db.from(TABLE).update({
+     host_seen_at:now,close_requested_at:null
+    }).eq('class_id',cls).eq('session_id',current.session_id)
+      .eq('host_client_id',b.hostId)
+      .eq('close_requested_at',current.close_requested_at).eq('active',true)
+      .select().maybeSingle();
+    if(resumeError)throw Error('resume_failed');
+    if(resumed)current=resumed;
+   }
+  }
+  // L'expiration est évaluée côté serveur, et jamais d'après l'horloge élève.
+  if(!guidedSessionLive(current)){
+   if(current?.active){
+    // Nettoyage prudent : ne pas désactiver une séance qui aurait entre-temps
+    // reçu un heartbeat ou un nouveau démarrage.
+    let query=db.from(TABLE).update({active:false,updated_at:now})
+      .eq('class_id',cls).eq('session_id',current.session_id)
+      .eq('revision',current.revision).eq('active',true);
+    query=current.host_seen_at?query.eq('host_seen_at',current.host_seen_at):query.is('host_seen_at',null);
+    query=current.close_requested_at?query.eq('close_requested_at',current.close_requested_at):query.is('close_requested_at',null);
+    const {error:cleanupError}=await query;
+    if(cleanupError)throw Error('cleanup_failed');
+   }
+   if(b.action==='status')return reply(view(null));
+   // start() peut remplacer une séance périmée en réutilisant sa ligne.
+   if(b.action!=='start')return fail('session_not_active',409);
+  }
   if(b.action==='status')return reply(view(current));
   if(!teacher)return fail('teacher_only',403);
   if(b.action==='start'){
@@ -73,8 +115,10 @@ Deno.serve(async(req:Request)=>{
     ||!Array.isArray(b.multipliers)||b.multipliers.length<1||b.multipliers.length>8
     ||new Set(b.multipliers).size!==b.multipliers.length
     ||b.multipliers.some((v:any)=>!Number.isInteger(v)||v<2||v>9))return fail('invalid_configuration');
-   if(current?.active)return fail('session_already_active',409);
+   if(current?.active&&guidedSessionLive(current))return fail('session_already_active',409);
+   if(!UUID.test(b.hostId||''))return fail('teacher_tab_required',409);
    const row={class_id:cls,teacher_id:user.id,session_id:crypto.randomUUID(),active:true,
+    host_client_id:b.hostId,host_seen_at:now,close_requested_at:null,
     level:b.level,carry_method:b.carryMethod,multipliers:b.multipliers,
     pages:[makePage(b.level,b.multipliers)],page_index:0,allow_skip:false,
     revision:Number(current?.revision||0)+1,updated_at:new Date().toISOString()};
@@ -85,10 +129,27 @@ Deno.serve(async(req:Request)=>{
    if(!data)return fail('session_conflict',409);
    return reply(view(data));
   }
-  if(!current?.active)return fail('session_not_active',409);
+  if(!current?.active||!guidedSessionLive(current))return fail('session_not_active',409);
   if(current.teacher_id!==user.id)return fail('session_owned_by_other_teacher',403);
-  if(!UUID.test(b.sessionId||'')||b.sessionId!==current.session_id||b.revision!==Number(current.revision))return fail('session_changed',409);
-  const patch:any={revision:Number(current.revision)+1,updated_at:new Date().toISOString()};
+  if(!UUID.test(b.sessionId||'')||b.sessionId!==current.session_id)return fail('session_changed',409);
+  if(current.host_client_id&&(!UUID.test(b.hostId||'')||b.hostId!==current.host_client_id))
+   return fail('session_owned_by_other_tab',403);
+  if(b.action==='heartbeat'||b.action==='closing'){
+   if(!mayRenewGuidedHost(current,{teacherId:user.id,sessionId:b.sessionId,hostId:b.hostId}))
+    return fail('session_owned_by_other_tab',403);
+   // Présence et fermeture ne changent PAS la révision pédagogique des pages.
+   // Le heartbeat ne lève pas une fermeture : seul un chargement (status)
+   // de l'onglet d'origine peut reprendre la séance.
+   const patch=b.action==='heartbeat'?{host_seen_at:now}:{close_requested_at:now};
+   const {data,error:writeError}=await db.from(TABLE).update(patch)
+    .eq('class_id',cls).eq('session_id',current.session_id)
+    .eq('host_client_id',b.hostId).eq('active',true).select().maybeSingle();
+   if(writeError)throw Error('presence_write_failed');
+   if(!data)return fail('session_changed',409);
+   return reply({ok:true,active:true});
+  }
+  if(b.revision!==Number(current.revision))return fail('session_changed',409);
+  const patch:any={revision:Number(current.revision)+1,updated_at:now};
   if(b.action==='next'){
    if(!Array.isArray(current.pages)||current.pages.length>=120)return fail('page_limit',409);
    patch.pages=[...current.pages,makePage(current.level,current.multipliers)];
