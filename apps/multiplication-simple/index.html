@@ -586,7 +586,7 @@ window.MathasPilotBridge={mode,openTeacherParcours:()=>{
 let classroomBridgeReady=false;
 if(mode==='connected'){
  try{
-  const response=await fetch('./collective-native-bridge.js?v=20261110-classroom-v4');
+  const response=await fetch('./collective-native-bridge.js?v=20261110-classroom-v5');
   if(!response.ok)throw Error('pont de guidé collectif non disponible');
   const source=await response.text();
   const marker='primaryBtn.onclick=handlePrimary;';
@@ -606,9 +606,12 @@ if(mode==='connected'){
 let guidedCloseToken=session?.access_token||null;
 if(mode==='connected'&&classroomBridgeReady){
  try{
-  const {createMultiplicationCollective}=await import('./collective-ui.mjs?v=20261110-classroom-v9');
+  const {createMultiplicationCollective}=await import('./collective-ui.mjs?v=20261110-classroom-v10');
   guidedCollective=createMultiplicationCollective({
  iframe,teacher:teacherPlayer,classId,classLabel:classTag,
+ // Sauvegarde locale et éphémère réservée aux élèves de ce compte/onglet.
+ studentId:teacherPlayer?'':session.user.id,
+ storage:(()=>{try{return window.sessionStorage}catch{return null}})(),
  call:async(action,payload={})=>{
   const current=(await cloud.auth.getSession()).data.session;
   if(!current?.access_token||current.user?.id!==session.user.id)throw Error('Session Connect remplacée');

@@ -1,12 +1,17 @@
 import {validSession,mayMoveForward,latestUnlockedPage} from './collective-contract.mjs?v=20261110-v3';
+import {createGuidedDraftStore} from './collective-draft.mjs?v=20261110-v1';
 
 // Contrôleur visuel du guidé collectif : mêmes nombres, copies individuelles.
 // Il ne transmet jamais les chiffres saisis par les élèves.
-export function createMultiplicationCollective({iframe,teacher,call,onClose,classId,classLabel=''}){
+export function createMultiplicationCollective({iframe,teacher,call,onClose,classId,classLabel='',storage=null,studentId=''}){
  let doc=null,bridge=null,session=null,joined=false,practicing=false,index=-1,busy=false;
  let bar=null,notice=null,entry=null,teacherRow=null,pupilRow=null,barClassBadge=null;
  let btnNext=null,btnPrevious=null,teacherNextButton=null,teacherPreviousButton=null,btnStartHere=null,btnJoinHere=null,btnRequired=null,btnStop=null,btnAnswers=null,btnPractice=null,btnReturn=null;
  let answerPanel=null,answerVisible=false,confirmPanel=null,started=false,lastError='';
+ // sessionStorage appartient à cet onglet seulement. Le compte élève authentifié
+ // et la classe isolent les brouillons ; l'UUID de la séance les invalide.
+ const drafts=teacher?null:createGuidedDraftStore({storage,classId,studentId});
+ let restoredSessionId=null;
  // Clé propre à l'onglet. Elle survit à F5, pas à une ouverture ordinaire
  // dans un nouvel onglet (aucune donnée élève stockée ici).
  const hostKey='mathas.mul.guided.host-tab.'+classId;
@@ -29,6 +34,18 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
   return node;
  };
  const sameSession=s=>session?.sessionId===s?.sessionId;
+ const saveDraft=()=>{
+  if(!drafts?.enabled||!joined||!validSession(session)||index<0)return false;
+  return drafts.save(session,index,bridge?.snapshot?.()||[]);
+ };
+ const restoreDraft=()=>{
+  if(!drafts?.enabled||!validSession(session)||restoredSessionId===session.sessionId)return null;
+  restoredSessionId=session.sessionId;
+  const saved=drafts.read(session);
+  if(!saved||!bridge?.restoreSnapshot)return null;
+  const count=bridge.restoreSnapshot(saved.pages,session);
+  return count>0?saved.pageIndex:null;
+ };
  const displayCurrent=()=>{
   if(!validSession(session)||index<0||index>=session.pages.length)return false;
   const inGame=doc?.getElementById('gameScreen')?.classList.contains('hidden')===false;
@@ -38,9 +55,10 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
  const updateSession=s=>{
   if(!validSession(s)){
    if(session&&joined){bridge?.leave();say('Le professeur a terminé la séance. Tu peux continuer en guidé individuel.')}
+   drafts?.clear();restoredSessionId=null;
    session=null;joined=false;practicing=false;index=-1;render();return;
   }
-  if(!sameSession(s)){bridge?.leave();bridge?.useSession?.(s.sessionId);session=s;joined=false;practicing=false;index=-1;clearAnswers();}
+  if(!sameSession(s)){bridge?.leave();bridge?.useSession?.(s.sessionId);session=s;joined=false;practicing=false;index=-1;restoredSessionId=null;clearAnswers();}
   else session=s;
   render();
  };
@@ -88,7 +106,8 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
     return;
    }
    if(!joined){
-    index=session.pageIndex;
+    const savedPage=teacher?null:restoreDraft();
+    index=Number.isInteger(savedPage)?Math.min(savedPage,latestUnlockedPage(session)):session.pageIndex;
     // Une arrivée tardive commence à la première page obligatoire non réussie.
     // Sinon, elle rejoint directement la page que le professeur affiche.
     if(!teacher){
@@ -101,7 +120,7 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
    if(!displayCurrent()){
     say('Moteur guidé indisponible. Recharge la page.');
     joined=false;
-   }else lastError='';
+   }else{lastError='';saveDraft()}
   }catch(e){
    say('Impossible de vérifier la séance pour le moment. Réessaie.');
   }finally{busy=false;render()}
@@ -134,17 +153,17 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
    session,from:index,to:next,isFinished:page=>bridge?.finishedAt?.(page)===true
   });
   if(!allowed){say('Page obligatoire : réussis les deux calculs avant de continuer.');render();return}
-  index=next;displayCurrent();say('');render();
+  index=next;displayCurrent();saveDraft();say('');render();
  }
  function studentPrevious(){
   if(!joined||practicing||busy||index<=0)return;
-  index--;displayCurrent();say('');render();
+  index--;displayCurrent();saveDraft();say('');render();
  }
  function practice(){
   if(!joined||busy)return;
   if(!practicing){bridge?.practice();practicing=true}
   else {practicing=false;displayCurrent()}
-  render();
+  saveDraft();render();
  }
  // Corrigé visuel : lignes ajoutées APRÈS les cases de saisie, sans jamais
  // écrire dans un input ou dans l'état de correction du moteur natif.
@@ -361,14 +380,24 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
   answerPanel.append(confirmPanel);answerPanel.hidden=true;
   bar.append(answerPanel);
   doc.getElementById('gameScreen')?.prepend(bar);
+  // Les valeurs du pavé natif sont modifiées avant la remontée de « click ».
+  // Capturer aussi les validations, corrections et changements de page sans
+  // toucher au moteur ni envoyer de saisie au serveur.
+  if(!teacher){
+   doc.addEventListener('click',saveDraft);
+   doc.addEventListener('input',saveDraft);
+   doc.addEventListener('keyup',saveDraft);
+  }
   setInterval(render,950);
   if(!started){
    started=true;setInterval(()=>{if(!document.hidden)void poll()},8000);
    document.addEventListener('visibilitychange',()=>{
     if(!document.hidden)void poll();
     else if(teacher)void keepTeacherPresence();
+    else saveDraft();
    });
    window.addEventListener('focus',()=>void poll());
+   if(!teacher)window.addEventListener('pagehide',saveDraft);
    if(teacher){
     setInterval(()=>{void keepTeacherPresence()},25000);
     window.addEventListener('pagehide',event=>{
