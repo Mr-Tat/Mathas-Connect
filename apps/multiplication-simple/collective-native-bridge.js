@@ -75,8 +75,29 @@
     for(let i=0;i<2;i++){
      const s=states[i],box=calculationsPair.querySelector('.calc-box[data-calc="'+i+'"]');
      if(!box)continue;
-     box.querySelectorAll('.answer-input').forEach(el=>el.value=s.answerValues[Number(el.dataset.col)]||'');
-     box.querySelectorAll('.carry-input').forEach(el=>el.value=s.carryValues[Number(el.dataset.carryCol)]||'');
+     box.querySelectorAll('.answer-input').forEach(el=>{
+      const c=Number(el.dataset.col);
+      el.value=s.answerValues[c]||'';
+      const history=el.closest('.answer-wrap')?.querySelector('.wrong-history');
+      if(history)history.textContent=s.wrongHistory[c]||'';
+     });
+     box.querySelectorAll('.carry-input').forEach(el=>{
+      const c=Number(el.dataset.carryCol);
+      el.value=s.carryValues[c]||'';
+      if(el.value)el.classList.add('good');
+      const history=el.closest('.carry-wrap')?.querySelector('.carry-wrong');
+      if(history)history.textContent=s.carryWrong[c]||'';
+     });
+     // Les reports latéraux et les traces de corrections doivent eux aussi
+     // revenir visuellement, pas seulement rester dans l'état interne.
+     const used=box.querySelector('.side-carry-used-list');
+     if(used)for(let c=1;c<s.count;c++){
+      if(s.sideCarryValues[c]===String(s.incoming[c])&&s.sideCarryValues[c]!==''){
+       const tag=document.createElement('span');
+       tag.className='side-carry-used-item';tag.dataset.usedCol=String(c);
+       tag.textContent=s.sideCarryValues[c];used.append(tag);
+      }
+     }
      if(s.solved){
       box.querySelectorAll('input').forEach(el=>{el.disabled=true;if(el.value)el.classList.add('correct','good')});
       status(i,'Correct','ok');
