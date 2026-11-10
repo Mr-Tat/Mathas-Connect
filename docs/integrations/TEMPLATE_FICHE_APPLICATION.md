@@ -1,6 +1,6 @@
 # Fiche vivante d'application — [JEU] / [app_key]
 
-> **Copier une fois** vers `docs/integrations/applications/<app-key>.md` puis tenir **cette même fiche** à jour entre conversations. Ne pas créer plusieurs comptes rendus parallèles. Lire au besoin la [synthèse](00_DEMARRER_ICI.md), la [procédure](README.md) et le [modèle historique détaillé](archives/TEMPLATE_FICHE_APPLICATION_DETAILLE_20261109.md).
+> **Copier une fois** vers `docs/integrations/applications/<app-key>.md` puis tenir **cette même fiche** à jour entre conversations. Ne pas créer plusieurs comptes rendus parallèles. Lire au besoin la [synthèse](https://github.com/Mr-Tat/Mathas-Connect/blob/main/docs/integrations/00_DEMARRER_ICI.md), la [procédure](https://github.com/Mr-Tat/Mathas-Connect/blob/main/docs/integrations/README.md) et le [modèle historique détaillé](https://github.com/Mr-Tat/Mathas-Connect/blob/main/docs/integrations/archives/TEMPLATE_FICHE_APPLICATION_DETAILLE_20261109.md). **Liens GitHub absolus volontaires** : ils restent corrects aussi bien dans ce modèle que dans sa copie sous `applications/`. Pour le travail non fusionné, lire **la branche de la PR active**.
 
 **État :** AUDIT / ARBITRAGE / CODE / CI / PAGES / EDGE-SQL / RECETTE / OUVERT / EN ATTENTE · **Date de vérification :** …  
 **Références :** `app_key` … · dépôt/moteur source + commit/empreinte … · `main` SHA … · branche/PR … · classes visées … · source des décisions …
@@ -34,8 +34,8 @@
 ## 4. Livraison et prochaine conversation
 
 - **PR et commit** … ; **`main`** … ; **Pages servi** … ; **Edge/version et JWT** … ; **SQL/migration** … ; **catalogue et classes réellement ouverts** … . Distinguer **NON VÉRIFIÉ** de **SANS OBJET**.
-- **Incidents / leçons** : symptôme … → cause vérifiée … → solution … → test/PR … → **raccourci pour le prochain jeu** … ; lien au [RETEX](RETEX_OPERATIONNEL.md) si récurrent dans plusieurs apps.
+- **Incidents / leçons** : symptôme … → cause vérifiée … → solution … → test/PR … → **raccourci pour le prochain jeu** … ; lien au [RETEX](https://github.com/Mr-Tat/Mathas-Connect/blob/main/docs/integrations/RETEX_OPERATIONNEL.md) si récurrent dans plusieurs apps.
 - **Prochaine action exacte / blocage / autorisation nécessaire** : …
-- **Passation** : 3–8 lignes de conclusion, avec liens, tests et statut ; mettre **une seule ligne** dans [l'index actif](SUIVI_COURANT.md). Ne pas recopier ce fichier en entier dans la conversation suivante.
+- **Passation** : 3–8 lignes de conclusion, avec liens, tests et statut ; mettre **une seule ligne** dans [l'index actif](https://github.com/Mr-Tat/Mathas-Connect/blob/main/docs/integrations/SUIVI_COURANT.md). Ne pas recopier ce fichier en entier dans la conversation suivante.
 
 **Sécurité :** aucun secret, nom d'élève réel, export privé, reset global ou activation non autorisée.
