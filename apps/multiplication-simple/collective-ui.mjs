@@ -332,7 +332,15 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
     });
    }
   }
-  void poll();render();
+  if(teacher){
+   // Seul un VRAI nouveau chargement relance l'onglet après F5.
+   // Un statut déjà en vol ne peut pas annuler une fermeture de page.
+   void call('resume',{hostId})
+    .then(s=>{if(s?.ok===true)updateSession(s)})
+    .catch(()=>{})
+    .finally(()=>{void poll()});
+  }else void poll();
+  render();
  }
  return {mount,refresh:poll};
 }
