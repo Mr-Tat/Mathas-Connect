@@ -39,6 +39,16 @@
 - Classe TEST (rubrique « Toutes ») et Phase 1 sont explicitement distinguées ; les autres classes officielles ont leurs libellés habituels. Une nouvelle classe non reconnue affichera son préfixe d'ID, sans inventer un nom.
 - Contrôles : Chromium du guidé et des comptes simulés TEST / Phase 1 / Monsieur T, y compris la version compacte. SQL/Edge : aucun changement. Recette réelle des deux comptes : encore à faire.
 
+## Fin de séance à la fermeture de l'onglet professeur — 10/11/2026
+- Périmètre : **seulement** la séance guidée collective Multiplication, jamais la connexion Math'as Connect, les XP, les records ou les comptes élèves.
+- Fermeture/navigation réelle de la page du professeur : un `pagehide` non-bfcache envoie une notification authentifiée via `fetch(...,keepalive:true)` ; une simple bascule vers un autre onglet ne déclenche pas cette notification.
+- Le serveur attend **15 secondes** avant de considérer le départ effectif : un rechargement F5 de la **même** page/onglet peut la reprendre. Une génération de page (UUID neuf) empêche un ancien signal de fermeture arrivé en retard de tuer la page rechargée.
+- Présence du professeur renouvelée toutes les **25 secondes**, même lorsque son onglet est à l'arrière-plan, sans requêtes supplémentaires côté élève avant son clic « Rejoindre ». L'Edge expire côté serveur toute séance sans présence au-delà de **10 minutes**, pour les mobiles, crashs et fermetures sans signal. Les navigateurs peuvent suspendre les onglets en arrière-plan ; ce délai minimise les fermetures injustifiées mais ne garantit pas une séance éternelle en cas de suspension système prolongée.
+- Les élèves qui ferment leur onglet ne terminent jamais la séance du professeur. Une séance terminée retourne `active:false` à la prochaine lecture, sans effacer les réponses locales.
+- Champs SQL privés ajoutés : `host_client_id`, `host_page_id`, `host_seen_at`, `close_requested_at` ; aucune donnée élèves. Actions Edge : `resume`, `heartbeat`, `closing`, verrouillées au professeur, même onglet et même génération. La révision pédagogique reste inchangée par la présence.
+- Preuves attendues : tests du contrat temporel, Chromium (passage autre onglet / pagehide non persisted), intégration native inchangée, SQL vérifié, Edge publiée, Pages publiée, puis recette réelle Monsieur T / Élève A. Déploiements SQL, Edge et Pages à suivre séparément.
+- **Limite navigateur** : un signal de fermeture n'est jamais garanti à 100 % (particulièrement sur mobile), d'où le délai de secours de 10 minutes ; on ne prétend pas à une détection instantanée universelle.
+
 ## Retour d'expérience à compléter
 - Source de divergence : chaque navigateur tire aléatoirement ses propres opérations ; la séance doit porter les nombres déterminés côté serveur.
 - Ne pas déclencher les clics natifs automatiques « Nouveaux calculs » pendant le guidé collectif.
