@@ -121,7 +121,7 @@ async function connectedPage(teacher=false,failFirstFinish=false,cls=CLS){
  page.on('pageerror',error=>{context.error=String(error.message)});
  const suffix='?class='+cls+'&requireConnect=1'+(teacher?'&joueur=prof':'');
  await page.goto(origin+'/apps/multiplication-simple/'+suffix,{waitUntil:'domcontentloaded'});
- await page.locator('iframe').waitFor({state:'attached',timeout:18000});
+ await page.locator('iframe').waitFor({state:'attached',timeout:18000}).catch(async e=>{throw Error('iframe_missing: '+e.message+'; error='+context.error+'; body='+(await page.locator('body').innerText()).slice(0,650))});
  await page.frameLocator('iframe').locator('#menuScreen').waitFor({state:'attached'});
  return context;
 }
