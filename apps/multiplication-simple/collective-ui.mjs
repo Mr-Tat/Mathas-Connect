@@ -1,4 +1,4 @@
-import {validSession,mayMoveForward,latestUnlockedPage} from './collective-contract.mjs?v=20261110-v2';
+import {validSession,mayMoveForward,latestUnlockedPage} from './collective-contract.mjs?v=20261110-v3';
 
 // Contrôleur visuel du guidé collectif : mêmes nombres, copies individuelles.
 // Il ne transmet jamais les chiffres saisis par les élèves.
