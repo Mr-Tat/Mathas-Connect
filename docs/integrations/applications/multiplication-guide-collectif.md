@@ -17,7 +17,10 @@
 
 ## État et preuves à distinguer
 - Branche : feat/mul-guided-collective-20261110.
-- Code : chantier en cours ; CI, SQL, Edge et publication Pages restent à vérifier séparément.
+- Code : PR #279 ; tests navigateur Chromium **13+ cas réussis** au SHA `55854831` (run [42813878262](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/42813878262)). Tests d'intégration et de validation manuelle existants réussis. La suite globale comporte 4 échecs de référence hors périmètre (3 miniatures, guide Laboratoire), plus une assertion de test du pilote corrigée ensuite.
+- SQL : migration `guided_multiplication_classroom_20261110` **appliquée** le 10/11/2026 sur le projet Connect ; RLS et grants service_role vérifiés, table vide.
+- Edge : `connect-guided-multiplication` **déployée** (version 1 ACTIVE, vérification JWT active) ; aucun score ou profil élève modifié.
+- GitHub Pages : en attente de fusion et de déploiement confirmé.
 - Recette fictive à faire : Monsieur T / Élève A ou B (classe TEST), questions identiques, saisies indépendantes, page suivante, passage libre, entraînement/rejoint, verrouillage tableau, petit écran, réseau intermittent.
 - Ne modifier aucune visibilité de classe, aucun résultat de vrais élèves et aucune application autre que Multiplication simple.
 
