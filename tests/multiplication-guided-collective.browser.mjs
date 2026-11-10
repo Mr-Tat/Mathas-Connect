@@ -9,7 +9,10 @@ const original=readFileSync(new URL('../apps/multiplication-simple/game-original
 const bridge=readFileSync(new URL('../apps/multiplication-simple/collective-native-bridge.js',import.meta.url),'utf8');
 const marker='primaryBtn.onclick=handlePrimary;';
 assert.equal(original.split(marker).length,2,'ancrage unique à maintenir');
-const html=original.replace(marker,bridge+'\nprimaryBtn.onclick=(event)=>{if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"){if(event?.isTrusted)window.MathasGuidedBridge.onContinue?.();return;}handlePrimary()};');
+const html=original.replace(marker,bridge+
+ '\nconst mathasNativeHandlePrimary=handlePrimary;'
+ +'\nhandlePrimary=function(...args){if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"){window.MathasGuidedBridge.onContinue?.();return;}return mathasNativeHandlePrimary(...args)};'
+ +'\nprimaryBtn.onclick=(event)=>{if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"&&!event?.isTrusted)return;handlePrimary()};');
 const server=createServer((req,res)=>{
  const path=(req.url||'').split('?')[0];
  if(path==='/'){res.writeHead(200,{'content-type':'text/html; charset=utf-8'});res.end(html);return}
