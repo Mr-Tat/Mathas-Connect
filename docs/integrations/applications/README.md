@@ -10,6 +10,12 @@
 4. Mettre à jour **une seule ligne** dans le suivi global ; à la fin, enlever cette ligne active et inscrire la fiche dans le registre ci-dessous.
 5. Si une panne ou un raccourci revient dans plusieurs applications, comparer les causes et remonter le **motif transversal prouvé** dans [RETEX_OPERATIONNEL.md](../RETEX_OPERATIONNEL.md), y compris les tendances émergentes.
 
+## Reprendre un chantier commencé AVANT ce registre
+
+L'[index actif](../SUIVI_COURANT.md) conserve **un inventaire daté des PR héritées**. Pour un sujet ancien, **ne pas créer une nouvelle intégration fictive** et ne pas fusionner une vieille PR simplement parce qu'elle est ouverte : vérifier le statut actuel, comparer sa branche et ses fichiers à `main`, ainsi que les PR et livraisons plus récentes. Le travail peut avoir déjà été repris ailleurs.
+
+Si le sujet doit vraiment continuer : réutiliser la PR existante si elle est encore adaptée, ou documenter clairement sa succession ; créer/mettre à jour la fiche **sur la branche réellement travaillée**, avec décisions pédagogiques déjà prouvées (ne jamais les inventer), tests et prochaine action. Remonter **une seule ligne active** dans le suivi. Une PR ancienne non fusionnée **ne constitue ni une mise en production ni une décision de fermeture**.
+
 ## Registre des intégrations terminées depuis le 09/11/2026
 
 | Application / app_key | Fiche | Dernière preuve de livraison | Décisions pédagogiques |
