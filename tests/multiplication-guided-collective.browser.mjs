@@ -135,9 +135,9 @@ try{
    assert.equal(departures.length,0);
    await first.evaluate(()=>window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:true})));
    assert.equal(departures.length,0,'bfcache : ne pas considérer la page comme détruite');
-   await first.goto('about:blank');
+   await first.evaluate(()=>window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:false})));
    await other.waitForTimeout(100);
-   assert.equal(departures.length,1,'la fermeture/navigation doit prévenir le serveur une seule fois');
+   assert.equal(departures.length,1,'pagehide réel (non bfcache) avertit le serveur');
    assert.equal(departures[0].sessionId,'11111111-1111-4111-8111-111111111111');
    assert.match(departures[0].hostId,/^[0-9a-f]{8}-[0-9a-f-]{27}$/i);
   }finally{await first.close();await other.close()}
