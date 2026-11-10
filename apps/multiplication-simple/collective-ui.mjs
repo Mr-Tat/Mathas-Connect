@@ -1,12 +1,12 @@
-import {validSession,canAdvance} from './collective-contract.mjs?v=20261110-v1';
+import {validSession,canReachPage,mandatoryBlocker} from './collective-contract.mjs?v=20261110-v2';
 
 // Contrôleur visuel du guidé collectif : mêmes nombres, copies individuelles.
 // Il ne transmet jamais les chiffres saisis par les élèves.
 export function createMultiplicationCollective({iframe,teacher,call,onClose,classId,classLabel=''}){
  let doc=null,bridge=null,session=null,joined=false,practicing=false,index=-1,busy=false;
  let menuSlot=null,menuButton=null,bar=null,notice=null,teacherRow=null,pupilRow=null,barClassBadge=null;
- let btnNext=null,teacherNextButton=null,btnStartHere=null,btnJoinHere=null,btnSkip=null,btnStop=null,btnBoard=null,btnPractice=null,btnReturn=null,btnCatchup=null;
- let answerPanel=null,teacherAnswers=[],confirmPanel=null,boardLock=null,started=false,lastError='';
+ let btnNext=null,btnPrev=null,teacherNextButton=null,teacherPrevButton=null,btnStartHere=null,btnJoinHere=null,btnRequired=null,btnStop=null,btnAnswers=null,btnPractice=null,btnReturn=null,btnCatchup=null;
+ let answerPanel=null,teacherAnswers=[],confirmPanel=null,answersVisible=false,started=false,lastError='';
  // Clé propre à l'onglet. Elle survit à F5, pas à une ouverture ordinaire
  // dans un nouvel onglet (aucune donnée élève stockée ici).
  const hostKey='mathas.mul.guided.host-tab.'+classId;
@@ -19,8 +19,8 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
    sessionStorage.setItem(hostKey,hostId);
   }catch{hostId=crypto.randomUUID()}
  }
- const lockKey='mathas.mul.guided.board-lock.'+classId;
- try{const v=JSON.parse(sessionStorage.getItem(lockKey)||'null');if(v?.salt&&v?.hash)boardLock=v}catch{}
+ // Plus de mode « Élève au tableau » : le professeur garde ses propres commandes.
+ // Les corrigés demandent une confirmation neutre, indépendante du score.
  const say=msg=>{lastError=msg;if(notice)notice.textContent=msg;};
  const el=(tag,cls,text)=>{const x=doc.createElement(tag);if(cls)x.className=cls;if(text!==undefined)x.textContent=text;return x};
  const button=(label,fn)=>{const x=el('button','mathas-collective-button',label);x.type='button';x.addEventListener('click',fn);return x};
@@ -30,8 +30,38 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
   node.title=classLabel+' · classe utilisée pour le guidé collectif';
   return node;
  };
- const isLocked=()=>teacher&&!!boardLock;
- const sameSession=s=>session?.sessionId===s?.sessionId;
+  const sameSession=s=>session?.sessionId===s?.sessionId;
+ const required=()=>Array.isArray(session?.requiredPages)?session.requiredPages:[];
+ const pageFinished=i=>bridge?.isFinished(i)===true;
+ const canOpen=i=>canReachPage({
+  current:index,target:i,unlocked:session?.pageIndex??-1,
+  requiredPages:required(),isFinished:pageFinished
+ });
+ function hideAnswers(){
+  answersVisible=false;
+  if(confirmPanel)confirmPanel.replaceChildren();
+  if(answerPanel)answerPanel.hidden=true;
+  if(btnAnswers)btnAnswers.textContent='Afficher les réponses';
+ }
+ function revealAnswers(){
+  if(!teacher||!joined||!validSession(session)||busy||!confirmPanel)return;
+  if(answersVisible){hideAnswers();render();return}
+  confirmPanel.replaceChildren();
+  const label=el('span','', 'Afficher les deux réponses de cette page ?');
+  const yes=button('Oui',()=>{
+   if(!validSession(session)||!teacher)return;
+   const current=session.pages[index];
+   if(!Array.isArray(current))return;
+   for(let i=0;i<2;i++)teacherAnswers[i].textContent=
+     'Calcul '+(i+1)+' : '+current[i].a+' × '+current[i].m+' = '+(BigInt(current[i].a)*BigInt(current[i].m)).toString();
+   answersVisible=true;
+   confirmPanel.replaceChildren();render();
+  });
+  const no=button('Non',()=>confirmPanel.replaceChildren());
+  yes.classList.add('mc-neutral');no.classList.add('mc-neutral');
+  const buttons=crypto.getRandomValues(new Uint8Array(1))[0]%2?[yes,no]:[no,yes];
+  confirmPanel.append(label,...buttons);
+ }
  const displayCurrent=()=>{
   if(!validSession(session)||index<0||index>=session.pages.length)return false;
   const inGame=doc?.getElementById('gameScreen')?.classList.contains('hidden')===false;
@@ -41,10 +71,12 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
  const updateSession=s=>{
   if(!validSession(s)){
    if(session&&joined){bridge?.leave();say('Le professeur a terminé la séance. Tu peux continuer en guidé individuel.')}
-   session=null;joined=false;practicing=false;index=-1;render();return;
+   if(session)bridge?.resetSaved();
+   session=null;joined=false;practicing=false;index=-1;hideAnswers();render();return;
   }
-  if(!sameSession(s)){bridge?.leave();session=s;joined=false;practicing=false;index=-1;}
-  else session=s;
+  if(!sameSession(s)){
+   bridge?.resetSaved();session=s;joined=false;practicing=false;index=-1;hideAnswers();
+  }else session=s;
   render();
  };
  async function poll(){
@@ -67,8 +99,9 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
    if(result?.ok!==true)throw Error(result?.error||'opération refusée');
    const previouslyJoined=joined;
    updateSession(result);
-   if(action==='next'&&previouslyJoined&&validSession(session)){
-    index=session.pageIndex;joined=true;practicing=false;displayCurrent();
+   if((action==='next'||action==='set-page')&&previouslyJoined&&validSession(session)){
+    index=session.teacherPageIndex??session.pageIndex;
+    joined=true;practicing=false;hideAnswers();displayCurrent();
    }
    lastError='';return true;
   }catch(e){say('Action non enregistrée : '+String(e.message||e));await poll();return false}
@@ -90,8 +123,11 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
     say('Aucune séance collective lancée pour ta classe. Continue le guidé individuel.');
     return;
    }
-   if(!joined)index=session.pageIndex;
-   else if(index>session.pageIndex)index=session.pageIndex;
+   if(!joined){
+    const wanted=session.teacherPageIndex??session.pageIndex;
+    // Un élève arrivé tard ne doit pas contourner une page obligatoire.
+    index=teacher?wanted:required().filter(i=>i<=wanted&&!pageFinished(i)).sort((a,b)=>a-b)[0]??wanted;
+   }else if(index>session.pageIndex)index=session.pageIndex;
    joined=true;practicing=false;
    if(!displayCurrent()){
     say('Moteur guidé indisponible. Recharge la page.');
@@ -123,11 +159,28 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
  }
  function studentNext(toLatest=false){
   if(!joined||practicing||busy||!validSession(session))return;
-  if(toLatest&&!session.allowSkip)return;
   const next=toLatest?session.pageIndex:index+1;
   if(next<=index||next>session.pageIndex)return;
-  if(!session.allowSkip&&!bridge?.status()?.finished){say('Termine tes deux calculs avant de continuer.');return}
-  index=next;displayCurrent();say('');render();
+  if(!canOpen(next)){
+   const blocker=mandatoryBlocker({target:next,requiredPages:required(),isFinished:pageFinished});
+   say(blocker===null?'Cette page n’est pas encore accessible.':
+     'Termine et réussis la page '+(blocker+1)+' (ses deux calculs) pour avancer.');
+   render();return;
+  }
+  index=next;hideAnswers();displayCurrent();say('');render();
+ }
+ function studentPrevious(){
+  if(!joined||practicing||busy||index<=0)return;
+  index--;hideAnswers();displayCurrent();say('');render();
+ }
+ function teacherNext(){
+  if(!teacher||busy||!validSession(session)||!joined)return;
+  void(index<session.pageIndex
+   ?write('set-page',{pageIndex:index+1}):write('next'));
+ }
+ function teacherPrevious(){
+  if(!teacher||busy||!validSession(session)||index<=0)return;
+  void write('set-page',{pageIndex:index-1});
  }
  function practice(){
   if(!joined||busy)return;
