@@ -76,7 +76,9 @@ try{
     });
     window.__controller.mount();
    },{page1,page2,config});
-   await page.getByRole('button',{name:/Lancer avec la classe/}).click();
+   // Le professeur est déjà dans le guidé, sans retour au menu.
+   await page.evaluate(()=>window.MathasGuidedBridge.practice());
+   await page.locator('#mc-guided-bar').getByRole('button',{name:/Démarrer avec la classe/}).click();
    await page.waitForFunction(()=>window.__sharedPages.length===1&&window.MathasGuidedBridge.status().collective);
    const toolbar=page.locator('#mc-guided-bar [data-role="teacher"]');
    await toolbar.getByRole('button',{name:/Suivant/}).click();
@@ -108,7 +110,9 @@ try{
     });
     window.__controller.mount();
    },{page1,page2,config});
-   await page.getByRole('button',{name:/Rejoindre le guidé collectif/}).click();
+   // L'élève peut rejoindre une séance depuis son exercice guidé déjà ouvert.
+   await page.evaluate(()=>window.MathasGuidedBridge.practice());
+   await page.locator('#mc-guided-bar').getByRole('button',{name:/Rejoindre le guidé collectif/}).click();
    let next=page.locator('#mc-guided-bar .mc-controls').last().getByRole('button',{name:/En attente/});
    assert.equal(await next.isDisabled(),true);
    await page.evaluate(p=>{window.__classroom={...window.__classroom,revision:2,pages:[...window.__classroom.pages,p],pageIndex:1}},page2);

@@ -579,7 +579,7 @@ if(mode==='connected'){
 // Le pont natif est évalué avant d'initialiser les commandes : pas de TDZ.
 if(mode==='connected'&&classroomBridgeReady){
  try{
-  const {createMultiplicationCollective}=await import('./collective-ui.mjs?v=20261110-classroom-v1');
+  const {createMultiplicationCollective}=await import('./collective-ui.mjs?v=20261110-classroom-v2');
   guidedCollective=createMultiplicationCollective({
  iframe,teacher:teacherPlayer,classId,
  call:async(action,payload={})=>{

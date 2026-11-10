@@ -5,7 +5,7 @@ import {validSession,canAdvance} from './collective-contract.mjs?v=20261110-v1';
 export function createMultiplicationCollective({iframe,teacher,call,classId}){
  let doc=null,bridge=null,session=null,joined=false,practicing=false,index=-1,busy=false;
  let menuSlot=null,menuButton=null,bar=null,notice=null,teacherRow=null,pupilRow=null;
- let btnNext=null,teacherNextButton=null,btnSkip=null,btnStop=null,btnBoard=null,btnPractice=null,btnReturn=null,btnCatchup=null;
+ let btnNext=null,teacherNextButton=null,btnStartHere=null,btnJoinHere=null,btnSkip=null,btnStop=null,btnBoard=null,btnPractice=null,btnReturn=null,btnCatchup=null;
  let answerPanel=null,teacherAnswers=[],confirmPanel=null,boardLock=null,started=false,lastError='';
  const lockKey='mathas.mul.guided.board-lock.'+classId;
  try{const v=JSON.parse(sessionStorage.getItem(lockKey)||'null');if(v?.salt&&v?.hash)boardLock=v}catch{}
@@ -146,11 +146,13 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
    menuButton.textContent=active?(teacher?'Reprendre le guidé collectif':'Rejoindre le guidé collectif')
     :(teacher?'👥 Lancer avec la classe':'');
   }
-  if(bar){
-   const visible=active&&(joined||!doc.getElementById('gameScreen')?.classList.contains('hidden'));
-   bar.hidden=!visible;
-  }
+  const gameVisible=doc.getElementById('gameScreen')?.classList.contains('hidden')===false;
+  const startHere=teacher&&!active&&gameVisible&&bridge?.status()?.training===true;
+  if(bar)bar.hidden=!((active&&(joined||gameVisible))||startHere);
+  if(btnStartHere){btnStartHere.hidden=!startHere;btnStartHere.disabled=busy||isLocked()}
+  if(btnJoinHere){btnJoinHere.hidden=!active||joined;btnJoinHere.disabled=busy}
   if(!active){
+   if(notice&&startHere)notice.textContent='Guidé individuel · prêt à lancer avec la classe';
    if(teacherRow)teacherRow.hidden=true;
    if(pupilRow)pupilRow.hidden=true;
    if(answerPanel)answerPanel.hidden=true;
@@ -162,8 +164,8 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
     'Guidé collectif · page '+(index+1)+' / '+(session.pageIndex+1)):'Séance collective disponible';
    notice.textContent=lastError||info+(teacher?' · Professeur':' · Élève');
   }
-  if(teacherRow)teacherRow.hidden=!teacher;
-  if(pupilRow)pupilRow.hidden=teacher;
+  if(teacherRow)teacherRow.hidden=!teacher||!joined;
+  if(pupilRow)pupilRow.hidden=teacher||!joined;
   if(teacher){
    if(btnBoard)btnBoard.textContent=locked?'🔒 Déverrouiller professeur':'🔐 Élève au tableau';
    if(teacherNextButton){teacherNextButton.hidden=locked;teacherNextButton.disabled=busy||session.pages.length>=120}
@@ -227,7 +229,9 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
   btnReturn=pupilReturn;
   // La rangée du professeur utilise sa commande propre, jamais le bouton élève.
   teacherRow.dataset.role='teacher';
-  bar.append(notice,teacherRow,pupilRow);
+  btnStartHere=button('👥 Démarrer avec la classe',()=>void start());
+  btnJoinHere=button('Rejoindre le guidé collectif',join);
+  bar.append(notice,btnStartHere,btnJoinHere,teacherRow,pupilRow);
   doc.getElementById('gameScreen')?.prepend(bar);
   answerPanel=el('details');answerPanel.id='mc-guided-answers';
   const summary=el('summary','', 'Outils professeur · corrigés (déplier uniquement en dehors du tableau)');
