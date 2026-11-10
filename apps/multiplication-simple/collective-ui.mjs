@@ -2,9 +2,9 @@ import {validSession,canAdvance} from './collective-contract.mjs?v=20261110-v1';
 
 // Contrôleur visuel du guidé collectif : mêmes nombres, copies individuelles.
 // Il ne transmet jamais les chiffres saisis par les élèves.
-export function createMultiplicationCollective({iframe,teacher,call,classId}){
+export function createMultiplicationCollective({iframe,teacher,call,classId,classLabel=''}){
  let doc=null,bridge=null,session=null,joined=false,practicing=false,index=-1,busy=false;
- let menuSlot=null,menuButton=null,bar=null,notice=null,teacherRow=null,pupilRow=null;
+ let menuSlot=null,menuButton=null,bar=null,notice=null,teacherRow=null,pupilRow=null,barClassBadge=null;
  let btnNext=null,teacherNextButton=null,btnStartHere=null,btnJoinHere=null,btnSkip=null,btnStop=null,btnBoard=null,btnPractice=null,btnReturn=null,btnCatchup=null;
  let answerPanel=null,teacherAnswers=[],confirmPanel=null,boardLock=null,started=false,lastError='';
  const lockKey='mathas.mul.guided.board-lock.'+classId;
@@ -12,6 +12,12 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
  const say=msg=>{lastError=msg;if(notice)notice.textContent=msg;};
  const el=(tag,cls,text)=>{const x=doc.createElement(tag);if(cls)x.className=cls;if(text!==undefined)x.textContent=text;return x};
  const button=(label,fn)=>{const x=el('button','mathas-collective-button',label);x.type='button';x.addEventListener('click',fn);return x};
+ const classBadge=()=>{
+  const node=el('span','mc-guided-class-badge',classLabel);
+  node.hidden=!classLabel;
+  node.title=classLabel+' · classe utilisée pour le guidé collectif';
+  return node;
+ };
  const isLocked=()=>teacher&&!!boardLock;
  const sameSession=s=>session?.sessionId===s?.sessionId;
  const displayCurrent=()=>{
@@ -209,9 +215,13 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
    !teacher?studentNext():say('La classe avance uniquement sur décision du professeur.');
   if(!doc.getElementById('mc-guided-styles')){
    const style=el('style');style.id='mc-guided-styles';style.textContent=
-    '.mc-guided-slot{display:flex;justify-content:center;padding:10px;margin:5px 0 12px}'
+    '.mc-guided-slot{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px;margin:5px 0 12px}'
+   +'.mc-guided-class-badge{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;flex:none;min-height:22px;max-width:100%;padding:3px 8px;border:1px solid #6db2c4;border-radius:999px;background:#153f4a;color:#dcf7ff;font:800 11px/1.25 system-ui;text-align:center;white-space:normal}'
+   +'.mc-guided-class-badge[hidden]{display:none!important}'
+   +'.mc-guided-entry{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:7px}'
+
    +'#menuScreen .classic-launch-grid > .mc-guided-launch-row{grid-column:1/-1!important;display:grid!important;grid-template-columns:minmax(0,340px) minmax(135px,175px);align-items:stretch;justify-content:center;gap:10px;width:100%!important;min-width:0!important;margin:0 0 4px!important}'
-   +'#menuScreen .classic-launch-grid > .mc-guided-launch-row > #startTraining{grid-column:auto!important;grid-row:auto!important;justify-self:stretch!important;width:100%!important;max-width:340px!important;min-width:0!important;margin:0!important}'
+   +'#menuScreen .classic-launch-grid > .mc-guided-launch-row > #startTraining{grid-column:auto!important;grid-row:auto!important;justify-self:stretch!important;align-self:start!important;width:100%!important;max-width:340px!important;min-width:0!important;margin:0!important}'
    +'#menuScreen .classic-launch-grid > .mc-guided-launch-row > .mc-guided-slot{grid-column:auto!important;min-width:0!important;margin:0!important;padding:0!important;align-items:stretch!important}'
    +'#menuScreen .mc-guided-launch-row .mc-guided-slot > button{width:100%;min-height:58px;line-height:1.25;white-space:normal}'
 
@@ -226,6 +236,7 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
    +'.mc-answer-item{display:flex;gap:8px;align-items:center;margin:15px 0}'
    +'.mc-result{font-weight:800;color:#f6dc9b}.mc-confirm{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:12px 0}'
    +'.mc-neutral{background:#193d48;border-color:#456b77;color:#e8f1f4}'
+   +'body.light .mc-guided-class-badge,body.light-mode .mc-guided-class-badge{background:#e7f6f9;color:#175369;border-color:#75b8ca}'
    +'@media(max-width:700px){#mc-guided-bar{margin:6px;padding:8px}.mc-controls{gap:5px}.mathas-collective-button{padding:9px 10px}}'
    +'@media(max-width:520px){#menuScreen .classic-launch-grid > .mc-guided-launch-row{grid-template-columns:minmax(0,1fr) minmax(100px,41%);gap:6px}#menuScreen .mc-guided-launch-row .mc-guided-slot > button{font-size:clamp(.7rem,2.7vw,.82rem);padding:6px!important;min-height:49px}}';
    doc.head.append(style);
@@ -236,7 +247,7 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
   if(teacher&&training){
    menuSlot=el('div','mc-guided-slot');menuSlot.id='mc-guided-slot';
    menuButton=button('',()=>session?.active?void join():void start());
-   menuSlot.append(menuButton);
+   menuSlot.append(menuButton,classBadge());
    const layout=el('div','mc-guided-launch-row');
    training.replaceWith(layout);
    layout.append(training,menuSlot);
@@ -266,7 +277,9 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
   teacherRow.dataset.role='teacher';
   btnStartHere=button('👥 Démarrer avec la classe',()=>void start());
   btnJoinHere=button('Rejoindre la classe',()=>void join());
-  bar.append(notice,btnStartHere,btnJoinHere,teacherRow,pupilRow);
+  const entry=el('div','mc-guided-entry');barClassBadge=classBadge();
+  entry.append(btnStartHere,btnJoinHere,barClassBadge);
+  bar.append(notice,entry,teacherRow,pupilRow);
   doc.getElementById('gameScreen')?.prepend(bar);
   answerPanel=el('details');answerPanel.id='mc-guided-answers';
   const summary=el('summary','', 'Outils professeur · corrigés (déplier uniquement en dehors du tableau)');
