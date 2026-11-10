@@ -1,4 +1,4 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Math’as Connect — HUB</title><link rel="icon" type="image/png" href="./assets/brand/favicon.png"><link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png"><link rel="stylesheet" href="./hub.css?v=20261107-abaque-toutes-v1"><link rel="stylesheet" href="./hub-profile.css?v=20261103-celebrations-cadres-v2"><script>
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Accueil | Math’as Connect</title><link rel="icon" type="image/png" href="./assets/brand/favicon.png"><link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png"><link rel="stylesheet" href="./hub.css?v=20261107-abaque-toutes-v1"><link rel="stylesheet" href="./hub-profile.css?v=20261103-celebrations-cadres-v2"><script>
 (function(){
   var q=new URLSearchParams(location.search);
   var spaces={
@@ -14,6 +14,16 @@
   if(!id&&q.get('toutes')==='1'&&q.get('joueur')==='prof'){q.set('class','4bf3400d-a315-4ea4-a2f3-afaca24dc9b9');q.set('name','Toutes');location.replace('./hub.html?'+q.toString());return;}
   if(!id){location.replace('./connexion.html');return;}
   window.__mathasClassRoute={id:id,name:(q.get('name')||'').trim().slice(0,80)||(space?space[1]:'Ma classe')};
+  // L'onglet indique toujours la classe consultée, même via un lien avec ?class=.
+  var shortClassNames={
+    '8fe170fa-9e8f-4e80-885a-b0ba68026f64':'Observation',
+    '71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'Ph1',
+    '1b021ed9-4846-4203-9c7b-4b5fa8d7adab':'Ph2 A',
+    '0d8ba828-59cc-468b-a4b8-7b2a1af10b88':'Ph2 B',
+    'a9195199-0a28-4e86-99ce-47b36dd6e646':'2 ECO'
+  };
+  var tabClass=shortClassNames[id]||window.__mathasClassRoute.name;
+  document.title='Accueil '+tabClass+' | Math’as Connect';
 })();
 </script><noscript><meta http-equiv="refresh" content="0;url=./connexion.html"></noscript></head>
 <body class="theme-phase2"><!-- Filtres de contour INTERIEUR : sans agrandir les lettres Connect. -->
