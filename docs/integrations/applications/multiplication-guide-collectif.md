@@ -68,6 +68,12 @@
 - Aucun changement aux règles Supabase, aux comptes, XP, trophées ou résultats de jeu ; uniquement le pont Connect Multiplication et ses tests navigateur.
 - Tests Chromium à confirmer sur le SHA final ; ensuite contrôler le déploiement GitHub Pages et la recette réelle en classe.
 
+## Corrigé comparatif sous les cases — 10/11/2026
+- Dans l'interface professeur, « Afficher les réponses » garde sa confirmation neutre Oui/Non, puis ajoute **deux lignes directement dans la grille de chaque opération** : une ligne de chiffres du résultat, alignée sous les cases de saisie, et juste en dessous une **petite ligne de reports**, alignée sur les mêmes colonnes. Le marqueur « r » identifie les reports ; seuls les reports positifs sont écrits, pas les zéros.
+- Les reports affichés sont les **retenues entrantes** utilisées par le moteur natif (méthodes haut et côté). Exemple : 247 × 6 = 1482, reports « 2 » au rang des centaines et « 4 » au rang des dizaines. Chaque chiffre est une superposition de texte dans la grille, **jamais une valeur écrite dans les champs de réponse ou de report**, et n'intervient ni dans la correction, ni dans les scores.
+- « Masquer les réponses » supprime les deux lignes et conserve exactement les saisies existantes. Changer de page cache également le corrigé. Les élèves ne voient jamais ces lignes.
+- Tests Chromium : résultats 247×6 et 139×8, retenues correctes, polices plus petites, alignement avec cases, aucun changement de saisie après révélation/masquage. Aucun SQL, Edge, XP, trophée ni visibilité modifiés.
+
 ## Retour d'expérience à compléter
 - Source de divergence : chaque navigateur tire aléatoirement ses propres opérations ; la séance doit porter les nombres déterminés côté serveur.
 - Ne pas déclencher les clics natifs automatiques « Nouveaux calculs » pendant le guidé collectif.
