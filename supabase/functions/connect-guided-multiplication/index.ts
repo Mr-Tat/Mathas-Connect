@@ -27,10 +27,13 @@ function operation(level:number,mults:number[]){
  return result;
 }
 const makePage=(l:number,m:number[])=>[operation(l,m),operation(l,m)];
+// Les séances créées avant la migration avaient zéro indicateur par page.
+const flags=(x:any)=>Array.from({length:Array.isArray(x.pages)?x.pages.length:0},
+ (_,i)=>Array.isArray(x.required_pages)&&x.required_pages[i]===true);
 const view=(x:any)=>!x?.active?{ok:true,active:false}:
  {ok:true,active:true,sessionId:x.session_id,revision:Number(x.revision),level:x.level,
  carryMethod:x.carry_method,multipliers:x.multipliers,pages:x.pages,
- pageIndex:x.page_index,allowSkip:x.allow_skip,updatedAt:x.updated_at};
+ pageIndex:x.page_index,requiredPages:flags(x),allowSkip:false,updatedAt:x.updated_at};
 Deno.serve(async(req:Request)=>{
  if(req.method==='OPTIONS')return new Response('',{headers});
  if(req.method!=='POST')return fail('method_not_allowed',405);
@@ -42,7 +45,7 @@ Deno.serve(async(req:Request)=>{
  const raw=await req.text();if(raw.length>5000)return fail('payload_too_large',413);
  let b:any;try{b=JSON.parse(raw)}catch{return fail('invalid_json')}
  if(!b||typeof b!=='object'||Array.isArray(b)||!UUID.test(b.classId||''))return fail('invalid_request');
- if(!['status','resume','start','next','set-skip','stop','heartbeat','closing'].includes(b.action))return fail('invalid_action');
+ if(!['status','resume','start','next','previous','set-required','stop','heartbeat','closing'].includes(b.action))return fail('invalid_action');
  if(b.action!=='status'&&user.is_anonymous===true)return fail('teacher_only',403);
  const cls=String(b.classId).toLowerCase();
  try{
@@ -122,7 +125,7 @@ Deno.serve(async(req:Request)=>{
    const row={class_id:cls,teacher_id:user.id,session_id:crypto.randomUUID(),active:true,
     host_client_id:b.hostId,host_page_id:b.pageId,host_seen_at:now,close_requested_at:null,
     level:b.level,carry_method:b.carryMethod,multipliers:b.multipliers,
-    pages:[makePage(b.level,b.multipliers)],page_index:0,allow_skip:false,
+    pages:[makePage(b.level,b.multipliers)],required_pages:[false],page_index:0,allow_skip:false,
     revision:Number(current?.revision||0)+1,updated_at:new Date().toISOString()};
    const {data,error:writeError}=current
     ?await db.from(TABLE).update(row).eq('class_id',cls).eq('revision',current.revision).select().maybeSingle()
@@ -155,13 +158,27 @@ Deno.serve(async(req:Request)=>{
   }
   if(b.revision!==Number(current.revision))return fail('session_changed',409);
   const patch:any={revision:Number(current.revision)+1,updated_at:now};
+  // Les pages déjà ouvertes restent en mémoire : revenir puis « Suivant »
+  // ne régénère jamais de calculs déjà affichés.
   if(b.action==='next'){
-   if(!Array.isArray(current.pages)||current.pages.length>=120)return fail('page_limit',409);
-   patch.pages=[...current.pages,makePage(current.level,current.multipliers)];
-   patch.page_index=patch.pages.length-1;
-  }else if(b.action==='set-skip'){
-   if(typeof b.allowSkip!=='boolean')return fail('invalid_configuration');
-   patch.allow_skip=b.allowSkip;
+   if(current.page_index<current.pages.length-1){
+    patch.page_index=current.page_index+1;
+   }else{
+    if(!Array.isArray(current.pages)||current.pages.length>=120)return fail('page_limit',409);
+    patch.pages=[...current.pages,makePage(current.level,current.multipliers)];
+    patch.required_pages=[...flags(current),false];
+    patch.page_index=patch.pages.length-1;
+   }
+  }else if(b.action==='previous'){
+   if(current.page_index<=0)return fail('first_page',409);
+   patch.page_index=current.page_index-1;
+  }else if(b.action==='set-required'){
+   if(!Number.isInteger(b.pageIndex)||b.pageIndex!==current.page_index
+     ||b.pageIndex<0||b.pageIndex>=current.pages.length||typeof b.required!=='boolean')
+    return fail('invalid_page_requirement');
+   const required=flags(current);
+   required[b.pageIndex]=b.required;
+   patch.required_pages=required;
   }else if(b.action==='stop')patch.active=false;
   const {data,error:writeError}=await db.from(TABLE).update(patch)
    .eq('class_id',cls).eq('session_id',current.session_id).eq('revision',current.revision).select().maybeSingle();
