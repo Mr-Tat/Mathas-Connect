@@ -21,7 +21,9 @@ export const latestUnlockedPage=session=>Array.isArray(session?.pages)?session.p
 export function mayMoveForward({session,from,to,isFinished}){
  if(!validSession(session)||!Number.isInteger(from)||!Number.isInteger(to)
   ||from<0||to<=from||to>=session.pages.length||typeof isFinished!=='function')return false;
- for(let page=from;page<to;page++)
+ // Inclut aussi les obligations d'anciennes pages : une obligation déclarée
+ // après l'arrivée de l'élève ne peut pas être contournée en avançant encore.
+ for(let page=0;page<to;page++)
   if(session.requiredPages[page]&&!isFinished(page))return false;
  return true;
 }

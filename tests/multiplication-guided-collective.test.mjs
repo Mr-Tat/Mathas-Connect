@@ -41,5 +41,7 @@ test('le retour en arrière reste libre et les pages obligatoires restent index�
  assert.equal(check(required,0,1,[0]),true);
  assert.equal(check(required,0,2,[0]),false);
  assert.equal(check(required,0,2,[0,1]),true);
+ assert.equal(check(required,1,2,[1]),false,'obligation antérieure : bloque même depuis une page ultérieure');
+ assert.equal(check(required,1,2,[0,1]),true,'les deux obligations réussies libèrent la suite');
  assert.equal(validSession({...required,requiredPages:[true]}),false);
 });

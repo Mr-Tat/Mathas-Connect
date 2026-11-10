@@ -216,6 +216,31 @@ try{
    await page.getByRole('button',{name:'Rejoindre la classe'}).waitFor({state:'visible'});
   }finally{await page.close()}
  });
+ await test('élève arrivant en retard : commence par une page obligatoire non réussie',async()=>{
+  const page=await browser.newPage();
+  try{
+   await page.goto(origin,{waitUntil:'domcontentloaded'});
+   await page.waitForFunction(()=>!!window.MathasGuidedBridge);
+   await page.evaluate(async({page1,page2,config})=>{
+    const {createMultiplicationCollective}=await import('/apps/multiplication-simple/collective-ui.mjs');
+    window.__lateSession={ok:true,active:true,sessionId:'22222222-2222-4222-8222-222222222222',
+     revision:1,level:1,carryMethod:'top',multipliers:config.multipliers,
+     pages:[page1,page2],pageIndex:1,requiredPages:[true,false]};
+    window.__lateController=createMultiplicationCollective({
+     iframe:{contentDocument:document,contentWindow:window},teacher:false,
+     classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',classLabel:'Classe TEST',
+     call:async()=>window.__lateSession
+    });
+    window.__lateController.mount();
+   },{page1,page2,config});
+   await page.evaluate(()=>window.MathasGuidedBridge.practice());
+   await page.locator('#mc-guided-bar').getByRole('button',{name:'Rejoindre la classe'}).click();
+   assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),0,
+    'l’élève commence à la première page obligatoire, pas à celle plus avancée du professeur');
+   assert.equal(await page.locator('#mc-guided-bar [data-role="student"]').getByRole('button',{name:/Termine la page obligatoire/}).isDisabled(),true);
+  }finally{await page.close()}
+ });
+
  await test('élève : avance libre par défaut, page obligatoire et retour arrière',async()=>{
   const page=await browser.newPage();
   try{
