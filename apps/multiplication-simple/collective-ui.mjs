@@ -5,7 +5,7 @@ import {validSession,canAdvance} from './collective-contract.mjs?v=20261110-v1';
 export function createMultiplicationCollective({iframe,teacher,call,classId}){
  let doc=null,bridge=null,session=null,joined=false,practicing=false,index=-1,busy=false;
  let menuSlot=null,menuButton=null,bar=null,notice=null,teacherRow=null,pupilRow=null;
- let btnNext=null,btnSkip=null,btnStop=null,btnBoard=null,btnPractice=null,btnReturn=null,btnCatchup=null;
+ let btnNext=null,teacherNextButton=null,btnSkip=null,btnStop=null,btnBoard=null,btnPractice=null,btnReturn=null,btnCatchup=null;
  let answerPanel=null,teacherAnswers=[],confirmPanel=null,boardLock=null,started=false,lastError='';
  const lockKey='mathas.mul.guided.board-lock.'+classId;
  try{const v=JSON.parse(sessionStorage.getItem(lockKey)||'null');if(v?.salt&&v?.hash)boardLock=v}catch{}
@@ -16,7 +16,8 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
  const sameSession=s=>session?.sessionId===s?.sessionId;
  const displayCurrent=()=>{
   if(!validSession(session)||index<0||index>=session.pages.length)return false;
-  if(bridge?.status()?.collective)return bridge.show(session.pages[index],index);
+  const inGame=doc?.getElementById('gameScreen')?.classList.contains('hidden')===false;
+  if(inGame&&bridge?.status()?.collective)return bridge.show(session.pages[index],index);
   return bridge?.enter(session.pages[index],index,session)===true;
  };
  const updateSession=s=>{
@@ -141,7 +142,7 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
   if(menuSlot){
    const inMenu=!doc.getElementById('menuScreen')?.classList.contains('hidden');
    menuSlot.hidden=!inMenu||(!teacher&&!active);
-   menuButton.disabled=busy||locked&&teacher&&false;
+   menuButton.disabled=busy;
    menuButton.textContent=active?(teacher?'Reprendre le guidé collectif':'Rejoindre le guidé collectif')
     :(teacher?'👥 Lancer avec la classe':'');
   }
@@ -165,10 +166,9 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
   if(pupilRow)pupilRow.hidden=teacher;
   if(teacher){
    if(btnBoard)btnBoard.textContent=locked?'🔒 Déverrouiller professeur':'🔐 Élève au tableau';
-   if(btnNext){btnNext.hidden=locked;btnNext.disabled=busy||session.pages.length>=120}
+   if(teacherNextButton){teacherNextButton.hidden=locked;teacherNextButton.disabled=busy||session.pages.length>=120}
    if(btnSkip){btnSkip.hidden=locked;btnSkip.disabled=busy;btnSkip.textContent=session.allowSkip?'✓ Passage libre autorisé':'Autoriser à passer sans finir'}
    if(btnStop){btnStop.hidden=locked;btnStop.disabled=busy}
-   if(btnReturn){btnReturn.hidden=!locked;btnReturn.textContent='Continuer avec les élèves'}
    if(answerPanel){answerPanel.hidden=locked||!joined||practicing;if(locked)clearAnswers()}
   }else{
    const can=joined&&!practicing&&canAdvance(phase?.finished===true,session.allowSkip,index,session.pageIndex);
@@ -209,16 +209,16 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
   notice=el('div','mc-notice');
   teacherRow=el('div','mc-controls');
   pupilRow=el('div','mc-controls');
-  btnNext=button('Suivant →',()=>teacher?void write('next'):studentNext());
+  teacherNextButton=button('Suivant →',()=>void write('next'));
   btnSkip=button('Autoriser à passer sans finir',()=>void write('set-skip',{allowSkip:!session.allowSkip}));
   btnStop=button('Terminer la séance',()=>{
    if(!isLocked()&&confirm('Terminer le guidé collectif pour toute la classe ?'))void write('stop');
   });
   btnBoard=button('🔐 Élève au tableau',()=>void toggleBoard());
-  teacherRow.append(btnNext,btnSkip,btnStop,btnBoard);
+  teacherRow.append(teacherNextButton,btnSkip,btnStop,btnBoard);
   const studentNextButton=button('Suivant →',()=>studentNext());
   // Évite de partager les mêmes éléments entre deux rangées.
-  const teacherNext=btnNext;btnNext=studentNextButton;
+  btnNext=studentNextButton;
   const pupilCatchup=button('Rejoindre le tableau',()=>studentNext(true));
   btnCatchup=pupilCatchup;
   btnPractice=button('M’entraîner en attendant',practice);
@@ -243,11 +243,7 @@ export function createMultiplicationCollective({iframe,teacher,call,classId}){
   if(!teacher)answerPanel.hidden=true;
   if(teacher){
    // Références professeur dédiées, le bouton élève ne doit jamais publier une page.
-   const originalRender=render;
-   const updateTeacher=()=>{teacherNext.hidden=isLocked();teacherNext.disabled=busy||!validSession(session)||session.pages.length>=120};
-   const oldPoll=poll;
-   void oldPoll();
-   setInterval(()=>{updateTeacher();render()},950);
+   setInterval(render,950);
   }else setInterval(render,950);
   if(!started){
    started=true;setInterval(()=>{if(!document.hidden)void poll()},8000);
