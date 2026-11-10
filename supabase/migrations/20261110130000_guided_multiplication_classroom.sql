@@ -14,5 +14,6 @@ create table if not exists public.connect_guided_multiplication_sessions (
  updated_at timestamptz not null default now()
 );
 alter table public.connect_guided_multiplication_sessions enable row level security;
+grant select,insert,update on public.connect_guided_multiplication_sessions to service_role;
 revoke all on table public.connect_guided_multiplication_sessions from public,anon,authenticated;
 comment on table public.connect_guided_multiplication_sessions is 'Séances collectives : mêmes opérations/pages par classe ; aucune réponse d’élève ni récompense.';
