@@ -8,8 +8,8 @@
 - **Intégration active :** aucune encore renseignée. **Prochain geste** : vérifier le HEAD de `main`, les PR ouvertes et l'application demandée, puis créer/actualiser sa fiche.
 - **Verrou pédagogique :** XP, trophées et scores d'une **nouvelle** app nécessitent chacun une proposition de l'IA et **l'accord explicite du professeur avant codage** ; état de décision dans la fiche.
 - **Signal transversal à traiter :** aucun nouveau signal classé à la création ; voir [les tendances et raccourcis](RETEX_OPERATIONNEL.md) si incident similaire.
-- **Rappels** : historique antérieur [au 07/11](SUIVI_DECISIONS_OUVERTES_20261107.md) à **revalider** ; PR #213 et #248–#251 étaient encore ouvertes le 09/11 (statut actuel à revérifier).
-- **Dernière consolidation** : 09/11/2026 — réorganisation documentaire seulement ; aucune recette ou visibilité élève certifiée par cette opération.
+- **Chantiers hérités** : cinq PR anciennes **toujours ouvertes et non fusionnées lors de la vérification GitHub du 10/11/2026** ; voir le bref inventaire plus bas. L'ancien [suivi du 07/11](SUIVI_DECISIONS_OUVERTES_20261107.md) reste à revalider, sans présumer ses tâches terminées.
+- **Dernière consolidation** : 10/11/2026 — inventaire GitHub documentaire et correction des liens des modèles ; aucune recette, fusion d'ancienne PR ou visibilité élève certifiée.
 
 ## Applications en cours depuis cette nouvelle série
 
@@ -18,6 +18,20 @@
 | _Aucune nouvelle intégration inscrite_ | — | — | — | — |
 
 **Étapes distinctes** : `AUDIT` → `ARBITRAGE PROF` → `CODE` → `CI` → `PAGES` → `EDGE/SQL` → `RECETTE FICTIVE` → `OUVERTURE AUTORISÉE`. N'afficher une étape comme franchie qu'avec **date + preuve** ; `SANS OBJET` si le jeu n'a pas cette capacité. Une fusion GitHub ne certifie pas le reste.
+
+## Chantiers hérités — PR ouvertes constatées sur GitHub le 10/11/2026
+
+> **Inventaire de continuité, pas un nouvel état de livraison.** Ces PR précèdent ce suivi et ne comptent pas comme « nouvelles intégrations ». Le statut ci-dessous vient de GitHub au 10/11/2026 ; **le recontrôler au moment de reprendre**. Une PR ouverte peut contenir un travail devenu obsolète ou repris ailleurs sur `main`. **Ne pas la fusionner, la fermer, ni rejouer sa migration sans audit du diff actuel et autorisation pertinente.**
+
+| PR héritée et objet | Branche (HEAD observé) | État vérifié | Action à la reprise |
+| --- | --- | --- | --- |
+| [#213 — Soustraction scolaire finale](https://github.com/Mr-Tat/Mathas-Connect/pull/213) | `work/soustraction-finale-eleve-20261104` (`0f540bc2`) | Ouverte, non fusionnée | Examiner portée, chevauchement avec `main`, tests et état SQL/Edge ; ne pas redéployer implicitement |
+| [#248 — Fermeture proposition projection Oui/Non](https://github.com/Mr-Tat/Mathas-Connect/pull/248) | `fix/projection-consent-one-click-20261106` (`47365b35`) | Ouverte, non fusionnée | Comparer le comportement et le correctif aux changements plus récents |
+| [#249 — Avatars des quatre calculs écrits](https://github.com/Mr-Tat/Mathas-Connect/pull/249) | `feat/avatars-four-written-calculations-20261106` (`bd46dea7`) | Ouverte, non fusionnée | Comparer les quatre interfaces à `main` ; vérifier si déjà repris ailleurs |
+| [#250 — Points du jour Soustraction](https://github.com/Mr-Tat/Mathas-Connect/pull/250) | `fix/subtraction-today-points-restoration-20261106` (`28c626b2`) | Ouverte, non fusionnée | Contrôler persistance du jour, tests et éventuels correctifs ultérieurs |
+| [#251 — Meilleur score du jour Additions](https://github.com/Mr-Tat/Mathas-Connect/pull/251) | `fix/addition-daily-score-reopen-20261106` (`853ce262`) | Ouverte, non fusionnée | Contrôler les deux additions et la reconnexion avant toute reprise |
+
+**Méthode de reprise :** partir de la PR/branche **et de `main` actuels**, comparer les commits, vérifier que le problème existe encore, puis créer/compléter **une fiche propre au sujet réellement repris**, sur la branche appropriée. Consigner dans l'index une seule ligne si le sujet devient actif. Les preuves d'anciennes PR ne prouvent pas un déploiement LIVE en 2026-11-10.
 
 ## Entretien (pas de journal infini)
 
