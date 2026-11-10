@@ -6,6 +6,15 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Projection collective | Math’as Connect</title>
+<script>
+(function(){
+  var q=new URLSearchParams(location.search);
+  var names={observation:'Observation',phase1:'Ph1',phase2:'Ph2 A',phase2b:'Ph2 B','2eco':'2 ECO'};
+  var ids={'8fe170fa-9e8f-4e80-885a-b0ba68026f64':'Observation','71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'Ph1','1b021ed9-4846-4203-9c7b-4b5fa8d7adab':'Ph2 A','0d8ba828-59cc-468b-a4b8-7b2a1af10b88':'Ph2 B','a9195199-0a28-4e86-99ce-47b36dd6e646':'2 ECO'};
+  var label=names[q.get('space')]||ids[q.get('class')]||(q.get('name')||'').trim().slice(0,40);
+  if(label)document.title='Projection '+label+' | Math’as Connect';
+})();
+</script>
 <link rel="icon" href="./assets/brand/favicon.png" type="image/png">
 <style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
