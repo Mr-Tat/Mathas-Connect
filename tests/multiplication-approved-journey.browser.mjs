@@ -110,7 +110,7 @@ async function connectedPage(teacher=false,failFirstFinish=false,cls=CLS){
     const item=record?{eventId:EVENT,mode:'classic',score:4,total:4,
      points:16,at:record.at}:null;
     response={ok:true,events:item?[item]:[],bestThree:item?[item]:[],
-     todayBest:item,boardBest:projectionPublished?16:0};
+     todayBest:item,boardBest:projectionPublished?16:0,boardTodayBest:projectionPublished?16:0};
    }else if(b.action==='student-share-score'){
     projectionCalls.push(b);projectionPublished=true;
     response={ok:true,consentRecorded:true,improved:true,boardBest:16};
@@ -236,7 +236,7 @@ try{
      trophyPointer:getComputedStyle(label).pointerEvents,stripTag:trophy.tagName
     };
    });
-   assert.equal(actions.share,'Proposer ce score à la projection');
+   assert.equal(actions.share,'Envoi indisponible');
    assert.equal(actions.shareBorder,'1px');
    assert.equal(actions.sharePointer,'none','le cadre décoratif ne change pas la zone de clic');
    assert.equal(actions.cardRole,'button');
