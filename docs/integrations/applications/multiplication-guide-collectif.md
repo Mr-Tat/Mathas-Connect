@@ -96,7 +96,7 @@
 - Le professeur garde **heartbeat toutes les 25 secondes**, `resume` au chargement et les requêtes de ses commandes ; changement d'onglet ne ferme pas la séance. L'élève ne synchronise pas ses réponses vers le serveur.
 - Navigateur : suppression du rendu permanent du bandeau toutes les 950 ms ; rendu après interaction/réponse serveur. Sauvegardes `sessionStorage` regroupées après une rafale de touches (~300 ms), mais immédiates pour navigation, changement d'onglet caché et `pagehide`.
 - Autres temporisateurs anciens dans le moteur d'origine : surveillance des célébrations mort subite (135 ms), compteurs/trophées (~600–650 ms), résumé du menu (1,4 s) et HUD Connect (~1,1 s). **Non modifiés** : chantier séparé après benchmark sur PC scolaire, pour ne pas risquer les scores, trophées ni leur publication. Ces minuteries ne sont pas des requêtes Supabase.
-- Tests ciblés et publication : vérification CI/Pages à consigner lors de la fusion de #295 ; recette réelle Monsieur T/Élève A encore à faire. Aucun changement SQL ni Edge.
+- **Livré** : PR #295 fusionnée, commit `9f6d0faa` ; [Chromium 31/31](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/43006386483) ; [Pages construit et déployé avec succès](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/43006650293). L'intégration et les parcours Multiplication passent ; la suite générale conserve huit échecs antérieurs hors périmètre (Abaque, miniatures, documents Laboratoire, Soustraction). Recette réelle Monsieur T/Élève A toujours à faire. Aucun changement SQL ni Edge.
 
 ## Retour d'expérience à compléter
 - Source de divergence : chaque navigateur tire aléatoirement ses propres opérations ; la séance doit porter les nombres déterminés côté serveur.
