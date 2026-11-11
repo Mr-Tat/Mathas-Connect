@@ -606,7 +606,7 @@ if(mode==='connected'){
 let guidedCloseToken=session?.access_token||null;
 if(mode==='connected'&&classroomBridgeReady){
  try{
-  const {createMultiplicationCollective}=await import('./collective-ui.mjs?v=20261110-classroom-v10');
+  const {createMultiplicationCollective}=await import('./collective-ui.mjs?v=20261111-classroom-v11');
   guidedCollective=createMultiplicationCollective({
  iframe,teacher:teacherPlayer,classId,classLabel:classTag,
  // Sauvegarde locale et éphémère réservée aux élèves de ce compte/onglet.
