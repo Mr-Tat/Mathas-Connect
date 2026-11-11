@@ -2,7 +2,7 @@
 
 **Projet :** Math’as Connect · **Date de référence :** 10 novembre 2026 · **Objet :** cahier de reprise pour une nouvelle conversation ChatGPT disposant de GitHub et Supabase.
 
-> **Source de vérité :** contrôler \`main\`, les PR ouvertes, GitHub Pages, Supabase et les tests au moment de la reprise. Ce document décrit les **décisions finales**, non toutes les versions intermédiaires. Le dernier ajout, sauvegarde locale de secours, a été préparé dans la PR **#294** ; vérifier son statut avant de porter cette fonction.
+> **Source de vérité :** contrôler \`main\`, les PR ouvertes, GitHub Pages, Supabase et les tests au moment de la reprise. Ce document décrit les **décisions finales**, non toutes les versions intermédiaires. Dernière optimisation finalisée : **#295**, synchronisation côté élèves uniquement sur « Rejoindre la classe » et « Suivant / Vérifier la suite », avec rendu événementiel et sauvegardes regroupées. #294 et #295 sont fusionnées et publiées.
 
 ## 1. Périmètre et ordre de travail
 
@@ -50,7 +50,7 @@
 - **Pages obligatoires vérifiées sur le statut serveur au clic de passage** pour prévenir le contournement d'un changement de règle depuis le dernier rafraîchissement ; les saisies restent locales.
 - Professeur : conserver son signal de présence ~25 secondes et la reprise à l'ouverture, mais ne pas ajouter de statut toutes les 8 secondes. Rester fonctionnel si réseau momentanément indisponible (bouton de nouvelle tentative).
 - Supprimer le rendu systématique du bandeau ~950 ms au profit des événements d'interface. Regrouper les écritures de sauvegarde rapprochées (~300 ms), avec sauvegarde immédiate à la navigation et `pagehide`. **Ne pas modifier les minuteries historiques des trophées ou scores sans audit et régressions dédiées.**
-- Pilote : [PR #295](https://github.com/Mr-Tat/Mathas-Connect/pull/295), vérifier son statut, CI et Pages avant de la considérer LIVE. Aucune migration SQL ou Edge nécessaire pour cette optimisation.
+- Pilote : [PR #295](https://github.com/Mr-Tat/Mathas-Connect/pull/295) **fusionnée et publiée** le 11/11/2026 ; [CI 31/31](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/43006386483) ; [GitHub Pages validé](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/43006650293). Aucune migration SQL ou Edge nécessaire pour cette optimisation.
 
 ## 3. Architecture du pilote à inspecter (ne pas copier aveuglément)
 
