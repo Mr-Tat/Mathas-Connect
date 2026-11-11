@@ -409,6 +409,14 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
   answerPanel.append(confirmPanel);answerPanel.hidden=true;
   bar.append(answerPanel);
   doc.getElementById('gameScreen')?.prepend(bar);
+  // Certains parcours démarrent le guidé via le moteur natif plutôt que via
+  // le clic du bouton. Observer la visibilité des deux écrans (pas tout le DOM)
+  // remplace le rendu permanent sans laisser le bandeau bloqué ou invisible.
+  const screenObserver=new MutationObserver(()=>render());
+  for(const screenId of ['menuScreen','gameScreen']){
+   const screen=doc.getElementById(screenId);
+   if(screen)screenObserver.observe(screen,{attributes:true,attributeFilter:['class']});
+  }
   // Saisie : une écriture locale regroupée après une rafale de touches ;
   // navigation et sortie : sauvegarde immédiate, sans aucune requête réseau.
   if(!teacher){
