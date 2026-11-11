@@ -44,6 +44,14 @@
 - **Sauvegarde de secours des élèves lors d’un couac/F5** : dans \`sessionStorage\` de **leur onglet**, par **classe + identifiant authentifié d’élève + UUID de séance**. Elle conserve la page consultée, les saisies, reports, traces de correction et réussite locale des pages visitées. Sauvegarder après les actions du pavé, validation, navigation et \`pagehide\`. Lors de la réouverture, **aucune recherche serveur avant le clic « Rejoindre la classe »** ; après ce clic, récupérer la bonne séance serveur, vérifier les nombres/pages, puis restaurer le brouillon.
 - Limiter volume (120 Kio), nombre de pages (120) et durée de secours (~12 h) ; ne jamais réutiliser le brouillon d’un autre élève, d’une autre classe ou d’une nouvelle séance ; invalider à la fin de séance. Si le stockage navigateur est bloqué, **ne pas bloquer le jeu** : rester avec la mémoire normale. **Pas d’envoi de réponses élèves à Supabase.** Il s’agit d’une reprise **sur le même onglet/appareil**, pas d’une synchronisation entre ordinateurs.
 
+### Dernière décision de performance du 11 novembre 2026 — PR #295
+- **Aucun polling de séance côté élève.** Après la première jonction, ne plus interroger Supabase toutes les 8 secondes. Il clique sur **« Suivant / Vérifier la suite »** pour récupérer la dernière version des pages et des obligations, même si le bouton ne connaissait aucune page supplémentaire. Si le professeur n'a pas avancé, afficher un message explicite. Le bouton doit donc rester cliquable.
+- **« Précédente » purement locale**, sans requête serveur. « M'entraîner en attendant » local ; le retour via **« Rejoindre la classe »** vérifie la séance au clic.
+- **Pages obligatoires vérifiées sur le statut serveur au clic de passage** pour prévenir le contournement d'un changement de règle depuis le dernier rafraîchissement ; les saisies restent locales.
+- Professeur : conserver son signal de présence ~25 secondes et la reprise à l'ouverture, mais ne pas ajouter de statut toutes les 8 secondes. Rester fonctionnel si réseau momentanément indisponible (bouton de nouvelle tentative).
+- Supprimer le rendu systématique du bandeau ~950 ms au profit des événements d'interface. Regrouper les écritures de sauvegarde rapprochées (~300 ms), avec sauvegarde immédiate à la navigation et `pagehide`. **Ne pas modifier les minuteries historiques des trophées ou scores sans audit et régressions dédiées.**
+- Pilote : [PR #295](https://github.com/Mr-Tat/Mathas-Connect/pull/295), vérifier son statut, CI et Pages avant de la considérer LIVE. Aucune migration SQL ou Edge nécessaire pour cette optimisation.
+
 ## 3. Architecture du pilote à inspecter (ne pas copier aveuglément)
 
 | Couche | Référence Multiplication | Rôle |
