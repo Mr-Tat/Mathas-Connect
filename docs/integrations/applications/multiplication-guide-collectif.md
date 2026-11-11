@@ -12,7 +12,7 @@
 - Moteur original inchangé ; pont natif injecté uniquement depuis l'hôte Connect, points d'insertion vérifiés ; les activités non guidées et le mode libre restent inchangés.
 - Edge dédiée « connect-guided-multiplication » : authentification, inscription/permission, visibilité HUB, décisions professeur côté serveur. Les élèves n'ont qu'un accès à la lecture.
 - Table RLS privée de séance : deux opérations par page, config, progression des pages et version ; aucune réponse, score, XP ou donnée de résultat élève.
-- Poll léger et reprise après réseau absent.
+- **Décision du 11/11/2026** : élève = **aucune vérification automatique**. La découverte sur « Rejoindre la classe » et l'ouverture de suite sur « Suivant / Vérifier la suite » sont déclenchées **par clic uniquement**. Le serveur répond avec la dernière règle « Page obligatoire » avant chaque avance. « Précédente » est locale. Le professeur conserve sa présence toutes les 25 secondes.
 
 ## État actuel et reprise après incident
 - **Décision validée du 10/11/2026** : une sauvegarde de secours locale élève doit survivre à F5/couac dans le même onglet. Réalisation : [PR #294](https://github.com/Mr-Tat/Mathas-Connect/pull/294). `collective-draft.mjs` et extensions du pont natif ; namespace `sessionStorage` par classe / utilisateur / séance, contrôle des calculs, 120 Kio et 12 h maximum ; aucun écrit élève sur le réseau ; aucun changement de mode obligatoire ou de navigation.
@@ -90,6 +90,13 @@
 - **Restauration** : après F5, cliquer explicitement « Rejoindre la classe » ; une lecture du serveur valide la séance ; les nombres sont comparés à ceux du serveur ; les valeurs sont restaurées seulement si elles sont cohérentes et sous les bornes. Pages obligatoires antérieures gardent leur priorité. Les sauvegardes d'une autre séance sont purgées.
 - **Limitations honnêtes** : sauvegarde locale de confort (même onglet / appareil), pas de synchronisation entre appareils ; si les données locales sont effacées/bloquées ou navigateur fermé sans reprise de session, la restauration peut ne plus être possible. Le jeu reste fonctionnel.
 - **Recette** : test automatique réussie à 31/31 sur Chromium et Node ; recette connectée réelle avec Élève A/Monsieur T encore à exécuter.
+
+## Optimisations frugales du guidé — 11/11/2026, PR #295
+- Échanges : suppression des lectures `status` toutes les 8 secondes côté élèves et des requêtes de statut périodiques côté professeur. L'élève clique sur **« Vérifier la suite »** lorsqu'aucune nouvelle page n'est connue : réponse claire si le professeur n'a pas encore avancé. Même lorsque la page suivante est connue, le clic vérifie les obligations de dernière minute côté serveur avant de laisser passer.
+- Le professeur garde **heartbeat toutes les 25 secondes**, `resume` au chargement et les requêtes de ses commandes ; changement d'onglet ne ferme pas la séance. L'élève ne synchronise pas ses réponses vers le serveur.
+- Navigateur : suppression du rendu permanent du bandeau toutes les 950 ms ; rendu après interaction/réponse serveur. Sauvegardes `sessionStorage` regroupées après une rafale de touches (~300 ms), mais immédiates pour navigation, changement d'onglet caché et `pagehide`.
+- Autres temporisateurs anciens dans le moteur d'origine : surveillance des célébrations mort subite (135 ms), compteurs/trophées (~600–650 ms), résumé du menu (1,4 s) et HUD Connect (~1,1 s). **Non modifiés** : chantier séparé après benchmark sur PC scolaire, pour ne pas risquer les scores, trophées ni leur publication. Ces minuteries ne sont pas des requêtes Supabase.
+- Tests ciblés et publication : vérification CI/Pages à consigner lors de la fusion de #295 ; recette réelle Monsieur T/Élève A encore à faire. Aucun changement SQL ni Edge.
 
 ## Retour d'expérience à compléter
 - Source de divergence : chaque navigateur tire aléatoirement ses propres opérations ; la séance doit porter les nombres déterminés côté serveur.
