@@ -365,7 +365,8 @@ try{
    await page.locator('#mc-guided-bar').getByRole('button',{name:'Rejoindre la classe'}).click();
    assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),0,
     'l’élève commence à la première page obligatoire, pas à celle plus avancée du professeur');
-   assert.equal(await page.locator('#mc-guided-bar [data-role="student"]').getByRole('button',{name:/Termine la page obligatoire/}).isDisabled(),true);
+   const lateButton=page.locator('#mc-guided-bar [data-role="student"]').getByRole('button',{name:/Suivant|Vérifier la suite/});
+   assert.equal(await lateButton.isEnabled(),true,'une obligation se vérifie au clic, le bouton n’est pas bloqué');
   }finally{await page.close()}
  });
 
@@ -380,6 +381,11 @@ try{
      revision:1,level:1,carryMethod:'top',multipliers:config.multipliers,
      pages:[page1],pageIndex:0,requiredPages:[false]};
     window.__statusCalls=0;
+    window.__classroomTimerDelays=[];
+    const originalInterval=window.setInterval.bind(window);
+    window.setInterval=(fn,ms,...args)=>{
+     window.__classroomTimerDelays.push(ms);return originalInterval(fn,ms,...args);
+    };
     window.__controller=createMultiplicationCollective({
      iframe:{contentDocument:document,contentWindow:window},teacher:false,
      classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',classLabel:'Classe TEST',
@@ -402,29 +408,42 @@ try{
    assert.equal(pupilLayout.gap,'11px');
    assert.equal(pupilLayout.border,4);
    assert.equal(pupilLayout.color,'rgb(246, 140, 54)');
-   assert.equal(await controls.getByRole('button',{name:/En attente/}).isDisabled(),true);
+   assert.deepEqual(await page.evaluate(()=>window.__classroomTimerDelays),[],
+    'aucun intervalle automatique de statut ou de rendu chez les élèves');
+   const next=controls.getByRole('button',{name:/Vérifier la suite|Suivant/});
+   assert.equal(await next.isEnabled(),true,'vérifier reste possible même sans page suivante connue');
+   await page.bringToFront();
+   assert.equal(await page.evaluate(()=>window.__statusCalls),1,'focus ne doit pas contacter le serveur');
+   await next.click();
+   assert.equal(await page.evaluate(()=>window.__statusCalls),2,'une vérification, seulement sur clic');
+   await page.getByText('Le professeur n’a pas encore ouvert la page suivante.').waitFor();
    await page.evaluate(p=>{window.__classroom={...window.__classroom,revision:2,
     pages:[...window.__classroom.pages,p],requiredPages:[false,false],pageIndex:1}},page2);
-   await page.evaluate(()=>window.__controller.refresh());
-   const next=controls.getByRole('button',{name:/Suivant/});
-   await next.waitFor({state:'visible'});
-   assert.equal(await next.isEnabled(),true,'page ordinaire : on avance sans avoir fini');
+   assert.equal(await page.evaluate(()=>window.__statusCalls),2,'l’ouverture prof ne produit aucune requête élève automatique');
    await next.click();
-   assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),1);
+   assert.equal(await page.evaluate(()=>window.__statusCalls),3);
+   assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),1,
+    'le clic suivant découvre et ouvre la nouvelle page, même si elle était inconnue');
    await controls.getByRole('button',{name:/Précédente/}).click();
    assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),0);
+   assert.equal(await page.evaluate(()=>window.__statusCalls),3,'précédente utilise le cache local');
+   // Le professeur rend l’ancienne page obligatoire sans que le navigateur
+   // élève le sache encore : le clic doit vérifier la règle serveur actualisée.
    await page.evaluate(()=>{window.__classroom={...window.__classroom,revision:3,requiredPages:[true,false]}});
-   await page.evaluate(()=>window.__controller.refresh());
-   const locked=controls.getByRole('button',{name:/Termine la page obligatoire/});
-   await locked.waitFor({state:'visible'});
-   assert.equal(await locked.isDisabled(),true);
+   await next.click();
+   assert.equal(await page.evaluate(()=>window.__statusCalls),4);
+   assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),0,
+    'une obligation nouvellement posée bloque le passage');
+   await page.getByText('Page obligatoire : réussis les deux calculs avant de continuer.').waitFor();
    await page.evaluate(()=>{window.MathasGuidedBridge.finishedAt=()=>true});
-   await controls.getByRole('button',{name:/Suivant/}).waitFor({state:'visible'});
-   await controls.getByRole('button',{name:/Suivant/}).click();
+   await next.click();
+   assert.equal(await page.evaluate(()=>window.__statusCalls),5);
    assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),1);
    await page.getByRole('button',{name:/M’entraîner/}).click();
    assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().collective),false);
+   assert.equal(await page.evaluate(()=>window.__statusCalls),5,'entraînement seul sans poll');
    await page.getByRole('button',{name:/Rejoindre la classe/}).click();
+   assert.equal(await page.evaluate(()=>window.__statusCalls),6,'retour en classe au clic seulement');
    assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),1);
   }finally{await page.close()}
  });
