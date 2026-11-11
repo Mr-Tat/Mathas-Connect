@@ -11,7 +11,7 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
  // sessionStorage appartient à cet onglet seulement. Le compte élève authentifié
  // et la classe isolent les brouillons ; l'UUID de la séance les invalide.
  const drafts=teacher?null:createGuidedDraftStore({storage,classId,studentId});
- let restoredSessionId=null;
+ let restoredSessionId=null,saveTimer=null;
  // Clé propre à l'onglet. Elle survit à F5, pas à une ouverture ordinaire
  // dans un nouvel onglet (aucune donnée élève stockée ici).
  const hostKey='mathas.mul.guided.host-tab.'+classId;
@@ -38,6 +38,17 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
   if(!drafts?.enabled||!joined||!validSession(session)||index<0)return false;
   return drafts.save(session,index,bridge?.snapshot?.()||[]);
  };
+ // Les touches du pavé peuvent déclencher plusieurs événements successifs.
+ // Regrouper les écritures plutôt que sérialiser toutes les pages à chaque touche.
+ const queueDraft=()=>{
+  if(!drafts?.enabled||!joined||practicing)return;
+  if(saveTimer!==null)clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{saveTimer=null;saveDraft()},300);
+ };
+ const flushDraft=()=>{
+  if(saveTimer!==null){clearTimeout(saveTimer);saveTimer=null}
+  saveDraft();
+ };
  const restoreDraft=()=>{
   if(!drafts?.enabled||!validSession(session)||restoredSessionId===session.sessionId)return null;
   restoredSessionId=session.sessionId;
@@ -63,8 +74,8 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
   render();
  };
  async function poll(){
-  // Aucun appel de découverte côté élève avant son clic explicite.
-  // Une fois dans la séance, le suivi léger permet d'activer « Suivant ».
+  // Aucune découverte périodique. Garder cette lecture explicite pour
+  // les tests, les erreurs de commande et la reprise professeur.
   if(!teacher&&!joined)return;
   if(busy||doc?.hidden||document.hidden)return;
   try{
@@ -145,15 +156,34 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
   try{await call('heartbeat',{sessionId:session.sessionId,hostId,pageId})}
   catch{ /* Une microcoupure n'arrête pas la classe ; délai de secours serveur. */ }
  }
- function studentNext(){
+ async function studentNext(){
   if(!joined||practicing||busy||!validSession(session))return;
-  const next=index+1;
-  if(next>latestUnlockedPage(session))return;
-  const allowed=mayMoveForward({
-   session,from:index,to:next,isFinished:page=>bridge?.finishedAt?.(page)===true
-  });
-  if(!allowed){say('Page obligatoire : réussis les deux calculs avant de continuer.');render();return}
-  index=next;displayCurrent();saveDraft();say('');render();
+  // C'est le clic « Suivant » qui vérifie les nouveautés et les
+  // obligations, même si la page suivante n'était pas connue localement.
+  busy=true;render();
+  try{
+   const current=await call('status',{hostId});
+   if(current?.ok!==true)throw Error(current?.error||'vérification indisponible');
+   updateSession(current);
+   if(!validSession(session)){
+    say('La séance collective est terminée. Continue le guidé individuel.');
+    return;
+   }
+   const next=index+1;
+   if(next>latestUnlockedPage(session)){
+    say('Le professeur n’a pas encore ouvert la page suivante.');
+    return;
+   }
+   if(!mayMoveForward({
+    session,from:index,to:next,isFinished:page=>bridge?.finishedAt?.(page)===true
+   })){
+    say('Page obligatoire : réussis les deux calculs avant de continuer.');
+    return;
+   }
+   index=next;displayCurrent();saveDraft();lastError='';
+  }catch(e){
+   say('Impossible de vérifier la suite pour le moment. Réessaie.');
+  }finally{busy=false;render()}
  }
  function studentPrevious(){
   if(!joined||practicing||busy||index<=0)return;
@@ -295,12 +325,11 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
    if(answerPanel)answerPanel.hidden=!joined||practicing||!confirmPanel?.childNodes.length;
   }else{
    const unlocked=latestUnlockedPage(session);
-   const allowed=joined&&!practicing&&index<unlocked&&
-    mayMoveForward({session,from:index,to:index+1,isFinished:page=>bridge?.finishedAt?.(page)===true});
    if(btnPrevious)btnPrevious.disabled=busy||!joined||practicing||index<=0;
-   if(btnNext){btnNext.disabled=busy||!allowed;
-    btnNext.textContent=index>=unlocked?'En attente du professeur':
-     !allowed?'Termine la page obligatoire':'Suivant →';
+   if(btnNext){
+    // Toujours cliquable : aucune interrogation automatique en arrière-plan.
+    btnNext.disabled=busy||!joined||practicing;
+    btnNext.textContent=index>=unlocked?'Vérifier la suite →':'Suivant →';
    }
    if(btnPractice){btnPractice.hidden=!joined||practicing;btnPractice.disabled=busy}
    if(btnReturn){btnReturn.hidden=!joined||!practicing;btnReturn.disabled=busy}
@@ -365,7 +394,7 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
   btnPrevious=button('← Précédente',studentPrevious);
   btnNext=button('Suivant →',studentNext);
   btnPractice=button('M’entraîner en attendant',practice);
-  btnReturn=button('Rejoindre la classe',practice);
+  btnReturn=button('Rejoindre la classe',()=>void join());
   // Même séparation orange : navigation | entraînement / retour à la classe.
   pupilRow.append(group(btnPrevious,btnNext),group(btnPractice,btnReturn));
   btnStartHere=button('👥 Lancer la séance',()=>void start());
@@ -380,24 +409,20 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
   answerPanel.append(confirmPanel);answerPanel.hidden=true;
   bar.append(answerPanel);
   doc.getElementById('gameScreen')?.prepend(bar);
-  // Les valeurs du pavé natif sont modifiées avant la remontée de « click ».
-  // Capturer aussi les validations, corrections et changements de page sans
-  // toucher au moteur ni envoyer de saisie au serveur.
+  // Saisie : une écriture locale regroupée après une rafale de touches ;
+  // navigation et sortie : sauvegarde immédiate, sans aucune requête réseau.
   if(!teacher){
-   doc.addEventListener('click',saveDraft);
-   doc.addEventListener('input',saveDraft);
-   doc.addEventListener('keyup',saveDraft);
+   doc.addEventListener('click',queueDraft);
+   doc.addEventListener('input',queueDraft);
+   doc.addEventListener('keyup',queueDraft);
   }
-  setInterval(render,950);
   if(!started){
-   started=true;setInterval(()=>{if(!document.hidden)void poll()},8000);
+   started=true;
    document.addEventListener('visibilitychange',()=>{
-    if(!document.hidden)void poll();
-    else if(teacher)void keepTeacherPresence();
-    else saveDraft();
+    if(teacher){if(document.hidden)void keepTeacherPresence()}
+    else if(document.hidden)flushDraft();
    });
-   window.addEventListener('focus',()=>void poll());
-   if(!teacher)window.addEventListener('pagehide',saveDraft);
+   if(!teacher)window.addEventListener('pagehide',flushDraft);
    if(teacher){
     setInterval(()=>{void keepTeacherPresence()},25000);
     window.addEventListener('pagehide',event=>{
@@ -413,9 +438,10 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
    // Un statut déjà en vol ne peut pas annuler une fermeture de page.
    void call('resume',{hostId,pageId})
     .then(s=>{if(s?.ok===true)updateSession(s)})
-    .catch(()=>{})
-    .finally(()=>{void poll()});
-  }else void poll();
+    .catch(()=>{void poll()});
+  }
+  // Le pilote n'a plus de boucles render(950ms) ou status(8s).
+  // Le bandeau est mis à jour lors des interactions et retours réseau.
   render();
  }
  return {mount,refresh:poll};
