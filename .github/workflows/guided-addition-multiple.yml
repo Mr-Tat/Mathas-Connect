@@ -18,4 +18,4 @@ jobs:
         with:
           node-version: '22'
       - name: Contrat natif et scripts optionnels
-        run: node --test tests/addition-plusieurs-collective-contract.test.mjs tests/guided-addition-multiple-static.test.mjs
+        run: node --test tests/addition-plusieurs-collective-contract.test.mjs tests/guided-addition-multiple-static.test.mjs tests/guided-addition-multiple-draft-security.test.mjs
