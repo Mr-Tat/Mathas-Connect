@@ -59,6 +59,20 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
  }
  async function open(role,existing=null){
   const p=existing||await browser.newPage({viewport:{width:1160,height:900}});
+  if(!existing&&role==='teacher')await p.addInitScript(()=>{
+   const nativeSet=window.setInterval,nativeClear=window.clearInterval;
+   const guidedTimers=new Set();
+   window.__activeGuidedHeartbeatTimers=0;
+   window.setInterval=function(callback,delay,...params){
+    const id=nativeSet.call(window,callback,delay,...params);
+    if(delay===25000){guidedTimers.add(id);window.__activeGuidedHeartbeatTimers=guidedTimers.size}
+    return id;
+   };
+   window.clearInterval=function(id){
+    if(guidedTimers.delete(id))window.__activeGuidedHeartbeatTimers=guidedTimers.size;
+    return nativeClear.call(window,id);
+   };
+  });
   if(!existing)await p.exposeFunction('__guidedApi',(action,payload)=>api(role,action,payload));
   await p.goto(url+'/fixture');
   await p.waitForFunction(()=>!!document.querySelector('#game')?.contentWindow?.MathasGuidedBridge);
@@ -78,8 +92,10 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
  }
  try{
   const teacher=await open('teacher');
+  assert.equal(await teacher.evaluate(()=>window.__activeGuidedHeartbeatTimers),0,'no idle teacher heartbeat');
   await teacher.frameLocator('#game').getByRole('button',{name:/Lancer la séance/}).click();
   await teacher.frameLocator('#game').getByText(/Guidé collectif · page 1/).waitFor();
+  assert.equal(await teacher.evaluate(()=>window.__activeGuidedHeartbeatTimers),1,'single active teacher heartbeat');
   assert.equal(state?.pages?.length,1);
   const student=await open('student');
   await student.frameLocator('#game').getByRole('button',{name:/Rejoindre la classe/}).click();
@@ -165,6 +181,12 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
   await teacher.frameLocator('#game').getByText(/Guidé collectif · page 2/).waitFor();
   assert.equal(state.sessionId,originalSession);
   assert.equal(state.pages.length,originalPages);
+  assert.equal(await teacher.evaluate(()=>window.__activeGuidedHeartbeatTimers),1,'one heartbeat after teacher F5');
+  teacher.once('dialog',d=>d.accept());
+  await teacher.frameLocator('#game').getByRole('button',{name:'Terminer la séance'}).click();
+  await teacher.waitForFunction(()=>window.__activeGuidedHeartbeatTimers===0);
+  assert.equal(state.active,false);
+
   await student.close();await teacher.close();
  }finally{await browser.close();await new Promise(r=>http.close(r))}
 });
