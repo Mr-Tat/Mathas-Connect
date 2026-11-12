@@ -18,4 +18,4 @@ jobs:
         with:
           node-version: '22'
       - name: Contrat, emprunts et syntaxe de l'intégration
-        run: node --test tests/soustraction-collective-contract.test.mjs tests/guided-subtraction-static.test.mjs
+        run: node --test tests/soustraction-collective-contract.test.mjs tests/guided-subtraction-static.test.mjs tests/guided-subtraction-draft-security.test.mjs
