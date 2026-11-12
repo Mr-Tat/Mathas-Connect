@@ -44,7 +44,6 @@ const levels = [
 ];
 
 // Les liens externes ordinaires ne bénéficient pas d'XP ni de session Connect.
-const PADLET_JEUX_IMAGE_URL='https://jftzuslpelgzbdrftszw.supabase.co/storage/v1/object/public/mathas-images/miniatures/optimise-v17-20-jeux-1791797149273-ie3n0w.webp';
 const connectedGameKeys=new Set(['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits']);
 const recordSlugByApp=SCHOOL_RECORD_APPS;
 function progressFor(appKey){
@@ -108,10 +107,9 @@ function card(app) {
     testMultiplication?'🧪 TEST · vrais XP et trophées Connect (connexion obligatoire)':
     testSlug?(app.app_key==='addition-ecrite-multiple'?'🧪 TEST · XP Connect en Classique / Mort subite':'🧪 TEST · nouveaux modes XP en préparation'):progressText(app.app_key);
   const officialThumbnail=(allMode&&app.app_key==='addition-ecrite-simple')?'./assets/miniatures/addition-ecrite-simple.webp':app.image_url;
-  // Exception bornée : la miniature d'origine du Padlet est publique dans l'ancien Math'as.
-  // Ne jamais réactiver en bloc les autres images de l'ancien projet.
-  const approvedPadletImage=app.app_key==='padlet-jeux'&&officialThumbnail===PADLET_JEUX_IMAGE_URL;
-  if (officialThumbnail && (!officialThumbnail.includes('jftzuslpelgzbdrftszw')||approvedPadletImage)) {
+  // Les miniatures externes sont conservées dans le dépôt public Exterieurs,
+  // pas dans le stockage de l'ancien Math'as (qui reste exclu ici).
+  if (officialThumbnail && !officialThumbnail.includes('jftzuslpelgzbdrftszw')) {
     const img = document.createElement('img');
     // Un numéro de version uniquement pour les deux miniatures approuvées évite
     // le cache de l'ancien visuel sans changer les URLs du catalogue Supabase.
