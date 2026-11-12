@@ -1,0 +1,21 @@
+name: Addition multiple — guidé collectif candidat
+on:
+  pull_request:
+    paths:
+      - 'apps/addition-plusieurs/**'
+      - 'tests/addition-plusieurs-collective-contract.test.mjs'
+      - 'tests/guided-addition-multiple-static.test.mjs'
+      - '.github/workflows/guided-addition-multiple.yml'
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Contrat natif et scripts optionnels
+        run: node --test tests/addition-plusieurs-collective-contract.test.mjs tests/guided-addition-multiple-static.test.mjs
