@@ -1,7 +1,7 @@
 -- Lien pédagogique externe « Padlet jeux », déjà actif dans l'ancien Math'as.
 -- DML idempotent, aucune migration de schéma, aucun score ni XP, aucun reset.
 -- À appliquer sur Math'as Connect uniquement APRÈS la publication du HUB
--- (le code autorise explicitement la miniature publique de l'ancien projet).
+-- (la miniature GitHub a été importée dans le dépôt autonome Exterieurs).
 -- Vérifier le résultat via connect_apps, connect_hub_preset_entries,
 -- connect_hub_all_settings et connect_lab_hub_visibility.
 
@@ -25,7 +25,7 @@ VALUES
   ('padlet-jeux','Padlet jeux',
    'https://padlet.com/julientatas1/jeux-math-6y4b0kwcj5444l83',
    true,'jeux',false,80,
-   'https://jftzuslpelgzbdrftszw.supabase.co/storage/v1/object/public/mathas-images/miniatures/optimise-v17-20-jeux-1791797149273-ie3n0w.webp')
+   'https://raw.githubusercontent.com/Mr-Tat/Exterieurs/main/miniatures/padlet-jeux.webp')
 ON CONFLICT (app_key) DO UPDATE SET
   title=EXCLUDED.title,
   launch_url=EXCLUDED.launch_url,
