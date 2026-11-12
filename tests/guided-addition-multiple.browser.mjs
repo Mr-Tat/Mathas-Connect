@@ -65,7 +65,7 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
   await p.evaluate(async ({role,cls})=>{
    const {createAdditionMultipleCollective}=await import('/collective-ui.mjs');
    const iframe=document.querySelector('#game');
-   window.guidedTest=createAdditionSimpleCollective({
+   window.guidedTest=createAdditionMultipleCollective({
     iframe,teacher:role==='teacher',classId:cls,classLabel:'TEST',
     studentId:role==='student'?'e0a1e106-1f35-45b3-83cf-719c4e6bbdad':'',
     storage:sessionStorage,call:(action,payload)=>window.__guidedApi(action,payload),
