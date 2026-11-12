@@ -2,6 +2,8 @@ name: Guided written classroom — Edge and SQL candidate checks
 on:
   pull_request:
     paths:
+      - 'docs/integrations/SUIVI_COURANT.md'
+      - 'docs/integrations/applications/guided-written-shared-backend.md'
       - 'supabase/functions/connect-guided-written/**'
       - 'supabase/migrations/20261112_guided_written_sessions.sql'
       - '.github/workflows/guided-written-edge-sql.yml'
