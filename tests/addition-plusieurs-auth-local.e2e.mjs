@@ -296,12 +296,12 @@ try{
  await professor.locator('#email').fill(teacherEmail);
  await professor.locator('#password').fill(teacherPassword);
  await professor.locator('#login-form button[type=submit]').click();
- await professor.locator('.results-overview-table').waitFor({timeout:30000});
+ await professor.locator('table.results-overview-table:not(.results-overview-floating-table)').waitFor({timeout:30000});
  const savedTeacherAuth=await professor.evaluate(
   ()=>Boolean(localStorage.getItem('mathas-connect-professor-auth-v1')));
  assert.equal(savedTeacherAuth,true,'professor native SDK must persist separate session');
  await professor.reload({waitUntil:'domcontentloaded'});
- await professor.locator('.results-overview-table').waitFor({timeout:30000});
+ await professor.locator('table.results-overview-table:not(.results-overview-floating-table)').waitFor({timeout:30000});
  const open=professor.getByRole('button',{
   name:'Voir les résultats de Élève Chromium dans Addition de plusieurs nombres'
  });
