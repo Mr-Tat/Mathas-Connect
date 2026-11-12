@@ -92,11 +92,29 @@ for(const method of ['addBottom','takeTop'])test('Chromium soustraction '+method
   await input.click();
   await student.frameLocator('#game').locator('.num-key[data-key="8"]').click();
   assert.equal(await input.inputValue(),'8');
+  // Emprunt natif du chiffre des unités, puis valeur diminuée si méthode directe.
+  const borrow=student.frameLocator('#game').locator('.borrow-cell[data-col="0"]').first();
+  await borrow.click();
+  assert.ok(await borrow.evaluate(el=>el.classList.contains('active')));
+  if(method==='takeTop'){
+   const adjust=student.frameLocator('#game').locator('.adjust-input[data-calc="0"][data-adjust-col="1"]');
+   await adjust.click();await adjust.press('3');
+   assert.equal(await adjust.inputValue(),'3');
+  }else{
+   assert.ok(await student.frameLocator('#game').locator('.carry-marker[data-carry="1"]').first().evaluate(el=>el.classList.contains('active')));
+  }
+  await student.waitForFunction(()=>Object.values(sessionStorage).some(v=>v.includes('"borrowed":[true')));
   await student.waitForFunction(()=>Object.keys(sessionStorage).some(k=>k.includes('guided.draft')));
   await open('student',student);
   await student.frameLocator('#game').getByRole('button',{name:/Rejoindre la classe/}).click();
   await student.frameLocator('#game').locator('.answer-input[data-calc="0"][data-col="0"]').waitFor();
   assert.equal(await student.frameLocator('#game').locator('.answer-input[data-calc="0"][data-col="0"]').inputValue(),'8');
+  assert.ok(await student.frameLocator('#game').locator('.borrow-cell[data-col="0"]').first().evaluate(el=>el.classList.contains('active')));
+  if(method==='takeTop'){
+   assert.equal(await student.frameLocator('#game').locator('.adjust-input[data-calc="0"][data-adjust-col="1"]').inputValue(),'3');
+  }else{
+   assert.ok(await student.frameLocator('#game').locator('.carry-marker[data-carry="1"]').first().evaluate(el=>el.classList.contains('active')));
+  }
   // Afficher le corrigé uniquement au tableau professeur, sans toucher aux réponses.
   const beforeAnswers=await teacher.frameLocator('#game').locator('.answer-input').evaluateAll(nodes=>nodes.map(x=>x.value));
   await teacher.frameLocator('#game').getByRole('button',{name:/Afficher les réponses/}).click();
