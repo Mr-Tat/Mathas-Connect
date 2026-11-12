@@ -32,3 +32,22 @@ test('Opérations illégales refusées',()=>{
  assert.throws(()=>generateOperation('multiplication-ecrite-simple',1),/invalid_guided_generator/);
  assert.throws(()=>generateOperation('addition-ecrite-simple',4),/invalid_guided_generator/);
 });
+
+test('Performance de génération : 10 pages de chaque niveau et application',()=>{
+ const samples=[];
+ for(const app of WRITTEN_GUIDED_APPS)for(const level of [1,2,3]){
+  let slowest=0;
+  for(let i=0;i<10;i++){
+   const started=performance.now();
+   const page=generatePage(app,level);
+   const duration=performance.now()-started;
+   slowest=Math.max(slowest,duration);
+   assert.equal(page.length,2);
+   // Limite large pour les machines CI partagées : détecte une boucle
+   // de génération pathological, sans fixer les temps réels des PC.
+   assert.ok(duration<2500,app+' niveau '+level+' : page lente '+duration.toFixed(0)+' ms');
+  }
+  samples.push(app+' N'+level+' maximum '+slowest.toFixed(1)+'ms');
+ }
+ console.log('Bench indicatif sur runner CI : '+samples.join(' ; '));
+});
