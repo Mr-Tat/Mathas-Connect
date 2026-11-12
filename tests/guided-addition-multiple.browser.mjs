@@ -95,6 +95,14 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
   await student.frameLocator('#game').getByRole('button',{name:/Rejoindre la classe/}).click();
   await student.frameLocator('#game').locator('.answer-input[data-calc="0"][data-col="0"]').waitFor();
   assert.equal(await student.frameLocator('#game').locator('.answer-input[data-calc="0"][data-col="0"]').inputValue(),'8');
+  // Afficher le corrigé uniquement au tableau professeur, sans toucher aux réponses.
+  const beforeAnswers=await teacher.frameLocator('#game').locator('.answer-input').evaluateAll(nodes=>nodes.map(x=>x.value));
+  await teacher.frameLocator('#game').getByRole('button',{name:/Afficher les réponses/}).click();
+  await teacher.frameLocator('#game').getByRole('button',{name:'Oui',exact:true}).click();
+  assert.ok(await teacher.frameLocator('#game').locator('.mc-guided-answer-digit').count()>0);
+  assert.deepEqual(await teacher.frameLocator('#game').locator('.answer-input').evaluateAll(nodes=>nodes.map(x=>x.value)),beforeAnswers);
+  await teacher.frameLocator('#game').getByRole('button',{name:/Masquer les réponses/}).click();
+  assert.equal(await teacher.frameLocator('#game').locator('.mc-guided-answer-digit').count(),0);
   await teacher.frameLocator('#game').getByRole('button',{name:/Page obligatoire/}).click();
   await teacher.frameLocator('#game').getByRole('button',{name:/Nouvelle page/}).click();
   await student.frameLocator('#game').getByRole('button',{name:/Suivant|Vérifier la suite/}).click();
