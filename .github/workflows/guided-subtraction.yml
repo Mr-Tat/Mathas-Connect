@@ -2,6 +2,7 @@ name: Soustraction — guidé collectif candidat
 on:
   pull_request:
     paths:
+      - 'docs/integrations/applications/soustraction-guide-collectif.md'
       - 'apps/soustraction-simple/**'
       - 'tests/soustraction-collective-contract.test.mjs'
       - 'tests/guided-subtraction-static.test.mjs'
