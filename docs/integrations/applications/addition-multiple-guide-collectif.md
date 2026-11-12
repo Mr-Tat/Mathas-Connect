@@ -27,3 +27,10 @@ Transposer le guidé collectif de Multiplication simple, y compris la dernière 
 
 ## Statut
 AUDIT PARTIEL + CONTRAT INITIAL. Aucun déploiement, aucune migration, aucune donnée scolaire touchée.
+
+## Implémentation de la branche au 12/11/2026
+- Hôte Connect, pont natif, contrôleur optimisé #295 et stockage F5 adaptés à `addends`.
+- Niveau 1 = 3 nombres, 2 = 4, 3 = 5 ; chiffres 5/6/7 par niveau, retenues à plusieurs unités.
+- Chaque élève clique volontairement pour rejoindre ou avancer ; aucun polling supplémentaire.
+- CI contrat + syntaxe et staging verts ; Chromium vrai moteur prof/élève, même page, obligation réussie : **VERT**. F5 par pavé réel ajouté, recette complémentaire en cours.
+- Edge/SQL partagées PR #299 **non déployées**. Pas de publication ni de test Auth hébergé sur comptes fictifs.
