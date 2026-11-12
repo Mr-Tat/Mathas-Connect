@@ -115,7 +115,7 @@ const mathasGuidedBridge={
   }
   mathasGuidedSpecs.set(index,page.map(({a,b})=>({a,b})));
   this.pageIndex=index;states=next;
-  session.completed=index*2+states.filter(s=>s.solved).length;
+  session.completed=index*2;
   active={kind:'answer',calc:0,col:0,replace:false};
   calculationsPair.innerHTML='';states.forEach((s,i)=>renderCalc(s,i));
   for(let i=0;i<2;i++){
@@ -136,6 +136,7 @@ const mathasGuidedBridge={
    }
   }
   mathasGateSecondCalc(!states[0].solved);
+  session.completed+=states.filter(s=>s.solved).length;
   phase=states.every(s=>s.solved)?'review':'answering';
   setPrimaryActionLabel(phase==='review'?'Suivant (classe)':'Valider');
   resetBtn.disabled=phase==='review';setNumpadDisabled(phase==='review');
