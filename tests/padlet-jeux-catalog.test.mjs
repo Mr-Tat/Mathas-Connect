@@ -8,7 +8,7 @@ const hub=read('../hub.js');
 const html=read('../hub.html');
 const sql=read('../supabase/release-candidates/20261113_padlet_jeux_catalog.sql');
 const padletUrl='https://padlet.com/julientatas1/jeux-math-6y4b0kwcj5444l83';
-const thumb='https://jftzuslpelgzbdrftszw.supabase.co/storage/v1/object/public/mathas-images/miniatures/optimise-v17-20-jeux-1791797149273-ie3n0w.webp';
+const thumb='https://raw.githubusercontent.com/Mr-Tat/Exterieurs/main/miniatures/padlet-jeux.webp';
 
 test('Padlet jeux: unique external card in the Jeux section, no XP',()=>{
   const padlets=apps.filter(a=>a.app_key==='padlet-jeux');
@@ -21,8 +21,8 @@ test('Padlet jeux: unique external card in the Jeux section, no XP',()=>{
   assert.equal(app.featured,false);
   assert.equal(app.display_order,80);
   assert.match(hub,/if\(appKey==='padlet-jeux'\)return '🎲 Jeux en ligne · lien externe'/);
-  assert.match(hub,/app\.app_key==='padlet-jeux'&&officialThumbnail===PADLET_JEUX_IMAGE_URL/);
-  assert.match(hub,/!officialThumbnail\.includes\('jftzuslpelgzbdrftszw'\)\|\|approvedPadletImage/);
+  assert.match(hub,/!officialThumbnail\.includes\('jftzuslpelgzbdrftszw'\)/);
+  assert.doesNotMatch(hub,/approvedPadletImage|PADLET_JEUX_IMAGE_URL/);
   assert.doesNotMatch(hub,/connectedGameKeys=new Set\(\[[^\]]*'padlet-jeux'/s);
   assert.match(html,/hub\.js\?v=20261113-padlet-jeux-v1/);
 });
