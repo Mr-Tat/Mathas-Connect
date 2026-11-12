@@ -6,7 +6,7 @@ test('Générateurs des trois guidés, deux calculs par page',()=>{
   const pages=generatePage(app,level);
   assert.equal(pages.length,2);
   for(const op of pages){
-   const width=maxDigitsForLevel(level);
+   const width=maxDigitsForLevel(level,app);
    if(app==='addition-ecrite-multiple'){
     assert.equal(op.addends.length,addendCountForLevel(level));
     assert.equal(Math.max(...op.addends.map(x=>x.length)),width);
