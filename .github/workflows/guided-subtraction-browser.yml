@@ -2,6 +2,7 @@ name: Soustraction — Chromium guidé collectif
 on:
   pull_request:
     paths:
+      - 'docs/integrations/applications/soustraction-guide-collectif.md'
       - 'apps/soustraction-simple/**'
       - 'tests/guided-subtraction.browser.mjs'
       - '.github/workflows/guided-subtraction-browser.yml'
