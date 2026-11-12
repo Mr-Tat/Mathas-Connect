@@ -1,0 +1,73 @@
+name: Guided written classroom — Edge and SQL candidate checks
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/connect-guided-written/**'
+      - 'supabase/migrations/20261112_guided_written_sessions.sql'
+      - '.github/workflows/guided-written-edge-sql.yml'
+permissions:
+  contents: read
+jobs:
+  edge-typecheck:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Verify Edge function TypeScript
+        run: deno check supabase/functions/connect-guided-written/index.ts
+  postgres-rls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: guided_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      PGPASSWORD: postgres
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGDATABASE: guided_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test candidate SQL in disposable PostgreSQL
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          create role anon nologin;
+          create role authenticated nologin;
+          create role service_role nologin;
+          create role public_read_test nologin;
+          create table public.connect_guided_written_test_marker(id int);
+          SQL
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261112_guided_written_sessions.sql
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          do $$
+          declare enabled boolean;
+          begin
+           select relrowsecurity into enabled from pg_class where oid='public.connect_guided_written_sessions'::regclass;
+           if not enabled then raise exception 'RLS missing'; end if;
+           if has_table_privilege('authenticated','public.connect_guided_written_sessions','select') then
+            raise exception 'authenticated has direct read';
+           end if;
+           if has_table_privilege('anon','public.connect_guided_written_sessions','insert') then
+            raise exception 'anon has direct write';
+           end if;
+           if not has_table_privilege('service_role','public.connect_guided_written_sessions','select') then
+            raise exception 'service role cannot access table';
+           end if;
+          end $$;
+          SQL
