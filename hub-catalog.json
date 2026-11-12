@@ -27,6 +27,15 @@
       "featured": false,
       "display_order": 30,
       "image_url": "./assets/miniatures/soustraction-ecrite-simple.webp"
+    },
+    {
+      "app_key": "padlet-jeux",
+      "title": "Padlet jeux",
+      "launch_url": "https://padlet.com/julientatas1/jeux-math-6y4b0kwcj5444l83",
+      "hub_section": "jeux",
+      "featured": false,
+      "display_order": 80,
+      "image_url": "https://jftzuslpelgzbdrftszw.supabase.co/storage/v1/object/public/mathas-images/miniatures/optimise-v17-20-jeux-1791797149273-ie3n0w.webp"
     }
   ]
 }
