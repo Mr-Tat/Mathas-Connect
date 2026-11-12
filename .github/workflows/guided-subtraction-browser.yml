@@ -1,0 +1,25 @@
+name: Soustraction — Chromium guidé collectif
+on:
+  pull_request:
+    paths:
+      - 'docs/integrations/applications/soustraction-guide-collectif.md'
+      - 'apps/soustraction-simple/**'
+      - 'tests/guided-subtraction.browser.mjs'
+      - '.github/workflows/guided-subtraction-browser.yml'
+permissions:
+  contents: read
+jobs:
+  classroom:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium and Playwright
+        run: |
+          npm install --no-save --no-package-lock playwright@1.57.0
+          npx playwright install chromium --with-deps
+      - name: Teacher/student and real subtraction engine
+        run: node --test tests/guided-subtraction.browser.mjs

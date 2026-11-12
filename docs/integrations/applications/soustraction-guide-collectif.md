@@ -1,0 +1,45 @@
+# Soustraction simple — guidé collectif (chantier en cours)
+
+## Contrat pédagogique validé
+Copier le comportement de Multiplication simple avec optimisation #295 : aucune surveillance périodique côté élève ; « Rejoindre la classe » et « Suivant / Vérifier la suite » interrogent le serveur au clic. Deux opérations par page, copies personnelles, page ordinaire libre, obligation rétroactive, arrivée tardive, entraînement séparé, reprise F5 locale, aucun XP/score/trophée.
+
+## Audit ciblé (12/11/2026)
+- Intégration Connect : `apps/soustraction-simple/index.html`, `app_key=soustraction-ecrite-simple`.
+- Moteur natif autonome `game-original.html` : `startSession('training')` et `makePair()` ; champs `answer-input` et `adjust-input` en `readonly`, pilotés par pavé interne.
+- Deux variantes constatées : `borrowMethod='takeTop'` (emprunt direct) et `borrowMethod='addBottom'` (compensation). **Ne pas calquer les reports de multiplication**.
+- Le pont scolaire et l'Edge `connect-soustraction-school` concernent les preuves scolaires ; ne pas mélanger ces données au guidé collectif.
+- À ce stade seul `connect-guided-multiplication` (v3) et sa table sont installés pour le guidé ; aucune Edge/table guidé soustraction constatée.
+- PR héritée #213 « Soustraction scolaire finale » encore ouverte lors de l'audit ; ne pas fusionner implicitement.
+
+## Code sur cette branche
+- `collective-contract.mjs` : contrat initial isolé, deux soustractions par page, méthode conservée, progression libre/obligatoire et entrée tardive.
+- `tests/soustraction-collective-contract.test.mjs` : 5 scénarios unitaires.
+- **Non connecté à l'interface ni à Supabase.**
+
+## Étapes restantes avant publication
+1. Analyser génération native `newState`, reports/emprunts, vérité de réussite après correction, et réaliser pont natif propre aux deux techniques.
+2. Corrigé sous cases en respectant les colonnes et les deux méthodes, purement visuel.
+3. Hôte Connect et contrôleur à requêtes élèves sur clic, sauvegarde sessionStorage identifiée par élève/classe/séance.
+4. Edge/RLS/lease, tests de sécurité et séparation des classes.
+5. Chromium réel (320, 390, 1160), non-régression des autres modes, CI, Pages/Edge/SQL contrôlés séparément et recette fictive.
+
+**Statut :** audit initial + contrat, pas de déploiement, pas de modification des données ou résultats d'élèves.
+
+## Implémentation candidate du 12/11/2026
+- Hôte, pont natif, UI #295 et brouillon F5 ajoutés sans changer `game-original.html`.
+- Respect des niveaux NATIFS 3/5/7 chiffres et des techniques `addBottom` / `takeTop`.
+- Snapshot privé des emprunts, reports de compensation, chiffres diminués, erreurs et chiffres de réponse ; attention au cas des emprunts en cascade : recette pédagogique à approfondir.
+- Scénario Chromium deux rôles et page obligatoire : **VERT** après correction du mapping niveaux 3/5/7 ; tests F5 ajoutés en cours.
+- Backend mutualisé PR #299 non déployé ; aucune SQL ni ouverture de classes faite. Pas de recette authentifiée hébergée.
+
+## Retours de recette renforcée — 12 novembre 2026
+- Chromium natif pour `addBottom` et `takeTop` : emprunts F5, correction après erreur, blocage puis déblocage d'une page obligatoire, numéros lors du retour, F5 enseignant avec même séance, corrigé enseignant visuel ([exécution Chromium](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/43271401224)).
+- États d'emprunt, report de compensation et chiffres diminués conservés uniquement dans le navigateur de l'élève ; test des brouillons corrompus refusés.
+- Aucun XP, trophée, score ni projection du collectif. Jeu original et méthodes inchangés.
+- **Blocage livraison** : Auth/Edge vrais avec profils TEST approuvés, Pages et non-régression globale non exécutés.
+
+## Optimisation contrôlée avant recette réelle — 12/11/2026
+- Élève : aucune minuterie réseau, seules les actions « Rejoindre » et « Suivant / Vérifier la suite » font un `status` ; les touches et la page précédente ne font aucun appel. Vérifié dans le Chromium à deux rôles par comptage des appels.
+- Saisies F5 : écritures `sessionStorage` regroupées après 300 ms, immédiates à la sortie/navigation, sans contenu élève sur Supabase.
+- Enseignant : un seul heartbeat toutes les 25 s **si une séance existe** ; aucun minuteur au repos ni après « Terminer ». Vérifié dans le Chromium, y compris après F5.
+- Portée : seulement Connect, moteur `game-original.html` intact ; aucune publication de cette branche au 12/11.
