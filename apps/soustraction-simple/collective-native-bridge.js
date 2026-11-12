@@ -25,7 +25,7 @@ const mathasGuidedBridge={
    firstTry:true,solved:false};
  },
  getConfig(){
-  const n=Number(trainingMaxDigits.value),level=n===5?1:n===6?2:n===7?3:0;
+  const n=Number(trainingMaxDigits.value),level=n===3?1:n===5?2:n===7?3:0;
   return {level,borrowMethod:selectedBorrowMethod()};
  },
  status(){return {training:session?.mode==='training',collective:this.active,
@@ -96,7 +96,7 @@ const mathasGuidedBridge={
  enter(page,index,config){
   if(![1,2,3].includes(config?.level)||!['addBottom','takeTop'].includes(config.borrowMethod))return false;
   this.save();
-  trainingMaxDigits.value=String([5,6,7][config.level-1]);
+  trainingMaxDigits.value=String([3,5,7][config.level-1]);
   const technique=document.querySelector('input[name="borrowMethod"][value="'+config.borrowMethod+'"]');
   if(technique)technique.checked=true;
   startSession('training');this.active=true;this.pageIndex=-1;
