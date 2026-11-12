@@ -2,6 +2,7 @@ name: Addition multiple — Chromium guidé collectif
 on:
   pull_request:
     paths:
+      - 'docs/integrations/applications/addition-multiple-guide-collectif.md'
       - 'apps/addition-plusieurs/**'
       - 'tests/guided-addition-multiple.browser.mjs'
       - '.github/workflows/guided-addition-multiple-browser.yml'
