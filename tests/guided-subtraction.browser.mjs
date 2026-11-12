@@ -128,6 +128,36 @@ for(const method of ['addBottom','takeTop'])test('Chromium soustraction '+method
   await student.frameLocator('#game').getByRole('button',{name:/Suivant|Vérifier la suite/}).click();
   await student.frameLocator('#game').getByText(/Page obligatoire : réussis/).waitFor();
   assert.equal(state.pages.length,2);
+  // Résolution NATIVE : réponse initiale erronée, correction, puis 2 calculs réussis.
+  await student.frameLocator('#game').locator('body').evaluate(()=>{window.__mathasManualValidation=true});
+  async function typeNative(calc,op,wrong=false){
+   const nums=[op.a,op.b],answer=String(Number(op.a)-Number(op.b)).padStart(op.a.length,'0').split('').reverse();
+   const count=Math.max(...nums.map(x=>x.length));let carry=0;
+   for(let c=0;c<answer.length;c++){
+    const digit=wrong&&c===0?String((Number(answer[c])+1)%10):answer[c];
+    const input=student.frameLocator('#game').locator('.answer-input[data-calc="'+calc+'"][data-col="'+c+'"]');
+    await input.click();await input.press(digit);
+   }
+   // Le vrai moteur de soustraction a son propre pavé d'emprunt : ne pas remplir de retenues d'addition.
+  }
+  const check=()=>student.frameLocator('#game').locator('.num-key.check').click();
+  await typeNative(0,first[0][0],true);
+  await check();
+  await student.frameLocator('#game').getByText(/Corrige les chiffres rouges/).first().waitFor();
+  assert.equal(await student.frameLocator('#game').locator('.answer-input[data-calc="0"][data-col="0"]').inputValue(),'');
+  const fix=String((Number(first[0][0].a)-Number(first[0][0].b))%10);
+  const wrong=student.frameLocator('#game').locator('.answer-input[data-calc="0"][data-col="0"]');
+  await wrong.click();await wrong.press(fix);await check();
+  await student.frameLocator('#game').getByText('Corrigé',{exact:true}).waitFor();
+  await typeNative(1,first[0][1]);await check();
+  await student.frameLocator('#game').getByText(/Les deux calculs sont maintenant corrects|Les deux calculs sont corrects/).waitFor();
+  await student.frameLocator('#game').getByRole('button',{name:/Suivant|Vérifier la suite/}).click();
+  await student.frameLocator('#game').getByText(/Guidé collectif · page 2/).waitFor();
+  await student.frameLocator('#game').getByRole('button',{name:/Précédente/}).click();
+  await student.frameLocator('#game').getByText(/Guidé collectif · page 1/).waitFor();
+  assert.deepEqual(await student.frameLocator('#game').locator('#calculationsPair .calc-label').allTextContents(),['Calcul 1','Calcul 2']);
+
+
   // Contrôle de la bannière collective sur téléphone, petit téléphone et PC.
   for(const width of [320,390,1160]){
    await student.setViewportSize({width,height:800});
