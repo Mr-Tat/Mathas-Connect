@@ -73,7 +73,7 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
    });
    window.guidedTest.mount();
   },{role,cls});
-  await p.frameLocator('#game').locator('#startTraining').click();
+  await p.frameLocator('#game').locator('#trainingChoiceBtn').click();
   return p;
  }
  try{
