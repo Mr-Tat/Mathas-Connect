@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {validOperation,validSession,mayMoveForward,entryPage,resultOf,incomingCarries,addendCountForLevel,maxDigitsForLevel} from '../apps/addition-plusieurs/collective-contract.mjs';
-const p=[[{addends:['247','35','8']},{addends:['18','19','20']}],[{addends:['44','44']},{addends:['10','30']}],[{addends:['75','25']},{addends:['12','13']}]];
+const p=[[{addends:['247','35','8']},{addends:['18','19','20']}],[{addends:['44','44','44']},{addends:['10','30','20']}],[{addends:['75','25','50']},{addends:['12','13','14']}]];
 const s=()=>({ok:true,active:true,sessionId:'f7d3f280-726e-4e61-86d2-13256aac1746',revision:1,pages:p,pageIndex:2,requiredPages:[false,false,false]});
 test('Deux opérations par page ; nombres positifs uniquement',()=>{
  assert.equal(validOperation({addends:['247','35','8']}),true);
