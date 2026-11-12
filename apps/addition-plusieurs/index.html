@@ -117,9 +117,9 @@ recorded.push(normalized);output.textContent=item.label+' : '+item.score;if(lab)
      const source=await response.text();
      const marker="primaryBtn.addEventListener('click',handlePrimary);";
      if(game.split(marker).length!==2)throw Error('moteur natif non compatible avec le guidé');
-     const hook=source+'\\nconst mathasNativeHandlePrimary=handlePrimary;'
-      +'\\nhandlePrimary=function(...args){if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"){window.MathasGuidedBridge.onContinue?.();return}return mathasNativeHandlePrimary(...args)};'
-      +'\\nprimaryBtn.addEventListener("click",handlePrimary);';
+     const hook=source+'\nconst mathasNativeHandlePrimary=handlePrimary;'
+      +'\nhandlePrimary=function(...args){if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"){window.MathasGuidedBridge.onContinue?.();return}return mathasNativeHandlePrimary(...args)};'
+      +'\nprimaryBtn.addEventListener("click",handlePrimary);';
      game=game.replace(marker,hook);
      const {createAdditionMultipleCollective}=await import('./collective-ui.mjs?v=20261112-guided-v1');
      const labels={
