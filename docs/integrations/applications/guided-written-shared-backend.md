@@ -30,3 +30,10 @@
 - CI générateurs et règles sécurité : OK.
 - **Différence découverte par Chromium** : Addition simple et Soustraction = niveaux de 3/5/7 chiffres ; Addition multiple = 5/6/7. Correctif des générateurs et nouveaux tests de largeur sur cette PR.
 - Code strictement candidat, ni migration LIVE, ni Edge LIVE, ni test Auth connecté en classe.
+
+## Contrôle performance (12/11/2026)
+- Uniquement le clic enseignant génère de nouvelles pages ; l'Edge reçoit des réponses élèves **au clic de navigation seulement**, sans suivi de leurs saisies.
+- Générateur CSPRNG par tampon de 256 entiers au lieu d'un `crypto.getRandomValues` à chaque chiffre : opérations et format natifs inchangés.
+- Test de 10 pages par application et niveau réussi sur CI ; temps maximal observé sur ce runner : ~10,2 ms pour Addition multiple niveau 3. **Mesure Node/runner uniquement**, pas temps réseau Supabase hébergé ou PC scolaire.
+- Contrôles Deno type-check et PostgreSQL RLS réussis sur dernière version testée ; migration/Edge LIVE non déployées. Les PR d'app embarquent désormais un heartbeat enseignant uniquement lorsque la séance est active, et des tests Chromium de l'absence d'appel élève au clavier.
+- Le workflow de fumée Addition multiple était bloqué par Ubuntu 26.04/Playwright ; le runner est désormais fixé sur Ubuntu 24.04. Son workflow Auth local est passé sur `supabase/setup-cli@v3` avec `version: v2.stable` pour préserver la compatibilité CLI v2 et éviter la recherche rate-limitée du dernier exécutable. Ces workflows ne modifient aucune ressource Supabase hébergée.
