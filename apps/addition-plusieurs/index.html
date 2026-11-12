@@ -5,7 +5,7 @@ import {createProjectionConsent} from '../../projection-consent.mjs';
 import {createLocalLab} from './local-lab.mjs';
 import {buildConnectPilot,CONNECT_WRITE_READY as writeReady} from './connect-pilot.mjs';
 import {createEdgePost} from './edge-transport.mjs';
-import {createAuthenticatedHost} from './connect-host.mjs';
+import {createAuthenticatedHost,CONNECT_URL,CONNECT_APP} from './connect-host.mjs';
 import {hydrateNativeRecords} from './connect-hydration.mjs';
 (async()=>{const frame=document.getElementById('game'),output=document.getElementById('result'),recorded=[];
  // No Connect credentials are read until the backend has been validated and enabled.
@@ -108,6 +108,56 @@ recorded.push(normalized);output.textContent=item.label+' : '+item.score;if(lab)
    frame.setAttribute('data-mathas-storage-scope',scope);
    game=game.replace('<head>','<head><script>'+storageCode+'</'+'script>');
    game=game.replace('</body>','<script src="./audit-bridge.js"></'+'script></body>');
+   // Contrôleur collectif optionnel, distinct de l'audit des scores et trophées.
+   let collective=null;
+   if(connected&&host&&!simulate){
+    try{
+     const response=await fetch('./collective-native-bridge.js?v=20261112-guided-v1');
+     if(!response.ok)throw Error('pont natif guidé indisponible');
+     const source=await response.text();
+     const marker="primaryBtn.addEventListener('click',handlePrimary);";
+     if(game.split(marker).length!==2)throw Error('moteur natif non compatible avec le guidé');
+     const hook=source+'\\nconst mathasNativeHandlePrimary=handlePrimary;'
+      +'\\nhandlePrimary=function(...args){if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"){window.MathasGuidedBridge.onContinue?.();return}return mathasNativeHandlePrimary(...args)};'
+      +'\\nprimaryBtn.addEventListener("click",handlePrimary);';
+     game=game.replace(marker,hook);
+     const {createAdditionMultipleCollective}=await import('./collective-ui.mjs?v=20261112-guided-v1');
+     const labels={
+      '8fe170fa-9e8f-4e80-885a-b0ba68026f64':'Observation',
+      '71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'Phase 1',
+      '1b021ed9-4846-4203-9c7b-4b5fa8d7adab':'Phase 2 A',
+      '0d8ba828-59cc-468b-a4b8-7b2a1af10b88':'Phase 2 B',
+      'a9195199-0a28-4e86-99ce-47b36dd6e646':'2 ECO',
+      '4bf3400d-a315-4ea4-a2f3-afaca24dc9b9':'TEST'
+     };
+     let closeToken=null;
+     collective=createAdditionMultipleCollective({
+      iframe:frame,teacher:teacherPlayer,classId:host.classId,
+      classLabel:labels[host.classId]||'ID '+host.classId.slice(0,8),
+      studentId:teacherPlayer?'':host.studentId,
+      storage:(()=>{try{return sessionStorage}catch{return null}})(),
+      call:async(action,payload={})=>{
+       closeToken=await host.getToken();
+       const response=await fetch(CONNECT_URL+'/functions/v1/connect-guided-written',{
+        method:'POST',headers:{apikey:host.apikey,authorization:'Bearer '+closeToken,'content-type':'application/json'},
+        body:JSON.stringify({action,appKey:CONNECT_APP,classId:host.classId,...payload})
+       });
+       const data=await response.json().catch(()=>({ok:false,error:'réponse illisible'}));
+       if(!response.ok||data?.ok!==true)throw Error(data?.error||'séance indisponible');
+       return data;
+      },
+      onClose:({sessionId,hostId,pageId})=>{
+       if(!teacherPlayer||!closeToken)return;
+       try{void fetch(CONNECT_URL+'/functions/v1/connect-guided-written',{
+        method:'POST',keepalive:true,cache:'no-store',
+        headers:{apikey:host.apikey,authorization:'Bearer '+closeToken,'content-type':'application/json'},
+        body:JSON.stringify({action:'closing',appKey:CONNECT_APP,classId:host.classId,sessionId,hostId,pageId})
+       }).catch(()=>{})}catch{}
+      }
+     });
+     frame.addEventListener('load',()=>collective?.mount());
+    }catch(error){console.warn('Guidé collectif non chargé ; autres modes préservés.',error)}
+   }
    frame.srcdoc=game;
   }catch(e){output.textContent='Erreur : '+e.message}
 })();
