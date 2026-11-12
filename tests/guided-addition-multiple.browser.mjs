@@ -108,6 +108,13 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
   await student.frameLocator('#game').getByRole('button',{name:/Suivant|Vérifier la suite/}).click();
   await student.frameLocator('#game').getByText(/Page obligatoire : réussis/).waitFor();
   assert.equal(state.pages.length,2);
+  // Contrôle de la bannière collective sur téléphone, petit téléphone et PC.
+  for(const width of [320,390,1160]){
+   await student.setViewportSize({width,height:800});
+   const rect=await student.frameLocator('#game').locator('#mc-guided-bar').boundingBox();
+   assert.ok(rect&&rect.x>=-2&&rect.x+rect.width<=width+2,'bannière déborde : '+width);
+  }
+
   await student.close();await teacher.close();
  }finally{await browser.close();await new Promise(r=>http.close(r))}
 });
