@@ -43,6 +43,7 @@ const levels = [
   ['jeux', 'Jeux', 'Pour jouer']
 ];
 
+// Les liens externes ordinaires ne bénéficient pas d'XP ni de session Connect.
 const connectedGameKeys=new Set(['abaque-longueurs','addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits']);
 const recordSlugByApp=SCHOOL_RECORD_APPS;
 function progressFor(appKey){
@@ -50,6 +51,7 @@ function progressFor(appKey){
   return p&&Array.isArray(p.apps)?p.apps.find(a=>a.appKey===appKey):null;
 }
 function progressText(appKey){
+  if(appKey==='padlet-jeux')return '🎲 Jeux en ligne · lien externe';
   if(!connectedGameKeys.has(appKey))return 'Jeu actuel · scores locaux';
   if(!activeProfile)return 'Classique : local · Connecté : compte élève';
   const p=progressFor(appKey);
@@ -105,6 +107,8 @@ function card(app) {
     testMultiplication?'🧪 TEST · vrais XP et trophées Connect (connexion obligatoire)':
     testSlug?(app.app_key==='addition-ecrite-multiple'?'🧪 TEST · XP Connect en Classique / Mort subite':'🧪 TEST · nouveaux modes XP en préparation'):progressText(app.app_key);
   const officialThumbnail=(allMode&&app.app_key==='addition-ecrite-simple')?'./assets/miniatures/addition-ecrite-simple.webp':app.image_url;
+  // Les miniatures externes sont conservées dans le dépôt public Exterieurs,
+  // pas dans le stockage de l'ancien Math'as (qui reste exclu ici).
   if (officialThumbnail && !officialThumbnail.includes('jftzuslpelgzbdrftszw')) {
     const img = document.createElement('img');
     // Un numéro de version uniquement pour les deux miniatures approuvées évite
