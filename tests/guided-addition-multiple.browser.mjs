@@ -157,10 +157,18 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
   const nativeAfterSecond=await student.frameLocator('#game').locator('body').evaluate(()=>({
    status:window.MathasGuidedBridge.status(),data:window.MathasGuidedBridge.snapshot()
   }));
-  assert.equal(nativeAfterSecond.status.finished,true,'Native completion mismatch: '+JSON.stringify(nativeAfterSecond).slice(0,5000));
-
-  await student.frameLocator('#game').getByText(/Les deux additions sont maintenant correctes|Les deux additions sont correctes/).waitFor();
-  await student.frameLocator('#game').getByRole('button',{name:/Suivant|Vérifier la suite/}).click();
+  const correctedPage=nativeAfterSecond.data.find(x=>x.index===0);
+  assert.ok(correctedPage?.states?.every(x=>x.solved===true),
+   'Both native calculations must be solved: '+JSON.stringify(nativeAfterSecond).slice(0,5000));
+  if(nativeAfterSecond.status.pageIndex===0){
+   assert.equal(nativeAfterSecond.status.finished,true);
+   await student.frameLocator('#game').getByText(/Les deux additions sont maintenant correctes|Les deux additions sont correctes/).waitFor();
+   await student.frameLocator('#game').getByRole('button',{name:/Suivant|Vérifier la suite/}).click();
+  }else{
+   // Selon le mode de validation native, un clic ✓ post-réussite peut aussi
+   // représenter le clic « Suivant ». Il doit suivre la réussite des DEUX calculs.
+   assert.equal(nativeAfterSecond.status.pageIndex,1);
+  }
   await student.frameLocator('#game').getByText(/Guidé collectif · page 2/).waitFor();
   await student.frameLocator('#game').getByRole('button',{name:/Précédente/}).click();
   await student.frameLocator('#game').getByText(/Guidé collectif · page 1/).waitFor();
