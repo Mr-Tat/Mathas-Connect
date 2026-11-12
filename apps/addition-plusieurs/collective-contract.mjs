@@ -45,3 +45,5 @@ export function incomingCarries(op){
  }
  return carries;
 }
+
+export const latestUnlockedPage=session=>Array.isArray(session?.pages)?session.pages.length-1:-1;
