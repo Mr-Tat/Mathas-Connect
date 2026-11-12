@@ -57,9 +57,9 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
   else if(action==='stop'){state.active=false;return {ok:true,active:false}}
   state.revision++;return clone(state);
  }
- async function open(role){
-  const p=await browser.newPage({viewport:{width:1160,height:900}});
-  await p.exposeFunction('__guidedApi',(action,payload)=>api(role,action,payload));
+ async function open(role,existing=null){
+  const p=existing||await browser.newPage({viewport:{width:1160,height:900}});
+  if(!existing)await p.exposeFunction('__guidedApi',(action,payload)=>api(role,action,payload));
   await p.goto(url+'/fixture');
   await p.waitForFunction(()=>!!document.querySelector('#game')?.contentWindow?.MathasGuidedBridge);
   await p.evaluate(async ({role,cls})=>{
@@ -86,6 +86,15 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
   const teacherNumbers=await teacher.frameLocator('#game').locator('#calculationsPair .digit').allTextContents();
   const studentNumbers=await student.frameLocator('#game').locator('#calculationsPair .digit').allTextContents();
   assert.deepEqual(studentNumbers,teacherNumbers);
+  const input=student.frameLocator('#game').locator('.answer-input[data-calc="0"][data-col="0"]');
+  await input.click();
+  await student.frameLocator('#game').locator('.num-key[data-key="8"]').click();
+  assert.equal(await input.inputValue(),'8');
+  await student.waitForFunction(()=>Object.keys(sessionStorage).some(k=>k.includes('guided.draft')));
+  await open('student',student);
+  await student.frameLocator('#game').getByRole('button',{name:/Rejoindre la classe/}).click();
+  await student.frameLocator('#game').locator('.answer-input[data-calc="0"][data-col="0"]').waitFor();
+  assert.equal(await student.frameLocator('#game').locator('.answer-input[data-calc="0"][data-col="0"]').inputValue(),'8');
   await teacher.frameLocator('#game').getByRole('button',{name:/Page obligatoire/}).click();
   await teacher.frameLocator('#game').getByRole('button',{name:/Nouvelle page/}).click();
   await student.frameLocator('#game').getByRole('button',{name:/Suivant|Vérifier la suite/}).click();
