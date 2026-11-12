@@ -2,6 +2,7 @@ name: Addition multiple — guidé collectif candidat
 on:
   pull_request:
     paths:
+      - 'docs/integrations/applications/addition-multiple-guide-collectif.md'
       - 'apps/addition-plusieurs/**'
       - 'tests/addition-plusieurs-collective-contract.test.mjs'
       - 'tests/guided-addition-multiple-static.test.mjs'
