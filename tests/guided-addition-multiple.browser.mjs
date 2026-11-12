@@ -40,8 +40,12 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
  const address=http.address(),url='http://127.0.0.1:'+address.port;
  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_BIN||undefined});
  let state=null;
+ let studentReads=0;
  const clone=x=>JSON.parse(JSON.stringify(x));
  async function api(role,action,payload){
+  if(role==='student'){
+   assert.equal(action,'status','student writes or polls must not occur');studentReads++;
+  }
   if(action==='status'||action==='resume')return clone(state??{ok:true,active:false});
   if(action==='heartbeat'||action==='closing')return {ok:true,active:true};
   assert.equal(role,'teacher');
@@ -101,11 +105,15 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
   await student.frameLocator('#game').getByRole('button',{name:/Rejoindre la classe/}).click();
   const teacherNumbers=await teacher.frameLocator('#game').locator('#calculationsPair .digit').allTextContents();
   const studentNumbers=await student.frameLocator('#game').locator('#calculationsPair .digit').allTextContents();
+  const readsAtJoin=studentReads;
+  assert.equal(readsAtJoin,1,'one explicit student join/status read');
   assert.deepEqual(studentNumbers,teacherNumbers);
   const input=student.frameLocator('#game').locator('.answer-input[data-calc="0"][data-col="0"]');
   await input.click();
   await student.frameLocator('#game').locator('.num-key[data-key="8"]').click();
   assert.equal(await input.inputValue(),'8');
+  await student.waitForTimeout(420);
+  assert.equal(studentReads,readsAtJoin,'keypad activity must not query Supabase');
   await student.waitForFunction(()=>Object.keys(sessionStorage).some(k=>k.includes('guided.draft')));
   await open('student',student);
   await student.frameLocator('#game').getByRole('button',{name:/Rejoindre la classe/}).click();
@@ -121,6 +129,7 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
   assert.equal(await teacher.frameLocator('#game').locator('.mc-guided-answer-digit').count(),0);
   await teacher.frameLocator('#game').getByRole('button',{name:/Page obligatoire/}).click();
   await teacher.frameLocator('#game').getByRole('button',{name:/Nouvelle page/}).click();
+  assert.equal(studentReads,readsAtJoin+1,'teacher page changes never poll the pupil');
   await student.frameLocator('#game').getByRole('button',{name:/Suivant|Vérifier la suite/}).click();
   await student.frameLocator('#game').getByText(/Page obligatoire : réussis/).waitFor();
   assert.equal(state.pages.length,2);
@@ -171,6 +180,9 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
   }
   await student.frameLocator('#game').getByText(/Guidé collectif · page 2/).waitFor();
   await student.frameLocator('#game').getByRole('button',{name:/Précédente/}).click();
+  const readsBeforePrevious=studentReads;
+  await student.waitForTimeout(420);
+  assert.equal(studentReads,readsBeforePrevious,'previous page is local, no query');
   await student.frameLocator('#game').getByText(/Guidé collectif · page 1/).waitFor();
   assert.deepEqual(await student.frameLocator('#game').locator('#calculationsPair .calc-label').allTextContents(),['Calcul 1 · 3 nombres','Calcul 2 · 3 nombres']);
 
