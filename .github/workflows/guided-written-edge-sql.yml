@@ -2,6 +2,7 @@ name: Guided written classroom — Edge and SQL candidate checks
 on:
   pull_request:
     paths:
+      - 'docs/integrations/RETEX_OPERATIONNEL.md'
       - 'docs/integrations/SUIVI_COURANT.md'
       - 'docs/integrations/applications/guided-written-shared-backend.md'
       - 'supabase/functions/connect-guided-written/**'
