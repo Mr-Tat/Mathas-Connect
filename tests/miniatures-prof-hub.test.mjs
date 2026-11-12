@@ -15,15 +15,17 @@ for (const [app,sha256] of [
     assert.equal(createHash('sha256').update(file).digest('hex'),sha256,'octets exacts du fichier optimisé');
   });
 }
-test('cache des deux miniatures seulement, sans modification des catalogues',()=>{
+test('cache des deux miniatures locales et carte Padlet externe indépendante',()=>{
  const hub=readFileSync(path('hub.js'),'utf8');
  const html=readFileSync(path('hub.html'),'utf8');
  const catalog=JSON.parse(readFileSync(path('hub-catalog.json'),'utf8'));
  assert.match(hub,/\['soustraction-ecrite-simple','melange-calculs-ecrits'\]\.includes\(app\.app_key\)/);
  assert.match(hub,/thumbUrl\.searchParams\.set\('v','20261031-miniatures-prof'\)/);
- assert.match(html,/hub\.js\?v=20261107-preserve-teacher-hud-v2/);
+ assert.match(html,/hub\.js\?v=20261113-padlet-jeux-v1/);
  assert.equal(catalog.apps.find(a=>a.app_key==='soustraction-ecrite-simple')?.image_url,
    './assets/miniatures/soustraction-ecrite-simple.webp');
+ assert.equal(catalog.apps.find(a=>a.app_key==='padlet-jeux')?.image_url,
+   'https://raw.githubusercontent.com/Mr-Tat/Exterieurs/main/miniatures/padlet-jeux.webp');
 });
 
 test('le mot Connect des HUB attend un compte approuvé, sans masquer celui du portail professeur',()=>{
