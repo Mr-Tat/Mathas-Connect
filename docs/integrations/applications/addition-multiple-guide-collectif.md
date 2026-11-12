@@ -40,3 +40,9 @@ AUDIT PARTIEL + CONTRAT INITIAL. Aucun déploiement, aucune migration, aucune do
 - Retenues 2 à 4 et champs du moteur `addends` : vérifiés ; une retenue manquante ne reconstitue plus une réussite après F5, tests anti-faux brouillon.
 - UI sans polling des élèves, sauvegarde limitée et locale. Aucun XP, trophée, score ni projection collectif.
 - **Blocage livraison** : Auth/Edge vrais avec profils fictifs, mise en ligne Pages, puis contrôle de non-régression. La suite globale échoue sur des assertions sans rapport direct avec ce patch ; à traiter séparément avant fusion.
+
+## Optimisation contrôlée avant recette réelle — 12/11/2026
+- Élève : aucune minuterie réseau, seules les actions « Rejoindre » et « Suivant / Vérifier la suite » font un `status` ; les touches et la page précédente ne font aucun appel. Vérifié dans le Chromium à deux rôles par comptage des appels.
+- Saisies F5 : écritures `sessionStorage` regroupées après 300 ms, immédiates à la sortie/navigation, sans contenu élève sur Supabase.
+- Enseignant : un seul heartbeat toutes les 25 s **si une séance existe** ; aucun minuteur au repos ni après « Terminer ». Vérifié dans le Chromium, y compris après F5.
+- Portée : seulement Connect, moteur `game-original.html` intact ; aucune publication de cette branche au 12/11.
