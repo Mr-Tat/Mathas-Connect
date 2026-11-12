@@ -24,3 +24,5 @@ export function entryPage(session,isFinished){
  return session.pageIndex;
 }
 export const resultOf=op=>validOperation(op)?(BigInt(op.a)-BigInt(op.b)).toString():null;
+
+export const latestUnlockedPage=session=>Array.isArray(session?.pages)?session.pages.length-1:-1;
