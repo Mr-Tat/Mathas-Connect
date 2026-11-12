@@ -34,3 +34,9 @@ AUDIT PARTIEL + CONTRAT INITIAL. Aucun déploiement, aucune migration, aucune do
 - Chaque élève clique volontairement pour rejoindre ou avancer ; aucun polling supplémentaire.
 - CI contrat + syntaxe et staging verts ; Chromium vrai moteur prof/élève, même page, obligation réussie : **VERT**. F5 par pavé réel ajouté, recette complémentaire en cours.
 - Edge/SQL partagées PR #299 **non déployées**. Pas de publication ni de test Auth hébergé sur comptes fictifs.
+
+## Retours de recette renforcée — 12 novembre 2026
+- Chromium natif multi-termes : profils simulés professeur/élève, correction après erreur, deux opérations validées, page obligatoire débloquée, retour à l'ancienne page, F5 élève et professeur, corrigé uniquement visuel ([exécution Chromium](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/43271813919)).
+- Retenues 2 à 4 et champs du moteur `addends` : vérifiés ; une retenue manquante ne reconstitue plus une réussite après F5, tests anti-faux brouillon.
+- UI sans polling des élèves, sauvegarde limitée et locale. Aucun XP, trophée, score ni projection collectif.
+- **Blocage livraison** : Auth/Edge vrais avec profils fictifs, mise en ligne Pages, puis contrôle de non-régression. La suite globale échoue sur des assertions sans rapport direct avec ce patch ; à traiter séparément avant fusion.
