@@ -31,3 +31,9 @@ Copier le comportement de Multiplication simple avec optimisation #295 : aucune 
 - Snapshot privé des emprunts, reports de compensation, chiffres diminués, erreurs et chiffres de réponse ; attention au cas des emprunts en cascade : recette pédagogique à approfondir.
 - Scénario Chromium deux rôles et page obligatoire : **VERT** après correction du mapping niveaux 3/5/7 ; tests F5 ajoutés en cours.
 - Backend mutualisé PR #299 non déployé ; aucune SQL ni ouverture de classes faite. Pas de recette authentifiée hébergée.
+
+## Retours de recette renforcée — 12 novembre 2026
+- Chromium natif pour `addBottom` et `takeTop` : emprunts F5, correction après erreur, blocage puis déblocage d'une page obligatoire, numéros lors du retour, F5 enseignant avec même séance, corrigé enseignant visuel ([exécution Chromium](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/43271401224)).
+- États d'emprunt, report de compensation et chiffres diminués conservés uniquement dans le navigateur de l'élève ; test des brouillons corrompus refusés.
+- Aucun XP, trophée, score ni projection du collectif. Jeu original et méthodes inchangés.
+- **Blocage livraison** : Auth/Edge vrais avec profils TEST approuvés, Pages et non-régression globale non exécutés.
