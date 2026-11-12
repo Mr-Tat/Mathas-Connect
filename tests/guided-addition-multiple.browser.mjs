@@ -138,6 +138,11 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
   await wrong.click();await wrong.press(fix);await check();
   await student.frameLocator('#game').getByText('Corrigé',{exact:true}).waitFor();
   await typeNative(1,first[0][1]);await check();
+  const nativeAfterSecond=await student.frameLocator('#game').locator('body').evaluate(()=>({
+   status:window.MathasGuidedBridge.status(),data:window.MathasGuidedBridge.snapshot()
+  }));
+  assert.equal(nativeAfterSecond.status.finished,true,'Native completion mismatch: '+JSON.stringify(nativeAfterSecond).slice(0,5000));
+
   await student.frameLocator('#game').getByText(/Les deux additions sont maintenant correctes|Les deux additions sont correctes/).waitFor();
   await student.frameLocator('#game').getByRole('button',{name:/Suivant|Vérifier la suite/}).click();
   await student.frameLocator('#game').getByText(/Guidé collectif · page 2/).waitFor();
