@@ -165,6 +165,13 @@ for(const method of ['addBottom','takeTop'])test('Chromium soustraction '+method
    assert.ok(rect&&rect.x>=-2&&rect.x+rect.width<=width+2,'bannière déborde : '+width);
   }
 
+  // Le vrai onglet professeur survit à F5 (hostId en sessionStorage) sans créer de page.
+  const originalSession=state.sessionId,originalPages=state.pages.length;
+  await open('teacher',teacher);
+  await teacher.frameLocator('#game').getByRole('button',{name:/Reprendre la séance/}).click();
+  await teacher.frameLocator('#game').getByText(/Guidé collectif · page 2/).waitFor();
+  assert.equal(state.sessionId,originalSession);
+  assert.equal(state.pages.length,originalPages);
   await student.close();await teacher.close();
  }finally{await browser.close();await new Promise(r=>http.close(r))}
 });
