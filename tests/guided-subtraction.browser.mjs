@@ -34,7 +34,7 @@ function server(){
 }
 const first=[[{a:'56342',b:'28765'},{a:'54321',b:'12345'}]];
 const second=[{a:'34567',b:'4567'},{a:'76543',b:'12345'}];
-test('Chromium soustraction : enseignant lance, élève rejoint, page obligatoire bloque', {timeout:120000},async()=>{
+for(const method of ['addBottom','takeTop'])test('Chromium soustraction '+method+' : deux rôles, F5 et obligation', {timeout:120000},async()=>{
  const http=server();
  await new Promise(r=>http.listen(0,'127.0.0.1',r));
  const address=http.address(),url='http://127.0.0.1:'+address.port;
@@ -78,9 +78,11 @@ test('Chromium soustraction : enseignant lance, élève rejoint, page obligatoir
  }
  try{
   const teacher=await open('teacher');
+  await teacher.frameLocator('#game').locator('input[name="borrowMethod"][value="'+method+'"]').evaluate(el=>{el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}))});
   await teacher.frameLocator('#game').getByRole('button',{name:/Lancer la séance/}).click();
   await teacher.frameLocator('#game').getByText(/Guidé collectif · page 1/).waitFor();
   assert.equal(state?.pages?.length,1);
+  assert.equal(state.borrowMethod,method);
   const student=await open('student');
   await student.frameLocator('#game').getByRole('button',{name:/Rejoindre la classe/}).click();
   const teacherNumbers=await teacher.frameLocator('#game').locator('#calculationsPair .digit').allTextContents();
