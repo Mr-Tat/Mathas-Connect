@@ -7,10 +7,19 @@ export const maxDigitsForLevel=(level,appKey='addition-ecrite-multiple')=>
  (appKey==='addition-ecrite-multiple'?[5,6,7]:[3,5,7])[level-1]??null;
 export const addendCountForLevel=level=>[3,4,5][level-1]??null;
 export const minimumDigitsForLevel=level=>[3,3,4][level-1]??null;
+// Tirages CSPRNG conservés, mais par lots pour éviter un appel crypto à
+// chaque chiffre : coût constant amorti sur les pages de nombreux nombres.
+const randomPool=new Uint32Array(256);
+let randomCursor=randomPool.length;
 export function unbiasedRand(max){
  if(!Number.isSafeInteger(max)||max<1||max>0x100000000)throw Error('invalid_random_range');
  const upper=0x100000000-(0x100000000%max);let n;
- do{n=crypto.getRandomValues(new Uint32Array(1))[0]}while(n>=upper);
+ do{
+  if(randomCursor>=randomPool.length){
+   crypto.getRandomValues(randomPool);randomCursor=0;
+  }
+  n=randomPool[randomCursor++];
+ }while(n>=upper);
  return n%max;
 }
 function numberDigits(len,rand){
