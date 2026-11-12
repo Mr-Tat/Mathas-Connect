@@ -603,9 +603,9 @@ if(mode==='connected'){
   const nativeSource=await response.text();
   const nativeMarker="primaryBtn.addEventListener('click',handlePrimary);";
   if(html.split(nativeMarker).length!==2)throw Error('greffe native impossible : version du moteur différente');
-  const hook=nativeSource+'\\nconst mathasOriginalHandlePrimary=handlePrimary;'
-   +'\\nhandlePrimary=function(...args){if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"){window.MathasGuidedBridge.onContinue?.();return}return mathasOriginalHandlePrimary(...args)};'
-   +'\\nprimaryBtn.addEventListener("click",handlePrimary);';
+  const hook=nativeSource+'\nconst mathasOriginalHandlePrimary=handlePrimary;'
+   +'\nhandlePrimary=function(...args){if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"){window.MathasGuidedBridge.onContinue?.();return}return mathasOriginalHandlePrimary(...args)};'
+   +'\nprimaryBtn.addEventListener("click",handlePrimary);';
   html=html.replace(nativeMarker,hook);
   classroomReady=true;
  }catch(error){console.warn('Guidé collectif indisponible, activités natives préservées.',error)}
