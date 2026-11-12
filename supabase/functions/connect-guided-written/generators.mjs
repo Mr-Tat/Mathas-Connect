@@ -3,7 +3,8 @@
 export const WRITTEN_GUIDED_APPS=Object.freeze([
  'addition-ecrite-simple','addition-ecrite-multiple','soustraction-ecrite-simple'
 ]);
-export const maxDigitsForLevel=level=>[5,6,7][level-1]??null;
+export const maxDigitsForLevel=(level,appKey='addition-ecrite-multiple')=>
+ (appKey==='addition-ecrite-multiple'?[5,6,7]:[3,5,7])[level-1]??null;
 export const addendCountForLevel=level=>[3,4,5][level-1]??null;
 export const minimumDigitsForLevel=level=>[3,3,4][level-1]??null;
 export function unbiasedRand(max){
@@ -40,7 +41,7 @@ function borrowPattern(top,bottom){
  return need;
 }
 function simpleAddition(level,rand){
- const digits=maxDigitsForLevel(level),wantCarry=rand(100)<80;
+ const digits=maxDigitsForLevel(level,'addition-ecrite-simple'),wantCarry=rand(100)<80;
  for(let tries=0;tries<1600;tries++){
   const a=numberDigits(digits,rand),b=numberDigits(digits-(rand(100)<15?1:0),rand);
   if(additionCarries([a,b]).hasCarry===wantCarry||tries===1599)return {a,b};
@@ -59,7 +60,7 @@ function multipleAddition(level,rand){
  }
 }
 function subtraction(level,rand){
- const digits=maxDigitsForLevel(level),wantBorrow=rand(100)<80;
+ const digits=maxDigitsForLevel(level,'soustraction-ecrite-simple'),wantBorrow=rand(100)<80;
  for(let tries=0;tries<50000;tries++){
   const a=numberDigits(digits,rand),b=numberDigits(digits-(rand(100)<15?1:0),rand);
   if(BigInt(a)<=BigInt(b))continue;
