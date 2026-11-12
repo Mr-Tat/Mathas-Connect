@@ -82,8 +82,11 @@ const mathasGuidedBridge={
      carryWrong=digits(p?.carryWrong,f.count);
     if(!answerValues||!carryValues||!wrongHistory||!carryWrong){saved.length=0;break}
     const correctAnswer=answerValues.every((v,c)=>v===String(f.result).split('').reverse()[c]);
-    const validCarries=carryValues.every((v,c)=>c===0||v===''||
-      v===(f.carryExpected[c]?String(f.carryExpected[c]):''));
+    const validCarries=carryValues.every((v,c)=>{
+     if(c===0)return v==='';
+     const expected=f.carryExpected[c]>0?String(f.carryExpected[c]):'';
+     return v===expected||(expected===''&&v==='0');
+    });
     saved.push({answerValues,carryValues,wrongHistory,carryWrong,
      firstTry:p.firstTry!==false,solved:p.solved===true&&correctAnswer&&validCarries});
    }
