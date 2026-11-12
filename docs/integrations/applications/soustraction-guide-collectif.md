@@ -24,3 +24,10 @@ Copier le comportement de Multiplication simple avec optimisation #295 : aucune 
 5. Chromium réel (320, 390, 1160), non-régression des autres modes, CI, Pages/Edge/SQL contrôlés séparément et recette fictive.
 
 **Statut :** audit initial + contrat, pas de déploiement, pas de modification des données ou résultats d'élèves.
+
+## Implémentation candidate du 12/11/2026
+- Hôte, pont natif, UI #295 et brouillon F5 ajoutés sans changer `game-original.html`.
+- Respect des niveaux NATIFS 3/5/7 chiffres et des techniques `addBottom` / `takeTop`.
+- Snapshot privé des emprunts, reports de compensation, chiffres diminués, erreurs et chiffres de réponse ; attention au cas des emprunts en cascade : recette pédagogique à approfondir.
+- Scénario Chromium deux rôles et page obligatoire : **VERT** après correction du mapping niveaux 3/5/7 ; tests F5 ajoutés en cours.
+- Backend mutualisé PR #299 non déployé ; aucune SQL ni ouverture de classes faite. Pas de recette authentifiée hébergée.
