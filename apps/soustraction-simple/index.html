@@ -586,6 +586,62 @@ window.addEventListener('pagehide',()=>{
   if(changed)saveQueue(pending);
  }catch(error){console.warn('Récompenses locales non finalisées',error)}
 });
+// Guidé collectif seulement en mode Connect : moteur original et scores préservés.
+let guidedCollective=null,classroomReady=false,guidedCloseToken=session?.access_token||null;
+const GUIDED_CLASS_NAMES=Object.freeze({
+ '8fe170fa-9e8f-4e80-885a-b0ba68026f64':'Observation',
+ '71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'Phase 1',
+ '1b021ed9-4846-4203-9c7b-4b5fa8d7adab':'Phase 2 A',
+ '0d8ba828-59cc-468b-a4b8-7b2a1af10b88':'Phase 2 B',
+ 'a9195199-0a28-4e86-99ce-47b36dd6e646':'2 ECO',
+ '4bf3400d-a315-4ea4-a2f3-afaca24dc9b9':'TEST'
+});
+if(mode==='connected'){
+ try{
+  const response=await fetch('./collective-native-bridge.js?v=20261112-guided-v1');
+  if(!response.ok)throw Error('pont natif collectif absent');
+  const nativeSource=await response.text();
+  const nativeMarker="primaryBtn.addEventListener('click',handlePrimary);";
+  if(html.split(nativeMarker).length!==2)throw Error('greffe native impossible : version du moteur différente');
+  const hook=nativeSource+'\\nconst mathasOriginalHandlePrimary=handlePrimary;'
+   +'\\nhandlePrimary=function(...args){if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"){window.MathasGuidedBridge.onContinue?.();return}return mathasOriginalHandlePrimary(...args)};'
+   +'\\nprimaryBtn.addEventListener("click",handlePrimary);';
+  html=html.replace(nativeMarker,hook);
+  classroomReady=true;
+ }catch(error){console.warn('Guidé collectif indisponible, activités natives préservées.',error)}
+}
+if(mode==='connected'&&classroomReady){
+ try{
+  const {createSubtractionCollective}=await import('./collective-ui.mjs?v=20261112-guided-v1');
+  guidedCollective=createSubtractionCollective({
+   iframe,teacher:teacherPlayer,classId,
+   classLabel:GUIDED_CLASS_NAMES[classId]||(UUID.test(classId)?'ID '+classId.slice(0,8):''),
+   studentId:teacherPlayer?'':session.user.id,
+   storage:(()=>{try{return sessionStorage}catch{return null}})(),
+   call:async(action,payload={})=>{
+    const current=(await cloud.auth.getSession()).data.session;
+    if(!current?.access_token||current.user?.id!==session.user.id)throw Error('Session Connect remplacée');
+    guidedCloseToken=current.access_token;
+    const response=await fetch(URL+'/functions/v1/connect-guided-written',{
+     method:'POST',headers:{apikey:KEY,authorization:'Bearer '+current.access_token,'content-type':'application/json'},
+     body:JSON.stringify({action,appKey:APP,classId,...payload})
+    });
+    const data=await response.json().catch(()=>({ok:false,error:'réponse illisible'}));
+    if(!response.ok||data?.ok!==true)throw Error(data?.error||'séance indisponible');
+    return data;
+   },
+   onClose:({sessionId,hostId,pageId})=>{
+    if(!teacherPlayer||!guidedCloseToken||!sessionId||!hostId||!pageId)return;
+    try{void fetch(URL+'/functions/v1/connect-guided-written',{
+     method:'POST',keepalive:true,cache:'no-store',
+     headers:{apikey:KEY,authorization:'Bearer '+guidedCloseToken,'content-type':'application/json'},
+     body:JSON.stringify({action:'closing',appKey:APP,classId,sessionId,hostId,pageId})
+    }).catch(()=>{})}catch{}
+   }
+  });
+  iframe.addEventListener('load',()=>guidedCollective?.mount());
+ }catch(error){console.warn('Contrôleur collectif indisponible ; guidé individuel disponible.',error)}
+}
 iframe.srcdoc=html;
 const toolbar=document.createElement('header');toolbar.id='ce-toolbar';
 toolbar.hidden=true;
