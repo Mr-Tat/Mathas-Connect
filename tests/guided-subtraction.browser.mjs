@@ -73,7 +73,7 @@ test('Chromium soustraction : enseignant lance, élève rejoint, page obligatoir
    });
    window.guidedTest.mount();
   },{role,cls});
-  await p.frameLocator('#game').locator('#startTraining').click();
+  await p.frameLocator('#game').locator('#trainingChoiceBtn').click();
   return p;
  }
  try{
