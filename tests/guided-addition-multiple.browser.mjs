@@ -79,6 +79,7 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
  try{
   const teacher=await open('teacher');
   await teacher.frameLocator('#game').getByRole('button',{name:/Lancer la séance/}).click();
+  await teacher.frameLocator('#game').getByText(/Guidé collectif · page 1/).waitFor();
   assert.equal(state?.pages?.length,1);
   const student=await open('student');
   await student.frameLocator('#game').getByRole('button',{name:/Rejoindre la classe/}).click();
