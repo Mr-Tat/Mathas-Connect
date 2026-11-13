@@ -36,6 +36,15 @@
       "featured": false,
       "display_order": 80,
       "image_url": "https://raw.githubusercontent.com/Mr-Tat/Exterieurs/main/miniatures/padlet-jeux.webp"
+    },
+    {
+      "app_key": "bowling-multiplication",
+      "title": "Bowling multiplication",
+      "launch_url": "https://www.gamingbee.com/games/multiplication-bowling/v2.0/index.html?lang=nl",
+      "hub_section": "jeux",
+      "featured": false,
+      "display_order": 90,
+      "image_url": "https://raw.githubusercontent.com/Mr-Tat/Exterieurs/main/miniatures/bowling-multiplication.webp"
     }
   ]
 }
