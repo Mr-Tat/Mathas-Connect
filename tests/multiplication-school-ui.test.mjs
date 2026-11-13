@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
- multiplicationAmberFollower,updateMultiplicationAmber,installMultiplicationSchoolUi
+ multiplicationAmberFollower,updateMultiplicationAmber,installMultiplicationSchoolUi,normalizeMultiplicationCountCaption
 } from '../apps/multiplication-simple/school-ui.mjs';
 import {xpStillAvailable} from '../apps/objective-record/native-connect-bridge.mjs';
 
@@ -69,4 +69,30 @@ test('public routes remain legacy until server-certified multiplication proofs e
  const host=source('../apps/objective-record/eleve.mjs');
  assert.match(routing,/const ADDITION_KEYS=new Set\(\['addition-ecrite-simple','addition-ecrite-multiple'\]\)/);
  assert.match(host,/SERVER_PROOF_ADDITIONS=new Set\(\['addition-ecrite-simple','addition-ecrite-multiple'\]\)/);
+});
+
+test('les badges XP des séries ne sont jamais recopiés dans le grand libellé',()=>{
+ for(const count of [4,10,20]){
+  const badge={nodeType:1,className:'mathas-multi-official-xp',textContent:'Reste 36 XP'};
+  const number={nodeType:1,className:'count-number',textContent:String(count)};
+  const label={nodeType:3,textContent:' calculsReste 36 XP',remove(){throw Error('caption should survive')}};
+  const button={
+   dataset:{count:String(count)},childNodes:[number,label,badge],
+   querySelector(selector){return selector===':scope > .count-number'?number:null}
+  };
+  assert.equal(normalizeMultiplicationCountCaption(button),true);
+  assert.equal(label.textContent,' calculs');
+  assert.equal(badge.textContent,'Reste 36 XP');
+  assert.equal(number.textContent,String(count));
+  assert.equal(normalizeMultiplicationCountCaption(button),false,'second refresh should not rewrite DOM');
+ }
+});
+test('label normal sans count-number garde uniquement son indicateur de coin',()=>{
+ const badge={nodeType:1,className:'mathas-multi-official-xp',textContent:'Reste 22 XP'};
+ const label={nodeType:3,textContent:'4 calculsReste 22 XP'};
+ const btn={dataset:{count:'4'},childNodes:[label,badge],querySelector(){return null}};
+ assert.equal(normalizeMultiplicationCountCaption(btn),true);
+ assert.equal(label.textContent,'4 calculs');
+ assert.equal(badge.textContent,'Reste 22 XP');
+ assert.equal(normalizeMultiplicationCountCaption(btn),false);
 });
