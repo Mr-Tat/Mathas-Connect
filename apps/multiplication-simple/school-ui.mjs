@@ -191,6 +191,36 @@ function ensureStyle(doc){
  ].join('\n');
  doc.head.append(el);
 }
+// Le moteur natif V3.2.3 met en valeur le nombre des boutons 4/10/20
+// en lisant button.textContent puis en reconstruisant innerHTML. Si le badge
+// Connect était déjà présent, son « Reste XX XP » se retrouve alors aussi
+// dans le GRAND libellé. Restaurer seulement le libellé natif ; conserver le
+// badge absolu, le span .count-number et tous les écouteurs du bouton.
+export function normalizeMultiplicationCountCaption(button){
+ const count=Number(button?.dataset?.count);
+ if(![4,10,20].includes(count)||!button?.childNodes)return false;
+ const number=button.querySelector?.(':scope > .count-number');
+ const expected=number?' calculs':count+' calculs';
+ const texts=[...button.childNodes].filter(node=>node.nodeType===3);
+ let caption=texts.find(node=>(node.textContent||'').includes('calculs'))||texts[0]||null;
+ let changed=false;
+ if(!caption){
+  const doc=button.ownerDocument;
+  if(!doc?.createTextNode)return false;
+  caption=doc.createTextNode(expected);
+  if(number)number.after(caption);else button.prepend(caption);
+  changed=true;
+ }else if(caption.textContent!==expected){
+  caption.textContent=expected;changed=true;
+ }
+ for(const node of texts){
+  if(node===caption)continue;
+  if((node.textContent||'').trim()){
+   node.remove();changed=true;
+  }
+ }
+ return changed;
+}
 function putBadge(doc,button,amount){
  if(!button||amount===null)return;
  let el=button.querySelector(':scope > .'+BADGE);
@@ -206,6 +236,10 @@ function level(doc,id){
  return [1,2,3].includes(n)?n:0;
 }
 function renderXp(doc,xp){
+ // Les trois titres doivent rester 4/10/20 calculs, même si le script
+ // de mise en valeur natif s'est exécuté après l'insertion des badges.
+ doc.querySelectorAll('#menuScreen .classic-count-btn[data-count]')
+  .forEach(normalizeMultiplicationCountCaption);
  if(!Array.isArray(xp?.milestones)||
     (xp.repeatXp===true&&Number(xp.parcours)>=2&&!Array.isArray(xp.currentMilestones)))return;
  const classicLevel=level(doc,'classicLevel');
@@ -312,6 +346,8 @@ export function installMultiplicationSchoolUi(doc,{connected=false,xp=null,rewar
  const home=doc?.getElementById?.('tensFirstToggle');
  if(!home||!doc.querySelector('#menuScreen'))return false;
  ensureStyle(doc);
+ doc.querySelectorAll('#menuScreen .classic-count-btn[data-count]')
+  .forEach(normalizeMultiplicationCountCaption);
  polishSurvivalMenu(doc,connected);
  const sync=()=>{
   doc.querySelectorAll('.'+TOGGLE+' input').forEach(x=>{x.checked=!!home.checked});
