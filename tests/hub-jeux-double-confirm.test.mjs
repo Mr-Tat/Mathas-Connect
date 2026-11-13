@@ -58,7 +58,8 @@ test('Jeux : double confirmation et permutation certaine des boutons',async()=>{
   assert.deepEqual(first.buttons.map(x=>x.textContent),['Oui','Non']);
   assert.equal(sim.document.activeElement,first.bubble,'ne pas pré-sélectionner Oui');
   first.click('Oui');
-  await Promise.resolve();
+  // Attendre le tour de micro-tâches entre les deux dialogues (VM isolée).
+  await new Promise(resolve=>setImmediate(resolve));
   const second=sim.dialog();
   assert.equal(second.question.textContent,'Tu es sûr ?');
   assert.deepEqual(second.buttons.map(x=>x.textContent),['Non','Oui']);
@@ -77,7 +78,8 @@ test('Jeux : Non à la première ou seconde question refuse l’ouverture',async
     assert.deepEqual(first.buttons.map(x=>x.textContent),['Non','Oui']);
     first.click(stopAt===1?'Non':'Oui');
     if(stopAt===2){
-      await Promise.resolve();
+      // Attendre le tour de micro-tâches entre les deux dialogues (VM isolée).
+  await new Promise(resolve=>setImmediate(resolve));
       const second=sim.dialog();
       assert.deepEqual(second.buttons.map(x=>x.textContent),['Oui','Non']);
       second.click('Non');
