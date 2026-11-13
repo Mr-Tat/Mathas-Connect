@@ -21,7 +21,7 @@ test('cache des deux miniatures locales et carte Padlet externe indépendante',(
  const catalog=JSON.parse(readFileSync(path('hub-catalog.json'),'utf8'));
  assert.match(hub,/\['soustraction-ecrite-simple','melange-calculs-ecrits'\]\.includes\(app\.app_key\)/);
  assert.match(hub,/thumbUrl\.searchParams\.set\('v','20261031-miniatures-prof'\)/);
- assert.match(html,/hub\.js\?v=20261113-bowling-jeux-v1/);
+ assert.match(html,/hub\.js\?v=20261113-jeux-confirm-v1/);
  assert.equal(catalog.apps.find(a=>a.app_key==='soustraction-ecrite-simple')?.image_url,
    './assets/miniatures/soustraction-ecrite-simple.webp');
  assert.equal(catalog.apps.find(a=>a.app_key==='padlet-jeux')?.image_url,
