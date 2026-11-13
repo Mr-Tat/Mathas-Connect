@@ -24,7 +24,7 @@ test('Padlet jeux: unique external card in the Jeux section, no XP',()=>{
   assert.match(hub,/!officialThumbnail\.includes\('jftzuslpelgzbdrftszw'\)/);
   assert.doesNotMatch(hub,/approvedPadletImage|PADLET_JEUX_IMAGE_URL/);
   assert.doesNotMatch(hub,/connectedGameKeys=new Set\(\[[^\]]*'padlet-jeux'/s);
-  assert.match(html,/hub\.js\?v=20261113-bowling-jeux-v1/);
+  assert.match(html,/hub\.js\?v=20261113-jeux-confirm-v1/);
 });
 
 test('Padlet jeux: idempotent insert in five school presets, Test and Toutes',()=>{
