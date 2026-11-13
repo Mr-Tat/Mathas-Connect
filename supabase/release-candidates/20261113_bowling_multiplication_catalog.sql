@@ -56,7 +56,7 @@ ON CONFLICT (app_key) DO UPDATE SET
   section=EXCLUDED.section,
   updated_at=now();
 
--- HUB TEST : le Padlet reste un lien externe, sans XP ni simulation Connect.
+-- HUB TEST : Bowling multiplication reste un lien externe, sans XP ni simulation Connect.
 INSERT INTO public.connect_lab_hub_visibility
   (app_key,visible,updated_at)
 VALUES ('bowling-multiplication',true,now())
