@@ -124,6 +124,77 @@ function card(app) {
   return node;
 }
 
+// Même garde-fou que dans l'ancien Math'as : uniquement à l'ouverture de la rubrique Jeux.
+// Aucun état serveur, aucune temporisation et aucun listener tant que l'élève n'ouvre pas Jeux.
+function askJeuxQuestion(message, yesOnLeft) {
+  return new Promise(resolve => {
+    const backdrop=document.createElement('div');
+    backdrop.className='jeux-confirm-backdrop';
+    const bubble=document.createElement('div');
+    bubble.className='jeux-confirm-bubble';
+    bubble.setAttribute('role','dialog');
+    bubble.setAttribute('aria-modal','true');
+    bubble.setAttribute('aria-label',message);
+    bubble.tabIndex=-1;
+    const question=document.createElement('p');
+    question.className='jeux-confirm-question';
+    question.textContent=message;
+    const actions=document.createElement('div');
+    actions.className='jeux-confirm-actions';
+    const noBtn=document.createElement('button');
+    noBtn.type='button'; noBtn.className='jeux-confirm-btn'; noBtn.textContent='Non';
+    const yesBtn=document.createElement('button');
+    yesBtn.type='button'; yesBtn.className='jeux-confirm-btn'; yesBtn.textContent='Oui';
+    // Même style et même taille. Ordre variable, mais aucune mise en évidence de Oui.
+    if(yesOnLeft)actions.append(yesBtn,noBtn);
+    else actions.append(noBtn,yesBtn);
+    bubble.append(question,actions);
+    backdrop.appendChild(bubble);
+    document.body.appendChild(backdrop);
+
+    let finished=false;
+    function finish(allowed) {
+      if(finished)return;
+      finished=true;
+      document.removeEventListener('keydown',onKeyDown,true);
+      backdrop.remove();
+      resolve(allowed);
+    }
+    function onKeyDown(event) {
+      if(event.key==='Escape'){
+        event.preventDefault();
+        finish(false);
+      }else if(event.key==='Tab'){
+        // Navigation au clavier conservée dans cette boîte de dialogue.
+        const first=actions.firstElementChild,last=actions.lastElementChild;
+        if(document.activeElement===bubble){
+          event.preventDefault();
+          (event.shiftKey?last:first).focus();
+        }else if(event.shiftKey&&document.activeElement===first){
+          event.preventDefault();last.focus();
+        }else if(!event.shiftKey&&document.activeElement===last){
+          event.preventDefault();first.focus();
+        }
+      }
+    }
+    noBtn.addEventListener('click',()=>finish(false));
+    yesBtn.addEventListener('click',()=>finish(true));
+    backdrop.addEventListener('click',event=>{
+      if(event.target===backdrop)finish(false);
+    });
+    document.addEventListener('keydown',onKeyDown,true);
+    // Aucun choix présélectionné ni focus placé sur Oui.
+    bubble.focus();
+  });
+}
+
+async function confirmJeuxOpening() {
+  const yesOnLeft=Math.random()<0.5;
+  if(!await askJeuxQuestion("Ton prof t'a dit que tu pouvais ?",yesOnLeft))return false;
+  // Inverser réellement les positions entre les deux questions.
+  return askJeuxQuestion('Tu es sûr ?',!yesOnLeft);
+}
+
 // Les démos ne reçoivent pas d'app_key Connect : pas de progression ni d'XP simulé dans le HUB.
 function section(kind, title, description, apps, makeCard=card) {
   const node = $('levelTemplate').content.firstElementChild.cloneNode(true);
@@ -135,9 +206,27 @@ function section(kind, title, description, apps, makeCard=card) {
   if (['objectif', 'calculs_ecrits', 'outil', 'record_lab'].includes(kind)) {
     node.classList.remove('collapsed'); toggle.setAttribute('aria-expanded', 'true');
   }
-  toggle.onclick = () => {
-    const collapsed = node.classList.toggle('collapsed');
-    toggle.setAttribute('aria-expanded', String(!collapsed));
+  let jeuxConfirmationPending=false;
+  toggle.onclick = async () => {
+    // Refermer la section reste immédiat ; seules les ouvertures de Jeux sont confirmées.
+    if(!node.classList.contains('collapsed')){
+      node.classList.add('collapsed');
+      toggle.setAttribute('aria-expanded','false');
+      return;
+    }
+    if(kind==='jeux'){
+      if(jeuxConfirmationPending)return;
+      jeuxConfirmationPending=true;
+      try{
+        if(!await confirmJeuxOpening())return;
+      }finally{
+        jeuxConfirmationPending=false;
+        toggle.focus({preventScroll:true});
+      }
+    }
+    if(!node.isConnected)return;
+    node.classList.remove('collapsed');
+    toggle.setAttribute('aria-expanded','true');
   };
   return node;
 }
