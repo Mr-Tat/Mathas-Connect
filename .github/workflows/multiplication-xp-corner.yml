@@ -1,0 +1,27 @@
+name: Multiplication — XP uniquement dans le coin
+on:
+  pull_request:
+    paths:
+      - 'apps/multiplication-simple/school-ui.mjs'
+      - 'tests/multiplication-school-ui.test.mjs'
+      - 'tests/multiplication-xp-badge.browser.mjs'
+      - '.github/workflows/multiplication-xp-corner.yml'
+permissions:
+  contents: read
+jobs:
+  xp-badge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Contrat des XP, correction non intrusive des titres
+        run: node --test tests/multiplication-school-ui.test.mjs
+      - name: Installer Chromium pour la reproduction visuelle
+        run: |
+          npm install --no-save --no-package-lock playwright@1.58.2
+          npx playwright install chromium --with-deps
+      - name: Reproduire le doublon XP et vérifier les trois boutons
+        run: node --test tests/multiplication-xp-badge.browser.mjs
