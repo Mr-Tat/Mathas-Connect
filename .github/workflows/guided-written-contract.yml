@@ -1,0 +1,29 @@
+name: Guided written classroom — isolated generators
+on:
+  pull_request:
+    paths:
+      - 'docs/integrations/RETEX_OPERATIONNEL.md'
+      - 'docs/integrations/SUIVI_COURANT.md'
+      - 'docs/integrations/applications/guided-written-shared-backend.md'
+      - 'supabase/functions/connect-guided-written/**'
+      - 'supabase/migrations/20261112_guided_written_sessions.sql'
+      - 'tests/guided-written-*.test.mjs'
+      - '.github/workflows/guided-written-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/connect-guided-written/**'
+      - 'tests/guided-written-*.test.mjs'
+permissions:
+  contents: read
+jobs:
+  isolated-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Offline generator and security assertions
+        run: node --test tests/guided-written-*.test.mjs
