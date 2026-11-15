@@ -29,6 +29,15 @@
       "image_url": "./assets/miniatures/soustraction-ecrite-simple.webp"
     },
     {
+      "app_key": "abaque-longueurs",
+      "title": "Abaque des longueurs",
+      "launch_url": "https://mr-tat.github.io/Mathas-Connect/apps/GRAN-abaque-m-1/?connect=1",
+      "hub_section": "outil",
+      "featured": false,
+      "display_order": 70,
+      "image_url": "./assets/miniatures/abaque-longueurs.webp"
+    },
+    {
       "app_key": "padlet-jeux",
       "title": "Padlet jeux",
       "launch_url": "https://padlet.com/julientatas1/jeux-math-6y4b0kwcj5444l83",
