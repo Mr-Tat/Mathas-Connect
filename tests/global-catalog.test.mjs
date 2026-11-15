@@ -42,6 +42,22 @@ test('Soustraction figure dans le secours statique, sans filtre HOLD ni cache an
  assert.match(read('../hub.html'),/hub\.js\?v=20261113-jeux-confirm-v1/);
 });
 
+
+test('Abaque scolaire : le HUB garde la carte officielle dans le catalogue de secours',()=>{
+ const local=JSON.parse(read('../hub-catalog.json'));
+ const cards=local.apps.filter(app=>app.app_key==='abaque-longueurs');
+ assert.equal(cards.length,1);
+ const card=cards[0];
+ assert.equal(card.hub_section,'outil');
+ assert.equal(card.featured,false);
+ assert.equal(card.display_order,70);
+ assert.equal(new URL(card.launch_url).searchParams.get('connect'),'1');
+ assert.equal(new URL(card.launch_url).pathname,'/Mathas-Connect/apps/GRAN-abaque-m-1/');
+ assert.equal(card.image_url,'./assets/miniatures/abaque-longueurs.webp');
+ assert.match(hub,/apps=fallbackApps;/);
+ assert.match(hub,/if \(classId && target.origin === location.origin\) target.searchParams.set\('class', classId\)/);
+});
+
 test('trophées permanents du profil et XP du parcours par application',()=>{
  const page=read('../hub.html'),css=read('../hub-profile.css'),edge=read('../supabase/functions/connect-api/index.ts');
  const results=read('../supabase/functions/connect-results/index.ts');
