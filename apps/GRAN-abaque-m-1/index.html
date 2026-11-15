@@ -1558,7 +1558,7 @@ window.MATHAS_ITEMS = [
  const beginRun=()=>{runPractice=master};
  const canRecord=()=>!master&&!runPractice;
  const pedagogicalUnlock=what=>what==='stage1'||what==='stage2'&&passes('stage1')>=2||what==='stage3'&&passes('stage2')>=2||what==='one'&&passes('stage2')>=2||what==='three'&&['orange','green'].includes(data.modes.one)||what==='five'&&['orange','green'].includes(data.modes.three)||what==='sudden'&&[['one',4],['three',12],['five',20]].every(([mode,total])=>Number.isInteger(data.modeScores[mode])?data.modeScores[mode]*5>=total*4:['orange','green'].includes(data.modes[mode]));
- const unlocked=what=>master||classActivityAccess.teacherFree||pedagogicalUnlock(what)&&(what==='stage2'?classActivityAccess.activity2:what==='stage1'||classActivityAccess.activity3);
+ const unlocked=what=>(master&&!connectBinding)||classActivityAccess.teacherFree||pedagogicalUnlock(what)&&(what==='stage2'?classActivityAccess.activity2:what==='stage1'||classActivityAccess.activity3);
  // Master autorise les essais, mais leurs résultats n'avancent pas les déblocages des élèves.
  const recordStage=(key,correct,total)=>{
   if(!canRecord())return {grade:color(correct,total),count:passes(key)};
@@ -1633,6 +1633,7 @@ window.MATHAS_ITEMS = [
   $('convertLock').classList.toggle('hidden',unlocked('stage3'));
   $('convertLock').textContent=connectBinding&&!classActivityAccess.teacherFree&&!classActivityAccess.activity3?'🔒 En attente de l’autorisation de ton professeur':'🔒 Activité 2 · '+passes('stage2')+'/2 réussites';
   $('recordLock').textContent=connectBinding&&!classActivityAccess.teacherFree&&!classActivityAccess.activity3?'🔒 En attente de l’autorisation de ton professeur':'🔒 Au moins 80 % en 1, 3 et 5 pages';
+  $('masterToggle').hidden=!!connectBinding&&!classActivityAccess.teacherFree;
   $('masterToggle').classList.toggle('active',master);$('masterTools').classList.toggle('hidden',!master);
   const homeVisibleMode=(m)=>{
     if(m==='sudden')return true;
@@ -1662,7 +1663,7 @@ window.MATHAS_ITEMS = [
  }
  const reset=()=>{data=blank();save();render()};
  $('masterToggle').addEventListener('click',()=>{
-  if(master)return;
+  if(master||connectBinding&&!classActivityAccess.teacherFree)return;
   $('masterError').textContent='';$('masterPassword').value='';$('masterDialog').showModal();$('masterPassword').focus();
  });
  $('masterCancel').addEventListener('click',()=>$('masterDialog').close());
@@ -1688,6 +1689,8 @@ window.MATHAS_ITEMS = [
   STORAGE='mathas.abaque.native.'+[binding.classId,binding.authSubject,binding.studentId,snapshot.resetEpoch].join('.')+'.v1';
   SESSION=STORAGE+'.master';
   try{master=sessionStorage.getItem(SESSION)==='1'}catch{master=false}
+  // The old local Master password is never an authorization in a connected pupil account.
+  if(!snapshot.activityAccess?.teacherFree){master=false;try{sessionStorage.removeItem(SESSION)}catch{}}
   runPractice=master;
   applyServer(snapshot);
  }
