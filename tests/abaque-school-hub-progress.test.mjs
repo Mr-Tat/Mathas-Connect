@@ -1,0 +1,20 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const source=readFileSync(new URL('../supabase/functions/connect-api/index.ts',import.meta.url),'utf8');
+const start=source.indexOf('const optionalProgress=async(studentId:string)=>');
+const end=source.indexOf('const optionalXp=async',start);
+const block=source.slice(start,end);
+test('Profil HUB : Abaque seulement pour une classe ouverte, et pilote explicite uniquement dans TEST',()=>{
+ assert.ok(start>0&&end>start);
+ assert.match(block,/abaqueSetting==='open'\|\|abaqueSetting==null/);
+ assert.match(block,/abaqueProject/);
+ assert.match(block,/abaqueSetting==='pilot'/);
+ assert.match(block,/b\.classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'/);
+ assert.match(block,/from\('connect_abaque_classes'\)/);
+ assert.match(block,/\.eq\('class_id',b\.classId\)\.eq\('enabled',true\)/);
+ assert.match(block,/includeAbaque=!permissionError&&!!permission/);
+ assert.match(block,/includeAbaque\s*\?db\.rpc\('connect_abaque_profile_progress_v1'/);
+ assert.match(block,/:db\.rpc\('connect_profile_progress_v1'/);
+ assert.doesNotMatch(block,/setInterval|setTimeout|\.update\(|\.insert\(|\.upsert\(/);
+});
