@@ -143,6 +143,15 @@
           <p id="auth-feedback" class="teacher-context" role="status" aria-live="polite"></p>
           <p id="auth-saved-summary" class="authorization-saved-summary" role="status" aria-live="polite" hidden></p>
         </div>
+        <section class="authorization-card" id="abaque-class-gates" aria-labelledby="abaque-class-gates-title">
+          <h3 id="abaque-class-gates-title">📏 Abaque des longueurs · ouverture des activités</h3>
+          <p class="hint">Deux autorisations indépendantes par classe. L’activité 1 est toujours accessible. Monsieur T peut présenter les trois activités, avec ses propres XP et trophées.</p>
+          <div class="authorization-fields"><label for="abaque-class-gates-class">Classe
+            <select id="abaque-class-gates-class"></select></label></div>
+          <label class="authorization-radio"><input type="checkbox" id="abaque-class-gates-2" disabled> Autoriser l’activité 2</label>
+          <label class="authorization-radio"><input type="checkbox" id="abaque-class-gates-3" disabled> Autoriser l’activité 3</label>
+          <p class="teacher-context" id="abaque-class-gates-status" role="status" aria-live="polite">Choisis une classe pour charger les autorisations.</p>
+        </section>
       </div>
       <div class="teacher-section" id="teacher-results" hidden>
         <div class="teacher-section-heading"><h2>Résultats des élèves</h2><button type="button" class="teacher-quiet" data-teacher-tab="home">← Accueil</button></div>
