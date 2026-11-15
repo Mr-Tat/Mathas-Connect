@@ -65,3 +65,11 @@ test('Autorisations : élève refusé et réponses liées au compte professeur',
  const denied=createAbaqueHandler({auth,db:{rpc:async()=>({data:null,error:{message:'teacher_authorization_required'}})},access:'open'});
  assert.equal((await denied(request('teacher-activity-get'))).status,403);
 });
+
+test('Mode Master local impossible à utiliser pour contourner les blocages Connect élèves',()=>{
+ assert.match(html,/const unlocked=what=>\(master&&!connectBinding\)\|\|classActivityAccess\.teacherFree/);
+ assert.match(html,/\$\('masterToggle'\)\.classList\.toggle\('hidden',!!connectBinding&&!classActivityAccess\.teacherFree\)/);
+ assert.match(html,/if\(master\|\|connectBinding&&!classActivityAccess\.teacherFree\)return/);
+ assert.match(html,/if\(!snapshot\.activityAccess\?\.teacherFree\)\{master=false/);
+ assert.match(html,/try\{sessionStorage\.removeItem\(SESSION\)\}/);
+});
