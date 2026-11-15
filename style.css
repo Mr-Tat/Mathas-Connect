@@ -593,6 +593,10 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
 #teacher-authorizations .authorization-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
 #teacher-authorizations .authorization-fields label{display:grid;gap:7px;font-weight:700;color:#d9edff}
 #teacher-authorizations select{width:100%;min-height:43px;padding:9px;border-radius:9px;background:#edf5ff;color:#112a41}
+#teacher-authorizations .authorization-settings{display:grid;gap:18px}
+#teacher-authorizations #auth-calculation-settings[hidden],
+#teacher-authorizations #abaque-class-gates[hidden],
+#teacher-authorizations #auth-scope-wrap[hidden]{display:none!important}
 #teacher-authorizations .authorization-options{padding:19px;border-radius:14px;border:1px solid #426783;background:#102a40}
 #teacher-authorizations .authorization-options h3{margin:0 0 6px;color:#fff}
 #teacher-authorizations .authorization-multipliers{display:flex;gap:9px;flex-wrap:wrap;margin:16px 0}
