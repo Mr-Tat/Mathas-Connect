@@ -92,11 +92,33 @@ test('Abaque pilote, Auth simulée : gestion réservée au professeur TEST et co
 
 test('Abaque activation 07/11: seulement TEST sur Connect, toute fermeture explicite prioritaire',()=>{
  const project='https://awmhpfofacaglewammxt.supabase.co';
- assert.equal(resolveAbaqueAccess(undefined,project),'pilot','l activation TEST autorisee ne depend pas d un secret absent');
- assert.equal(resolveAbaqueAccess(null,project),'pilot');
+ assert.equal(resolveAbaqueAccess(undefined,project),'open','les seules classes activées en SQL sont accessibles sur Connect');
+ assert.equal(resolveAbaqueAccess(null,project),'open');
  assert.equal(resolveAbaqueAccess('pilot',project),'pilot');
- for(const flag of ['closed','open','', 'unsafe'])assert.equal(resolveAbaqueAccess(flag,project),'closed');
+ for(const flag of ['closed','', 'unsafe'])assert.equal(resolveAbaqueAccess(flag,project),'closed');
  assert.equal(resolveAbaqueAccess(undefined,'https://bzdflehyuowbawdzuawh.supabase.co'),'closed');
  assert.equal(resolveAbaqueAccess(undefined,'http://localhost:54321'),'closed');
  assert.equal(resolveAbaqueAccess(undefined,'not a url'),'closed');
+ assert.equal(resolveAbaqueAccess('open',project),'open','ouverture scolaire seulement sur le projet officiel');
+ assert.equal(resolveAbaqueAccess('open','https://bzdflehyuowbawdzuawh.supabase.co'),'closed');
+ assert.equal(resolveAbaqueAccess('open','not a url'),'closed');
+});
+
+
+test('Abaque scolaire : Edge open accepte une classe inscrite et conserve les protections du pilote TEST',async()=>{
+ const schoolClass='00000000-0000-4000-8000-000000000014';
+ let calls=0,last;
+ const db={rpc:async(name,args)=>{calls++;last={name,args};return {data:{ok:true},error:null}}};
+ const auth={auth:{getUser:async()=>({data:{user:{id:authId,is_anonymous:true}},error:null})}};
+ const req=(action,classId)=>new Request('http://local.invalid',{method:'POST',headers:{authorization:'Bearer fake-approved'},body:JSON.stringify({action,appKey:'abaque-longueurs',classId})});
+ const pilot=createAbaqueHandler({auth,db,access:'pilot'});
+ assert.equal((await pilot(req('load',schoolClass))).status,403);
+ assert.equal(calls,0);
+ const open=createAbaqueHandler({auth,db,access:'open'});
+ assert.equal((await open(req('load',schoolClass))).status,200);
+ assert.equal(last.name,'connect_abaque_load_v1');
+ assert.equal(last.args.p_class,schoolClass);
+ assert.equal(calls,1);
+ assert.equal((await open(req('teacher-pilot-status',schoolClass))).status,403);
+ assert.equal(calls,1,'la gestion des profils fictifs reste limitée à TEST');
 });
