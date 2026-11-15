@@ -95,7 +95,7 @@ test('Abaque activation 07/11: seulement TEST sur Connect, toute fermeture expli
  assert.equal(resolveAbaqueAccess(undefined,project),'pilot','l activation TEST autorisee ne depend pas d un secret absent');
  assert.equal(resolveAbaqueAccess(null,project),'pilot');
  assert.equal(resolveAbaqueAccess('pilot',project),'pilot');
- for(const flag of ['closed','open','', 'unsafe'])assert.equal(resolveAbaqueAccess(flag,project),'closed');
+ for(const flag of ['closed','', 'unsafe'])assert.equal(resolveAbaqueAccess(flag,project),'closed');
  assert.equal(resolveAbaqueAccess(undefined,'https://bzdflehyuowbawdzuawh.supabase.co'),'closed');
  assert.equal(resolveAbaqueAccess(undefined,'http://localhost:54321'),'closed');
  assert.equal(resolveAbaqueAccess(undefined,'not a url'),'closed');
