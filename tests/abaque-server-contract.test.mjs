@@ -92,8 +92,8 @@ test('Abaque pilote, Auth simulée : gestion réservée au professeur TEST et co
 
 test('Abaque activation 07/11: seulement TEST sur Connect, toute fermeture explicite prioritaire',()=>{
  const project='https://awmhpfofacaglewammxt.supabase.co';
- assert.equal(resolveAbaqueAccess(undefined,project),'pilot','l activation TEST autorisee ne depend pas d un secret absent');
- assert.equal(resolveAbaqueAccess(null,project),'pilot');
+ assert.equal(resolveAbaqueAccess(undefined,project),'open','les seules classes activées en SQL sont accessibles sur Connect');
+ assert.equal(resolveAbaqueAccess(null,project),'open');
  assert.equal(resolveAbaqueAccess('pilot',project),'pilot');
  for(const flag of ['closed','', 'unsafe'])assert.equal(resolveAbaqueAccess(flag,project),'closed');
  assert.equal(resolveAbaqueAccess(undefined,'https://bzdflehyuowbawdzuawh.supabase.co'),'closed');
