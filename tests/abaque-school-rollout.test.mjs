@@ -7,7 +7,7 @@ test('Abaque scolaire : cinq presets et classes explicitement gardés, aucun cha
  assert.match(sql,/connect_abaque_classes \(class_id,enabled,pilot_only\)/);
  assert.match(sql,/SELECT id,true,false FROM public\.connect_classes/);
  assert.match(sql,/connect_hub_preset_entries \(preset_slug,app_key,section,display_order,visible,featured\)/);
- assert.match(sql,/'abaque-longueurs','outils',70,true,false/);
+ assert.match(sql,/'abaque-longueurs','outil',70,true,false/);
  assert.match(sql,/abaque_test_pilot_must_remain_enabled/);
  assert.match(sql,/COMMIT;/);
  assert.doesNotMatch(sql,/^\s*(DELETE|TRUNCATE|DROP|ALTER|UPDATE\s+public\.connect_(xp_|students|states|trophy_))/im);
