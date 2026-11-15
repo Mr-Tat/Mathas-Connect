@@ -10,7 +10,7 @@ Le professeur souhaite pouvoir utiliser demain l'Abaque des longueurs avec de vr
 
 ## Diff minimal
 1. Politique Edge : `closed` ferme ; `pilot` limite à TEST ; `open` **ou secret absent** permet seulement aux classes explicitement `connect_abaque_classes.enabled`, exclusivement quand `SUPABASE_URL` est le projet Connect officiel. Les valeurs inconnues et projets tiers ferment. Un secret explicitement `pilot` ou `closed` ne sera jamais ignoré.
-2. Après publication Edge **et vérification** du fonctionnement du mode scolaire, appliquer `supabase/release-candidates/20261115_abaque_school_all_presets.sql` sur **Math'as Connect uniquement** : les cinq classes sont activées en `pilot_only=false` et une carte visible est ajoutée dans `outils` de chacun des cinq presets. Ce SQL est idempotent et conserve la classe TEST comme pilote.
+2. Après publication Edge **et vérification** du fonctionnement du mode scolaire, appliquer `supabase/release-candidates/20261115_abaque_school_all_presets.sql` sur **Math'as Connect uniquement** : les cinq classes sont activées en `pilot_only=false` et une carte visible est ajoutée dans `outil` (intitulé Outils) de chacun des cinq presets. Ce SQL est idempotent et conserve la classe TEST comme pilote.
 3. Ne pas réinitialiser XP, trophées, résultats ni codes/identités. Les appareils doivent demeurer approuvés.
 
 ## Contrôles et limites
