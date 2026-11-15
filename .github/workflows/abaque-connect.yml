@@ -10,6 +10,9 @@ on:
       - 'supabase/release-candidates/*abaque*'
       - 'scripts/abaque-release.mjs'
       - 'tests/abaque*'
+      - 'app.js'
+      - 'index.html'
+      - 'supabase/migrations/*abaque*'
       - 'tests/local/abaque*'
       - 'tests/local/run-abaque-local.sh'
       - 'tests/helpers/abaque*'
@@ -35,7 +38,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          node --test tests/abaque-contract.test.mjs tests/abaque-server-contract.test.mjs tests/laboratoire-objective-record.test.mjs tests/abaque-browser.browser.mjs 2>&1 | tee "$RUNNER_TEMP/abaque-browser.tap"
+          node --test tests/abaque-prof-gates-top-two.test.mjs tests/abaque-two-perfect-trophies.test.mjs tests/abaque-contract.test.mjs tests/abaque-server-contract.test.mjs tests/laboratoire-objective-record.test.mjs tests/abaque-browser.browser.mjs 2>&1 | tee "$RUNNER_TEMP/abaque-browser.tap"
           test_status=${PIPESTATUS[0]}
           set -e
           if [ "$test_status" -ne 0 ]; then

@@ -21,6 +21,7 @@ function validSnapshot(value,subject,pupil=null){
  return value?.ok===true&&value.status==='approved'&&value.ruleset===1&&value.appKey===APP_KEY&&value.classId===CLASS&&value.authSubject===subject&&
   uuid.test(value.studentId)&&(!pupil||value.studentId===pupil)&&integer(value.revision)&&integer(value.resetEpoch)&&
   value.state&&typeof value.state==='object'&&!Array.isArray(value.state)&&Array.isArray(value.trophies)&&
+  value.activityAccess&&typeof value.activityAccess.activity2==='boolean'&&typeof value.activityAccess.activity3==='boolean'&&typeof value.activityAccess.teacherFree==='boolean'&&
   value.xp?.max===204&&integer(value.xp.appXp)&&value.xp.appXp<=204&&integer(value.xp.total)&&
   Object.entries(caps).every(([kind,cap])=>integer(value.xp.remaining?.[kind])&&value.xp.remaining[kind]<=cap);
 }
@@ -32,7 +33,7 @@ async function connect(){
  let chosenAvatar=null;
  const details=element('span');details.setAttribute('role','status');details.setAttribute('aria-live','polite');
  const xp=element('span','','abaque-account-xp');
- const retry=element('button','Réessayer','btn');retry.type='button';retry.hidden=true;
+ const retry=element('button','Actualiser les autorisations','btn');retry.type='button';retry.hidden=true;
  const demo=element('a','Ouvrir la démo isolée');demo.href='./';
  panel.append(dot,face,label,details,xp,retry,demo);document.body.prepend(panel);setInert(true);
  const nativeModal=window.MATHAS_CELEBRATE.modal;
@@ -66,7 +67,7 @@ async function connect(){
    homeXp.textContent=online?snapshot.xp.appXp+' / 204 XP acquis':'Hors connexion · XP en attente';
    paintConnectedAvatar(homeAvatar,chosenAvatar,snapshot.displayName);
   }
-  document.querySelector('.demo-notice').textContent=online?(CLASS===PILOT?'Laboratoire connecté · résultats liés à ton compte':'Mode Connect · résultats liés à ton compte'):'Hors connexion · résultats conservés en attente de synchronisation';
+  document.querySelector('.demo-notice').textContent=online?(snapshot.activityAccess.teacherFree?'Compte Monsieur T · toutes les activités accessibles · XP et trophées à gagner':CLASS===PILOT?'Laboratoire connecté · résultats liés à ton compte':'Mode Connect · résultats liés à ton compte'):'Hors connexion · résultats conservés en attente de synchronisation';
   label.textContent=snapshot.displayName||'Compte Connect';
   dot.hidden=false;face.hidden=false;paintConnectedAvatar(face,chosenAvatar,snapshot.displayName);face.style.display='inline-grid';
   xp.textContent=online?snapshot.xp.appXp+' / 204 XP acquis · '+snapshot.trophies.length+' / 6 trophées':'Connexion à confirmer';
@@ -141,7 +142,7 @@ async function connect(){
   },()=>queue.version().resetEpoch);
   draw(snapshot,online);delete document.documentElement.dataset.abaquePending;
   if(online&&!queue.pending())delete document.documentElement.dataset.abaqueAttention;
-  retry.hidden=false;setInert(false);
+  retry.hidden=false;retry.textContent='Actualiser les autorisations';setInert(false);
   if(online)await queue.flush();
  }
  try{
@@ -157,10 +158,10 @@ async function connect(){
    else if(updated?.user?.id===subject)sessionActive=true;
   });
   retry.onclick=async()=>{
-   retry.disabled=true;
+   retry.disabled=true;retry.textContent='Vérification…';
    try{await queue?.flush();const loaded=await post({action:'load'});if(pupil&&loaded.studentId!==pupil)throw Error('identity_changed');await initialize(loaded,true);}
    catch(error){hideRemaining();document.documentElement.dataset.abaqueAttention='true';if([401,403,409].includes(error.status)||error.message==='identity_changed'){queue?.halt();setInert(true);document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';dot.hidden=true;face.hidden=true;face.style.display='none';xp.textContent='';}details.textContent='Connexion indisponible : '+error.message;}
-   finally{retry.disabled=false;}
+   finally{retry.disabled=false;retry.textContent='Actualiser les autorisations';}
   };
   try{await initialize(await post({action:'load'}),true);}
   catch(error){

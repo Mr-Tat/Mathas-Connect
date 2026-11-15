@@ -110,6 +110,7 @@ async function teacher(){
  const box=$('class-selector');
  box.replaceChildren(...(r.classes||[]).filter(c=>!c.name.includes('TEST')).map(c=>new Option(c.name,c.id)));
  $('year-selector').replaceChildren(...(r.years||[]).map(v=>new Option(v.label,v.id)));
+ $('abaque-class-gates-class').replaceChildren(...(r.classes||[]).map(c=>new Option(c.name,c.id)));
  show('teacher');showTeacherTab('home');
  // Accueil GLOBAL : une seule requête pour toutes les classes.
  renderGlobalRequests(r);
@@ -995,6 +996,61 @@ $('auth-aid-save').onclick=()=>{
 };
 $('auth-aid-clear').onclick=()=>void authSave('teacher-table-aid-set',{allowed:null});
 
+// Abaque: class permissions stay independent from multiplication locks.
+let abaqueGateBusy=false,abaqueGateSequence=0;
+const abaqueGateClass=$('abaque-class-gates-class');
+const abaqueGateChecks=[$('abaque-class-gates-2'),$('abaque-class-gates-3')];
+const abaqueGateStatus=$('abaque-class-gates-status');
+function abaqueGateEnabled(value){
+ abaqueGateChecks.forEach(c=>{c.disabled=!value;});
+}
+async function abaqueGateRequest(action,classId,extra={}){
+ const {data:{session}}=await sb.auth.getSession();
+ if(!session?.access_token||session.user?.is_anonymous!==false)throw Error('Connexion professeur requise.');
+ const response=await fetch(url+'/functions/v1/connect-abaque',{method:'POST',cache:'no-store',
+  headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
+  body:JSON.stringify({appKey:'abaque-longueurs',classId,action,...extra})});
+ const value=await response.json().catch(()=>null);
+ if(!response.ok||value?.ok!==true)throw Error(value?.error||'Autorisations indisponibles.');
+ if(value.authSubject!==session.user.id||value.classId!==classId)throw Error('La session a changé.');
+ return value;
+}
+async function abaqueGatesLoad(){
+ const classId=abaqueGateClass.value,sequence=++abaqueGateSequence;
+ abaqueGateEnabled(false);
+ if(!classId){abaqueGateStatus.textContent='Choisis une classe.';return;}
+ abaqueGateStatus.textContent='Lecture des deux autorisations…';
+ try{
+  const data=await abaqueGateRequest('teacher-activity-get',classId);
+  if(sequence!==abaqueGateSequence||abaqueGateClass.value!==classId)return;
+  abaqueGateChecks[0].checked=data.activity2===true;abaqueGateChecks[1].checked=data.activity3===true;
+  abaqueGateEnabled(true);
+  abaqueGateStatus.textContent='✓ Autorisations enregistrées sur Supabase. Les élèves actualisent leurs droits depuis le jeu, sans surveillance en boucle.';
+ }catch(e){if(sequence!==abaqueGateSequence)return;abaqueGateStatus.textContent='Lecture impossible : '+e.message;}
+}
+async function abaqueGateSave(activity,allowed){
+ if(abaqueGateBusy)return;
+ const classId=abaqueGateClass.value,sequence=++abaqueGateSequence;
+ abaqueGateBusy=true;abaqueGateEnabled(false);abaqueGateClass.disabled=true;
+ abaqueGateStatus.textContent='Enregistrement…';
+ try{
+  const data=await abaqueGateRequest('teacher-activity-set',classId,{activity,allowed});
+  if(sequence!==abaqueGateSequence||classId!==abaqueGateClass.value)return;
+  abaqueGateChecks[0].checked=data.activity2===true;abaqueGateChecks[1].checked=data.activity3===true;
+  abaqueGateStatus.textContent='✓ Autorisations de cette classe enregistrées.';
+ }catch(e){
+  abaqueGateStatus.textContent='Enregistrement refusé : '+e.message;
+  // A failed write is not a local permission change.
+  abaqueGateChecks[activity===2?0:1].checked=!allowed;
+ }finally{
+  abaqueGateBusy=false;abaqueGateClass.disabled=false;
+  if(sequence===abaqueGateSequence)abaqueGateEnabled(true);
+ }
+}
+abaqueGateClass.onchange=()=>void abaqueGatesLoad();
+abaqueGateChecks[0].onchange=e=>void abaqueGateSave(2,e.target.checked);
+abaqueGateChecks[1].onchange=e=>void abaqueGateSave(3,e.target.checked);
+
 const teacherTabs=['home','apps','authorizations','results','management'];
 function showTeacherTab(tab){
  const selected=teacherTabs.includes(tab)?tab:'home';
@@ -1004,7 +1060,7 @@ function showTeacherTab(tab){
   if(node)node.hidden=t!==selected;
  }
  if(selected==='apps')loadTeacherAppPreview();
- if(selected==='authorizations')void loadAuthorizations();
+ if(selected==='authorizations'){void loadAuthorizations();void abaqueGatesLoad();}
  if(selected==='management'&&!busy)run(refresh);
  if(selected==='home'&&!busy)run(refreshGlobalRequests);
  if(selected==='results' && !currentTeacherSpace)run(showResults);
