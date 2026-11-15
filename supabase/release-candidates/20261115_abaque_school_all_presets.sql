@@ -27,7 +27,7 @@ SELECT id,true,false FROM public.connect_classes
 WHERE name IN ('Observation','Phase 1','Phase 2 A','Phase 2 B','2 ECO')
 ON CONFLICT (class_id) DO UPDATE SET enabled=EXCLUDED.enabled,pilot_only=EXCLUDED.pilot_only;
 INSERT INTO public.connect_hub_preset_entries (preset_slug,app_key,section,display_order,visible,featured)
-SELECT slug,'abaque-longueurs','outils',70,true,false FROM public.connect_hub_presets
+SELECT slug,'abaque-longueurs','outil',70,true,false FROM public.connect_hub_presets
 WHERE slug IN ('observation','phase1','phase2','phase2b','2eco')
 ON CONFLICT (preset_slug,app_key) DO UPDATE SET
  section=EXCLUDED.section,display_order=EXCLUDED.display_order,
@@ -40,7 +40,7 @@ BEGIN
  IF actual<>5 THEN RAISE EXCEPTION 'abaque_school_activation_incomplete: %',actual; END IF;
  SELECT count(*) INTO actual FROM public.connect_hub_preset_entries
  WHERE app_key='abaque-longueurs' AND preset_slug IN ('observation','phase1','phase2','phase2b','2eco')
- AND section='outils' AND visible AND NOT featured;
+ AND section='outil' AND visible AND NOT featured;
  IF actual<>5 THEN RAISE EXCEPTION 'abaque_school_visibility_incomplete: %',actual; END IF;
 END $guard$;
 COMMIT;
