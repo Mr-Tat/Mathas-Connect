@@ -50,15 +50,16 @@ test('page Toutes uses its own section selector, independent of classes',()=>{
  assert.match(migration,/ADD COLUMN IF NOT EXISTS section/);
 });
 
-test('Abaque officiel : cartes de Toutes et session Monsieur T sans ouverture scolaire',()=>{
+test('Abaque officiel : Toutes TEST et profils scolaires avec droits serveur',()=>{
  const hub=read('hub.js'),api=read('supabase/functions/connect-api/index.ts');
  const controls=read('apps/GRAN-abaque-m-1/connect/hub-all-controls.mjs');
  const panel=read('hub-toutes-auth.mjs');
  assert.match(hub,/playingAsTeacher&&connectedGameKeys\.has\(app\.app_key\)/);
  assert.match(hub,/target\.origin===location\.origin\|\|app\.app_key==='abaque-longueurs'/);
- assert.match(api,/abaqueSetting==null&&abaqueProject/);
- assert.match(api,/const query=abaquePilot/);
- assert.doesNotMatch(api,/abaqueOpen/);
+ assert.match(api,/abaqueSetting==null/);
+ assert.match(api,/const query=includeAbaque/);
+ assert.match(api,/abaqueCanOpen=abaqueProject/);
+ assert.match(api,/from\('connect_abaque_classes'\)/);
  assert.match(controls,/teacher-pilot-approve/);
  assert.match(controls,/fictiveConfirmed:true/);
  assert.match(controls,/teacher-pilot-status/);
