@@ -1482,7 +1482,7 @@ window.MATHAS_ITEMS = [
  let demoPreviewActive=false,demoPreviewBackup=null;
  const allowDemoPreview=isolatedDemo&&new URLSearchParams(location.search).get('connect')!=='1';
  const $=id=>document.getElementById(id);
- const blank=()=>({stage1:{passes:[],passScores:[],perfectRuns:0,failed:false,failedScore:null},stage2:{passes:[],passScores:[],perfectRuns:0,failed:false,failedScore:null},recordsByMode:{},modes:{one:null,three:null,five:null,sudden:null},modeScores:{one:null,three:null,five:null},suddenBest:0,scoreRecords:{dayDate:"",dayBest:0,dayMode:"",allBest:0,allMode:"",medals:[]}});
+ const blank=()=>({stage1:{passes:[],passScores:[],topScores:[],perfectRuns:0,failed:false,failedScore:null},stage2:{passes:[],passScores:[],topScores:[],perfectRuns:0,failed:false,failedScore:null},recordsByMode:{},modes:{one:null,three:null,five:null,sudden:null},modeScores:{one:null,three:null,five:null},suddenBest:0,scoreRecords:{dayDate:"",dayBest:0,dayMode:"",allBest:0,allMode:"",medals:[]}});
  const TROPHY_DEFINITIONS=[['bronze','launchBtn','Architecte de l’abaque'],['silver','moveLaunchBtn','Maître des déplacements'],['gold','convertLaunchCard','Expert des conversions'],['sudden-bronze','sudden-bronze','Mort subite · bronze'],['sudden-silver','sudden-silver','Mort subite · argent'],['sudden-gold','sudden-gold','Mort subite · or']];
  const trophyKeys=TROPHY_DEFINITIONS.map(([key])=>key);
  const SUDDEN_TROPHIES=[[3,'sudden-bronze'],[5,'sudden-silver'],[8,'sudden-gold']];
@@ -1491,6 +1491,8 @@ window.MATHAS_ITEMS = [
  try{const saved=JSON.parse(localStorage.getItem(TROPHIES));if(Array.isArray(saved))earnedTrophies=[...new Set(saved.filter(x=>trophyKeys.includes(x)))];}catch{}
  function earnTrophy(key){if(connectBinding)return;if(!earnedTrophies.includes(key)){earnedTrophies.push(key);if(!demoPreviewActive)try{localStorage.setItem(TROPHIES,JSON.stringify(earnedTrophies))}catch{}}}
  let data=blank(), master=false, runPractice=false;
+ // Classroom rights are loaded once with each signed Connect snapshot, no polling.
+ let classActivityAccess={activity2:true,activity3:true,teacherFree:false};
  function restoreNative(saved){data=blank();if(saved&&typeof saved==='object'){
    for(const key of ['stage1','stage2']) if(saved[key]){
      const old=saved[key];const raw=Array.isArray(old.passes)?old.passes.slice(0,2):[];
@@ -1499,6 +1501,8 @@ window.MATHAS_ITEMS = [
        const v=Array.isArray(old.passScores)?old.passScores[i]:null;
        return Number.isInteger(v)&&v>=0&&v<=(key==='stage1'?12:8)?v:null;
      });
+     const top=Array.isArray(old.topScores)?old.topScores:old.passScores;
+     data[key].topScores=(Array.isArray(top)?top:[]).filter(v=>Number.isInteger(v)&&v>=0&&v<=(key==='stage1'?12:8)).sort((a,b)=>b-a).slice(0,2);
      const recordedPerfects=data[key].passScores.filter(score=>score===(key==='stage1'?12:8)).length;
      data[key].perfectRuns=Number.isSafeInteger(old.perfectRuns)&&old.perfectRuns>=0
        ?Math.min(2,Math.max(recordedPerfects,old.perfectRuns))
@@ -1553,11 +1557,14 @@ window.MATHAS_ITEMS = [
  const passes=key=>data[key].passes.length;
  const beginRun=()=>{runPractice=master};
  const canRecord=()=>!master&&!runPractice;
- const unlocked=what=>master||what==='stage1'||what==='stage2'&&passes('stage1')>=2||what==='stage3'&&passes('stage2')>=2||what==='one'&&passes('stage2')>=2||what==='three'&&['orange','green'].includes(data.modes.one)||what==='five'&&['orange','green'].includes(data.modes.three)||what==='sudden'&&[['one',4],['three',12],['five',20]].every(([mode,total])=>Number.isInteger(data.modeScores[mode])?data.modeScores[mode]*5>=total*4:['orange','green'].includes(data.modes[mode]));
+ const pedagogicalUnlock=what=>what==='stage1'||what==='stage2'&&passes('stage1')>=2||what==='stage3'&&passes('stage2')>=2||what==='one'&&passes('stage2')>=2||what==='three'&&['orange','green'].includes(data.modes.one)||what==='five'&&['orange','green'].includes(data.modes.three)||what==='sudden'&&[['one',4],['three',12],['five',20]].every(([mode,total])=>Number.isInteger(data.modeScores[mode])?data.modeScores[mode]*5>=total*4:['orange','green'].includes(data.modes[mode]));
+ const unlocked=what=>master||classActivityAccess.teacherFree||pedagogicalUnlock(what)&&(what==='stage2'?classActivityAccess.activity2:what==='stage1'||classActivityAccess.activity3);
  // Master autorise les essais, mais leurs résultats n'avancent pas les déblocages des élèves.
  const recordStage=(key,correct,total)=>{
   if(!canRecord())return {grade:color(correct,total),count:passes(key)};
   const previous=Math.max(0,...data[key].passScores.filter(Number.isSafeInteger),Number.isSafeInteger(data[key].failedScore)?data[key].failedScore:0);
+  const top=Array.isArray(data[key].topScores)?data[key].topScores:data[key].passScores;
+  data[key].topScores=[...top.filter(Number.isSafeInteger),correct].sort((a,b)=>b-a).slice(0,2);
   const beforeTrophies=earnedTrophies.length,grade=color(correct,total);
   if(correct===total){
    data[key].perfectRuns=Math.min(2,(data[key].perfectRuns||0)+1);
@@ -1584,20 +1591,21 @@ window.MATHAS_ITEMS = [
  function dots(key){const target=$(key==='stage1'?'stage1Dots':'stage2Dots');target.replaceChildren();
   const total=key==='stage1'?12:8;
   const caption=document.createElement('span');caption.className='progressCaption';
-  const captionText=document.createElement('span');captionText.textContent='Réussites';
-  const captionCount=document.createElement('strong');captionCount.textContent=passes(key)+'/2';
+  const captionText=document.createElement('span');captionText.textContent='Meilleurs scores';
+  const captionCount=document.createElement('strong');captionCount.textContent=passes(key)+'/2 réussites';
   caption.append(captionText,captionCount);target.appendChild(caption);
+  const top=Array.isArray(data[key].topScores)?data[key].topScores:data[key].passScores;
   for(let i=0;i<2;i++){
-   const col=data[key].passes[i]||((i===passes(key)&&data[key].failed)?'red':'empty');
-   const score=col==='red'?data[key].failedScore:data[key].passScores[i];
-   const shown=col==='empty'?'':Number.isInteger(score)?`${score}/${total}`:col==='green'?'100 %':col==='orange'?'≥80 %':'<80 %';
+   const score=top[i];
+   const col=Number.isInteger(score)?color(score,total):'empty';
+   const shown=Number.isInteger(score)?Math.round(100*score/total)+' %':'';
    const group=document.createElement('span');group.className='dotResult';
    const label=document.createElement('span');label.className='dotScore'+(shown?'':' unplayed');label.textContent=shown||'—';
    const dot=document.createElement('span');dot.className='progressDot '+col;dot.setAttribute('aria-hidden','true');
-   group.append(label,dot);group.setAttribute('aria-label',shown?`${shown}, ${col==='green'?'sans-faute':col==='orange'?'réussite':'à réessayer'}`:'Non réalisé');
+   group.append(label,dot);group.setAttribute('aria-label',shown?shown+' ('+score+'/'+total+')':'Aucune partie');
    target.appendChild(group);
   }
-  target.setAttribute('aria-label',passes(key)+' réussites sur 2');
+  target.setAttribute('aria-label','Deux meilleurs scores des parties distinctes ; '+passes(key)+' réussites pour débloquer la suite');
  }
  function render(){dots('stage1');dots('stage2');$('recordLock').classList.toggle('hidden',unlocked('sudden'));
   for(const [key,id,name] of TROPHY_DEFINITIONS){
@@ -1620,10 +1628,11 @@ window.MATHAS_ITEMS = [
   $('moveLaunchBtn').classList.toggle('lockedCard',!unlocked('stage2'));
   $('moveLaunchBtn').setAttribute('aria-disabled',String(!unlocked('stage2')));
   $('moveLock').classList.toggle('hidden',unlocked('stage2'));
-  $('moveLock').textContent='🔒 Activité 1 · '+passes('stage1')+'/2 réussites';
+  $('moveLock').textContent=connectBinding&&!classActivityAccess.teacherFree&&!classActivityAccess.activity2?'🔒 En attente de l’autorisation de ton professeur':'🔒 Activité 1 · '+passes('stage1')+'/2 réussites';
   $('convertLaunchCard').classList.toggle('lockedCard',!unlocked('stage3'));
   $('convertLock').classList.toggle('hidden',unlocked('stage3'));
-  $('convertLock').textContent='🔒 Activité 2 · '+passes('stage2')+'/2 réussites';
+  $('convertLock').textContent=connectBinding&&!classActivityAccess.teacherFree&&!classActivityAccess.activity3?'🔒 En attente de l’autorisation de ton professeur':'🔒 Activité 2 · '+passes('stage2')+'/2 réussites';
+  $('recordLock').textContent=connectBinding&&!classActivityAccess.teacherFree&&!classActivityAccess.activity3?'🔒 En attente de l’autorisation de ton professeur':'🔒 Au moins 80 % en 1, 3 et 5 pages';
   $('masterToggle').classList.toggle('active',master);$('masterTools').classList.toggle('hidden',!master);
   const homeVisibleMode=(m)=>{
     if(m==='sudden')return true;
@@ -1667,6 +1676,8 @@ window.MATHAS_ITEMS = [
  function applyServer(snapshot){
   if(!connectBinding||snapshot.studentId!==connectBinding.studentId||snapshot.authSubject!==connectBinding.authSubject)throw Error('connect_identity_changed');
   restoreNative(snapshot.state);
+  if(!snapshot.activityAccess||typeof snapshot.activityAccess.activity2!=='boolean'||typeof snapshot.activityAccess.activity3!=='boolean'||typeof snapshot.activityAccess.teacherFree!=='boolean')throw Error('invalid_activity_access');
+  classActivityAccess=snapshot.activityAccess;
   earnedTrophies=(snapshot.trophies||[]).filter(key=>trophyKeys.some(local=>'abaque:'+local===key)).map(key=>key.slice('abaque:'.length));
   save();render();
  }
