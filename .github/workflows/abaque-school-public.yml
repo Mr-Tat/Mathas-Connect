@@ -1,0 +1,27 @@
+name: Abaque — vérification des URLs publiques en classe
+on:
+  pull_request:
+    paths:
+      - 'hub-catalog.json'
+      - 'tests/abaque-school-public.test.mjs'
+      - '.github/workflows/abaque-school-public.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'hub-catalog.json'
+      - 'tests/abaque-school-public.test.mjs'
+      - '.github/workflows/abaque-school-public.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier les 5 cartes scolaires, le site et la miniature (lecture seule)
+        run: node --test tests/abaque-school-public.test.mjs
