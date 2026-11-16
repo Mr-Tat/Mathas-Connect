@@ -1107,7 +1107,7 @@ test('Abaque activité 3 : plateau aligné à gauche et abaque élargi, arcs et 
    return {abacusWidth:zone.width,boardOffset:board.left-scroll.left,
     order:board.right<zone.left,scrollLeft:scroll.left,abacusLeft:zone.left};
   });
-  assert.ok(desktop.abacusWidth>=260,'l’abaque élargi occupe au moins 260 px sur ordinateur');
+  assert.ok(desktop.abacusWidth>=260,'l’abaque élargi occupe au moins 260 px sur ordinateur : '+JSON.stringify(desktop));
   assert.ok(desktop.boardOffset>=-2&&desktop.boardOffset<=20,'cases de manipulation alignées à gauche');
   assert.equal(desktop.order,true,'abaque à droite des cases sans chevauchement');
   const before=await board.boundingBox();
