@@ -1284,6 +1284,76 @@ html[data-abaque-pending]:not([data-abaque-connected]) body::after{
  #convertScreen .t3Prompt .t3Expression{flex-wrap:wrap;white-space:normal}
  #convertScreen .t3Prompt .t3Answer{width:min(156px,44vw);flex:0 0 min(156px,44vw)}
 }
+/* Activité 3 V3 : manipuler à gauche ; abaque uniquement sur demande à droite. */
+#convertScreen .t3Ex.unitPromptActive .t3FromUnit,
+#convertScreen .t3Ex.unitPromptActive .t3ToUnit{
+ text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:4px;
+}
+#convertScreen .t3Ex.unitPromptActive .t3FromUnit{text-decoration-color:#239e61}
+#convertScreen .t3Ex.unitPromptActive .t3ToUnit{text-decoration-color:#9853c3}
+#convertScreen .t3HelpControls{position:relative;display:inline-flex;flex-wrap:wrap;gap:5px}
+#convertScreen .t3HelpConfirm{
+ position:absolute;left:0;top:calc(100% + 8px);z-index:20;
+ width:min(285px,calc(100vw - 62px));padding:11px 13px;
+ background:#fffefa;border:2px solid #aab9bf;border-radius:13px;
+ box-shadow:0 12px 29px #1739442e;color:#173944;text-align:left;
+}
+#convertScreen .t3HelpConfirm p{font-size:.81rem;line-height:1.45;font-weight:750;margin:0 0 10px}
+#convertScreen .t3HelpConfirm>div{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+#convertScreen .t3HelpConfirm button{font-size:.8rem;padding:7px 11px;min-height:37px;background:#edf4f2}
+#convertScreen .t3HelpConfirm button:focus-visible{outline:3px solid #e6a646}
+#convertScreen .t3HelpFinished .t3HelpControls{display:none}
+#convertScreen .t3ManipRow{
+ display:grid!important;grid-template-columns:minmax(300px,1fr) 172px 128px!important;
+ align-items:center!important;column-gap:9px!important;row-gap:5px!important;
+}
+#convertScreen .t3ManipRow .t3BoardScroll{
+ grid-area:auto!important;grid-column:1!important;
+ min-width:0;width:100%!important;max-width:100%!important;
+ display:flex!important;justify-content:center!important;overflow-x:auto!important;
+}
+#convertScreen .t3ManipRow .t3AbacusZone{
+ grid-area:auto!important;grid-column:2!important;
+ display:flex;flex-direction:column;align-items:stretch;justify-content:center;
+ width:172px;min-width:0;
+}
+#convertScreen .t3AbacusZone .t3UnitsBtn{
+ width:100%!important;min-width:0!important;min-height:44px;
+ padding:6px 6px!important;white-space:normal;
+}
+#convertScreen .t3Abacus{
+ width:100%;min-height:87px;padding:10px 3px 4px;
+ background:#eff7f4;border:1px solid #b8d4cf;border-radius:11px;
+ display:flex;flex-direction:column;justify-content:center;gap:4px;
+}
+#convertScreen .t3Abacus .t3UnitLabels{
+ width:100%!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;display:grid;
+}
+#convertScreen .t3Abacus .t3UnitLabels.hidden{display:none!important}
+#convertScreen .t3Abacus .t3UnitLabel{
+ min-width:0;height:31px;padding:7px 0;font-size:.59rem;letter-spacing:-.03em;
+}
+#convertScreen .t3Abacus .t3Movement,
+#convertScreen .t3Abacus .t3Movement svg{width:100%!important;height:37px!important}
+#convertScreen .t3ManipRow .t3BoardSide{
+ grid-area:auto!important;grid-column:3!important;
+ display:flex!important;flex-direction:column!important;align-items:center!important;
+ min-width:0!important;max-width:128px!important;
+}
+#convertScreen .t3ManipRow .t3Direction{width:100%!important;max-width:128px!important}
+#convertScreen .t3ManipRow .t3BoardActions{width:100%!important;justify-content:center!important}
+@media(max-width:1340px){
+ #convertScreen .t3Ex{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:8px}
+ #convertScreen .t3Prompt{grid-column:1!important}
+ #convertScreen .t3Assistance{grid-column:1!important;grid-row:auto!important}
+}
+@media(max-width:760px){
+ #convertScreen .t3ManipRow{display:flex!important;flex-direction:column!important;align-items:center!important;gap:10px!important}
+ #convertScreen .t3ManipRow .t3BoardScroll{flex:0 0 auto!important;width:100%!important;max-width:100%!important;overflow-x:auto!important}
+ #convertScreen .t3ManipRow .t3AbacusZone{width:min(240px,100%);align-self:center}
+ #convertScreen .t3ManipRow .t3BoardSide{width:100%!important;max-width:none!important;flex-direction:row!important;justify-content:space-between!important}
+ #convertScreen .t3ManipRow .t3BoardActions{width:auto!important}
+}
 </style><link rel="stylesheet" href="./abaque.css?v=trophees-sombres-20261107"><script src="./environment.js"></script></head><body><svg class="trophy-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0"><symbol id="abaque-cup" viewBox="0 0 32 36"><path d="M7 5H2v7c0 5 4 8 9 8h10c5 0 9-3 9-8V5h-5v3h2v4c0 3-3 5-6 5H11c-3 0-6-2-6-5V8h2Z" fill="var(--cup-shadow)"/><path d="M7 3h18v10c0 6-4 10-9 10s-9-4-9-10Z" fill="var(--cup-body)"/><path d="M9 5h5v12c0 2 1 3 2 4-5-1-7-4-7-8Z" fill="var(--cup-light)"/><path d="M14 22h4v7h-4Z" fill="var(--cup-shadow)"/><path d="M12 27h8l3 4H9Z" fill="var(--cup-body)"/><path d="M7 31h18v3H7Z" fill="var(--cup-shadow)"/><path d="M7 2h18v3H7Z" fill="var(--cup-light)"/></symbol></svg><div class="shell"><header><h1 class="brand">L’abaque, étape par étape.</h1><div id="recordLives" class="record-hearts hidden" role="status" aria-live="polite"></div><div class="headerBtns"><button id="homeBtn" class="btn dark hidden" type="button">← Accueil</button><button id="helpBtn" class="btn dark hidden" type="button">? Aide</button><button id="fullBtn" class="btn dark" type="button">⛶ Plein écran</button></div></header><main><aside class="demo-notice" role="note">🧪 Laboratoire · XP fictifs · aucun résultat Connect. Progression enregistrée sur cet appareil uniquement.</aside><section id="homeScreen"><div class="home-layout"><div class="home-sidebar"><div id="homeConnectAccount" class="home-connect-account" hidden role="status"><div class="home-connect-identity"><span id="homeConnectAvatar" class="home-connect-avatar" aria-hidden="true"></span><strong id="homeConnectName">Compte Connect</strong></div><div id="homeConnectLevel" class="home-connect-level" hidden><span>Niveau</span><strong id="homeConnectLevelNumber">—</strong></div><span id="homeConnectXp" class="home-connect-app-xp"></span><div id="homeConnectProgress" class="home-connect-progress" hidden><strong id="homeConnectProgressLabel">— / — XP</strong><div id="homeConnectProgressRail" class="home-connect-progress-rail" role="progressbar" aria-label="XP vers le prochain niveau" aria-valuemin="0" aria-valuemax="50" aria-valuenow="0"><span id="homeConnectProgressFill"></span></div></div></div><aside class="personal-records" aria-label="Score du jour et trophées"><div class="personal-best"><span class="record-label">☀️ Score du jour</span><div class="personal-score"><strong id="personalBest">0</strong><span>points</span></div><small id="personalBestMode">À toi de jouer !</small></div><div class="personal-collection"><div class="collection-heading"><span>Trophées obtenus</span><strong id="personalTrophyCount">0 / 6</strong></div><div class="collection-cups" id="personalTrophies"><span class="collection-trophy trophy-bronze" data-collected="bronze" role="img" aria-label="Trophée bronze non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span><span class="collection-trophy trophy-silver" data-collected="silver" role="img" aria-label="Trophée argent non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span><span class="collection-trophy trophy-gold" data-collected="gold" role="img" aria-label="Trophée or non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span><span class="collection-trophy trophy-bronze" data-collected="sudden-bronze" role="img" aria-label="Mort subite · bronze non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span><span class="collection-trophy trophy-silver" data-collected="sudden-silver" role="img" aria-label="Mort subite · argent non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span><span class="collection-trophy trophy-gold" data-collected="sudden-gold" role="img" aria-label="Mort subite · or non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span></div></div></aside>
 <div class="scorePanel hidden" id="scorePanel" aria-label="Record historique de conversion">
   <div class="scorePanelRecords"><div class="scoreRecord"><span>🏆 Record historique</span><strong id="scoreHistory">—</strong><small id="scoreHistoryMode">À battre !</small></div></div>
