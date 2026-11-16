@@ -477,7 +477,7 @@ test('Laboratoire : pas de doublon Abaque Connect, uniquement une démo hors lig
 
 test('Abaque : opération de conversion et indicateurs hors du pavé fixe',async()=>{
  const h=await setup(),{page}=h;
- const thousand=n=>String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g,' ');
+ const thousand=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
  const geometry=async(ex,operation)=>ex.evaluate(el=>{
   const calc=el.querySelector('.t3Operation'),label=el.querySelector('.t3Direction');
   const operationBox=calc.getBoundingClientRect(),descriptionBox=calc.nextElementSibling.getBoundingClientRect();
