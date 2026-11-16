@@ -33,6 +33,7 @@ jobs:
           set -e
           exit "$test_status"
       - name: Tester le moteur dans Chromium
+        if: always() # Les 8 échecs d'empreintes préexistants ne doivent pas cacher les tests navigateur.
         shell: bash
         env:
           CHROME_BIN: ''
