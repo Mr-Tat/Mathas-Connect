@@ -1558,7 +1558,17 @@ window.MATHAS_ITEMS = [
  const beginRun=()=>{runPractice=master};
  const canRecord=()=>!master&&!runPractice;
  const pedagogicalUnlock=what=>what==='stage1'||what==='stage2'&&passes('stage1')>=2||what==='stage3'&&passes('stage2')>=2||what==='one'&&passes('stage2')>=2||what==='three'&&['orange','green'].includes(data.modes.one)||what==='five'&&['orange','green'].includes(data.modes.three)||what==='sudden'&&[['one',4],['three',12],['five',20]].every(([mode,total])=>Number.isInteger(data.modeScores[mode])?data.modeScores[mode]*5>=total*4:['orange','green'].includes(data.modes[mode]));
- const unlocked=what=>(master&&!connectBinding)||classActivityAccess.teacherFree||pedagogicalUnlock(what)&&(what==='stage2'?classActivityAccess.activity2:what==='stage1'||classActivityAccess.activity3);
+ const unlocked=what=>{
+  if((master&&!connectBinding)||classActivityAccess.teacherFree)return true;
+  if(!connectBinding)return pedagogicalUnlock(what);
+  switch(classActivityAccess.unlockMode){
+   case 'stage1_only':return what==='stage1';
+   case 'through_2':return what==='stage1'||what==='stage2';
+   case 'all_open':return true;
+   case 'mastery_80':return pedagogicalUnlock(what);
+   default:return what==='stage1'; // A snapshot without a valid mode fails closed.
+  }
+ };
  // Master autorise les essais, mais leurs résultats n'avancent pas les déblocages des élèves.
  const recordStage=(key,correct,total)=>{
   if(!canRecord())return {grade:color(correct,total),count:passes(key)};
@@ -1628,11 +1638,11 @@ window.MATHAS_ITEMS = [
   $('moveLaunchBtn').classList.toggle('lockedCard',!unlocked('stage2'));
   $('moveLaunchBtn').setAttribute('aria-disabled',String(!unlocked('stage2')));
   $('moveLock').classList.toggle('hidden',unlocked('stage2'));
-  $('moveLock').textContent=connectBinding&&!classActivityAccess.teacherFree&&!classActivityAccess.activity2?'🔒 En attente de l’autorisation de ton professeur':'🔒 Activité 1 · '+passes('stage1')+'/2 réussites';
+  $('moveLock').textContent=connectBinding&&!classActivityAccess.teacherFree&&classActivityAccess.unlockMode==='stage1_only'?'🔒 Ton professeur a limité la classe à l’activité 1':'🔒 Activité 1 · '+passes('stage1')+'/2 réussites';
   $('convertLaunchCard').classList.toggle('lockedCard',!unlocked('stage3'));
   $('convertLock').classList.toggle('hidden',unlocked('stage3'));
-  $('convertLock').textContent=connectBinding&&!classActivityAccess.teacherFree&&!classActivityAccess.activity3?'🔒 En attente de l’autorisation de ton professeur':'🔒 Activité 2 · '+passes('stage2')+'/2 réussites';
-  $('recordLock').textContent=connectBinding&&!classActivityAccess.teacherFree&&!classActivityAccess.activity3?'🔒 En attente de l’autorisation de ton professeur':'🔒 Au moins 80 % en 1, 3 et 5 pages';
+  $('convertLock').textContent=connectBinding&&!classActivityAccess.teacherFree&&['stage1_only','through_2'].includes(classActivityAccess.unlockMode)?'🔒 En attente de l’ouverture de l’activité 3 par ton professeur':'🔒 Activité 2 · '+passes('stage2')+'/2 réussites';
+  $('recordLock').textContent=connectBinding&&!classActivityAccess.teacherFree&&['stage1_only','through_2'].includes(classActivityAccess.unlockMode)?'🔒 En attente de l’ouverture de l’activité 3 par ton professeur':'🔒 Au moins 80 % en 1, 3 et 5 pages';
   $('masterToggle').hidden=!!connectBinding&&!classActivityAccess.teacherFree;
   $('masterToggle').classList.toggle('hidden',!!connectBinding&&!classActivityAccess.teacherFree);
   $('masterToggle').classList.toggle('active',master);$('masterTools').classList.toggle('hidden',!master);
@@ -1649,7 +1659,7 @@ window.MATHAS_ITEMS = [
    const total={one:4,three:12,five:20}[m];
    const best=data.modeScores[m];
    const scoreText=Number.isInteger(best)?`${best}/${total}`:state==='green'?`${total}/${total}`:state==='orange'?'≥80 % (ancien score)':state==='red'?'<80 % (ancien score)':'';
-   const noteText=m==='sudden'?(data.suddenBest>0?`Meilleure série : ${data.suddenBest}`:''):(!open?`🔒 ${prev} · 80 %`:(scoreText||'Pas encore joué'));
+   const noteText=m==='sudden'?(data.suddenBest>0?`Meilleure série : ${data.suddenBest}`:''):(!open?(connectBinding&&classActivityAccess.unlockMode!=='mastery_80'?'🔒 En attente du professeur':`🔒 ${prev} · 80 %`):(scoreText||'Pas encore joué'));
    document.querySelectorAll(`[data-mode="${m}"]`).forEach(b=>{
      b.classList.toggle('lockedMode',!open);b.classList.remove('grade-red','grade-orange','grade-green');if(state)b.classList.add('grade-'+state);
      b.setAttribute('aria-disabled',String(!open));
@@ -1678,7 +1688,7 @@ window.MATHAS_ITEMS = [
  function applyServer(snapshot){
   if(!connectBinding||snapshot.studentId!==connectBinding.studentId||snapshot.authSubject!==connectBinding.authSubject)throw Error('connect_identity_changed');
   restoreNative(snapshot.state);
-  if(!snapshot.activityAccess||typeof snapshot.activityAccess.activity2!=='boolean'||typeof snapshot.activityAccess.activity3!=='boolean'||typeof snapshot.activityAccess.teacherFree!=='boolean')throw Error('invalid_activity_access');
+  if(!snapshot.activityAccess||typeof snapshot.activityAccess.activity2!=='boolean'||typeof snapshot.activityAccess.activity3!=='boolean'||typeof snapshot.activityAccess.teacherFree!=='boolean'||!['stage1_only','through_2','all_open','mastery_80'].includes(snapshot.activityAccess.unlockMode))throw Error('invalid_activity_access');
   classActivityAccess=snapshot.activityAccess;
   earnedTrophies=(snapshot.trophies||[]).filter(key=>trophyKeys.some(local=>'abaque:'+local===key)).map(key=>key.slice('abaque:'.length));
   save();render();
@@ -2599,5 +2609,5 @@ if(new URLSearchParams(location.search).get('connect')==='1'){
  document.documentElement.dataset.abaquePending='true';
  for(const element of document.body.children)if(element.tagName!=='SCRIPT')element.inert=true;
 }
-</script><script type="module" src="./connect/bootstrap.mjs?v=20261108-classic-two"></script>
+</script><script type="module" src="./connect/bootstrap.mjs?v=20261116-four-modes-v1"></script>
 <script type="module" src="./demo-controls.mjs"></script></body></html>

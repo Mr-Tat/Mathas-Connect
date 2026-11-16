@@ -26,7 +26,7 @@ export function createAbaqueHandler({auth,db,access='closed'}){
   let body;
   try{body=await readBody(request);}catch(error){return deny(error.message,error.message==='payload_too_large'?413:400);}
   if(!body||body.appKey!==APP_KEY||!uuid.test(body.classId)||
-   !['load','record','teacher-summary','teacher-reset','teacher-pilot-status','teacher-pilot-approve','teacher-activity-get','teacher-activity-set'].includes(body.action))return deny('invalid_request');
+   !['load','record','teacher-summary','teacher-reset','teacher-pilot-status','teacher-pilot-approve','teacher-activity-get','teacher-activity-set','teacher-mode-get','teacher-mode-set'].includes(body.action))return deny('invalid_request');
   if(access==='pilot'&&body.classId!==PILOT_CLASS)return deny('app_class_not_open',403);
   try{
    const verified=await auth.auth.getUser(token),user=verified.data?.user;
@@ -45,7 +45,13 @@ export function createAbaqueHandler({auth,db,access='closed'}){
      p_event:result.eventId,p_revision:body.revision,p_epoch:body.resetEpoch,p_result:result});
    }else{
     if(!teacher)return deny('professor_required',403);
-    if(body.action==='teacher-activity-get'||body.action==='teacher-activity-set'){
+    if(body.action==='teacher-mode-get'||body.action==='teacher-mode-set'){
+     if(body.action==='teacher-mode-get')routine='connect_abaque_class_mode_get_v1';
+     else{
+      if(!['stage1_only','through_2','all_open','mastery_80'].includes(body.mode))return deny('invalid_request');
+      routine='connect_abaque_class_mode_set_v1';args.p_mode=body.mode;
+     }
+    }else if(body.action==='teacher-activity-get'||body.action==='teacher-activity-set'){
      if(body.action==='teacher-activity-get')routine='connect_abaque_class_gates_get_v1';
      else{
       if(![2,3].includes(body.activity)||typeof body.allowed!=='boolean')return deny('invalid_request');
