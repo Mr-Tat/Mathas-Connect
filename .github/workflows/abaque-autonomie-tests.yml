@@ -1,0 +1,44 @@
+name: Abaque - points des aides et XP progressifs
+on:
+  pull_request:
+    paths:
+      - 'apps/GRAN-abaque-m-1/**'
+      - 'supabase/migrations/*abaque*'
+      - 'tests/abaque*'
+      - '.github/workflows/abaque-autonomie-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/GRAN-abaque-m-1/**'
+      - 'supabase/migrations/*abaque*'
+      - 'tests/abaque*'
+      - '.github/workflows/abaque-autonomie-tests.yml'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+      - name: Preuves V1/V2, XP75, records et déblocages
+        run: >
+          node --test
+          tests/abaque-autonomie-points-xp75.test.mjs
+          tests/abaque-record-pages-and-xp204.test.mjs
+          tests/abaque-sudden-pages-contract.test.mjs
+          tests/abaque-four-unlock-modes.test.mjs
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+      - run: npm install --no-save --no-package-lock playwright@1.57.0
+      - run: npx playwright install chromium --with-deps
+      - name: Conversion avec aides en mode classique et records
+        run: node --test --test-name-pattern="Abaque V2 : points des aides réellement affichés" tests/abaque-browser.browser.mjs
