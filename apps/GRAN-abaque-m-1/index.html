@@ -1533,7 +1533,7 @@ window.MATHAS_ITEMS = [
  let demoPreviewActive=false,demoPreviewBackup=null;
  const allowDemoPreview=isolatedDemo&&new URLSearchParams(location.search).get('connect')!=='1';
  const $=id=>document.getElementById(id);
- const blank=()=>({stage1:{passes:[],passScores:[],topScores:[],perfectRuns:0,failed:false,failedScore:null},stage2:{passes:[],passScores:[],topScores:[],perfectRuns:0,failed:false,failedScore:null},recordsByMode:{},modes:{one:null,three:null,five:null,sudden:null},modeScores:{one:null,three:null,five:null},modeDots:{one:null,three:null,five:null},suddenBest:0,scoreRecords:{dayDate:"",dayBest:0,dayMode:"",allBest:0,allMode:"",medals:[]}});
+ const blank=()=>({stage1:{passes:[],passScores:[],topScores:[],perfectRuns:0,failed:false,failedScore:null},stage2:{passes:[],passScores:[],topScores:[],perfectRuns:0,failed:false,failedScore:null},recordsByMode:{},modes:{one:null,three:null,five:null,sudden:null},modeScores:{one:null,three:null,five:null},modeDots:{one:null,three:null,five:null},cleanPerfect:{one:false,three:false,five:false},suddenBest:0,suddenCleanBest:0,scoreRecords:{dayDate:"",dayBest:0,dayMode:"",allBest:0,allMode:"",medals:[]}});
  const TROPHY_DEFINITIONS=[['bronze','launchBtn','Architecte de l’abaque'],['silver','moveLaunchBtn','Maître des déplacements'],['gold','convertLaunchCard','Expert des conversions'],['sudden-bronze','sudden-bronze','Mort subite · bronze'],['sudden-silver','sudden-silver','Mort subite · argent'],['sudden-gold','sudden-gold','Mort subite · or']];
  const trophyKeys=TROPHY_DEFINITIONS.map(([key])=>key);
  const SUDDEN_TROPHIES=[[3,'sudden-bronze'],[5,'sudden-silver'],[8,'sudden-gold']];
@@ -1576,6 +1576,8 @@ window.MATHAS_ITEMS = [
     }
    }
    data.suddenBest=Math.max(0,Math.floor(Number(saved.suddenBest)||0));
+   for(const m of ['one','three','five'])data.cleanPerfect[m]=saved.cleanPerfect?.[m]===true;
+   data.suddenCleanBest=Math.max(0,Math.min(data.suddenBest,Math.floor(Number(saved.suddenCleanBest)||0)));
    for(const m of ['one','three','five','sudden','lives']){const v=saved.recordsByMode?.[m];if(Number.isSafeInteger(v)&&v>=0)data.recordsByMode[m]=v;}
    if(saved.scoreRecords && typeof saved.scoreRecords==='object'){
      const r=saved.scoreRecords;
@@ -1594,8 +1596,7 @@ window.MATHAS_ITEMS = [
  earnedTrophies=earnedTrophies.filter(key=>(key!=='bronze'||data.stage1.perfectRuns>=2)&&(key!=='silver'||data.stage2.perfectRuns>=2));
  if(data.stage1.perfectRuns>=2)earnTrophy('bronze');
  if(data.stage2.perfectRuns>=2)earnTrophy('silver');
- if(['one','three','five'].every(mode=>data.modes[mode]==='green'))earnTrophy('gold');
- for(const [pages,key] of SUDDEN_TROPHIES)if(data.suddenBest>=pages)earnTrophy(key);
+ // Ne pas recalculer des coupes à partir des anciens scores sans preuve d'autonomie.
  try{master=sessionStorage.getItem(SESSION)==='1'}catch(e){}
  const save=()=>{if(demoPreviewActive)return;try{localStorage.setItem(STORAGE,JSON.stringify(data))}catch(e){}};
  const modeName={one:'1 page',three:'3 pages',five:'5 pages',sudden:'Mort subite',lives:'3 vies'};
@@ -1662,7 +1663,7 @@ window.MATHAS_ITEMS = [
   if(!connectBinding&&!demoPreviewActive)window.MATHAS_ABAQUE_HIGHLIGHT?.show({kind:key,previous,result:correct,total,newTrophies:earnedTrophies.length-beforeTrophies});
   return {grade,count:passes(key)};
  };
- const recordMode=(key,correct,total,dotDetails=null)=>{
+ const recordMode=(key,correct,total,dotDetails=null,clean=false)=>{
   // 75 % suffit dans l'activité 3 ; les activités 1/2 conservent 80 %.
   const grade=correct===total?'green':correct*4>=total*3?'orange':'red';
   if(!canRecord())return grade;
@@ -1678,12 +1679,13 @@ window.MATHAS_ITEMS = [
     data.modeDots[key]=dotDetails.slice();
    else data.modeDots[key]=null;
   }
-  if(['one','three','five'].every(m=>data.modes[m]==='green'))earnTrophy('gold');
+  if(clean&&correct===total)data.cleanPerfect[key]=true;
+  if(['one','three','five'].every(m=>data.cleanPerfect[m]))earnTrophy('gold');
   save();render();
   if(!connectBinding&&!demoPreviewActive)window.MATHAS_ABAQUE_HIGHLIGHT?.show({kind:key,previous:Number.isInteger(previous)?previous:0,result:correct,total,newTrophies:earnedTrophies.length-beforeTrophies});
   return grade;
  };
- const recordSudden=pages=>{if(!canRecord())return;const previous=data.suddenBest,beforeTrophies=earnedTrophies.length;data.suddenBest=Math.max(data.suddenBest,pages);data.modes.sudden=pages>0?'green':'red';for(const [threshold,key] of SUDDEN_TROPHIES)if(pages>=threshold)earnTrophy(key);save();render();if(!connectBinding&&!demoPreviewActive&&earnedTrophies.length>beforeTrophies)window.MATHAS_ABAQUE_HIGHLIGHT?.show({kind:'sudden',previous,result:pages,newTrophies:earnedTrophies.length-beforeTrophies})};
+ const recordSudden=(pages,clean=false)=>{if(!canRecord())return;const previous=data.suddenBest,beforeTrophies=earnedTrophies.length;data.suddenBest=Math.max(data.suddenBest,pages);data.modes.sudden=pages>0?'green':'red';if(clean)data.suddenCleanBest=Math.max(data.suddenCleanBest,pages);for(const [threshold,key] of SUDDEN_TROPHIES)if(data.suddenCleanBest>=threshold)earnTrophy(key);save();render();if(!connectBinding&&!demoPreviewActive&&earnedTrophies.length>beforeTrophies)window.MATHAS_ABAQUE_HIGHLIGHT?.show({kind:'sudden',previous,result:pages,newTrophies:earnedTrophies.length-beforeTrophies})};
  function dots(key){const target=$(key==='stage1'?'stage1Dots':'stage2Dots');target.replaceChildren();
   const total=key==='stage1'?12:8;
   const caption=document.createElement('span');caption.className='progressCaption';
@@ -1820,8 +1822,7 @@ window.MATHAS_ITEMS = [
    &&(key!=='silver'||data.stage2.perfectRuns>=2));
   if(data.stage1.perfectRuns>=2)earnTrophy('bronze');
   if(data.stage2.perfectRuns>=2)earnTrophy('silver');
-  if(['one','three','five'].every(mode=>data.modes[mode]==='green'))earnTrophy('gold');
-  for(const [pages,key] of SUDDEN_TROPHIES)if(data.suddenBest>=pages)earnTrophy(key);
+  // Les coupes déjà enregistrées restent acquises, aucune attribution rétroactive.
   if($('masterDialog').open)$('masterDialog').close();
   render();
  }
@@ -2169,7 +2170,7 @@ function renderLives(){
  box.querySelector('.heart-status').textContent=lives+' vies restantes';
 }
 $('homeBtn').addEventListener('click',()=>$('recordLives').classList.add('hidden'));
-let selectedMode=null, pageNumber=0, recordStep=0, totalPages=1, runCorrect=0, runQuestions=0, suddenStreak=0, runFinished=false, runScore=0, runDots=[];
+let selectedMode=null, pageNumber=0, recordStep=0, totalPages=1, runCorrect=0, runQuestions=0, suddenStreak=0, runFinished=false, runScore=0, runDots=[],runPaidHelp=false;
 const helpRestricted=()=>selectedMode==='sudden'&&suddenStreak>=3;
 const unitsRestricted=()=>selectedMode==='sudden'&&suddenStreak>=1;
 const calcPoints=ex=>{
@@ -2179,7 +2180,7 @@ const calcPoints=ex=>{
  if(ex.status!=='good')return 0;
  // Sans aide : 3 points ; manipulation : 2 ; unités affichées : 1.
  // Mort subite conserve le coefficient x2, 3 vies applique la grille classique.
- const helpPoints=ex.usedUnits?1:ex.usedManip?2:3;
+ const helpPoints=selectedMode==='one'?(ex.usedUnits?2:3):ex.usedUnits?1:ex.usedManip?2:3;
  return helpPoints*(selectedMode==='sudden'&&recordVariant==='sudden'?2:1);
 };
 function scoreView(message){
@@ -2296,6 +2297,8 @@ function choosePageTask(kind,usedPairs,usedSteps,usedDirections){
 function makeSeries(){
  const usedPairs=new Set(),usedSteps=new Set(),usedDirections=new Set();
  series=kindsForPage().map(kind=>choosePageTask(kind,usedPairs,usedSteps,usedDirections));
+ // En 1 page la manipulation est automatiquement ouverte sans coût.
+ if(selectedMode==='one')series.forEach(ex=>{ex.open=true;ex.usedManip=true;ex.help=makeHelp(ex);});
  activeIndex=0;recordStep=0;locked=false;correctionMode=false;
  $('t3Summary').textContent='';$('t3Progress').textContent='';$('t3Progress').classList.add('hidden');$('t3Verify').textContent=selectedMode==='sudden'?'✓ Valider cet exercice':'✓ Vérifier les 4 réponses';
  $('t3PageLabel').textContent=selectedMode==='sudden'?`${recordVariant==='lives'?'3 vies':'Mort subite'} · Page ${pageNumber+1} · Exercice 1/5`:`Page ${pageNumber+1} / ${totalPages}`;
@@ -2309,7 +2312,7 @@ function startMode(mode,variant="sudden"){
  $('homeScreen').classList.add('hidden');$('moveScreen').classList.add('hidden');$('gameScreen').classList.add('hidden');
  $('convertScreen').classList.remove('hidden');$('homeBtn').classList.remove('hidden');$('helpBtn').classList.add('hidden');
  window.MATHAS_ABAQUE_PROOF.start(mode==='sudden'?(variant==='lives'?'lives':'sudden'):mode);
- recordVariant=variant;lives=3;selectedMode=mode;totalPages={one:1,three:3,five:5,sudden:Infinity}[mode];pageNumber=0;runCorrect=0;runQuestions=0;suddenStreak=0;runFinished=false;runScore=0;runDots=[];
+ recordVariant=variant;lives=3;selectedMode=mode;totalPages={one:1,three:3,five:5,sudden:Infinity}[mode];pageNumber=0;runCorrect=0;runQuestions=0;suddenStreak=0;runFinished=false;runScore=0;runDots=[];runPaidHelp=false;
  $('t3Layout').classList.remove('hidden');$('t3SessionHead').classList.remove('hidden');
  makeSeries();renderLives();window.scrollTo({top:0,behavior:'smooth'});
 }
