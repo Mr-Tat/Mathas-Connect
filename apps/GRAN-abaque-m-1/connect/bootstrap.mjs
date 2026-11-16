@@ -21,7 +21,7 @@ function validSnapshot(value,subject,pupil=null){
  return value?.ok===true&&value.status==='approved'&&value.ruleset===1&&value.appKey===APP_KEY&&value.classId===CLASS&&value.authSubject===subject&&
   uuid.test(value.studentId)&&(!pupil||value.studentId===pupil)&&integer(value.revision)&&integer(value.resetEpoch)&&
   value.state&&typeof value.state==='object'&&!Array.isArray(value.state)&&Array.isArray(value.trophies)&&
-  value.activityAccess&&typeof value.activityAccess.activity2==='boolean'&&typeof value.activityAccess.activity3==='boolean'&&typeof value.activityAccess.teacherFree==='boolean'&&
+  value.activityAccess&&typeof value.activityAccess.activity2==='boolean'&&typeof value.activityAccess.activity3==='boolean'&&typeof value.activityAccess.teacherFree==='boolean'&&['stage1_only','through_2','all_open','mastery_80'].includes(value.activityAccess.unlockMode)&&
   value.xp?.max===204&&integer(value.xp.appXp)&&value.xp.appXp<=204&&integer(value.xp.total)&&
   Object.entries(caps).every(([kind,cap])=>integer(value.xp.remaining?.[kind])&&value.xp.remaining[kind]<=cap);
 }
