@@ -1386,7 +1386,7 @@ html[data-abaque-pending]:not([data-abaque-connected]) body::after{
 }
 @media(min-width:1341px){
  #convertScreen .t3ManipRow{
-  grid-template-columns:minmax(370px,1fr) minmax(245px,280px) 128px!important;
+  grid-template-columns:minmax(340px,1fr) clamp(262px,19vw,280px) 120px!important;
   column-gap:8px!important;justify-content:start!important;
  }
  #convertScreen .t3ManipRow .t3BoardScroll{
@@ -1399,7 +1399,7 @@ html[data-abaque-pending]:not([data-abaque-connected]) body::after{
 }
 @media(min-width:761px) and (max-width:1340px){
  #convertScreen .t3ManipRow{
-  grid-template-columns:minmax(320px,1fr) minmax(220px,275px) minmax(108px,128px)!important;
+  grid-template-columns:minmax(320px,1fr) clamp(235px,22vw,275px) minmax(108px,128px)!important;
   column-gap:8px!important;
  }
  #convertScreen .t3ManipRow .t3BoardScroll{
