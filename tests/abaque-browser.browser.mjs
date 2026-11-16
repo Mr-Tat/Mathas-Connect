@@ -974,6 +974,10 @@ test('Abaque V3 : confirmation virgule payante puis abaque, et coupes 100 % sans
   assert.equal(await page.locator('#trophy-sudden-bronze').getAttribute('data-earned'),'false');
   await page.evaluate(()=>window.MATHAS_PROGRESS.recordSudden(15,true));
   assert.equal(await page.locator('#trophy-sudden-bronze').getAttribute('data-earned'),'true');
+  await page.locator('[data-variant="sudden"]').click();
+  await page.locator('.t3Ex').first().locator('.t3Open').click();
+  assert.match(await page.locator('.t3Ex').first().locator('.t3HelpConfirm').textContent(),/2 points de moins/,'Mort subite conserve son coefficient x2');
+  await page.locator('.t3Ex').first().locator('.t3ConfirmCancel').click();
   assert.deepEqual(h.errors,[]);
   assert.deepEqual(h.external,[]);
  }finally{await h.close();}
