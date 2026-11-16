@@ -21,7 +21,7 @@ export function createAbaqueProjectionShare({classId,base,key,appKey,token,ident
  @media(prefers-reduced-motion:reduce){#abaque-projection-consent::backdrop{backdrop-filter:none}}`;
  document.head.append(css);
  const dialog=document.createElement('dialog');dialog.id='abaque-projection-consent';
- const title=document.createElement('h2');title.textContent='📺 Envoyer ton score au tableau ?';
+ const title=document.createElement('h2');title.textContent='📺 Envoyer ton score au tableau ?';title.tabIndex=-1;
  const intro=document.createElement('p');
  const actions=document.createElement('div');actions.className='abaque-share-choices';
  const yes=document.createElement('button');yes.id='abaque-share-yes';yes.type='button';yes.textContent='Oui';
@@ -87,7 +87,7 @@ export function createAbaqueProjectionShare({classId,base,key,appKey,token,ident
    offered={eventId:event.eventId};
    intro.textContent=result.points+' points · C’est toi qui décides de partager ce score avec ta classe.';
    queueMicrotask(()=>{if(offered?.eventId===event.eventId&&!dialog.open
-     &&!document.documentElement.dataset.abaqueBlocked)dialog.showModal();});
+     &&!document.documentElement.dataset.abaqueBlocked){dialog.showModal();title.focus({preventScroll:true});}});
   },
   ack(event){
    if(uuid.test(event?.eventId)){
