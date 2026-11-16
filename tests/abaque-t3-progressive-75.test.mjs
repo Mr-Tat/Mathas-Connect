@@ -9,9 +9,10 @@ const migration=read('supabase/migrations/20261116190500_abaque_t3_internal_75_p
 test('Le professeur ouvre l’activité 3, les scores internes à 75 % restent nécessaires',()=>{
  assert.match(html,/case 'all_open':teacherAllows=true/);
  assert.match(html,/return teacherAllows&&\(!\['one','three','five','sudden','lives'\]\.includes\(what\)\|\|progressiveUnlocked\(what\)\)/);
- for(const [kind,mode,total] of [['three','one',4],['five','three',12],['sudden','five',20]]){
+ for(const [kind,mode,total] of [['three','one',4],['five','three',12]]){
   assert.match(html,new RegExp("has75\\('"+mode+"',"+total+"\\)"),kind);
  }
+ assert.match(html,/\[\['one',4\],\['three',12\],\['five',20\]\]\.every\(/);
  assert.match(html,/best\*4>=total\*3/);
  assert.match(html,/\['sudden','lives'\]\.includes\(what\)/);
  assert.match(html,/what==='stage2'&&passes\('stage1'\)>=2/);
