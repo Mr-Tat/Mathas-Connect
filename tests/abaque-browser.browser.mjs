@@ -926,7 +926,9 @@ test('Abaque V3 : virgule gratuite 1 page, abaque à droite confirmé et dispari
   assert.equal(await first.locator('.t3Abacus:not(.hidden)').count(),1);
   assert.equal(await btn.isVisible(),false,'l’abaque remplace le bouton à droite des cases');
   assert.equal(await first.locator('.t3UnitLabels .t3UnitLabel').count(),7);
-  await first.locator('.t3Correspondences path').first().waitFor({state:'attached'});
+  assert.equal(await first.locator('.t3Correspondences').count(),0,'les grandes flèches de correspondance sont masquées');
+  assert.equal(await first.locator('.t3Board > .t3Movement').count(),1,'les petits arcs sont au-dessus des chiffres');
+  assert.equal(await first.locator('.t3Abacus .t3Movement').count(),0,'l’abaque ne contient plus les arcs mobiles');
   await inputConversion(page);
   assert.equal(await page.locator('#t3ScoreNow').textContent(),'11 points','3 + 3 + 3 + 2 avec une aide abaque');
   assert.equal(await all.locator('.t3Assistance:not(.hidden)').count(),0,'les aides disparaissent après validation');
@@ -978,6 +980,48 @@ test('Abaque V3 : confirmation virgule payante puis abaque, et coupes 100 % sans
   await page.locator('.t3Ex').first().locator('.t3Open').click();
   assert.match(await page.locator('.t3Ex').first().locator('.t3HelpConfirm').textContent(),/2 points de moins/,'Mort subite conserve son coefficient x2');
   await page.locator('.t3Ex').first().locator('.t3ConfirmCancel').click();
+  assert.deepEqual(h.errors,[]);
+  assert.deepEqual(h.external,[]);
+ }finally{await h.close();}
+});
+
+test('Abaque : arcs au-dessus des cases sans abaque et abaque statique, grandes flèches conservées mais masquées',async()=>{
+ const h=await setup(),{page}=h;
+ try{
+  await page.goto(h.url);await fixture(page);
+  await page.locator('[data-mode="one"]').click();
+  const ex=page.locator('.t3Ex').first();
+  const arcs=ex.locator('.t3Board > .t3Movement');
+  assert.equal(await arcs.count(),1);
+  assert.equal(await ex.locator('.t3Abacus:not(.hidden)').count(),0,'pas d’abaque automatique');
+  assert.equal(await ex.locator('.t3Correspondences').count(),0,'pas de grandes correspondances');
+  const comma=ex.locator('.t3Comma');
+  const at=Number(await comma.getAttribute('aria-valuenow'));
+  await comma.focus();
+  await page.keyboard.press(at>0?'ArrowLeft':'ArrowRight');
+  assert.equal(await arcs.locator('svg path[d^="M "]').count(),1,'un déplacement produit un arc');
+  const placement=await ex.evaluate(node=>{
+   const board=node.querySelector('.t3Board');
+   const movement=board.querySelector(':scope > .t3Movement');
+   const digits=board.querySelector('.t3Digits');
+   const r=movement.getBoundingClientRect(),d=digits.getBoundingClientRect();
+   return {above:r.bottom<=d.top+2,visible:r.width>200&&r.height>=30,svg:movement.querySelector('svg')!==null};
+  });
+  assert.deepEqual(placement,{above:true,visible:true,svg:true},'les petites flèches sont réellement au-dessus des cases');
+
+  await ex.locator('.t3UnitsBtn').click();
+  await ex.locator('.t3ConfirmOk').click();
+  assert.equal(await ex.locator('.t3Abacus:not(.hidden)').count(),1);
+  assert.equal(await ex.locator('.t3Abacus .t3Movement').count(),0,'aucun mouvement dans l’abaque');
+  assert.equal(await ex.locator('.t3Correspondences').count(),0,'même après affichage, aucune grande flèche');
+  const labels=ex.locator('.t3Abacus .t3UnitLabel');
+  assert.equal(await labels.count(),7,'sept unités fixes');
+  const before=await labels.evaluateAll(ns=>ns.map(n=>[n.textContent,n.className,n.getBoundingClientRect().x]));
+  await ex.locator('.t3Comma').focus();
+  await page.keyboard.press(at>0?'ArrowLeft':'ArrowRight');
+  const after=await labels.evaluateAll(ns=>ns.map(n=>[n.textContent,n.className,n.getBoundingClientRect().x]));
+  assert.deepEqual(after,before,'l’abaque ne change ni de place ni de surlignage');
+  assert.equal(await arcs.locator('svg path[d^="M "]').count(),2,'les arcs continuent de suivre la virgule');
   assert.deepEqual(h.errors,[]);
   assert.deepEqual(h.external,[]);
  }finally{await h.close();}

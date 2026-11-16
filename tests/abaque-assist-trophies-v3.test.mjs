@@ -82,3 +82,16 @@ test('Les scripts intégrés à la page sont syntaxiquement valides avant public
  assert.ok(scripts.length>=2);
  for(const [index,script] of scripts.entries())assert.doesNotThrow(()=>new Function(script),'script '+index);
 });
+
+test('Les arcs sont liés à la virgule, les unités de l’abaque restent fixes et les grandes flèches peuvent être réactivées',()=>{
+ const h=r('apps/GRAN-abaque-m-1/index.html');
+ assert.match(h,/t3Board"><div class="t3Movement" aria-hidden="true"><\/div><div class="t3Digits"/);
+ assert.match(h,/t3Abacus hidden" aria-label="Abaque métrique fixe"><div class="t3UnitLabels hidden"><\/div><\/div>/);
+ assert.match(h,/const SHOW_ABACUS_CORRESPONDENCE_ARROWS=false;/);
+ assert.match(h,/function drawUnitCorrespondences\(article\)/);
+ assert.match(h,/if\(!SHOW_ABACUS_CORRESPONDENCE_ARROWS\)/);
+ assert.match(h,/if\(!SHOW_ABACUS_CORRESPONDENCE_ARROWS\)return;/);
+ assert.match(h,/\.t3Board \.t3Movement\{/);
+ assert.doesNotMatch(h,/\.t3Abacus \.t3Movement\{/);
+ assert.doesNotMatch(h,/if\(ex\.units\)\[\.\.\.headers\.children\]\.forEach/);
+});
