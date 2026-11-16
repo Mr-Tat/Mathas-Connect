@@ -888,3 +888,84 @@ test('Abaque : prof all_open ouvre activité 3, mais 3/4 puis 9/12 puis 15/20 re
   assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });
+
+test('Abaque V3 : virgule gratuite 1 page, abaque à droite confirmé et disparition à la validation',async()=>{
+ const h=await setup(),{page}=h;
+ try{
+  await page.goto(h.url);await fixture(page);
+  await page.locator('[data-mode="one"]').click();
+  const all=page.locator('.t3Ex');
+  assert.equal(await all.count(),4);
+  assert.equal(await all.locator('.t3Assistance:not(.hidden)').count(),4,'virgule automatique sur chaque conversion');
+  const first=all.first();
+  assert.equal(await first.locator('.t3Open').textContent(),'✓ Virgule gratuite');
+  assert.equal(await first.locator('.t3HelpConfirm:not(.hidden)').count(),0,'aucune confirmation pour la virgule gratuite');
+  assert.equal(await first.locator('.t3FromUnit').evaluate(el=>getComputedStyle(el).textDecorationLine.includes('underline')),true);
+  assert.equal(await first.locator('.t3Abacus:not(.hidden)').count(),0);
+  assert.equal(await first.locator('.t3Correspondences').count(),0,'sans abaque, aucune flèche ne relie les unités');
+  const btn=first.locator('.t3UnitsBtn');
+  assert.match(await btn.textContent(),/Afficher l’abaque/);
+  await btn.click();
+  const dialog=first.locator('.t3HelpConfirm');
+  assert.equal(await dialog.isVisible(),true);
+  assert.match(await dialog.textContent(),/1 point de moins/);
+  await dialog.locator('.t3ConfirmCancel').click();
+  assert.equal(await dialog.isVisible(),false);
+  assert.equal(await first.locator('.t3Abacus:not(.hidden)').count(),0);
+  await btn.click();
+  await dialog.locator('.t3ConfirmOk').click();
+  assert.equal(await first.locator('.t3Abacus:not(.hidden)').count(),1);
+  assert.equal(await btn.isVisible(),false,'l’abaque remplace le bouton à droite des cases');
+  assert.equal(await first.locator('.t3UnitLabels .t3UnitLabel').count(),7);
+  await first.locator('.t3Correspondences path').first().waitFor({state:'attached'});
+  await inputConversion(page);
+  assert.equal(await page.locator('#t3ScoreNow').textContent(),'11 points','3 + 3 + 3 + 2 avec une aide abaque');
+  assert.equal(await all.locator('.t3Assistance:not(.hidden)').count(),0,'les aides disparaissent après validation');
+  assert.equal(await all.locator('.unitPromptActive').count(),0);
+  assert.equal(await all.locator('.t3HelpControls:visible').count(),0);
+  assert.deepEqual(h.errors,[]);
+  assert.deepEqual(h.external,[]);
+ }finally{await h.close();}
+});
+
+test('Abaque V3 : confirmation virgule payante puis abaque, et coupes 100 % sans aide',async()=>{
+ const h=await setup(),{page}=h;
+ try{
+  await page.goto(h.url);await fixture(page);
+  await page.locator('[data-mode="three"]').click();
+  const first=page.locator('.t3Ex').first();
+  assert.equal(await first.locator('.t3Assistance:not(.hidden)').count(),0);
+  await first.locator('.t3Open').click();
+  assert.match(await first.locator('.t3HelpConfirm').textContent(),/1 point de moins/);
+  await first.locator('.t3ConfirmCancel').click();
+  assert.equal(await first.locator('.t3Assistance:not(.hidden)').count(),0);
+  await first.locator('.t3Open').click();
+  await first.locator('.t3ConfirmOk').click();
+  assert.equal(await first.locator('.t3Assistance:not(.hidden)').count(),1);
+  assert.equal(await first.locator('.t3Abacus:not(.hidden)').count(),0);
+  assert.equal(await first.locator('.t3Correspondences').count(),0);
+  await first.locator('.t3UnitsBtn').click();
+  await first.locator('.t3ConfirmOk').click();
+  assert.equal(await first.locator('.t3Abacus:not(.hidden)').count(),1);
+  await inputConversion(page);
+  assert.equal(await page.locator('#t3ScoreNow').textContent(),'10 points','3 + 3 + 3 + 1');
+  await modal(page,'Accueil');
+
+  // Un parfait avec aide n'apporte pas de coupe, même si les XP restent possibles.
+  await page.evaluate(()=>{
+    const progress=window.MATHAS_PROGRESS;
+    progress.recordMode('one',4,4,Array(4).fill('blue'),true);
+    progress.recordMode('three',12,12,Array(12).fill('green'),true);
+    progress.recordMode('five',20,20,Array(20).fill('purple'),false);
+  });
+  assert.equal(await page.locator('#trophy-convertLaunchCard').getAttribute('data-earned'),'false');
+  await page.evaluate(()=>window.MATHAS_PROGRESS.recordMode('five',20,20,Array(20).fill('green'),true));
+  assert.equal(await page.locator('#trophy-convertLaunchCard').getAttribute('data-earned'),'true');
+  await page.evaluate(()=>window.MATHAS_PROGRESS.recordSudden(3,false));
+  assert.equal(await page.locator('#trophy-sudden-bronze').getAttribute('data-earned'),'false');
+  await page.evaluate(()=>window.MATHAS_PROGRESS.recordSudden(3,true));
+  assert.equal(await page.locator('#trophy-sudden-bronze').getAttribute('data-earned'),'true');
+  assert.deepEqual(h.errors,[]);
+  assert.deepEqual(h.external,[]);
+ }finally{await h.close();}
+});
