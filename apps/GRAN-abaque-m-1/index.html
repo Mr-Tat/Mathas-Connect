@@ -1322,7 +1322,7 @@ html[data-abaque-pending]:not([data-abaque-connected]) body::after{
  padding:6px 6px!important;white-space:normal;
 }
 #convertScreen .t3Abacus{
- width:100%;min-height:87px;padding:10px 3px 4px;
+ width:100%;min-height:57px;padding:10px 3px 4px;
  background:#eff7f4;border:1px solid #b8d4cf;border-radius:11px;
  display:flex;flex-direction:column;justify-content:center;gap:4px;
 }
@@ -1333,8 +1333,12 @@ html[data-abaque-pending]:not([data-abaque-connected]) body::after{
 #convertScreen .t3Abacus .t3UnitLabel{
  min-width:0;height:31px;padding:7px 0;font-size:.59rem;letter-spacing:-.03em;
 }
-#convertScreen .t3Abacus .t3Movement,
-#convertScreen .t3Abacus .t3Movement svg{width:100%!important;height:37px!important}
+/* Arcs restaurés au-dessus des cases, même sans abaque. */
+#convertScreen .t3Board .t3Movement{
+ width:calc(7 * var(--cell));height:35px!important;flex-shrink:0;
+}
+#convertScreen .t3Board .t3Movement svg{display:block;width:100%;height:35px!important}
+#convertScreen .t3Ex.unitsGuideActive .t3ManipRow .t3BoardScroll{padding-top:0!important}
 #convertScreen .t3ManipRow .t3BoardSide{
  grid-area:auto!important;grid-column:3!important;
  display:flex!important;flex-direction:column!important;align-items:center!important;
@@ -2435,7 +2439,7 @@ function renderAll(){
   article.innerHTML=`<div class="t3Prompt"><div class="t3Heading"><span class="t3Num">${i+1}</span><div class="t3Expression"><span>${nice(ex.source)} <span class="t3FromUnit">${ex.from}</span> =</span><input class="t3Answer" type="text" inputmode="none" readonly autocomplete="off" spellcheck="false" aria-label="Réponse de la conversion ${i+1} ; pavé numérique de Math’as ou clavier physique" maxlength="13"><span class="t3ToUnit">${ex.to}</span></div></div>
    <div class="t3Controls"><div class="t3HelpControls"><button class="btn t3HelpBtn t3Open" type="button" aria-expanded="false">▦ Manipuler la virgule</button><div class="t3HelpConfirm hidden" role="dialog" aria-label="Confirmation de l’aide"><p>Utiliser cette aide ? Cette réponse rapportera 1 point de moins.</p><div><button class="btn t3ConfirmCancel" type="button">Annuler</button><button class="btn t3ConfirmOk" type="button">OK</button></div></div></div><div class="t3Status" role="status"></div></div></div>
    <div class="t3Assistance hidden" aria-label="Manipulation de la virgule">
-   <div class="t3ManipRow"><div class="t3BoardScroll"><div class="t3Board"><div class="t3Digits"></div><div class="t3Commas"></div></div></div><div class="t3AbacusZone"><button class="btn t3UnitsBtn" type="button" aria-pressed="false">▤ Afficher l’abaque</button><div class="t3Abacus hidden" aria-label="Abaque métrique et flèches des unités"><div class="t3UnitLabels hidden"></div><div class="t3Movement" aria-hidden="true"></div></div></div><div class="t3BoardSide"><div class="t3Direction" role="status" aria-live="polite"></div><div class="t3BoardActions"><button type="button" class="btn t3ResetHelp" aria-label="Recommencer la manipulation">↺ Recommencer</button></div></div></div></div>`;
+   <div class="t3ManipRow"><div class="t3BoardScroll"><div class="t3Board"><div class="t3Movement" aria-hidden="true"></div><div class="t3Digits"></div><div class="t3Commas"></div></div></div><div class="t3AbacusZone"><button class="btn t3UnitsBtn" type="button" aria-pressed="false">▤ Afficher l’abaque</button><div class="t3Abacus hidden" aria-label="Abaque métrique fixe"><div class="t3UnitLabels hidden"></div></div></div><div class="t3BoardSide"><div class="t3Direction" role="status" aria-live="polite"></div><div class="t3BoardActions"><button type="button" class="btn t3ResetHelp" aria-label="Recommencer la manipulation">↺ Recommencer</button></div></div></div></div>`;
   const input=article.querySelector('input');
   input.value=ex.answer;
   input.addEventListener('focus',()=>{if(!input.disabled)setActive(i)});
@@ -2498,7 +2502,15 @@ function setActive(i){
 function nextAnswer(){if(locked)return;const available=series.map((ex,i)=>(selectedMode!=='sudden'||i===recordStep)&&['pending','retry'].includes(ex.status)?i:-1).filter(i=>i>=0);if(!available.length)return;let next=available.find(i=>i>activeIndex);if(next===undefined)next=available.find(i=>!series[i].answer)??available[0];setActive(next);$('t3ExList').children[next].querySelector('input').focus()}
 /* Associe chaque unité de l'énoncé à la même unité dans l'abaque,
    sans dessiner de déplacement ni révéler la direction à suivre. */
+// Grandes flèches ENONCE -> ABAQUE conservées, mais désactivées par défaut.
+ // La géométrie ci-dessous peut être réactivée en passant ce drapeau à true.
+ // Les petits arcs de déplacement dans la grille restent indépendants.
+ const SHOW_ABACUS_CORRESPONDENCE_ARROWS=false;
 function drawUnitCorrespondences(article){
+ if(!SHOW_ABACUS_CORRESPONDENCE_ARROWS){
+  article.querySelector(':scope > .t3Correspondences')?.remove();
+  return;
+ }
  let overlay=article.querySelector(':scope > .t3Correspondences');
  if(!article.classList.contains('unitsGuideActive')){overlay?.remove();return}
  const pairs=[
@@ -2602,6 +2614,7 @@ function refreshUnitCorrespondences(){
 }
 let t3LinkRedrawPending=false;
 function scheduleUnitCorrespondences(){
+ if(!SHOW_ABACUS_CORRESPONDENCE_ARROWS)return;
  if(t3LinkRedrawPending)return;
  t3LinkRedrawPending=true;
  requestAnimationFrame(()=>{t3LinkRedrawPending=false;refreshUnitCorrespondences()});
@@ -2671,7 +2684,7 @@ function renderBoard(i){
     comma.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();state.comma=e.key==='ArrowLeft'?Math.max(0,state.comma-1):e.key==='ArrowRight'?Math.min(6,state.comma+1):e.key==='Home'?0:6;visual();const focus=commas.querySelector('.t3Comma');focus?.focus()}});
     slot.appendChild(comma)}
   });
-  if(ex.units)[...headers.children].forEach((label,k)=>label.classList.toggle('activeUnit',k===state.comma));
+  // L'abaque ne réagit pas à la virgule ; ses unités restent fixes.
   updateMovement();
  };
  visual();
