@@ -2116,7 +2116,7 @@ function renderOne(i){
  const box=refs[i];if(!box)return;const n=states[i];box.dataset.dir=n<0?'left':n>0?'right':'none';box.classList.toggle('helpUsed',moveHelpUsed);
  box.style.setProperty('--shade',color(n));
  const rail=box.querySelector('.moveRail');rail.innerHTML=svg(i);
- const factor=String(10**Math.abs(n)).replace(/\\B(?=(\\d{3})+(?!\\d))/g,' ');
+ const factor=String(10**Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
   const operation=n>0?'×':'÷';
   box.querySelector('.moveResult').toggleAttribute('data-moved',n!==0);
   box.querySelector('.moveResult').innerHTML=n===0?'?':`<div class="moveLine"><div class="moveLineTop"><span class="moveOperation" aria-label="${n>0?'Multiplier par':'Diviser par'} ${factor}">${operation} ${factor}</span><strong>${Math.abs(n)}</strong><span>déplacement${Math.abs(n)>1?'s':''}</span></div><div class="moveLineBottom">vers la <span class="moveWord">${n<0?'gauche':'droite'}</span></div></div>`;
