@@ -678,3 +678,43 @@ test('Abaque activité 3 : pastilles du premier essai vert, bleu, mauve, rouge e
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });
+
+test('Abaque Connect démarre même si le module facultatif du tableau ne se charge pas',async()=>{
+ const cls='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
+ const subject='00000000-0000-4000-8000-000000000121',pupil='00000000-0000-4000-8000-000000000122';
+ const snapshot={ok:true,status:'approved',ruleset:1,appKey:'abaque-longueurs',classId:cls,
+  authSubject:subject,studentId:pupil,revision:0,resetEpoch:0,displayName:'Eleve test',
+  state:{},trophies:[],activityAccess:{activity2:true,activity3:true,teacherFree:false,unlockMode:'all_open'},
+  xp:{max:204,appXp:0,total:0,remaining:{build:20,moves:20,one:20,three:32,five:40,lives:72,sudden:72}}};
+ const mockSdk=`export function createClient(){return {auth:{
+  getSession:async()=>({data:{session:{access_token:'fake-token',user:{id:'${subject}'}}}}),
+  onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})
+ }}}`;
+ const h=await setup(async route=>{
+  const url=route.request().url();
+  if(url.startsWith('https://esm.sh/@supabase/supabase-js@2.95.0')){
+   await route.fulfill({status:200,contentType:'text/javascript',body:mockSdk});return true;
+  }
+  if(url.includes('/functions/v1/connect-abaque')){
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(snapshot)});return true;
+  }
+  if(url.includes('/functions/v1/connect-api')){
+   await route.fulfill({status:404,contentType:'application/json',body:'{"ok":false}'});return true;
+  }
+  return false;
+ });
+ try{
+  const {page}=h;
+  // Reproduit un fichier de projection filtré par le réseau de l'école.
+  await page.route('**/apps/GRAN-abaque-m-1/connect/projection-share.mjs*',route=>route.abort('failed'));
+  await page.goto(h.url+'?connect=1&class='+cls);
+  await page.waitForFunction(()=>document.documentElement.dataset.abaqueConnected==='true');
+  await page.locator('#launchBtn').waitFor({state:'visible'});
+  assert.equal(await page.evaluate(()=>document.documentElement.dataset.abaquePending),undefined);
+  assert.equal(await page.locator('#homeScreen').isVisible(),true);
+  assert.equal(await page.locator('#launchBtn').evaluate(x=>x.inert),false);
+  assert.equal(await page.locator('#homeConnectName').textContent(),'Eleve test');
+  assert.equal(await page.evaluate(()=>document.documentElement.dataset.abaqueProjectionUnavailable),'true');
+  assert.deepEqual(h.errors,[]);
+ }finally{await h.close();}
+});
