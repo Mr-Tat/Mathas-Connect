@@ -437,6 +437,15 @@
  #convertScreen .t3KeyGrid button{min-height:34px;padding:0;font-size:1.04rem;border-radius:7px}
  #convertScreen .t3KeyGrid .t3NextKey{min-height:32px;font-size:.78rem}
 }
+/* Laisser la place au pavé fixé à droite sans masquer les scores ni la progression. */
+@media(min-width:781px){
+ #convertScreen .t3Top,
+ #convertScreen .t3SessionHead{padding-right:248px}
+}
+@media(min-width:781px) and (max-width:860px){
+ #convertScreen .t3Top,
+ #convertScreen .t3SessionHead{padding-right:218px}
+}
 @media(max-width:780px) and (max-height:540px){
  #convertScreen .t3KeyGrid{grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}
  #convertScreen .t3KeyGrid .t3NextKey{grid-column:span 3}
@@ -470,6 +479,13 @@
 #convertScreen .t3BoardSide{display:flex!important;grid-area:auto!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;gap:7px!important;min-width:132px;min-height:118px}
 #convertScreen .t3Direction{display:flex!important;align-items:center!important;justify-content:center!important;width:132px;min-height:56px!important;max-height:70px;line-height:1.2;font-size:.93rem!important;text-align:center!important;margin:0!important;padding:0!important;white-space:normal}
 #convertScreen .t3Direction .t3Count{font-size:1.24rem!important}
+/* L'opération suit la couleur de la flèche et précède le décompte. */
+#convertScreen .t3Direction{flex-direction:column!important}
+#convertScreen .t3Direction .t3Operation{
+ display:block;color:var(--dir-color,#895bc7);font-weight:950;
+ font-size:1.23rem;line-height:1.05;white-space:nowrap;margin-bottom:4px;
+}
+@media(max-width:860px){#convertScreen .t3Direction .t3Operation{font-size:1.08rem}}
 #convertScreen .t3BoardActions{grid-area:auto!important;justify-self:stretch;align-self:center;width:132px;display:flex!important;justify-content:center!important}
 #convertScreen .t3ResetHelp{min-height:32px!important;padding:5px 7px;font-size:.75rem!important;white-space:nowrap;line-height:1.1}
 #convertScreen .t3Movement{height:35px!important}
@@ -2413,7 +2429,8 @@ function renderBoard(i){
    paths+=`<path d="M ${start} 34 Q ${mid} ${6-Math.min(step,3)*2} ${end} 34" fill="none" stroke="${paint}" stroke-width="3.5" stroke-linecap="round" marker-end="url(#arrowT3${i})"/>`;
   }
   movement.innerHTML=`<svg viewBox="0 0 357 40" aria-hidden="true" preserveAspectRatio="none"><defs><marker id="arrowT3${i}" markerWidth="4.8" markerHeight="4.8" refX="3.1" refY="2" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L3.7,2 L0,4 Z" fill="${shade}"/></marker></defs>${paths}</svg>`;
-  direction.innerHTML=`<span><span class="t3Color t3Count">${count}</span> déplacement${count>1?'s':''} vers la <span class="t3Color">${left?'gauche':'droite'}</span></span>`;
+  const power=String(10**count).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+  direction.innerHTML=`<span class="t3Operation">${left?'÷':'×'} ${power}</span><span><span class="t3Color t3Count">${count}</span> déplacement${count>1?'s':''} vers la <span class="t3Color">${left?'gauche':'droite'}</span></span>`;
   direction.style.setProperty('--dir-color',shade);
  };
  const commas=article.querySelector('.t3Commas');commas.replaceChildren();
