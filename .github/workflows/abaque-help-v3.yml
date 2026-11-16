@@ -38,4 +38,4 @@ jobs:
       - run: npx playwright install chromium --with-deps
       - name: Jouer 1 et 3 pages avec et sans aide, vérifier les coupes
         run: |
-          node --test --test-name-pattern="Abaque V3 :" tests/abaque-browser.browser.mjs
+          node --test --test-name-pattern="Abaque V3 :|Abaque : opération de conversion et indicateurs hors du pavé fixe" tests/abaque-browser.browser.mjs
