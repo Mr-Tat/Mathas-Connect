@@ -107,7 +107,7 @@ test('Activité 2 : multiplier ou diviser par dix fois chaque déplacement, sans
 });
 test('Abaque : les cases migrent à gauche, les unités à droite ont une largeur accrue',()=>{
  const h=r('apps/GRAN-abaque-m-1/index.html');
- assert.match(h,/grid-template-columns:minmax\(370px,1fr\) minmax\(245px,280px\) 128px/);
+ assert.match(h,/grid-template-columns:minmax\(340px,1fr\) clamp\(262px,19vw,280px\) 120px/);
  assert.match(h,/\.t3BoardScroll \.t3Board\{\s*margin-left:0!important;margin-right:0!important/);
  assert.match(h,/\.t3AbacusZone\{\s*width:100%!important;max-width:280px!important/);
  assert.match(h,/\.t3Abacus \.t3UnitLabel\{\s*height:42px!important;font-size:\.8rem!important/);
