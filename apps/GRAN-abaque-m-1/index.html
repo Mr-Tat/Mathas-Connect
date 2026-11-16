@@ -2620,13 +2620,14 @@ function finishRecordAnswer(){
  const good=Number(ex.answer)===ex.result;
  ex.status=good?'good':'badFinal';
  ex.earnedPoints=good?calcPoints(ex):0;
+ ex.open=false;ex.units=false;ex.helpValidated=true;
  window.MATHAS_ABAQUE_PROOF.page([ex]);
  runCorrect+=Number(good);
  runQuestions++;
  if(good){
   suddenStreak++;
   runScore+=ex.earnedPoints;
-  if(recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak);
+  if(recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak,!runPaidHelp);
  }else lives=recordVariant==='lives'?lives-1:0;
  runFinished=lives===0;
  renderLives();
@@ -2643,7 +2644,7 @@ function finishRecordAnswer(){
  if(runFinished){
   locked=true;
   window.MATHAS_ABAQUE_PROOF.complete();
-  if(recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak);
+  if(recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak,!runPaidHelp);
   $('t3Summary').textContent=`Fin de partie : ${suddenStreak} conversions réussies · ${runScore} points.`;
   $('t3PageLabel').textContent=`${label} · ${suddenStreak} conversions réussies`;
   $('t3Verify').classList.add('hidden');
@@ -2696,15 +2697,15 @@ function finishPage(firstGood,corrected=0){
  else{
    runFinished=true;
    window.MATHAS_ABAQUE_PROOF.complete();
-   const grade=window.MATHAS_PROGRESS.recordMode(selectedMode,runCorrect,total,runDots);
+   const grade=window.MATHAS_PROGRESS.recordMode(selectedMode,runCorrect,total,runDots,!runPaidHelp);
    const recordResult=window.MATHAS_PROGRESS.recordScore(runScore,selectedMode);notifyRecord(recordResult);
-   $('t3Summary').textContent=`Série : ${runCorrect}/${total} · ${runScore} points · ${grade==='green'?'100 % !':grade==='orange'?'80 % atteint !':'À réessayer.'}`;
+   $('t3Summary').textContent=`Série : ${runCorrect}/${total} · ${runScore} points · ${grade==='green'?'100 % !':grade==='orange'?'75 % atteint !':'À réessayer.'}`;
    $('t3New').textContent='↻ Nouvelle série';
    const nextMap={one:'three',three:'five',five:'sudden'}; const nextMode=nextMap[selectedMode];
    const nextUnlocked=nextMode && window.MATHAS_PROGRESS.unlocked(nextMode);
    const nextLabel=grade==='red'?'2e série':(nextUnlocked?(nextMode==='three'?'3 pages':nextMode==='five'?'5 pages':'Mort subite'):'2e série');
    const nextAction=grade==='red'?(()=>startMode(selectedMode)):(nextUnlocked?(()=>startMode(nextMode)):(()=>startMode(selectedMode)));
-   window.MATHAS_CELEBRATE?.modal({title:grade==='red'?'Continue !':'Bravo !',emoji:grade==='red'?'✨':'🏆',text:grade==='red'?`Tu as obtenu ${runCorrect}/${total}. Il faut au moins 80 % pour valider cette série.`:`Série terminée : ${runCorrect}/${total}. Score : ${runScore} points.${recordResult.allRecord?' Nouveau record historique !':recordResult.dayRecord?' Record du jour battu !':''}`,buttons:[{label:'Accueil',action:()=>{$('homeBtn').click()}},{label:'Recommencer',action:()=>startMode(selectedMode)},{label:nextLabel,primary:true,action:nextAction}]});
+   window.MATHAS_CELEBRATE?.modal({title:grade==='red'?'Continue !':'Bravo !',emoji:grade==='red'?'✨':'🏆',text:grade==='red'?`Tu as obtenu ${runCorrect}/${total}. Il faut au moins 75 % pour valider cette série.`:`Série terminée : ${runCorrect}/${total}. Score : ${runScore} points.${recordResult.allRecord?' Nouveau record historique !':recordResult.dayRecord?' Record du jour battu !':''}`,buttons:[{label:'Accueil',action:()=>{$('homeBtn').click()}},{label:'Recommencer',action:()=>startMode(selectedMode)},{label:nextLabel,primary:true,action:nextAction}]});
  }
 }
 function verify(){
@@ -2716,7 +2717,11 @@ function verify(){
  if(!correctionMode)window.MATHAS_ABAQUE_PROOF.first(series);
  if(!correctionMode){
   const wrong=[];
-  series.forEach((ex,i)=>{if(Number(ex.answer)===ex.result){ex.status='good';ex.earnedPoints=calcPoints(ex)}else{ex.status='retry';wrong.push(i)}});
+  series.forEach((ex,i)=>{
+   if(Number(ex.answer)===ex.result){ex.status='good';ex.earnedPoints=calcPoints(ex)}
+   else{ex.status='retry';wrong.push(i)}
+   ex.open=false;ex.units=false;ex.helpValidated=true;
+  });
   if(wrong.length){
    correctionMode=true;
    const good=series.length-wrong.length;
@@ -2727,7 +2732,7 @@ function verify(){
    setActive(wrong[0]);$('t3ExList').children[wrong[0]].querySelector('input').focus();return;
   }
  }else{
-  series.forEach(ex=>{if(ex.status==='retry')ex.status=Number(ex.answer)===ex.result?'corrected':'badFinal'});
+  series.forEach(ex=>{if(ex.status==='retry')ex.status=Number(ex.answer)===ex.result?'corrected':'badFinal';ex.open=false;ex.units=false;ex.helpValidated=true});
  }
  const firstGood=series.filter(ex=>ex.status==='good').length;
  const corrected=series.filter(ex=>ex.status==='corrected').length;
