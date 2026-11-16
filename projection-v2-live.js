@@ -20,9 +20,11 @@ const apps=[
  {key:'multiplication-ecrite-simple',title:'Multiplication écrite'},
  {key:'soustraction-ecrite-simple',title:'Soustraction écrite'},
  {key:'addition-ecrite-multiple',title:'Addition multiple'},
- {key:'melange-calculs-ecrits',title:'Mélange de calculs'}
+ {key:'melange-calculs-ecrits',title:'Mélange de calculs'},
+ {key:'abaque-longueurs',title:'Abaque des longueurs'}
 ];
 const allKeys=apps.map(a=>a.key);
+const percentageKeys=allKeys.filter(k=>k!=='abaque-longueurs'); // Abaque : score uniquement
 let client=null,classesAvailable=[],data=null,fetching=false,refreshTicket=0;
 let hasLoaded=false,connected=false,optionsLoaded=false,pendingReset=null;
 let scoreMode='today'; // new default; the manually shared historical score stays available
@@ -39,7 +41,7 @@ function cancelPlayback(){
  }
 }
 // rotationSeconds subsiste seulement pour la validation du contrat Supabase.
-let options={scoreApps:allKeys.slice(0,MAX_VISIBLE_APPS),percentageApps:[...allKeys],comparisons:[],comparisonDisplay:[],rotationSeconds:40};
+let options={scoreApps:allKeys.slice(0,MAX_VISIBLE_APPS),percentageApps:[...percentageKeys],comparisons:[],comparisonDisplay:[],rotationSeconds:40};
 const comparedIds=()=>options.comparisonDisplay.filter(v=>v.score||v.percentage).map(v=>v.classId);
 const currentComparison=id=>options.comparisonDisplay.find(v=>v.classId===id)||{classId:id,score:false,percentage:false};
 const note=message=>{
@@ -117,7 +119,7 @@ async function refresh(){
    if(remote&&Array.isArray(remote.scoreApps)&&Array.isArray(remote.percentageApps)
       &&Array.isArray(remote.comparisons)&&Number.isInteger(remote.rotationSeconds)){
     options={scoreApps:apps.filter(app=>remote.scoreApps.includes(app.key)).map(app=>app.key).slice(0,MAX_VISIBLE_APPS),
-     percentageApps:remote.percentageApps.filter(k=>allKeys.includes(k)),
+     percentageApps:remote.percentageApps.filter(k=>percentageKeys.includes(k)),
      comparisons:remote.comparisons.filter(id=>classesAvailable.some(c=>c.id===id&&id!==classId)),
      comparisonDisplay:(Array.isArray(remote.comparisonDisplay)?remote.comparisonDisplay:remote.comparisons.map(id=>({classId:id,score:true,percentage:true})))
        .filter(v=>v&&classesAvailable.some(c=>c.id===v.classId&&v.classId!==classId))
@@ -574,7 +576,9 @@ function buildSettings(){
   const tr=document.createElement('tr');
   const name=document.createElement('td');name.textContent=app.title;tr.append(name);
   for(const field of ['scoreApps','percentageApps']){
-   const cell=document.createElement('td');const cb=document.createElement('input');
+   const cell=document.createElement('td');
+   if(field==='percentageApps'&&app.key==='abaque-longueurs'){cell.textContent='—';cell.title='Le tableau Abaque affiche les points, pas un pourcentage';tr.append(cell);continue;}
+   const cb=document.createElement('input');
    cb.type='checkbox';cb.checked=options[field].includes(app.key);
    if(field==='scoreApps')cb.disabled=(cb.checked&&options.scoreApps.length<=1)
      ||(!cb.checked&&options.scoreApps.length>=MAX_VISIBLE_APPS);
