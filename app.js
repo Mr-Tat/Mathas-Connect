@@ -939,7 +939,7 @@ function authSwitchView(){
  $('auth-scope-wrap').hidden=isAbaque;
  $('auth-student-wrap').hidden=isAbaque||$('auth-scope').value!=='student';
  $('auth-description').textContent=isAbaque
-  ?'Abaque des longueurs : choisis une classe, puis autorise séparément les activités 2 et 3. L’activité 1 reste disponible. Les scores et les XP ne sont pas réinitialisés.'
+  ?'Abaque des longueurs : choisis un mode de déblocage pour toute la classe. Le défi des 80 % peut être réactivé à tout moment sans effacer les résultats ni les récompenses.'
   :'Prépare les réglages même avant le premier résultat. La classe définit les valeurs générales ; une exception pour un élève les remplace. Les résultats et les XP restent indépendants.';
  return isAbaque;
 }
@@ -949,8 +949,8 @@ async function loadAuthorizations(requestedStudent=null){
  $('auth-saved-summary').hidden=true;
  const cls=$('auth-class');if(!cls.value)cls.value=$('class-selector').value||CLASS_SPACES.observation.id;
  // The Abaque uses class-wide rights only: do not call the multiplication RPCs.
- if(authSwitchView()){void abaqueGatesLoad();return false;}
- ++abaqueGateSequence;abaqueGateEnabled(false);
+ if(authSwitchView()){void abaqueModeLoad();return false;}
+ ++abaqueModeSequence;abaqueModeEnabled(false);
  authSay('Chargement des autorisations…');
  $('auth-student').replaceChildren();
  try{
@@ -1010,61 +1010,62 @@ $('auth-aid-save').onclick=()=>{
 };
 $('auth-aid-clear').onclick=()=>void authSave('teacher-table-aid-set',{allowed:null});
 
-// Abaque: class permissions stay independent from multiplication locks.
-let abaqueGateBusy=false,abaqueGateSequence=0;
-const abaqueGateClass=$('auth-class');
-const abaqueGateChecks=[$('abaque-class-gates-2'),$('abaque-class-gates-3')];
-const abaqueGateStatus=$('abaque-class-gates-status');
-function abaqueGateEnabled(value){
- abaqueGateChecks.forEach(c=>{c.disabled=!value;});
+// The Abaque uses one exclusive per-class teaching mode, independent of multiplication.
+let abaqueModeBusy=false,abaqueModeSequence=0,abaqueCommittedMode=null;
+const abaqueModeClass=$('auth-class');
+const abaqueModeInputs=[...document.querySelectorAll('input[name="abaque-unlock-mode"]')];
+const abaqueModeStatus=$('abaque-class-gates-status');
+const abaqueModeValues=['stage1_only','through_2','all_open','mastery_80'];
+const abaqueModeEnabled=value=>abaqueModeInputs.forEach(input=>{input.disabled=!value;});
+function abaqueModePaint(mode){
+ abaqueModeInputs.forEach(input=>{input.checked=input.value===mode;});
 }
-async function abaqueGateRequest(action,classId,extra={}){
+async function abaqueModeRequest(action,classId,extra={}){
  const {data:{session}}=await sb.auth.getSession();
  if(!session?.access_token||session.user?.is_anonymous!==false)throw Error('Connexion professeur requise.');
  const response=await fetch(url+'/functions/v1/connect-abaque',{method:'POST',cache:'no-store',
   headers:{apikey:key,authorization:'Bearer '+session.access_token,'content-type':'application/json'},
   body:JSON.stringify({appKey:'abaque-longueurs',classId,action,...extra})});
  const value=await response.json().catch(()=>null);
- if(!response.ok||value?.ok!==true)throw Error(value?.error||'Autorisations indisponibles.');
- if(value.authSubject!==session.user.id||value.classId!==classId)throw Error('La session a changé.');
+ if(!response.ok||value?.ok!==true)throw Error(value?.error||'Mode de déblocage indisponible.');
+ if(value.authSubject!==session.user.id||value.classId!==classId||!abaqueModeValues.includes(value.mode))throw Error('Réponse invalide ou session modifiée.');
  return value;
 }
-async function abaqueGatesLoad(){
+async function abaqueModeLoad(){
  if($('auth-app').value!=='abaque-longueurs')return;
- const classId=abaqueGateClass.value,sequence=++abaqueGateSequence;
- abaqueGateChecks.forEach(c=>{c.checked=false;});
- abaqueGateEnabled(false);
- if(!classId){abaqueGateStatus.textContent='Choisis une classe.';return;}
- abaqueGateStatus.textContent='Lecture des deux autorisations…';
+ const classId=abaqueModeClass.value,sequence=++abaqueModeSequence;
+ abaqueCommittedMode=null;abaqueModePaint(null);abaqueModeEnabled(false);
+ if(!classId){abaqueModeStatus.textContent='Choisis une classe.';return;}
+ abaqueModeStatus.textContent='Lecture du mode de déblocage…';
  try{
-  const data=await abaqueGateRequest('teacher-activity-get',classId);
-  if(sequence!==abaqueGateSequence||abaqueGateClass.value!==classId||$('auth-app').value!=='abaque-longueurs')return;
-  abaqueGateChecks[0].checked=data.activity2===true;abaqueGateChecks[1].checked=data.activity3===true;
-  abaqueGateEnabled(true);
-  abaqueGateStatus.textContent='✓ Autorisations enregistrées sur Supabase. Les élèves actualisent leurs droits depuis le jeu, sans surveillance en boucle.';
- }catch(e){if(sequence!==abaqueGateSequence)return;abaqueGateStatus.textContent='Lecture impossible : '+e.message;}
-}
-async function abaqueGateSave(activity,allowed){
- if(abaqueGateBusy||$('auth-app').value!=='abaque-longueurs')return;
- const classId=abaqueGateClass.value,sequence=++abaqueGateSequence;
- abaqueGateBusy=true;abaqueGateEnabled(false);abaqueGateClass.disabled=true;$('auth-app').disabled=true;
- abaqueGateStatus.textContent='Enregistrement…';
- try{
-  const data=await abaqueGateRequest('teacher-activity-set',classId,{activity,allowed});
-  if(sequence!==abaqueGateSequence||classId!==abaqueGateClass.value)return;
-  abaqueGateChecks[0].checked=data.activity2===true;abaqueGateChecks[1].checked=data.activity3===true;
-  abaqueGateStatus.textContent='✓ Autorisations de cette classe enregistrées.';
- }catch(e){
-  abaqueGateStatus.textContent='Enregistrement refusé : '+e.message;
-  // A failed write is not a local permission change.
-  abaqueGateChecks[activity===2?0:1].checked=!allowed;
- }finally{
-  abaqueGateBusy=false;abaqueGateClass.disabled=false;$('auth-app').disabled=false;
-  if(sequence===abaqueGateSequence&&$('auth-app').value==='abaque-longueurs')abaqueGateEnabled(true);
+  const data=await abaqueModeRequest('teacher-mode-get',classId);
+  if(sequence!==abaqueModeSequence||abaqueModeClass.value!==classId||$('auth-app').value!=='abaque-longueurs')return;
+  abaqueCommittedMode=data.mode;abaqueModePaint(data.mode);abaqueModeEnabled(true);
+  abaqueModeStatus.textContent='✓ Mode enregistré sur Supabase. Les élèves peuvent actualiser leurs autorisations depuis le jeu.';
+ }catch(error){
+  if(sequence!==abaqueModeSequence)return;
+  abaqueModeStatus.textContent='Lecture impossible : '+error.message;
  }
 }
-abaqueGateChecks[0].onchange=e=>void abaqueGateSave(2,e.target.checked);
-abaqueGateChecks[1].onchange=e=>void abaqueGateSave(3,e.target.checked);
+async function abaqueModeSave(mode){
+ if(abaqueModeBusy||$('auth-app').value!=='abaque-longueurs'||!abaqueModeValues.includes(mode))return;
+ const classId=abaqueModeClass.value,sequence=++abaqueModeSequence,previous=abaqueCommittedMode;
+ abaqueModeBusy=true;abaqueModeEnabled(false);abaqueModeClass.disabled=true;$('auth-app').disabled=true;
+ abaqueModeStatus.textContent='Enregistrement…';
+ try{
+  const data=await abaqueModeRequest('teacher-mode-set',classId,{mode});
+  if(sequence!==abaqueModeSequence||classId!==abaqueModeClass.value)return;
+  abaqueCommittedMode=data.mode;abaqueModePaint(data.mode);
+  abaqueModeStatus.textContent='✓ '+$('auth-class').selectedOptions[0]?.textContent+' : mode enregistré sur Supabase.';
+ }catch(error){
+  abaqueModePaint(previous);
+  abaqueModeStatus.textContent='Enregistrement refusé : '+error.message;
+ }finally{
+  abaqueModeBusy=false;abaqueModeClass.disabled=false;$('auth-app').disabled=false;
+  if(sequence===abaqueModeSequence&&abaqueCommittedMode)abaqueModeEnabled(true);
+ }
+}
+abaqueModeInputs.forEach(input=>input.onchange=()=>{if(input.checked)void abaqueModeSave(input.value);});
 
 const teacherTabs=['home','apps','authorizations','results','management'];
 function showTeacherTab(tab){
