@@ -1366,6 +1366,24 @@ html[data-abaque-pending]:not([data-abaque-connected]) body::after{
 
 /* Activité 3 : cases ancrées à gauche et abaque plus large sur ordinateurs.
    Les arcs suivent toujours la virgule dans le même plateau, inchangés. */
+/* Le panneau d'énoncé était inutilement large : ses 30 px gagnés
+   sont redistribués à l'abaque sans réduire les sept cases. */
+@media(min-width:1440px){
+ #convertScreen .t3Ex{
+  grid-template-columns:minmax(335px,355px) minmax(0,1fr)!important;
+ }
+}
+/* Sur les PC intermédiaires, les aides passent sous l'énoncé
+   plutôt que de compresser l'abaque ou de cacher une partie des cases. */
+@media(min-width:1341px) and (max-width:1439px){
+ #convertScreen .t3Ex{
+  grid-template-columns:minmax(0,1fr)!important;
+ }
+ #convertScreen .t3Assistance{
+  grid-column:1!important;grid-row:auto!important;
+  margin-top:6px!important;
+ }
+}
 @media(min-width:1341px){
  #convertScreen .t3ManipRow{
   grid-template-columns:minmax(370px,1fr) minmax(245px,280px) 128px!important;
