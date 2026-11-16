@@ -349,11 +349,11 @@ test('Abaque démo : trois états de compte simulés, XP discrets et zéro modif
 });
 
 
-test('Abaque : les deux modes record exigent 80 % dans chacun des trois formats, résultats sans libellé',async()=>{
+test('Abaque : les deux modes record exigent 75 % dans chacun des trois formats, résultats sans libellé',async()=>{
  const h=await setup(),{page}=h;
  try{
   await page.goto(h.url);
-  for(const scores of [{one:3,three:10,five:16},{one:4,three:9,five:16},{one:4,three:10,five:15}]){
+  for(const scores of [{one:2,three:9,five:15},{one:3,three:8,five:15},{one:3,three:9,five:14}]){
    await fixture(page,{modeScores:scores});
    assert.equal(await page.locator('#recordChoice').isVisible(),true);
    for(const variant of ['lives','sudden']){
@@ -362,9 +362,9 @@ test('Abaque : les deux modes record exigent 80 % dans chacun des trois formats,
     await button.click({force:true});assert.equal(await page.locator('#homeScreen').isVisible(),true);
    }
   }
-  await fixture(page,{modeScores:{one:4,three:10,five:16}});
+  await fixture(page,{modeScores:{one:3,three:9,five:15}});
   for(const variant of ['lives','sudden'])assert.equal(await page.locator('[data-variant="'+variant+'"]').getAttribute('aria-disabled'),'false');
-  for(const [mode,result] of [['one','4/4'],['three','10/12'],['five','16/20']])assert.equal(await page.locator('[data-mode="'+mode+'"] .modeResult').textContent(),result);
+  for(const [mode,result] of [['one','3/4'],['three','9/12'],['five','15/20']])assert.equal(await page.locator('[data-mode="'+mode+'"] .modeResult').textContent(),result);
   assert.equal(await page.locator('#recordLock').isVisible(),false);
   assert.equal(await page.locator('.scoreMedals,.scoreMedal').count(),0);
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
@@ -751,12 +751,15 @@ test('Abaque sans compte : scores et trophées locaux, deux réussites à 80 %, 
   for(let n=0;n<2;n++)await solveMoves(page,{imperfect:true});
   assert.equal(await page.locator('[data-mode="one"]').getAttribute('aria-disabled'),'false',
    'deux séries de déplacements >=80 % débloquent l’activité 3 sans serveur');
+  await page.evaluate(()=>window.MATHAS_PROGRESS.recordMode('one',2,4,['green','green','red','red']));
+  assert.equal(await page.locator('[data-mode="three"]').getAttribute('aria-disabled'),'true',
+   '2/4 est insuffisant pour débloquer 3 pages');
   await page.evaluate(()=>{
    window.MATHAS_PROGRESS.recordMode('one',3,4,['green','green','green','red']);
    window.MATHAS_PROGRESS.recordScore(45,'one');
   });
-  assert.equal(await page.locator('[data-mode="three"]').getAttribute('aria-disabled'),'true',
-   '75 % est insuffisant pour débloquer 3 pages');
+  assert.equal(await page.locator('[data-mode="three"]').getAttribute('aria-disabled'),'false',
+   '3/4 ouvre 3 pages dès 75 %');
   await page.evaluate(()=>window.MATHAS_PROGRESS.recordMode('one',4,4,['green','green','green','green']));
   assert.equal(await page.locator('[data-mode="three"]').getAttribute('aria-disabled'),'false');
   // Les trophées s’acquièrent localement comme dans la démo, sans XP.
