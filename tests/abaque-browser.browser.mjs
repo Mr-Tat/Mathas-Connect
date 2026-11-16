@@ -474,3 +474,77 @@ test('Laboratoire : pas de doublon Abaque Connect, uniquement une démo hors lig
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });
+
+test('Abaque : opération de conversion et indicateurs hors du pavé fixe',async()=>{
+ const h=await setup(),{page}=h;
+ const thousand=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+ const geometry=async(ex,operation)=>ex.evaluate(el=>{
+  const calc=el.querySelector('.t3Operation'),label=el.querySelector('.t3Direction');
+  const operationBox=calc.getBoundingClientRect(),descriptionBox=calc.nextElementSibling.getBoundingClientRect();
+  const marker=el.querySelector('.t3Movement marker path')?.getAttribute('fill');
+  const probe=document.createElement('span');probe.style.color=marker;document.body.appendChild(probe);
+  const expectedColor=getComputedStyle(probe).color;probe.remove();
+  return {above:operationBox.bottom<=descriptionBox.top+1,
+   sameColor:getComputedStyle(calc).color===expectedColor,
+   withinSide:operationBox.right<=label.getBoundingClientRect().right+2,
+   result:calc.textContent};
+ });
+ try{
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto(h.url);await fixture(page);
+  for(const selector of ['[data-mode="one"]','[data-mode="three"]','[data-mode="five"]','[data-variant="sudden"]','[data-variant="lives"]']){
+   await page.locator(selector).click();
+   const ex=page.locator('.t3Ex').first();
+   await ex.locator('.t3Open').click();
+   const comma=ex.locator('.t3Comma');
+   const initial=Number(await comma.getAttribute('aria-valuenow'));
+   assert.equal(await ex.locator('.t3Operation').count(),0,'aucune opération à zéro déplacement');
+   const target=initial>0?0:6;
+   await comma.focus();await page.keyboard.press(initial>0?'Home':'End');
+   const count=Math.abs(target-initial),op=(target<initial?'÷':'×')+' '+thousand(10**count);
+   assert.equal(await ex.locator('.t3Operation').textContent(),op,selector);
+   const rendered=await geometry(ex,op);
+   assert.equal(rendered.above,true,selector+': opération au-dessus du déplacement');
+   assert.equal(rendered.sameColor,true,selector+': couleur de la pointe de flèche');
+   assert.equal(rendered.withinSide,true,selector+': opération dans sa colonne');
+   await ex.locator('.t3Comma').focus();
+   await page.keyboard.press(target===0?'ArrowRight':'ArrowLeft');
+   const newCount=Math.abs(target+(target===0?1:-1)-initial);
+   if(newCount===0)assert.equal(await ex.locator('.t3Operation').count(),0);
+   else assert.equal(await ex.locator('.t3Operation').textContent(),(target<initial?'÷':'×')+' '+thousand(10**newCount),selector+': mise à jour immédiate au clavier');
+   await page.locator('#homeBtn').click();
+  }
+  await page.locator('[data-mode="one"]').click();
+  await page.evaluate(()=>{
+   const progress=document.querySelector('#t3Progress');
+   progress.classList.remove('hidden');progress.textContent='12/12 au premier essai';
+  });
+  for(const width of [1760,1440,1100,900,861,800,781]){
+   await page.setViewportSize({width,height:900});
+   const layout=await page.evaluate(()=>{
+    const keypad=document.querySelector('#convertScreen .t3Keypad').getBoundingClientRect();
+    const ids=['t3Progress','t3ScoreNow','t3ScoreBadge'];
+    return {keypadLeft:keypad.left,indicators:ids.map(id=>{
+     const rect=document.getElementById(id).getBoundingClientRect();
+     return {id,right:rect.right,left:rect.left,top:rect.top,bottom:rect.bottom};
+    })};
+   });
+   for(const item of layout.indicators)
+    assert.ok(item.right<=layout.keypadLeft-6,
+     width+'px: '+item.id+' doit rester à gauche du pavé');
+  }
+  for(const width of [780,660,390,320]){
+   await page.setViewportSize({width,height:900});
+   const mobile=await page.evaluate(()=>{
+    const keypad=document.querySelector('#convertScreen .t3Keypad').getBoundingClientRect();
+    const indicators=['t3Progress','t3ScoreNow','t3ScoreBadge'].map(id=>document.getElementById(id).getBoundingClientRect());
+    return {bottomKeypad:keypad.top>innerHeight/2,
+     topIndicators:indicators.every(r=>r.bottom<keypad.top),
+     documentWidth:document.documentElement.scrollWidth,viewport:innerWidth};
+   });
+   assert.ok(mobile.bottomKeypad&&mobile.topIndicators,width+'px: pavé au bas de la fenêtre');
+   assert.ok(mobile.documentWidth<=mobile.viewport,width+'px: pas de défilement horizontal global');
+  }
+  assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
+ }finally{await h.close();}
+});
