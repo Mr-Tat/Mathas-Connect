@@ -510,8 +510,8 @@ test('Abaque : opération de conversion et indicateurs hors du pavé fixe',async
    await ex.locator('.t3Comma').focus();
    await page.keyboard.press(target===0?'ArrowRight':'ArrowLeft');
    const newCount=Math.abs(target+(target===0?1:-1)-initial);
-   const currentLabel=await ex.locator('.t3Operation').textContent();
-   assert.equal(currentLabel,(newCount===0?null:(target<initial?'÷':'×')+' '+thousand(10**newCount)),selector+': mise à jour immédiate au clavier');
+   if(newCount===0)assert.equal(await ex.locator('.t3Operation').count(),0);
+   else assert.equal(await ex.locator('.t3Operation').textContent(),(target<initial?'÷':'×')+' '+thousand(10**newCount),selector+': mise à jour immédiate au clavier');
    await page.locator('#homeBtn').click();
   }
   await page.locator('[data-mode="one"]').click();
