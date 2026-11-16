@@ -1390,6 +1390,12 @@ html[data-abaque-pending]:not([data-abaque-connected]) body::after{
  }
  #convertScreen .t3ManipRow .t3AbacusZone{width:100%!important;max-width:275px!important}
 }
+/* Les anciennes marges automatiques recentraient le plateau dans sa colonne. */
+@media(min-width:761px){
+ #convertScreen .t3ManipRow .t3BoardScroll .t3Board{
+  margin-left:0!important;margin-right:0!important;
+ }
+}
 #convertScreen .t3Abacus{
  min-height:72px!important;padding:10px 6px!important;
 }
