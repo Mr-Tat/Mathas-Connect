@@ -557,6 +557,7 @@ test('Abaque V2 : points des aides réellement affichés en classique, 3 vies et
   await page.locator('[data-mode="one"]').click();
   const items=page.locator('.t3Ex');
   await items.nth(1).locator('.t3Open').click();
+  await items.nth(2).locator('.t3Open').click();
   await items.nth(2).locator('.t3UnitsBtn').click();
   await inputConversion(page);
   assert.equal(await page.locator('#t3ScoreNow').textContent(),'9 points','3 + 2 + 1 + 3');
@@ -565,6 +566,7 @@ test('Abaque V2 : points des aides réellement affichés en classique, 3 vies et
 
   for(const [variant,points] of [['lives',1],['sudden',2]]){
    await page.locator('[data-variant="'+variant+'"]').click();
+   await page.locator('.t3Ex').first().locator('.t3Open').click();
    await page.locator('.t3Ex').first().locator('.t3UnitsBtn').click();
    await inputConversion(page,false,{expectModal:false});
    assert.equal(await page.locator('#t3ScoreNow').textContent(),points+' '+(points===1?'point':'points'));
