@@ -40,6 +40,7 @@ export function judgeCompletion(raw){
  const kind=raw.kind;
  if(raw.completed===false&&!['lives','sudden'].includes(kind))fail();
  let firstTry=0,points=0,total=0,successes=0,errors=0,assisted=false;
+ const resultDots=[];
  if(kind==='build'){
   if(!Array.isArray(raw.units)||raw.units.length!==4||!Array.isArray(raw.images)||raw.images.length!==8)fail();
   if(new Set(raw.units.map(x=>x?.unit)).size!==4||new Set(raw.images.map(x=>x?.image)).size!==8)fail();
@@ -70,6 +71,7 @@ export function judgeCompletion(raw){
    }else{
     // Les conversions corrigées rapportent 0 point ; les aides sont facturées au premier essai.
     if(judged.good){firstTry++;points+=raw.version===1?2:conversionPoints(kind,judged);}
+    if(raw.version===2)resultDots.push(!judged.good?'red':judged.units?'purple':judged.manip?'blue':'green');
    }
   }
   if(record&&raw.tailSegments!=null){
@@ -91,5 +93,5 @@ export function judgeCompletion(raw){
  if(!integer(points,0,Number.MAX_SAFE_INTEGER))fail();
  // Préserver exactement le jugement V1 pour les preuves anciennes en attente et les accusés idempotents.
  return Object.freeze({eventId:raw.eventId.toLowerCase(),kind,firstTry,total,points,successes,errors,eligible:raw.completed,ruleset:raw.version,
-  ...(raw.version===2?{assisted}:{} )});
+  ...(raw.version===2?{assisted,...(resultDots.length?{resultDots}:{} )}:{} )});
 }
