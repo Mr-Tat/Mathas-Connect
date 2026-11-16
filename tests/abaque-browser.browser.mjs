@@ -282,6 +282,10 @@ test('Abaque : les anciennes réussites de la même démo réaffichent les troph
    stage2:{passes:['orange','green'],passScores:[7,8]},
    modes:{one:'green',three:'green',five:'green'}
   });
+  // Les anciennes coupes déjà acquises demeurent ; la couleur verte seule
+  // ne crée plus rétroactivement de coupe sans preuve d'autonomie.
+  await page.evaluate(key=>localStorage.setItem(key,'["bronze","silver","gold"]'),trophyKey);
+  await page.reload();
   assert.deepEqual((await trophies(page)).sort(),['bronze','gold','silver']);
   assert.equal(await page.locator('.homeCard>.trophy-hint.earned').count(),3);
   await page.evaluate(()=>window.MATHAS_PROGRESS.reset());await page.reload();
@@ -495,7 +499,12 @@ test('Abaque : opération de conversion et indicateurs hors du pavé fixe',async
   for(const selector of ['[data-mode="one"]','[data-mode="three"]','[data-mode="five"]','[data-variant="sudden"]','[data-variant="lives"]']){
    await page.locator(selector).click();
    const ex=page.locator('.t3Ex').first();
-   await ex.locator('.t3Open').click();
+   if(selector!=='[data-mode="one"]'){
+    await ex.locator('.t3Open').click();
+    await ex.locator('.t3ConfirmOk').click();
+   }
+   await ex.locator('.t3UnitsBtn').click();
+   await ex.locator('.t3ConfirmOk').click();
    const comma=ex.locator('.t3Comma');
    const initial=Number(await comma.getAttribute('aria-valuenow'));
    assert.equal(await ex.locator('.t3Operation').count(),0,'aucune opération à zéro déplacement');
