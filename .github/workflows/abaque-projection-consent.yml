@@ -1,0 +1,42 @@
+name: Abaque - projection consentement explicite
+on:
+  pull_request:
+    paths:
+      - 'apps/GRAN-abaque-m-1/**'
+      - 'supabase/functions/connect-projection-v2/**'
+      - 'supabase/migrations/*abaque_projection*'
+      - 'projection-v2-live.js'
+      - 'tests/abaque*'
+      - '.github/workflows/abaque-projection-consent.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/GRAN-abaque-m-1/**'
+      - 'supabase/functions/connect-projection-v2/**'
+      - 'supabase/migrations/*abaque_projection*'
+      - 'projection-v2-live.js'
+      - 'tests/abaque*'
+      - '.github/workflows/abaque-projection-consent.yml'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+      - run: node --test tests/abaque-projection-consent.test.mjs tests/abaque-autonomie-points-xp75.test.mjs
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+      - run: npm install --no-save --no-package-lock playwright@1.57.0
+      - run: npx playwright install chromium --with-deps
+      - run: |
+          node --test --test-name-pattern="Abaque projection : grande fenêtre Oui/Non" tests/abaque-browser.browser.mjs
