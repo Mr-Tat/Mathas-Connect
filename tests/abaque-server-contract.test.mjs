@@ -61,16 +61,20 @@ test('Abaque contrat Edge avec Auth simulée : fermeture, identité fournie par 
 });
 
 
-test('Abaque record long : mémoire de preuve bornée, barème 1/2 points et aucun plafond de 10 000 conversions',()=>{
+test('Abaque record long : V1 historique et V2 autonomie sans limite à 10 000 conversions',()=>{
  for(const kind of ['lives','sudden']){
   for(let count=0;count<1000;count++){
-   assert.equal(recordPoints(kind,count),count*(kind==='sudden'?2:1),kind+' '+count);
+   assert.equal(recordPoints(kind,count,1),count*(kind==='sudden'?2:1),kind+' V1 '+count);
+   assert.equal(recordPoints(kind,count,2),count*(kind==='sudden'?6:3),kind+' V2 '+count);
   }
-  const event=record(kind,10,{abandoned:true});event.completed=true;delete event.abandoned;
-  event.tailSegments=kind==='lives'?[100000,0,0,0]:[100000,0];
-  const judged=judgeCompletion(event);
-  assert.equal(judged.firstTry,100010);assert.equal(judged.points,recordPoints(kind,100010));
-  assert.equal(event.tasks.length,10);assert.equal(event.tailSegments.length,kind==='lives'?4:2);
+  const old=record(kind,10,{abandoned:true});old.completed=true;delete old.abandoned;
+  old.tailSegments=kind==='lives'?[100000,0,0,0]:[100000,0];
+  const previous=judgeCompletion(old);
+  assert.equal(previous.firstTry,100010);assert.equal(previous.points,recordPoints(kind,100010,1));
+  const upgraded=judgeCompletion({...old,version:2});
+  assert.equal(upgraded.firstTry,100010);assert.equal(upgraded.points,recordPoints(kind,100010,2));
+  assert.equal(upgraded.assisted,false);
+  assert.equal(old.tasks.length,10);assert.equal(old.tailSegments.length,kind==='lives'?4:2);
  }
 });
 
