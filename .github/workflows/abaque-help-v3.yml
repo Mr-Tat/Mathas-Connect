@@ -1,0 +1,41 @@
+name: Abaque - aides par étapes et coupes 100 sans aide
+on:
+  pull_request:
+    paths:
+      - 'apps/GRAN-abaque-m-1/**'
+      - 'supabase/migrations/*abaque_helpers*'
+      - 'tests/abaque*'
+      - '.github/workflows/abaque-help-v3.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/GRAN-abaque-m-1/**'
+      - 'supabase/migrations/*abaque_helpers*'
+      - 'tests/abaque*'
+      - '.github/workflows/abaque-help-v3.yml'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+      - name: Valider V1 V2 V3, barèmes, XP et conditions des coupes
+        run: |
+          node --test tests/abaque-assist-trophies-v3.test.mjs tests/abaque-autonomie-points-xp75.test.mjs tests/abaque-record-pages-and-xp204.test.mjs tests/abaque-server-contract.test.mjs
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+      - run: npm install --no-save --no-package-lock playwright@1.57.0
+      - run: npx playwright install chromium --with-deps
+      - name: Jouer 1 et 3 pages avec et sans aide, vérifier les coupes
+        run: |
+          node --test --test-name-pattern="Abaque V3 :" tests/abaque-browser.browser.mjs
