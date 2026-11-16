@@ -50,8 +50,9 @@ test('L’application affiche bien 4/12/20 ronds et les quatre couleurs, sans to
  assert.match(html,/recordMode\(selectedMode,runCorrect,total,runDots\)/);
  assert.match(html,/runDots\.push\(ex\.status!=='good'\?'red'/);
  const sql=read('supabase/migrations/20261116111500_abaque_classic_result_dots.sql');
- assert.match(sql,/first_good>=coalesce\(\(scores->>kind\)::bigint,-1\)/);
- assert.match(sql,/jsonb_array_length\(p_result->'resultDots'\)<>total/);
- assert.match(sql,/WHERE d\.v<>'red'\)<>first_good/);
+ const normalized=sql.replaceAll("''","'");
+ assert.match(normalized,/first_good>=coalesce\(\(scores->>kind\)::bigint,-1\)/);
+ assert.match(normalized,/jsonb_array_length\(p_result->'resultDots'\)<>total/);
+ assert.match(normalized,/WHERE d\.v<>'red'\)<>first_good/);
  assert.doesNotMatch(sql,/DELETE FROM|DROP TABLE|TRUNCATE TABLE/);
 });
