@@ -2367,11 +2367,38 @@ function renderAll(){
   // Le champ reste sélectionnable, mais readonly empêche Windows d'ouvrir son clavier tactile.
   // Toute saisie passe par le pavé Math'as, ou par le clavier physique intercepté ci-dessous.
   input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();nextAnswer()}});
+  const consent=article.querySelector('.t3HelpConfirm');
+  const ask=(action)=>{
+   consent.querySelector('p').textContent='Utiliser cette aide ? Cette réponse rapportera 1 point de moins.';
+   consent.classList.remove('hidden');
+   const cancel=()=>{consent.classList.add('hidden');article.querySelector('.t3ConfirmOk').onclick=null;};
+   article.querySelector('.t3ConfirmCancel').onclick=cancel;
+   article.querySelector('.t3ConfirmOk').onclick=()=>{cancel();action()};
+   consent.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();cancel()}};
+   article.querySelector('.t3ConfirmCancel').focus({preventScroll:true});
+  };
+  const openManip=()=>{
+   ex.open=true;ex.usedManip=true;
+   if(selectedMode!=='one'){ex.helpUsed=true;runPaidHelp=true}
+   if(!ex.help)ex.help=makeHelp(ex);
+   renderOne(i);
+  };
   article.querySelector('.t3Open').addEventListener('click',()=>{
-    if(helpRestricted())return;ex.open=!ex.open;if(ex.open){ex.helpUsed=true;ex.usedManip=true;if(!ex.help)ex.help=makeHelp(ex)}renderOne(i);
+   if(helpRestricted()||ex.helpValidated||locked||(selectedMode==='sudden'&&i!==recordStep))return;
+   if(ex.open){ex.open=false;renderOne(i);return;}
+   if(selectedMode==='one'||ex.usedManip){openManip();return;}
+   ask(openManip);
   });
-  article.querySelector('.t3UnitsBtn').addEventListener('click',()=>{if(unitsRestricted())return;ex.units=!ex.units;if(ex.units){ex.open=true;ex.helpUsed=true;ex.usedManip=true;ex.usedUnits=true;if(!ex.help)ex.help=makeHelp(ex)}renderOne(i)});
-  article.querySelector('.t3ResetHelp').addEventListener('click',()=>{ex.helpUsed=true;ex.help=makeHelp(ex);renderBoard(i);renderOne(i)});
+  article.querySelector('.t3UnitsBtn').addEventListener('click',()=>{
+   if(unitsRestricted()||!ex.open||ex.helpValidated||ex.units||locked||(selectedMode==='sudden'&&i!==recordStep))return;
+   const openAbacus=()=>{ex.units=true;ex.usedUnits=true;ex.usedManip=true;ex.helpUsed=true;runPaidHelp=true;renderOne(i)};
+   if(ex.usedUnits){openAbacus();return;}
+   ask(openAbacus);
+  });
+  article.querySelector('.t3ResetHelp').addEventListener('click',()=>{
+   if(ex.helpValidated||locked)return;
+   ex.help=makeHelp(ex);renderBoard(i);renderOne(i);
+  });
   host.appendChild(article);
  });
  series.forEach((_,i)=>renderOne(i));setActive(activeIndex);updateKeypadAction();
