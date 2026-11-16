@@ -1026,3 +1026,115 @@ test('Abaque : arcs au-dessus des cases sans abaque et abaque statique, grandes 
   assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });
+
+test('Abaque activité 2 : × ou ÷ 10^n au-dessus des déplacements, même couleur que le point',async()=>{
+ const h=await setup(),{page}=h;
+ try{
+  await page.goto(h.url);
+  await fixture(page);
+  await page.locator('#moveLaunchBtn').click();
+  const ex=page.locator('.moveEx').first();
+  const rail=ex.locator('.moveRail');
+  const op=ex.locator('.moveOperation');
+  assert.equal(await op.count(),0,'pas de calcul à zéro déplacement');
+  await rail.focus();
+  await page.keyboard.press('ArrowRight');
+  assert.equal(await op.textContent(),'× 10');
+  assert.equal(await ex.locator('.moveLineTop strong').textContent(),'1');
+  await page.keyboard.press('ArrowRight');
+  assert.equal(await op.textContent(),'× 100');
+  assert.equal(await ex.locator('.moveLineTop strong').textContent(),'2');
+  const positive=await ex.evaluate(node=>{
+   const operation=node.querySelector('.moveOperation');
+   const dot=node.querySelector('.moveDot > circle');
+   const preview=document.createElement('i');preview.style.color=dot.getAttribute('fill');
+   document.body.appendChild(preview);
+   const equal=getComputedStyle(operation).color===getComputedStyle(preview).color;
+   preview.remove();
+   return {equal,vertical:operation.getBoundingClientRect().bottom<=node.querySelector('.moveLineTop strong').getBoundingClientRect().top+1};
+  });
+  assert.deepEqual(positive,{equal:true,vertical:true});
+  for(let n=0;n<4;n++)await page.keyboard.press('ArrowRight');
+  assert.equal(await op.textContent(),'× 1 000 000','l’affichage doit rester lisible pour six cases');
+  await page.keyboard.press('Home');
+  assert.equal(await op.count(),0,'revenir au centre masque le calcul');
+  await page.keyboard.press('ArrowLeft');
+  assert.equal(await op.textContent(),'÷ 10');
+  await page.keyboard.press('ArrowLeft');
+  assert.equal(await op.textContent(),'÷ 100');
+  assert.equal(await op.getAttribute('aria-label'),'Diviser par 100');
+  const negative=await ex.evaluate(node=>{
+   const operation=node.querySelector('.moveOperation');
+   const dot=node.querySelector('.moveDot > circle');
+   const preview=document.createElement('i');preview.style.color=dot.getAttribute('fill');
+   document.body.appendChild(preview);
+   const equal=getComputedStyle(operation).color===getComputedStyle(preview).color;
+   preview.remove();return equal;
+  });
+  assert.equal(negative,true);
+  for(const width of [1440,1100,850,580,390,320]){
+   await page.setViewportSize({width,height:900});
+   const positions=await ex.evaluate(node=>{
+    const result=node.querySelector('.moveOutcome').getBoundingClientRect();
+    const operation=node.querySelector('.moveOperation').getBoundingClientRect();
+    const label=node.querySelector('.moveLineTop strong').getBoundingClientRect();
+    return {within:operation.left>=-2&&operation.right<=innerWidth+2,
+     before:operation.bottom<=label.top+2, documentWidth:document.documentElement.scrollWidth};
+   });
+   assert.equal(positions.within,true,width+'px : opération contenue dans le viewport');
+   assert.equal(positions.before,true,width+'px : opération au-dessus du nombre');
+   assert.ok(positions.documentWidth<=width,width+'px : pas de défilement horizontal');
+  }
+  assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
+ }finally{await h.close();}
+});
+
+test('Abaque activité 3 : plateau aligné à gauche et abaque élargi, arcs et score inchangés',async()=>{
+ const h=await setup(),{page}=h;
+ try{
+  await page.goto(h.url);await fixture(page);
+  await page.setViewportSize({width:1440,height:900});
+  await page.locator('[data-mode="one"]').click();
+  const ex=page.locator('.t3Ex').first();
+  const zone=ex.locator('.t3AbacusZone');
+  const scroll=ex.locator('.t3BoardScroll');
+  const board=ex.locator('.t3Board');
+  const labels=ex.locator('.t3UnitLabel');
+  const desktop=await ex.evaluate(node=>{
+   const zone=node.querySelector('.t3AbacusZone').getBoundingClientRect();
+   const scroll=node.querySelector('.t3BoardScroll').getBoundingClientRect();
+   const board=node.querySelector('.t3Board').getBoundingClientRect();
+   return {abacusWidth:zone.width,boardOffset:board.left-scroll.left,
+    order:board.right<zone.left,scrollLeft:scroll.left,abacusLeft:zone.left};
+  });
+  assert.ok(desktop.abacusWidth>=260,'l’abaque élargi occupe au moins 260 px sur ordinateur');
+  assert.ok(desktop.boardOffset>=-2&&desktop.boardOffset<=20,'cases de manipulation alignées à gauche');
+  assert.equal(desktop.order,true,'abaque à droite des cases sans chevauchement');
+  const before=await board.boundingBox();
+  await ex.locator('.t3UnitsBtn').click();
+  await ex.locator('.t3ConfirmOk').click();
+  assert.equal(await labels.count(),7);
+  const abacus=await ex.locator('.t3Abacus').boundingBox();
+  assert.ok(abacus.width>=260,'les sept unités bénéficient de la largeur accrue');
+  const labelSize=await labels.first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+  assert.ok(labelSize>=12,'étiquettes de l’abaque suffisamment lisibles');
+  const comma=ex.locator('.t3Comma'),at=Number(await comma.getAttribute('aria-valuenow'));
+  await comma.focus();await page.keyboard.press(at>0?'ArrowLeft':'ArrowRight');
+  assert.ok(await ex.locator('.t3Board > .t3Movement.active svg path[d^="M "]').count()>=1,
+   'les flèches de manipulation restent au-dessus des cases');
+  assert.equal(await ex.locator('.t3Correspondences').count(),0,'aucune grosse flèche de guidage');
+  for(const width of [1341,1100,900,780,760,390,320]){
+   await page.setViewportSize({width,height:900});
+   const layout=await ex.evaluate(node=>{
+    const rect=node.querySelector('.t3AbacusZone').getBoundingClientRect();
+    const screen=document.documentElement;
+    return {width:rect.width,within:rect.left>=-1&&rect.right<=innerWidth+2,
+     bodyWidth:screen.scrollWidth};
+   });
+   assert.equal(layout.within,true,width+'px : abaque dans la page');
+   assert.ok(layout.bodyWidth<=width,width+'px : aucun défilement horizontal global');
+   assert.ok(layout.width>=Math.min(width<761?270:215,width-45),width+'px : abaque agrandi');
+  }
+  assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
+ }finally{await h.close();}
+});
