@@ -1,5 +1,5 @@
 import {createAbaqueQueue} from './offline-queue.mjs?v=20261108-classic-two';
-import {createAbaqueProjectionShare} from './projection-share.mjs';
+// La projection est facultative : son chargement ne doit JAMAIS bloquer l'Abaque.
 import {APP_KEY} from './completion-contract.mjs?v=20261108-classic-two';
 import {createXpHints} from '../xp-hints.mjs';
 import {paintConnectedAvatar} from '../../objective-record/profile-avatar-badge.mjs?v=20261107-v1';
@@ -54,8 +54,21 @@ async function connect(){
  const homeProgressRail=document.getElementById('homeConnectProgressRail');
  const homeProgressFill=document.getElementById('homeConnectProgressFill');
  let profileRead=null,profileReadAgain=false;
- const projectionShare=createAbaqueProjectionShare({classId:CLASS,base:BASE,key:KEY,appKey:APP_KEY,
-  token:()=>token(),identity:()=>({subject,pupil,sessionActive}),status:details});
+ // Initialiser le jeu sans attendre les fichiers de la projection (CDN/cache/réseau scolaire).
+ // Si ce module n'est pas accessible, les exercices, points et XP restent fonctionnels.
+ let projectionShare={offer(){},ack(){},flush(){}};
+ const projectionReady=import('./projection-share.mjs?v=20261116-optional-1')
+  .then(({createAbaqueProjectionShare})=>{
+   projectionShare=createAbaqueProjectionShare({
+    classId:CLASS,base:BASE,key:KEY,appKey:APP_KEY,
+    token:()=>token(),identity:()=>({subject,pupil,sessionActive}),status:details
+   });
+   if(sessionActive&&pupil)projectionShare.flush();
+  })
+  .catch(()=>{ // Échec du dialogue : pas d'envoi, mais l'Abaque continue à fonctionner.
+   document.documentElement.dataset.abaqueProjectionUnavailable='true';
+  });
+ void projectionReady;
  function hideRemaining(){delete document.documentElement.dataset.abaqueXpApproved;hints.hide();}
  function draw(snapshot,online){
   latest=snapshot;
