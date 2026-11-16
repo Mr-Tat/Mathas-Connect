@@ -44,7 +44,7 @@ test('Consentement : dialogue grand écran Oui/Non, même apparence, jamais auto
  assert.match(share,/no\.onclick=close/);
  assert.match(share,/yes\.onclick=/);
  assert.match(share,/if\(acked\.has\(event\.eventId\)\)void publish/);
- assert.match(share,/function publish\(id\)/);
+ assert.match(share,/async function publish\(id\)/);
  assert.match(share,/result\?\.ok===true/);
  assert.match(share,/Score envoyé au tableau/);
  assert.match(bootstrap,/projectionShare\.offer\(event\)/);
