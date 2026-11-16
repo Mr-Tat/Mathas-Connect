@@ -1,20 +1,21 @@
 // Shared proof validation, executed by the server before its atomic RPC.
 // No XP amount, trophy flag or native local-storage snapshot is accepted.
 export const APP_KEY='abaque-longueurs';
-export const VERSION=2; // V1 reste accepté pour les parties déjà enregistrées hors ligne.
+export const VERSION=3; // Les anciennes preuves V1/V2 restent acceptées sans changer leurs crédits.
 export const MAX_TASKS=20;
 // The first ten successful record conversions carry arithmetic proofs. Later
 // successes cannot earn any extra XP; run-length segments keep their native
 // points/records exact without growing a proof array or imposing a game cap.
 export function recordPoints(kind,count,version=VERSION){
- if(!Number.isSafeInteger(count)||count<0||![1,2].includes(version)||!['lives','sudden'].includes(kind))fail();
+ if(!Number.isSafeInteger(count)||count<0||![1,2,3].includes(version)||!['lives','sudden'].includes(kind))fail();
  // Après 10 réussites, toutes les aides sont désactivées : pas de preuve détaillée supplémentaire.
  return count*(version===1?(kind==='sudden'?2:1):(kind==='sudden'?6:3));
 }
-export function conversionPoints(kind,{manip=false,units=false}={}){
- if(!['one','three','five','lives','sudden'].includes(kind))fail();
- // Le niveau d'aide le plus élevé l'emporte. Mort subite conserve son bonus x2.
- return (units?1:manip?2:3)*(kind==='sudden'?2:1);
+export function conversionPoints(kind,{manip=false,units=false}={},version=VERSION){
+ if(!['one','three','five','lives','sudden'].includes(kind)||![2,3].includes(version))fail();
+ // V3 : en 1 page, la manipulation de la virgule est automatique et gratuite.
+ // Seul l'abaque coûte 1 point (3 -> 2), les autres modes conservent 3/2/1.
+ return (version===3&&kind==='one'?(units?2:3):(units?1:manip?2:3))*(kind==='sudden'?2:1);
 }
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const allUnits=['km','hm','dam','m','dm','cm','mm'];
@@ -35,7 +36,7 @@ function conversion(task){
  return {good:task.answer===expected,corrected:task.correctedAnswer===expected,manip:task.manip,units:task.units};
 }
 export function judgeCompletion(raw){
- if(!object(raw)||![1,VERSION].includes(raw.version)||!UUID.test(raw.eventId)||!integer(raw.expectedResetEpoch,0,Number.MAX_SAFE_INTEGER)||!((raw.completed===true&&raw.abandoned!==true)||(raw.completed===false&&raw.abandoned===true))||raw.master!==false||
+ if(!object(raw)||![1,2,VERSION].includes(raw.version)||!UUID.test(raw.eventId)||!integer(raw.expectedResetEpoch,0,Number.MAX_SAFE_INTEGER)||!((raw.completed===true&&raw.abandoned!==true)||(raw.completed===false&&raw.abandoned===true))||raw.master!==false||
   ['xp','trophies','state','studentId','points','firstTry','assisted'].some(key=>Object.hasOwn(raw,key)))fail();
  const kind=raw.kind;
  if(raw.completed===false&&!['lives','sudden'].includes(kind))fail();
@@ -60,18 +61,18 @@ export function judgeCompletion(raw){
   if(!Array.isArray(raw.tasks)||raw.tasks.length<1||raw.tasks.length>MAX_TASKS||(!record&&raw.tasks.length!==expectedCount))fail();
   for(const [index,task] of raw.tasks.entries()){
    const judged=conversion(task);
-   if(raw.version===2&&(judged.manip||judged.units))assisted=true;
+   if(raw.version>=2&&(raw.version===3&&kind==='one'?judged.units:(judged.manip||judged.units)))assisted=true;
    if(record){
     if(errors===(kind==='lives'?3:1)||task.correctedAnswer!=null||
      (successes>=1&&judged.units)||(successes>=3&&judged.manip))fail();
     if(judged.good){
-     points+=raw.version===1?(kind==='sudden'?2:1):conversionPoints(kind,judged);
+     points+=raw.version===1?(kind==='sudden'?2:1):conversionPoints(kind,judged,raw.version);
      successes++;
     }else errors++;
    }else{
     // Les conversions corrigées rapportent 0 point ; les aides sont facturées au premier essai.
-    if(judged.good){firstTry++;points+=raw.version===1?2:conversionPoints(kind,judged);}
-    if(raw.version===2)resultDots.push(!judged.good?'red':judged.units?'purple':judged.manip?'blue':'green');
+    if(judged.good){firstTry++;points+=raw.version===1?2:conversionPoints(kind,judged,raw.version);}
+    if(raw.version>=2)resultDots.push(!judged.good?'red':judged.units?'purple':judged.manip?'blue':'green');
    }
   }
   if(record&&raw.tailSegments!=null){
@@ -93,5 +94,7 @@ export function judgeCompletion(raw){
  if(!integer(points,0,Number.MAX_SAFE_INTEGER))fail();
  // Préserver exactement le jugement V1 pour les preuves anciennes en attente et les accusés idempotents.
  return Object.freeze({eventId:raw.eventId.toLowerCase(),kind,firstTry,total,points,successes,errors,eligible:raw.completed,ruleset:raw.version,
-  ...(raw.version===2?{assisted,...(resultDots.length?{resultDots}:{} )}:{} )});
+  ...(raw.version>=2?{assisted,...(resultDots.length?{resultDots}:{} )}:{} ),
+  ...(raw.version===3?{cleanPerfect:!assisted&&['one','three','five'].includes(kind)&&firstTry===total,
+    cleanRecord:!assisted&&kind==='sudden'}:{})});
 }
