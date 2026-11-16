@@ -12,7 +12,7 @@
  window.MATHAS_ABAQUE_PROOF=Object.freeze({
   configure(callback,getEpoch){sink=callback;epoch=getEpoch;},
   start(kind){
-   current=sink?{version:1,eventId:crypto.randomUUID(),expectedResetEpoch:epoch(),kind,units:[],images:[],tasks:[],prefixSuccesses:0,sent:false}:null;
+   current=sink?{version:2,eventId:crypto.randomUUID(),expectedResetEpoch:epoch(),kind,units:[],images:[],tasks:[],prefixSuccesses:0,sent:false}:null;
    page=null;
   },
   units(positions){if(current&&!current.units.length)current.units=['km','m','cm','mm'].map(unit=>({unit,placed:positions[unit]}));},
@@ -25,7 +25,12 @@
   },
   page(series){
    if(!current||!page)return;
-   for(let i=0;i<series.length;i++)if(['corrected','badFinal'].includes(series[i].status)&&current.kind!=='lives'&&current.kind!=='sudden')page[i].correctedAnswer=Number(series[i].answer);
+   for(let i=0;i<series.length;i++)if(current.kind!=='lives'&&current.kind!=='sudden'){
+    // Une aide ouverte après le premier essai compte aussi pour le coefficient XP de la série.
+    page[i].manip ||= !!series[i].usedManip;
+    page[i].units ||= !!series[i].usedUnits;
+    if(['corrected','badFinal'].includes(series[i].status))page[i].correctedAnswer=Number(series[i].answer);
+   }
    if(current.kind==='lives'||current.kind==='sudden'){
     for(let i=0;i<series.length;i++){
      const good=Number(series[i].answer)===series[i].result;
