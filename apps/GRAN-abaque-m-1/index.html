@@ -2445,7 +2445,8 @@ function renderAll(){
   input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();nextAnswer()}});
   const consent=article.querySelector('.t3HelpConfirm');
   const ask=(action)=>{
-   consent.querySelector('p').textContent='Utiliser cette aide ? Cette réponse rapportera 1 point de moins.';
+   const loss=selectedMode==='sudden'&&recordVariant==='sudden'?2:1;
+   consent.querySelector('p').textContent=`Utiliser cette aide ? Cette réponse rapportera ${loss} point${loss>1?'s':''} de moins.`;
    consent.classList.remove('hidden');
    const cancel=()=>{consent.classList.add('hidden');article.querySelector('.t3ConfirmOk').onclick=null;};
    article.querySelector('.t3ConfirmCancel').onclick=cancel;
