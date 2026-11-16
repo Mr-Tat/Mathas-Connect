@@ -12,14 +12,14 @@ const event=(kind,tasks,{version=2,completed=true,tailSegments}={})=>({
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 
 test('Contrat V2 : 3/2/1 classique et 3 vies ; 6/4/2 Mort subite',()=>{
- assert.equal(VERSION,2);
+ assert.equal(VERSION,3); // Nouveau contrat tout en acceptant V1/V2.
  for(const kind of ['one','three','five','lives']){
-  assert.equal(conversionPoints(kind,{}),3);
-  assert.equal(conversionPoints(kind,{manip:true}),2);
-  assert.equal(conversionPoints(kind,{manip:true,units:true}),1);
+  assert.equal(conversionPoints(kind,{},2),3);
+  assert.equal(conversionPoints(kind,{manip:true},2),2);
+  assert.equal(conversionPoints(kind,{manip:true,units:true},2),1);
  }
  for(const [props,points] of [[{},6],[{manip:true},4],[{manip:true,units:true},2]]){
-  assert.equal(conversionPoints('sudden',props),points);
+  assert.equal(conversionPoints('sudden',props,2),points);
  }
  assert.equal(recordPoints('lives',50),150);
  assert.equal(recordPoints('sudden',50),300);
@@ -75,8 +75,8 @@ test('XP : pourcentages validés, compléments récupérables et aucun effacemen
  assert.match(sql,/aucun UPDATE|Aucun UPDATE/);
  assert.match(read('supabase/migrations/20261107223500_abaque_204xp_5perpage_records.sql'),/greatest\(r.amount,excluded.amount\)/);
  const bridge=read('apps/GRAN-abaque-m-1/connect/native-bridge.js');
- assert.match(bridge,/version:2/);
+ assert.match(bridge,/version:3/);
  assert.match(bridge,/page\[i\]\.manip \|\|=/);
  const html=read('apps/GRAN-abaque-m-1/index.html');
- assert.match(html,/ex\.usedUnits\?1:ex\.usedManip\?2:3/);
+ assert.match(html,/selectedMode==='one'\?\(ex\.usedUnits\?2:3\)/);
 });

@@ -1284,6 +1284,81 @@ html[data-abaque-pending]:not([data-abaque-connected]) body::after{
  #convertScreen .t3Prompt .t3Expression{flex-wrap:wrap;white-space:normal}
  #convertScreen .t3Prompt .t3Answer{width:min(156px,44vw);flex:0 0 min(156px,44vw)}
 }
+/* Activité 3 V3 : manipuler à gauche ; abaque uniquement sur demande à droite. */
+#convertScreen .t3Ex.unitPromptActive .t3FromUnit,
+#convertScreen .t3Ex.unitPromptActive .t3ToUnit{
+ text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:4px;
+}
+#convertScreen .t3Ex.unitPromptActive .t3FromUnit{text-decoration-color:#239e61}
+#convertScreen .t3Ex.unitPromptActive .t3ToUnit{text-decoration-color:#9853c3}
+#convertScreen .t3HelpControls{position:relative;display:inline-flex;flex-wrap:wrap;gap:5px}
+#convertScreen .t3HelpConfirm{
+ position:absolute;left:0;top:calc(100% + 8px);z-index:20;
+ width:min(285px,calc(100vw - 62px));padding:11px 13px;
+ background:#fffefa;border:2px solid #aab9bf;border-radius:13px;
+ box-shadow:0 12px 29px #1739442e;color:#173944;text-align:left;
+}
+#convertScreen .t3HelpConfirm p{font-size:.81rem;line-height:1.45;font-weight:750;margin:0 0 10px}
+#convertScreen .t3HelpConfirm>div{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+#convertScreen .t3HelpConfirm button{font-size:.8rem;padding:7px 11px;min-height:37px;background:#edf4f2}
+#convertScreen .t3HelpConfirm button:focus-visible{outline:3px solid #e6a646}
+#convertScreen .t3HelpFinished .t3HelpControls{display:none}
+#convertScreen .t3ManipRow{
+ display:grid!important;grid-template-columns:minmax(300px,1fr) 172px 128px!important;
+ align-items:center!important;column-gap:9px!important;row-gap:5px!important;
+}
+#convertScreen .t3ManipRow .t3BoardScroll{
+ grid-area:auto!important;grid-column:1!important;
+ min-width:0;width:100%!important;max-width:100%!important;
+ display:flex!important;justify-content:center!important;overflow-x:auto!important;
+}
+#convertScreen .t3ManipRow .t3AbacusZone{
+ grid-area:auto!important;grid-column:2!important;
+ display:flex;flex-direction:column;align-items:stretch;justify-content:center;
+ width:172px;min-width:0;
+}
+#convertScreen .t3AbacusZone .t3UnitsBtn{
+ width:100%!important;min-width:0!important;min-height:44px;
+ padding:6px 6px!important;white-space:normal;
+}
+#convertScreen .t3Abacus{
+ width:100%;min-height:87px;padding:10px 3px 4px;
+ background:#eff7f4;border:1px solid #b8d4cf;border-radius:11px;
+ display:flex;flex-direction:column;justify-content:center;gap:4px;
+}
+#convertScreen .t3Abacus .t3UnitLabels{
+ width:100%!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;display:grid;
+}
+#convertScreen .t3Abacus .t3UnitLabels.hidden{display:none!important}
+#convertScreen .t3Abacus .t3UnitLabel{
+ min-width:0;height:31px;padding:7px 0;font-size:.59rem;letter-spacing:-.03em;
+}
+#convertScreen .t3Abacus .t3Movement,
+#convertScreen .t3Abacus .t3Movement svg{width:100%!important;height:37px!important}
+#convertScreen .t3ManipRow .t3BoardSide{
+ grid-area:auto!important;grid-column:3!important;
+ display:flex!important;flex-direction:column!important;align-items:center!important;
+ min-width:0!important;max-width:128px!important;
+}
+#convertScreen .t3ManipRow .t3Direction{width:100%!important;max-width:128px!important}
+#convertScreen .t3ManipRow .t3BoardActions{width:100%!important;justify-content:center!important}
+@media(max-width:1340px){
+ #convertScreen .t3Ex{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:8px}
+ #convertScreen .t3Prompt{grid-column:1!important}
+ #convertScreen .t3Assistance{grid-column:1!important;grid-row:auto!important}
+}
+@media(max-width:760px){
+ #convertScreen .t3ManipRow{display:flex!important;flex-direction:column!important;align-items:center!important;gap:10px!important}
+ #convertScreen .t3ManipRow .t3BoardScroll{flex:0 0 auto!important;width:100%!important;max-width:100%!important;overflow-x:auto!important}
+ #convertScreen .t3ManipRow .t3AbacusZone{width:min(240px,100%);align-self:center}
+ #convertScreen .t3ManipRow .t3BoardSide{width:100%!important;max-width:none!important;flex-direction:row!important;justify-content:space-between!important}
+ #convertScreen .t3ManipRow .t3BoardActions{width:auto!important}
+}
+/* Les très grandes puissances de dix doivent tenir dans la colonne de droite. */
+#convertScreen .t3ManipRow .t3Direction .t3Operation{
+ max-width:100%;font-size:.9rem!important;letter-spacing:-.035em!important;
+ white-space:nowrap!important;
+}
 </style><link rel="stylesheet" href="./abaque.css?v=trophees-sombres-20261107"><script src="./environment.js"></script></head><body><svg class="trophy-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0"><symbol id="abaque-cup" viewBox="0 0 32 36"><path d="M7 5H2v7c0 5 4 8 9 8h10c5 0 9-3 9-8V5h-5v3h2v4c0 3-3 5-6 5H11c-3 0-6-2-6-5V8h2Z" fill="var(--cup-shadow)"/><path d="M7 3h18v10c0 6-4 10-9 10s-9-4-9-10Z" fill="var(--cup-body)"/><path d="M9 5h5v12c0 2 1 3 2 4-5-1-7-4-7-8Z" fill="var(--cup-light)"/><path d="M14 22h4v7h-4Z" fill="var(--cup-shadow)"/><path d="M12 27h8l3 4H9Z" fill="var(--cup-body)"/><path d="M7 31h18v3H7Z" fill="var(--cup-shadow)"/><path d="M7 2h18v3H7Z" fill="var(--cup-light)"/></symbol></svg><div class="shell"><header><h1 class="brand">L’abaque, étape par étape.</h1><div id="recordLives" class="record-hearts hidden" role="status" aria-live="polite"></div><div class="headerBtns"><button id="homeBtn" class="btn dark hidden" type="button">← Accueil</button><button id="helpBtn" class="btn dark hidden" type="button">? Aide</button><button id="fullBtn" class="btn dark" type="button">⛶ Plein écran</button></div></header><main><aside class="demo-notice" role="note">🧪 Laboratoire · XP fictifs · aucun résultat Connect. Progression enregistrée sur cet appareil uniquement.</aside><section id="homeScreen"><div class="home-layout"><div class="home-sidebar"><div id="homeConnectAccount" class="home-connect-account" hidden role="status"><div class="home-connect-identity"><span id="homeConnectAvatar" class="home-connect-avatar" aria-hidden="true"></span><strong id="homeConnectName">Compte Connect</strong></div><div id="homeConnectLevel" class="home-connect-level" hidden><span>Niveau</span><strong id="homeConnectLevelNumber">—</strong></div><span id="homeConnectXp" class="home-connect-app-xp"></span><div id="homeConnectProgress" class="home-connect-progress" hidden><strong id="homeConnectProgressLabel">— / — XP</strong><div id="homeConnectProgressRail" class="home-connect-progress-rail" role="progressbar" aria-label="XP vers le prochain niveau" aria-valuemin="0" aria-valuemax="50" aria-valuenow="0"><span id="homeConnectProgressFill"></span></div></div></div><aside class="personal-records" aria-label="Score du jour et trophées"><div class="personal-best"><span class="record-label">☀️ Score du jour</span><div class="personal-score"><strong id="personalBest">0</strong><span>points</span></div><small id="personalBestMode">À toi de jouer !</small></div><div class="personal-collection"><div class="collection-heading"><span>Trophées obtenus</span><strong id="personalTrophyCount">0 / 6</strong></div><div class="collection-cups" id="personalTrophies"><span class="collection-trophy trophy-bronze" data-collected="bronze" role="img" aria-label="Trophée bronze non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span><span class="collection-trophy trophy-silver" data-collected="silver" role="img" aria-label="Trophée argent non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span><span class="collection-trophy trophy-gold" data-collected="gold" role="img" aria-label="Trophée or non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span><span class="collection-trophy trophy-bronze" data-collected="sudden-bronze" role="img" aria-label="Mort subite · bronze non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span><span class="collection-trophy trophy-silver" data-collected="sudden-silver" role="img" aria-label="Mort subite · argent non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span><span class="collection-trophy trophy-gold" data-collected="sudden-gold" role="img" aria-label="Mort subite · or non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span></div></div></aside>
 <div class="scorePanel hidden" id="scorePanel" aria-label="Record historique de conversion">
   <div class="scorePanelRecords"><div class="scoreRecord"><span>🏆 Record historique</span><strong id="scoreHistory">—</strong><small id="scoreHistoryMode">À battre !</small></div></div>
@@ -1533,10 +1608,11 @@ window.MATHAS_ITEMS = [
  let demoPreviewActive=false,demoPreviewBackup=null;
  const allowDemoPreview=isolatedDemo&&new URLSearchParams(location.search).get('connect')!=='1';
  const $=id=>document.getElementById(id);
- const blank=()=>({stage1:{passes:[],passScores:[],topScores:[],perfectRuns:0,failed:false,failedScore:null},stage2:{passes:[],passScores:[],topScores:[],perfectRuns:0,failed:false,failedScore:null},recordsByMode:{},modes:{one:null,three:null,five:null,sudden:null},modeScores:{one:null,three:null,five:null},modeDots:{one:null,three:null,five:null},suddenBest:0,scoreRecords:{dayDate:"",dayBest:0,dayMode:"",allBest:0,allMode:"",medals:[]}});
+ const blank=()=>({stage1:{passes:[],passScores:[],topScores:[],perfectRuns:0,failed:false,failedScore:null},stage2:{passes:[],passScores:[],topScores:[],perfectRuns:0,failed:false,failedScore:null},recordsByMode:{},modes:{one:null,three:null,five:null,sudden:null},modeScores:{one:null,three:null,five:null},modeDots:{one:null,three:null,five:null},cleanPerfect:{one:false,three:false,five:false},suddenBest:0,suddenCleanBest:0,scoreRecords:{dayDate:"",dayBest:0,dayMode:"",allBest:0,allMode:"",medals:[]}});
  const TROPHY_DEFINITIONS=[['bronze','launchBtn','Architecte de l’abaque'],['silver','moveLaunchBtn','Maître des déplacements'],['gold','convertLaunchCard','Expert des conversions'],['sudden-bronze','sudden-bronze','Mort subite · bronze'],['sudden-silver','sudden-silver','Mort subite · argent'],['sudden-gold','sudden-gold','Mort subite · or']];
  const trophyKeys=TROPHY_DEFINITIONS.map(([key])=>key);
- const SUDDEN_TROPHIES=[[3,'sudden-bronze'],[5,'sudden-silver'],[8,'sudden-gold']];
+ // Trois, cinq et huit pages de cinq conversions : 15, 25 et 40 réussites.
+ const SUDDEN_TROPHIES=[[15,'sudden-bronze'],[25,'sudden-silver'],[40,'sudden-gold']];
  let TROPHIES=isolatedDemo?'mathas_connect_abaque_demo_trophies_v1':'mathas_abaque_longueurs_trophies_v1';
  let earnedTrophies=[];
  try{const saved=JSON.parse(localStorage.getItem(TROPHIES));if(Array.isArray(saved))earnedTrophies=[...new Set(saved.filter(x=>trophyKeys.includes(x)))];}catch{}
@@ -1576,6 +1652,8 @@ window.MATHAS_ITEMS = [
     }
    }
    data.suddenBest=Math.max(0,Math.floor(Number(saved.suddenBest)||0));
+   for(const m of ['one','three','five'])data.cleanPerfect[m]=saved.cleanPerfect?.[m]===true;
+   data.suddenCleanBest=Math.max(0,Math.min(data.suddenBest,Math.floor(Number(saved.suddenCleanBest)||0)));
    for(const m of ['one','three','five','sudden','lives']){const v=saved.recordsByMode?.[m];if(Number.isSafeInteger(v)&&v>=0)data.recordsByMode[m]=v;}
    if(saved.scoreRecords && typeof saved.scoreRecords==='object'){
      const r=saved.scoreRecords;
@@ -1594,8 +1672,7 @@ window.MATHAS_ITEMS = [
  earnedTrophies=earnedTrophies.filter(key=>(key!=='bronze'||data.stage1.perfectRuns>=2)&&(key!=='silver'||data.stage2.perfectRuns>=2));
  if(data.stage1.perfectRuns>=2)earnTrophy('bronze');
  if(data.stage2.perfectRuns>=2)earnTrophy('silver');
- if(['one','three','five'].every(mode=>data.modes[mode]==='green'))earnTrophy('gold');
- for(const [pages,key] of SUDDEN_TROPHIES)if(data.suddenBest>=pages)earnTrophy(key);
+ // Ne pas recalculer des coupes à partir des anciens scores sans preuve d'autonomie.
  try{master=sessionStorage.getItem(SESSION)==='1'}catch(e){}
  const save=()=>{if(demoPreviewActive)return;try{localStorage.setItem(STORAGE,JSON.stringify(data))}catch(e){}};
  const modeName={one:'1 page',three:'3 pages',five:'5 pages',sudden:'Mort subite',lives:'3 vies'};
@@ -1662,7 +1739,7 @@ window.MATHAS_ITEMS = [
   if(!connectBinding&&!demoPreviewActive)window.MATHAS_ABAQUE_HIGHLIGHT?.show({kind:key,previous,result:correct,total,newTrophies:earnedTrophies.length-beforeTrophies});
   return {grade,count:passes(key)};
  };
- const recordMode=(key,correct,total,dotDetails=null)=>{
+ const recordMode=(key,correct,total,dotDetails=null,clean=false)=>{
   // 75 % suffit dans l'activité 3 ; les activités 1/2 conservent 80 %.
   const grade=correct===total?'green':correct*4>=total*3?'orange':'red';
   if(!canRecord())return grade;
@@ -1678,12 +1755,13 @@ window.MATHAS_ITEMS = [
     data.modeDots[key]=dotDetails.slice();
    else data.modeDots[key]=null;
   }
-  if(['one','three','five'].every(m=>data.modes[m]==='green'))earnTrophy('gold');
+  if(clean&&correct===total)data.cleanPerfect[key]=true;
+  if(['one','three','five'].every(m=>data.cleanPerfect[m]))earnTrophy('gold');
   save();render();
   if(!connectBinding&&!demoPreviewActive)window.MATHAS_ABAQUE_HIGHLIGHT?.show({kind:key,previous:Number.isInteger(previous)?previous:0,result:correct,total,newTrophies:earnedTrophies.length-beforeTrophies});
   return grade;
  };
- const recordSudden=pages=>{if(!canRecord())return;const previous=data.suddenBest,beforeTrophies=earnedTrophies.length;data.suddenBest=Math.max(data.suddenBest,pages);data.modes.sudden=pages>0?'green':'red';for(const [threshold,key] of SUDDEN_TROPHIES)if(pages>=threshold)earnTrophy(key);save();render();if(!connectBinding&&!demoPreviewActive&&earnedTrophies.length>beforeTrophies)window.MATHAS_ABAQUE_HIGHLIGHT?.show({kind:'sudden',previous,result:pages,newTrophies:earnedTrophies.length-beforeTrophies})};
+ const recordSudden=(pages,clean=false)=>{if(!canRecord())return;const previous=data.suddenBest,beforeTrophies=earnedTrophies.length;data.suddenBest=Math.max(data.suddenBest,pages);data.modes.sudden=pages>0?'green':'red';if(clean)data.suddenCleanBest=Math.max(data.suddenCleanBest,pages);for(const [threshold,key] of SUDDEN_TROPHIES)if(data.suddenCleanBest>=threshold)earnTrophy(key);save();render();if(!connectBinding&&!demoPreviewActive&&earnedTrophies.length>beforeTrophies)window.MATHAS_ABAQUE_HIGHLIGHT?.show({kind:'sudden',previous,result:pages,newTrophies:earnedTrophies.length-beforeTrophies})};
  function dots(key){const target=$(key==='stage1'?'stage1Dots':'stage2Dots');target.replaceChildren();
   const total=key==='stage1'?12:8;
   const caption=document.createElement('span');caption.className='progressCaption';
@@ -1820,8 +1898,7 @@ window.MATHAS_ITEMS = [
    &&(key!=='silver'||data.stage2.perfectRuns>=2));
   if(data.stage1.perfectRuns>=2)earnTrophy('bronze');
   if(data.stage2.perfectRuns>=2)earnTrophy('silver');
-  if(['one','three','five'].every(mode=>data.modes[mode]==='green'))earnTrophy('gold');
-  for(const [pages,key] of SUDDEN_TROPHIES)if(data.suddenBest>=pages)earnTrophy(key);
+  // Les coupes déjà enregistrées restent acquises, aucune attribution rétroactive.
   if($('masterDialog').open)$('masterDialog').close();
   render();
  }
@@ -2169,7 +2246,7 @@ function renderLives(){
  box.querySelector('.heart-status').textContent=lives+' vies restantes';
 }
 $('homeBtn').addEventListener('click',()=>$('recordLives').classList.add('hidden'));
-let selectedMode=null, pageNumber=0, recordStep=0, totalPages=1, runCorrect=0, runQuestions=0, suddenStreak=0, runFinished=false, runScore=0, runDots=[];
+let selectedMode=null, pageNumber=0, recordStep=0, totalPages=1, runCorrect=0, runQuestions=0, suddenStreak=0, runFinished=false, runScore=0, runDots=[],runPaidHelp=false;
 const helpRestricted=()=>selectedMode==='sudden'&&suddenStreak>=3;
 const unitsRestricted=()=>selectedMode==='sudden'&&suddenStreak>=1;
 const calcPoints=ex=>{
@@ -2179,7 +2256,7 @@ const calcPoints=ex=>{
  if(ex.status!=='good')return 0;
  // Sans aide : 3 points ; manipulation : 2 ; unités affichées : 1.
  // Mort subite conserve le coefficient x2, 3 vies applique la grille classique.
- const helpPoints=ex.usedUnits?1:ex.usedManip?2:3;
+ const helpPoints=selectedMode==='one'?(ex.usedUnits?2:3):ex.usedUnits?1:ex.usedManip?2:3;
  return helpPoints*(selectedMode==='sudden'&&recordVariant==='sudden'?2:1);
 };
 function scoreView(message){
@@ -2296,6 +2373,8 @@ function choosePageTask(kind,usedPairs,usedSteps,usedDirections){
 function makeSeries(){
  const usedPairs=new Set(),usedSteps=new Set(),usedDirections=new Set();
  series=kindsForPage().map(kind=>choosePageTask(kind,usedPairs,usedSteps,usedDirections));
+ // En 1 page la manipulation est automatiquement ouverte sans coût.
+ if(selectedMode==='one')series.forEach(ex=>{ex.open=true;ex.usedManip=true;ex.help=makeHelp(ex);});
  activeIndex=0;recordStep=0;locked=false;correctionMode=false;
  $('t3Summary').textContent='';$('t3Progress').textContent='';$('t3Progress').classList.add('hidden');$('t3Verify').textContent=selectedMode==='sudden'?'✓ Valider cet exercice':'✓ Vérifier les 4 réponses';
  $('t3PageLabel').textContent=selectedMode==='sudden'?`${recordVariant==='lives'?'3 vies':'Mort subite'} · Page ${pageNumber+1} · Exercice 1/5`:`Page ${pageNumber+1} / ${totalPages}`;
@@ -2309,7 +2388,7 @@ function startMode(mode,variant="sudden"){
  $('homeScreen').classList.add('hidden');$('moveScreen').classList.add('hidden');$('gameScreen').classList.add('hidden');
  $('convertScreen').classList.remove('hidden');$('homeBtn').classList.remove('hidden');$('helpBtn').classList.add('hidden');
  window.MATHAS_ABAQUE_PROOF.start(mode==='sudden'?(variant==='lives'?'lives':'sudden'):mode);
- recordVariant=variant;lives=3;selectedMode=mode;totalPages={one:1,three:3,five:5,sudden:Infinity}[mode];pageNumber=0;runCorrect=0;runQuestions=0;suddenStreak=0;runFinished=false;runScore=0;runDots=[];
+ recordVariant=variant;lives=3;selectedMode=mode;totalPages={one:1,three:3,five:5,sudden:Infinity}[mode];pageNumber=0;runCorrect=0;runQuestions=0;suddenStreak=0;runFinished=false;runScore=0;runDots=[];runPaidHelp=false;
  $('t3Layout').classList.remove('hidden');$('t3SessionHead').classList.remove('hidden');
  makeSeries();renderLives();window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -2325,21 +2404,24 @@ function renderOne(i){
  el.classList.toggle('t3bad',ex.status==='badFinal');
  el.classList.toggle('t3retry',ex.status==='retry');
  el.classList.toggle('t3corrected',ex.status==='corrected');
- el.classList.toggle('unitsGuideActive',ex.open&&ex.units);
+ el.classList.toggle('unitsGuideActive',ex.open&&ex.units&&!ex.helpValidated);
+ el.classList.toggle('unitPromptActive',ex.open&&!ex.helpValidated);
+ el.classList.toggle('t3HelpFinished',!!ex.helpValidated);
  const input=el.querySelector('.t3Answer');if(input.value!==ex.answer)input.value=ex.answer;
  // Les réponses longues rétrécissent en police, jamais en nombre de chiffres visibles.
  input.classList.toggle('t3LongAnswer',String(ex.answer||'').replace(/[^0-9]/g,'').length>=10);
  input.disabled=locked||(selectedMode==='sudden'&&i!==recordStep)||!['pending','retry'].includes(ex.status);input.classList.toggle('active',i===activeIndex&&!input.disabled);
  const manipulate=el.querySelector('.t3Open'),unitsBtn=el.querySelector('.t3UnitsBtn');
- manipulate.disabled=helpRestricted();unitsBtn.disabled=unitsRestricted();
+ manipulate.disabled=helpRestricted()||!!ex.helpValidated;unitsBtn.disabled=unitsRestricted()||!!ex.helpValidated;
  manipulate.title=helpRestricted()?'Manipulation impossible dès la 4e question en Mort subite':'';
  unitsBtn.title=unitsRestricted()?'Unités indisponibles dès la 2e question en Mort subite':'';
  manipulate.setAttribute('aria-expanded',String(ex.open));
- manipulate.textContent=helpRestricted()?'🔒 Manipulation indisponible':ex.open?'▦ Masquer la manipulation':'▦ Manipuler la virgule';
+ manipulate.textContent=helpRestricted()?'🔒 Manipulation indisponible':selectedMode==='one'&&ex.open?'✓ Virgule gratuite':ex.open?'▦ Masquer la manipulation':'▦ Manipuler la virgule';
  el.querySelector('.t3UnitsBtn').setAttribute('aria-pressed',String(ex.units));
- unitsBtn.textContent=unitsRestricted()?'🔒 Unités indisponibles':ex.units?'▤ Masquer les unités':'▤ Afficher les unités';
- el.querySelector('.t3UnitsBtn').classList.toggle('hidden',!ex.open);
- el.querySelector('.t3Assistance').classList.toggle('hidden',!ex.open);
+ unitsBtn.textContent=unitsRestricted()?'🔒 Abaque indisponible':'▤ Afficher l’abaque';
+ unitsBtn.classList.toggle('hidden',!ex.open||ex.units||!!ex.helpValidated);
+ el.querySelector('.t3Abacus').classList.toggle('hidden',!ex.open||!ex.units||!!ex.helpValidated);
+ el.querySelector('.t3Assistance').classList.toggle('hidden',!ex.open||!!ex.helpValidated);
  const st=el.querySelector('.t3Status');
  st.textContent=ex.status==='good'?'✓ Correct.':ex.status==='retry'?'À corriger : deuxième essai.':ex.status==='corrected'?'✓ Corrigé au deuxième essai.':ex.status==='badFinal'?`✗ Réponse attendue : ${nice(ex.result)} ${ex.to}`:'';
  if(ex.open)renderBoard(i);
@@ -2351,10 +2433,9 @@ function renderAll(){
  series.forEach((ex,i)=>{
   const article=document.createElement('article');article.className='t3Ex';
   article.innerHTML=`<div class="t3Prompt"><div class="t3Heading"><span class="t3Num">${i+1}</span><div class="t3Expression"><span>${nice(ex.source)} <span class="t3FromUnit">${ex.from}</span> =</span><input class="t3Answer" type="text" inputmode="none" readonly autocomplete="off" spellcheck="false" aria-label="Réponse de la conversion ${i+1} ; pavé numérique de Math’as ou clavier physique" maxlength="13"><span class="t3ToUnit">${ex.to}</span></div></div>
-   <div class="t3Controls"><div class="t3HelpControls"><button class="btn t3HelpBtn t3Open" type="button" aria-expanded="false">▦ Manipuler la virgule</button></div><div class="t3Status" role="status"></div></div></div>
+   <div class="t3Controls"><div class="t3HelpControls"><button class="btn t3HelpBtn t3Open" type="button" aria-expanded="false">▦ Manipuler la virgule</button><div class="t3HelpConfirm hidden" role="dialog" aria-label="Confirmation de l’aide"><p>Utiliser cette aide ? Cette réponse rapportera 1 point de moins.</p><div><button class="btn t3ConfirmCancel" type="button">Annuler</button><button class="btn t3ConfirmOk" type="button">OK</button></div></div></div><div class="t3Status" role="status"></div></div></div>
    <div class="t3Assistance hidden" aria-label="Manipulation de la virgule">
-   <div class="t3ManipRow"><button class="btn t3UnitsBtn" type="button" aria-pressed="false">▤ Afficher les unités</button><div class="t3BoardScroll"><div class="t3Board"><div class="t3Movement" aria-hidden="true"></div><div class="t3UnitLabels hidden"></div><div class="t3Digits"></div><div class="t3Commas"></div></div></div>
-   <div class="t3BoardSide"><div class="t3Direction" role="status" aria-live="polite"></div><div class="t3BoardActions"><button type="button" class="btn t3ResetHelp" aria-label="Recommencer la manipulation">↺ Recommencer</button></div></div></div></div>`;
+   <div class="t3ManipRow"><div class="t3BoardScroll"><div class="t3Board"><div class="t3Digits"></div><div class="t3Commas"></div></div></div><div class="t3AbacusZone"><button class="btn t3UnitsBtn" type="button" aria-pressed="false">▤ Afficher l’abaque</button><div class="t3Abacus hidden" aria-label="Abaque métrique et flèches des unités"><div class="t3UnitLabels hidden"></div><div class="t3Movement" aria-hidden="true"></div></div></div><div class="t3BoardSide"><div class="t3Direction" role="status" aria-live="polite"></div><div class="t3BoardActions"><button type="button" class="btn t3ResetHelp" aria-label="Recommencer la manipulation">↺ Recommencer</button></div></div></div></div>`;
   const input=article.querySelector('input');
   input.value=ex.answer;
   input.addEventListener('focus',()=>{if(!input.disabled)setActive(i)});
@@ -2362,11 +2443,39 @@ function renderAll(){
   // Le champ reste sélectionnable, mais readonly empêche Windows d'ouvrir son clavier tactile.
   // Toute saisie passe par le pavé Math'as, ou par le clavier physique intercepté ci-dessous.
   input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();nextAnswer()}});
+  const consent=article.querySelector('.t3HelpConfirm');
+  const ask=(action)=>{
+   const loss=selectedMode==='sudden'&&recordVariant==='sudden'?2:1;
+   consent.querySelector('p').textContent=`Utiliser cette aide ? Cette réponse rapportera ${loss} point${loss>1?'s':''} de moins.`;
+   consent.classList.remove('hidden');
+   const cancel=()=>{consent.classList.add('hidden');article.querySelector('.t3ConfirmOk').onclick=null;};
+   article.querySelector('.t3ConfirmCancel').onclick=cancel;
+   article.querySelector('.t3ConfirmOk').onclick=()=>{cancel();action()};
+   consent.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();cancel()}};
+   article.querySelector('.t3ConfirmCancel').focus({preventScroll:true});
+  };
+  const openManip=()=>{
+   ex.open=true;ex.usedManip=true;
+   if(selectedMode!=='one'){ex.helpUsed=true;runPaidHelp=true}
+   if(!ex.help)ex.help=makeHelp(ex);
+   renderOne(i);
+  };
   article.querySelector('.t3Open').addEventListener('click',()=>{
-    if(helpRestricted())return;ex.open=!ex.open;if(ex.open){ex.helpUsed=true;ex.usedManip=true;if(!ex.help)ex.help=makeHelp(ex)}renderOne(i);
+   if(helpRestricted()||ex.helpValidated||locked||(selectedMode==='sudden'&&i!==recordStep))return;
+   if(ex.open){ex.open=false;renderOne(i);return;}
+   if(selectedMode==='one'||ex.usedManip){openManip();return;}
+   ask(openManip);
   });
-  article.querySelector('.t3UnitsBtn').addEventListener('click',()=>{if(unitsRestricted())return;ex.units=!ex.units;if(ex.units){ex.open=true;ex.helpUsed=true;ex.usedManip=true;ex.usedUnits=true;if(!ex.help)ex.help=makeHelp(ex)}renderOne(i)});
-  article.querySelector('.t3ResetHelp').addEventListener('click',()=>{ex.helpUsed=true;ex.help=makeHelp(ex);renderBoard(i);renderOne(i)});
+  article.querySelector('.t3UnitsBtn').addEventListener('click',()=>{
+   if(unitsRestricted()||!ex.open||ex.helpValidated||ex.units||locked||(selectedMode==='sudden'&&i!==recordStep))return;
+   const openAbacus=()=>{ex.units=true;ex.usedUnits=true;ex.usedManip=true;ex.helpUsed=true;runPaidHelp=true;renderOne(i)};
+   if(ex.usedUnits){openAbacus();return;}
+   ask(openAbacus);
+  });
+  article.querySelector('.t3ResetHelp').addEventListener('click',()=>{
+   if(ex.helpValidated||locked)return;
+   ex.help=makeHelp(ex);renderBoard(i);renderOne(i);
+  });
   host.appendChild(article);
  });
  series.forEach((_,i)=>renderOne(i));setActive(activeIndex);updateKeypadAction();
@@ -2502,7 +2611,7 @@ window.addEventListener('scroll',scheduleUnitCorrespondences,{passive:true});
 $('t3ExList').addEventListener('scroll',scheduleUnitCorrespondences,{passive:true,capture:true});
 function renderBoard(i){
  const ex=series[i],state=ex.help,article=$('t3ExList').children[i];if(!state)return;
- article.querySelector('.t3UnitsBtn').textContent=ex.units?'▤ Masquer les unités':'▤ Afficher les unités';
+ article.querySelector('.t3UnitsBtn').textContent='▤ Afficher l’abaque';
  article.querySelector('.t3UnitsBtn').setAttribute('aria-pressed',String(ex.units));
  const headers=article.querySelector('.t3UnitLabels');headers.replaceChildren();headers.classList.toggle('hidden',!ex.units);
  if(ex.units)UNITS.forEach((u,j)=>{
@@ -2588,13 +2697,14 @@ function finishRecordAnswer(){
  const good=Number(ex.answer)===ex.result;
  ex.status=good?'good':'badFinal';
  ex.earnedPoints=good?calcPoints(ex):0;
+ ex.open=false;ex.units=false;ex.helpValidated=true;
  window.MATHAS_ABAQUE_PROOF.page([ex]);
  runCorrect+=Number(good);
  runQuestions++;
  if(good){
   suddenStreak++;
   runScore+=ex.earnedPoints;
-  if(recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak);
+  if(recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak,!runPaidHelp);
  }else lives=recordVariant==='lives'?lives-1:0;
  runFinished=lives===0;
  renderLives();
@@ -2611,7 +2721,7 @@ function finishRecordAnswer(){
  if(runFinished){
   locked=true;
   window.MATHAS_ABAQUE_PROOF.complete();
-  if(recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak);
+  if(recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak,!runPaidHelp);
   $('t3Summary').textContent=`Fin de partie : ${suddenStreak} conversions réussies · ${runScore} points.`;
   $('t3PageLabel').textContent=`${label} · ${suddenStreak} conversions réussies`;
   $('t3Verify').classList.add('hidden');
@@ -2664,15 +2774,15 @@ function finishPage(firstGood,corrected=0){
  else{
    runFinished=true;
    window.MATHAS_ABAQUE_PROOF.complete();
-   const grade=window.MATHAS_PROGRESS.recordMode(selectedMode,runCorrect,total,runDots);
+   const grade=window.MATHAS_PROGRESS.recordMode(selectedMode,runCorrect,total,runDots,!runPaidHelp);
    const recordResult=window.MATHAS_PROGRESS.recordScore(runScore,selectedMode);notifyRecord(recordResult);
-   $('t3Summary').textContent=`Série : ${runCorrect}/${total} · ${runScore} points · ${grade==='green'?'100 % !':grade==='orange'?'80 % atteint !':'À réessayer.'}`;
+   $('t3Summary').textContent=`Série : ${runCorrect}/${total} · ${runScore} points · ${grade==='green'?'100 % !':grade==='orange'?'75 % atteint !':'À réessayer.'}`;
    $('t3New').textContent='↻ Nouvelle série';
    const nextMap={one:'three',three:'five',five:'sudden'}; const nextMode=nextMap[selectedMode];
    const nextUnlocked=nextMode && window.MATHAS_PROGRESS.unlocked(nextMode);
    const nextLabel=grade==='red'?'2e série':(nextUnlocked?(nextMode==='three'?'3 pages':nextMode==='five'?'5 pages':'Mort subite'):'2e série');
    const nextAction=grade==='red'?(()=>startMode(selectedMode)):(nextUnlocked?(()=>startMode(nextMode)):(()=>startMode(selectedMode)));
-   window.MATHAS_CELEBRATE?.modal({title:grade==='red'?'Continue !':'Bravo !',emoji:grade==='red'?'✨':'🏆',text:grade==='red'?`Tu as obtenu ${runCorrect}/${total}. Il faut au moins 80 % pour valider cette série.`:`Série terminée : ${runCorrect}/${total}. Score : ${runScore} points.${recordResult.allRecord?' Nouveau record historique !':recordResult.dayRecord?' Record du jour battu !':''}`,buttons:[{label:'Accueil',action:()=>{$('homeBtn').click()}},{label:'Recommencer',action:()=>startMode(selectedMode)},{label:nextLabel,primary:true,action:nextAction}]});
+   window.MATHAS_CELEBRATE?.modal({title:grade==='red'?'Continue !':'Bravo !',emoji:grade==='red'?'✨':'🏆',text:grade==='red'?`Tu as obtenu ${runCorrect}/${total}. Il faut au moins 75 % pour valider cette série.`:`Série terminée : ${runCorrect}/${total}. Score : ${runScore} points.${recordResult.allRecord?' Nouveau record historique !':recordResult.dayRecord?' Record du jour battu !':''}`,buttons:[{label:'Accueil',action:()=>{$('homeBtn').click()}},{label:'Recommencer',action:()=>startMode(selectedMode)},{label:nextLabel,primary:true,action:nextAction}]});
  }
 }
 function verify(){
@@ -2684,7 +2794,11 @@ function verify(){
  if(!correctionMode)window.MATHAS_ABAQUE_PROOF.first(series);
  if(!correctionMode){
   const wrong=[];
-  series.forEach((ex,i)=>{if(Number(ex.answer)===ex.result){ex.status='good';ex.earnedPoints=calcPoints(ex)}else{ex.status='retry';wrong.push(i)}});
+  series.forEach((ex,i)=>{
+   if(Number(ex.answer)===ex.result){ex.status='good';ex.earnedPoints=calcPoints(ex)}
+   else{ex.status='retry';wrong.push(i)}
+   ex.open=false;ex.units=false;ex.helpValidated=true;
+  });
   if(wrong.length){
    correctionMode=true;
    const good=series.length-wrong.length;
@@ -2695,7 +2809,7 @@ function verify(){
    setActive(wrong[0]);$('t3ExList').children[wrong[0]].querySelector('input').focus();return;
   }
  }else{
-  series.forEach(ex=>{if(ex.status==='retry')ex.status=Number(ex.answer)===ex.result?'corrected':'badFinal'});
+  series.forEach(ex=>{if(ex.status==='retry')ex.status=Number(ex.answer)===ex.result?'corrected':'badFinal';ex.open=false;ex.units=false;ex.helpValidated=true});
  }
  const firstGood=series.filter(ex=>ex.status==='good').length;
  const corrected=series.filter(ex=>ex.status==='corrected').length;

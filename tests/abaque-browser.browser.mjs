@@ -282,6 +282,10 @@ test('Abaque : les anciennes réussites de la même démo réaffichent les troph
    stage2:{passes:['orange','green'],passScores:[7,8]},
    modes:{one:'green',three:'green',five:'green'}
   });
+  // Les anciennes coupes déjà acquises demeurent ; la couleur verte seule
+  // ne crée plus rétroactivement de coupe sans preuve d'autonomie.
+  await page.evaluate(key=>localStorage.setItem(key,'["bronze","silver","gold"]'),trophyKey);
+  await page.reload();
   assert.deepEqual((await trophies(page)).sort(),['bronze','gold','silver']);
   assert.equal(await page.locator('.homeCard>.trophy-hint.earned').count(),3);
   await page.evaluate(()=>window.MATHAS_PROGRESS.reset());await page.reload();
@@ -495,7 +499,12 @@ test('Abaque : opération de conversion et indicateurs hors du pavé fixe',async
   for(const selector of ['[data-mode="one"]','[data-mode="three"]','[data-mode="five"]','[data-variant="sudden"]','[data-variant="lives"]']){
    await page.locator(selector).click();
    const ex=page.locator('.t3Ex').first();
-   await ex.locator('.t3Open').click();
+   if(selector!=='[data-mode="one"]'){
+    await ex.locator('.t3Open').click();
+    await ex.locator('.t3ConfirmOk').click();
+   }
+   await ex.locator('.t3UnitsBtn').click();
+   await ex.locator('.t3ConfirmOk').click();
    const comma=ex.locator('.t3Comma');
    const initial=Number(await comma.getAttribute('aria-valuenow'));
    assert.equal(await ex.locator('.t3Operation').count(),0,'aucune opération à zéro déplacement');
@@ -549,25 +558,26 @@ test('Abaque : opération de conversion et indicateurs hors du pavé fixe',async
  }finally{await h.close();}
 });
 
-test('Abaque V2 : points des aides réellement affichés en classique, 3 vies et Mort subite',async()=>{
+test('Abaque V3 : points des aides réellement affichés en classique, 3 vies et Mort subite',async()=>{
  const h=await setup(),{page}=h;
  try{
   await page.goto(h.url);
   await fixture(page);
   await page.locator('[data-mode="one"]').click();
   const items=page.locator('.t3Ex');
-  await items.nth(1).locator('.t3Open').click();
-  await items.nth(2).locator('.t3Open').click();
   await items.nth(2).locator('.t3UnitsBtn').click();
+  await items.nth(2).locator('.t3ConfirmOk').click();
   await inputConversion(page);
-  assert.equal(await page.locator('#t3ScoreNow').textContent(),'9 points','3 + 2 + 1 + 3');
-  assert.match(await page.locator('#t3Summary').textContent(),/4\/4.*9 points/);
+  assert.equal(await page.locator('#t3ScoreNow').textContent(),'11 points','3 + 3 + 2 + 3');
+  assert.match(await page.locator('#t3Summary').textContent(),/4\/4.*11 points/);
   await modal(page,'Accueil');
 
   for(const [variant,points] of [['lives',1],['sudden',2]]){
    await page.locator('[data-variant="'+variant+'"]').click();
    await page.locator('.t3Ex').first().locator('.t3Open').click();
+   await page.locator('.t3Ex').first().locator('.t3ConfirmOk').click();
    await page.locator('.t3Ex').first().locator('.t3UnitsBtn').click();
+   await page.locator('.t3Ex').first().locator('.t3ConfirmOk').click();
    await inputConversion(page,false,{expectModal:false});
    assert.equal(await page.locator('#t3ScoreNow').textContent(),points+' '+(points===1?'point':'points'));
    assert.equal(await page.locator('.t3Ex').nth(1).locator('.t3UnitsBtn').isDisabled(),true);
@@ -646,15 +656,14 @@ test('Abaque activité 3 : pastilles du premier essai vert, bleu, mauve, rouge e
   // Une vraie série imparfaite remplace le résultat de référence d'une ancienne version.
   await fixture(page,{modes:{one:'red',three:'red',five:'red'}});
   await page.locator('[data-mode="one"]').click();
-  await page.locator('.t3Ex').nth(1).locator('.t3Open').click();
-  await page.locator('.t3Ex').nth(2).locator('.t3Open').click();
   await page.locator('.t3Ex').nth(2).locator('.t3UnitsBtn').click();
+  await page.locator('.t3Ex').nth(2).locator('.t3ConfirmOk').click();
   await inputConversion(page,i=>i===3,{expectModal:false});
   await inputConversion(page,false);
   await modal(page,'Accueil');
   const button=page.locator('.homeModeBtn[data-mode="one"]');
   const details=await button.locator('.modeDots .modeDot').evaluateAll(xs=>xs.map(x=>x.classList[1]));
-  assert.deepEqual(details,['green','blue','purple','red']);
+  assert.deepEqual(details,['blue','blue','purple','red']);
   assert.equal(await button.locator('.modeResult').textContent(),'3/4');
   assert.match(await button.locator('.modeDots').getAttribute('aria-label'),/virgule/);
   assert.match(await button.locator('.modeDots').getAttribute('aria-label'),/unités/);
@@ -674,7 +683,7 @@ test('Abaque activité 3 : pastilles du premier essai vert, bleu, mauve, rouge e
   }
   await page.reload();
   assert.deepEqual(await page.locator('.homeModeBtn[data-mode="one"] .modeDot').evaluateAll(xs=>xs.map(x=>x.classList[1])),
-   ['green','blue','purple','red'],'les résultats demeurent après rechargement');
+   ['blue','blue','purple','red'],'les résultats demeurent après rechargement');
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });
@@ -884,6 +893,91 @@ test('Abaque : prof all_open ouvre activité 3, mais 3/4 puis 9/12 puis 15/20 re
   assert.equal(await permitted('one'),false,'le professeur bloque toujours activité 3');
   assert.equal(await permitted('three'),false);
   assert.equal(await records(),false);
+  assert.deepEqual(h.errors,[]);
+  assert.deepEqual(h.external,[]);
+ }finally{await h.close();}
+});
+
+test('Abaque V3 : virgule gratuite 1 page, abaque à droite confirmé et disparition à la validation',async()=>{
+ const h=await setup(),{page}=h;
+ try{
+  await page.goto(h.url);await fixture(page);
+  await page.locator('[data-mode="one"]').click();
+  const all=page.locator('.t3Ex');
+  assert.equal(await all.count(),4);
+  assert.equal(await all.locator('.t3Assistance:not(.hidden)').count(),4,'virgule automatique sur chaque conversion');
+  const first=all.first();
+  assert.equal(await first.locator('.t3Open').textContent(),'✓ Virgule gratuite');
+  assert.equal(await first.locator('.t3HelpConfirm:not(.hidden)').count(),0,'aucune confirmation pour la virgule gratuite');
+  assert.equal(await first.locator('.t3FromUnit').evaluate(el=>getComputedStyle(el).textDecorationLine.includes('underline')),true);
+  assert.equal(await first.locator('.t3Abacus:not(.hidden)').count(),0);
+  assert.equal(await first.locator('.t3Correspondences').count(),0,'sans abaque, aucune flèche ne relie les unités');
+  const btn=first.locator('.t3UnitsBtn');
+  assert.match(await btn.textContent(),/Afficher l’abaque/);
+  await btn.click();
+  const dialog=first.locator('.t3HelpConfirm');
+  assert.equal(await dialog.isVisible(),true);
+  assert.match(await dialog.textContent(),/1 point de moins/);
+  await dialog.locator('.t3ConfirmCancel').click();
+  assert.equal(await dialog.isVisible(),false);
+  assert.equal(await first.locator('.t3Abacus:not(.hidden)').count(),0);
+  await btn.click();
+  await dialog.locator('.t3ConfirmOk').click();
+  assert.equal(await first.locator('.t3Abacus:not(.hidden)').count(),1);
+  assert.equal(await btn.isVisible(),false,'l’abaque remplace le bouton à droite des cases');
+  assert.equal(await first.locator('.t3UnitLabels .t3UnitLabel').count(),7);
+  await first.locator('.t3Correspondences path').first().waitFor({state:'attached'});
+  await inputConversion(page);
+  assert.equal(await page.locator('#t3ScoreNow').textContent(),'11 points','3 + 3 + 3 + 2 avec une aide abaque');
+  assert.equal(await all.locator('.t3Assistance:not(.hidden)').count(),0,'les aides disparaissent après validation');
+  assert.equal(await all.locator('.unitPromptActive').count(),0);
+  assert.equal(await all.locator('.t3HelpControls:visible').count(),0);
+  assert.deepEqual(h.errors,[]);
+  assert.deepEqual(h.external,[]);
+ }finally{await h.close();}
+});
+
+test('Abaque V3 : confirmation virgule payante puis abaque, et coupes 100 % sans aide',async()=>{
+ const h=await setup(),{page}=h;
+ try{
+  await page.goto(h.url);await fixture(page);
+  await page.locator('[data-mode="three"]').click();
+  const first=page.locator('.t3Ex').first();
+  assert.equal(await first.locator('.t3Assistance:not(.hidden)').count(),0);
+  await first.locator('.t3Open').click();
+  assert.match(await first.locator('.t3HelpConfirm').textContent(),/1 point de moins/);
+  await first.locator('.t3ConfirmCancel').click();
+  assert.equal(await first.locator('.t3Assistance:not(.hidden)').count(),0);
+  await first.locator('.t3Open').click();
+  await first.locator('.t3ConfirmOk').click();
+  assert.equal(await first.locator('.t3Assistance:not(.hidden)').count(),1);
+  assert.equal(await first.locator('.t3Abacus:not(.hidden)').count(),0);
+  assert.equal(await first.locator('.t3Correspondences').count(),0);
+  await first.locator('.t3UnitsBtn').click();
+  await first.locator('.t3ConfirmOk').click();
+  assert.equal(await first.locator('.t3Abacus:not(.hidden)').count(),1);
+  await inputConversion(page);
+  assert.equal(await page.locator('#t3ScoreNow').textContent(),'10 points','3 + 3 + 3 + 1');
+  await modal(page,'Accueil');
+
+  // Un parfait avec aide n'apporte pas de coupe, même si les XP restent possibles.
+  await page.evaluate(()=>{
+    const progress=window.MATHAS_PROGRESS;
+    progress.recordMode('one',4,4,Array(4).fill('blue'),true);
+    progress.recordMode('three',12,12,Array(12).fill('green'),true);
+    progress.recordMode('five',20,20,Array(20).fill('purple'),false);
+  });
+  assert.equal(await page.locator('#trophy-convertLaunchCard').getAttribute('data-earned'),'false');
+  await page.evaluate(()=>window.MATHAS_PROGRESS.recordMode('five',20,20,Array(20).fill('green'),true));
+  assert.equal(await page.locator('#trophy-convertLaunchCard').getAttribute('data-earned'),'true');
+  await page.evaluate(()=>window.MATHAS_PROGRESS.recordSudden(15,false));
+  assert.equal(await page.locator('#trophy-sudden-bronze').getAttribute('data-earned'),'false');
+  await page.evaluate(()=>window.MATHAS_PROGRESS.recordSudden(15,true));
+  assert.equal(await page.locator('#trophy-sudden-bronze').getAttribute('data-earned'),'true');
+  await page.locator('[data-variant="sudden"]').click();
+  await page.locator('.t3Ex').first().locator('.t3Open').click();
+  assert.match(await page.locator('.t3Ex').first().locator('.t3HelpConfirm').textContent(),/2 points de moins/,'Mort subite conserve son coefficient x2');
+  await page.locator('.t3Ex').first().locator('.t3ConfirmCancel').click();
   assert.deepEqual(h.errors,[]);
   assert.deepEqual(h.external,[]);
  }finally{await h.close();}
