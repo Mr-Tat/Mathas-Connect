@@ -970,9 +970,9 @@ test('Abaque V3 : confirmation virgule payante puis abaque, et coupes 100 % sans
   assert.equal(await page.locator('#trophy-convertLaunchCard').getAttribute('data-earned'),'false');
   await page.evaluate(()=>window.MATHAS_PROGRESS.recordMode('five',20,20,Array(20).fill('green'),true));
   assert.equal(await page.locator('#trophy-convertLaunchCard').getAttribute('data-earned'),'true');
-  await page.evaluate(()=>window.MATHAS_PROGRESS.recordSudden(3,false));
+  await page.evaluate(()=>window.MATHAS_PROGRESS.recordSudden(15,false));
   assert.equal(await page.locator('#trophy-sudden-bronze').getAttribute('data-earned'),'false');
-  await page.evaluate(()=>window.MATHAS_PROGRESS.recordSudden(3,true));
+  await page.evaluate(()=>window.MATHAS_PROGRESS.recordSudden(15,true));
   assert.equal(await page.locator('#trophy-sudden-bronze').getAttribute('data-earned'),'true');
   assert.deepEqual(h.errors,[]);
   assert.deepEqual(h.external,[]);
