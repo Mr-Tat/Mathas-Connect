@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createAbaqueHandler} from '../supabase/functions/connect-abaque/handler.mjs';
 const file=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const sql=file('supabase/migrations/20261116100000_abaque_prof_class_gates_top_two.sql');
+const modesSql=file('supabase/migrations/20261116120000_abaque_four_classroom_unlock_modes.sql');
 const html=file('apps/GRAN-abaque-m-1/index.html');
 const ui=file('index.html');
 const teacher=file('app.js');
@@ -11,13 +12,15 @@ const bootstrap=file('apps/GRAN-abaque-m-1/connect/bootstrap.mjs');
 const classroom='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 const actor='00000000-0000-4000-8000-000000000011';
 
-test('Deux seules cases de classe et droits sauvegardés via RPC professeur',()=>{
- assert.match(ui,/id="abaque-class-gates-2"/);
- assert.match(ui,/id="abaque-class-gates-3"/);
- assert.doesNotMatch(ui,/id="abaque-class-gates-[1456]"/);
- assert.match(teacher,/teacher-activity-get/);
- assert.match(teacher,/teacher-activity-set/);
- assert.match(teacher,/void abaqueGatesLoad\(\)/);
+test('Quatre modes professoraux, anciens champs et contrôle SQL conservés',()=>{
+ assert.match(ui,/name="abaque-unlock-mode" value="stage1_only"/);
+ assert.match(ui,/name="abaque-unlock-mode" value="through_2"/);
+ assert.match(ui,/name="abaque-unlock-mode" value="all_open"/);
+ assert.match(ui,/name="abaque-unlock-mode" value="mastery_80"/);
+ assert.match(teacher,/teacher-mode-get/);
+ assert.match(teacher,/teacher-mode-set/);
+ assert.match(teacher,/void abaqueModeLoad\(\)/);
+ assert.match(modesSql,/connect_abaque_class_mode_set_v1/);
  assert.match(sql,/activity_2_allowed boolean NOT NULL DEFAULT false/);
  assert.match(sql,/activity_3_allowed boolean NOT NULL DEFAULT false/);
  assert.match(sql,/connect_class_permissions[\s\S]*?teacher_id=p_actor AND can_manage/);
@@ -30,7 +33,8 @@ test('Le serveur interdit 2 et tout 3, master professeur débloqué sans offrir 
  assert.match(sql,/RAISE EXCEPTION 'teacher_authorization_required'/);
  assert.match(sql,/IF NOT p_teacher AND \(\(kind='moves'/);
  assert.match(sql,/IF kind='one' AND first_good=4 THEN PERFORM public.connect_abaque_award_v1/);
- assert.match(html,/classActivityAccess.teacherFree\|\|pedagogicalUnlock/);
+ assert.match(html,/case 'mastery_80':return pedagogicalUnlock\(what\)/);
+ assert.match(modesSql,/original_fragment[\s\S]*?IF NOT p_teacher AND/);
  assert.match(bootstrap,/snapshot.activityAccess.teacherFree/);
  assert.match(bootstrap,/Actualiser les autorisations/);
 });
@@ -67,7 +71,8 @@ test('Autorisations : élève refusé et réponses liées au compte professeur',
 });
 
 test('Mode Master local impossible à utiliser pour contourner les blocages Connect élèves',()=>{
- assert.match(html,/const unlocked=what=>\(master&&!connectBinding\)\|\|classActivityAccess\.teacherFree/);
+ assert.match(html,/const unlocked=what=>\{/);
+ assert.match(html,/if\(\(master&&!connectBinding\)\|\|classActivityAccess\.teacherFree\)return true/);
  assert.match(html,/\$\('masterToggle'\)\.classList\.toggle\('hidden',!!connectBinding&&!classActivityAccess\.teacherFree\)/);
  assert.match(html,/if\(master\|\|connectBinding&&!classActivityAccess\.teacherFree\)return/);
  assert.match(html,/if\(!snapshot\.activityAccess\?\.teacherFree\)\{master=false/);
