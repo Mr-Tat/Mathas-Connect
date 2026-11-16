@@ -47,7 +47,7 @@ test('L’application affiche bien 4/12/20 ronds et les quatre couleurs, sans to
  assert.match(html,/Convertis les longueurs, aides facultatives\./);
  assert.match(html,/data\.modeDots/);
  assert.match(html,/runDots\.push/);
- assert.match(html,/recordMode\(selectedMode,runCorrect,total,runDots\)/);
+ assert.match(html,/recordMode\(selectedMode,runCorrect,total,runDots,!runPaidHelp\)/);
  assert.match(html,/runDots\.push\(ex\.status!=='good'\?'red'/);
  const sql=read('supabase/migrations/20261116111500_abaque_classic_result_dots.sql');
  const normalized=sql.replaceAll("''","'");
