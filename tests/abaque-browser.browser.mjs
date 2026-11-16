@@ -799,7 +799,8 @@ test('Abaque : compte identifié mais non autorisé ne bascule jamais dans le mo
   await h.page.waitForFunction(()=>document.querySelector('#abaque-connect-panel')?.textContent?.includes('Connexion non disponible'));
   assert.equal(await h.page.evaluate(()=>document.documentElement.dataset.abaqueGuest),undefined);
   assert.equal(await h.page.evaluate(()=>document.documentElement.dataset.abaqueBlocked),'true');
-  assert.equal(await h.page.locator('#launchBtn').evaluate(x=>x.inert),true);
+  assert.equal(await h.page.locator('#launchBtn').evaluate(x=>x.closest('[inert]')!==null),true,
+   'le verrou est appliqué au conteneur de la page, donc hérité par ses boutons');
   assert.deepEqual(h.errors,[]);
  }finally{await h.close();}
 });
