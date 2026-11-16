@@ -95,3 +95,22 @@ test('Les arcs sont liés à la virgule, les unités de l’abaque restent fixes
  assert.doesNotMatch(h,/\.t3Abacus \.t3Movement\{/);
  assert.doesNotMatch(h,/if\(ex\.units\)\[\.\.\.headers\.children\]\.forEach/);
 });
+
+test('Activité 2 : multiplier ou diviser par dix fois chaque déplacement, sans modifier le barème',()=>{
+ const h=r('apps/GRAN-abaque-m-1/index.html');
+ assert.match(h,/const factor=String\(10\*\*Math\.abs\(n\)\)/);
+ assert.match(h,/const operation=n>0\?'×':'÷'/);
+ assert.match(h,/class="moveOperation"/);
+ assert.match(h,/\$\{operation\} \$\{factor\}.*<strong>\$\{Math\.abs\(n\)\}/);
+ assert.match(h,/\.moveLineTop \.moveOperation\{/);
+ assert.match(h,/color:var\(--moveColor\)/);
+});
+test('Abaque : les cases migrent à gauche, les unités à droite ont une largeur accrue',()=>{
+ const h=r('apps/GRAN-abaque-m-1/index.html');
+ assert.match(h,/grid-template-columns:minmax\(340px,1fr\) clamp\(262px,19vw,280px\) 120px/);
+ assert.match(h,/\.t3BoardScroll \.t3Board\{\s*margin-left:0!important;margin-right:0!important/);
+ assert.match(h,/\.t3AbacusZone\{\s*width:100%!important;max-width:280px!important/);
+ assert.match(h,/\.t3Abacus \.t3UnitLabel\{\s*height:42px!important;font-size:\.8rem!important/);
+ assert.match(h,/width:min\(310px,100%\)!important/);
+ assert.match(h,/const SHOW_ABACUS_CORRESPONDENCE_ARROWS=false/);
+});
