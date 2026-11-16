@@ -1611,7 +1611,8 @@ window.MATHAS_ITEMS = [
  const blank=()=>({stage1:{passes:[],passScores:[],topScores:[],perfectRuns:0,failed:false,failedScore:null},stage2:{passes:[],passScores:[],topScores:[],perfectRuns:0,failed:false,failedScore:null},recordsByMode:{},modes:{one:null,three:null,five:null,sudden:null},modeScores:{one:null,three:null,five:null},modeDots:{one:null,three:null,five:null},cleanPerfect:{one:false,three:false,five:false},suddenBest:0,suddenCleanBest:0,scoreRecords:{dayDate:"",dayBest:0,dayMode:"",allBest:0,allMode:"",medals:[]}});
  const TROPHY_DEFINITIONS=[['bronze','launchBtn','Architecte de l’abaque'],['silver','moveLaunchBtn','Maître des déplacements'],['gold','convertLaunchCard','Expert des conversions'],['sudden-bronze','sudden-bronze','Mort subite · bronze'],['sudden-silver','sudden-silver','Mort subite · argent'],['sudden-gold','sudden-gold','Mort subite · or']];
  const trophyKeys=TROPHY_DEFINITIONS.map(([key])=>key);
- const SUDDEN_TROPHIES=[[3,'sudden-bronze'],[5,'sudden-silver'],[8,'sudden-gold']];
+ // Trois, cinq et huit pages de cinq conversions : 15, 25 et 40 réussites.
+ const SUDDEN_TROPHIES=[[15,'sudden-bronze'],[25,'sudden-silver'],[40,'sudden-gold']];
  let TROPHIES=isolatedDemo?'mathas_connect_abaque_demo_trophies_v1':'mathas_abaque_longueurs_trophies_v1';
  let earnedTrophies=[];
  try{const saved=JSON.parse(localStorage.getItem(TROPHIES));if(Array.isArray(saved))earnedTrophies=[...new Set(saved.filter(x=>trophyKeys.includes(x)))];}catch{}
