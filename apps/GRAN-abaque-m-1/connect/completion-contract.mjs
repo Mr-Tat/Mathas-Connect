@@ -1,16 +1,20 @@
 // Shared proof validation, executed by the server before its atomic RPC.
 // No XP amount, trophy flag or native local-storage snapshot is accepted.
 export const APP_KEY='abaque-longueurs';
-export const VERSION=1;
+export const VERSION=2; // V1 reste accepté pour les parties déjà enregistrées hors ligne.
 export const MAX_TASKS=20;
 // The first ten successful record conversions carry arithmetic proofs. Later
 // successes cannot earn any extra XP; run-length segments keep their native
 // points/records exact without growing a proof array or imposing a game cap.
-export function recordPoints(kind,count){
- if(!Number.isSafeInteger(count)||count<0)fail();
- // Un point par conversion réussie en 3 vies, deux en Mort subite.
- // Les aides ne changent pas le score : seule la réussite est comptée.
- return kind==='sudden'?2*count:count;
+export function recordPoints(kind,count,version=VERSION){
+ if(!Number.isSafeInteger(count)||count<0||![1,2].includes(version)||!['lives','sudden'].includes(kind))fail();
+ // Après 10 réussites, toutes les aides sont désactivées : pas de preuve détaillée supplémentaire.
+ return count*(version===1?(kind==='sudden'?2:1):(kind==='sudden'?6:3));
+}
+export function conversionPoints(kind,{manip=false,units=false}={}){
+ if(!['one','three','five','lives','sudden'].includes(kind))fail();
+ // Le niveau d'aide le plus élevé l'emporte. Mort subite conserve son bonus x2.
+ return (units?1:manip?2:3)*(kind==='sudden'?2:1);
 }
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const allUnits=['km','hm','dam','m','dm','cm','mm'];
@@ -31,11 +35,11 @@ function conversion(task){
  return {good:task.answer===expected,corrected:task.correctedAnswer===expected,manip:task.manip,units:task.units};
 }
 export function judgeCompletion(raw){
- if(!object(raw)||raw.version!==VERSION||!UUID.test(raw.eventId)||!integer(raw.expectedResetEpoch,0,Number.MAX_SAFE_INTEGER)||!((raw.completed===true&&raw.abandoned!==true)||(raw.completed===false&&raw.abandoned===true))||raw.master!==false||
-  ['xp','trophies','state','studentId','points','firstTry'].some(key=>Object.hasOwn(raw,key)))fail();
+ if(!object(raw)||![1,VERSION].includes(raw.version)||!UUID.test(raw.eventId)||!integer(raw.expectedResetEpoch,0,Number.MAX_SAFE_INTEGER)||!((raw.completed===true&&raw.abandoned!==true)||(raw.completed===false&&raw.abandoned===true))||raw.master!==false||
+  ['xp','trophies','state','studentId','points','firstTry','assisted'].some(key=>Object.hasOwn(raw,key)))fail();
  const kind=raw.kind;
  if(raw.completed===false&&!['lives','sudden'].includes(kind))fail();
- let firstTry=0,points=0,total=0,successes=0,errors=0;
+ let firstTry=0,points=0,total=0,successes=0,errors=0,assisted=false;
  if(kind==='build'){
   if(!Array.isArray(raw.units)||raw.units.length!==4||!Array.isArray(raw.images)||raw.images.length!==8)fail();
   if(new Set(raw.units.map(x=>x?.unit)).size!==4||new Set(raw.images.map(x=>x?.image)).size!==8)fail();
@@ -55,17 +59,17 @@ export function judgeCompletion(raw){
   if(!Array.isArray(raw.tasks)||raw.tasks.length<1||raw.tasks.length>MAX_TASKS||(!record&&raw.tasks.length!==expectedCount))fail();
   for(const [index,task] of raw.tasks.entries()){
    const judged=conversion(task);
+   if(raw.version===2&&(judged.manip||judged.units))assisted=true;
    if(record){
     if(errors===(kind==='lives'?3:1)||task.correctedAnswer!=null||
      (successes>=1&&judged.units)||(successes>=3&&judged.manip))fail();
     if(judged.good){
-     points+=kind==='sudden'?2:1;
+     points+=raw.version===1?(kind==='sudden'?2:1):conversionPoints(kind,judged);
      successes++;
     }else errors++;
    }else{
-    // Activité 3 classique : 2 points par conversion correcte au premier essai.
-    // Les aides et les corrections ne créent aucun point supplémentaire.
-    if(judged.good){firstTry++;points+=2;}
+    // Les conversions corrigées rapportent 0 point ; les aides sont facturées au premier essai.
+    if(judged.good){firstTry++;points+=raw.version===1?2:conversionPoints(kind,judged);}
    }
   }
   if(record&&raw.tailSegments!=null){
@@ -73,7 +77,7 @@ export function judgeCompletion(raw){
    const extra=raw.tailSegments.reduce((a,b)=>a+b,0);
    const extraErrors=raw.tailSegments.length-1;
    if(!Number.isSafeInteger(successes+extra)||errors+extraErrors>(kind==='lives'?3:1))fail();
-   points+=recordPoints(kind,successes+extra)-recordPoints(kind,successes);
+   points+=recordPoints(kind,successes+extra,raw.version)-recordPoints(kind,successes,raw.version);
    successes+=extra;errors+=extraErrors;
   }
   if(record){
@@ -85,5 +89,7 @@ export function judgeCompletion(raw){
   total=record?successes+errors:expectedCount;
  }else fail();
  if(!integer(points,0,Number.MAX_SAFE_INTEGER))fail();
- return Object.freeze({eventId:raw.eventId.toLowerCase(),kind,firstTry,total,points,successes,errors,eligible:raw.completed,ruleset:VERSION});
+ // Préserver exactement le jugement V1 pour les preuves anciennes en attente et les accusés idempotents.
+ return Object.freeze({eventId:raw.eventId.toLowerCase(),kind,firstTry,total,points,successes,errors,eligible:raw.completed,ruleset:raw.version,
+  ...(raw.version===2?{assisted}:{} )});
 }
