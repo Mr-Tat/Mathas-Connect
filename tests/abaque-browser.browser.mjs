@@ -718,3 +718,88 @@ test('Abaque Connect démarre même si le module facultatif du tableau ne se cha
   assert.deepEqual(h.errors,[]);
  }finally{await h.close();}
 });
+
+test('Abaque sans compte : scores et trophées locaux, deux réussites à 80 %, aucun XP ni publication',async()=>{
+ const requests=[];
+ const mockSdk=`export function createClient(){return {auth:{
+  getSession:async()=>({data:{session:null}}),
+  onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})
+ }}}`;
+ const h=await setup(async route=>{
+  const url=route.request().url();
+  if(url.startsWith('https://esm.sh/@supabase/supabase-js@2.95.0')){
+   await route.fulfill({status:200,contentType:'text/javascript',body:mockSdk});return true;
+  }
+  if(url.includes('/functions/v1/')){requests.push(url);await route.abort();return true;}
+  return false;
+ });
+ try{
+  const {page}=h;
+  await page.goto(h.url+'?connect=1&class='+labClass);
+  await page.waitForFunction(()=>document.documentElement.dataset.abaqueGuest==='true');
+  assert.equal(await page.locator('#homeScreen').isVisible(),true);
+  assert.equal(await page.locator('#launchBtn').evaluate(x=>x.inert),false);
+  assert.equal(await page.locator('#moveLaunchBtn').getAttribute('aria-disabled'),'true');
+  assert.equal(await page.locator('#masterToggle').isVisible(),false);
+  assert.equal(await page.locator('#homeConnectAccount').isVisible(),false);
+  assert.match(await page.locator('#abaque-connect-panel').textContent(),/sans connexion/);
+  assert.match(await page.locator('#abaque-connect-panel').textContent(),/aucun XP/i);
+  assert.equal(await page.evaluate(()=>window.MATHAS_PROGRESS.practice),false);
+  for(let n=0;n<2;n++)await solveConstruction(page,{imperfect:true});
+  assert.equal(await page.locator('#moveLaunchBtn').getAttribute('aria-disabled'),'false',
+   'deux séries de construction >=80 % débloquent l’activité 2 sans serveur');
+  for(let n=0;n<2;n++)await solveMoves(page,{imperfect:true});
+  assert.equal(await page.locator('[data-mode="one"]').getAttribute('aria-disabled'),'false',
+   'deux séries de déplacements >=80 % débloquent l’activité 3 sans serveur');
+  await page.evaluate(()=>{
+   window.MATHAS_PROGRESS.recordMode('one',3,4,['green','green','green','red']);
+   window.MATHAS_PROGRESS.recordScore(45,'one');
+  });
+  assert.equal(await page.locator('[data-mode="three"]').getAttribute('aria-disabled'),'true',
+   '75 % est insuffisant pour débloquer 3 pages');
+  await page.evaluate(()=>window.MATHAS_PROGRESS.recordMode('one',4,4,['green','green','green','green']));
+  assert.equal(await page.locator('[data-mode="three"]').getAttribute('aria-disabled'),'false');
+  // Les trophées s’acquièrent localement comme dans la démo, sans XP.
+  await solveConstruction(page);
+  await solveConstruction(page);
+  assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'true');
+  const guestKey='mathas.abaque.guest.'+labClass+'.v1';
+  const saved=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),guestKey);
+  assert.equal(saved.modeScores.one,4);
+  assert.equal(saved.scoreRecords.allBest,45);
+  assert.ok(Array.isArray(JSON.parse(await page.evaluate(k=>localStorage.getItem(k+'.trophies'),guestKey))));
+  await page.reload();
+  await page.waitForFunction(()=>document.documentElement.dataset.abaqueGuest==='true');
+  assert.equal(await page.locator('[data-mode="three"]').getAttribute('aria-disabled'),'false');
+  assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'true');
+  assert.equal(await page.locator('#scoreHistory').textContent(),'45 pts');
+  assert.deepEqual(requests,[],'aucune requête de score/XP/projection envoyée');
+  assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
+ }finally{await h.close();}
+});
+
+test('Abaque : compte identifié mais non autorisé ne bascule jamais dans le mode invité',async()=>{
+ const subject='00000000-0000-4000-8000-000000000131';
+ const mockSdk=`export function createClient(){return {auth:{
+  getSession:async()=>({data:{session:{access_token:'fake-token',user:{id:'${subject}'}}}}),
+  onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})
+ }}}`;
+ const h=await setup(async route=>{
+  const url=route.request().url();
+  if(url.startsWith('https://esm.sh/@supabase/supabase-js@2.95.0')){
+   await route.fulfill({status:200,contentType:'text/javascript',body:mockSdk});return true;
+  }
+  if(url.includes('/functions/v1/connect-abaque')){
+   await route.fulfill({status:403,contentType:'application/json',body:'{"ok":false,"error":"not_authorized"}'});return true;
+  }
+  return false;
+ });
+ try{
+  await h.page.goto(h.url+'?connect=1&class='+labClass);
+  await h.page.waitForFunction(()=>document.querySelector('#abaque-connect-panel')?.textContent?.includes('Connexion non disponible'));
+  assert.equal(await h.page.evaluate(()=>document.documentElement.dataset.abaqueGuest),undefined);
+  assert.equal(await h.page.evaluate(()=>document.documentElement.dataset.abaqueBlocked),'true');
+  assert.equal(await h.page.locator('#launchBtn').evaluate(x=>x.inert),true);
+  assert.deepEqual(h.errors,[]);
+ }finally{await h.close();}
+});
