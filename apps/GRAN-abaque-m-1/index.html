@@ -2060,10 +2060,10 @@ const calcPoints=ex=>{
  if(ex.status==='badFinal')return 0;
  if(ex.status==='corrected')return 0;
  if(ex.status!=='good')return 0;
- if(selectedMode==='sudden')return recordVariant==='sudden'?2:1;
- // Activité 3 classique : chaque conversion juste au premier essai vaut 2 points.
- // Aides autorisées ; aucune seconde attribution lors d'une correction.
- return 2;
+ // Sans aide : 3 points ; manipulation : 2 ; unités affichées : 1.
+ // Mort subite conserve le coefficient x2, 3 vies applique la grille classique.
+ const helpPoints=ex.usedUnits?1:ex.usedManip?2:3;
+ return helpPoints*(selectedMode==='sudden'&&recordVariant==='sudden'?2:1);
 };
 function scoreView(message){
  $('t3ScoreNow').textContent=`${runScore} ${runScore===1?'point':'points'}`;
@@ -2182,7 +2182,7 @@ function makeSeries(){
  activeIndex=0;recordStep=0;locked=false;correctionMode=false;
  $('t3Summary').textContent='';$('t3Progress').textContent='';$('t3Progress').classList.add('hidden');$('t3Verify').textContent=selectedMode==='sudden'?'✓ Valider cet exercice':'✓ Vérifier les 4 réponses';
  $('t3PageLabel').textContent=selectedMode==='sudden'?`${recordVariant==='lives'?'3 vies':'Mort subite'} · Page ${pageNumber+1} · Exercice 1/5`:`Page ${pageNumber+1} / ${totalPages}`;
- $('t3Instructions').textContent=selectedMode==='sudden'&&recordVariant==='lives'?'3 vies : une réponse fausse termine cette conversion et retire un cœur. Les aides se retirent progressivement.':selectedMode!=='sudden'?'Écris les réponses. Utilise les aides si nécessaire.':suddenStreak===0?'Mort subite : aucune erreur permise. Les aides se retirent progressivement.':suddenStreak<3?'Mort subite : unités verrouillées, manipulation de la virgule autorisée.':'Mort subite : autonomie totale, aucune aide disponible.';
+ $('t3Instructions').textContent=selectedMode==='sudden'&&recordVariant==='lives'?'3 vies : une erreur retire un cœur. Sans aide : 3 pts · Virgule : 2 pts · Unités : 1 pt.':selectedMode!=='sudden'?'Réponse juste au premier essai : 3 pts sans aide · 2 pts avec la virgule · 1 pt avec les unités.':suddenStreak===0?'Mort subite : une erreur termine la partie. Sans aide : 6 pts · Virgule : 4 pts · Unités : 2 pts.':suddenStreak<3?'Mort subite : unités verrouillées, manipulation encore autorisée.':'Mort subite : autonomie totale, aucune aide disponible.';
  $('t3Verify').classList.remove('hidden');$('t3New').classList.add('hidden');
  scoreView();renderAll();
 }
