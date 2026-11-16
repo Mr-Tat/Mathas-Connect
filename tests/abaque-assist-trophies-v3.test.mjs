@@ -78,7 +78,7 @@ test('L’aide a une confirmation annulable, deux zones séparées et disparaît
 
 test('Les scripts intégrés à la page sont syntaxiquement valides avant publication',()=>{
  const html=r('apps/GRAN-abaque-m-1/index.html');
- const scripts=[...html.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/g)].map(m=>m[1].trim()).filter(Boolean);
+ const scripts=[...html.matchAll(new RegExp('<script[^>]*>([^]*?)</script>','g'))].map(m=>m[1].trim()).filter(Boolean);
  assert.ok(scripts.length>=2);
  for(const [index,script] of scripts.entries())assert.doesNotThrow(()=>new Function(script),'script '+index);
 });
