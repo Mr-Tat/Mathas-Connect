@@ -30,11 +30,12 @@ test('Quatre modes uniques par classe avec choix 80 % restaurable et aucun effac
  assert.match(hub,/puis remettre le défi des 80 % sans supprimer les résultats/);
 });
 
-test('Modes forcés contournent le seuil, mode défi rétablit la progression, Master Connect élève non autorisé',()=>{
- assert.match(html,/case 'stage1_only':return what==='stage1'/);
- assert.match(html,/case 'through_2':return what==='stage1'\|\|what==='stage2'/);
- assert.match(html,/case 'all_open':return true/);
+test('Mode professeur autorise les activités, sous-niveaux progressifs, Master Connect interdit aux élèves',()=>{
+ assert.match(html,/case 'stage1_only':teacherAllows=what==='stage1'/);
+ assert.match(html,/case 'through_2':teacherAllows=what==='stage1'\|\|what==='stage2'/);
+ assert.match(html,/case 'all_open':teacherAllows=true/);
  assert.match(html,/case 'mastery_80':return pedagogicalUnlock\(what\)/);
+  assert.match(html,/progressiveUnlocked\(what\)/);
  assert.match(sql,/definition:=replace\(definition,original_fragment,new_fragment\)/);
  assert.match(sql,/unlock_mode FROM public\.connect_abaque_classes a WHERE a\.class_id=p_class AND a\.enabled\)=''mastery_80''/);
  assert.match(sql,/activity_2_allowed=p_mode IN \('through_2','all_open','mastery_80'\)/);
@@ -53,7 +54,7 @@ test('Droits connectés : validation stricte des modes et sélection par classe'
  assert.match(html,/snapshot\.activityAccess\.unlockMode/);
  assert.match(frontend,/abaqueModeRequest\('teacher-mode-get',classId\)/);
  assert.match(frontend,/abaqueModeRequest\('teacher-mode-set',classId,\{mode\}\)/);
- assert.match(html,/connect\/bootstrap\.mjs\?v=20261116-four-modes-v1/);
+ assert.match(html,/connect\/bootstrap\.mjs\?v=20261116-guest-mode-v1/);
 });
 
 test('Le professeur peut lire et enregistrer les 4 modes ; un élève ou mode inconnu est refusé',async()=>{
