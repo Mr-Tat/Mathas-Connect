@@ -1741,7 +1741,7 @@ window.MATHAS_ITEMS = [
    const prev={one:'Activité 2',three:'1 page',five:'3 pages',sudden:'1, 3 et 5 pages'}[m];
    const total={one:4,three:12,five:20}[m];
    const best=data.modeScores[m];
-   const scoreText=Number.isInteger(best)?`${best}/${total}`:state==='green'?`${total}/${total}`:state==='orange'?'≥75 %':`?/${total}`;
+   const scoreText=Number.isInteger(best)?`${best}/${total}`:`?/${total}`;
    const noteText=m==='sudden'?(data.suddenBest>0?`Meilleure série : ${data.suddenBest}`:''):scoreText;
    document.querySelectorAll(`[data-mode="${m}"]`).forEach(b=>{
      b.classList.toggle('lockedMode',!open);b.classList.remove('grade-red','grade-orange','grade-green');if(state)b.classList.add('grade-'+state);
