@@ -349,11 +349,11 @@ test('Abaque démo : trois états de compte simulés, XP discrets et zéro modif
 });
 
 
-test('Abaque : les deux modes record exigent 80 % dans chacun des trois formats, résultats sans libellé',async()=>{
+test('Abaque : les deux modes record exigent 75 % dans chacun des trois formats, résultats sans libellé',async()=>{
  const h=await setup(),{page}=h;
  try{
   await page.goto(h.url);
-  for(const scores of [{one:3,three:10,five:16},{one:4,three:9,five:16},{one:4,three:10,five:15}]){
+  for(const scores of [{one:2,three:9,five:15},{one:3,three:8,five:15},{one:3,three:9,five:14}]){
    await fixture(page,{modeScores:scores});
    assert.equal(await page.locator('#recordChoice').isVisible(),true);
    for(const variant of ['lives','sudden']){
@@ -362,9 +362,9 @@ test('Abaque : les deux modes record exigent 80 % dans chacun des trois formats,
     await button.click({force:true});assert.equal(await page.locator('#homeScreen').isVisible(),true);
    }
   }
-  await fixture(page,{modeScores:{one:4,three:10,five:16}});
+  await fixture(page,{modeScores:{one:3,three:9,five:15}});
   for(const variant of ['lives','sudden'])assert.equal(await page.locator('[data-variant="'+variant+'"]').getAttribute('aria-disabled'),'false');
-  for(const [mode,result] of [['one','4/4'],['three','10/12'],['five','16/20']])assert.equal(await page.locator('[data-mode="'+mode+'"] .modeResult').textContent(),result);
+  for(const [mode,result] of [['one','3/4'],['three','9/12'],['five','15/20']])assert.equal(await page.locator('[data-mode="'+mode+'"] .modeResult').textContent(),result);
   assert.equal(await page.locator('#recordLock').isVisible(),false);
   assert.equal(await page.locator('.scoreMedals,.scoreMedal').count(),0);
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
@@ -751,12 +751,15 @@ test('Abaque sans compte : scores et trophées locaux, deux réussites à 80 %, 
   for(let n=0;n<2;n++)await solveMoves(page,{imperfect:true});
   assert.equal(await page.locator('[data-mode="one"]').getAttribute('aria-disabled'),'false',
    'deux séries de déplacements >=80 % débloquent l’activité 3 sans serveur');
+  await page.evaluate(()=>window.MATHAS_PROGRESS.recordMode('one',2,4,['green','green','red','red']));
+  assert.equal(await page.locator('[data-mode="three"]').getAttribute('aria-disabled'),'true',
+   '2/4 est insuffisant pour débloquer 3 pages');
   await page.evaluate(()=>{
    window.MATHAS_PROGRESS.recordMode('one',3,4,['green','green','green','red']);
    window.MATHAS_PROGRESS.recordScore(45,'one');
   });
-  assert.equal(await page.locator('[data-mode="three"]').getAttribute('aria-disabled'),'true',
-   '75 % est insuffisant pour débloquer 3 pages');
+  assert.equal(await page.locator('[data-mode="three"]').getAttribute('aria-disabled'),'false',
+   '3/4 ouvre 3 pages dès 75 %');
   await page.evaluate(()=>window.MATHAS_PROGRESS.recordMode('one',4,4,['green','green','green','green']));
   assert.equal(await page.locator('[data-mode="three"]').getAttribute('aria-disabled'),'false');
   // Les trophées s’acquièrent localement comme dans la démo, sans XP.
@@ -802,5 +805,86 @@ test('Abaque : compte identifié mais non autorisé ne bascule jamais dans le mo
   assert.equal(await h.page.locator('#launchBtn').evaluate(x=>x.closest('[inert]')!==null),true,
    'le verrou est appliqué au conteneur de la page, donc hérité par ses boutons');
   assert.deepEqual(h.errors,[]);
+ }finally{await h.close();}
+});
+
+test('Abaque : prof all_open ouvre activité 3, mais 3/4 puis 9/12 puis 15/20 restent obligatoires',async()=>{
+ const subject='00000000-0000-4000-8000-000000000175';
+ const pupil='00000000-0000-4000-8000-000000000176';
+ const mockSdk=`export function createClient(){return {auth:{
+  getSession:async()=>({data:{session:{access_token:'fake-token',user:{id:'${subject}'}}}}),
+  onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})
+ }}}`;
+ const snapshot={ok:true,status:'approved',ruleset:1,appKey:'abaque-longueurs',classId:labClass,
+  authSubject:subject,studentId:pupil,revision:0,resetEpoch:0,displayName:'Eleve 75',
+  state:{},trophies:[],activityAccess:{activity2:true,activity3:true,teacherFree:false,unlockMode:'all_open'},
+  xp:{max:204,appXp:0,total:0,remaining:{build:20,moves:20,one:20,three:32,five:40,lives:72,sudden:72}}};
+ const h=await setup(async route=>{
+  const url=route.request().url();
+  if(url.startsWith('https://esm.sh/@supabase/supabase-js@2.95.0')){
+   await route.fulfill({status:200,contentType:'text/javascript',body:mockSdk});return true;
+  }
+  if(url.includes('/functions/v1/connect-abaque')){
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(snapshot)});return true;
+  }
+  if(url.includes('/functions/v1/connect-api')){
+   await route.fulfill({status:404,contentType:'application/json',body:'{"ok":false}'});return true;
+  }
+  return false;
+ });
+ try{
+  const {page}=h;
+  await page.goto(h.url+'?connect=1&class='+labClass);
+  await page.waitForFunction(()=>document.documentElement.dataset.abaqueConnected==='true');
+  const btn=mode=>page.locator('#homeModeGrid [data-mode="'+mode+'"]');
+  const permitted=async mode=>(await btn(mode).getAttribute('aria-disabled'))==='false';
+  const records=async()=>(await page.locator('[data-variant="sudden"]').getAttribute('aria-disabled'))==='false';
+  const setProgress=async(state,access=snapshot.activityAccess)=>page.evaluate(({snap,state,access})=>{
+   window.MATHAS_PROGRESS.applyServer({...snap,state,activityAccess:access});
+  },{snap:snapshot,state,access});
+  assert.equal(await permitted('one'),true);
+  assert.equal(await permitted('three'),false);
+  assert.equal(await permitted('five'),false);
+  assert.equal(await records(),false);
+  assert.equal(await btn('one').locator('.modeResult').textContent(),'?/4');
+  assert.equal(await btn('three').locator('.modeResult').textContent(),'?/12');
+  assert.equal(await btn('five').locator('.modeResult').textContent(),'?/20');
+  assert.equal(await btn('three').isVisible(),true);
+  assert.equal(await btn('five').isVisible(),true);
+  assert.match(await page.locator('#recordLock').textContent(),/75 %/);
+  await setProgress({modeScores:{one:2}});
+  assert.equal(await permitted('three'),false,'2/4 est insuffisant');
+  await setProgress({modeScores:{one:3}});
+  assert.equal(await permitted('three'),true,'3/4 ouvre les 3 pages');
+  assert.equal(await permitted('five'),false);
+  await setProgress({modeScores:{one:3,three:8}});
+  assert.equal(await permitted('five'),false,'8/12 est insuffisant');
+  await setProgress({modeScores:{one:3,three:9}});
+  assert.equal(await permitted('five'),true,'9/12 ouvre les 5 pages');
+  assert.equal(await records(),false);
+  await setProgress({modeScores:{one:3,three:9,five:14}});
+  assert.equal(await records(),false,'14/20 est insuffisant');
+  await setProgress({modeScores:{one:3,three:9,five:15}});
+  assert.equal(await records(),true,'15/20 ouvre les deux défis de score');
+  assert.equal(await page.locator('[data-variant="lives"]').getAttribute('aria-disabled'),'false');
+
+  await page.setViewportSize({width:1440,height:900});
+  await btn('one').click();
+  const input=page.locator('#convertScreen .t3Answer').first();
+  await input.waitFor({state:'visible'});
+  assert.ok((await input.boundingBox()).width>=150,'la case réponse mesure au moins 150 px sur PC');
+  await page.setViewportSize({width:390,height:780});
+  const bounds=await input.boundingBox();
+  assert.ok(bounds.width>=135,'la réponse est suffisamment longue sur petit écran');
+  assert.ok(bounds.x+bounds.width<=390+2,'la case ne déborde pas de l’écran');
+  await page.locator('#homeBtn').click();
+
+  await setProgress({modeScores:{one:4,three:12,five:20}},
+   {activity2:true,activity3:false,teacherFree:false,unlockMode:'through_2'});
+  assert.equal(await permitted('one'),false,'le professeur bloque toujours activité 3');
+  assert.equal(await permitted('three'),false);
+  assert.equal(await records(),false);
+  assert.deepEqual(h.errors,[]);
+  assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });
