@@ -1,4 +1,5 @@
 import {createAbaqueQueue} from './offline-queue.mjs?v=20261108-classic-two';
+import {createAbaqueProjectionShare} from './projection-share.mjs';
 import {APP_KEY} from './completion-contract.mjs?v=20261108-classic-two';
 import {createXpHints} from '../xp-hints.mjs';
 import {paintConnectedAvatar} from '../../objective-record/profile-avatar-badge.mjs?v=20261107-v1';
@@ -53,6 +54,8 @@ async function connect(){
  const homeProgressRail=document.getElementById('homeConnectProgressRail');
  const homeProgressFill=document.getElementById('homeConnectProgressFill');
  let profileRead=null,profileReadAgain=false;
+ const projectionShare=createAbaqueProjectionShare({classId:CLASS,base:BASE,key:KEY,appKey:APP_KEY,
+  token:()=>token(),identity:()=>({subject,pupil,sessionActive}),status:details});
  function hideRemaining(){delete document.documentElement.dataset.abaqueXpApproved;hints.hide();}
  function draw(snapshot,online){
   latest=snapshot;
@@ -106,6 +109,7 @@ async function connect(){
    if(!validSnapshot(value,subject,pupil)){hideRemaining();queue.halt();setInert(true);details.textContent='Réponse de synchronisation invalide. Réessaie la connexion.';return;}
    const prior=latest;
    window.MATHAS_PROGRESS.applyServer(value);draw(value,true);
+   projectionShare.ack(event);
    details.textContent=queue.pending()?'Résultats en cours de synchronisation…':'Résultats enregistrés.';
    if(queue.pending())document.documentElement.dataset.abaqueAttention='true';
    else delete document.documentElement.dataset.abaqueAttention;
@@ -137,13 +141,13 @@ async function connect(){
   if(previousEpoch===null||previousEpoch!==snapshot.resetEpoch)window.MATHAS_PROGRESS.bindConnect({classId:CLASS,authSubject:subject,studentId:pupil},snapshot);
   else window.MATHAS_PROGRESS.applyServer(snapshot);
   window.MATHAS_ABAQUE_PROOF.configure(event=>{
-   try{if(queue.enqueue(event))void queue.flush();}
+   try{if(queue.enqueue(event)){projectionShare.offer(event);void queue.flush();}}
    catch(error){handleState(error.message==='invalid_completion'?'rejected':'storage-error');}
   },()=>queue.version().resetEpoch);
   draw(snapshot,online);delete document.documentElement.dataset.abaquePending;
   if(online&&!queue.pending())delete document.documentElement.dataset.abaqueAttention;
   retry.hidden=false;retry.textContent='Actualiser les autorisations';setInert(false);
-  if(online)await queue.flush();
+  if(online){await queue.flush();projectionShare.flush();}
  }
  try{
   const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.95.0');

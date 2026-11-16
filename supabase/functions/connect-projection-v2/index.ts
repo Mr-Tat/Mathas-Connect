@@ -16,12 +16,13 @@ const respond=(body:object,status=200)=>new Response(JSON.stringify(body),{statu
 const deny=(code:string,status=400)=>respond({ok:false,error:code},status);
 const uuid=(s:unknown)=>typeof s==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
 const keys=['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple',
- 'addition-ecrite-multiple','melange-calculs-ecrits'];
+ 'addition-ecrite-multiple','melange-calculs-ecrits','abaque-longueurs'];
+const percentageKeys=keys.filter(k=>k!=='abaque-longueurs');
 const allowKey=(k:unknown)=>typeof k==='string'&&keys.includes(k);
 const distinct=(x:string[])=>[...new Set(x)];
 const classOptions=(o:any)=>o&&typeof o==='object'&&!Array.isArray(o)&&
  Array.isArray(o.scoreApps)&&o.scoreApps.length<=keys.length&&o.scoreApps.every(allowKey)&&
- Array.isArray(o.percentageApps)&&o.percentageApps.length<=keys.length&&o.percentageApps.every(allowKey)&&
+ Array.isArray(o.percentageApps)&&o.percentageApps.length<=percentageKeys.length&&o.percentageApps.every(k=>percentageKeys.includes(k))&&
  Array.isArray(o.comparisons)&&o.comparisons.length<=4&&o.comparisons.every(uuid)&&
  (o.comparisonDisplay===undefined||(Array.isArray(o.comparisonDisplay)&&o.comparisonDisplay.length<=4&&
    o.comparisonDisplay.every((v:any)=>v&&uuid(v.classId)&&typeof v.score==='boolean'&&
@@ -90,10 +91,12 @@ Deno.serve(async(req:Request)=>{
    const multiplication=b.appKey==='multiplication-ecrite-simple';
    const subtraction=b.appKey==='soustraction-ecrite-simple';
    const mixed=b.appKey==='melange-calculs-ecrits';
-   const certified=addition||multiplication||subtraction||mixed;
+   const abaque=b.appKey==='abaque-longueurs';
+   const certified=addition||multiplication||subtraction||mixed||abaque;
    if(b.action==='student-score-history'){
     if(!certified)return deny('unsupported_score_history',400);
-    const {data,error}=await db.rpc(mixed?'connect_projection_mixed_verified_summary_v1'
+    const {data,error}=await db.rpc(abaque?'connect_projection_abaque_summary_v1'
+     :mixed?'connect_projection_mixed_verified_summary_v1'
      :multiplication?'connect_projection_mul_verified_summary_v1'
      :subtraction?'connect_projection_sub_verified_summary_v1'
      :'connect_projection_addition_score_summary_v1',{
@@ -106,7 +109,8 @@ Deno.serve(async(req:Request)=>{
     // Multiplication n'accepte QUE des événements issus de preuves consommées.
     // Le verrou sur l'élève et la comparaison des points sont atomiques en SQL.
     // Un ancien score, un score égal ou un événement non prouvé ne passent jamais.
-    const {data,error}=await db.rpc(mixed?'connect_projection_mixed_share_improved_v1'
+    const {data,error}=await db.rpc(abaque?'connect_projection_abaque_share_v1'
+     :mixed?'connect_projection_mixed_share_improved_v1'
      :multiplication?'connect_projection_mul_share_improved_v1'
      :subtraction?'connect_projection_sub_share_improved_v1'
      :'connect_projection_share_improved_addition_v1',{
@@ -212,7 +216,7 @@ Deno.serve(async(req:Request)=>{
     if(!error&&Array.isArray(rows))completedRows=rows;
    }catch{/* Percentage failure must not prevent scores or exploits. */}
    const selectedPct=settingsRows.find((row:any)=>row.class_id===b.classId)?.options?.percentageApps;
-   const globalPercentApps=Array.isArray(selectedPct)?selectedPct.filter(allowKey):keys;
+   const globalPercentApps=Array.isArray(selectedPct)?selectedPct.filter(k=>percentageKeys.includes(k)):percentageKeys;
    const showTeacher=b.showTeacher===true;
    const classes=classRows.filter((row:any)=>classIds.includes(row.id)).map((row:any)=>{
     const members=memberRows.filter((m:any)=>m.class_id===row.id).map((m:any)=>m.student_id);

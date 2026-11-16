@@ -578,3 +578,55 @@ test('Abaque V2 : points des aides réellement affichés en classique, 3 vies et
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });
+
+test('Abaque projection : grande fenêtre Oui/Non et envoi seulement après preuve confirmée',async()=>{
+ const h=await setup(),{page}=h,requests=[];
+ try{
+  await page.route('**/functions/v1/connect-projection-v2',async route=>{
+   requests.push(JSON.parse(route.request().postData()));
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,consentRecorded:true})});
+  });
+  await page.goto(h.url);
+  await page.evaluate(async()=>{
+   const {createAbaqueProjectionShare}=await import('./connect/projection-share.mjs');
+   const cls='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
+   const mock=()=>({version:2,eventId:crypto.randomUUID(),expectedResetEpoch:0,kind:'one',
+    completed:true,master:false,units:[],images:[],
+    tasks:Array.from({length:4},()=>({from:'m',to:'cm',source:2,answer:200,manip:false,units:false}))});
+   window.__projectionMock=mock;
+   window.__projectionTestStatus=document.querySelector('.demo-notice');
+   window.__projectionShare=createAbaqueProjectionShare({classId:cls,base:'https://awmhpfofacaglewammxt.supabase.co',
+    key:'public-test',appKey:'abaque-longueurs',token:async()=> 'fake-valid-token',
+    identity:()=>({subject:'00000000-0000-4000-8000-000000000111',
+     pupil:'00000000-0000-4000-8000-000000000222',sessionActive:true}),
+    status:window.__projectionTestStatus});
+   window.__projectionShare.offer(mock());
+  });
+  await page.locator('#abaque-projection-consent').waitFor({state:'visible'});
+  assert.match(await page.locator('#abaque-projection-consent h2').textContent(),/Envoyer ton score au tableau/);
+  const sizes=await page.locator('#abaque-projection-consent .abaque-share-choices button').evaluateAll(btns=>btns.map(b=>({
+   width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height,
+   background:getComputedStyle(b).backgroundColor,font:getComputedStyle(b).fontWeight
+  })));
+  assert.equal(sizes.length,2);assert.deepEqual(sizes[0],sizes[1],'Oui et Non ont exactement la même présentation');
+  assert.ok(sizes[0].height>=80);
+  const dialog=await page.locator('#abaque-projection-consent').boundingBox();
+  assert.ok(dialog.width>=600&&dialog.height>=350,'grande fenêtre visible');
+  await page.locator('#abaque-share-no').click();
+  assert.equal(await page.locator('#abaque-projection-consent').evaluate(el=>el.open),false);
+  assert.equal(requests.length,0,'Non ne doit jamais appeler le serveur');
+  await page.evaluate(()=>{
+   window.__projectionEvent=window.__projectionMock();
+   window.__projectionShare.offer(window.__projectionEvent);
+  });
+  await page.locator('#abaque-share-yes').click();
+  assert.equal(requests.length,0,'Oui attend la confirmation Connect avant de publier');
+  await page.evaluate(()=>window.__projectionShare.ack(window.__projectionEvent));
+  await page.waitForFunction(()=>document.querySelector('.demo-notice')?.textContent?.includes('Score envoyé au tableau'));
+  assert.equal(requests.length,1);
+  assert.equal(requests[0].action,'student-share-score');
+  assert.equal(requests[0].appKey,'abaque-longueurs');
+  assert.equal(requests[0].eventId,await page.evaluate(()=>window.__projectionEvent.eventId));
+  assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
+ }finally{await h.close();}
+});
