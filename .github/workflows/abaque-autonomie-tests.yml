@@ -41,4 +41,5 @@ jobs:
       - run: npm install --no-save --no-package-lock playwright@1.57.0
       - run: npx playwright install chromium --with-deps
       - name: Conversion avec aides en mode classique et records
-        run: node --test --test-name-pattern="Abaque V2 : points des aides réellement affichés" tests/abaque-browser.browser.mjs
+        run: |
+          node --test --test-name-pattern="Abaque V2 : points des aides réellement affichés" tests/abaque-browser.browser.mjs
