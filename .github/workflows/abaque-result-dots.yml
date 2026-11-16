@@ -1,0 +1,41 @@
+name: Abaque - ronds de résultats activité 3
+on:
+  pull_request:
+    paths:
+      - 'apps/GRAN-abaque-m-1/**'
+      - 'supabase/migrations/*abaque*'
+      - 'tests/abaque*'
+      - '.github/workflows/abaque-result-dots.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/GRAN-abaque-m-1/**'
+      - 'supabase/migrations/*abaque*'
+      - 'tests/abaque*'
+      - '.github/workflows/abaque-result-dots.yml'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+      - name: Preuves détaillées et ancienne compatibilité
+        run: |
+          node --test tests/abaque-result-dots.test.mjs tests/abaque-autonomie-points-xp75.test.mjs tests/abaque-server-contract.test.mjs
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+      - run: npm install --no-save --no-package-lock playwright@1.57.0
+      - run: npx playwright install chromium --with-deps
+      - name: Vérifier les pastilles et la sauvegarde en Chromium
+        run: |
+          node --test --test-name-pattern="Abaque activité 3 : pastilles du premier essai" tests/abaque-browser.browser.mjs
