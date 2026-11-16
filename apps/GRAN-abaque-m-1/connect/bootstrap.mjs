@@ -41,6 +41,31 @@ async function connect(){
  window.MATHAS_CELEBRATE.modal=options=>{if(!document.documentElement.dataset.abaqueBlocked)nativeModal(options);};
  if(!uuid.test(CLASS||'')){label.textContent='Classe manquante';details.textContent='Ouvre ce jeu depuis le HUB de ta classe.';return;}
  let client,subject,pupil,queue,latest=null,cacheKey=null,sessionActive=false,sessionVersion=0;
+ function startGuest(){
+  // Une absence de session autorise la progression locale. En revanche, un
+  // refus explicite du serveur pour une identité connue reste bloquant.
+  if(subject||sessionActive)return false;
+  window.MATHAS_PROGRESS.activateGuest(CLASS);
+  queue?.halt();hideRemaining();
+  document.documentElement.dataset.abaqueGuest='true';
+  document.documentElement.dataset.abaqueOnline='false';
+  delete document.documentElement.dataset.abaquePending;
+  delete document.documentElement.dataset.abaqueAttention;
+  label.textContent='🎒 Mode sans connexion';
+  details.textContent='Scores, trophées et déblocages à 80 % sur cet ordinateur seulement · aucun XP ni tableau. Les règles du professeur ne sont pas disponibles.';
+  xp.textContent='Aucun XP en mode invité';
+  dot.hidden=true;face.hidden=true;face.style.display='none';
+  retry.hidden=true;
+  demo.href='../../';demo.textContent='Retour au HUB pour se connecter';
+  if(homeAccount)homeAccount.hidden=true;
+  const notice=document.querySelector('.demo-notice');
+  if(notice)notice.textContent='Mode sans connexion · scores et trophées locaux · aucun XP · déblocages 80 %';
+  try{const probe='mathas.abaque.guest.storage-test';localStorage.setItem(probe,'1');
+   if(localStorage.getItem(probe)!=='1')throw Error('storage_disabled');
+   localStorage.removeItem(probe);
+  }catch{details.textContent='Mode sans connexion : stockage indisponible. Les résultats peuvent disparaître. Aucun XP.';}
+  setInert(false);return true;
+ }
  const cachedBindingKey='mathas.abaque.binding.'+CLASS+'.';
  const hints=createXpHints();
  const homeAccount=document.getElementById('homeConnectAccount');
@@ -239,6 +264,16 @@ async function connect(){
   void refreshConnectProfile();
   window.addEventListener('online',()=>{if(!retry.disabled)retry.click();});
   window.addEventListener('offline',()=>handleState('offline'));
- }catch(error){label.textContent='Connexion non disponible';details.textContent='Aucun résultat Connect envoyé. '+error.message;retry.hidden=!client;hideRemaining();setInert(true);}
+ }catch(error){
+  // Mode invité uniquement avant toute session authentifiée ; pas après refus serveur.
+  if(!subject&&!sessionActive){
+   try{if(startGuest())return;}catch(guestError){
+    details.textContent='Parcours local indisponible : '+guestError.message;
+   }
+  }
+  label.textContent='Connexion non disponible';
+  details.textContent='Aucun résultat Connect envoyé. '+error.message;
+  retry.hidden=!client;hideRemaining();setInert(true);
+ }
 }
 if(enabled)void connect();

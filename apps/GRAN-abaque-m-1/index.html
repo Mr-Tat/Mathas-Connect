@@ -1523,11 +1523,11 @@ window.MATHAS_ITEMS = [
  const TROPHY_DEFINITIONS=[['bronze','launchBtn','Architecte de l’abaque'],['silver','moveLaunchBtn','Maître des déplacements'],['gold','convertLaunchCard','Expert des conversions'],['sudden-bronze','sudden-bronze','Mort subite · bronze'],['sudden-silver','sudden-silver','Mort subite · argent'],['sudden-gold','sudden-gold','Mort subite · or']];
  const trophyKeys=TROPHY_DEFINITIONS.map(([key])=>key);
  const SUDDEN_TROPHIES=[[3,'sudden-bronze'],[5,'sudden-silver'],[8,'sudden-gold']];
- const TROPHIES=isolatedDemo?'mathas_connect_abaque_demo_trophies_v1':'mathas_abaque_longueurs_trophies_v1';
+ let TROPHIES=isolatedDemo?'mathas_connect_abaque_demo_trophies_v1':'mathas_abaque_longueurs_trophies_v1';
  let earnedTrophies=[];
  try{const saved=JSON.parse(localStorage.getItem(TROPHIES));if(Array.isArray(saved))earnedTrophies=[...new Set(saved.filter(x=>trophyKeys.includes(x)))];}catch{}
  function earnTrophy(key){if(connectBinding)return;if(!earnedTrophies.includes(key)){earnedTrophies.push(key);if(!demoPreviewActive)try{localStorage.setItem(TROPHIES,JSON.stringify(earnedTrophies))}catch{}}}
- let data=blank(), master=false, runPractice=false;
+ let data=blank(), master=false, runPractice=false, guestMode=false;
  // Classroom rights are loaded once with each signed Connect snapshot, no polling.
  let classActivityAccess={activity2:true,activity3:true,teacherFree:false};
  function restoreNative(saved){data=blank();if(saved&&typeof saved==='object'){
@@ -1698,9 +1698,11 @@ window.MATHAS_ITEMS = [
   $('convertLock').classList.toggle('hidden',unlocked('stage3'));
   $('convertLock').textContent=connectBinding&&!classActivityAccess.teacherFree&&['stage1_only','through_2'].includes(classActivityAccess.unlockMode)?'🔒 En attente de l’ouverture de l’activité 3 par ton professeur':'🔒 Activité 2 · '+passes('stage2')+'/2 réussites';
   $('recordLock').textContent=connectBinding&&!classActivityAccess.teacherFree&&['stage1_only','through_2'].includes(classActivityAccess.unlockMode)?'🔒 En attente de l’ouverture de l’activité 3 par ton professeur':'🔒 Au moins 80 % en 1, 3 et 5 pages';
-  $('masterToggle').hidden=!!connectBinding&&!classActivityAccess.teacherFree;
-  $('masterToggle').classList.toggle('hidden',!!connectBinding&&!classActivityAccess.teacherFree);
-  $('masterToggle').classList.toggle('active',master);$('masterTools').classList.toggle('hidden',!master);
+  const masterDisabled=guestMode||!!connectBinding&&!classActivityAccess.teacherFree;
+  $('masterToggle').hidden=masterDisabled;
+  $('masterToggle').classList.toggle('hidden',masterDisabled);
+  $('masterToggle').classList.toggle('active',!guestMode&&master);
+  $('masterTools').classList.toggle('hidden',guestMode||!master);
   const homeVisibleMode=(m)=>{
     if(m==='sudden')return true;
     if(!unlocked('stage3')) return false;
@@ -1751,11 +1753,11 @@ window.MATHAS_ITEMS = [
  }
  const reset=()=>{data=blank();save();render()};
  $('masterToggle').addEventListener('click',()=>{
-  if(master||connectBinding&&!classActivityAccess.teacherFree)return;
+  if(master||guestMode||connectBinding&&!classActivityAccess.teacherFree)return;
   $('masterError').textContent='';$('masterPassword').value='';$('masterDialog').showModal();$('masterPassword').focus();
  });
  $('masterCancel').addEventListener('click',()=>$('masterDialog').close());
- $('masterForm').addEventListener('submit',e=>{e.preventDefault();
+ $('masterForm').addEventListener('submit',e=>{e.preventDefault();if(guestMode)return;
   if($('masterPassword').value!=='Thecakeisalie'){$('masterError').textContent='Mot de passe incorrect.';$('masterPassword').value='';return}
   master=true;runPractice=true;try{sessionStorage.setItem(SESSION,'1')}catch(e){}$('masterDialog').close();render();
  });
@@ -1770,9 +1772,33 @@ window.MATHAS_ITEMS = [
   earnedTrophies=(snapshot.trophies||[]).filter(key=>trophyKeys.some(local=>'abaque:'+local===key)).map(key=>key.slice('abaque:'.length));
   save();render();
  }
+ // Invitée : progression locale isolée par classe, sans requête ni synchronisation Connect.
+ function activateGuest(classId){
+  if(connectBinding||!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(classId))
+   throw Error('guest_invalid_context');
+  guestMode=true;master=false;runPractice=false;
+  classActivityAccess={activity2:true,activity3:true,teacherFree:false};
+  STORAGE='mathas.abaque.guest.'+classId.toLowerCase()+'.v1';
+  TROPHIES=STORAGE+'.trophies';
+  SESSION=STORAGE+'.master-disabled';
+  try{sessionStorage.removeItem(SESSION)}catch{}
+  let local=null;try{local=JSON.parse(localStorage.getItem(STORAGE)||'null')}catch{}
+  restoreNative(local);
+  let savedTrophies=[];try{savedTrophies=JSON.parse(localStorage.getItem(TROPHIES)||'[]')}catch{}
+  earnedTrophies=Array.isArray(savedTrophies)?[...new Set(savedTrophies.filter(key=>trophyKeys.includes(key)))]:[];
+  earnedTrophies=earnedTrophies.filter(key=>(key!=='bronze'||data.stage1.perfectRuns>=2)
+   &&(key!=='silver'||data.stage2.perfectRuns>=2));
+  if(data.stage1.perfectRuns>=2)earnTrophy('bronze');
+  if(data.stage2.perfectRuns>=2)earnTrophy('silver');
+  if(['one','three','five'].every(mode=>data.modes[mode]==='green'))earnTrophy('gold');
+  for(const [pages,key] of SUDDEN_TROPHIES)if(data.suddenBest>=pages)earnTrophy(key);
+  if($('masterDialog').open)$('masterDialog').close();
+  render();
+ }
  function bindConnect(binding,snapshot){
   const valid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   if(![binding.classId,binding.authSubject,binding.studentId].every(value=>valid.test(value))||!Number.isSafeInteger(snapshot.resetEpoch)||snapshot.resetEpoch<0)throw Error('invalid_connect_binding');
+  if(guestMode)throw Error('guest_requires_reload_for_connect');
   connectBinding=Object.freeze({...binding});
   STORAGE='mathas.abaque.native.'+[binding.classId,binding.authSubject,binding.studentId,snapshot.resetEpoch].join('.')+'.v1';
   SESSION=STORAGE+'.master';
@@ -1795,7 +1821,7 @@ window.MATHAS_ITEMS = [
   }
   render();
  }
- window.MATHAS_PROGRESS={unlocked,beginRun,recordStage,recordMode,recordSudden,recordScore,render,grade:color,passes,reset,setDemoPreview,bindConnect,applyServer,get master(){return master},get practice(){return master||runPractice}};
+ window.MATHAS_PROGRESS={unlocked,beginRun,recordStage,recordMode,recordSudden,recordScore,render,grade:color,passes,reset,setDemoPreview,activateGuest,bindConnect,applyServer,get master(){return master},get practice(){return master||runPractice}};
  render();
 })();
 </script><script>
@@ -2689,5 +2715,5 @@ if(new URLSearchParams(location.search).get('connect')==='1'){
  document.documentElement.dataset.abaquePending='true';
  for(const element of document.body.children)if(element.tagName!=='SCRIPT')element.inert=true;
 }
-</script><script type="module" src="./connect/bootstrap.mjs?v=20261116-classroom-startup-hotfix1"></script>
+</script><script type="module" src="./connect/bootstrap.mjs?v=20261116-guest-mode-v1"></script>
 <script type="module" src="./demo-controls.mjs"></script></body></html>

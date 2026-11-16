@@ -39,4 +39,4 @@ jobs:
       - run: npm install --no-save --no-package-lock playwright@1.57.0
       - run: npx playwright install chromium --with-deps
       - run: |
-          node --test --test-name-pattern="Abaque projection : grande fenêtre Oui/Non|Abaque Connect démarre même si le module facultatif" tests/abaque-browser.browser.mjs
+          node --test --test-name-pattern="Abaque projection : grande fenêtre Oui/Non|Abaque Connect démarre même si le module facultatif|Abaque sans compte : scores et trophées locaux|Abaque : compte identifié mais non autorisé" tests/abaque-browser.browser.mjs
