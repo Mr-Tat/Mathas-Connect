@@ -36,5 +36,5 @@ test('interface : ne résumer que la relecture serveur et masquer les erreurs',(
  assert.match(app,/saved\.textContent='✓ Enregistré : '\+summarizeSavedAuthorizations/);
  assert.match(app,/authSettingsLoaded=false;\s*\$\('auth-saved-summary'\)\.hidden=true/);
  assert.match(css,/\.authorization-saved-summary\[hidden\]\{display:none!important\}/);
- assert.match(html,/app\.js\?v=20261116-abaque-menu-v1/);
+ assert.match(html,/app\.js\?v=20261116-abaque-modes-v1/);
 });
