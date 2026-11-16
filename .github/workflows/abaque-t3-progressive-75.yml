@@ -1,0 +1,41 @@
+name: Abaque - activité 3 progression à 75 pour cent
+on:
+  pull_request:
+    paths:
+      - 'apps/GRAN-abaque-m-1/**'
+      - 'supabase/migrations/*abaque_t3*'
+      - 'tests/abaque*'
+      - '.github/workflows/abaque-t3-progressive-75.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/GRAN-abaque-m-1/**'
+      - 'supabase/migrations/*abaque_t3*'
+      - 'tests/abaque*'
+      - '.github/workflows/abaque-t3-progressive-75.yml'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+      - name: Seuils et non-régression professeur, XP et records
+        run: |
+          node --test tests/abaque-t3-progressive-75.test.mjs tests/abaque-four-unlock-modes.test.mjs tests/abaque-autonomie-points-xp75.test.mjs tests/abaque-record-pages-and-xp204.test.mjs
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+      - run: npm install --no-save --no-package-lock playwright@1.57.0
+      - run: npx playwright install chromium --with-deps
+      - name: Tester les 75 pour cent connectés, invités et le champ large
+        run: |
+          node --test --test-name-pattern="Abaque : prof all_open|Abaque sans compte : scores et trophées locaux|Abaque : les deux modes record exigent 75" tests/abaque-browser.browser.mjs
