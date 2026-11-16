@@ -630,3 +630,51 @@ test('Abaque projection : grande fenêtre Oui/Non et envoi seulement après preu
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });
+
+test('Abaque activité 3 : pastilles du premier essai vert, bleu, mauve, rouge et anciennes parties neutres',async()=>{
+ const h=await setup(),{page}=h;
+ try{
+  await page.goto(h.url);
+  await fixture(page,{modes:{one:'red',three:'red',five:'red'},modeScores:{one:4,three:10,five:16}});
+  for(const [mode,count] of [['one',4],['three',12],['five',20]]){
+   const button=page.locator('.homeModeBtn[data-mode="'+mode+'"]');
+   const dot=button.locator('.modeDots .modeDot');
+   assert.equal(await dot.count(),count,'nombre de pastilles '+mode);
+   assert.equal(await button.locator('.modeDots .modeDot.empty').count(),count,
+    'anciennes séries sans détail ne doivent pas recevoir une fausse couleur');
+  }
+  // Une vraie série imparfaite remplace le résultat de référence d'une ancienne version.
+  await fixture(page,{modes:{one:'red',three:'red',five:'red'}});
+  await page.locator('[data-mode="one"]').click();
+  await page.locator('.t3Ex').nth(1).locator('.t3Open').click();
+  await page.locator('.t3Ex').nth(2).locator('.t3Open').click();
+  await page.locator('.t3Ex').nth(2).locator('.t3UnitsBtn').click();
+  await inputConversion(page,i=>i===3,{expectModal:false});
+  await inputConversion(page,false);
+  await modal(page,'Accueil');
+  const button=page.locator('.homeModeBtn[data-mode="one"]');
+  const details=await button.locator('.modeDots .modeDot').evaluateAll(xs=>xs.map(x=>x.classList[1]));
+  assert.deepEqual(details,['green','blue','purple','red']);
+  assert.equal(await button.locator('.modeResult').textContent(),'3/4');
+  assert.match(await button.locator('.modeDots').getAttribute('aria-label'),/virgule/);
+  assert.match(await button.locator('.modeDots').getAttribute('aria-label'),/unités/);
+
+  // 12 et 20 résultats : quatre ronds par ligne, aucun résultat inventé.
+  await page.evaluate(()=>{
+   for(const [mode,total] of [['three',12],['five',20]]){
+    const dots=Array.from({length:total},(_,i)=>['green','blue','purple','red'][i%4]);
+    window.MATHAS_PROGRESS.recordMode(mode,total*3/4,total,dots);
+   }
+  });
+  for(const [mode,count] of [['three',12],['five',20]]){
+   const button=page.locator('.homeModeBtn[data-mode="'+mode+'"]');
+   assert.equal(await button.locator('.modeDots .modeDot').count(),count);
+   assert.equal(await button.locator('.modeDots .modeDot.blue').count(),count/4);
+   assert.equal(await button.locator('.modeDots .modeDot.purple').count(),count/4);
+  }
+  await page.reload();
+  assert.deepEqual(await page.locator('.homeModeBtn[data-mode="one"] .modeDot').evaluateAll(xs=>xs.map(x=>x.classList[1])),
+   ['green','blue','purple','red'],'les résultats demeurent après rechargement');
+  assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
+ }finally{await h.close();}
+});
