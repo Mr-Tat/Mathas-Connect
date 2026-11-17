@@ -53,3 +53,13 @@ Aucun de ces sujets n'est déclaré **tendance statistiquement confirmée** par 
 **Solution et raccourci reproductibles :** … · **Limite ou condition d'usage :** … · **Test préventif :** … · **Dernière vérification :** …
 
 **Entretien :** chaque fiche de nouvelle app renvoie ici si elle a rencontré un motif connu ; le suivi global n'affiche **que** les tendances actionnables, pas toutes les anecdotes.
+
+## 12/11/2026 — Portage d'un guidé collectif entre moteurs natifs distincts — TENDANCE CONFIRMÉE (3 jeux)
+
+**Symptôme :** reprendre les fonctions du pilote Multiplication à l'identique a masqué des divergences vérifiables : niveaux 3/5/7 contre 5/6/7 chiffres, bouton natif `startTraining` caché derrière `trainingChoiceBtn`, retenues pouvant valoir 2–4 en Addition multiple, deux techniques d'emprunt en Soustraction, restauration de « réussi » trop permissive lorsque la retenue manque.
+
+**Cause :** mêmes intitulés de modes mais **contrats d'état et parcours DOM différents**, plus des hypothèses insuffisamment vérifiées sur la copie locale F5.
+
+**Méthode plus rapide et sûre :** repérer les signatures `generate...`, `renderCalc`, `verifyPair`, l'entrée réelle visible et les conditions exactes de réussite du moteur ; adapter chaque pont sans changer `game-original.html`. Exécuter le vrai Chromium professeur/élève : même page → F5 → erreur → correction → obligation franchie → retour et numéro stable, pour chaque méthode native. Vérifier la table privée et l'Edge séparément ; CI locale ≠ Pages/SQL/Edge hébergés.
+
+**Preuves :** [Addition simple #27](https://github.com/Mr-Tat/CE-Addition-simple/pull/27), [Addition multiple #297](https://github.com/Mr-Tat/Mathas-Connect/pull/297), [Soustraction #298](https://github.com/Mr-Tat/Mathas-Connect/pull/298), [service partagé #299](https://github.com/Mr-Tat/Mathas-Connect/pull/299). Les essais Auth réels hébergés restent **NON EXÉCUTÉS** ; ne pas les confondre avec les fixtures Chromium.
