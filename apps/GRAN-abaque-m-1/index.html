@@ -1439,6 +1439,10 @@ html[data-abaque-pending]:not([data-abaque-connected]) body::after{
 }
 
 /* V4 Connect — deux aides indépendantes, abaque à gauche et virgule à droite */
+#convertScreen .t3ManipRow .t3BoardScroll.hidden,
+#convertScreen .t3ManipRow .t3BoardSide.hidden,
+#convertScreen .t3ManipRow .t3Abacus.hidden{display:none!important}
+
 #convertScreen .t3HelpControls{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important;width:min(100%,340px)!important;align-items:stretch!important}
 #convertScreen .t3HelpControls>.t3UnitsBtn,#convertScreen .t3HelpControls>.t3Open{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;text-align:center!important;min-width:0!important;min-height:48px!important;font-size:.76rem!important;padding:6px!important;white-space:normal!important;line-height:1.15!important}
 #convertScreen .t3HelpPrice{display:block;margin-top:3px;opacity:.8;font-size:.65rem;font-weight:800}
