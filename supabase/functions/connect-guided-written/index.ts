@@ -33,7 +33,7 @@ Deno.serve(async(req:Request)=>{
  let b:any;try{b=JSON.parse(raw)}catch{return fail('invalid_json')}
  if(!b||typeof b!=='object'||Array.isArray(b)||!UUID.test(b.classId||'')||!WRITTEN_GUIDED_APPS.includes(b.appKey))return fail('invalid_request');
  const appKey=b.appKey as string;
- if(!['status','resume','start','next','previous','set-required','stop','heartbeat','closing'].includes(b.action))return fail('invalid_action');
+ if(!['status','resume','takeover','start','next','previous','set-required','stop','heartbeat','closing'].includes(b.action))return fail('invalid_action');
  if(b.action!=='status'&&user.is_anonymous===true)return fail('teacher_only',403);
  const cls=String(b.classId).toLowerCase();
  try{
@@ -101,7 +101,10 @@ Deno.serve(async(req:Request)=>{
    // start() peut remplacer une séance périmée en réutilisant sa ligne.
    if(b.action!=='start')return fail('session_not_active',409);
   }
-  if(b.action==='status'||b.action==='resume')return reply(view(current));
+  if(b.action==='status'||b.action==='resume')
+   return reply({...view(current),...(teacher?{hostOwned:mayRenewGuidedHost(current,{
+    teacherId:user.id,sessionId:current.session_id,hostId:b.hostId,pageId:b.pageId
+   })}:{})});
   if(!teacher)return fail('teacher_only',403);
   if(b.action==='start'){
    if(![1,2,3].includes(b.level)
@@ -124,6 +127,21 @@ Deno.serve(async(req:Request)=>{
   if(!current?.active||!guidedSessionLive(current))return fail('session_not_active',409);
   if(current.teacher_id!==user.id)return fail('session_owned_by_other_teacher',403);
   if(!UUID.test(b.sessionId||'')||b.sessionId!==current.session_id)return fail('session_changed',409);
+  if(b.action==='takeover'){
+   // Reprise explicitement confirmée par le titulaire authentifié de la classe.
+   if(!UUID.test(b.hostId||'')||!UUID.test(b.pageId||''))return fail('teacher_tab_required',409);
+   if(b.revision!==Number(current.revision))return fail('session_changed',409);
+   let query=db.from(TABLE).update({
+    host_client_id:b.hostId,host_page_id:b.pageId,host_seen_at:now,close_requested_at:null
+   }).eq('app_key',appKey).eq('class_id',cls).eq('session_id',current.session_id)
+    .eq('revision',current.revision).eq('active',true);
+   query=current.host_client_id?query.eq('host_client_id',current.host_client_id):query.is('host_client_id',null);
+   query=current.host_page_id?query.eq('host_page_id',current.host_page_id):query.is('host_page_id',null);
+   const {data:claimed,error:claimError}=await query.select().maybeSingle();
+   if(claimError)throw Error('takeover_failed');
+   if(!claimed)return fail('session_changed',409);
+   return reply({...view(claimed),hostOwned:true});
+  }
   if(current.host_client_id&&(!UUID.test(b.hostId||'')||b.hostId!==current.host_client_id))
    return fail('session_owned_by_other_tab',403);
   if(current.host_page_id&&(!UUID.test(b.pageId||'')||b.pageId!==current.host_page_id))
