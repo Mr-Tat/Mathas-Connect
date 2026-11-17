@@ -224,13 +224,21 @@ for(const method of ['addBottom','takeTop'])test('Chromium soustraction '+method
   }
   await student.frameLocator('#game').locator('#menuBtn').click();
   await student.frameLocator('#game').locator('#menuScreen').waitFor({state:'visible'});
-  await student.frameLocator('#game').locator('#startSudden').evaluate(button=>button.click());
-  await student.frameLocator('#game').locator('#gameScreen').waitFor({state:'visible'});
-  assert.equal(await student.frameLocator('#game').locator('#mc-guided-bar').isVisible(),false,
-   'Mort subite reste individuel même avec une séance de classe active');
-  assert.equal(await student.frameLocator('#game').locator('body').evaluate(()=>
-   window.MathasGuidedBridge.isCollectiveActive()),false);
-  await student.frameLocator('#game').locator('#menuBtn').click();
+  // Mort subite peut être verrouillée par les résultats scolaires de l'élève.
+  // Ne jamais contourner ce verrou pour rendre le test vert.
+  const suddenLocked=await student.frameLocator('#game').locator('#startSudden').evaluate(button=>button.disabled);
+  if(!suddenLocked){
+   await student.frameLocator('#game').locator('#startSudden').click();
+   await student.frameLocator('#game').locator('#gameScreen').waitFor({state:'visible'});
+   assert.equal(await student.frameLocator('#game').locator('#mc-guided-bar').isVisible(),false,
+    'Mort subite est toujours individuelle lorsqu’elle est disponible');
+   assert.equal(await student.frameLocator('#game').locator('body').evaluate(()=>
+    window.MathasGuidedBridge.isCollectiveActive()),false);
+   await student.frameLocator('#game').locator('#menuBtn').click();
+  }else{
+   assert.equal(await student.frameLocator('#game').locator('#mc-guided-bar').isVisible(),false,
+    'Mort subite bloquée : aucun contrôle collectif dans le menu');
+  }
   await student.frameLocator('#game').locator('#trainingChoiceBtn').click();
   await student.frameLocator('#game').getByRole('button',{name:/Rejoindre la classe/}).click();
   await student.frameLocator('#game').getByText(/Guidé collectif · page/).first().waitFor();
