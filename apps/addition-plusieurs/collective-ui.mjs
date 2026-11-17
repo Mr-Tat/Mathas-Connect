@@ -34,6 +34,9 @@ export function createAdditionMultipleCollective({iframe,teacher,call,onClose,cl
   }catch{hostId=crypto.randomUUID()}
  }
  const say=msg=>{lastError=msg;if(notice)notice.textContent=msg;};
+ // Le collectif est réservé à la vue native Exercice guidé.
+ const isGuidedVisible=()=>doc?.getElementById('gameScreen')?.classList.contains('hidden')===false
+  &&bridge?.status()?.training===true;
  const el=(tag,cls,text)=>{const x=doc.createElement(tag);if(cls)x.className=cls;if(text!==undefined)x.textContent=text;return x};
  const button=(label,fn)=>{const x=el('button','mathas-collective-button',label);x.type='button';x.addEventListener('click',fn);return x};
  const classBadge=()=>{
@@ -110,7 +113,7 @@ export function createAdditionMultipleCollective({iframe,teacher,call,onClose,cl
   finally{busy=false;render()}
  }
  async function join(){
-  if(busy)return;
+  if(busy||!isGuidedVisible())return;
   const inGame=doc?.getElementById('gameScreen')?.classList.contains('hidden')===false;
   if(!joined&&inGame&&bridge?.status()?.training===false){
    if(!confirm('Quitter l’exercice en cours pour rejoindre le guidé collectif ?'))return;
@@ -146,7 +149,7 @@ export function createAdditionMultipleCollective({iframe,teacher,call,onClose,cl
   }finally{busy=false;render()}
  }
  async function start(){
-  if(!teacher||busy||!bridge||session?.active)return;
+  if(!teacher||busy||!bridge||session?.active||!isGuidedVisible())return;
   const cfg=bridge.getConfig();
   if(![1,2,3].includes(cfg.level)){say('Choisis un niveau de calcul.');return}
   busy=true;render();
@@ -295,10 +298,15 @@ export function createAdditionMultipleCollective({iframe,teacher,call,onClose,cl
   const active=validSession(session);
   const gameVisible=doc.getElementById('gameScreen')?.classList.contains('hidden')===false;
   const inGuided=gameVisible&&bridge?.status()?.training===true;
+  // Quitter le guidé détache cet onglet seulement : le cours continue au serveur,
+  // les brouillons locaux sont conservés et les contrôles sont masqués.
+  if(!inGuided&&joined){
+   flushDraft();bridge?.leave();joined=false;practicing=false;index=-1;clearAnswers();
+  }
   const startHere=teacher&&!active&&inGuided;
   const studentJoinHere=!teacher&&inGuided&&!practicing&&!joined;
   const joinHere=(active&&inGuided&&!practicing&&!joined)||studentJoinHere;
-  if(bar)bar.hidden=!((active&&(joined||inGuided))||startHere||studentJoinHere);
+  if(bar)bar.hidden=!inGuided;
   if(btnStartHere){btnStartHere.hidden=!startHere;btnStartHere.disabled=busy}
   if(btnJoinHere){btnJoinHere.hidden=!joinHere;btnJoinHere.disabled=busy;
    btnJoinHere.textContent=teacher?'Reprendre la séance':'Rejoindre la classe'}
