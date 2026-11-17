@@ -200,11 +200,11 @@ for(const method of ['addBottom','takeTop'])test('Chromium soustraction '+method
    await student.frameLocator('#game').locator('#menuScreen').waitFor({state:'visible'});
    await student.frameLocator('#game').locator('#mc-guided-bar').waitFor({state:'hidden'});
    await student.frameLocator('#game').locator('body').evaluate((_,n)=>{
-    // Le menu personnalisé peut remplacer .classic-count-btn par .countBtn.
-    const choice=document.querySelector('#menuScreen button[data-count="'+n+'"]');
+    // Le bouton natif de série déclenche DÉJÀ le démarrage automatique.
+    // Ne jamais cliquer une deuxième fois sur startClassic après ce départ.
+    const choice=document.querySelector('#menuScreen .classic-count-picker .classic-count-btn[data-count="'+n+'"]');
     if(!choice)throw Error('Série '+n+' introuvable dans le menu natif');
     choice.click();
-    document.getElementById('startClassic').click();
    },count);
    await student.frameLocator('#game').locator('#gameScreen').waitFor({state:'visible'});
    assert.equal(await student.frameLocator('#game').locator('#mc-guided-bar').isVisible(),false,
