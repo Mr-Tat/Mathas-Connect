@@ -661,7 +661,7 @@ test('Abaque activité 3 : pastilles du premier essai vert, bleu, mauve, rouge e
   const details=await button.locator('.modeDots .modeDot').evaluateAll(xs=>xs.map(x=>x.classList[1]));
   assert.deepEqual(details,['green','green','purple','red']);
   assert.equal(await button.locator('.modeResult').textContent(),'3/4');
-  assert.match(await button.locator('.modeDots').getAttribute('aria-label'),/virgule/);
+  assert.match(await button.locator('.modeDots').getAttribute('aria-label'),/sans aide/);
   assert.match(await button.locator('.modeDots').getAttribute('aria-label'),/unités/);
 
   // 12 et 20 résultats : quatre ronds par ligne, aucun résultat inventé.
