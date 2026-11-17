@@ -1,0 +1,22 @@
+name: Soustraction — guidé collectif candidat
+on:
+  pull_request:
+    paths:
+      - 'docs/integrations/applications/soustraction-guide-collectif.md'
+      - 'apps/soustraction-simple/**'
+      - 'tests/soustraction-collective-contract.test.mjs'
+      - 'tests/guided-subtraction-static.test.mjs'
+      - '.github/workflows/guided-subtraction.yml'
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Contrat, emprunts et syntaxe de l'intégration
+        run: node --test tests/soustraction-collective-contract.test.mjs tests/guided-subtraction-static.test.mjs tests/guided-subtraction-draft-security.test.mjs
