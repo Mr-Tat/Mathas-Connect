@@ -11,7 +11,7 @@ const code=html.slice(a,b);
 
 function simulate(variant){
  const build=new Function('variant',`
- let locked=false,selectedMode='sudden',recordStep=0,runCorrect=0,runQuestions=0,suddenStreak=0,runScore=0,runFinished=false,lives=3,pageNumber=0,recordVariant=variant,runPaidHelp=false;
+ let locked=false,selectedMode='sudden',recordStep=0,runCorrect=0,runQuestions=0,suddenStreak=0,runScore=0,runFinished=false,lives=3,pageNumber=0,recordVariant=variant,runUsedHelp=false;
  const nodes=new Map(), $=id=>{if(!nodes.has(id))nodes.set(id,{textContent:'',classList:{add(){},remove(){}}});return nodes.get(id)};
  const proof={first:[],page:[],complete:0};
  let series=Array.from({length:5},()=>({answer:'',result:10,status:'pending',usedManip:false,usedUnits:false,earnedPoints:null}));
