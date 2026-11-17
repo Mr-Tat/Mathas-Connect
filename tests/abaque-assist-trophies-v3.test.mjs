@@ -10,7 +10,7 @@ const proof=(kind,tasks,version=3,completed=true)=>({
  ...(completed?{}:{abandoned:true})
 });
 test('V3 : 1 page manipulation automatique gratuite (3 points), abaque -1 (2 points), XP inchangés sauf abaque',()=>{
- assert.equal(VERSION,3);
+ assert.equal(VERSION,4);
  assert.equal(conversionPoints('one',{manip:true},3),3);
  assert.equal(conversionPoints('one',{manip:true,units:true},3),2);
  assert.equal(conversionPoints('one',{manip:true},2),2,'ancienne preuve V2 stable');
@@ -25,11 +25,11 @@ test('V3 : 1 page manipulation automatique gratuite (3 points), abaque -1 (2 poi
 });
 test('V3 : 3/5 pages et 3 vies conservent 3 / 2 / 1 ; Mort subite 6 / 4 / 2',()=>{
  for(const k of ['three','five','lives']){
-  assert.equal(conversionPoints(k,{}),3);
-  assert.equal(conversionPoints(k,{manip:true}),2);
-  assert.equal(conversionPoints(k,{manip:true,units:true}),1);
+  assert.equal(conversionPoints(k,{},3),3);
+  assert.equal(conversionPoints(k,{manip:true},3),2);
+  assert.equal(conversionPoints(k,{manip:true,units:true},3),1);
  }
- assert.deepEqual([{}, {manip:true},{manip:true,units:true}].map(h=>conversionPoints('sudden',h)),[6,4,2]);
+ assert.deepEqual([{}, {manip:true},{manip:true,units:true}].map(h=>conversionPoints('sudden',h,3)),[6,4,2]);
  const clean=judgeCompletion(proof('three',Array.from({length:12},()=>good())));
  assert.equal(clean.cleanPerfect,true);assert.equal(clean.assisted,false);
  const helped=judgeCompletion(proof('five',Array.from({length:20},(_,i)=>i===7?good({manip:true}):good())));
@@ -59,12 +59,12 @@ test('Aucune coupe supplémentaire à partir des XP ou de l’ancien score ; acq
  assert.doesNotMatch(sql,/DELETE FROM|DROP TABLE|TRUNCATE TABLE/);
  assert.match(html,/if\(clean&&correct===total\)data\.cleanPerfect\[key\]=true/);
  assert.match(html,/if\(clean\)data\.suddenCleanBest=/);
- assert.match(html,/if\(selectedMode==='one'\)series\.forEach/);
- assert.match(html,/runPaidHelp=false/);
- assert.match(html,/recordMode\(selectedMode,runCorrect,total,runDots,!runPaidHelp\)/);
- assert.match(html,/recordSudden\(suddenStreak,!runPaidHelp\)/);
+ assert.match(html,/Les aides gratuites restent facultatives/);
+ assert.match(html,/runUsedHelp=false/);
+ assert.match(html,/recordMode\(selectedMode,runCorrect,total,runDots,!runUsedHelp\)/);
+ assert.match(html,/recordSudden\(suddenStreak,!runUsedHelp\)/);
  const bridge=r('apps/GRAN-abaque-m-1/connect/native-bridge.js');
- assert.match(bridge,/version:3/);
+ assert.match(bridge,/version:4/);
 });
 test('L’aide a une confirmation annulable, deux zones séparées et disparaît à la validation',()=>{
  const h=r('apps/GRAN-abaque-m-1/index.html');
@@ -72,7 +72,7 @@ test('L’aide a une confirmation annulable, deux zones séparées et disparaît
   't3UnitLabels','t3Movement','unitPromptActive','t3HelpFinished','helpValidated=true'])
   assert.ok(h.includes(s),s);
  assert.match(h,/ex\.units=true;ex\.usedUnits=true/);
- assert.match(h,/runPaidHelp=true/);
+ assert.match(h,/runUsedHelp=true/);
  assert.match(h,/width:172px/);
 });
 
