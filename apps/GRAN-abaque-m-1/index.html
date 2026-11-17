@@ -1437,6 +1437,19 @@ html[data-abaque-pending]:not([data-abaque-connected]) body::after{
 @media(max-width:580px){
  #moveScreen .moveLineTop .moveOperation{font-size:.86rem}
 }
+
+/* V4 Connect — deux aides indépendantes, abaque à gauche et virgule à droite */
+#convertScreen .t3HelpControls{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important;width:min(100%,340px)!important;align-items:stretch!important}
+#convertScreen .t3HelpControls>.t3UnitsBtn,#convertScreen .t3HelpControls>.t3Open{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;text-align:center!important;min-width:0!important;min-height:48px!important;font-size:.76rem!important;padding:6px!important;white-space:normal!important;line-height:1.15!important}
+#convertScreen .t3HelpPrice{display:block;margin-top:3px;opacity:.8;font-size:.65rem;font-weight:800}
+#convertScreen .t3ManipRow{display:flex!important;flex-flow:row wrap!important;align-items:center!important;justify-content:flex-start!important;gap:8px!important;grid-template-columns:none!important;grid-template-areas:none!important;grid-template-rows:none!important}
+#convertScreen .t3ManipRow .t3AbacusZone{display:flex!important;grid-area:auto!important;grid-column:auto!important;flex:0 1 255px!important;width:min(255px,100%)!important;max-width:310px!important;min-width:0!important;align-self:center!important}
+#convertScreen .t3ManipRow .t3Abacus{width:100%!important}
+#convertScreen .t3ManipRow .t3BoardScroll{display:flex!important;grid-area:auto!important;grid-column:auto!important;flex:1 1 340px!important;width:auto!important;max-width:100%!important;min-width:0!important;justify-content:center!important;align-items:center!important;overflow-x:auto!important;margin:0!important;padding:0!important}
+#convertScreen .t3ManipRow .t3BoardSide{display:flex!important;grid-area:auto!important;grid-column:auto!important;flex:0 1 128px!important;width:auto!important;min-width:110px!important;max-width:145px!important;flex-direction:column!important;justify-content:center!important;align-self:center!important}
+#convertScreen .t3ManipRow.abaqueOnly .t3BoardScroll,#convertScreen .t3ManipRow.abaqueOnly .t3BoardSide,#convertScreen .t3ManipRow.manipOnly .t3AbacusZone{display:none!important}
+#convertScreen .t3ManipRow.abaqueOnly .t3AbacusZone{flex:0 1 310px!important;width:min(310px,100%)!important}
+@media(max-width:760px){#convertScreen .t3HelpControls{width:100%!important}#convertScreen .t3HelpControls>.t3UnitsBtn,#convertScreen .t3HelpControls>.t3Open{font-size:.71rem!important}#convertScreen .t3ManipRow{justify-content:center!important}#convertScreen .t3ManipRow .t3AbacusZone{flex:0 1 310px!important;width:min(310px,100%)!important}#convertScreen .t3ManipRow .t3BoardScroll{flex:1 1 100%!important}#convertScreen .t3ManipRow .t3BoardSide{flex:1 1 100%!important;max-width:none!important;flex-direction:row!important}}
 </style><link rel="stylesheet" href="./abaque.css?v=trophees-sombres-20261107"><script src="./environment.js"></script></head><body><svg class="trophy-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0"><symbol id="abaque-cup" viewBox="0 0 32 36"><path d="M7 5H2v7c0 5 4 8 9 8h10c5 0 9-3 9-8V5h-5v3h2v4c0 3-3 5-6 5H11c-3 0-6-2-6-5V8h2Z" fill="var(--cup-shadow)"/><path d="M7 3h18v10c0 6-4 10-9 10s-9-4-9-10Z" fill="var(--cup-body)"/><path d="M9 5h5v12c0 2 1 3 2 4-5-1-7-4-7-8Z" fill="var(--cup-light)"/><path d="M14 22h4v7h-4Z" fill="var(--cup-shadow)"/><path d="M12 27h8l3 4H9Z" fill="var(--cup-body)"/><path d="M7 31h18v3H7Z" fill="var(--cup-shadow)"/><path d="M7 2h18v3H7Z" fill="var(--cup-light)"/></symbol></svg><div class="shell"><header><h1 class="brand">L’abaque, étape par étape.</h1><div id="recordLives" class="record-hearts hidden" role="status" aria-live="polite"></div><div class="headerBtns"><button id="homeBtn" class="btn dark hidden" type="button">← Accueil</button><button id="helpBtn" class="btn dark hidden" type="button">? Aide</button><button id="fullBtn" class="btn dark" type="button">⛶ Plein écran</button></div></header><main><aside class="demo-notice" role="note">🧪 Laboratoire · XP fictifs · aucun résultat Connect. Progression enregistrée sur cet appareil uniquement.</aside><section id="homeScreen"><div class="home-layout"><div class="home-sidebar"><div id="homeConnectAccount" class="home-connect-account" hidden role="status"><div class="home-connect-identity"><span id="homeConnectAvatar" class="home-connect-avatar" aria-hidden="true"></span><strong id="homeConnectName">Compte Connect</strong></div><div id="homeConnectLevel" class="home-connect-level" hidden><span>Niveau</span><strong id="homeConnectLevelNumber">—</strong></div><span id="homeConnectXp" class="home-connect-app-xp"></span><div id="homeConnectProgress" class="home-connect-progress" hidden><strong id="homeConnectProgressLabel">— / — XP</strong><div id="homeConnectProgressRail" class="home-connect-progress-rail" role="progressbar" aria-label="XP vers le prochain niveau" aria-valuemin="0" aria-valuemax="50" aria-valuenow="0"><span id="homeConnectProgressFill"></span></div></div></div><aside class="personal-records" aria-label="Score du jour et trophées"><div class="personal-best"><span class="record-label">☀️ Score du jour</span><div class="personal-score"><strong id="personalBest">0</strong><span>points</span></div><small id="personalBestMode">À toi de jouer !</small></div><div class="personal-collection"><div class="collection-heading"><span>Trophées obtenus</span><strong id="personalTrophyCount">0 / 6</strong></div><div class="collection-cups" id="personalTrophies"><span class="collection-trophy trophy-bronze" data-collected="bronze" role="img" aria-label="Trophée bronze non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span><span class="collection-trophy trophy-silver" data-collected="silver" role="img" aria-label="Trophée argent non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span><span class="collection-trophy trophy-gold" data-collected="gold" role="img" aria-label="Trophée or non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span><span class="collection-trophy trophy-bronze" data-collected="sudden-bronze" role="img" aria-label="Mort subite · bronze non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span><span class="collection-trophy trophy-silver" data-collected="sudden-silver" role="img" aria-label="Mort subite · argent non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span><span class="collection-trophy trophy-gold" data-collected="sudden-gold" role="img" aria-label="Mort subite · or non obtenu"><svg class="trophy-icon" viewBox="0 0 32 36" aria-hidden="true"><use href="#abaque-cup"></use></svg></span></div></div></aside>
 <div class="scorePanel hidden" id="scorePanel" aria-label="Record historique de conversion">
   <div class="scorePanelRecords"><div class="scoreRecord"><span>🏆 Record historique</span><strong id="scoreHistory">—</strong><small id="scoreHistoryMode">À battre !</small></div></div>
@@ -2327,7 +2340,7 @@ function renderLives(){
  box.querySelector('.heart-status').textContent=lives+' vies restantes';
 }
 $('homeBtn').addEventListener('click',()=>$('recordLives').classList.add('hidden'));
-let selectedMode=null, pageNumber=0, recordStep=0, totalPages=1, runCorrect=0, runQuestions=0, suddenStreak=0, runFinished=false, runScore=0, runDots=[],runPaidHelp=false;
+let selectedMode=null, pageNumber=0, recordStep=0, totalPages=1, runCorrect=0, runQuestions=0, suddenStreak=0, runFinished=false, runScore=0, runDots=[],runUsedHelp=false;
 const helpRestricted=()=>selectedMode==='sudden'&&suddenStreak>=3;
 const unitsRestricted=()=>selectedMode==='sudden'&&suddenStreak>=1;
 const calcPoints=ex=>{
@@ -2335,11 +2348,22 @@ const calcPoints=ex=>{
  if(ex.status==='badFinal')return 0;
  if(ex.status==='corrected')return 0;
  if(ex.status!=='good')return 0;
- // Sans aide : 3 points ; manipulation : 2 ; unités affichées : 1.
- // Mort subite conserve le coefficient x2, 3 vies applique la grille classique.
- const helpPoints=selectedMode==='one'?(ex.usedUnits?2:3):ex.usedUnits?1:ex.usedManip?2:3;
+ // Connect V4 : 1 page tout gratuit ; 3 pages abaque gratuit ; 5 pages 3/2/1/0.
+ // Mort subite et 3 vies préservent leur grille 3/2/1 et le coefficient x2.
+ const helpPoints=selectedMode==='one'?3:selectedMode==='three'?(ex.usedManip?2:3):
+  selectedMode==='five'?3-Number(!!ex.usedUnits)-2*Number(!!ex.usedManip):
+  ex.usedUnits?1:ex.usedManip?2:3;
  return helpPoints*(selectedMode==='sudden'&&recordVariant==='sudden'?2:1);
 };
+function hintCost(ex,kind){
+ const before=calcPoints({...ex,status:'good',earnedPoints:null});
+ const after=calcPoints({...ex,status:'good',earnedPoints:null,usedUnits:!!ex.usedUnits||kind==='units',usedManip:!!ex.usedManip||kind==='manip'});
+ return Math.max(0,before-after);
+}
+function hintLabel(ex,kind){
+ if(kind==='units'&&ex.usedUnits||kind==='manip'&&ex.usedManip)return 'Déjà utilisé';
+ const n=hintCost(ex,kind);return n?'−'+n+' point'+(n>1?'s':''):'Gratuit';
+}
 function scoreView(message){
  $('t3ScoreNow').textContent=`${runScore} ${runScore===1?'point':'points'}`;
  $('t3ScoreBadge').textContent=window.MATHAS_PROGRESS.practice?'Entraînement Master · scores non enregistrés':message||'Record du jour à battre !';
@@ -2454,12 +2478,11 @@ function choosePageTask(kind,usedPairs,usedSteps,usedDirections){
 function makeSeries(){
  const usedPairs=new Set(),usedSteps=new Set(),usedDirections=new Set();
  series=kindsForPage().map(kind=>choosePageTask(kind,usedPairs,usedSteps,usedDirections));
- // En 1 page la manipulation est automatiquement ouverte sans coût.
- if(selectedMode==='one')series.forEach(ex=>{ex.open=true;ex.usedManip=true;ex.help=makeHelp(ex);});
+ // Les aides gratuites restent facultatives pour permettre une vraie réussite sans aide.
  activeIndex=0;recordStep=0;locked=false;correctionMode=false;
  $('t3Summary').textContent='';$('t3Progress').textContent='';$('t3Progress').classList.add('hidden');$('t3Verify').textContent=selectedMode==='sudden'?'✓ Valider cet exercice':'✓ Vérifier les 4 réponses';
  $('t3PageLabel').textContent=selectedMode==='sudden'?`${recordVariant==='lives'?'3 vies':'Mort subite'} · Page ${pageNumber+1} · Exercice 1/5`:`Page ${pageNumber+1} / ${totalPages}`;
- $('t3Instructions').textContent=selectedMode==='sudden'&&recordVariant==='lives'?'3 vies : une erreur retire un cœur. Sans aide : 3 pts · Virgule : 2 pts · Unités : 1 pt.':selectedMode!=='sudden'?'Réponse juste au premier essai : 3 pts sans aide · 2 pts avec la virgule · 1 pt avec les unités.':suddenStreak===0?'Mort subite : une erreur termine la partie. Sans aide : 6 pts · Virgule : 4 pts · Unités : 2 pts.':suddenStreak<3?'Mort subite : unités verrouillées, manipulation encore autorisée.':'Mort subite : autonomie totale, aucune aide disponible.';
+ $('t3Instructions').textContent=selectedMode==='sudden'&&recordVariant==='lives'?'3 vies : une erreur retire un cœur. Sans aide : 3 pts · Virgule : 2 pts · Unités : 1 pt.':selectedMode!=='sudden'?(selectedMode==='one'?'1 page : abaque et virgule gratuits, trophée seulement sans aide.':selectedMode==='three'?'3 pages : abaque gratuit, virgule −1 point.':'5 pages : abaque −1, virgule −2, les deux −3 points.'):suddenStreak===0?'Mort subite : une erreur termine la partie. Sans aide : 6 pts · Virgule : 4 pts · Unités : 2 pts.':suddenStreak<3?'Mort subite : unités verrouillées, manipulation encore autorisée.':'Mort subite : autonomie totale, aucune aide disponible.';
  $('t3Verify').classList.remove('hidden');$('t3New').classList.add('hidden');
  scoreView();renderAll();
 }
@@ -2469,7 +2492,7 @@ function startMode(mode,variant="sudden"){
  $('homeScreen').classList.add('hidden');$('moveScreen').classList.add('hidden');$('gameScreen').classList.add('hidden');
  $('convertScreen').classList.remove('hidden');$('homeBtn').classList.remove('hidden');$('helpBtn').classList.add('hidden');
  window.MATHAS_ABAQUE_PROOF.start(mode==='sudden'?(variant==='lives'?'lives':'sudden'):mode);
- recordVariant=variant;lives=3;selectedMode=mode;totalPages={one:1,three:3,five:5,sudden:Infinity}[mode];pageNumber=0;runCorrect=0;runQuestions=0;suddenStreak=0;runFinished=false;runScore=0;runDots=[];runPaidHelp=false;
+ recordVariant=variant;lives=3;selectedMode=mode;totalPages={one:1,three:3,five:5,sudden:Infinity}[mode];pageNumber=0;runCorrect=0;runQuestions=0;suddenStreak=0;runFinished=false;runScore=0;runDots=[];runUsedHelp=false;
  $('t3Layout').classList.remove('hidden');$('t3SessionHead').classList.remove('hidden');
  makeSeries();renderLives();window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -2497,15 +2520,19 @@ function renderOne(i){
  manipulate.title=helpRestricted()?'Manipulation impossible dès la 4e question en Mort subite':'';
  unitsBtn.title=unitsRestricted()?'Unités indisponibles dès la 2e question en Mort subite':'';
  manipulate.setAttribute('aria-expanded',String(ex.open));
- manipulate.textContent=helpRestricted()?'🔒 Manipulation indisponible':selectedMode==='one'&&ex.open?'✓ Virgule gratuite':ex.open?'▦ Masquer la manipulation':'▦ Manipuler la virgule';
+ manipulate.innerHTML=helpRestricted()?'🔒 Manipulation indisponible':`<span>${ex.open?'↔ Masquer la manipulation':'↔ Manipuler la virgule'}</span><small class="t3HelpPrice">${hintLabel(ex,'manip')}</small>`;
  el.querySelector('.t3UnitsBtn').setAttribute('aria-pressed',String(ex.units));
- unitsBtn.textContent=unitsRestricted()?'🔒 Abaque indisponible':'▤ Afficher l’abaque';
- unitsBtn.classList.toggle('hidden',!ex.open||ex.units||!!ex.helpValidated);
- el.querySelector('.t3Abacus').classList.toggle('hidden',!ex.open||!ex.units||!!ex.helpValidated);
- el.querySelector('.t3Assistance').classList.toggle('hidden',!ex.open||!!ex.helpValidated);
+ unitsBtn.innerHTML=unitsRestricted()?'🔒 Abaque indisponible':`<span>${ex.units?'▦ Masquer l’abaque':'▦ Afficher l’abaque'}</span><small class="t3HelpPrice">${hintLabel(ex,'units')}</small>`;
+ el.querySelector('.t3Abacus').classList.toggle('hidden',!ex.units||!!ex.helpValidated);
+ el.querySelector('.t3Assistance').classList.toggle('hidden',(!ex.open&&!ex.units)||!!ex.helpValidated);
+ const aidRow=el.querySelector('.t3ManipRow');
+ aidRow.classList.toggle('abaqueOnly',ex.units&&!ex.open);
+ aidRow.classList.toggle('manipOnly',ex.open&&!ex.units);
+ aidRow.querySelector('.t3BoardScroll').classList.toggle('hidden',!ex.open);
+ aidRow.querySelector('.t3BoardSide').classList.toggle('hidden',!ex.open);
  const st=el.querySelector('.t3Status');
  st.textContent=ex.status==='good'?'✓ Correct.':ex.status==='retry'?'À corriger : deuxième essai.':ex.status==='corrected'?'✓ Corrigé au deuxième essai.':ex.status==='badFinal'?`✗ Réponse attendue : ${nice(ex.result)} ${ex.to}`:'';
- if(ex.open)renderBoard(i);
+ if(ex.open||ex.units)renderBoard(i);
  else drawUnitCorrespondences(el);
  updateKeypadAction();
 }
@@ -2514,9 +2541,9 @@ function renderAll(){
  series.forEach((ex,i)=>{
   const article=document.createElement('article');article.className='t3Ex';
   article.innerHTML=`<div class="t3Prompt"><div class="t3Heading"><span class="t3Num">${i+1}</span><div class="t3Expression"><span>${nice(ex.source)} <span class="t3FromUnit">${ex.from}</span> =</span><input class="t3Answer" type="text" inputmode="none" readonly autocomplete="off" spellcheck="false" aria-label="Réponse de la conversion ${i+1} ; pavé numérique de Math’as ou clavier physique" maxlength="13"><span class="t3ToUnit">${ex.to}</span></div></div>
-   <div class="t3Controls"><div class="t3HelpControls"><button class="btn t3HelpBtn t3Open" type="button" aria-expanded="false">▦ Manipuler la virgule</button><div class="t3HelpConfirm hidden" role="dialog" aria-label="Confirmation de l’aide"><p>Utiliser cette aide ? Cette réponse rapportera 1 point de moins.</p><div><button class="btn t3ConfirmCancel" type="button">Annuler</button><button class="btn t3ConfirmOk" type="button">OK</button></div></div></div><div class="t3Status" role="status"></div></div></div>
+   <div class="t3Controls"><div class="t3HelpControls"><button class="btn t3HelpBtn t3UnitsBtn" type="button" aria-pressed="false">▦ Afficher l’abaque</button><button class="btn t3HelpBtn t3Open" type="button" aria-expanded="false">↔ Manipuler la virgule</button><div class="t3HelpConfirm hidden" role="dialog" aria-label="Confirmation de l’aide"><p>Utiliser cette aide ? Cette réponse rapportera 1 point de moins.</p><div><button class="btn t3ConfirmCancel" type="button">Annuler</button><button class="btn t3ConfirmOk" type="button">OK</button></div></div></div><div class="t3Status" role="status"></div></div></div>
    <div class="t3Assistance hidden" aria-label="Manipulation de la virgule">
-   <div class="t3ManipRow"><div class="t3BoardScroll"><div class="t3Board"><div class="t3Movement" aria-hidden="true"></div><div class="t3Digits"></div><div class="t3Commas"></div></div></div><div class="t3AbacusZone"><button class="btn t3UnitsBtn" type="button" aria-pressed="false">▤ Afficher l’abaque</button><div class="t3Abacus hidden" aria-label="Abaque métrique fixe"><div class="t3UnitLabels hidden"></div></div></div><div class="t3BoardSide"><div class="t3Direction" role="status" aria-live="polite"></div><div class="t3BoardActions"><button type="button" class="btn t3ResetHelp" aria-label="Recommencer la manipulation">↺ Recommencer</button></div></div></div></div>`;
+   <div class="t3ManipRow"><div class="t3AbacusZone"><div class="t3Abacus hidden" aria-label="Abaque métrique fixe"><div class="t3UnitLabels hidden"></div></div></div><div class="t3BoardScroll"><div class="t3Board"><div class="t3Movement" aria-hidden="true"></div><div class="t3Digits"></div><div class="t3Commas"></div></div></div><div class="t3BoardSide"><div class="t3Direction" role="status" aria-live="polite"></div><div class="t3BoardActions"><button type="button" class="btn t3ResetHelp" aria-label="Recommencer la manipulation">↺ Recommencer</button></div></div></div></div>`;
   const input=article.querySelector('input');
   input.value=ex.answer;
   input.addEventListener('focus',()=>{if(!input.disabled)setActive(i)});
@@ -2525,8 +2552,7 @@ function renderAll(){
   // Toute saisie passe par le pavé Math'as, ou par le clavier physique intercepté ci-dessous.
   input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();nextAnswer()}});
   const consent=article.querySelector('.t3HelpConfirm');
-  const ask=(action)=>{
-   const loss=selectedMode==='sudden'&&recordVariant==='sudden'?2:1;
+  const ask=(action,loss)=>{
    consent.querySelector('p').textContent=`Utiliser cette aide ? Cette réponse rapportera ${loss} point${loss>1?'s':''} de moins.`;
    consent.classList.remove('hidden');
    const cancel=()=>{consent.classList.add('hidden');article.querySelector('.t3ConfirmOk').onclick=null;};
@@ -2536,22 +2562,24 @@ function renderAll(){
    article.querySelector('.t3ConfirmCancel').focus({preventScroll:true});
   };
   const openManip=()=>{
-   ex.open=true;ex.usedManip=true;
-   if(selectedMode!=='one'){ex.helpUsed=true;runPaidHelp=true}
+   ex.open=true;ex.usedManip=true;ex.helpUsed=true;runUsedHelp=true;
    if(!ex.help)ex.help=makeHelp(ex);
    renderOne(i);
   };
   article.querySelector('.t3Open').addEventListener('click',()=>{
    if(helpRestricted()||ex.helpValidated||locked||(selectedMode==='sudden'&&i!==recordStep))return;
    if(ex.open){ex.open=false;renderOne(i);return;}
-   if(selectedMode==='one'||ex.usedManip){openManip();return;}
-   ask(openManip);
+   const loss=hintCost(ex,'manip');
+   if(loss===0||ex.usedManip){openManip();return;}
+   ask(openManip,loss);
   });
   article.querySelector('.t3UnitsBtn').addEventListener('click',()=>{
-   if(unitsRestricted()||!ex.open||ex.helpValidated||ex.units||locked||(selectedMode==='sudden'&&i!==recordStep))return;
-   const openAbacus=()=>{ex.units=true;ex.usedUnits=true;ex.usedManip=true;ex.helpUsed=true;runPaidHelp=true;renderOne(i)};
-   if(ex.usedUnits){openAbacus();return;}
-   ask(openAbacus);
+   if(unitsRestricted()||ex.helpValidated||locked||(selectedMode==='sudden'&&i!==recordStep))return;
+   if(ex.units){ex.units=false;renderOne(i);return;}
+   const openAbacus=()=>{ex.units=true;ex.usedUnits=true;ex.helpUsed=true;runUsedHelp=true;if(!ex.help)ex.help=makeHelp(ex);renderOne(i)};
+   const loss=hintCost(ex,'units');
+   if(loss===0||ex.usedUnits){openAbacus();return;}
+   ask(openAbacus,loss);
   });
   article.querySelector('.t3ResetHelp').addEventListener('click',()=>{
    if(ex.helpValidated||locked)return;
@@ -2701,7 +2729,6 @@ window.addEventListener('scroll',scheduleUnitCorrespondences,{passive:true});
 $('t3ExList').addEventListener('scroll',scheduleUnitCorrespondences,{passive:true,capture:true});
 function renderBoard(i){
  const ex=series[i],state=ex.help,article=$('t3ExList').children[i];if(!state)return;
- article.querySelector('.t3UnitsBtn').textContent='▤ Afficher l’abaque';
  article.querySelector('.t3UnitsBtn').setAttribute('aria-pressed',String(ex.units));
  const headers=article.querySelector('.t3UnitLabels');headers.replaceChildren();headers.classList.toggle('hidden',!ex.units);
  if(ex.units)UNITS.forEach((u,j)=>{
@@ -2794,7 +2821,7 @@ function finishRecordAnswer(){
  if(good){
   suddenStreak++;
   runScore+=ex.earnedPoints;
-  if(recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak,!runPaidHelp);
+  if(recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak,!runUsedHelp);
  }else lives=recordVariant==='lives'?lives-1:0;
  runFinished=lives===0;
  renderLives();
@@ -2811,7 +2838,7 @@ function finishRecordAnswer(){
  if(runFinished){
   locked=true;
   window.MATHAS_ABAQUE_PROOF.complete();
-  if(recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak,!runPaidHelp);
+  if(recordVariant==='sudden')window.MATHAS_PROGRESS.recordSudden(suddenStreak,!runUsedHelp);
   $('t3Summary').textContent=`Fin de partie : ${suddenStreak} conversions réussies · ${runScore} points.`;
   $('t3PageLabel').textContent=`${label} · ${suddenStreak} conversions réussies`;
   $('t3Verify').classList.add('hidden');
@@ -2864,7 +2891,7 @@ function finishPage(firstGood,corrected=0){
  else{
    runFinished=true;
    window.MATHAS_ABAQUE_PROOF.complete();
-   const grade=window.MATHAS_PROGRESS.recordMode(selectedMode,runCorrect,total,runDots,!runPaidHelp);
+   const grade=window.MATHAS_PROGRESS.recordMode(selectedMode,runCorrect,total,runDots,!runUsedHelp);
    const recordResult=window.MATHAS_PROGRESS.recordScore(runScore,selectedMode);notifyRecord(recordResult);
    $('t3Summary').textContent=`Série : ${runCorrect}/${total} · ${runScore} points · ${grade==='green'?'100 % !':grade==='orange'?'75 % atteint !':'À réessayer.'}`;
    $('t3New').textContent='↻ Nouvelle série';
