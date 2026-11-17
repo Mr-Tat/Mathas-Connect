@@ -654,7 +654,6 @@ test('Abaque activité 3 : pastilles du premier essai vert, bleu, mauve, rouge e
   await fixture(page,{modes:{one:'red',three:'red',five:'red'}});
   await page.locator('[data-mode="one"]').click();
   await page.locator('.t3Ex').nth(2).locator('.t3UnitsBtn').click();
-  await page.locator('.t3Ex').nth(2).locator('.t3ConfirmOk').click();
   await inputConversion(page,i=>i===3,{expectModal:false});
   await inputConversion(page,false);
   await modal(page,'Accueil');
