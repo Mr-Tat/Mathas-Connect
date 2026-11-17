@@ -193,6 +193,45 @@ for(const method of ['addBottom','takeTop'])test('Chromium soustraction '+method
    assert.ok(rect&&rect.x>=-2&&rect.x+rect.width<=width+2,'bannière déborde : '+width);
   }
 
+  // Régression : une séance déjà rejointe ne doit pas contaminer les autres modes.
+  const activeClassSession=state.sessionId,activeClassPages=state.pages.length;
+  for(const count of [4,10,20]){
+   await student.frameLocator('#game').locator('#menuBtn').click();
+   await student.frameLocator('#game').locator('#menuScreen').waitFor({state:'visible'});
+   await student.frameLocator('#game').locator('#mc-guided-bar').waitFor({state:'hidden'});
+   await student.frameLocator('#game').locator('body').evaluate(n=>{
+    document.querySelector('#menuScreen .classic-count-btn[data-count="'+n+'"]').click();
+    document.getElementById('startClassic').click();
+   },count);
+   await student.frameLocator('#game').locator('#gameScreen').waitFor({state:'visible'});
+   assert.equal(await student.frameLocator('#game').locator('#mc-guided-bar').isVisible(),false,
+    'le collectif ne doit pas apparaître dans '+count+' calculs');
+   assert.equal(await student.frameLocator('#game').locator('body').evaluate(()=>
+    window.MathasGuidedBridge.isCollectiveActive()),false,
+    'une série classique ne peut jamais déclencher une action collective');
+   assert.equal(state.active,true);
+   assert.equal(state.sessionId,activeClassSession);
+   assert.equal(state.pages.length,activeClassPages);
+   await student.frameLocator('#game').locator('#menuBtn').click();
+   await student.frameLocator('#game').locator('#trainingChoiceBtn').click();
+   await student.frameLocator('#game').getByRole('button',{name:/Rejoindre la classe/}).click();
+   await student.frameLocator('#game').getByText(/Guidé collectif · page/).first().waitFor();
+   assert.equal(await student.frameLocator('#game').locator('#mc-guided-bar').isVisible(),true,
+    'la classe se rejoint à nouveau dans Exercice guidé');
+  }
+  await student.frameLocator('#game').locator('#menuBtn').click();
+  await student.frameLocator('#game').locator('#menuScreen').waitFor({state:'visible'});
+  await student.frameLocator('#game').locator('#startSudden').evaluate(button=>button.click());
+  await student.frameLocator('#game').locator('#gameScreen').waitFor({state:'visible'});
+  assert.equal(await student.frameLocator('#game').locator('#mc-guided-bar').isVisible(),false,
+   'Mort subite reste individuel même avec une séance de classe active');
+  assert.equal(await student.frameLocator('#game').locator('body').evaluate(()=>
+   window.MathasGuidedBridge.isCollectiveActive()),false);
+  await student.frameLocator('#game').locator('#menuBtn').click();
+  await student.frameLocator('#game').locator('#trainingChoiceBtn').click();
+  await student.frameLocator('#game').getByRole('button',{name:/Rejoindre la classe/}).click();
+  await student.frameLocator('#game').getByText(/Guidé collectif · page/).first().waitFor();
+
   // Le vrai onglet professeur survit à F5 (hostId en sessionStorage) sans créer de page.
   const originalSession=state.sessionId,originalPages=state.pages.length;
   await open('teacher',teacher);
