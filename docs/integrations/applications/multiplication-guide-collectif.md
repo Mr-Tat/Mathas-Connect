@@ -102,3 +102,9 @@
 - Source de divergence : chaque navigateur tire aléatoirement ses propres opérations ; la séance doit porter les nombres déterminés côté serveur.
 - Ne pas déclencher les clics natifs automatiques « Nouveaux calculs » pendant le guidé collectif.
 - Contrôles professeur validés par Edge, pas simplement par le paramètre URL ou le verrou local de présentation.
+
+## Correctif 17/11/2026 — collectif uniquement en Exercice guidé
+- Symptôme : après une séance de classe rejointe, le bandeau collectif pouvait rester visible dans une série « Calculs » (condition d'affichage basée sur `joined` même hors du guidé) ; le pont natif pouvait intercepter « Suivant » dans un autre mode si son drapeau `active` persistait.
+- Correction sur la branche `fix/multiplication-collectif-guided-only-20261117` : bandeau et commandes seulement quand le moteur natif affiche réellement `Exercice guidé`, sortie locale automatique lors du changement de mode avec sauvegarde des brouillons, contrôle natif du guidé avant toute interception. La séance serveur du professeur **n'est pas terminée** en quittant le guidé ; reprise explicite depuis le guidé.
+- Recette ajoutée : série de 4, 10 puis 20 calculs pendant qu'une séance professeur reste active ; absence des contrôles collectifs et validation native indépendante, puis « Reprendre la séance » dans Exercice guidé.
+- État : **proposé sur PR, non livré automatiquement**. Tests CI / navigateur sur branche et publication Pages à distinguer ; recette authentifiée Monsieur T + Élève A encore à effectuer.
