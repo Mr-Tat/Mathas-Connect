@@ -80,12 +80,15 @@ try{
      // report 4, unité 2, report 2, dizaine 8.
      for(const digit of ['4','2','2','8'])pad(digit);
      const saved=window.MathasGuidedBridge.snapshot().find(x=>x.index===0)?.states[0];
-     return {answers:saved?.answerValues,carries:method==='top'?saved?.carryValues:saved?.sideCarryValues};
+     const usedReports=[...document.querySelectorAll('#calculationsPair .side-carry-panel[data-side-calc="0"] .side-carry-used-item')].map(x=>Number(x.dataset.usedCol));
+     return {answers:saved?.answerValues,carries:method==='top'?saved?.carryValues:saved?.sideCarryValues,usedReports};
     },method);
     assert.equal(state.carries[1],'4',method+' : report des unités');
     assert.equal(state.answers[0],'2',method+' : unités directement après report');
     assert.equal(state.carries[2],'2',method+' : report des dizaines');
     assert.equal(state.answers[1],'8',method+' : dizaines après second report');
+    if(method==='side')assert.deepEqual(state.usedReports,[1,2],
+     'les deux reports latéraux doivent rester visibles après avoir écrit les unités');
    }finally{await page.close()}
   }
  });
