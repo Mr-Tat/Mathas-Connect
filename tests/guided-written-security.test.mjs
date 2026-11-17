@@ -26,3 +26,16 @@ test('Base : aucune donnée de copie élève ; table privée et RLS',()=>{
  for(const forbidden of ['answer_values','student_id','xp_awarded','score_awarded','trophy_id'])
   assert.ok(!ddl.toLowerCase().includes(forbidden),forbidden);
 });
+
+test('Reprise inter-onglet : même enseignant, clic explicite, CAS sur le propriétaire',()=>{
+ const teacher=edge.indexOf("if(!teacher)return fail('teacher_only',403)");
+ const same=edge.indexOf("if(current.teacher_id!==user.id)");
+ const take=edge.indexOf("if(b.action==='takeover')");
+ const normal=edge.indexOf("if(current.host_client_id&&");
+ assert.ok(teacher>=0&&teacher<same&&same<take&&take<normal);
+ assert.match(edge,/'takeover'/);
+ assert.match(edge,/hostOwned:mayRenewGuidedHost\(current/);
+ assert.match(edge,/\.eq\('app_key',appKey\)\.eq\('class_id',cls\)\.eq\('session_id',current\.session_id\)/);
+ assert.match(edge,/command=current\.host_client_id\?command\.eq\('host_client_id',current\.host_client_id\)/);
+ assert.match(edge,/command=current\.host_page_id\?command\.eq\('host_page_id',current\.host_page_id\)/);
+});
