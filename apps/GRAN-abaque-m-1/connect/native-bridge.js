@@ -12,7 +12,7 @@
  window.MATHAS_ABAQUE_PROOF=Object.freeze({
   configure(callback,getEpoch){sink=callback;epoch=getEpoch;},
   start(kind){
-   current=sink?{version:3,eventId:crypto.randomUUID(),expectedResetEpoch:epoch(),kind,units:[],images:[],tasks:[],prefixSuccesses:0,sent:false}:null;
+   current=sink?{version:4,eventId:crypto.randomUUID(),expectedResetEpoch:epoch(),kind,units:[],images:[],tasks:[],prefixSuccesses:0,sent:false}:null;
    page=null;
   },
   units(positions){if(current&&!current.units.length)current.units=['km','m','cm','mm'].map(unit=>({unit,placed:positions[unit]}));},
