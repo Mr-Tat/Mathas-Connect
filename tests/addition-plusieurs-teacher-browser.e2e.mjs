@@ -71,9 +71,9 @@ try{
   });
   await page.goto(origin+'/?portail=prof&profClass='+classroom,
    {waitUntil:'domcontentloaded'});
-  await page.locator('.results-overview-table').waitFor({timeout:20000});
+  await page.locator('table.results-overview-table:not(.results-overview-floating-table)').waitFor({timeout:20000});
   assert.equal(interceptedTeacherModule,!enabled,'test must override the actual versioned app.js URL');
-  const labels=await page.locator('.results-overview-table thead th').allTextContents();
+  const labels=await page.locator('table.results-overview-table:not(.results-overview-floating-table) thead th').allTextContents();
   assert.ok(labels.some(x=>x==='Élève'));
   assert.equal(labels.some(x=>x.includes('Addition de plusieurs nombres')),enabled,
    'new game column must respect the test-only professor flag');
