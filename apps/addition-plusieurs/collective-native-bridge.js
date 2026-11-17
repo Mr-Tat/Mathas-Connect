@@ -3,7 +3,9 @@
 const mathasGuidedAnswers=new Map(), mathasGuidedSpecs=new Map();
 const mathasGuidedBridge={
  active:false,pageIndex:-1,onContinue:null,currentSessionId:null,
- isCollectiveActive(){return this.active},
+ // Aucun bouton des séries, de Mort subite ou HARD ne commande la classe.
+ isCollectiveActive(){return this.active&&session?.mode==='training'
+  &&document.getElementById('gameScreen')?.classList.contains('hidden')===false},
  useSession(id){
   if(!id||id===this.currentSessionId)return;
   mathasGuidedAnswers.clear();mathasGuidedSpecs.clear();
@@ -33,7 +35,7 @@ const mathasGuidedBridge={
   const maxDigits=Number(trainingMaxDigits.value);
   return {level:maxDigits===5?1:maxDigits===6?2:maxDigits===7?3:0};
  },
- status(){return {training:session?.mode==='training',collective:this.active,
+ status(){return {training:session?.mode==='training',collective:this.isCollectiveActive(),
   pageIndex:this.pageIndex,phase,finished:states?.length===2&&states.every(s=>s.solved)}},
  finishedAt(index){
   if(this.active&&index===this.pageIndex&&session?.mode==='training')
