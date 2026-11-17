@@ -1,4 +1,6 @@
-# Soustraction simple — guidé collectif (chantier en cours)
+# Soustraction simple — guidé collectif
+
+**LIVE le 17/11/2026** — [PR #298](https://github.com/Mr-Tat/Mathas-Connect/pull/298) fusionnée ; [GitHub Pages réussi](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/44053182710) et [smoke production en lecture seule réussi](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/44053182609). Edge commun JWT v1 et table RLS publiés. Chromium natif des méthodes `addBottom` et `takeTop` vert. Vérifier encore Auth en vrai avec professeur et élève TEST. Contrôles de classe uniquement dans Exercice guidé, reprise enseignant volontaire, aucune modification des preuves scolaires, XP, scores ni visibilités.
 
 ## Contrat pédagogique validé
 Copier le comportement de Multiplication simple avec optimisation #295 : aucune surveillance périodique côté élève ; « Rejoindre la classe » et « Suivant / Vérifier la suite » interrogent le serveur au clic. Deux opérations par page, copies personnelles, page ordinaire libre, obligation rétroactive, arrivée tardive, entraînement séparé, reprise F5 locale, aucun XP/score/trophée.
