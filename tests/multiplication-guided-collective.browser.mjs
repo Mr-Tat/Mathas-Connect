@@ -177,6 +177,23 @@ try{
    assert.equal(await page.locator('#calculationsPair .mc-guided-answer-overlay').count(),0);
    assert.deepEqual(await snapshot(),before,'masquer doit retrouver exactement la saisie initiale');
    assert.equal(await toolbar.getByRole('button',{name:/Élève au tableau/}).count(),0);
+   // Une classe peut rester active au serveur sans polluer Calculs ou les autres modes.
+   await page.locator('#menuBtn').click();
+   await page.waitForFunction(()=>window.MathasGuidedBridge.status().collective===false);
+   assert.equal(await guided.isVisible(),false,'aucun contrôle collectif dans le menu');
+   for(const count of [4,10,20]){
+    await page.locator('.classic-count-btn[data-count="'+count+'"]').click();
+    await page.locator('#gameScreen').waitFor({state:'visible'});
+    assert.equal(await guided.isVisible(),false,count+' calculs restent individuels');
+    assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.isCollectiveActive()),false,
+     'la validation native des séries ne doit pas commander la classe');
+    assert.equal(await page.evaluate(()=>window.__sharedPages.length),2,'la séance professeur reste intacte');
+    await page.locator('#menuBtn').click();
+   }
+   await page.locator('#startTraining').click();
+   await guided.getByRole('button',{name:/Reprendre la séance/}).click();
+   await page.waitForFunction(()=>window.MathasGuidedBridge.status().collective===true);
+   assert.equal(await guided.isVisible(),true,'la classe se reprend uniquement en Exercice guidé');
   }finally{await page.close()}
  });
 
