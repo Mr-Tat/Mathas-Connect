@@ -187,6 +187,22 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
   assert.deepEqual(await student.frameLocator('#game').locator('#calculationsPair .calc-label').allTextContents(),['Calcul 1 · 3 nombres','Calcul 2 · 3 nombres']);
 
 
+
+  // Audit transversal : quitter le collectif pour travailler seul, puis revenir,
+  // sans modifier les questions/obligations serveur ni interroger en arrière-plan.
+  const readsBeforeSolo=studentReads,serverPagesBeforeSolo=state.pages.length;
+  await student.frameLocator('#game').getByRole('button',{name:/M.entraîner en attendant/}).click();
+  assert.equal(await student.frameLocator('#game').locator('body').evaluate(()=>
+   window.MathasGuidedBridge.isCollectiveActive()),false,'entrainement individuel détaché');
+  assert.equal(studentReads,readsBeforeSolo,'entraînement local : aucune lecture réseau');
+  assert.equal(state.active,true,'l élève ne ferme pas la séance professeur');
+  await student.frameLocator('#game').getByRole('button',{name:'Rejoindre la classe'}).click();
+  await student.frameLocator('#game').getByText(/Guidé collectif · page 1/).waitFor();
+  assert.equal(await student.frameLocator('#game').locator('body').evaluate(()=>
+   window.MathasGuidedBridge.isCollectiveActive()),true,'retour au collectif');
+  assert.equal(studentReads,readsBeforeSolo+1,'retour : une seule lecture explicite');
+  assert.equal(state.pages.length,serverPagesBeforeSolo,'aucune page ajoutée par un élève');
+
   // Contrôle de la bannière collective sur téléphone, petit téléphone et PC.
   for(const width of [320,390,1160]){
    await student.setViewportSize({width,height:800});
@@ -257,6 +273,21 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
   await teacher.waitForFunction(()=>window.__activeGuidedHeartbeatTimers===0);
   assert.equal(state.active,false);
 
+
+  // Après la fermeture du professeur, le dernier clic élève se détache de la
+  // classe et le guidé individuel natif reste accessible (sans nouvelle séance).
+  const readsBeforeTeacherStop=studentReads;
+  await student.frameLocator('#game').getByRole('button',{name:/Suivant|Vérifier la suite/}).click();
+  await student.frameLocator('#game').getByText(/séance collective est terminée/).waitFor();
+  assert.equal(await student.frameLocator('#game').locator('body').evaluate(()=>
+   window.MathasGuidedBridge.isCollectiveActive()),false,'une classe terminée ne retient pas l élève');
+  assert.equal(studentReads,readsBeforeTeacherStop+1,'fin : un seul statut au clic élève');
+  await student.frameLocator('#game').locator('#menuBtn').click();
+  await student.frameLocator('#game').locator('#trainingChoiceBtn').click();
+  assert.equal(await student.frameLocator('#game').locator('body').evaluate(()=>
+   window.MathasGuidedBridge.status().training&&!window.MathasGuidedBridge.isCollectiveActive()),
+   true,'le guidé individuel reste jouable après la fermeture');
+  assert.equal(state.active,false,'le guidé solo ne réouvre pas la classe');
   await student.close();await teacher.close();
  }finally{await browser.close();await new Promise(r=>http.close(r))}
 });
