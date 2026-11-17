@@ -71,7 +71,7 @@ try{
     const state=()=>({ok:true,active:true,sessionId:'11111111-1111-4111-8111-111111111111',
      revision:window.__sharedRevision,level:1,carryMethod:'top',multipliers:config.multipliers,
      pages:window.__sharedPages,pageIndex:window.__sharedIndex,requiredPages:window.__requiredPages,
-     updatedAt:new Date().toISOString()});
+     hostOwned:true,updatedAt:new Date().toISOString()});
     window.__sharedPages=[];window.__sharedIndex=0;window.__requiredPages=[];window.__sharedRevision=0;
     window.__controller=createMultiplicationCollective({
      iframe:{contentDocument:document,contentWindow:window},teacher:true,
@@ -194,6 +194,69 @@ try{
    await guided.getByRole('button',{name:/Reprendre la séance/}).click();
    await page.waitForFunction(()=>window.MathasGuidedBridge.status().collective===true);
    assert.equal(await guided.isVisible(),true,'la classe se reprend uniquement en Exercice guidé');
+  }finally{await page.close()}
+ });
+
+ await test('professeur : reprendre un onglet fermé, avancer, perdre le verrou et terminer',async()=>{
+  const page=await browser.newPage();
+  try{
+   await page.goto(origin,{waitUntil:'domcontentloaded'});
+   await page.waitForFunction(()=>!!window.MathasGuidedBridge);
+   await page.evaluate(async({page1,page2,config})=>{
+    const {createMultiplicationCollective}=await import('/apps/multiplication-simple/collective-ui.mjs');
+    window.__claimOwner='ancien-onglet';window.__claimPage='ancienne-page';
+    window.__claimCalls=[];window.__claimPages=[page1];window.__claimRevision=1;
+    window.__claimActive=true;
+    const state=payload=>({
+     ok:true,active:true,sessionId:'11111111-1111-4111-8111-111111111111',
+     revision:window.__claimRevision,level:config.level,carryMethod:'top',
+     multipliers:config.multipliers,pages:window.__claimPages,
+     pageIndex:window.__claimPages.length-1,
+     requiredPages:window.__claimPages.map(()=>false),
+     hostOwned:payload?.hostId===window.__claimOwner&&payload?.pageId===window.__claimPage,
+     updatedAt:new Date().toISOString()
+    });
+    window.__claimController=createMultiplicationCollective({
+     iframe:{contentDocument:document,contentWindow:window},
+     teacher:true,classId:'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',classLabel:'Classe TEST',
+     call:async(action,payload)=>{
+      window.__claimCalls.push(action);
+      if(action==='status'||action==='resume')return window.__claimActive?state(payload):{ok:true,active:false};
+      if(action==='takeover'){
+       assertMissingCredentialNeverSent(payload);
+       window.__claimOwner=payload.hostId;window.__claimPage=payload.pageId;
+       return state(payload);
+      }
+      if(payload?.hostId!==window.__claimOwner||payload?.pageId!==window.__claimPage)
+       throw Error('session_owned_by_other_tab');
+      if(action==='next'){window.__claimPages.push(page2);window.__claimRevision++;return state(payload)}
+      if(action==='stop'){window.__claimActive=false;return{ok:true,active:false}}
+      if(action==='heartbeat')return{ok:true,active:true};
+      return state(payload);
+     }
+    });
+    function assertMissingCredentialNeverSent(payload){
+     if('answer' in payload||'studentId' in payload)throw Error('unexpected student payload');
+    }
+    window.__claimController.mount();
+   },{page1,page2,config});
+   await page.evaluate(()=>window.MathasGuidedBridge.practice());
+   page.on('dialog',d=>d.accept());
+   await page.getByRole('button',{name:'Reprendre la séance'}).click();
+   await page.waitForFunction(()=>window.MathasGuidedBridge.status().collective===true);
+   assert.equal(await page.evaluate(()=>window.__claimCalls.includes('takeover')),true);
+   await page.getByRole('button',{name:/Nouvelle page/}).click();
+   await page.waitForFunction(()=>window.__claimPages.length===2);
+   assert.equal(await page.evaluate(()=>window.MathasGuidedBridge.status().pageIndex),1);
+   // Une autre fenêtre reprend la séance : l'ancienne doit perdre ses commandes.
+   await page.evaluate(()=>{window.__claimOwner='deuxième-onglet';window.__claimPage='deuxième-page'});
+   await page.getByRole('button',{name:/Nouvelle page/}).click();
+   await page.getByText(/La séance est pilotée depuis un autre onglet/).waitFor();
+   await page.getByRole('button',{name:'Reprendre la séance'}).click();
+   await page.waitForFunction(()=>window.MathasGuidedBridge.status().collective===true);
+   await page.getByRole('button',{name:'Terminer la séance'}).click();
+   await page.waitForFunction(()=>window.__claimActive===false);
+   assert.ok((await page.evaluate(()=>window.__claimCalls.filter(x=>x==='takeover').length))>=2);
   }finally{await page.close()}
  });
 
