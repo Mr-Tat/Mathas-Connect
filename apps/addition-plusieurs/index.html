@@ -121,7 +121,7 @@ recorded.push(normalized);output.textContent=item.label+' : '+item.score;if(lab)
       +'\nhandlePrimary=function(...args){if(window.MathasGuidedBridge?.isCollectiveActive()&&phase==="review"){window.MathasGuidedBridge.onContinue?.();return}return mathasNativeHandlePrimary(...args)};'
       +'\nprimaryBtn.addEventListener("click",handlePrimary);';
      game=game.replace(marker,hook);
-     const {createAdditionMultipleCollective}=await import('./collective-ui.mjs?v=20261112-guided-v1');
+     const {createAdditionMultipleCollective}=await import('./collective-ui.mjs?v=20261117-guided-reprise-v2');
      const labels={
       '8fe170fa-9e8f-4e80-885a-b0ba68026f64':'Observation',
       '71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'Phase 1',
