@@ -100,20 +100,44 @@ export function createMultiplicationCollective({iframe,teacher,call,onClose,clas
     index=session.pageIndex;joined=true;practicing=false;clearAnswers();displayCurrent();
    }
    lastError='';return true;
-  }catch(e){say('Action non enregistrée : '+String(e.message||e));await poll();return false}
+  }catch(e){
+   const code=String(e?.message||e);
+   const stolen=code==='session_owned_by_other_tab'||code==='session_owned_by_other_page';
+   if(stolen){
+    // Une reprise depuis un autre onglet retire réellement nos droits.
+    // Revenir au bouton « Reprendre » plutôt que laisser des commandes cassées.
+    bridge?.leave();joined=false;practicing=false;index=-1;clearAnswers();
+   }
+   // Pas d'appel à poll() ici : busy=true l'empêchait de s'exécuter.
+   try{
+    const current=await call('status',{hostId,pageId});
+    if(current?.ok===true)updateSession(current);
+   }catch{}
+   say(stolen
+    ?'La séance est pilotée depuis un autre onglet. Clique « Reprendre la séance » pour récupérer le contrôle.'
+    :'Action non enregistrée : '+code);
+   return false;
+  }
   finally{busy=false;render()}
  }
  async function join(){
   if(busy||!isGuidedVisible())return;
-  const inGame=doc?.getElementById('gameScreen')?.classList.contains('hidden')===false;
-  if(!joined&&inGame&&bridge?.status()?.training===false){
-   if(!confirm('Quitter l’exercice en cours pour rejoindre le guidé collectif ?'))return;
-  }
   busy=true;render();
   try{
-   // Contrôle de la séance uniquement au clic, jamais à l'ouverture élève.
-   const current=await call('status',{hostId});
+   // L'élève ne consulte toujours le serveur qu'au clic. Le professeur
+   // tente d'abord une reprise normale du même onglet (après F5).
+   let current=await call(teacher?'resume':'status',{hostId,pageId});
    if(current?.ok!==true)throw Error(current?.error||'vérification indisponible');
+   if(teacher&&validSession(current)&&current.hostOwned!==true){
+    // Un nouvel onglet du même professeur peut reprendre, MAIS jamais
+    // silencieusement : l'ancien onglet perd alors ses commandes.
+    if(!confirm('Cette séance est contrôlée par un autre onglet professeur. La reprendre ici ? L’ancien onglet perdra le contrôle.')){
+     say('La séance reste sous le contrôle de l’autre onglet.');return;
+    }
+    current=await call('takeover',{sessionId:current.sessionId,
+     revision:current.revision,hostId,pageId});
+    if(current?.ok!==true||current.hostOwned!==true)throw Error(current?.error||'reprise refusée');
+   }
    updateSession(current);
    if(!validSession(session)){
     say('Aucune séance collective lancée pour ta classe. Continue le guidé individuel.');
