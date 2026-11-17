@@ -46,3 +46,9 @@ AUDIT PARTIEL + CONTRAT INITIAL. Aucun déploiement, aucune migration, aucune do
 - Saisies F5 : écritures `sessionStorage` regroupées après 300 ms, immédiates à la sortie/navigation, sans contenu élève sur Supabase.
 - Enseignant : un seul heartbeat toutes les 25 s **si une séance existe** ; aucun minuteur au repos ni après « Terminer ». Vérifié dans le Chromium, y compris après F5.
 - Portée : seulement Connect, moteur `game-original.html` intact ; aucune publication de cette branche au 12/11.
+
+## Correctif 17/11/2026 — collectif strictement dans Exercice guidé
+- L'audit du portage a révélé le défaut déjà corrigé sur Multiplication : le bandeau utilisait `joined` même quand l'écran natif n'était plus en mode `training`; le pont pouvait conserver `active` en dehors du guidé.
+- Contrôles ajoutés : affichage du bandeau uniquement si `gameScreen` est visible **et** la session native est `training` ; entrée/lancement impossibles hors guidé ; détachement de l'onglet au changement de mode avec sauvegarde des saisies privées, sans arrêter la séance du professeur ; interception du bouton natif restreinte au guidé visible.
+- Test Chromium de régression ajouté : quitter un guidé collectif actif, ouvrir successivement les séries 4/10/20 et Mort subite sans bandeau ni commande de classe, conserver la séance côté professeur, puis rejoindre volontairement le collectif à l'intérieur d'Exercice guidé.
+- **Travail sur la branche de la PR candidate uniquement.** Les clients dépendent encore du service partagé PR #299 non déployé au dernier audit. Aucun droit de classe, migration SQL/Edge, résultats ni barèmes modifiés dans ce correctif. Séparer validations CI, déploiement GitHub Pages, Edge/SQL et recette authentifiée.
