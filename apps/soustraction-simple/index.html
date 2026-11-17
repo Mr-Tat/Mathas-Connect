@@ -612,7 +612,7 @@ if(mode==='connected'){
 }
 if(mode==='connected'&&classroomReady){
  try{
-  const {createSubtractionCollective}=await import('./collective-ui.mjs?v=20261112-guided-v1');
+  const {createSubtractionCollective}=await import('./collective-ui.mjs?v=20261117-guided-reprise-v2');
   guidedCollective=createSubtractionCollective({
    iframe,teacher:teacherPlayer,classId,
    classLabel:GUIDED_CLASS_NAMES[classId]||(UUID.test(classId)?'ID '+classId.slice(0,8):''),
