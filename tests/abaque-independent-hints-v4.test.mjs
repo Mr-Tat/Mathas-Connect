@@ -52,7 +52,7 @@ test('Connect : position, autonomie et verrous 75 % / professeur restent',()=>{
 });
 test('Nouvelle preuve certifiée V4 et migration SQL sans réécriture des anciens scores',()=>{
  const bridge=read('apps/GRAN-abaque-m-1/connect/native-bridge.js');
- const sql=read('supabase/migrations/20261117170000_abaque_independent_hints_v4.sql');
+ const sql=read('supabase/migrations/20261117110002_abaque_independent_hints_v4.sql');
  assert.match(bridge,/version:4/);
  assert.match(sql,/NOT IN \(''1'',''2'',''3'',''4''\)/);
  assert.match(sql,/p_result->>''ruleset'' IN \(''3'',''4''\)/);
