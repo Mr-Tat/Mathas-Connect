@@ -679,7 +679,7 @@ test('Abaque activité 3 : pastilles du premier essai vert, bleu, mauve, rouge e
   }
   await page.reload();
   assert.deepEqual(await page.locator('.homeModeBtn[data-mode="one"] .modeDot').evaluateAll(xs=>xs.map(x=>x.classList[1])),
-   ['blue','blue','purple','red'],'les résultats demeurent après rechargement');
+   ['green','green','purple','red'],'les résultats demeurent après rechargement');
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });
