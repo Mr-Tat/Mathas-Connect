@@ -47,3 +47,11 @@ test('reprise explicite : même professeur seulement, verrou atomique et ancien 
  assert.match(ui,/call\('takeover',\{sessionId:current\.sessionId/);
  assert.match(ui,/await call\('status',\{hostId,pageId\}\)/);
 });
+
+test('les commandes pédagogiques vérifient encore l’onglet au moment de l’écriture',()=>{
+ const edge=readFileSync(new URL('../supabase/functions/connect-guided-multiplication/index.ts',import.meta.url),'utf8');
+ assert.match(edge,/let command=db\.from\(TABLE\)\.update\(patch\)/);
+ assert.match(edge,/command=current\.host_client_id\?command\.eq\('host_client_id',current\.host_client_id\)/);
+ assert.match(edge,/command=current\.host_page_id\?command\.eq\('host_page_id',current\.host_page_id\)/);
+ assert.match(edge,/\.eq\('revision',current\.revision\)\.eq\('active',true\)/);
+});
