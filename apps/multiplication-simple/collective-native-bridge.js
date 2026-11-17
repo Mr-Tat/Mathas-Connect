@@ -4,7 +4,9 @@
   const mathasGuidedPageSpecs=new Map();
   const mathasGuidedBridge={
    active:false,pageIndex:-1,onContinue:null,currentSessionId:null,
-   isCollectiveActive(){return this.active;},
+   // La validation des autres modes ne peut jamais être détournée vers la classe.
+   isCollectiveActive(){return this.active&&session?.mode==='training'
+    &&$('gameScreen')?.classList.contains('hidden')===false;},
    useSession(sessionId){
     if(!sessionId||sessionId===this.currentSessionId)return;
     // Une nouvelle séance collective n'hérite jamais des réponses d'une autre séance.
@@ -21,7 +23,7 @@
    getConfig(){return {level:Number($('trainingLevel').value),
     carryMethod:document.querySelector('input[name="carryMethod"]:checked')?.value||'top',
     multipliers:[...selectedMultipliers]};},
-   status(){return{training:session?.mode==='training',collective:this.active,
+   status(){return{training:session?.mode==='training',collective:this.isCollectiveActive(),
     finished:session?.mode==='training'&&states.length===2&&states.every(s=>s.solved),
     pageIndex:this.pageIndex,phase};},
    save(){
