@@ -566,7 +566,7 @@ test('Abaque V3 : points des aides réellement affichés en classique, 3 vies et
   await items.nth(2).locator('.t3UnitsBtn').click();
   await inputConversion(page);
   assert.equal(await page.locator('#t3ScoreNow').textContent(),'12 points','deux aides gratuites en 1 page');
-  assert.match(await page.locator('#t3Summary').textContent(),/4\/4.*11 points/);
+  assert.match(await page.locator('#t3Summary').textContent(),/4\/4.*12 points/);
   await modal(page,'Accueil');
 
   for(const [variant,points] of [['lives',1],['sudden',2]]){
