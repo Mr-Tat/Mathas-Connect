@@ -1,4 +1,6 @@
-# Addition écrite multiple — guidé collectif (chantier en cours)
+# Addition écrite multiple — guidé collectif
+
+**LIVE le 17/11/2026** — [PR #297](https://github.com/Mr-Tat/Mathas-Connect/pull/297) fusionnée ; [GitHub Pages réussi](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/44053182710). Le service commun `connect-guided-written` v1 et sa table RLS sont déployés. Chromium réel professeur/élève et tests d'Auth local isolée réussis sur la dernière branche candidate ; contrôle Auth réel en classe TEST à confirmer. « Ensemble en classe » n'existe que dans Exercice guidé ; le professeur peut récupérer son onglet avec confirmation ; les modes individuels et seuils de déblocage restent inchangés. Les sections plus anciennes documentent les étapes précédant la publication.
 
 ## Décision validée
 Transposer le guidé collectif de Multiplication simple, y compris la dernière optimisation #295 (requêtes élèves exclusivement au clic ; pas de polling, pas de rendu permanent ; sauvegardes groupées), sans XP/trophée/score.

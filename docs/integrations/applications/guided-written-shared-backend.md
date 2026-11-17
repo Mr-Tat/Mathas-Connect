@@ -1,4 +1,6 @@
-# Service commun — guidé collectif des 3 autres calculs écrits (candidat non publié)
+# Service commun — guidé collectif des 3 autres calculs écrits
+
+**Publication vérifiée le 17/11/2026 :** [PR #299](https://github.com/Mr-Tat/Mathas-Connect/pull/299) fusionnée ; migration `guided_written_sessions_20261117` appliquée en production (`20261117090927`) ; table `public.connect_guided_written_sessions` avec RLS et zéro politique directe ; Edge `connect-guided-written` **v1 ACTIVE** avec vérification JWT, contenu identique à `main`. Les trois clients [Addition simple](https://github.com/Mr-Tat/CE-Addition-simple/pull/27), [Addition multiple](https://github.com/Mr-Tat/Mathas-Connect/pull/297), [Soustraction](https://github.com/Mr-Tat/Mathas-Connect/pull/298) fusionnés et Pages confirmées ([CE](https://github.com/Mr-Tat/CE-Addition-simple/actions/runs/44053092622), [Connect](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/44053182710)). Tests navigateur ciblés verts, production smoke Soustraction verte. Aucun changement de barème ni visibilité par classe. **Reste à vérifier :** recette Auth en LIVE avec professeur et élève fictif ; les 10 échecs de la suite générale préexistaient exactement à cette fusion. Les sections d'audit ci-dessous sont conservées comme historique (leur mention « candidat » n'est plus l'état courant).
 
 **Source de vérité :** pilote Multiplication, PR #294 (brouillons F5) et #295 (réseau côté élève uniquement au clic), toutes deux fusionnées. Multiplication utilise sa propre Edge et sa propre table ; ne pas la changer ici.
 
