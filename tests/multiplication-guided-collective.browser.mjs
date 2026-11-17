@@ -61,6 +61,37 @@ try{
   }finally{await prof.close();await student.close()}
  });
 
+ await test('dizaines d’abord : deux chiffres tapés sans attendre l’animation vont dans deux cases différentes',async()=>{
+  for(const method of ['top','side']){
+   const page=await browser.newPage();
+   try{
+    await page.goto(origin,{waitUntil:'domcontentloaded'});
+    await page.waitForFunction(()=>!!window.MathasGuidedBridge);
+    await page.evaluate(({method,operations})=>{
+     const option=document.querySelector('#tensFirstToggle');
+     option.checked=true;option.dispatchEvent(new Event('change',{bubbles:true}));
+     const ok=window.MathasGuidedBridge.enter(operations,0,{level:1,carryMethod:method,multipliers:[6]});
+     if(!ok)throw Error('cannot enter guided page');
+    },{method,operations:[{a:'247',m:6},{a:'139',m:8}]});
+    await page.waitForTimeout(60);
+    const state=await page.evaluate(method=>{
+     const pad=d=>document.querySelector('#numpad .num-key[data-key="'+d+'"]')?.click();
+     // Dans 247 × 6, les chiffres à saisir dans l’ordre sont
+     // report 4, unité 2, report 2, dizaine 8.
+     for(const digit of ['4','2','2','8'])pad(digit);
+     const saved=window.MathasGuidedBridge.snapshot().find(x=>x.index===0)?.states[0];
+     const usedReports=[...document.querySelectorAll('#calculationsPair .side-carry-panel[data-side-calc="0"] .side-carry-used-item')].map(x=>Number(x.dataset.usedCol));
+     return {answers:saved?.answerValues,carries:method==='top'?saved?.carryValues:saved?.sideCarryValues,usedReports};
+    },method);
+    assert.equal(state.carries[1],'4',method+' : report des unités');
+    assert.equal(state.answers[0],'2',method+' : unités directement après report');
+    assert.equal(state.carries[2],'2',method+' : report des dizaines');
+    assert.equal(state.answers[1],'8',method+' : dizaines après second report');
+    if(method==='side')assert.deepEqual(state.usedReports,[1,2],
+     'les deux reports latéraux doivent rester visibles après avoir écrit les unités');
+   }finally{await page.close()}
+  }
+ });
  await test('professeur : pages mémorisées, précédentes, obligation et réponses',async()=>{
   const page=await browser.newPage();
   try{

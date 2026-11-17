@@ -5796,8 +5796,8 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
   function status(i,t,type=''){const e=calculationsPair.querySelector(`.calc-box[data-calc="${i}"] .calc-status`);if(e){e.textContent=t;e.className=`calc-status${type?' '+type:''}`}}
   function setFeedback(t,type=''){feedback.textContent=t;feedback.className=`feedback${type?' '+type:''}`}
   function setActive(kind,calc,col,el){calculationsPair.querySelectorAll('.active-entry').forEach(x=>x.classList.remove('active-entry'));active={kind,calc,col};if(el&&!el.disabled){el.classList.add('active-entry');el.focus({preventScroll:true});el.select()}numpadTitle.textContent=kind==='answer'?'Écris le chiffre du résultat':'Écris le report'}
-  function focusAnswer(i,c){window.mathasEntryNavigation.schedule(()=>setActive('answer',i,c,answerFor(i,c)))}
-  function focusCarry(i,c){window.mathasEntryNavigation.schedule(()=>setActive('carry',i,c,carryFor(i,c)))}
+  function focusAnswer(i,c){active={kind:'answer',calc:i,col:c};window.mathasEntryNavigation.schedule(()=>setActive('answer',i,c,answerFor(i,c)))}
+  function focusCarry(i,c){active={kind:'carry',calc:i,col:c};window.mathasEntryNavigation.schedule(()=>setActive('carry',i,c,carryFor(i,c)))}
   function markSideCarryUsed(i,c){
     if(c<1)return;
     const s=states[i];
@@ -5819,7 +5819,7 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
       inp.classList.remove('good','bad')
     }
   }
-  function focusSide(i,c){const inp=sideFor(i);if(inp){inp.value='';inp.classList.remove('bad','good');window.mathasEntryNavigation.schedule(()=>setActive('side',i,c,inp))}}
+  function focusSide(i,c){const inp=sideFor(i);if(inp){active={kind:'side',calc:i,col:c};inp.value='';inp.classList.remove('bad','good');window.mathasEntryNavigation.schedule(()=>setActive('side',i,c,inp))}}
   function focusMulColumn(i,c){const s=states[i];if(!s||s.solved)return;if(tensFirst&&c<s.count-1&&s.outgoing[c]>0){const target=c+1;if(carryMethod==='top'&&s.carryValues[target]!==String(s.outgoing[c])){focusCarry(i,target);return}if(carryMethod==='side'&&s.sideCarryValues[target]!==String(s.outgoing[c])){focusSide(i,target);return}}focusAnswer(i,c)}
   function nextMissingSideCarry(i,start=1){const s=states[i];for(let c=Math.max(1,start);c<s.count;c++)if(s.incoming[c]>0&&s.sideCarryValues[c]!==String(s.incoming[c]))return c;return null}
   function onKey(e){if(/^\d$/.test(e.key)){e.preventDefault();enterDigit(e.key)}else if(e.key==='Backspace'||e.key==='Delete'){e.preventDefault();eraseActive()}else if(e.key==='Enter'){e.preventDefault();handlePrimary()}}
@@ -5840,14 +5840,14 @@ function enregistrerResultatMathas(score,total,niveau,niveauRang,aideTables=fals
     const s=states[i],inp=answerFor(i,c);if(!inp||inp.disabled)return;
     inp.value=d;inp.classList.remove('incorrect');s.answerValues[c]=d;
     const wh=opFor(i)?.querySelector(`[data-wrong="${c}"]`);if(wh)wh.textContent='';
-    if(carryMethod==='side'&&c>=1)markSideCarryUsed(i,c);
+    if(carryMethod==='side'){const usedCol=tensFirst?c+1:c;if(usedCol>=1&&usedCol<s.count)markSideCarryUsed(i,usedCol)}
     if(!tensFirst&&c<s.count-1&&s.outgoing[c]>0){carryMethod==='top'?focusCarry(i,c+1):focusSide(i,c+1)}
     else if(c+1<s.answerCount)focusMulColumn(i,c+1);
     updateSecondDim();
     autoAdvanceAfterCalc(i)
   }
   function setTopCarry(i,c,d){const s=states[i],inp=carryFor(i,c);if(!inp||inp.disabled)return;inp.value=d;inp.classList.remove('bad');s.carryValues[c]=d;tensFirst&&c>0?focusAnswer(i,c-1):focusAnswer(i,c)}
-  function setSideCarry(i,c,d){const s=states[i],inp=sideFor(i);if(!inp||inp.disabled)return;const expected=String(s.incoming[c]);if(d===expected){s.sideCarryValues[c]=d;inp.value=d;inp.classList.remove('bad');inp.classList.add('good');window.mathasEntryNavigation.later(()=>tensFirst&&c>0?focusAnswer(i,c-1):focusAnswer(i,c),100)}else{s.firstTry=false;inp.value=d;inp.classList.add('bad');const h=inp.parentElement.querySelector('.side-carry-history');if(h)h.textContent=`✕ ${d}`;setTimeout(()=>{if(active.kind==='side'&&active.calc===i&&active.col===c){inp.value='';inp.classList.remove('bad');inp.focus({preventScroll:true})}},420)}}
+  function setSideCarry(i,c,d){const s=states[i],inp=sideFor(i);if(!inp||inp.disabled)return;const expected=String(s.incoming[c]);if(d===expected){s.sideCarryValues[c]=d;inp.value=d;inp.classList.remove('bad');inp.classList.add('good');active={kind:'answer',calc:i,col:tensFirst&&c>0?c-1:c};window.mathasEntryNavigation.later(()=>tensFirst&&c>0?focusAnswer(i,c-1):focusAnswer(i,c),100)}else{s.firstTry=false;inp.value=d;inp.classList.add('bad');const h=inp.parentElement.querySelector('.side-carry-history');if(h)h.textContent=`✕ ${d}`;setTimeout(()=>{if(active.kind==='side'&&active.calc===i&&active.col===c){inp.value='';inp.classList.remove('bad');inp.focus({preventScroll:true})}},420)}}
   function mathasMulEntrySequence(s,calc){const seq=[];for(let c=0;c<s.answerCount;c++){if(tensFirst){if(c<s.count-1&&s.outgoing[c]>0)seq.push({kind:carryMethod==='top'?'carry':'side',calc,col:c+1});seq.push({kind:'answer',calc,col:c})}else{seq.push({kind:'answer',calc,col:c});if(c<s.count-1&&s.outgoing[c]>0)seq.push({kind:carryMethod==='top'?'carry':'side',calc,col:c+1})}}return seq}
   function mathasMulEntryValue(s,t){return t.kind==='answer'?(s.answerValues[t.col]||''):t.kind==='carry'?(s.carryValues[t.col]||''):(s.sideCarryValues[t.col]||'')}
   function mathasMulSame(a,b){return a&&b&&a.kind===b.kind&&a.calc===b.calc&&a.col===b.col}
@@ -6585,7 +6585,7 @@ function hardThreeScore(level){const n=Number(hardThreeStore()[String(level)]);r
   function hardInput(cls,kind,col){const i=document.createElement('input');i.type='text';i.readOnly=true;i.inputMode='none';i.maxLength=1;i.className=cls;i.dataset.kind=kind;i.dataset.col=col;i.addEventListener('focus',()=>setHardActive(i,kind,+i.dataset.col));return i}
   function hardInputFor(kind,col){if(kind==='side')return hardOperationCard.querySelector('.hard-side-carry');return hardOperationCard.querySelector(`input[data-kind="${kind}"][data-col="${col}"]`)}
   function setHardActive(inp,kind,col){hardOperationCard.querySelectorAll('.hard-active').forEach(x=>x.classList.remove('hard-active'));hardActive={kind,col};if(inp&&!inp.disabled){inp.classList.add('hard-active');inp.focus({preventScroll:true});inp.select()}}
-  function focusHard(kind,col){window.mathasEntryNavigation.schedule(()=>setHardActive(hardInputFor(kind,col),kind,col))}
+  function focusHard(kind,col){hardActive={kind,col};window.mathasEntryNavigation.schedule(()=>setHardActive(hardInputFor(kind,col),kind,col))}
   function focusHardMulColumn(c){if(!hardState)return;if(tensFirst&&c<hardState.count-1&&hardState.outgoing[c]>0){const target=c+1;if(carryMethod==='top'&&hardState.carryValues[target]!==String(hardState.outgoing[c])){focusHard('carry',target);return}if(carryMethod==='side'&&hardState.sideCarryValues[target]!==String(hardState.outgoing[c])){focusHard('side',target);return}}focusHard('answer',c)}
   function markHardSideCarryUsed(c){
     if(c<1)return;
@@ -6619,7 +6619,7 @@ function hardThreeScore(level){const n=Number(hardThreeStore()[String(level)]);r
     const {kind,col}=hardActive,inp=hardInputFor(kind,col);if(!inp||inp.disabled)return;
     if(kind==='answer'){
       inp.value=d;hardState.answerValues[col]=d;
-      if(carryMethod==='side'&&col>=1)markHardSideCarryUsed(col);
+      if(carryMethod==='side'){const usedCol=tensFirst?col+1:col;if(usedCol>=1&&usedCol<hardState.count)markHardSideCarryUsed(usedCol)}
       if(!tensFirst&&col<hardState.count-1&&hardState.outgoing[col]>0){carryMethod==='top'?focusHard('carry',col+1):focusHard('side',col+1)}
       else if(col+1<hardState.answerCount)focusHardMulColumn(col+1)
     }else if(kind==='carry'){
@@ -6628,7 +6628,7 @@ function hardThreeScore(level){const n=Number(hardThreeStore()[String(level)]);r
       const e=String(hardState.incoming[col]);inp.value=d;
       if(d===e){
         hardState.sideCarryValues[col]=d;inp.classList.remove('hard-bad');inp.classList.add('hard-good');
-        window.mathasEntryNavigation.later(()=>tensFirst&&col>0?focusHard('answer',col-1):focusHard('answer',col),90)
+        hardActive={kind:'answer',col:tensFirst&&col>0?col-1:col};window.mathasEntryNavigation.later(()=>tensFirst&&col>0?focusHard('answer',col-1):focusHard('answer',col),90)
       }else{
         inp.classList.add('hard-bad');
         window.mathasEntryNavigation.later(()=>{inp.value='';inp.classList.remove('hard-bad');focusHard('side',col)},350)
