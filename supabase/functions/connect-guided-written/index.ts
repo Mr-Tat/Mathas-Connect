@@ -185,8 +185,13 @@ Deno.serve(async(req:Request)=>{
    required[b.pageIndex]=b.required;
    patch.required_pages=required;
   }else if(b.action==='stop')patch.active=false;
-  const {data,error:writeError}=await db.from(TABLE).update(patch)
-   .eq('app_key',appKey).eq('class_id',cls).eq('session_id',current.session_id).eq('revision',current.revision).select().maybeSingle();
+  // Pas de commande en vol de l'ancien onglet après une reprise par un autre.
+  let command=db.from(TABLE).update(patch)
+   .eq('app_key',appKey).eq('class_id',cls).eq('session_id',current.session_id)
+   .eq('revision',current.revision).eq('active',true);
+  command=current.host_client_id?command.eq('host_client_id',current.host_client_id):command.is('host_client_id',null);
+  command=current.host_page_id?command.eq('host_page_id',current.host_page_id):command.is('host_page_id',null);
+  const {data,error:writeError}=await command.select().maybeSingle();
   if(writeError)throw Error('update_failed');
   if(!data)return fail('session_conflict',409);
   return reply(view(data));
