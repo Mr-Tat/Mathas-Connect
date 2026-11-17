@@ -225,8 +225,14 @@ test('Chromium addition multiple : enseignant lance, élève rejoint, obligation
   }
   await student.frameLocator('#game').locator('#menuBtn').click();
   await student.frameLocator('#game').locator('#menuScreen').waitFor({state:'visible'});
-  await student.frameLocator('#game').locator('#startSudden').evaluate(button=>button.click());
-  await student.frameLocator('#game').locator('#gameScreen').waitFor({state:'visible'});
+  const suddenState=await student.frameLocator('#game').locator('#startSudden').evaluate(button=>{
+   const before={disabled:button.disabled,hidden:document.getElementById('gameScreen').classList.contains('hidden')};
+   button.click();
+   return {...before,afterHidden:document.getElementById('gameScreen').classList.contains('hidden'),
+    menuHidden:document.getElementById('menuScreen').classList.contains('hidden'),
+    buttonText:button.textContent?.trim(),training:window.MathasGuidedBridge?.status()?.training};
+  });
+  assert.equal(suddenState.afterHidden,false,'Mort subite doit ouvrir son écran : '+JSON.stringify(suddenState));
   assert.equal(await student.frameLocator('#game').locator('#mc-guided-bar').isVisible(),false,
    'Mort subite reste individuel même avec une séance de classe active');
   assert.equal(await student.frameLocator('#game').locator('body').evaluate(()=>
