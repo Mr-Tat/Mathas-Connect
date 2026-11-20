@@ -51,8 +51,8 @@ test('le patch du pont natif est limité aux deux additions et échoue sans cass
  assert.equal(unsupported,game);
  assert.equal(calls.length,0);
  for(const [app,path] of [
-  ['addition-ecrite-simple','/CE-Addition-simple/collective-native-bridge.js'],
-  ['addition-ecrite-multiple','/Mathas-Connect/apps/addition-plusieurs/collective-native-bridge.js']
+  ['addition-ecrite-simple','../../guided-addition-simple/collective-native-bridge.js'],
+  ['addition-ecrite-multiple','../../../addition-plusieurs/collective-native-bridge.js']
  ]){
   const patched=await patch(game,app);
   assert.ok(calls.at(-1).startsWith(path));
