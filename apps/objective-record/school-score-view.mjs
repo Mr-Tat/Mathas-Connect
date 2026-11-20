@@ -87,8 +87,8 @@ export function renderCertifiedTodayPoints(doc,history,state={}){
  if((history?.ok!==true&&stored===null)||!doc?.querySelector)return false;
  const box=doc.querySelector('#mathasPointsQuick [data-points="daily"]');
  if(!box)return false;
- const today=schoolScoreSnapshot(history,state).today;
- const value=String(today?.points??0);
+ const daily=schoolScoreSnapshot(history,state).today;
+ const value=String(daily?.points??0);
  if(nativeDayPoints({querySelector:()=>box})===Number(value))return true;
  // Le premier élément doit porter le nombre pour l'outil de projection.
  // Aucun score local n'est converti en record officiel.
