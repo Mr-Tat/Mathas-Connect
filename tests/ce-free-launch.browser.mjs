@@ -155,3 +155,30 @@ test('Parcours HUB sans compte : les cartes Multiplication/Soustraction donnent 
   await hub.close();
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
+
+test('Addition multiple : guidé puis série classique jouables sans SDK ni Edge', {timeout:120000},async()=>{
+ const {server,url}=await serve();
+ const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
+ try{
+  const app={name:'addition multiple',slug:'addition-plusieurs'};
+  for(const withClass of [false,true]){
+   const {page,errors,external}=await openGame(browser,url,app,{withClass,explicitFree:true});
+   try{
+    const frame=page.frameLocator('iframe');
+    await frame.locator('#menuScreen').waitFor({state:'visible',timeout:16000});
+    await frame.locator('#startTraining').click();
+    await frame.locator('#gameScreen').waitFor({state:'visible',timeout:16000});
+    assert.ok(await frame.locator('#calculationsPair .calc-box').count()>0,'guidé libre sans calcul');
+    await frame.locator('#menuBtn').click();
+    await frame.locator('#menuScreen').waitFor({state:'visible'});
+    await frame.locator('.classic-count-btn[data-count="4"]').click();
+    await frame.locator('#startClassic').click();
+    await frame.locator('#gameScreen').waitFor({state:'visible',timeout:16000});
+    assert.ok(await frame.locator('#calculationsPair .calc-box').count()>0,'série classique libre sans calcul');
+    assert.deepEqual(errors,[],'erreurs de navigateur : '+errors.join('; '));
+    assert.equal(external.some(url=>url.includes('supabase')),false,
+     'une addition explicitement libre ne doit pas chercher le SDK Supabase');
+   }finally{await page.close()}
+  }
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
