@@ -24,7 +24,10 @@ export function schoolScoreSnapshot(remote,state={}){
  const top=(Array.isArray(remote?.bestThree)?remote.bestThree:recent)
   .map(cleanScoreEntry).filter(Boolean).sort((a,b)=>b.points-a.points||b.at.localeCompare(a.at)).slice(0,3);
  const remoteDay=cleanScoreEntry(remote?.todayBest);
- const localToday=remote?.ok===true?null:state?.todayBest?.day===today()?points(state.todayBest.points):null;
+ // student-load is itself server-certified. Use its dated daily result as a
+ // DISPLAY fallback when projection history is unavailable or incomplete.
+ // It carries no shareable event proof: publication still needs a fresh history.
+ const localToday=state?.todayBest?.day===today()?points(state.todayBest.points):null;
  // Le serveur conserve le meilleur du jour même s'il est ancien et que
  // sa preuve ne figure plus dans les derniers événements. Ne pas l'inventer.
  const sameDay=recent.filter(x=>day(x.at)===today()).sort((a,b)=>b.points-a.points||b.at.localeCompare(a.at))[0]||null;
@@ -78,7 +81,10 @@ export function renderCertifiedHistoricalPodium(doc,history){
 // pouvait afficher 0 malgré 27 points certifiés. Affichage exclusivement depuis
 // le résumé authentifié (aucune écriture de score ou de XP).
 export function renderCertifiedTodayPoints(doc,history,state={}){
- if(history?.ok!==true||!doc?.querySelector)return false;
+ // The certified student-load snapshot may be available before the separate
+ // projection-history request. Do not render zero over that known result.
+ const stored=state?.todayBest?.day===today()?points(state.todayBest.points):null;
+ if((history?.ok!==true&&stored===null)||!doc?.querySelector)return false;
  const box=doc.querySelector('#mathasPointsQuick [data-points="daily"]');
  if(!box)return false;
  const today=schoolScoreSnapshot(history,state).today;
