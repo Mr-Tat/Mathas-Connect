@@ -24,7 +24,10 @@ export function schoolScoreSnapshot(remote,state={}){
  const top=(Array.isArray(remote?.bestThree)?remote.bestThree:recent)
   .map(cleanScoreEntry).filter(Boolean).sort((a,b)=>b.points-a.points||b.at.localeCompare(a.at)).slice(0,3);
  const remoteDay=cleanScoreEntry(remote?.todayBest);
- const localToday=remote?.ok===true?null:state?.todayBest?.day===today()?points(state.todayBest.points):null;
+ // student-load is itself server-certified. Use its dated daily result as a
+ // DISPLAY fallback when projection history is unavailable or incomplete.
+ // It carries no shareable event proof: publication still needs a fresh history.
+ const localToday=state?.todayBest?.day===today()?points(state.todayBest.points):null;
  // Le serveur conserve le meilleur du jour même s'il est ancien et que
  // sa preuve ne figure plus dans les derniers événements. Ne pas l'inventer.
  const sameDay=recent.filter(x=>day(x.at)===today()).sort((a,b)=>b.points-a.points||b.at.localeCompare(a.at))[0]||null;
@@ -78,11 +81,14 @@ export function renderCertifiedHistoricalPodium(doc,history){
 // pouvait afficher 0 malgré 27 points certifiés. Affichage exclusivement depuis
 // le résumé authentifié (aucune écriture de score ou de XP).
 export function renderCertifiedTodayPoints(doc,history,state={}){
- if(history?.ok!==true||!doc?.querySelector)return false;
+ // The certified student-load snapshot may be available before the separate
+ // projection-history request. Do not render zero over that known result.
+ const stored=state?.todayBest?.day===today()?points(state.todayBest.points):null;
+ if((history?.ok!==true&&stored===null)||!doc?.querySelector)return false;
  const box=doc.querySelector('#mathasPointsQuick [data-points="daily"]');
  if(!box)return false;
- const today=schoolScoreSnapshot(history,state).today;
- const value=String(today?.points??0);
+ const daily=schoolScoreSnapshot(history,state).today;
+ const value=String(daily?.points??0);
  if(nativeDayPoints({querySelector:()=>box})===Number(value))return true;
  // Le premier élément doit porter le nombre pour l'outil de projection.
  // Aucun score local n'est converti en record officiel.
@@ -105,15 +111,18 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
   const hint=clickTarget?.querySelector('.mathas-school-share-hint');if(!hint)return;
   const snapshot=select(),status=scoreShareStatus(snapshot);
   const confirmed=confirmedEvent!==null&&confirmedEvent===snapshot.today?.eventId;
-  hint.textContent=confirmed?'✓ Score envoyé au tableau':status==='sent'?'✓ Meilleur score déjà envoyé':
-   status==='send'?'Envoyer au tableau':'Envoi indisponible';
-  clickTarget.classList.toggle('mathas-school-shareable',status==='send'&&!confirmed);
+  const queued=!!(snapshot.today?.eventId&&consent()?.isPending?.(snapshot.today.eventId));
+  hint.textContent=confirmed?'✓ Score envoyé au tableau':queued?'⌛ Envoi en attente':
+   status==='sent'?'✓ Meilleur score déjà envoyé':status==='send'?'Envoyer au tableau':'Envoi indisponible';
+  clickTarget.classList.toggle('mathas-school-shareable',status==='send'&&!confirmed&&!queued);
   clickTarget.classList.toggle('mathas-school-share-sent',status==='sent'||confirmed);
   clickTarget.title=hint.textContent;
  }
  const unsubscribeResult=consent()?.onResult?.(({eventId,result})=>{
   if(destroyed)return;
   if(result==='sent'){confirmedEvent=eventId;renderShareHint();void load(true)}
+  else if(result==='queued'){renderShareHint()}
+  else {renderShareHint();void load(true)}
  });
  function mountToday(doc){
   const target=doc.querySelector('#mathasPointsQuick [data-points="daily"]');
@@ -176,6 +185,9 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
   if(!canShareBestScore(snapshot)){
    notify(scoreShareStatus(snapshot)==='sent'?'Meilleur score du jour déjà envoyé au tableau.':
     'Envoi indisponible : connexion ou publication du jour à vérifier.');return false;
+  }
+  if(consent()?.isPending?.(snapshot.today.eventId)){
+   notify('Envoi déjà accepté : en attente de confirmation du tableau.');return false;
   }
   return !!consent()?.offer(snapshot.today.eventId,{points:snapshot.today.points,mode:snapshot.today.mode});
  }

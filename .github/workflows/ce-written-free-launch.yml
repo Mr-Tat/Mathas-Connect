@@ -1,0 +1,32 @@
+name: Quatre calculs — lancement libre sans SDK Supabase
+on:
+  pull_request:
+    paths:
+      - 'hub.js'
+      - 'apps/objective-record/release-routing.mjs'
+      - 'apps/addition-plusieurs/index.html'
+      - 'apps/multiplication-simple/index.html'
+      - 'apps/soustraction-simple/index.html'
+      - 'tests/ce-free-launch.browser.mjs'
+      - 'tests/ce-additions-free-routing.test.mjs'
+      - '.github/workflows/ce-written-free-launch.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  free-play:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier le routage libre des additions
+        run: node --test tests/ce-additions-free-routing.test.mjs
+      - name: Préparer Chromium et Playwright sans accès aux comptes réels
+        run: |
+          npm install --no-save --no-package-lock playwright@1.58.2
+          npx playwright install chromium
+      - name: Tester les vrais menus, guidés et séries en mode libre avec SDK bloqué
+        run: node --test --test-concurrency=1 tests/ce-free-launch.browser.mjs

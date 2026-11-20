@@ -19,7 +19,8 @@ import {hydrateNativeRecords} from './connect-hydration.mjs';
  // (or the separate teacher player session). Explicit free mode never queries.
  const classId=launch.get('class')||'';
  const teacherPlayer=launch.get('joueur')==='prof';
- const free=!teacherPlayer&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';
+ const requireConnect=launch.get('requireConnect')==='1';
+ const free=!teacherPlayer&&!requireConnect&&(launch.get('libre')==='1'||localStorage.getItem('mathas.connect.mode-libre.v1')==='1');
  if(writeReady&&classId&&!free){
   try{
    const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.95.0');
@@ -53,6 +54,20 @@ import {hydrateNativeRecords} from './connect-hydration.mjs';
    connected=null;host=null;
    modeNote.textContent='Connexion indisponible — aucun résultat enregistré';
    output.textContent='Connexion Connect impossible ou non autorisée. Jeu non lancé : vérifiez votre session et votre classe.';
+   // Repli EXPLICITE, isolé à cette application. Aucun XP ni résultat officiel
+   // n'est attribué sans compte validé ; la classe reste dans l'URL.
+   const retry=document.createElement('button');retry.type='button';retry.textContent='Réessayer';
+   retry.onclick=()=>location.reload();
+   const openFree=document.createElement('button');openFree.type='button';
+   openFree.textContent='Jouer librement (sans XP Connect)';
+   openFree.onclick=()=>{
+    const target=new URL(location.href);
+    target.searchParams.set('libre','1');
+    target.searchParams.delete('requireConnect');
+    target.searchParams.delete('joueur');
+    location.assign(target.href);
+   };
+   modeNote.after(retry,openFree);
    console.warn('Addition plusieurs : connexion non disponible',error?.message||'unknown');
    return;
   }

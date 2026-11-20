@@ -76,13 +76,17 @@ function card(app) {
   // non vers l'ancien hôte expérimental Objectif record.
   const testMixed=classId===LAB_CLASS&&app.app_key==='melange-calculs-ecrits';
   const schoolMultiplication=SCHOOL_CLASS_IDS.includes(classId)&&app.app_key==='multiplication-ecrite-simple';
-  const testSlug=classId===LAB_CLASS&&!testMultiplication&&!testMixed?recordSlugByApp[app.app_key]:null;
-  const target = new URL(testMixed?'./apps/calculs-melanges/':
+  // Addition engines are locally playable without the Supabase SDK; the
+  // certified Objectif record launcher is intentionally not an offline guest UI.
+  const freeAddition=inFreeMode()&&['addition-ecrite-simple','addition-ecrite-multiple'].includes(app.app_key);
+  const testSlug=classId===LAB_CLASS&&!testMultiplication&&!testMixed&&!freeAddition?recordSlugByApp[app.app_key]:null;
+  const target = new URL(freeAddition?app.launch_url:
+    testMixed?'./apps/calculs-melanges/':
     testMultiplication?'./apps/multiplication-simple/':
     schoolMultiplication?'./apps/multiplication-simple/':
     testSlug?SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(testSlug):
     schoolAdditionsLaunch({classId,appKey:app.app_key,legacyUrl:
-      schoolRecordLaunch({classId,appKey:app.app_key,legacyUrl:app.launch_url})}),location.href);
+      schoolRecordLaunch({classId,appKey:app.app_key,legacyUrl:app.launch_url}),freeMode:freeAddition}),location.href);
   // Le HUB fournit la classe au jeu Connect ; les autorisations restent vérifiées côté serveur.
   if (classId && target.origin === location.origin) target.searchParams.set('class', classId);
   if((testMultiplication||testMixed) && target.origin===location.origin)target.searchParams.set('requireConnect','1');

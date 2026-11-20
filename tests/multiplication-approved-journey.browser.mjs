@@ -336,7 +336,7 @@ try{
    await consent.waitFor({timeout:9000});
    assert.equal(projectionCalls.length,0);
    await consent.locator('button.yes').click();
-   await consent.getByText('Score bien envoyé au tableau',{exact:false}).waitFor({timeout:9000});
+   await page.waitForFunction(()=>!document.querySelector('.mathas-projection-offer:not([hidden])'),null,{timeout:9000});
    await page.waitForFunction((school)=>window.localStorage.getItem(
     'mathas.projection-consents.'+school+'.multiplication-ecrite-simple.'+
      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.v1')==='[]',school,{timeout:9000});
@@ -447,8 +447,8 @@ try{
    await consent.waitFor({timeout:9000});
    assert.equal(projectionCalls.length,0,'aucune projection sans choix de l’élève');
    await consent.locator('button.yes').click();
-   await consent.getByText('Score bien envoyé au tableau',{exact:false}).waitFor({timeout:9000});
-   await consent.getByRole('button',{name:'Fermer'}).click();
+   await page.waitForFunction(()=>!document.querySelector('.mathas-projection-offer:not([hidden])'),null,{timeout:9000});
+   // OUI ferme sans seconde validation (ACK consultable via le score du menu).
    await page.waitForFunction(()=>!document.querySelector('.mathas-projection-offer:not([hidden])'),
     null,{timeout:9000});
    await page.waitForFunction(()=>window.localStorage.getItem('mathas.projection-consents.'+

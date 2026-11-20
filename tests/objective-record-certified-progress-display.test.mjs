@@ -82,6 +82,27 @@ test('le top du jour officiel remplace le 0 local sans écriture en base',()=>{
  assert.equal(renderCertifiedTodayPoints(doc,{ok:false,...history,ok:false}),false);
 });
 
+test('le Top du jour certifié reste lisible si la projection est temporairement indisponible',()=>{
+ const day=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ const box={children:[],value:'0'};
+ Object.defineProperty(box,'textContent',{
+  get(){return this.children.length?this.children[0].textContent:this.value},
+  set(v){this.value=v;this.children=[]}
+ });
+ Object.defineProperty(box,'firstElementChild',{get(){return this.children[0]??null}});
+ box.append=function(node){this.children.push(node)};
+ const doc={
+  querySelector:q=>q==='#mathasPointsQuick [data-points="daily"]'?box:null,
+  createElement:()=>({textContent:''})
+ };
+ assert.equal(renderCertifiedTodayPoints(doc,null,{todayBest:{day,points:31}}),true);
+ assert.equal(nativeDayPoints({querySelector:()=>box}),31);
+ assert.equal(renderCertifiedTodayPoints(doc,null,{todayBest:{day,points:31}}),true);
+ assert.equal(box.children.length,1,'ne pas déclencher de mutation DOM répétée');
+ const earlier=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()-86400000));
+ assert.equal(renderCertifiedTodayPoints(doc,null,{todayBest:{day:earlier,points:99}}),false,
+  'une valeur de la veille n’est jamais réutilisée');
+});
 test('l hôte actualise et met en cache la grille et le score du jour',()=>{
  const host=source('apps/objective-record/eleve.mjs');
  const html=source('apps/objective-record/eleve.html');
