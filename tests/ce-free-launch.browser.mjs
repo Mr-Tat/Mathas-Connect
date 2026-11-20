@@ -64,7 +64,7 @@ test('Multiplication et Soustraction : vrai menu et exercice guidé sans compte 
     try{
      const frame=page.frameLocator('iframe');
      await frame.locator('#menuScreen').waitFor({state:'visible',timeout:16000});
-     await frame.locator('#trainingChoiceBtn').click();
+     await frame.locator(app.slug==='multiplication-simple'?'#startTraining':'#trainingChoiceBtn').click();
      await frame.locator('#gameScreen').waitFor({state:'visible',timeout:16000});
      assert.ok(await frame.locator('#calculationsPair .calc-box').count()>0,app.name+' '+scenario.name+' : aucun calcul');
      await frame.locator('#menuBtn').click();
