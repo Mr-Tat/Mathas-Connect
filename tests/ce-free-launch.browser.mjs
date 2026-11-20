@@ -182,3 +182,31 @@ test('Addition multiple : guidé puis série classique jouables sans SDK ni Edge
   }
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
+
+test('Addition multiple avec classe : repli libre explicite lorsque Supabase est inaccessible', {timeout:120000},async()=>{
+ const {server,url}=await serve();
+ const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
+ try{
+  const app={name:'addition multiple',slug:'addition-plusieurs'};
+  const {page,errors}=await openGame(browser,url,app,{withClass:true,explicitFree:false});
+  try{
+   const freeButton=page.getByRole('button',{name:'Jouer librement (sans XP Connect)'});
+   await freeButton.waitFor({state:'visible',timeout:16000});
+   assert.equal(await page.frameLocator('iframe').locator('#gameScreen').count(),0,
+    'aucune partie officielle lancée sans authentification');
+   await freeButton.click();
+   await page.frameLocator('iframe').locator('#menuScreen').waitFor({state:'visible',timeout:16000});
+   const target=new URL(page.url());
+   assert.equal(target.searchParams.get('libre'),'1');
+   assert.equal(target.searchParams.get('class'),klass);
+   const frame=page.frameLocator('iframe');
+   await frame.locator('#startTraining').click();
+   await frame.locator('#gameScreen').waitFor({state:'visible'});
+   await frame.locator('#menuBtn').click();
+   await frame.locator('.classic-count-btn[data-count="4"]').click();
+   await frame.locator('#startClassic').click();
+   await frame.locator('#gameScreen').waitFor({state:'visible'});
+   assert.deepEqual(errors,[]);
+  }finally{await page.close()}
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
