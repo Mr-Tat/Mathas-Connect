@@ -40,7 +40,7 @@ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const origin='http://127.0.0.1:'+server.address().port;
 const browser=await chromium.launch({headless:true});
 
-async function connectedPage(teacher=false,failFirstFinish=false,cls=CLS){
+async function connectedPage(teacher=false,failFirstFinish=false,cls=CLS,options={}){
  const page=await browser.newPage({viewport:{width:390,height:820}});
  // Image par image : ce compteur détecte les bandeaux fugitifs à l'ouverture.
  await page.addInitScript(()=>{
@@ -58,7 +58,7 @@ async function connectedPage(teacher=false,failFirstFinish=false,cls=CLS){
   requestAnimationFrame(sample);
  });
  const calls=[],proofCalls=[],projectionCalls=[];
- let state=null,firstFinishFails=failFirstFinish,projectionPublished=false;
+ let state=options.initialState??null,firstFinishFails=failFirstFinish,projectionPublished=false;
  let xp={ok:true,milestones:[],repeatXp:false,parcours:1,total:0,appXp:0,level:1};
  const context={get state(){return state},get xp(){return xp},calls,proofCalls,projectionCalls,page};
  await page.route('https://esm.sh/**',async route=>{
@@ -84,7 +84,8 @@ async function connectedPage(teacher=false,failFirstFinish=false,cls=CLS){
   }else if(url.endsWith('/connect-multiplication-school')){
    proofCalls.push(b);
    if(b.action==='start-classic-v1'){
-    response={ok:true,sessionId:EVENT,revision:0,resetEpoch:0,level:1,total:4,
+    if(b.level===options.lockClassicLevel){status=403;response={ok:false,error:'school_mode_locked'};}
+    else response={ok:true,sessionId:EVENT,revision:0,resetEpoch:0,level:1,total:4,
      expiresAt:new Date(Date.now()+3600000).toISOString(),
      questions:Array.from({length:4},(_,i)=>({id:'q'+(i+1),op:'mul',a:'249',m:9,width:3}))};
    }else if(b.action==='finish-classic-v1'){
@@ -483,6 +484,50 @@ try{
    assert.equal(projectionCalls.length,0,'aucune projection sans Oui après la reprise');
    await page.waitForFunction(()=>
     document.getElementById('xp-earned-total')?.textContent?.includes('22'),null,{timeout:11000});
+  }finally{await page.close()}
+ });
+ await test('Élève seul : verrou scolaire propose le guidé individuel sans professeur ni faux XP',async()=>{
+  const cls='71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e';
+  const initialState={classic:[{'10':8},{},{}],progress:{level2:true,sudden1:true}};
+  const {page,proofCalls,calls}=await connectedPage(false,false,cls,{initialState,lockClassicLevel:2});
+  try{
+   const frame=page.frameLocator('iframe');
+   await frame.locator('#classicLevel').evaluate(el=>{
+    el.value='2';el.dispatchEvent(new Event('change',{bubbles:true}));
+   });
+   await frame.locator('.classic-count-btn[data-count="4"]').click();
+   const notice=page.locator('#mathasMultiNativeProofStatus');
+   await notice.getByText(/Mode noté non encore débloqué/).waitFor({timeout:12000});
+   assert.doesNotMatch(await notice.innerText(),/school_mode_locked/);
+   assert.match(await notice.innerText(),/sans rejoindre une séance de classe/);
+   assert.equal(await frame.locator('#gameScreen:not(.hidden)').count(),0);
+   const networkBefore=calls.filter(c=>c.url==='connect-guided-multiplication').length;
+   await notice.getByRole('button',{name:/Exercice guidé individuel/}).click();
+   await frame.locator('#gameScreen:not(.hidden)').waitFor({timeout:12000});
+   await frame.locator('#calculationsPair .calc-box').first().waitFor();
+   assert.equal(proofCalls.length,1,'seule la tentative notée refusée contacte le serveur');
+   assert.equal(calls.filter(c=>c.url==='connect-guided-multiplication').length,
+    networkBefore,'s’entraîner seul ne rejoint pas le professeur');
+   assert.equal(await page.evaluate(()=>window.MathasPilotBridge?.mode),'connected');
+  }finally{await page.close()}
+ });
+ await test('Élève seul : après verrou N2, reprise Classique N1 avec preuve serveur',async()=>{
+  const cls='71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e';
+  const initialState={classic:[{'10':8},{},{}],progress:{level2:true,sudden1:true}};
+  const {page,proofCalls}=await connectedPage(false,false,cls,{initialState,lockClassicLevel:2});
+  try{
+   const frame=page.frameLocator('iframe');
+   await frame.locator('#classicLevel').evaluate(el=>{
+    el.value='2';el.dispatchEvent(new Event('change',{bubbles:true}));
+   });
+   await frame.locator('.classic-count-btn[data-count="4"]').click();
+   const notice=page.locator('#mathasMultiNativeProofStatus');
+   await notice.getByRole('button',{name:/Classique N1/}).click();
+   await frame.locator('#gameScreen:not(.hidden)').waitFor({timeout:12000});
+   assert.deepEqual(proofCalls.map(c=>[c.action,c.level]),[
+     ['start-classic-v1',2],['start-classic-v1',1]
+   ],'la reprise est certifiée par Supabase');
+   assert.equal(await page.locator('#mathasMultiNativeProofStatus').isVisible(),false);
   }finally{await page.close()}
  });
  await test('Monsieur T: teacher JWT scope uses the same school-certified multiplication entry',async()=>{
