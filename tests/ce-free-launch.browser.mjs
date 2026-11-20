@@ -91,6 +91,22 @@ test('Un lancement scolaire officiel exige toujours Connect et ne donne jamais d
     await page.locator('#loading #message').waitFor({timeout:16000});
     await page.waitForFunction(()=>document.querySelector('#loading #message')?.textContent?.includes('Connect'),null,{timeout:16000});
     assert.equal(await page.locator('iframe').count(),0,app.name+' : aucun moteur libre sous requireConnect');
+    // Un clic VOLONTAIRE ouvre un autre parcours local, sans certification ni
+    // écriture Connect. L'URL scolaire n'est jamais rétrogradée en silence.
+    await page.getByRole('button',{name:/Jouer librement \(sans XP Connect\)/}).click();
+    await page.frameLocator('iframe').locator('#menuScreen').waitFor({state:'visible',timeout:16000});
+    assert.equal(new URL(page.url()).searchParams.get('requireConnect'),null);
+    assert.equal(new URL(page.url()).searchParams.get('libre'),'1');
+    assert.equal(new URL(page.url()).searchParams.get('class'),klass);
+    assert.equal(await page.evaluate(()=>localStorage.getItem('mathas.connect.mode-libre.v1')),null,
+      app.name+' : ne pas déconnecter silencieusement les autres apps');
+    assert.equal(await page.locator('#ce-xp-meter').count(),0,app.name+' : aucune jauge scolaire en libre');
+    const frame=page.frameLocator('iframe');
+    await frame.locator(app.slug==='multiplication-simple'?'#startTraining':'#trainingChoiceBtn').click();
+    await frame.locator('#gameScreen').waitFor({state:'visible'});
+    await frame.locator('#menuBtn').click();
+    await frame.locator('.classic-count-btn[data-count="4"]').click();
+    await frame.locator('#gameScreen').waitFor({state:'visible'});
    }finally{await page.close()}
   }
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
