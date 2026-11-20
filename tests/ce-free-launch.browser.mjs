@@ -166,13 +166,12 @@ test('Addition multiple : guidé puis série classique jouables sans SDK ni Edge
    try{
     const frame=page.frameLocator('iframe');
     await frame.locator('#menuScreen').waitFor({state:'visible',timeout:16000});
-    await frame.locator('#startTraining').click();
+    await frame.locator('#trainingChoiceBtn').click();
     await frame.locator('#gameScreen').waitFor({state:'visible',timeout:16000});
     assert.ok(await frame.locator('#calculationsPair .calc-box').count()>0,'guidé libre sans calcul');
     await frame.locator('#menuBtn').click();
     await frame.locator('#menuScreen').waitFor({state:'visible'});
     await frame.locator('.classic-count-btn[data-count="4"]').click();
-    await frame.locator('#startClassic').click();
     await frame.locator('#gameScreen').waitFor({state:'visible',timeout:16000});
     assert.ok(await frame.locator('#calculationsPair .calc-box').count()>0,'série classique libre sans calcul');
     assert.deepEqual(errors,[],'erreurs de navigateur : '+errors.join('; '));
@@ -200,11 +199,10 @@ test('Addition multiple avec classe : repli libre explicite lorsque Supabase est
    assert.equal(target.searchParams.get('libre'),'1');
    assert.equal(target.searchParams.get('class'),klass);
    const frame=page.frameLocator('iframe');
-   await frame.locator('#startTraining').click();
+   await frame.locator('#trainingChoiceBtn').click();
    await frame.locator('#gameScreen').waitFor({state:'visible'});
    await frame.locator('#menuBtn').click();
    await frame.locator('.classic-count-btn[data-count="4"]').click();
-   await frame.locator('#startClassic').click();
    await frame.locator('#gameScreen').waitFor({state:'visible'});
    assert.deepEqual(errors,[]);
   }finally{await page.close()}
