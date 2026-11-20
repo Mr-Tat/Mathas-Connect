@@ -22,7 +22,7 @@
 
 **Étapes distinctes** : `AUDIT` → `ARBITRAGE PROF` → `CODE` → `CI` → `PAGES` → `EDGE/SQL` → `RECETTE FICTIVE` → `OUVERTURE AUTORISÉE`. N'afficher une étape comme franchie qu'avec **date + preuve** ; `SANS OBJET` si le jeu n'a pas cette capacité. Une fusion GitHub ne certifie pas le reste.
 
-| Fiabilité 4 calculs écrits — libre, score du jour, consentement | **PR #333** : corrections en cours de validation (pas encore fusionnées), aucun SQL/Edge ni barème modifié ; recette Auth TEST non exécutée | Sans nouveau barème | [#333](https://github.com/Mr-Tat/Mathas-Connect/pull/333) ; vérifier CI puis Pages et recette fictive | [Fiche](applications/calculs-ecrits-fiabilite-libre-projection-20261120.md) |
+| Fiabilité 4 calculs écrits — libre, score du jour, consentement | **PR #333** : correctifs CI ciblée verte 20/11, publication Pages et recette Auth TEST à confirmer ; aucun SQL/Edge ni barème modifié | Sans nouveau barème | [#333](https://github.com/Mr-Tat/Mathas-Connect/pull/333) ; vérifier CI puis Pages et recette fictive | [Fiche](applications/calculs-ecrits-fiabilite-libre-projection-20261120.md) |
 
 ## Chantiers hérités — PR ouvertes constatées sur GitHub le 10/11/2026
 
