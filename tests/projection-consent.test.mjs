@@ -82,6 +82,10 @@ test('Consentement : refuser ne transmet rien ; accepter transmet exactement son
  assert.equal(tool.offer(rejected),true);
  no.onclick();
  assert.equal(events.length,0);
+ assert.equal(tool.offer(rejected),true,
+  'NON ne rend pas définitivement impubliable le même score certifié');
+ no.onclick();
+ assert.equal(events.length,0,'deux refus successifs ne publient jamais');
  assert.equal(tool.offer(accepted),true);
  assert.equal(events.length,0,'no publication before YES click');
  yes.onclick();
