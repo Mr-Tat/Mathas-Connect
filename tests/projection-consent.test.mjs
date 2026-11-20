@@ -130,13 +130,15 @@ test('Consentement : offres simultanées visibles, chaque Oui envoyé sans atten
  yes.onclick();
  await new Promise(resolve=>setImmediate(resolve));
  assert.deepEqual(submitted.map(x=>x.eventId),[first]);
- assert.equal(dialog.hidden,false,'attendre la confirmation serveur');
- finishFirst({ok:true,json:async()=>({ok:true})});
- await new Promise(resolve=>setImmediate(resolve));
- assert.equal(no.textContent,'Fermer');
- no.onclick();
- assert.equal(dialog.hidden,false,'deuxième proposition après fermeture');
+ assert.equal(dialog.hidden,false,'la deuxième proposition est visible sans attendre le réseau');
+ assert.equal(no.textContent,'NON','un seul clic suffit, pas de bouton Fermer');
+ assert.equal(tool.isPending(first),true,'premier consentement sauvé avant envoi');
+ assert.equal(tool.offer(first),false,'pas de dialogue en double pendant un envoi en attente');
+ // Deuxième OUI également possible tandis que la première requête est lente.
  yes.onclick();
+ assert.equal(dialog.hidden,true,'OUI ferme directement la seconde proposition');
+ assert.equal(tool.isPending(second),true);
+ finishFirst({ok:true,json:async()=>({ok:true})});
  await new Promise(resolve=>setImmediate(resolve));
  assert.deepEqual(submitted.map(x=>x.eventId),[first,second]);
  assert.equal(tool.pending(),0);
