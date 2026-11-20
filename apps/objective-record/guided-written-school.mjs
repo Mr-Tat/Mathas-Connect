@@ -1,7 +1,7 @@
 // Raccorde l'hôte Objectif record scolaire aux contrôleurs collectifs existants.
 // Les calculs guidés sont non notés, sans réponse élève envoyée au serveur.
 const CONTROLLERS=Object.freeze({
- 'addition-ecrite-simple':async()=>({module:await import('/CE-Addition-simple/collective-ui.mjs?v=20261117-guided-reprise-v2'),name:'createAdditionSimpleCollective'}),
+ 'addition-ecrite-simple':async()=>({module:await import('./guided-addition-simple/collective-ui.mjs?v=20261120-school-v1'),name:'createAdditionSimpleCollective'}),
  'addition-ecrite-multiple':async()=>({module:await import('../addition-plusieurs/collective-ui.mjs?v=20261117-guided-reprise-v2'),name:'createAdditionMultipleCollective'})
 });
 const LABELS=Object.freeze({
