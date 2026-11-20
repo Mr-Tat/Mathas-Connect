@@ -10,7 +10,7 @@ const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
 const requireConnect=query.get('requireConnect')==='1';
-const free=!teacherPlayer&&!requireConnect&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,studentName='',studentAvatar=null,connectionCheckRequired=false,consent=null;
+const free=!teacherPlayer&&!requireConnect&&(query.get('libre')==='1'||localStorage.getItem('mathas.connect.mode-libre.v1')==='1');let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,studentName='',studentAvatar=null,connectionCheckRequired=false,consent=null;
 const status=s=>document.getElementById('message').textContent=s;
 const originalPromise=fetch('./game-original.html').then(r=>{if(!r.ok)throw Error('Copie du jeu non disponible');return r.text()});
 // Un visiteur sans profil approuvé ouvre directement le jeu classique.
@@ -54,12 +54,14 @@ if((connectionCheckRequired||teacherPlayer||requireConnect)&&mode!=='connected')
  document.getElementById('message').textContent=requireConnect?'Compte Connect approuvé nécessaire pour ce test scolaire. Connecte-toi via ton HUB et réessaie. Aucun XP fictif ne sera attribué.':'Impossible de vérifier les sauvegardes du compte. Aucun résultat ne sera perdu : réessaie plus tard ou joue sans synchronisation.';
  const actions=document.createElement('div');actions.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-top:20px';
  const retry=document.createElement('button');retry.textContent='Réessayer';retry.onclick=()=>location.reload();
- const classic=document.createElement('button');classic.textContent='Jouer sans synchronisation';
- classic.onclick=()=>{if(teacherPlayer)location.href=location.pathname+'?class='+encodeURIComponent(classId);else{localStorage.setItem('mathas.connect.mode-libre.v1','1');location.reload()}};
+ const classic=document.createElement('button');classic.textContent='Jouer librement (sans XP Connect)';
+ // Choix explicite : le lancement officiel reste bloqué tant que Connect
+ // est indisponible. Le lien séparé vers la version libre n'émet aucun XP
+ // et ne désactive pas Connect pour les autres jeux de cet appareil.
+ classic.onclick=()=>{const target=new window.URL(location.href);target.searchParams.delete('requireConnect');target.searchParams.delete('joueur');target.searchParams.set('libre','1');location.assign(target.href)};
  for(const b of [retry,classic])b.style.cssText='padding:12px;border:0;border-radius:10px;background:#176e8d;color:white;font:600 13px system-ui;cursor:pointer';
- actions.append(retry);
- if(!requireConnect)actions.append(classic);
- else{const link=document.createElement('a');link.href='../../index.html?class='+encodeURIComponent(classId);link.textContent='Se connecter au HUB';link.style.cssText='color:#fff;border:1px solid #8dbccc;padding:12px;border-radius:9px;text-decoration:none';actions.append(link)}
+ actions.append(retry,classic);
+ if(requireConnect){const link=document.createElement('a');link.href='../../index.html?class='+encodeURIComponent(classId);link.textContent='Se connecter au HUB';link.style.cssText='color:#fff;border:1px solid #8dbccc;padding:12px;border-radius:9px;text-decoration:none';actions.append(link)}
  view.appendChild(actions);
 }else{
 const ns=mode==='connected'?'mathas.ce-soustraction.connect.'+classId+'.'+(teacherPlayer?'monsieur-t':session.user.id)+'.v1:':'mathas.ce-soustraction.libre.v1:',GKEYS=new Set();
