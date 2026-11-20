@@ -4,8 +4,8 @@
 (function(){
  'use strict';
  const sources=Object.freeze({
-  'addition-ecrite-simple':'/CE-Addition-simple/collective-native-bridge.js?v=20261117-guided-reprise-v2',
-  'addition-ecrite-multiple':'/Mathas-Connect/apps/addition-plusieurs/collective-native-bridge.js?v=20261117-guided-reprise-v2'
+  'addition-ecrite-simple':'../../guided-addition-simple/collective-native-bridge.js?v=20261120-school-v1',
+  'addition-ecrite-multiple':'../../../addition-plusieurs/collective-native-bridge.js?v=20261120-school-v1'
  });
  const marker="primaryBtn.addEventListener('click',handlePrimary);";
  window.MathasWrittenGuidedNativePatch=async function(game,appKey){
