@@ -27,7 +27,7 @@ const teacherPlayer=query.get('joueur')==='prof';
 // Les lancements depuis « Tests en ligne » ne sont PAS des démos sans XP.
 const requireConnect=query.get('requireConnect')==='1';
 const isTestClass=classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
-const free=!teacherPlayer&&!requireConnect&&localStorage.getItem('mathas.connect.mode-libre.v1')==='1';let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,multiplierLock=null,multiplierLockVersion=null,tableAidAllowed=true,studentName='',studentAvatar=null,connectionCheckRequired=false;
+const free=!teacherPlayer&&!requireConnect&&(query.get('libre')==='1'||localStorage.getItem('mathas.connect.mode-libre.v1')==='1');let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,multiplierLock=null,multiplierLockVersion=null,tableAidAllowed=true,studentName='',studentAvatar=null,connectionCheckRequired=false;
 const status=s=>document.getElementById('message').textContent=s;
 const originalPromise=fetch('./game-original.html').then(r=>{if(!r.ok)throw Error('Copie du jeu non disponible');return r.text()});
 // Un visiteur sans profil approuvé ouvre directement le jeu classique.
@@ -70,15 +70,18 @@ if((connectionCheckRequired||teacherPlayer||requireConnect)&&mode!=='connected')
  const view=document.getElementById('loading');
  document.getElementById('message').textContent=requireConnect
   ?(isTestClass
-   ?'Connexion Connect obligatoire pour ce test en ligne : aucun élève fictif TEST approuvé n’est reconnu dans ce navigateur. Ce jeu ne démarre pas sans sauvegarde, XP et preuve serveur. Connecte-toi avec un profil fictif TEST, puis reviens essayer.'
-   :'Connexion Connect obligatoire pour les résultats officiels de multiplication : aucun compte élève approuvé pour cette classe n’est reconnu dans ce navigateur. Aucun exercice ne sera lancé sans sauvegarde et preuve serveur. Connecte-toi à ta classe, puis réessaie.')
-  :'Impossible de vérifier les sauvegardes du compte. Aucun résultat ne sera perdu : réessaie plus tard ou joue sans synchronisation.';
+   ?'Connexion Connect obligatoire pour ce test en ligne : aucun élève fictif TEST approuvé n’est reconnu. Connecte-toi avec un profil TEST pour obtenir la sauvegarde et les XP officiels, ou choisis « Jouer librement » sans XP Connect.'
+   :'Connexion Connect obligatoire pour les résultats officiels de multiplication : un compte élève approuvé pour cette classe est nécessaire. Connecte-toi pour sauvegarder les XP et les scores officiels, ou choisis « Jouer librement » sans XP Connect.')
+  :'Impossible de vérifier les sauvegardes Connect. Tu peux réessayer ou choisir « Jouer librement » : cette partie restera locale, sans XP Connect.';
  const actions=document.createElement('div');actions.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-top:20px';
  const retry=document.createElement('button');retry.textContent='Réessayer';retry.onclick=()=>location.reload();
- const classic=document.createElement('button');classic.textContent='Jouer sans synchronisation';
- classic.onclick=()=>{if(teacherPlayer)location.href=location.pathname+'?class='+encodeURIComponent(classId);else{localStorage.setItem('mathas.connect.mode-libre.v1','1');location.reload()}};
+ const classic=document.createElement('button');classic.textContent='Jouer librement (sans XP Connect)';
+ // Choix explicite : le lancement officiel reste bloqué tant que Connect
+ // est indisponible. Le lien séparé vers la version libre n'émet aucun XP
+ // et ne désactive pas Connect pour les autres jeux de cet appareil.
+ classic.onclick=()=>{const target=new window.URL(location.href);target.searchParams.delete('requireConnect');target.searchParams.delete('joueur');target.searchParams.set('libre','1');location.assign(target.href)};
  for(const b of [retry,classic])b.style.cssText='padding:12px;border:0;border-radius:10px;background:#176e8d;color:white;font:600 13px system-ui;cursor:pointer';
- actions.append(retry);
+ actions.append(retry,classic);
  if(requireConnect){
   const login=document.createElement('a');
   login.textContent=isTestClass?'Se connecter avec un élève fictif TEST':'Se connecter à ma classe';
@@ -92,7 +95,7 @@ if((connectionCheckRequired||teacherPlayer||requireConnect)&&mode!=='connected')
   login.href=target.href;
   login.style.cssText='padding:12px;border-radius:10px;background:#176e8d;color:white;font:600 13px system-ui;text-decoration:none';
   actions.append(login);
- }else actions.append(classic);
+ }
  view.appendChild(actions);
 }else{
 const ns=mode==='connected'?'mathas.ce-multiplication.connect.'+(teacherPlayer?'monsieur-t':session.user.id)+'.v1:':'mathas.ce-multiplication.libre.v1:',GKEYS=new Set();
