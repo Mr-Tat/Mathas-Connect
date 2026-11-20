@@ -71,7 +71,7 @@ if((connectionCheckRequired||teacherPlayer||requireConnect)&&mode!=='connected')
  document.getElementById('message').textContent=requireConnect
   ?(isTestClass
    ?'Connexion Connect obligatoire pour les résultats officiels de ce test : aucun élève fictif TEST approuvé n’est reconnu. Connecte-toi avec un profil TEST pour obtenir la sauvegarde et les XP, ou choisis « Jouer librement » sans XP Connect.'
-   :'Les résultats officiels de multiplication nécessitent un compte élève approuvé pour cette classe. Connecte-toi à ta classe pour sauvegarder tes XP et tes scores, ou choisis « Jouer librement » sans XP Connect.')
+   :'Connexion Connect obligatoire pour les résultats officiels de multiplication : un compte élève approuvé pour cette classe est nécessaire. Connecte-toi pour sauvegarder les XP et les scores officiels, ou choisis « Jouer librement » sans XP Connect.')
   :'Impossible de vérifier les sauvegardes Connect. Tu peux réessayer ou choisir « Jouer librement » : cette partie restera locale, sans XP Connect.';
  const actions=document.createElement('div');actions.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-top:20px';
  const retry=document.createElement('button');retry.textContent='Réessayer';retry.onclick=()=>location.reload();
