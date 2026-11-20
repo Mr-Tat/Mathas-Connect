@@ -49,6 +49,7 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
 <script src="../../native-certified-survival-patch.js?v=20261106-native-school-v1"></script>
 <script src="./lab-objectif-record-v2.js?v=20261106-certified-grid-v6"></script>
 <script src="../../native-hub-link.js?v=20261107-hud-restore-v2"></script>
+<script src="../../guided-written-native-patch.js?v=20261120-guided-v1"></script>
 <script>
 (async function(){
  'use strict';
@@ -351,6 +352,8 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
    game=window.MathasLabV2.patch(game,'multi');
    game=window.MathasCertifiedMultiPatch(game);
    if(hostedByConnect)game=window.MathasCertifiedSurvivalPatch(game,'multi');
+    if(hostedByConnect&&typeof window.MathasWrittenGuidedNativePatch==='function')
+      game=await window.MathasWrittenGuidedNativePatch(game,'addition-ecrite-multiple');
    frame.srcdoc=game;
    status.remove();
  }catch(error){
