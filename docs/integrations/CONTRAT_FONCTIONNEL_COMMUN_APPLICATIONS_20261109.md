@@ -258,6 +258,7 @@ Sources : `docs/integrations/REFERENCE_TECHNIQUE.md`, `docs/integrations/CONTRAT
 ## 8. Checklist de recette à recopier dans toute nouvelle PR
 
 - [ ] Profil fictif approuvé, bascule enseignant/Monsieur T/élève, avatar + nom + niveau + barre, mode libre réellement isolé.
+- [ ] **Hors connexion Connect : test navigateur BLOQUANT pour toute application**. Depuis HUB libre **et** URL directe, avec et sans classe, ouvrir le vrai menu, commencer Exercice guidé puis une série Classique, saisir et revenir. Simuler SDK/Edge indisponibles ; résultats locaux sans XP, trophée ou projection Connect. `requireConnect=1` bloque toute partie officielle sans validation, mais peut offrir un **autre lancement libre explicite**. Le vrai mode avion au premier chargement requiert des fichiers précachés : le vérifier séparément si promis.
 - [ ] Carte HUB, vignette approuvée, permission d'accès par classe et retour HUB ; édition de réglages professeur si pertinents.
 - [ ] Exercice admissible : indication `Reste N XP` réellement issue serveur ; changement de niveau/options ; `0` fiable et indisponibilité non transformée en `0`.
 - [ ] Trophées accessibles/en cours/acquis, trophées de maîtrise de section, compteurs corrects, restauration après reset de scores. **Tester qu'un score certifié en 3 vies peut attribuer une coupe `scoreOne`, mais ne débloque jamais une coupe réservée à Mort subite.**
