@@ -81,41 +81,29 @@ export function createProjectionConsent({classId,appKey,studentKey,getToken,
   finally{flushing=false}
   return result;
  }
- no.onclick=()=>{if(flushing)return;dismiss()};
- yes.onclick=async()=>{
-  if(!showing||flushing)return;
+ // A single explicit choice closes the dialog. Only the accepted event is
+ // durably queued, so a later click after NON can ask again without publishing.
+ no.onclick=()=>{dismiss()};
+ yes.onclick=()=>{
+  if(!showing)return;
   const eventId=showing.eventId;
-  const queued=read();if(!queued.includes(eventId)){queued.push(eventId);if(!save(queued)){
+  const queued=read();
+  if(!queued.includes(eventId)){queued.push(eventId);if(!save(queued)){
    status.textContent='Impossible de conserver la demande : préviens ton professeur.';return;
   }}
-  yes.disabled=true;no.disabled=true;status.textContent='Envoi sécurisé au tableau…';
-  const outcome=await flush(eventId);
-  if(outcome==='network_error'||outcome==='queued')emit(eventId,'queued');
-  yes.disabled=false;no.disabled=false;
-  if(!showing||showing.eventId!==eventId)return;
-  if(outcome==='sent'){
-   status.textContent='✅ Score bien envoyé au tableau !';
-   yes.hidden=true;no.textContent='Fermer';
-  }else if(outcome==='not_improved'){
-   status.textContent='Ce score est déjà dépassé ou égalé sur le tableau.';
-   yes.hidden=true;no.textContent='Fermer';
-  }else if(outcome==='score_reset'||outcome==='event_not_found'){
-   status.textContent='Ce résultat n’est plus publiable. Il reste dans ton historique.';
-   yes.hidden=true;no.textContent='Fermer';
-  }else{
-   status.textContent='Connexion indisponible : envoi conservé et réessayé automatiquement.';
-   yes.hidden=true;no.textContent='Fermer';
-  }
+  emit(eventId,'queued'); // UI says pending, NEVER "sent" before server ACK.
+  dismiss();
+  void flush(eventId);
  };
  const onOnline=()=>{void flush()};
  windowRef.addEventListener('online',onOnline);
  void flush(); // opt-ins explicitly accepted earlier, never ask again
  return Object.freeze({
-  offer(eventId,details={}){if(!UUID.test(eventId)||showing?.eventId===eventId||waiting.some(x=>x.eventId===eventId))return false;
+  offer(eventId,details={}){if(!UUID.test(eventId)||read().includes(eventId)||showing?.eventId===eventId||waiting.some(x=>x.eventId===eventId))return false;
    const points=Number(details?.points);
    waiting.push({eventId,points:Number.isSafeInteger(points)&&points>=0?points:null});
    showNext();return true},
-  retry:()=>flush(),pending:()=>read().length,
+  retry:()=>flush(),pending:()=>read().length,isPending:eventId=>UUID.test(eventId)&&read().includes(eventId),
   onResult(fn){if(typeof fn!=='function')return ()=>{};resultListeners.add(fn);return ()=>resultListeners.delete(fn)},
   destroy(){ // Hide old-app offers on a change of pupil/app; keep explicitly opted-in retries.
    showing=null;waiting.length=0;resultListeners.clear();dialog.remove();css.remove();
