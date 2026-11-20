@@ -17,6 +17,7 @@ import {installSessionToolbarLayout} from './in-game-session-layout.mjs?v=202611
 import {paintConnectedAvatar} from './profile-avatar-badge.mjs?v=20261107-v1';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
+import {mountWrittenGuidedClass} from './guided-written-school.mjs?v=20261120-guided-v1';
 
 // Canonical school/test host; the HUB rollout flag controls when real pupils
 // see this route. JWT and PostgreSQL proofs remain mandatory even by direct URL.
@@ -365,6 +366,36 @@ function watchGame(seq){
    installNativeCertifiedLaunch(doc,activeApp,launchOfficial);
    if(typeof native!=='function')return;
    activeProofUI.bind(inside.contentWindow,doc);
+   // Montage unique du guidé collectif dans le vrai moteur Objectif record.
+   // Les élèves n'interrogent le serveur que sur Rejoindre / Suivant.
+   if(SERVER_PROOF_ADDITIONS.has(activeApp)&&pupilId&&!doc.__mathasWrittenGuidedAttached){
+    doc.__mathasWrittenGuidedAttached=true;
+    let closingToken=null;
+    const guidedApp=activeApp;
+    const current=()=>seq===generation&&activeApp===guidedApp
+     &&$('gameFrame').contentDocument?.getElementById('game')?.contentDocument===doc;
+    const guidedCall=async(action,payload={})=>{
+     closingToken=await verifiedToken();
+     return call('connect-guided-written',action,guidedApp,payload);
+    };
+    const closeGuided=({sessionId,hostId,pageId})=>{
+     if(!teacher||!closingToken||!sessionId||!hostId||!pageId)return;
+     try{void fetch(BASE+'/functions/v1/connect-guided-written',{
+      method:'POST',keepalive:true,cache:'no-store',
+      headers:{apikey:KEY,authorization:'Bearer '+closingToken,'content-type':'application/json'},
+      body:JSON.stringify({action:'closing',appKey:guidedApp,classId,sessionId,hostId,pageId})
+     }).catch(()=>{})}catch{}
+    };
+    void mountWrittenGuidedClass({
+     iframe:inside,appKey:guidedApp,teacher,classId,
+     studentId:teacher?'':pupilId,storage:(()=>{try{return sessionStorage}catch{return null}})(),
+     call:guidedCall,onClose:closeGuided,isCurrent:current
+    }).catch(error=>{
+     if(!current())return;
+     console.warn('Guidé collectif des additions indisponible ; autres modes conservés.',error);
+     message('⚠️ Guidé collectif indisponible. Le guidé individuel reste accessible.');
+    });
+   }
    if(doc===visibleDoc)return;
    visibleDoc=doc;
    {
