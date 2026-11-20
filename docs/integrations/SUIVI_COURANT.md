@@ -24,6 +24,8 @@
 
 | Fiabilité 4 calculs écrits — libre, score du jour, consentement | **PR #333** : correctifs CI ciblée verte 20/11, publication Pages et recette Auth TEST à confirmer ; aucun SQL/Edge ni barème modifié | Sans nouveau barème | [#333](https://github.com/Mr-Tat/Mathas-Connect/pull/333) ; vérifier CI puis Pages et recette fictive | [Fiche](applications/calculs-ecrits-fiabilite-libre-projection-20261120.md) |
 
+| Multiplication simple — exercice autonome malgré verrou de progression | **PR #334** : `school_mode_locked` identifié comme verrou de niveau/mode noté, non une obligation de rejoindre le professeur ; boutons pour le guidé individuel immédiat et le Classique N1 certifié ; CI Chromium + intégration OK 20/11 | Aucun barème/droit modifié | [#334](https://github.com/Mr-Tat/Mathas-Connect/pull/334) · [Chromium](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/44738712575) · Pages et recette Auth réelle à distinguer | [Fiche](applications/multiplication-guide-collectif.md) |
+
 ## Chantiers hérités — PR ouvertes constatées sur GitHub le 10/11/2026
 
 > **Inventaire de continuité, pas un nouvel état de livraison.** Ces PR précèdent ce suivi et ne comptent pas comme « nouvelles intégrations ». Le statut ci-dessous vient de GitHub au 10/11/2026 ; **le recontrôler au moment de reprendre**. Une PR ouverte peut contenir un travail devenu obsolète ou repris ailleurs sur `main`. **Ne pas la fusionner, la fermer, ni rejouer sa migration sans audit du diff actuel et autorisation pertinente.**
