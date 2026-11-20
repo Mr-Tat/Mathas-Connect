@@ -46,7 +46,10 @@ export const SCHOOL_ADDITIONS_ROLLOUT=Object.freeze({
   enabled:true,proofRpcsReady:true,hostedJwtVerified:true,projectionVerified:true
 });
 const ADDITION_KEYS=new Set(['addition-ecrite-simple','addition-ecrite-multiple']);
-export function schoolAdditionsLaunch({classId,appKey,legacyUrl,rollout=SCHOOL_ADDITIONS_ROLLOUT}){
+export function schoolAdditionsLaunch({classId,appKey,legacyUrl,rollout=SCHOOL_ADDITIONS_ROLLOUT,freeMode=false}){
+  // The HUB's explicitly selected free mode must never open the certified
+  // school launcher: that launcher needs the remote Supabase SDK even for a guest.
+  if(freeMode===true)return legacyUrl;
   if(!SCHOOL_CLASSES.has(classId)||!ADDITION_KEYS.has(appKey)
     ||rollout.enabled!==true||rollout.proofRpcsReady!==true
     ||rollout.hostedJwtVerified!==true||rollout.projectionVerified!==true)return legacyUrl;
