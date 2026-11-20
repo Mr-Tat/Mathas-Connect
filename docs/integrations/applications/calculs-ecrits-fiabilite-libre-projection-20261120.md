@@ -25,8 +25,14 @@
 - Suite de régression générale : plusieurs échecs hérités indépendants ; comparer à la base avant de déclarer vert.
 - **Recette AUTH hébergée TEST avec professeur et élève fictifs : NON EXÉCUTÉE** (professeur la réalisera après mise en place).
 
+## Preuves vérifiées (20/11/2026)
+- **Addition simple autonome :** [PR #31](https://github.com/Mr-Tat/CE-Addition-simple/pull/31) fusionnée (`4e62ee3d22b628e374f2409df94284a8dea636e1`) ; Chromium libre, guidé collectif et contrôle moteur/Connect **verts**. Publication Pages à contrôler séparément.
+- **Connect PR #333** : [routage libre Chromium et SDK absent](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/44733586714), [Multiplication certifiée Chromium](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/44733586595), [deux additions scores/projection](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/44733586770) et [contrats Objectif record](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/44733586541) **réussis** au HEAD code `208e9af`.
+- [Suite Node globale](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/44733586516) : **740 réussites / 10 échecs**, les dix catégories déjà en échec avant ce chantier ; aucune nouvelle régression ciblée constatée.
+- **Aucune recette authentifiée LIVE à deux rôles**. Aucun test ne doit utiliser de vrais élèves.
+
 ## Portes de livraison
-- PR / CI ciblée : suivre les runs du HEAD de #333 ; aucune migration SQL ou Edge.
+- PR / CI ciblée : réussie sur le code du 20/11 ; aucun SQL/Edge modifié.
 - GitHub Pages après fusion : vérifier succès de déploiement au SHA fusionné, séparément de la recette authentifiée.
 - Catalogue Supabase et permissions/classes : **inchangés** ; aucun score, XP, trophée ni profil réel touché.
 - Ne pas fusionner mécaniquement les anciennes PR #248 (fenêtre Oui/Non), #250 (score du jour Soustraction), #251 (score du jour Additions) : ces besoins sont repris ici, et leurs patches datés doivent être comparés à `main`.
