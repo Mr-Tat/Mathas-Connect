@@ -29,7 +29,7 @@
 - **Règles approuvées** : liens/barème versionné ; exemples de cas limites et résultat attendu (premier gain, répétition, erreurs, reset) … ; `SANS OBJET` si absent.
 - **Connect** : `app_key`, identité/session, limites serveur, preuve de fin + UUID/ACK et restauration, état/trophées permanents … .
 - **Parcours** : HUB → jeu → score/XP/coupes → professeur → projection volontaire si existante ; interface et petits écrans … .
-- **Tests** : contrat logique … ; Auth/Edge/SQL … ; Chromium vrai moteur … ; isolement autres apps … ; **recette Pages authentifiée fictive** … . Pour chaque case : OK/ÉCHEC/NON EXÉCUTÉ/SANS OBJET, date, run et SHA.
+- **Tests** : contrat logique … ; Auth/Edge/SQL … ; Chromium vrai moteur … ; isolement autres apps … ; **démarrage mode libre/hors connexion Connect OBLIGATOIRE** (HUB + URL directe, classe présente/absente, SDK injoignable, jeu guidé et Classique réellement lancé, stockage local isolé, pas de XP Connect, `requireConnect=1` bloqué sans Auth), **recette Pages authentifiée fictive** … . Distinguer jeu sans compte et véritable mode avion sans réseau/cache. Pour chaque case : OK/ÉCHEC/NON EXÉCUTÉ/SANS OBJET, date, run et SHA.
 
 ## 4. Livraison et prochaine conversation
 
