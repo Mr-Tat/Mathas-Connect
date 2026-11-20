@@ -51,7 +51,7 @@ const original=await originalPromise;
 // silencieusement des parties Connect dans les résultats locaux.
 if((connectionCheckRequired||teacherPlayer||requireConnect)&&mode!=='connected'){
  const view=document.getElementById('loading');
- document.getElementById('message').textContent=requireConnect?'Compte Connect approuvé nécessaire pour ce test scolaire. Connecte-toi via ton HUB et réessaie. Aucun XP fictif ne sera attribué.':'Impossible de vérifier les sauvegardes du compte. Aucun résultat ne sera perdu : réessaie plus tard ou joue sans synchronisation.';
+ document.getElementById('message').textContent=requireConnect?'Les résultats officiels de soustraction nécessitent un compte Connect approuvé. Connecte-toi via ton HUB ou choisis « Jouer librement » : aucune partie libre ne donne de XP Connect.':'Impossible de vérifier les sauvegardes Connect. Tu peux réessayer ou choisir « Jouer librement » : cette partie restera locale, sans XP Connect.';
  const actions=document.createElement('div');actions.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-top:20px';
  const retry=document.createElement('button');retry.textContent='Réessayer';retry.onclick=()=>location.reload();
  const classic=document.createElement('button');classic.textContent='Jouer librement (sans XP Connect)';
