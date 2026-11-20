@@ -51,7 +51,13 @@ for(const [slug,app] of [['addition-simple','addition-ecrite-simple'],
      }else if(route.request().url().includes('/connect-projection-v2')){
       result={ok:true,events:[],bestThree:[],todayBest:null,boardBest:0};
      }else if(route.request().url().includes('/connect-guided-written')){
-      result={ok:true,active:false};
+      const page=app==='addition-ecrite-simple'
+       ?[{a:'123',b:'456'},{a:'234',b:'567'}]
+       :[{addends:['123','456','789']},{addends:['234','345','456']}];
+      result=b.action==='start'?{
+       ok:true,active:true,sessionId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+       revision:1,level:1,pages:[page],pageIndex:0,requiredPages:[false],hostOwned:true
+      }:{ok:true,active:false};
      }else{
       result={ok:false,error:'unexpected_test_request'};
      }
@@ -82,6 +88,12 @@ for(const [slug,app] of [['addition-simple','addition-ecrite-simple'],
     }else{
      assert.equal(requests.some(x=>x.action==='start'&&x.appKey===app),false,
       'pas de création de séance sans clic professeur');
+     await command.click();
+     await bar.getByText('Guidé collectif · page 1 / 1',{exact:false}).waitFor({timeout:10000});
+     await bar.getByRole('button',{name:'Page obligatoire'}).waitFor({state:'visible'});
+     await bar.getByRole('button',{name:'Afficher les réponses'}).waitFor({state:'visible'});
+     await bar.getByRole('button',{name:'Terminer la séance'}).waitFor({state:'visible'});
+     assert.equal(requests.filter(x=>x.action==='start'&&x.appKey===app).length,1);
     }
     assert.deepEqual(errors,[]);
    }finally{await browser?.close();await new Promise(ok=>server.close(ok))}
