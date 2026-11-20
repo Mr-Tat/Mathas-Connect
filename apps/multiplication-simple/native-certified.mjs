@@ -16,7 +16,53 @@ export function createNativeCertifiedMultiplication({
  notice.id='mathasMultiNativeProofStatus';
  notice.style.cssText='position:fixed;z-index:99999;bottom:9px;left:50%;transform:translateX(-50%);max-width:min(570px,calc(100vw - 24px));background:#103451;color:#fff1c2;border:1px solid #d7b967;border-radius:12px;padding:9px 14px;font:650 13px/1.45 system-ui;box-shadow:0 4px 25px #0018;text-align:center;pointer-events:none';
  notice.hidden=true;documentRef.body.append(notice);
- const show=(s,visible=true)=>{notice.textContent=String(s);notice.hidden=!visible;notify(s)};
+ const show=(s,visible=true)=>{
+  notice.textContent=String(s);
+  notice.hidden=!visible;
+  notice.style.pointerEvents='none';
+  notify(s);
+ };
+ // Un verrou de progression scolaire n'est jamais un verrou de séance
+ // collective. Le jeu guidé autonome reste accessible sans le professeur ;
+ // une série officielle de niveau 1 est aussi toujours possible.
+ function offerSoloOptions(request){
+  const selectedMode=request.mode,requestedLevel=request.level;
+  const requirement=selectedMode.startsWith('hard-')
+   ?'Ce défi HARD demande les sans-faute officiels des trois niveaux et les défis HARD précédents.'
+   :selectedMode==='sudden'||selectedMode==='three-lives'
+    ?'Mort subite et 3 vies se débloquent après 8/10 ou 16/20 en Classique au même niveau.'
+    :'Les niveaux 2 et 3 se débloquent après 8/10 ou 16/20 en Classique au niveau précédent.';
+  show('🔒 Mode noté non encore débloqué. '+requirement+
+   ' Tu peux toujours travailler seule, sans rejoindre une séance de classe.');
+  notice.setAttribute('role','alert');
+  notice.style.pointerEvents='auto';
+  const actions=documentRef.createElement('div');
+  actions.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-top:9px';
+  const button=(label,callback)=>{
+   const b=documentRef.createElement('button');
+   b.type='button';b.textContent=label;
+   b.style.cssText='padding:8px 10px;border-radius:8px;border:1px solid #a3d8e0;background:#174961;color:white;font:750 12px/1.4 system-ui;cursor:pointer';
+   b.addEventListener('click',callback);actions.append(b);
+   return b;
+  };
+  button('📘 Exercice guidé individuel',()=>{
+   const doc=getFrame?.()?.contentDocument;
+   const training=doc?.getElementById('trainingChoiceBtn')
+    ||doc?.getElementById('startTraining');
+   if(!training){show('Jeu indisponible : actualise la page et recommence.');return}
+   show('',false);
+   training.click(); // mode natif non noté : aucun appel de preuve ou XP
+  });
+  // Repartir sur une vraie série certifiée, jamais un lancement natif
+  // classique local qui produirait un faux résultat Connect.
+  if(selectedMode!=='classic'||requestedLevel!==1){
+   button('✅ Classique N1 · 4 calculs (XP Connect)',()=>{
+    show('',false);
+    void start({...request,mode:'classic',level:1,total:4});
+   });
+  }
+  notice.append(actions);
+ }
  const identity=()=>getContext?.();
  const bridge=()=>getFrame?.()?.contentWindow?.MathasNativeCertifiedBridge||null;
  const same=()=>{const ctx=identity();return run&&ctx?.connected===true
@@ -136,7 +182,11 @@ export function createNativeCertifiedMultiplication({
       ' premier(s) essai(s) retrouvés · même série serveur.',true);
    return true;
   }catch(e){
-   show('⚠️ Partie scolaire indisponible : '+(e?.message||'Erreur inconnue'));
+   if(e?.message==='school_mode_locked'){
+    offerSoloOptions({mode,level,total,multipliers,method,tensFirst});
+   }else{
+    show('⚠️ Partie scolaire indisponible : '+(e?.message||'Erreur inconnue'));
+   }
    run=null;queue=null;contextKey=null;
    syncSurvivalHud();
    return false;
