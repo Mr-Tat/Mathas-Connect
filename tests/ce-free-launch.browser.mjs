@@ -111,3 +111,44 @@ test('Un lancement scolaire officiel exige toujours Connect et ne donne jamais d
   }
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
+
+test('Parcours HUB sans compte : les cartes Multiplication/Soustraction donnent une voie libre sans XP', {timeout:120000},async()=>{
+ const {server,url}=await serve();
+ const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
+ try{
+  const hub=await browser.newPage();
+  const catalog=JSON.parse(await readFile(resolve(root,'hub-catalog.json'),'utf8'));
+  for(const app of catalog.apps){
+   if(app.app_key==='multiplication-ecrite-simple')app.launch_url=url+'/apps/multiplication-simple/';
+   if(app.app_key==='soustraction-ecrite-simple')app.launch_url=url+'/apps/soustraction-simple/';
+  }
+  await hub.route('**/*',route=>{
+   const uri=route.request().url();
+   if(uri===url+'/hub-catalog.json')return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(catalog)});
+   if(uri.startsWith(url+'/'))return route.continue();
+   return route.abort();
+  });
+  await hub.goto(url+'/hub.html?space=phase2',{waitUntil:'domcontentloaded'});
+  for(const [key,slug] of [['multiplication-ecrite-simple','multiplication-simple'],['soustraction-ecrite-simple','soustraction-simple']]){
+   const link=hub.locator('a.app-card[data-app-key="'+key+'"]');
+   await link.waitFor({timeout:18000});
+   const href=await link.getAttribute('href'),target=new URL(href);
+   assert.equal(target.searchParams.has('class'),true,key+' : le HUB a transmis la classe');
+   const game=await browser.newPage();
+   await game.route('**/*',route=>route.request().url().startsWith(url+'/')?route.continue():route.abort());
+   try{
+    await game.goto(href,{waitUntil:'domcontentloaded'});
+    if(slug==='multiplication-simple'){
+     assert.equal(target.searchParams.get('requireConnect'),'1','les preuves scolaires ne sont jamais rétrogradées tacitement');
+     await game.getByRole('button',{name:/Jouer librement \(sans XP Connect\)/}).click();
+    }
+    const frame=game.frameLocator('iframe');
+    await frame.locator('#menuScreen').waitFor({state:'visible',timeout:18000});
+    await frame.locator(slug==='multiplication-simple'?'#startTraining':'#trainingChoiceBtn').click();
+    await frame.locator('#gameScreen').waitFor({state:'visible'});
+    assert.equal(await game.locator('#ce-xp-meter').count(),0,key+' : pas de XP officiels dans la session libre');
+   }finally{await game.close()}
+  }
+  await hub.close();
+ }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
