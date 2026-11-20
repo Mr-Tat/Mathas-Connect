@@ -10,7 +10,7 @@ test('Consentement : question à chaque résultat, refus sans écriture et confi
  assert.match(s,/textContent='NON'/);
  assert.match(s,/textContent='OUI !'/);
  assert.match(s,/no.onclick=\(\)=>/);
- assert.match(s,/yes.onclick=async\(\)=>/);
+ assert.match(s,/yes.onclick=\(\)=>/);
  assert.match(s,/student-share-score/);
  assert.match(s,/pending:\(\)=>read\(\).length/);
  const result=spawnSync(process.execPath,['--check','--input-type=module'],{input:s,encoding:'utf8'});
