@@ -23,6 +23,23 @@ test('le classement du jour accepte les cinq modes, même sous le record histori
   assert.equal(scoreShareStatus(snapshot),'send',mode);
  }
 });
+test('un score certifié du jour reste affichable si l’historique de projection est absent',()=>{
+ const day=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ const state={todayBest:{day,points:37}};
+ const absent=schoolScoreSnapshot(null,state);
+ assert.equal(absent.today.points,37);
+ assert.equal(canShareBestScore(absent),false,'pas de partage sans preuve et historique');
+ const incomplete=schoolScoreSnapshot({
+  ok:true,events:[],bestThree:[],todayBest:null,boardBest:60,boardTodayBest:0
+ },state);
+ assert.equal(incomplete.today.points,37,'la réponse incomplète ne réinitialise pas le score');
+ assert.equal(incomplete.today.eventId,null,'jamais de preuve inventée pour partager');
+ assert.equal(canShareBestScore(incomplete),false);
+ const yesterday=new Date(Date.now()-86400000);
+ const previousDay=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Brussels',year:'numeric',month:'2-digit',day:'2-digit'}).format(yesterday);
+ assert.equal(schoolScoreSnapshot(null,{todayBest:{day:previousDay,points:99}}).today,null,
+  'un ancien score ne devient pas celui du lendemain');
+});
 test('une publication du jour confirmée est reconnaissable à la réouverture',()=>{
  const snapshot=schoolScoreSnapshot(fixture('sudden',60,14));
  assert.equal(canShareBestScore(snapshot),false);
