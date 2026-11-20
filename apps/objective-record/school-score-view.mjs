@@ -111,15 +111,18 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
   const hint=clickTarget?.querySelector('.mathas-school-share-hint');if(!hint)return;
   const snapshot=select(),status=scoreShareStatus(snapshot);
   const confirmed=confirmedEvent!==null&&confirmedEvent===snapshot.today?.eventId;
-  hint.textContent=confirmed?'✓ Score envoyé au tableau':status==='sent'?'✓ Meilleur score déjà envoyé':
-   status==='send'?'Envoyer au tableau':'Envoi indisponible';
-  clickTarget.classList.toggle('mathas-school-shareable',status==='send'&&!confirmed);
+  const queued=!!(snapshot.today?.eventId&&consent()?.isPending?.(snapshot.today.eventId));
+  hint.textContent=confirmed?'✓ Score envoyé au tableau':queued?'⌛ Envoi en attente':
+   status==='sent'?'✓ Meilleur score déjà envoyé':status==='send'?'Envoyer au tableau':'Envoi indisponible';
+  clickTarget.classList.toggle('mathas-school-shareable',status==='send'&&!confirmed&&!queued);
   clickTarget.classList.toggle('mathas-school-share-sent',status==='sent'||confirmed);
   clickTarget.title=hint.textContent;
  }
  const unsubscribeResult=consent()?.onResult?.(({eventId,result})=>{
   if(destroyed)return;
   if(result==='sent'){confirmedEvent=eventId;renderShareHint();void load(true)}
+  else if(result==='queued'){renderShareHint()}
+  else {renderShareHint();void load(true)}
  });
  function mountToday(doc){
   const target=doc.querySelector('#mathasPointsQuick [data-points="daily"]');
@@ -182,6 +185,9 @@ export function createSchoolScoreView({appKey,fetchHistory,consent,notify}){
   if(!canShareBestScore(snapshot)){
    notify(scoreShareStatus(snapshot)==='sent'?'Meilleur score du jour déjà envoyé au tableau.':
     'Envoi indisponible : connexion ou publication du jour à vérifier.');return false;
+  }
+  if(consent()?.isPending?.(snapshot.today.eventId)){
+   notify('Envoi déjà accepté : en attente de confirmation du tableau.');return false;
   }
   return !!consent()?.offer(snapshot.today.eventId,{points:snapshot.today.points,mode:snapshot.today.mode});
  }
