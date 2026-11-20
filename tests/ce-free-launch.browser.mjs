@@ -130,7 +130,7 @@ test('Parcours HUB sans compte : les cartes Multiplication/Soustraction donnent 
   });
   await hub.goto(url+'/hub.html?space=phase2',{waitUntil:'domcontentloaded'});
   for(const [key,slug] of [['multiplication-ecrite-simple','multiplication-simple'],['soustraction-ecrite-simple','soustraction-simple']]){
-   const link=hub.locator('a.app-card[data-app-key="'+key+'"]');
+   const link=hub.locator('#levels a.app-card[data-app-key="'+key+'"]');
    await link.waitFor({timeout:18000});
    const href=await link.getAttribute('href'),target=new URL(href);
    assert.equal(target.searchParams.has('class'),true,key+' : le HUB a transmis la classe');
