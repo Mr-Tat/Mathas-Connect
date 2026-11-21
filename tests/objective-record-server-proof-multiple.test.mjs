@@ -69,6 +69,15 @@ test('retry partitioned by real pupil and school class, not client score',()=>{
  a.clear();assert.equal(a.read(),null);
  assert.equal(createMultiProofQueue({storage,studentId:'x',classId:CLASS}),null);
 });
+test('un clic visible ne doit lancer le moteur Classique qu’une seule fois',()=>{
+ const host=read('apps/objective-record/certified-multiple-ui.mjs');
+ const engine=read('apps/objective-record/engines/addition-multiple/index.html');
+ assert.match(engine,/startClassic\.click\(\)/,
+  'le bouton natif 4/10/20 déclenche déjà le vrai démarrage');
+ assert.match(host,/selectCount\.click\(\);/);
+ assert.doesNotMatch(host,/selectCount\.click\(\);launch\.click\(\)/,
+  'un second démarrage efface la paire conservée');
+});
 test('native adapter matches the exact generated engine and captures before correction',()=>{
  const game=read('apps/objective-record/engines/addition-multiple/index.html');
  const adapter=read('apps/objective-record/engines/addition-multiple/certified-multiple-patch.js');
