@@ -170,7 +170,9 @@ export function createMultipleProofUI({
    const width=MULTI_PROOF_WIDTH[level];
    sharedLevel.value=String(width);nativeLevel.value=String(width);
    sharedLevel.dispatchEvent(new Event('change',{bubbles:true}));
-   selectCount.click();launch.click();
+   // Le bouton visible déclenche déjà startClassic.click() via le moteur
+   // natif. Un deuxième clic relançait la paire et effaçait sa reprise F5.
+   selectCount.click();
    notify(resumed
     ?'↩️ Reprise de la série : '+resumed+'/'+total+
      ' réponses conservées. Résultat et XP officiels après vérification Connect.'
