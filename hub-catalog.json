@@ -21,6 +21,7 @@
     },
     {
       "app_key": "soustraction-ecrite-simple",
+      "fallback_visible_spaces": [],
       "title": "Soustraction écrite",
       "launch_url": "https://mr-tat.github.io/Mathas-Connect/apps/soustraction-simple/",
       "hub_section": "calculs_ecrits",
@@ -30,6 +31,7 @@
     },
     {
       "app_key": "abaque-longueurs",
+      "fallback_visible_spaces": ["phase2", "phase2b", "2eco"],
       "title": "Abaque des longueurs",
       "launch_url": "https://mr-tat.github.io/Mathas-Connect/apps/GRAN-abaque-m-1/?connect=1",
       "hub_section": "outil",
