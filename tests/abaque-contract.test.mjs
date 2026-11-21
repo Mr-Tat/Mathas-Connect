@@ -54,5 +54,9 @@ test('Abaque démo : source traçable intacte, pas de réseau/identité Connect 
  assert.equal(card.length,1,'carte Abaque présente une seule fois');
  assert.match(card[0].launch_url,/GRAN-abaque-m-1\/\?connect=1/);
 
- for(const html of ['hub.html','index.html'])assert.doesNotMatch(read(html),/abaque-longueurs/);
+ // HUB HTML statique sans lien Abaque hors permissions ; le portail
+ // professeur DOIT proposer la case de visibilité pour chaque classe.
+ assert.doesNotMatch(read('hub.html'),/abaque-longueurs|GRAN-abaque-m-1/);
+ assert.match(read('index.html'),/value="abaque-longueurs"/);
+ assert.doesNotMatch(read('index.html'),/href=["'][^"']*GRAN-abaque-m-1/);
 });
