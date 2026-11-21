@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {acceptMultiChallenge,normalizeMultiFirstAttempt,multipleFirstAttemptCorrect,createMultiProofQueue,
  MULTI_PROOF_COUNTS,MULTI_PROOF_WIDTH} from '../apps/objective-record/certified-multiple.mjs';
@@ -80,6 +81,11 @@ test('native adapter matches the exact generated engine and captures before corr
  assert.ok(classic.indexOf('MathasCertifiedMultipleAttempt?.(')>=0);
  assert.ok(classic.indexOf('MathasCertifiedMultipleAttempt?.(')<classic.indexOf('s.firstTry=false;hadError=true'));
  assert.ok(adapted.includes('proof.questions?.[session.completed+i]'));
+ const nativeScript=[...adapted.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)]
+  .map(match=>match[1]).find(script=>script.includes('function makePair(){'));
+ assert.ok(nativeScript,'script du moteur natif présent');
+ assert.doesNotThrow(()=>new vm.Script(nativeScript),
+  'le pont de reprise doit conserver un vrai moteur JavaScript exécutable');
  assert.match(adapted,/session\.completed=count-\(count%2\)/,
   'le moteur reprend à la paire non terminée après F5');
  assert.match(adapted,/states\[0\]\.proofCaptured=true/,
