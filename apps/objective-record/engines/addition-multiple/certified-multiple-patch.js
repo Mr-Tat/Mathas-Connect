@@ -37,16 +37,16 @@
   const pairMarker="function makePair(){";
   const pairResume=[
    pairMarker,
-   "const proof=window.__mathasServerCertifiedMulti;",
-   "if(proof?.sessionId&&session?.mode==='classic'&&!proof.resumeInitialized){",
-   " proof.resumeInitialized=true;",
-   " const count=Number.isSafeInteger(proof.resumeCount)?proof.resumeCount:0;",
+   "const resumeProof=window.__mathasServerCertifiedMulti;",
+   "if(resumeProof?.sessionId&&session?.mode==='classic'&&!resumeProof.resumeInitialized){",
+   " resumeProof.resumeInitialized=true;",
+   " const count=Number.isSafeInteger(resumeProof.resumeCount)?resumeProof.resumeCount:0;",
    " if(count>0&&count<session.totalCalculs){",
    "  session.completed=count-(count%2);",
-   "  session.score=Number.isSafeInteger(proof.resumeScore)?proof.resumeScore:0;",
+   "  session.score=Number.isSafeInteger(resumeProof.resumeScore)?resumeProof.resumeScore:0;",
    " }",
    "}"
-  ].join('\\n');
+  ].join('\n');
   game=swap(game,pairMarker,pairResume,'reprise avant génération de la première paire');
   const renderMarker="active={kind:'answer',calc:0,col:0};calculationsPair.innerHTML='';states.forEach((s,i)=>renderCalc(s,i));mathasGateSecondCalc(true);";
   const renderResume=[
