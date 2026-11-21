@@ -58,3 +58,13 @@ Copier le comportement de Multiplication simple avec optimisation #295 : aucune 
 - La PR de service partagé #299 contient `takeover` avec `app_key`, classe, enseignant, IDs de page, révision et comparaison atomique de l'ancien propriétaire. Les enseignants d'autres classes et tous les élèves ne peuvent pas reprendre.
 - Tests supplémentaires : les séries 4/10/20 n'affichent pas le collectif même en présence d'une séance ; Mort subite reste individuel s'il est débloqué, et reste verrouillé lorsque le barème natif ne l'autorise pas.
 - **Candidat uniquement : aucune publication Pages / SQL / Edge de cette application**. La recette Auth réelle avec profils fictifs reste une condition distincte.
+
+## Certification Soustraction — robustesse ACK et consentement (21/11/2026, PR #335)
+
+- **Défaut constaté en CI :** `soustraction-certified.browser.mjs` attendait encore l'ancien dialogue « Oui, score bien envoyé, Fermer ». Depuis #333, le consentement **OUI ferme immédiatement** ; seule la réponse de l'Edge confirme « envoyé ». L'ancien test chronométrait à tort une confirmation désormais supprimée.
+- **Test corrigé :** un clic OUI, dialogue fermé, une seule demande `student-share-score` au serveur ; jamais deux confirmations ni score partagé après refus.
+- **Test ajouté, navigateur réel / réseau simulé :** une réponse 503 au premier `finish-classic-v1` laisse le journal de premières réponses en attente, sans nouveau score, XP ni projection ; le clic sur **Réessayer la synchronisation** renvoie **la même preuve et le même `sessionId`**, puis reçoit un seul ACK.
+- **Interface :** le récapitulatif final n'annonce plus que le *profil est synchronisé* si l'ACK mathématique est arrivé mais que la relecture `student-load` a échoué. Les XP sont certifiés par le reçu, le profil doit alors être relu par actualisation. Projection optionnelle, jamais substitut du reçu.
+- **Portée :** moteur original, méthodes, barèmes, droits, JWT, Edge/SQL, trophées et données élèves **inchangés**. Tests scolaires authentifiés prof + élève réel TEST **non réalisés**.
+- **CI ciblée** : [Soustraction browser smoke #44908688340](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/44908688340) **SUCCESS** ; [guidé collectif #44908688344](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/44908688344) **SUCCESS** ; [contrats collectif #44908688418](https://github.com/Mr-Tat/Mathas-Connect/actions/runs/44908688418) **SUCCESS** ; suite générale 740 succès / 10 échecs déjà présents sur `main`.
+- **À contrôler après fusion :** déploiement GitHub Pages sur le SHA de fusion ; recette de deux profils fictifs réellement connectés, fin de série et reprise réseau réel.
