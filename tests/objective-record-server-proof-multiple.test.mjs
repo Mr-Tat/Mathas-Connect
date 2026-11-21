@@ -75,7 +75,9 @@ test('native adapter matches the exact generated engine and captures before corr
  const w={};
  new Function('window',read('apps/objective-record/engines/addition-multiple/lab-objectif-record-v2.js'))(w);
  new Function('window',adapter)(w);
- const adapted=w.MathasCertifiedMultiPatch(w.MathasLabV2.patch(game,'multi'));
+ new Function('window',read('apps/objective-record/native-certified-survival-patch.js'))(w);
+ const adapted=w.MathasCertifiedSurvivalPatch(
+  w.MathasCertifiedMultiPatch(w.MathasLabV2.patch(game,'multi')),'multi');
  assert.match(adapted,/__mathasServerCertifiedMulti/);
  assert.match(adapted,/MathasCertifiedMultipleAttempt\?\./);
  const classic=adapted.slice(adapted.indexOf('// Calculs\n    let hadError=false;'),
