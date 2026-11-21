@@ -224,7 +224,13 @@ test('HUB sans Edge : les deux classes de petits ne voient pas Abaque, les trois
     ?route.continue():route.abort('internetdisconnected'));
    try{
     await page.goto(url+'/hub.html?space='+space,{waitUntil:'domcontentloaded'});
-    await page.locator('#levels .level').first().waitFor({state:'attached',timeout:16000});
+    try{await page.locator('#levels .level').first().waitFor({state:'attached',timeout:16000});}
+    catch(error){
+     const diag=await page.evaluate(()=>({page:location.href,levels:document.querySelector('#levels')?.innerHTML?.slice(0,450),
+      status:document.querySelector('#dailyApps')?.textContent?.slice(0,220),
+      module:document.querySelector('script[src*="hub.js"]')?.getAttribute('src')}));
+     throw Error('HUB fallback '+space+' : '+JSON.stringify({diag,errors})+' / '+error);
+    }
     const keys=await page.locator('#levels .app-card[data-app-key]').evaluateAll(cards=>
      cards.map(card=>card.dataset.appKey));
     assert.equal(keys.includes('abaque-longueurs'),!['observation','phase1'].includes(space),
