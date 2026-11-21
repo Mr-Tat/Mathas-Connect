@@ -31,11 +31,17 @@ test('teacher browser JavaScript module parses',()=>{execFileSync(process.execPa
 
 test('five class columns, distinct Phase 2 scopes and separate caches',()=>{for(const name of ['Observation','Phase 1','Phase 2 A','Phase 2 B','2 ECO','Partout','Position'])assert.ok(html.includes(name));assert.match(hub,/classPresets\[classId\]/);assert.match(result,/teacher-app-matrix-save/);assert.match(result,/const slugs=\['observation','phase1','phase2','phase2b','2eco'\]/);assert.match(catalog,/phase2b/);assert.match(read('../connect-context.js'),/phase2b:/);});
 
-test('Soustraction figure dans le secours statique, sans filtre HOLD ni cache ancien',()=>{
+test('Soustraction reste téléchargeable en libre, sans réapparaître dans les presets masqués',()=>{
  const local=JSON.parse(read('../hub-catalog.json'));
  const apps=local.apps.filter(a=>a.app_key==='soustraction-ecrite-simple');
  assert.equal(apps.length,1);
  assert.equal(apps[0].hub_section,'calculs_ecrits');
+ assert.deepEqual(apps[0].fallback_visible_spaces,[],
+  'les cinq presets scolaires actuels masquent Soustraction');
+ assert.deepEqual(local.apps.find(a=>a.app_key==='abaque-longueurs')?.fallback_visible_spaces,
+  ['phase2','phase2b','2eco'],'Abaque exclu des deux premières phases');
+ assert.match(hub,/Object\.hasOwn\(app,'fallback_visible_spaces'\)/);
+ assert.match(hub,/app\.fallback_visible_spaces\.includes\(selectedSpace\)/);
  assert.match(hub,/apps=fallbackApps;/);
  assert.doesNotMatch(hub,/fallbackApps\.filter\(a=>a\.app_key!=='soustraction-ecrite-simple'\)/);
  assert.match(hub,/mathas\.connect\.global-catalog\.v2/);
