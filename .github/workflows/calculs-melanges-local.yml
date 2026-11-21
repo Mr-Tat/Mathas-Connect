@@ -19,7 +19,9 @@ permissions:
   contents: read
 jobs:
   local-validation:
-    runs-on: ubuntu-latest
+    # Ubuntu-latest now resolves to 26.04; the pinned Chromium in Playwright
+    # 1.58.2 does not support that runner yet. Keep a reproducible browser.
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
