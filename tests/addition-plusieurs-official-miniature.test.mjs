@@ -7,11 +7,11 @@ test('miniature officielle Addition multiple : WebP léger conforme à l’image
  const bytes=readFileSync(new URL('../assets/miniatures/addition-ecrite-multiple.webp',import.meta.url));
  assert.equal(bytes.subarray(0,4).toString(),'RIFF');
  assert.equal(bytes.subarray(8,12).toString(),'WEBP');
- assert.ok(bytes.length>5000&&bytes.length<20000,'miniature adaptée aux petits PC et au réseau scolaire');
+ assert.ok(bytes.length>30000&&bytes.length<50000,'WebP 768px optimisé, contrôlé en taille pour les PC de classe');
  const header=Buffer.from('blob '+bytes.length+String.fromCharCode(0));
  const gitSha=createHash('sha1').update(header).update(bytes).digest('hex');
- assert.equal(gitSha,'e79bb8423d9768e2c32884fb72a3fc23fc60294c',
-  'image officielle fournie pour Addition de plusieurs nombres');
+ assert.equal(gitSha,'a8e8306c68185f90d1a7c03bda21dd38436e4c8f',
+  'miniature optimisée actuelle : commit 1d4495674caa, empreinte Git vérifiée');
 });
 
 test('référence correcte dans la page professeur, sans dévoiler la carte dans le HUB statique',()=>{

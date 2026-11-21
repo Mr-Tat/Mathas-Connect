@@ -98,10 +98,15 @@ test('moteur Soustraction : version animée protégée par empreinte Git',async(
  const {createHash}=await import('node:crypto');
  const {readFileSync}=await import('node:fs');
  const bytes=readFileSync(new URL('../apps/soustraction-simple/game-original.html',import.meta.url));
- const sha=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
- // Changement UI approuvé du 06/11/2026 : petite croix après correction,
- // sans toucher aux animations historiques ni au barème.
- assert.equal(sha,'806b462de721d25a5cc8a96ef4e1d0230b123c03');
+ // Commit du 20/11 : uniquement le titre d'onglet « Soustraction écrite ».
+ // Reconstituer le blob antérieur pour ne pas affaiblir la protection du moteur.
+ const current=bytes.toString('utf8');
+ const title='<title>Soustraction écrite | Math’as</title>';
+ assert.equal(current.split(title).length,2,'seule modification de titre attendue');
+ const original=Buffer.from(current.replace(title,'<title>Soustraction</title>'));
+ const sha=createHash('sha1').update('blob '+original.length+'\0').update(original).digest('hex');
+ assert.equal(sha,'806b462de721d25a5cc8a96ef4e1d0230b123c03',
+  'moteur natif inchangé au-delà du titre d’onglet');
 });
 
 test('Soustraction : animation forcée sur le jeu et son lanceur (sans toucher aux règles XP)',()=>{

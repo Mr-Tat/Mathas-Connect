@@ -72,4 +72,9 @@ export SUPABASE_SDK_MODULE="$TOOLS/node_modules/@supabase/supabase-js/dist/index
 export PLAYWRIGHT_MODULE="$TOOLS/node_modules/playwright/index.mjs"
 export MATHAS_TEST_SITE="http://127.0.0.1:$STATIC_PORT"
 export CHROMIUM_PATH=${CHROMIUM_PATH:-/usr/bin/chromium}
-node "$ROOT/tests/calculs-melanges-auth-local.e2e.mjs"
+if ! node "$ROOT/tests/calculs-melanges-auth-local.e2e.mjs"; then
+  # Disposable local container only. Filter out headers/tokens by printing
+  # exclusively our error-code diagnostic, not the full Edge request logs.
+  docker_local logs "$RUN_NAME-results" 2>&1 | grep 'LOCAL_READ_QUERY_FAILURE' | tail -n 12 >&2 || true
+  exit 1
+fi

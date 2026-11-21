@@ -73,8 +73,10 @@ test('Autorisations : élève refusé et réponses liées au compte professeur',
 test('Mode Master local impossible à utiliser pour contourner les blocages Connect élèves',()=>{
  assert.match(html,/const unlocked=what=>\{/);
  assert.match(html,/if\(\(master&&!connectBinding\)\|\|classActivityAccess\.teacherFree\)return true/);
- assert.match(html,/\$\('masterToggle'\)\.classList\.toggle\('hidden',!!connectBinding&&!classActivityAccess\.teacherFree\)/);
- assert.match(html,/if\(master\|\|connectBinding&&!classActivityAccess\.teacherFree\)return/);
+ assert.match(html,/const masterDisabled=guestMode\|\|!!connectBinding&&!classActivityAccess\.teacherFree;/);
+ assert.match(html,/\$\('masterToggle'\)\.hidden=masterDisabled;/);
+ assert.match(html,/\$\('masterToggle'\)\.classList\.toggle\('hidden',masterDisabled\)/);
+ assert.match(html,/if\(master\|\|guestMode\|\|connectBinding&&!classActivityAccess\.teacherFree\)return;/);
  assert.match(html,/if\(!snapshot\.activityAccess\?\.teacherFree\)\{master=false/);
  assert.match(html,/try\{sessionStorage\.removeItem\(SESSION\)\}/);
 });

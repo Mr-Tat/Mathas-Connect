@@ -10,17 +10,21 @@ async function check(url,{expectJson=false}={}){
  return expectJson?response.json():response;
 }
 
-test('Abaque : les cinq catalogues publics de production renvoient la carte ouvrable',async()=>{
+test('Abaque : aucun accès Observation/Phase 1, carte ouvrable dans les trois espaces de Phase 2',async()=>{
+ // Décision pédagogique du professeur (20/11) ET permissions LIVE relues dans
+ // connect_hub_preset_entries le 21/11 : ne pas exposer l'abaque aux petits.
+ const allowed=new Set(['phase2','phase2b','2eco']);
  for(const space of SPACES){
   const data=await check(CATALOG+'?space='+space,{expectJson:true});
   assert.equal(data.ok,true,space);
   assert.ok(Array.isArray(data.apps),space);
   const matches=data.apps.filter(x=>x.app_key==='abaque-longueurs');
-  assert.equal(matches.length,1,space);
+  assert.equal(matches.length,allowed.has(space)?1:0,space+' : visibilité autorisée seulement');
+  if(!allowed.has(space))continue;
   const item=matches[0];
   assert.equal(item.hub_section,'outil',space);
   assert.equal(item.enabled,true,space);
-  assert.equal(item.featured,false,space);
+  assert.equal(item.featured,space==='2eco',space+' : vedette actuelle du preset');
   assert.equal(new URL(item.launch_url).searchParams.get('connect'),'1',space);
  }
 });

@@ -53,12 +53,15 @@ test('le Laboratoire ne propose plus de liens vers les anciennes versions',()=>{
  assert.match(html,/Ouvrir Tests dans le HUB Toutes/);
 });
 
-test('le guide explique l’essai sans XP, puis le pilote Connect authentifié',()=>{
+test('le guide actuel sépare hors-connexion, authentification fictive et publication',()=>{
   const guide=read('docs/integrations/README.md');
-  assert.match(guide,/court sas de recette authentifiée du même candidat/);
-  assert.match(guide,/Démonstration visuelle ou de moteur, isolée/);
-  assert.match(guide,/Pilote authentifié Connect/);
-  assert.match(guide,/les URL GitHub Pages|Les URL GitHub Pages/);
+  // Le long guide pilote a été remplacé par 6 étapes concrètes le 09/11.
+  // Vérifier les GARANTIES qui subsistent, pas ses anciens intitulés.
+  assert.match(guide,/Test bloquant de mode libre\/hors connexion/);
+  assert.match(guide,/simuler SDK Supabase\/Edge indisponibles/);
+  assert.match(guide,/Tests authentifiés fictifs sur Pages/);
+  assert.match(guide,/Ne jamais confondre mock\/GET HTTP et élève fictif connecté/);
+  assert.match(guide,/Une PR fusionnée ≠ jeu disponible aux élèves/);
   assert.match(guide,/classe TEST/);
 });
 

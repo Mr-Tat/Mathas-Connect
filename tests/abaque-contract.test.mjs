@@ -13,7 +13,14 @@ test('Abaque démo : source traçable intacte, pas de réseau/identité Connect 
  const copiedSource=read(base+'game-original.html');
  const favicon='<link rel="icon" type="image/png" href="../../assets/brand/favicon.png">';
  assert.equal(copiedSource.split(favicon).length,2,'une seule balise favicon Connect');
- assert.equal(createHash('sha256').update(copiedSource.replace('\n'+favicon,'')).digest('hex'),manifest.sourceSha256);
+ // Two later presentation-only commits changed the favicon and browser tab
+ // label. Check the rest against the original standalone SOURCE hash instead
+ // of accepting an entirely different game when this title changes.
+ const title='<title>Abaque des longueurs | Math’as</title>';
+ const upstreamTitle="<title>Math'as — Abaque des longueurs v1.0.0</title>";
+ assert.equal(copiedSource.split(title).length,2,'titre d’onglet approuvé présent une seule fois');
+ const unchangedSource=copiedSource.replace('\n'+favicon,'').replace(title,upstreamTitle);
+ assert.equal(createHash('sha256').update(unchangedSource).digest('hex'),manifest.sourceSha256);
  assert.equal(manifest.repositoryDisplayName,'GRAN-abaque-m-1');
  assert.match(manifest.sourceCommit,/^[a-f0-9]{40}$/);
  for(const [file,expected] of Object.entries(manifest.sourceFiles)){
@@ -40,6 +47,16 @@ test('Abaque démo : source traçable intacte, pas de réseau/identité Connect 
  assert.doesNotMatch(demo,/fetch\(|createClient|getSession|localStorage|sessionStorage|supabase\.co/,'les aperçus ne sont pas des connexions ni des sauvegardes');
  const preview=objectiveRecordLabPreviews.find(x=>x.id==='abaque-longueurs');
  assert.equal(preview.url,'https://mr-tat.github.io/Mathas-Connect/apps/GRAN-abaque-m-1/');
- assert.doesNotMatch(read('hub-catalog.json'),/abaque-longueurs/);
- for(const html of ['hub.html','index.html'])assert.doesNotMatch(read(html),/abaque-longueurs/);
+ // La carte officielle figure désormais dans le secours statique :
+ // sa visibilité EFFECTIVE doit être contrôlée par espace, même sans Edge.
+ const fallback=JSON.parse(read('hub-catalog.json'));
+ const card=fallback.apps.filter(a=>a.app_key==='abaque-longueurs');
+ assert.equal(card.length,1,'carte Abaque présente une seule fois');
+ assert.match(card[0].launch_url,/GRAN-abaque-m-1\/\?connect=1/);
+
+ // HUB HTML statique sans lien Abaque hors permissions ; le portail
+ // professeur DOIT proposer la case de visibilité pour chaque classe.
+ assert.doesNotMatch(read('hub.html'),/abaque-longueurs|GRAN-abaque-m-1/);
+ assert.match(read('index.html'),/value="abaque-longueurs"/);
+ assert.doesNotMatch(read('index.html'),/href=["'][^"']*GRAN-abaque-m-1/);
 });

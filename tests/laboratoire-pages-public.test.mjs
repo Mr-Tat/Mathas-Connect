@@ -64,7 +64,8 @@ test('Pages hébergées : le catalogue du laboratoire reste séparé des jeux of
 test('LAB pilote Connect : la page publique et son pont sont servis',async()=>{
  const page=await get('https://mr-tat.github.io/Mathas-Connect/essais/objectif-record-pilote.html');
  const js=await get('https://mr-tat.github.io/Mathas-Connect/essais/objectif-record-pilote.js');
- assert.match(page,/Pilote Objectif record/i);
+ // Le titre public a été harmonisé : « Objectif record — pilote Connect ».
+ assert.match(page,/Objectif record — pilote Connect/i);
  assert.match(page,/id="gameFrame"/);
  assert.match(js,/connect-record-pilot/);
  assert.match(js,/classId:TEST/);

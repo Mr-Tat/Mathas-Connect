@@ -3,10 +3,13 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 
+// Empreintes des versions WebP approuvées et optimisées : Soustraction (#1d449567)
+// et Mélange (#e0c84e4d). Les anciens octets correspondent à des miniatures
+// antérieures, pas aux images aujourd'hui servies.
 const path = p => new URL('../'+p, import.meta.url);
 for (const [app,sha256] of [
-  ['soustraction-ecrite-simple','2e78286a1e2726502e30efd7eabe3643a16d5dc4ff4cfdcc8b36c55495df0b16'],
-  ['melange-calculs-ecrits','0308d57fc27b5b5360e260240af9019969804702d978267ba797843cb32c0c10'],
+  ['soustraction-ecrite-simple','312714c76304872870c742aa29b97a1aa3730c726e10340b6c9f756ddfc5dff6'],
+  ['melange-calculs-ecrits','977e0f6aa65ea332133e04c74f694f2ae37ca2dd780d91681f9c1e86c1f784bd'],
 ]) {
   test('miniature HUB approuvée : '+app,()=>{
     const file=readFileSync(path('assets/miniatures/'+app+'.webp'));
