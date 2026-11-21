@@ -115,7 +115,7 @@ test('Un lancement scolaire officiel exige toujours Connect et ne donne jamais d
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
 
-test('Parcours HUB sans compte : les cartes Multiplication/Soustraction donnent une voie libre sans XP', {timeout:120000},async()=>{
+test('Parcours HUB sans compte : la carte Multiplication propose une voie libre sans XP', {timeout:120000},async()=>{
  const {server,url}=await serve();
  const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
  try{
@@ -132,7 +132,9 @@ test('Parcours HUB sans compte : les cartes Multiplication/Soustraction donnent 
    return route.abort();
   });
   await hub.goto(url+'/hub.html?space=phase2',{waitUntil:'domcontentloaded'});
-  for(const [key,slug] of [['multiplication-ecrite-simple','multiplication-simple'],['soustraction-ecrite-simple','soustraction-simple']]){
+  // Soustraction est masquée dans les cinq presets actuels ; son accès
+  // libre direct reste couvert par le test de démarrage hors SDK ci-dessus.
+  for(const [key,slug] of [['multiplication-ecrite-simple','multiplication-simple']]){
    const link=hub.locator('#levels a.app-card[data-app-key="'+key+'"]');
    await link.waitFor({timeout:18000});
    const href=await link.getAttribute('href'),target=new URL(href);
@@ -207,4 +209,38 @@ test('Addition multiple avec classe : repli libre explicite lorsque Supabase est
    assert.deepEqual(errors,[]);
   }finally{await page.close()}
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
+});
+
+
+test('HUB sans Edge : les deux classes de petits ne voient pas Abaque, les trois autres oui', {timeout:120000},async()=>{
+ const {server,url}=await serve();
+ const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
+ try{
+  for(const space of ['observation','phase1','phase2','phase2b','2eco']){
+   const page=await browser.newPage();
+   const errors=[];
+   page.on('pageerror',error=>errors.push(error.message));
+   await page.route('**/*',route=>route.request().url().startsWith(url+'/')
+    ?route.continue():route.abort('internetdisconnected'));
+   try{
+    await page.goto(url+'/hub.html?space='+space,{waitUntil:'domcontentloaded'});
+    try{await page.locator('#levels .level').first().waitFor({state:'attached',timeout:16000});}
+    catch(error){
+     const diag=await page.evaluate(()=>({page:location.href,levels:document.querySelector('#levels')?.innerHTML?.slice(0,450),
+      status:document.querySelector('#dailyApps')?.textContent?.slice(0,220),
+      module:document.querySelector('script[src*="hub.js"]')?.getAttribute('src')}));
+     throw Error('HUB fallback '+space+' : '+JSON.stringify({diag,errors})+' / '+error);
+    }
+    const keys=await page.locator('#levels .app-card[data-app-key]').evaluateAll(cards=>
+     cards.map(card=>card.dataset.appKey));
+    assert.equal(keys.includes('abaque-longueurs'),!['observation','phase1'].includes(space),
+     'Abaque ne doit jamais réapparaître chez les petits en panne Edge : '+space);
+    assert.equal(keys.includes('soustraction-ecrite-simple'),false,
+     'Soustraction est actuellement masquée par le professeur dans les cinq classes : '+space);
+    for(const key of ['multiplication-ecrite-simple','addition-ecrite-simple','padlet-jeux','bowling-multiplication'])
+     assert.equal(keys.includes(key),true,'la panne ne masque pas les applications autorisées : '+key+' '+space);
+    assert.deepEqual(errors,[],'aucune erreur JS ne doit empêcher le repli statique');
+   }finally{await page.close()}
+  }
+ }finally{await browser.close();await new Promise(resolve=>server.close(resolve))}
 });

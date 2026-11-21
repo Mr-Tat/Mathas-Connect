@@ -267,11 +267,18 @@ async function showCatalog() {
     // Secours statique public : Soustraction est désormais publiée au même titre que les autres jeux.
     // Les permissions et l'accès Connect restent vérifiés côté serveur.
     apps=fallbackApps;
+    const classPresets={'8fe170fa-9e8f-4e80-885a-b0ba68026f64':'observation','71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'phase1','1b021ed9-4846-4203-9c7b-4b5fa8d7adab':'phase2','0d8ba828-59cc-468b-a4b8-7b2a1af10b88':'phase2b','a9195199-0a28-4e86-99ce-47b36dd6e646':'2eco'};
+    const selectedSpace=classPresets[classId]||new URLSearchParams(location.search).get('space')||'observation';
+    // Un simple JSON public n'accorde aucune visibilité de classe. Si Edge
+    // est indisponible et que le cache a expiré, suivre le SNAPSHOT conservateur
+    // du preset approuvé. En cas de propriété invalide, masquer (fail-closed).
+    // Les réglages dynamiques du professeur restent prioritaires dès que le
+    // catalogue authentique revient ; aucune restriction serveur n'est changée.
+    apps=apps.filter(app=>!Object.hasOwn(app,'fallback_visible_spaces')||
+      (Array.isArray(app.fallback_visible_spaces)&&app.fallback_visible_spaces.includes(selectedSpace)));
     // Une lecture globale courte, mise en cache côté navigateur. Le catalogue statique reste le secours.
     try{
       const cacheKey='mathas.connect.global-catalog.v2';
-      const classPresets={'8fe170fa-9e8f-4e80-885a-b0ba68026f64':'observation','71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'phase1','1b021ed9-4846-4203-9c7b-4b5fa8d7adab':'phase2','0d8ba828-59cc-468b-a4b8-7b2a1af10b88':'phase2b','a9195199-0a28-4e86-99ce-47b36dd6e646':'2eco'};
-      const selectedSpace=classPresets[classId]||new URLSearchParams(location.search).get('space')||'observation';
       const scopedKey=cacheKey+':'+selectedSpace;
       const cached=JSON.parse(sessionStorage.getItem(scopedKey)||'null');
       if(cached&&Date.now()-cached.at<60000&&Array.isArray(cached.apps))apps=cached.apps;
