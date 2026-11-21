@@ -244,11 +244,14 @@ test('Chromium scolaire natif : 4 soustractions, XP, consentement et projection'
   assert.deepEqual(ctx.fixture.checks[0],{mode:'classic',method:'takeTop',correct:4,attempts:4});
   assert.equal(ctx.fixture.received.some(x=>x.action==='game-record'),false);
   assert.equal(ctx.fixture.shared,0);
+  // OUI ferme immédiatement ; seule la réponse de l'Edge confirme l'envoi.
   await page.locator('.mathas-projection-offer:not([hidden]) button.yes').click({timeout:16000});
-  await page.locator('.mathas-projection-offer:not([hidden])').getByText('Score bien envoyé au tableau').waitFor({timeout:15000});
-  await page.locator('.mathas-projection-offer:not([hidden]) button:not(.yes)').click();
+  await page.waitForFunction(()=>document.querySelector('.mathas-projection-offer')?.hidden===true,null,{timeout:15000});
+  await page.waitForFunction(()=>document.querySelector('#mathasPointsQuick .mathas-school-share-hint')?.textContent?.includes('envoyé')||document.querySelector('#mathasPointsQuick .mathas-school-share-hint')?.textContent?.includes('Envoyé'),null,{timeout:15000}).catch(()=>{});
   await page.waitForFunction(()=>document.querySelector('.mathas-projection-offer')?.hidden===true,null,{timeout:15000});
   assert.equal(ctx.fixture.shared,1);
+  assert.equal(ctx.fixture.received.filter(x=>x.action==='student-share-score').length,1,
+   'un seul envoi, pas de deuxième confirmation');
   assert.deepEqual(errors,[]);
  }finally{await ctx.close()}
 });
