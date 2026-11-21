@@ -47,6 +47,12 @@ test('Abaque démo : source traçable intacte, pas de réseau/identité Connect 
  assert.doesNotMatch(demo,/fetch\(|createClient|getSession|localStorage|sessionStorage|supabase\.co/,'les aperçus ne sont pas des connexions ni des sauvegardes');
  const preview=objectiveRecordLabPreviews.find(x=>x.id==='abaque-longueurs');
  assert.equal(preview.url,'https://mr-tat.github.io/Mathas-Connect/apps/GRAN-abaque-m-1/');
- assert.doesNotMatch(read('hub-catalog.json'),/abaque-longueurs/);
+ // La carte officielle figure désormais dans le secours statique :
+ // sa visibilité EFFECTIVE doit être contrôlée par espace, même sans Edge.
+ const fallback=JSON.parse(read('hub-catalog.json'));
+ const card=fallback.apps.filter(a=>a.app_key==='abaque-longueurs');
+ assert.equal(card.length,1,'carte Abaque présente une seule fois');
+ assert.match(card[0].launch_url,/GRAN-abaque-m-1\/\?connect=1/);
+
  for(const html of ['hub.html','index.html'])assert.doesNotMatch(read(html),/abaque-longueurs/);
 });
