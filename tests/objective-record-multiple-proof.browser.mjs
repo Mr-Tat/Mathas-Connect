@@ -141,9 +141,13 @@ test('Chromium: native multiple engine renders server terms and submits only pro
    const boxes=[...w.document.querySelectorAll('#calculationsPair .calc-box')];
    return {firstAlreadyVerified:boxes[0]?.classList.contains('mathas-calc-verified'),
     firstBadge:boxes[0]?.querySelector('.mathas-calc-ok-badge')?.textContent,
-    secondText:boxes[1]?.textContent||'',resumeCount:w.__mathasServerCertifiedMulti?.resumeCount};
+    secondText:boxes[1]?.textContent||'',firstText:boxes[0]?.textContent?.slice(0,200)||'',
+    firstClass:boxes[0]?.className||'',resumeApplied:w.__mathasServerCertifiedMulti?.resumeApplied,
+    resumeInitialized:w.__mathasServerCertifiedMulti?.resumeInitialized,
+    correct:w.__mathasServerCertifiedMulti?.resumeCorrect,
+    resumeCount:w.__mathasServerCertifiedMulti?.resumeCount};
   });
-  assert.equal(restored.firstAlreadyVerified,true,'la première addition conserve son état vérifié');
+  assert.equal(restored.firstAlreadyVerified,true,'la première addition conserve son état vérifié : '+JSON.stringify(restored));
   assert.equal(restored.firstBadge,'✓','réussite initiale conservée');
   assert.ok(restored.secondText.includes('12346'),'la suite reprend sur q2, pas q1');
   // Le terminal est simulé pour vérifier l'ACK. Seules q2-q4 sont capturées
