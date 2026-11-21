@@ -247,7 +247,6 @@ test('Chromium scolaire natif : 4 soustractions, XP, consentement et projection'
   // OUI ferme immédiatement ; seule la réponse de l'Edge confirme l'envoi.
   await page.locator('.mathas-projection-offer:not([hidden]) button.yes').click({timeout:16000});
   await page.waitForFunction(()=>document.querySelector('.mathas-projection-offer')?.hidden===true,null,{timeout:15000});
-  await page.waitForFunction(()=>document.querySelector('#mathasPointsQuick .mathas-school-share-hint')?.textContent?.includes('envoyé')||document.querySelector('#mathasPointsQuick .mathas-school-share-hint')?.textContent?.includes('Envoyé'),null,{timeout:15000}).catch(()=>{});
   await page.waitForFunction(()=>document.querySelector('.mathas-projection-offer')?.hidden===true,null,{timeout:15000});
   assert.equal(ctx.fixture.shared,1);
   assert.equal(ctx.fixture.received.filter(x=>x.action==='student-share-score').length,1,
