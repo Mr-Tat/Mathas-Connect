@@ -8,7 +8,13 @@ const manifest=JSON.parse(read('apps/calculs-melanges/source-manifest.json'));
 const game=read('apps/calculs-melanges/game-original.html');
 const archived=read('apps/calculs-melanges/game-original-v6-archive.html');
 test('original immutable source is traced, images copied identically; native V6 and teaching modes retained',()=>{
- assert.equal(createHash('sha256').update(archived).digest('hex'),manifest.integratedIndexSha256);
+ // f7b1ebd (20/11) changed only the archive browser-tab title.
+ // The original V6 archived source stays byte-for-byte pinned after removing
+ // that one approved presentation edit (do NOT rebaseline the engine hash).
+ const title='<title>Calculs mélangés — Archive v6 | Math’as</title>';
+ assert.equal(archived.split(title).length,2,'seule variante de titre approuvée');
+ const canonical=archived.replace(title,'<title>Mélange de calculs</title>');
+ assert.equal(createHash('sha256').update(canonical).digest('hex'),manifest.integratedIndexSha256);
  assert.equal(manifest.commit,'e11c88b4e449e8cdb17b0fee78c7daa6ea5bf279');assert.equal(manifest.indexBlob,'3d2ad6c8de9cdc67cd4464f4b43da2513d17c489');
  for(const file of ['illustration.webp','logo-m.png','logo-mot.webp'])assert.equal(createHash('sha256').update(readFileSync(new URL('../apps/calculs-melanges/'+file,import.meta.url))).digest('hex'),manifest.files[file]);
  for(const fragment of ['V6.0.2','"appId":"melange-calculs"','addBottom','takeTop',"mulMethod==='side'",'"1":3,"2":5,"3":7','"1":10,"2":12,"3":16'])assert.ok(game.includes(fragment),fragment);
