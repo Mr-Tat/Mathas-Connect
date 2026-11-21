@@ -31,19 +31,23 @@
   ].join('\n');
   // L'ancien moteur est chargé dans une iframe isolée : reprendre en
   // réutilisant la paire serveur courante, sans changer sa génération libre.
-  const startMarker="session={mode,maxDigits,level,totalCalculs:mode==='classic'?selectedClassicCount():null,score:0,completed:0,rulerUsed:false};";
-  const startResume=[
-   startMarker,
+  // This stable function boundary survives the surrounding wrapper's
+  // layout and school-mode transformations (which change the session
+  // initializer). Restore the cursor before generating the first pair only.
+  const pairMarker="function makePair(){";
+  const pairResume=[
+   pairMarker,
    "const proof=window.__mathasServerCertifiedMulti;",
-   "if(proof?.sessionId&&mode==='classic'&&proof.level===level&&proof.total===session.totalCalculs){",
+   "if(proof?.sessionId&&session?.mode==='classic'&&!proof.resumeInitialized){",
+   " proof.resumeInitialized=true;",
    " const count=Number.isSafeInteger(proof.resumeCount)?proof.resumeCount:0;",
    " if(count>0&&count<session.totalCalculs){",
    "  session.completed=count-(count%2);",
    "  session.score=Number.isSafeInteger(proof.resumeScore)?proof.resumeScore:0;",
    " }",
    "}"
-  ].join('\n');
-  game=swap(game,startMarker,startResume,'reprise de progression du jeu natif');
+  ].join('\\n');
+  game=swap(game,pairMarker,pairResume,'reprise avant génération de la première paire');
   const renderMarker="active={kind:'answer',calc:0,col:0};calculationsPair.innerHTML='';states.forEach((s,i)=>renderCalc(s,i));mathasGateSecondCalc(true);";
   const renderResume=[
    renderMarker,
