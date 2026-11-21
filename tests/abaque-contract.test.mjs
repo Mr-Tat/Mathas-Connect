@@ -13,7 +13,14 @@ test('Abaque démo : source traçable intacte, pas de réseau/identité Connect 
  const copiedSource=read(base+'game-original.html');
  const favicon='<link rel="icon" type="image/png" href="../../assets/brand/favicon.png">';
  assert.equal(copiedSource.split(favicon).length,2,'une seule balise favicon Connect');
- assert.equal(createHash('sha256').update(copiedSource.replace('\n'+favicon,'')).digest('hex'),manifest.sourceSha256);
+ // Two later presentation-only commits changed the favicon and browser tab
+ // label. Check the rest against the original standalone SOURCE hash instead
+ // of accepting an entirely different game when this title changes.
+ const title='<title>Abaque des longueurs | Math’as</title>';
+ const upstreamTitle="<title>Math'as — Abaque des longueurs v1.0.0</title>";
+ assert.equal(copiedSource.split(title).length,2,'titre d’onglet approuvé présent une seule fois');
+ const unchangedSource=copiedSource.replace('\n'+favicon,'').replace(title,upstreamTitle);
+ assert.equal(createHash('sha256').update(unchangedSource).digest('hex'),manifest.sourceSha256);
  assert.equal(manifest.repositoryDisplayName,'GRAN-abaque-m-1');
  assert.match(manifest.sourceCommit,/^[a-f0-9]{40}$/);
  for(const [file,expected] of Object.entries(manifest.sourceFiles)){
