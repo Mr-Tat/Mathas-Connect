@@ -248,14 +248,21 @@ export function createCertifiedSubtraction({
    // une écriture XP à cause d'une panne de rafraîchissement ou de projection.
    store?.clear();
    if(nativeRunning){native()?.home();nativeRunning=false}
-   try{await refresh()}catch(error){notify('✅ XP certifiés, actualisation du profil à retenter.')}
+   let profileUpdated=true;
+   try{await refresh()}catch(error){
+    profileUpdated=false;
+    notify('✅ Résultat et XP certifiés. Lecture du profil à retenter.');
+   }
    try{await onVerified?.({eventId:snapshot.sessionId,ack:receipt})}
-   catch{notify('✅ XP certifiés, projection à consulter plus tard.')}
+   catch{notify('✅ Résultat et XP certifiés, projection à consulter plus tard.')}
    inner.replaceChildren(
     node('h2','','Série vérifiée ✓'),
     node('div','mathas-sub-proof-meta',
-     stats.correct+' réussite(s) sur '+snapshot.answers.length+' calcul(s). XP, trophées et records synchronisés.'),
-    node('div','mathas-sub-status','Le score du tableau sera proposé uniquement avec ton accord.'));
+     stats.correct+' réussite(s) sur '+snapshot.answers.length+' calcul(s). '+
+     (profileUpdated?'Résultat et XP enregistrés dans Connect.':
+      'Résultat et XP enregistrés par Connect ; actualise pour relire ton profil.')),
+    node('div','mathas-sub-status',
+     'Un score éligible peut être proposé au tableau uniquement avec ton accord.'));
    inner.append(button('Retour à Soustraction',()=>{sending=false;finishing=false;close()},true));
   }catch(error){
    const message=error instanceof Error?error.message:'proof_unavailable';
