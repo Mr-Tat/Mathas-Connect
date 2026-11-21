@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {acceptMultiChallenge,normalizeMultiFirstAttempt,createMultiProofQueue,
+import {acceptMultiChallenge,normalizeMultiFirstAttempt,multipleFirstAttemptCorrect,createMultiProofQueue,
  MULTI_PROOF_COUNTS,MULTI_PROOF_WIDTH} from '../apps/objective-record/certified-multiple.mjs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const SID='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -42,6 +42,19 @@ test('invalid challenge is rejected before touching the native engine',()=>{
   {...good,expiresAt:'invalid'}
  ])assert.equal(acceptMultiChallenge(invalid),null);
 });
+test('un transcript partiel conserve les premières réponses sans inventer un XP',()=>{
+ const q=sample(1,4).questions[0],sum=q.addends.reduce((a,b)=>a+b,0);
+ const digits=String(sum).split('').reverse();
+ const carries=Array.from({length:5},(_,j)=>{
+  if(j===0)return '';
+  const power=10**j,carry=Math.floor(q.addends.reduce((a,b)=>a+b%power,0)/power);
+  return carry?String(carry):'';
+ });
+ const response={id:q.id,digits,carries};
+ assert.equal(multipleFirstAttemptCorrect(q,response,1),true);
+ assert.equal(multipleFirstAttemptCorrect(q,{...response,digits:['0',...digits.slice(1)]},1),false);
+ assert.equal(multipleFirstAttemptCorrect(q,{...response,carries:['','5',...carries.slice(2)]},1),false);
+});
 test('retry partitioned by real pupil and school class, not client score',()=>{
  const m=new Map(),storage={
   getItem:k=>m.get(k)??null,setItem:(k,v)=>m.set(k,v),removeItem:k=>m.delete(k)
@@ -67,6 +80,13 @@ test('native adapter matches the exact generated engine and captures before corr
  assert.ok(classic.indexOf('MathasCertifiedMultipleAttempt?.(')>=0);
  assert.ok(classic.indexOf('MathasCertifiedMultipleAttempt?.(')<classic.indexOf('s.firstTry=false;hadError=true'));
  assert.ok(adapted.includes('proof.questions?.[session.completed+i]'));
+ assert.match(adapted,/session\.completed=count-\(count%2\)/,
+  'le moteur reprend à la paire non terminée après F5');
+ assert.match(adapted,/states\[0\]\.proofCaptured=true/,
+  'le premier essai antérieur ne sera jamais envoyé deux fois');
+ assert.match(adapted,/Déjà vérifié avant la reprise/,
+  'la case déjà réussie garde son statut pédagogique');
+
  const wrapper=read('apps/objective-record/engines/addition-multiple/essai-objectif-record-3-vies.html');
  assert.ok(wrapper.includes('certified-multiple-patch.js'));
  assert.ok(wrapper.includes('MathasCertifiedMultiPatch(game)'));
