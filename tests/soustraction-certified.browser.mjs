@@ -33,8 +33,8 @@ async function serve(){
  await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
  return {server,url:'http://127.0.0.1:'+server.address().port};
 }
-function fixture(){
- let revision=0,state=null,shared=0;
+function fixture({failFirstFinish=false}={}){
+ let revision=0,state=null,shared=0,finishFailures=failFirstFinish?1:0;
  const received=[],checks=[],issued=[];
  const questions=(total,method,width)=>Array.from({length:total},(_,i)=>{
   const a=width===3?'743':width===5?'54231':width===7?'9876543':'9'.repeat(width);
@@ -77,6 +77,7 @@ function fixture(){
     issued.push(row);return reply(route,row);
    }
    if(data.action==='finish-classic-v1'||data.action==='finish-extended-v1'){
+    if(finishFailures>0){finishFailures--;return reply(route,{ok:false,error:'network_error'},503)}
     const issue=issued.at(-1);
     assert.equal(data.sessionId,issue?.sessionId);
     assert.equal(data.answers?.length>0,true);
@@ -244,12 +245,40 @@ test('Chromium scolaire natif : 4 soustractions, XP, consentement et projection'
   assert.deepEqual(ctx.fixture.checks[0],{mode:'classic',method:'takeTop',correct:4,attempts:4});
   assert.equal(ctx.fixture.received.some(x=>x.action==='game-record'),false);
   assert.equal(ctx.fixture.shared,0);
+  // OUI ferme immédiatement ; seule la réponse de l'Edge confirme l'envoi.
   await page.locator('.mathas-projection-offer:not([hidden]) button.yes').click({timeout:16000});
-  await page.locator('.mathas-projection-offer:not([hidden])').getByText('Score bien envoyé au tableau').waitFor({timeout:15000});
-  await page.locator('.mathas-projection-offer:not([hidden]) button:not(.yes)').click();
+  await page.waitForFunction(()=>document.querySelector('.mathas-projection-offer')?.hidden===true,null,{timeout:15000});
   await page.waitForFunction(()=>document.querySelector('.mathas-projection-offer')?.hidden===true,null,{timeout:15000});
   assert.equal(ctx.fixture.shared,1);
+  assert.equal(ctx.fixture.received.filter(x=>x.action==='student-share-score').length,1,
+   'un seul envoi, pas de deuxième confirmation');
   assert.deepEqual(errors,[]);
+ }finally{await ctx.close()}
+});
+test('Soustraction : panne réseau à la validation, reprise de la même preuve sans faux XP', {timeout:120000},async()=>{
+ const data=fixture({failFirstFinish:true});
+ const ctx=await setup({fixtureData:data});
+ try{
+  const {page,frame}=await ctx.page();
+  await launchClassic(page,frame,{method:'addBottom',count:4});
+  const q=ctx.fixture.issued[0].questions;
+  await solvePair(frame,q.slice(0,2));
+  await frame.locator('#primaryBtn').click();
+  await solvePair(frame,q.slice(2,4));
+  await page.getByText(/En attente de synchronisation/).waitFor({timeout:25000});
+  assert.equal(ctx.fixture.revision,0,'une réponse réseau refusée ne crédite pas des XP');
+  assert.equal(ctx.fixture.shared,0,'la projection dépend de la preuve certifiée');
+  const first=ctx.fixture.received.filter(x=>x.action==='finish-classic-v1');
+  assert.equal(first.length,1);
+  await page.getByRole('button',{name:'Réessayer la synchronisation'}).click();
+  await page.getByRole('heading',{name:'Série vérifiée ✓'}).waitFor({timeout:25000});
+  const finished=ctx.fixture.received.filter(x=>x.action==='finish-classic-v1');
+  assert.equal(finished.length,2);
+  assert.deepEqual(finished.map(x=>x.sessionId),[first[0].sessionId,first[0].sessionId]);
+  assert.deepEqual(finished[1].answers,finished[0].answers,
+   'exactement la même première tentative doit être rejouée');
+  assert.equal(ctx.fixture.revision,1,'le résultat est créé une seule fois');
+  assert.equal(ctx.fixture.checks.length,1,'le score n’est vérifié qu’une fois');
  }finally{await ctx.close()}
 });
 test('Chromium scolaire natif : 3 vies et trois erreurs', {timeout:120000},async()=>{
