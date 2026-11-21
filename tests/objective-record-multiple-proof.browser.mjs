@@ -71,7 +71,18 @@ test('Chromium: native multiple engine renders server terms and submits only pro
   });
   await page.goto(url+'/apps/objective-record/eleve.html?class='+classId+'&app=addition-multiple',
    {waitUntil:'domcontentloaded',timeout:25000});
-  await page.waitForFunction(()=>!document.getElementById('certify').disabled,null,{timeout:45000});
+  try{await page.waitForFunction(()=>!document.getElementById('certify').disabled,null,{timeout:13000});}
+  catch(error){
+   const diag=await page.evaluate(()=>{
+    const host=document.getElementById('gameFrame')?.contentDocument;
+    const inner=host?.getElementById('game');
+    return {hostState:host?.getElementById('state')?.textContent,
+     iframeHidden:inner?.hidden,iframeLength:inner?.srcdoc?.length||0,
+     innerMenu:inner?.contentDocument?.getElementById('menuScreen')?.className,
+     topStatus:document.getElementById('status')?.textContent};
+   });
+   throw Error('Addition multiple bootstrap: '+JSON.stringify({diag,errors})+' / '+error);
+  }
   // Les exercices se choisissent dans le menu natif, pas dans la barre Connect.
   const native=page.frameLocator('#gameFrame').frameLocator('#game');
   await native.locator('.classic-count-btn[data-count="4"]').click();
