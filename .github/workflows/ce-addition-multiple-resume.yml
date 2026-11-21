@@ -1,0 +1,30 @@
+name: Addition multiple — reprise F5 certifiée ciblée
+on:
+  pull_request:
+    paths:
+      - 'apps/objective-record/certified-multiple.mjs'
+      - 'apps/objective-record/certified-multiple-ui.mjs'
+      - 'apps/objective-record/engines/addition-multiple/certified-multiple-patch.js'
+      - 'tests/objective-record-multiple-proof.browser.mjs'
+      - 'tests/objective-record-server-proof-multiple.test.mjs'
+      - '.github/workflows/ce-addition-multiple-resume.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-multiple-resume:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preuve de premier essai et compilation de la chaîne native
+        run: node --test tests/objective-record-server-proof-multiple.test.mjs
+      - name: Préparer Chromium sans compte Supabase réel
+        run: |
+          npm install --no-save --no-package-lock playwright@1.58.2
+          npx playwright install chromium
+      - name: Démarrer le vrai moteur, F5 en milieu de paire, ACK unique
+        run: node --test tests/objective-record-multiple-proof.browser.mjs

@@ -31,6 +31,23 @@ export function normalizeMultiFirstAttempt(raw,q,level){
   ||!['','0'].includes(raw.carries[0]))return null;
  return Object.freeze({id:raw.id,digits:[...raw.digits],carries:[...raw.carries]});
 }
+// Uniquement pour restituer l'affichage natif après F5. Le serveur reste
+// l'unique autorité pour les résultats, les déblocages, les coupes et les XP.
+export function multipleFirstAttemptCorrect(question,raw,level){
+ const attempt=normalizeMultiFirstAttempt(raw,question,level);
+ if(!attempt)return false;
+ const sum=question.addends.reduce((s,n)=>s+n,0);
+ const digits=String(sum).split('').reverse();
+ if(digits.some((v,i)=>attempt.digits[i]!==v))return false;
+ for(let j=1;j<MULTI_PROOF_WIDTH[level];j++){
+  const power=10**j;
+  const carry=Math.floor(question.addends.reduce((s,n)=>s+n%power,0)/power);
+  const expected=carry?String(carry):'';
+  const value=attempt.carries[j]==='0'&&expected===''?'':attempt.carries[j];
+  if(value!==expected)return false;
+ }
+ return true;
+}
 export function createMultiProofQueue({storage,studentId,classId}){
  if(!UUID.test(studentId)||!UUID.test(classId))return null;
  const key='mathas.multiple-certified.v1.'+classId+'.'+studentId;

@@ -1,5 +1,5 @@
 import {MULTI_PROOF_APP,MULTI_PROOF_WIDTH,acceptMultiChallenge,
- normalizeMultiFirstAttempt,createMultiProofQueue} from './certified-multiple.mjs';
+ normalizeMultiFirstAttempt,multipleFirstAttemptCorrect,createMultiProofQueue} from './certified-multiple.mjs';
 import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
 import {schoolModeAllowed,schoolModeLockReason} from './school-official-unlocks.mjs';
 const VALID_PROOF_CLASSES=new Set(['4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',...SCHOOL_CLASS_IDS]);
@@ -137,17 +137,31 @@ export function createMultipleProofUI({
    queue=createMultiProofQueue({storage:localStorage,studentId:ctx.pupilId,classId:ctx.classId});
    if(!queue)throw Error('Stockage du profil indisponible');
    const previous=queue.read();
-   run={...challenge,generation:seq,answers:[],finished:false,invalid:false};
+   const matched=previous?.sessionId===challenge.sessionId
+    &&previous.level===level&&previous.total===total;
+   // Si le serveur a réémis un autre défi, ne JAMAIS recycler les réponses
+   // d'une autre session. Une preuve locale ne valide aucun XP à elle seule.
+   const saved=matched?previous.answers.map((answer,i)=>
+    normalizeMultiFirstAttempt(answer,challenge.questions[i],level)):null;
+   if(saved?.some(answer=>answer===null))
+    throw Error('Réponses sauvegardées incohérentes : aucune preuve envoyée. Préviens ton professeur.');
+   run={...challenge,generation:seq,answers:saved||[],finished:false,invalid:false};
    suppressedTerminal=false;proofStatus('playing');
-   if(previous?.sessionId===challenge.sessionId&&previous.level===level
-    &&previous.total===total&&previous.answers.length===total){
-    run.answers=previous.answers;run.finished=true;
+   if(run.answers.length===total){
+    run.finished=true;
     notify('Synchronisation des '+total+' réponses sauvegardées…');
     void finish();return;
    }
-   if(!queue.save(run,[]))throw Error('Sauvegarde locale impossible');
+   // Une série partielle reste attachée à SON sessionId, même après F5.
+   // Le moteur reprend à la paire non terminée (la 1re case peut être déjà
+   // vérifiée). Les XP et le score final attendent toujours l'ACK SQL.
+   if(!queue.save(run,run.answers))throw Error('Sauvegarde locale impossible');
+   const resumed=run.answers.length;
+   const correct=run.answers.map((answer,i)=>
+    multipleFirstAttemptCorrect(run.questions[i],answer,level));
    win.__mathasServerCertifiedMulti={sessionId:run.sessionId,
-    level:run.level,total:run.total,questions:run.questions};
+    level:run.level,total:run.total,questions:run.questions,
+    resumeCount:resumed,resumeScore:correct.filter(Boolean).length,resumeCorrect:correct};
    const nativeLevel=doc.getElementById('classicMaxDigits');
    const sharedLevel=doc.getElementById('trainingMaxDigits');
    const selectCount=doc.querySelector('.classic-count-btn[data-count="'+total+'"]');
@@ -156,9 +170,14 @@ export function createMultipleProofUI({
    const width=MULTI_PROOF_WIDTH[level];
    sharedLevel.value=String(width);nativeLevel.value=String(width);
    sharedLevel.dispatchEvent(new Event('change',{bubbles:true}));
-   selectCount.click();launch.click();
-   notify('🔐 '+total+' additions de plusieurs nombres niveau '+level+
-    ' émises par Connect. Reports et résultats vérifiés côté serveur.');
+   // Le bouton visible déclenche déjà startClassic.click() via le moteur
+   // natif. Un deuxième clic relançait la paire et effaçait sa reprise F5.
+   selectCount.click();
+   notify(resumed
+    ?'↩️ Reprise de la série : '+resumed+'/'+total+
+     ' réponses conservées. Résultat et XP officiels après vérification Connect.'
+    :'🔐 '+total+' additions de plusieurs nombres niveau '+level+
+     ' émises par Connect. Reports et résultats vérifiés côté serveur.');
   }catch(e){
    if(isCurrent(seq)){run=null;queue=null;proofStatus('idle');notify('⚠️ '+e.message+' : aucun XP demandé.')}
   }finally{if(isCurrent(seq))button.disabled=!!run||sending}

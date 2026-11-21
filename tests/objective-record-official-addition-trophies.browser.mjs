@@ -158,8 +158,8 @@ for(const [slug,levelWidth] of [['addition-simple','3'],['addition-multiple','5'
     &&res.request().postDataJSON()?.action==='student-share-score');
    await page.locator('.mathas-projection-offer button.yes').click();
    await posted;
-   assert.equal(scoreShareWrites,1,'La confirmation publie exactement une preuve officielle');
-   await page.locator('.mathas-projection-offer button:not(.yes)').click();
+   await page.locator('.mathas-projection-offer').waitFor({state:'hidden',timeout:12000});
+   assert.equal(scoreShareWrites,1,'OUI ferme en un clic et publie exactement une preuve officielle');
 
    await page.evaluate(width=>{
     const native=document.getElementById('gameFrame').contentDocument.getElementById('game').contentDocument;

@@ -71,7 +71,18 @@ test('Chromium: native multiple engine renders server terms and submits only pro
   });
   await page.goto(url+'/apps/objective-record/eleve.html?class='+classId+'&app=addition-multiple',
    {waitUntil:'domcontentloaded',timeout:25000});
-  await page.waitForFunction(()=>!document.getElementById('certify').disabled,null,{timeout:45000});
+  try{await page.waitForFunction(()=>!document.getElementById('certify').disabled,null,{timeout:13000});}
+  catch(error){
+   const diag=await page.evaluate(()=>{
+    const host=document.getElementById('gameFrame')?.contentDocument;
+    const inner=host?.getElementById('game');
+    return {hostState:host?.getElementById('state')?.textContent,
+     iframeHidden:inner?.hidden,iframeLength:inner?.srcdoc?.length||0,
+     innerMenu:inner?.contentDocument?.getElementById('menuScreen')?.className,
+     topStatus:document.getElementById('status')?.textContent};
+   });
+   throw Error('Addition multiple bootstrap: '+JSON.stringify({diag,errors})+' / '+error);
+  }
   // Les exercices se choisissent dans le menu natif, pas dans la barre Connect.
   const native=page.frameLocator('#gameFrame').frameLocator('#game');
   await native.locator('.classic-count-btn[data-count="4"]').click();
@@ -100,11 +111,50 @@ test('Chromium: native multiple engine renders server terms and submits only pro
   assert.deepEqual(rendered.questions,questions);
   assert.ok(rendered.text.includes('12345'));
   assert.ok(rendered.text.includes('67890'));
-  // This synthetic completion validates the real browser-to-Edge contract; the
-  // native pre-correction interception is separately tested by patch contract.
+  // F5 au milieu d'une paire : le premier calcul reste sauvegardé, et
+  // le retour au jeu ne doit ni perdre sa réponse ni lui créditer deux fois.
   await page.evaluate(()=>{
    const w=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
-   for(const q of w.__mathasServerCertifiedMulti.questions){
+   const q=w.__mathasServerCertifiedMulti.questions[0],sum=q.addends.reduce((a,b)=>a+b,0);
+   const carries=[''];
+   for(let j=1;j<5;j++){
+    const power=10**j,carry=Math.floor(q.addends.reduce((a,b)=>a+b%power,0)/power);
+    carries.push(carry?String(carry):'');
+   }
+   w.MathasCertifiedMultipleAttempt({id:q.id,digits:String(sum).split('').reverse(),carries});
+  });
+  const queuedBeforeReload=await page.evaluate(()=>{
+   const key=Object.keys(localStorage).find(k=>k.includes('mathas.multiple-certified.v1.'));
+   return key?JSON.parse(localStorage.getItem(key)):null;
+  });
+  assert.equal(queuedBeforeReload?.answers.length,1);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>!document.getElementById('certify')?.disabled,null,{timeout:45000});
+  await page.frameLocator('#gameFrame').frameLocator('#game').locator('.classic-count-btn[data-count="4"]').click();
+  await page.waitForFunction(()=>{
+   const w=document.getElementById('gameFrame')?.contentDocument?.getElementById('game')?.contentWindow;
+   return w?.__mathasServerCertifiedMulti?.resumeCount===1
+    &&w.document.getElementById('gameScreen')?.classList.contains('hidden')===false;
+  },null,{timeout:35000});
+  const restored=await page.evaluate(()=>{
+   const w=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
+   const boxes=[...w.document.querySelectorAll('#calculationsPair .calc-box')];
+   return {firstAlreadyVerified:boxes[0]?.classList.contains('mathas-calc-verified'),
+    firstBadge:boxes[0]?.querySelector('.mathas-calc-ok-badge')?.textContent,
+    secondText:boxes[1]?.textContent||'',firstText:boxes[0]?.textContent?.slice(0,200)||'',
+    firstClass:boxes[0]?.className||'',resumeApplied:w.__mathasServerCertifiedMulti?.resumeApplied,
+    resumeInitialized:w.__mathasServerCertifiedMulti?.resumeInitialized,
+    correct:w.__mathasServerCertifiedMulti?.resumeCorrect,
+    resumeCount:w.__mathasServerCertifiedMulti?.resumeCount};
+  });
+  assert.equal(restored.firstAlreadyVerified,true,'la première addition conserve son état vérifié : '+JSON.stringify(restored));
+  assert.equal(restored.firstBadge,'✓','réussite initiale conservée');
+  assert.ok(restored.secondText.includes('12346'),'la suite reprend sur q2, pas q1');
+  // Le terminal est simulé pour vérifier l'ACK. Seules q2-q4 sont capturées
+  // après F5 : la première réponse a été enregistrée avant l'interruption.
+  await page.evaluate(()=>{
+   const w=document.getElementById('gameFrame').contentDocument.getElementById('game').contentWindow;
+   for(const q of w.__mathasServerCertifiedMulti.questions.slice(1)){
     const sum=q.addends.reduce((s,n)=>s+n,0);
     const carries=[''];
     for(let j=1;j<5;j++){
