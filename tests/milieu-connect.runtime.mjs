@@ -103,9 +103,11 @@ test('Chromium réel avec JWT simulé, handler et PostgreSQL réels : preuve nat
    const n=await page.evaluate(()=>current().n);
    await page.locator('input[data-field="answer"]').fill(String(n/20).replace('.',','));
    await page.locator('#ok').click();
-   const hit=await page.locator('#rulerHit').boundingBox(),mm=n/2;
-   await page.mouse.move(hit.x+(5+mm*4)*hit.width/810,hit.y+hit.height/2);
+   const mm=n/2,pt=await page.locator('#rulerHit').evaluate((el,mm)=>{const p=el.ownerSVGElement.createSVGPoint();p.x=35+mm*4;p.y=82;const t=p.matrixTransform(el.getScreenCTM());return {x:t.x,y:t.y}},mm);
+   await page.mouse.move(pt.x,pt.y);
    await page.locator('#lens [data-tick="'+mm+'"]').click();
+   assert.equal(await page.evaluate(()=>current().done),false);
+   await page.locator('#ok').click();
    await page.locator('#ok').click();
   }
   await page.waitForFunction(()=>document.getElementById('officialResultInfo')?.textContent.includes('non confirmé'));
