@@ -10,7 +10,7 @@ permissions:
   contents: read
 jobs:
   postgres:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:17
@@ -52,5 +52,6 @@ jobs:
             psql -v ON_ERROR_STOP=1 -f "$migration"
           done
           psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/20261126_abaque_restart_scope_candidate.sql
-      - run: npm install --no-save --no-package-lock pg@8.16.3
+      - run: npm install --no-save --no-package-lock pg@8.16.3 playwright@1.57.0
+      - run: npx playwright install chromium --with-deps
       - run: node --test tests/abaque-restart-scope.runtime.mjs
