@@ -35,7 +35,7 @@ const http=require("node:http"),fs=require("node:fs");
  await fields.first().focus();assert.equal(await page.locator("#padOK").innerText(),"Avancer");
  for(let i=0;i<5;i++){await fields.nth(i).fill(vals[i]);assert.equal(await page.locator("#padOK").innerText(),i===4?"Valider":"Avancer");await page.locator("#padOK").click();if(i<4){assert.equal(await fields.nth(i+1).evaluate(el=>document.activeElement===el),true);assert.equal(await page.evaluate(()=>run.q[0].attempts),0,"aucune validation anticipée")}}
  assert.equal(await page.locator("#padOK").innerText(),"Page suivante");assert.equal(await page.evaluate(()=>run.checked),true);await page.locator("#home").click();await page.locator("#discard").click();await page.locator('[data-start="even"]').click();
- for(let series=0;series<3;series++){
+ for(let series=0;series<2;series++){
    if(series)await page.locator('[data-start="even"]').click();
    for(let p=0;p<2;p++){
      const answers=await page.evaluate(()=>pageItems().map(q=>fmt(q.n/2)));
@@ -45,6 +45,7 @@ const http=require("node:http"),fs=require("node:fs");
      await page.locator("#ok").click();
    }
    await page.locator("#back").click();
+   if(series===0)assert.equal(await page.locator('[data-start="odd"]').isDisabled(),true);
  }
  assert.equal(await page.locator('[data-start="odd"]').isEnabled(),true);
  assert.equal(await page.evaluate(()=>progress.cups.even),true);assert.equal(await page.evaluate(()=>{const x=document.querySelector(".challenge"),y=x.querySelector(".tile");return Math.abs(y.getBoundingClientRect().width/x.getBoundingClientRect().width-.65)<.03}),true,"boutons centrés à 65%");
@@ -130,6 +131,6 @@ const http=require("node:http"),fs=require("node:fs");
   await p.goto(base+"?hub=toutes&class=71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e");
   assert.equal(await p.getByRole("button",{name:"Parcours Connect · TEST"}).count(),0);
  }finally{await routeCtx.close();await new Promise(resolve=>routeServer.close(resolve))}
- console.log("Chromium : cache web local, refus Connect non certifié, menu, trois séries, glisser, aides décimales, 320/390 px, loupe, mesure, milieu, reprise et accès hors ligne OK.");
+ console.log("Chromium : cache web local, refus Connect non certifié, menu, deux séries, glisser, aides décimales, 320/390 px, loupe, mesure, milieu, reprise et accès hors ligne OK.");
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
