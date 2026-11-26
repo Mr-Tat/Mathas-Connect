@@ -17,7 +17,7 @@ const users=new Map([[teacher,false],[actor,true],[otherActor,true]]);
 const auth={auth:{getUser:async token=>users.has(token)?{data:{user:{id:token,is_anonymous:users.get(token)}}}:{error:{message:'invalid'}}}};
 const db={rpc:async(name,args)=>{try{const entries=Object.entries(args);const sql='select public.'+name+'('+entries.map(([k,v],i)=>k+' => $'+(i+1)).join(',')+') v';const values=entries.map(([k,v])=>['p_proof','p_judgement','p_state','p_targets'].includes(k)?JSON.stringify(v):v);return {data:(await query(sql,values)).rows[0].v}}catch(e){return {error:{message:e.message}}}}};
 const handler=createMilieuHandler({auth,db,access:'pilot'});
-async function post(action,body={},who=actor,h=handler){const response=await h(new Request('https://local.test',{method:'POST',headers:{authorization:'Bearer '+who,'content-type':'application/json'},body:JSON.stringify({action,appKey:'milieu-segment',classId:cls,...body})}));return {status:response.status,...await response.json()}}
+async function post(action,body={},who=actor,h=handler){const response=await h(new Request('https://local.test',{method:'POST',headers:{authorization:'Bearer '+who,'content-type':'application/json'},body:JSON.stringify({action,ruleset:3,appKey:'milieu-segment',classId:cls,...body})}));return {status:response.status,...await response.json()}}
 async function ok(action,body={},who=actor){const r=await post(action,body,who);assert.equal(r.ok,true,JSON.stringify(r));return r}
 const proof=(activity,mode,seed,good=20)=>{const n=questionSequence(activity,seed),steps=['gi2','g3'].includes(activity)?['measure','calc','place']:activity.startsWith('g')?['calc','place']:['calc'];const items=[];for(let i=0;i<(mode?good:LEVELS[activity].n);i++){const v=n();items.push({n:v,helps:[],attempts:steps.map(stage=>stage==='measure'?{stage,tick:v,value:v}:stage==='calc'?{stage,value:v/2}:{stage,tick:v/2})})}if(mode)for(let i=0;i<(mode==='sudden'?1:3);i++){const v=n();items.push({n:v,helps:[],attempts:[{stage:'measure',tick:v,value:0}]})}return {version:1,activity,mode,items}};
 async function run(activity,mode=null,who=actor,pupil=student){const current=await ok('load',{},who),eventId=randomUUID(),b={expectedStudentId:pupil,eventId,resetEpoch:current.resetEpoch};const started=await ok('begin',{...b,activity,mode},who);const result=proof(activity,mode,started.seed);return {b,result,ack:await ok('record',{...b,proof:result},who)}}
@@ -37,7 +37,7 @@ test('PostgreSQL réel + handler Edge injecté : identité, 280 XP, projection, 
  await run('even');await run('even');
  assert.equal((await post('begin',{expectedStudentId:student,eventId:randomUUID(),resetEpoch:0,activity:'odd'})).error,'activity_locked');
  assert.equal((await ok('teacher-cap-set',{maxActivity:6},teacher)).maxActivity,6);
- assert.equal((await post('begin',{expectedStudentId:student,eventId:randomUUID(),resetEpoch:0,activity:'decimal'})).error,'activity_locked');
+ assert.equal((await post('begin',{expectedStudentId:student,eventId:randomUUID(),resetEpoch:0,activity:'decimal1'})).error,'activity_locked');
  for(const k of Object.keys(LEVELS))for(let i=0;i<LEVELS[k].p;i++)await run(k);
  let a=await run('gi2','sudden');assert.equal(a.ack.judgement.points,80);assert.equal(a.ack.xp.delta,48);
  let b=await run('g3','sudden');assert.equal(b.ack.judgement.points,120);assert.equal(b.ack.xp.appXp,280);assert.equal(b.ack.trophies.length,12);
@@ -68,7 +68,7 @@ test('PostgreSQL réel + handler Edge injecté : identité, 280 XP, projection, 
 test('Chromium réel avec JWT simulé, handler et PostgreSQL réels : preuve native, ACK perdu et partage différé',async()=>{
  // The only Auth substitution is a fictive signed-in session. All game requests
  // pass through the real handler, with the same disposable database as above.
- for(const k of ['even','odd','mix'])for(let i=0;i<2;i++)await run(k,null,otherActor,other);
+ for(const k of ['even','odd','mix'])for(let i=0;i<3;i++)await run(k,null,otherActor,other);
  const root=resolve('.'),prefix='/apps/DIV-Milieu-de-segment-1/';
  const server=createServer(async(req,res)=>{try{const path=new URL(req.url,'http://localhost').pathname;if(!path.startsWith(prefix)&&path!=='/avatar-catalog.js'){res.writeHead(404);res.end();return}const absolute=resolve(root,'.'+path);if(!absolute.startsWith(root+'/'))throw Error('path');const data=await readFile(absolute);res.setHeader('content-type',extname(path)==='.html'?'text/html; charset=utf-8':extname(path)==='.svg'?'image/svg+xml':'text/javascript');res.end(data)}catch{res.writeHead(404);res.end()}});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));

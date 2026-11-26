@@ -2,7 +2,7 @@
 // This validator checks mathematics and the completed sequence. It is NOT authentication:
 // the caller must additionally bind the event to a server-authorized student/class/run/epoch.
 export const PROOF_VERSION=1;
-const config=Object.freeze({even:[10,"even",["calc"]],odd:[10,"odd",["calc"]],mix:[10,"integer",["calc"]],gi1:[6,"integer",["calc","place"]],gi2:[6,"integer",["measure","calc","place"]],decimal:[10,"decimal",["calc"]],g1:[5,"decimalGeo",["calc","place"]],g2:[10,"decimalGeo",["calc","place"]],g3:[10,"decimalGeo",["measure","calc","place"]]});
+const config=Object.freeze({even:[10,"even",["calc"]],odd:[10,"odd",["calc"]],mix:[10,"integer",["calc"]],gi1:[6,"integer",["calc","place"]],gi2:[6,"integer",["measure","calc","place"]],decimal1:[5,"decimal",["calc"]],decimal2:[10,"decimal",["calc"]],decimal3:[15,"decimal",["calc"]],g1:[5,"decimalGeo",["calc","place"]],g2:[10,"decimalGeo",["calc","place"]],g3:[10,"decimalGeo",["measure","calc","place"]]});
 const fail=()=>{throw Error("invalid_completion")};
 const integer=v=>Number.isSafeInteger(v);
 const range=(v,min,max)=>integer(v)&&v>=min&&v<=max;

@@ -1,7 +1,8 @@
 // Validated 26/11/2026. Server reward model; no client points accepted.
 import {judgeNativeCompletion} from './completion-proof.mjs';
-export const APP_KEY='milieu-segment',XP_MAX=280,RULESET=2;
-export const LEVELS=Object.freeze({even:{n:10,p:2,xp:[8,6,6]},odd:{n:10,p:2,xp:[8,6,6]},mix:{n:10,p:2,xp:[8,6,6]},gi1:{n:6,p:1,xp:[8,4]},gi2:{n:6,p:1,xp:[10,6]},decimal:{n:10,p:2,xp:[8,6,6]},g1:{n:5,p:1,xp:[8,4]},g2:{n:10,p:1,xp:[10,6]},g3:{n:10,p:1,xp:[16,8]}});
+export const APP_KEY='milieu-segment',XP_MAX=280,RULESET=3;
+export const LEVELS=Object.freeze({even:{n:10,p:3,xp:[8,3,3,6]},odd:{n:10,p:3,xp:[8,3,3,6]},mix:{n:10,p:3,xp:[8,3,3,6]},gi1:{n:6,p:1,xp:[8,4]},gi2:{n:6,p:1,xp:[10,6]},decimal1:{n:5,p:1,xp:[2,2]},decimal2:{n:10,p:1,xp:[4,2]},decimal3:{n:15,p:1,xp:[6,4]},g1:{n:5,p:1,xp:[8,4]},g2:{n:10,p:1,xp:[10,6]},g3:{n:10,p:1,xp:[16,8]}});
+export const DECIMALS=['decimal1','decimal2','decimal3'];
 export const ORDER=Object.keys(LEVELS),GEO={integers:['gi1','gi2'],decimals:['g1','g2','g3']},THRESHOLDS=[5,10,20];
 export const family=k=>['even','odd','mix','gi1','gi2'].includes(k)?'integers':'decimals';
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -10,18 +11,18 @@ const challengeIds=['integers:sudden','integers:lives','decimals:sudden','decima
 const milestones=k=>LEVELS[k].xp.map((v,i)=>[k+':'+(i===LEVELS[k].p?'perfect':'pass'+(i+1)),v]);
 const recordMilestones=f=>THRESHOLDS.map(t=>[f+':record:'+t,f==='integers'?16:24]);
 export const RIGHTS=Object.freeze(Object.fromEntries([...ORDER.flatMap(milestones),...Object.keys(GEO).flatMap(recordMilestones)]));
-export const TROPHIES=Object.freeze([...ORDER.filter(k=>!k.startsWith('g')),...Object.keys(GEO).map(f=>f+':segments'),...Object.keys(GEO).flatMap(f=>THRESHOLDS.map(t=>f+':sudden:'+t))]);
+export const TROPHIES=Object.freeze(['even','odd','mix','decimal',...Object.keys(GEO).map(f=>f+':segments'),...Object.keys(GEO).flatMap(f=>THRESHOLDS.map(t=>f+':sudden:'+t))]);
 const blankScore=()=>({allBest:0,dayBest:0,dayDate:null,allEvent:null,dayEvent:null});
 export const initialState=()=>({levels:{},records:{},recordCounts:{},scoresByActivity:{},scoresByClass:{},rights:{},bonusRights:{},archivedBonusXp:0,repeatKeys:[],cups:{},decimalUnlocked:false,epoch:0});
 export const passing=(s,k)=>(s.levels[k]||[]).filter(x=>x.percent>=80).length>=LEVELS[k].p;
-export const cleanPerfect=(s,k)=>(s.levels[k]||[]).filter(x=>x.percent===100&&x.clean).length>=LEVELS[k].p;
+export const cleanPerfect=(s,k)=>(s.levels[k]||[]).filter(x=>x.percent===100&&(k==='decimal1'||x.clean)).length>=LEVELS[k].p;
 export const challengesOpen=(s,f)=>GEO[f].every(k=>passing(s,k));
-export const activityNumber=k=>({even:1,odd:2,mix:3,gi1:4,gi2:4,decimal:5,g1:6,g2:6,g3:6})[k];
+export const activityNumber=k=>({even:1,odd:2,mix:3,gi1:4,gi2:4,decimal1:5,decimal2:5,decimal3:5,g1:6,g2:6,g3:6})[k];
 export function canPlay(s,k,mode=null,teacherFree=false,maxActivity=6){
  if(!Object.hasOwn(LEVELS,k)||!teacherFree&&activityNumber(k)>maxActivity)return false;
  if(mode!==null)return ['sudden','lives'].includes(mode)&&['gi2','g3'].includes(k)&&challengesOpen(s,family(k));
  if(teacherFree)return true;
- if(k==='decimal')return s.decimalUnlocked||challengesOpen(s,'integers');
+ if(k==='decimal1')return s.decimalUnlocked||challengesOpen(s,'integers');
  return k===ORDER[0]||passing(s,ORDER[ORDER.indexOf(k)-1]);
 }
 export function segmentPoints(k,mode,helps=[]){
@@ -33,7 +34,7 @@ export function segmentPoints(k,mode,helps=[]){
 }
 export function judgeCompletion(proof){
  const j=judgeNativeCompletion(proof);
- return {...j,percent:Math.round(100*j.firstGood/j.total),points:j.items.reduce((sum,item)=>sum+(item.firstGood?segmentPoints(j.activity,j.mode,item.helps):0),0)};
+ return {...j,percent:Math.round(100*(['decimal2','decimal3'].includes(j.activity)?j.items.filter(i=>i.firstGood&&!i.helps.length).length:j.firstGood)/j.total),points:j.items.reduce((sum,item)=>sum+(item.firstGood?segmentPoints(j.activity,j.mode,item.helps):0),0)};
 }
 export const xpTotal=s=>(s.archivedBonusXp||0)+Object.values(s.rights).reduce((a,b)=>a+b,0)+Object.values(s.bonusRights).reduce((a,b)=>a+b,0);
 export function remaining(s){
@@ -63,8 +64,9 @@ export function applyJudgement(old,j,{eventId,day,classId=null,teacherFree=false
   rows.sort((a,b)=>b.percent-a.percent||Number(b.clean)-Number(a.clean)||b.points-a.points);
   s.levels[k]=rows.slice(0,spec.p);
   for(let i=0;i<s.levels[k].filter(x=>x.percent>=80).length;i++)award(k+':pass'+(i+1));
-  if(j.percent===100&&j.clean)award(k+':perfect');
+  if(j.percent===100&&(k==='decimal1'||j.clean))award(k+':perfect');
   if(k.startsWith('g')){if(GEO[f].every(x=>cleanPerfect(s,x)))s.cups[f+':segments']=true}
+  else if(DECIMALS.includes(k)){if(DECIMALS.every(x=>cleanPerfect(s,x)))s.cups.decimal=true}
   else if(cleanPerfect(s,k))s.cups[k]=true;
  }
  if(challengesOpen(s,'integers'))s.decimalUnlocked=true;

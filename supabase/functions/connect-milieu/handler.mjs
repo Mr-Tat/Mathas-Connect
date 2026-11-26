@@ -18,6 +18,7 @@ export function createMilieuHandler({auth,db,access='closed',pilotClassId=null})
    const b=JSON.parse(raw);
    if(b.appKey!==APP_KEY||!uuid(b.classId)||!['load','begin','record','share','board','teacher-summary','teacher-restart','teacher-cap-get','teacher-cap-set'].includes(b.action))throw Error('invalid_result');
    if(pilotClassId&&b.classId!==pilotClassId)throw Error('app_class_not_open');
+   if(['begin','record'].includes(b.action)&&b.ruleset!==RULESET)throw Error('invalid_result');
    const verified=await auth.auth.getUser(token),u=verified.data?.user;
    if(verified.error||!uuid(u?.id)||typeof u.is_anonymous!=='boolean')return reply({ok:false,error:'authentication_required'},401);
    const teacher=!u.is_anonymous,base={p_actor:u.id,p_class:b.classId,p_teacher:teacher};
