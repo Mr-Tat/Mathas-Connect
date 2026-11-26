@@ -44,7 +44,7 @@ test('restarting a parcours affects only the selected application',()=>{
  assert.match(classRestart,/connect_parcours_restart_one\(p_teacher,p_class,member\.id,p_app,p_repeat_xp\)/);
  const teacher=src('../app.js');
  assert.ok(teacher.includes("appKey:$('results-app').value"));
- assert.match(teacher,/resultCall\('teacher-parcours-restart',\{scope,studentId,repeatXp:xp\.checked,appKey\}\)/);
+ assert.match(teacher,/resultCall\('teacher-parcours-restart',\{scope,studentId,repeatXp:xp\.checked,appKey,classId\}\)/);
 });
 
 test('teacher selector lists both apps and backup restore is isolated',()=>{
