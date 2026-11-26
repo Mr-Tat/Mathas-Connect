@@ -92,8 +92,9 @@ function card(app) {
   if((testMultiplication||testMixed) && target.origin===location.origin)target.searchParams.set('requireConnect','1');
   // En mode Connect scolaire, une carte officielle ne doit jamais ouvrir
   // silencieusement un 4/4 sans preuve et sans XP. Le mode Classique reste libre.
-  if((schoolMultiplication||(SCHOOL_CLASS_IDS.includes(classId)&&app.app_key==='milieu-segment'&&!allMode)) && !inFreeMode() && target.origin===location.origin)
+  if(schoolMultiplication && !inFreeMode() && target.origin===location.origin)
     target.searchParams.set('requireConnect','1');
+  if(SCHOOL_CLASS_IDS.includes(classId)&&app.app_key==='milieu-segment'&&!allMode&&!inFreeMode()&&target.origin===location.origin)target.searchParams.set('requireConnect','1');
   if(!allMode&&SCHOOL_CLASS_IDS.includes(classId)&&app.app_key==='milieu-segment'&&target.origin===location.origin){target.searchParams.delete('hub');target.searchParams.set('hub','classe');if(inFreeMode()){target.searchParams.delete('requireConnect');target.searchParams.delete('connect')}}
    // Un lancement dans Toutes conserve l'identité approuvée Monsieur T
   // pour TOUS les jeux Connect. Sans « joueur=prof », leurs hôtes lisent la
