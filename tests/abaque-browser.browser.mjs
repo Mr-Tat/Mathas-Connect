@@ -82,6 +82,11 @@ test('Abaque : premiers essais 10/12 et 7/8, déblocages, puis trophées parfait
   assert.equal(await page.locator('#trophy-convertLaunchCard').getAttribute('data-earned'),'false');
   await page.evaluate(()=>window.MATHAS_PROGRESS.reset());await page.reload();
   assert.equal(await page.locator('.trophy-hint.earned').count(),2,'acquis démo conservés après reset/rechargement');
+  assert.deepEqual((await progress(page)).stage1.passes,[]);
+  assert.deepEqual((await progress(page)).stage2.passes,[]);
+  assert.equal((await progress(page)).stage1.perfectRuns,0);
+  assert.equal((await progress(page)).stage2.perfectRuns,0);
+  assert.equal(await page.locator('#moveLaunchBtn').getAttribute('aria-disabled'),'true','le trophée permanent ne débloque pas le nouveau parcours');
   assert.equal(await page.locator('#personalTrophyCount').textContent(),'2 / 6');
   assert.equal(await page.locator('.collection-trophy.earned').count(),2);
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
@@ -319,6 +324,8 @@ test('Abaque démo : trois états de compte simulés, XP discrets et zéro modif
   assert.equal(await page.locator('[data-variant="sudden"]>.abaque-xp-remaining').textContent(),'Reste 32 XP');
   assert.equal(await page.locator('#personalTrophyCount').textContent(),'0 / 6');
   assert.equal(await page.locator('#launchBtn>.abaque-xp-remaining').evaluate(el=>getComputedStyle(el).fontWeight),'400');
+  await solveConstruction(page);
+  assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'false','une seule série parfaite ne suffit pas même dans la simulation');
   await solveConstruction(page);
   assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'true','une activité reste jouable dans le profil fictif');
   await choice.selectOption('collected');

@@ -1703,7 +1703,7 @@ window.MATHAS_ITEMS = [
  let demoPreviewActive=false,demoPreviewBackup=null;
  const allowDemoPreview=isolatedDemo&&new URLSearchParams(location.search).get('connect')!=='1';
  const $=id=>document.getElementById(id);
- const blank=()=>({stage1:{passes:[],passScores:[],topScores:[],perfectRuns:0,failed:false,failedScore:null},stage2:{passes:[],passScores:[],topScores:[],perfectRuns:0,failed:false,failedScore:null},recordsByMode:{},modes:{one:null,three:null,five:null,sudden:null},modeScores:{one:null,three:null,five:null},modeDots:{one:null,three:null,five:null},cleanPerfect:{one:false,three:false,five:false},suddenBest:0,suddenCleanBest:0,scoreRecords:{dayDate:"",dayBest:0,dayMode:"",allBest:0,allMode:"",medals:[]}});
+ const blank=()=>({earnedStageProofs:{stage1:false,stage2:false},stage1:{passes:[],passScores:[],topScores:[],perfectRuns:0,failed:false,failedScore:null},stage2:{passes:[],passScores:[],topScores:[],perfectRuns:0,failed:false,failedScore:null},recordsByMode:{},modes:{one:null,three:null,five:null,sudden:null},modeScores:{one:null,three:null,five:null},modeDots:{one:null,three:null,five:null},cleanPerfect:{one:false,three:false,five:false},suddenBest:0,suddenCleanBest:0,scoreRecords:{dayDate:"",dayBest:0,dayMode:"",allBest:0,allMode:"",medals:[]}});
  const TROPHY_DEFINITIONS=[['bronze','launchBtn','Architecte de l’abaque'],['silver','moveLaunchBtn','Maître des déplacements'],['gold','convertLaunchCard','Expert des conversions'],['sudden-bronze','sudden-bronze','Mort subite · bronze'],['sudden-silver','sudden-silver','Mort subite · argent'],['sudden-gold','sudden-gold','Mort subite · or']];
  const trophyKeys=TROPHY_DEFINITIONS.map(([key])=>key);
  // Trois, cinq et huit pages de cinq conversions : 15, 25 et 40 réussites.
@@ -1729,6 +1729,7 @@ window.MATHAS_ITEMS = [
      data[key].perfectRuns=Number.isSafeInteger(old.perfectRuns)&&old.perfectRuns>=0
        ?Math.min(2,Math.max(recordedPerfects,old.perfectRuns))
        :Math.min(2,recordedPerfects);
+     data.earnedStageProofs[key]=saved.earnedStageProofs?.[key]===true||data[key].perfectRuns>=2;
      data[key].failed=!!old.failed;
      const fail=old.failedScore;data[key].failedScore=Number.isInteger(fail)&&fail>=0&&fail<=(key==='stage1'?12:8)?fail:null;
    }
@@ -1764,9 +1765,10 @@ window.MATHAS_ITEMS = [
  }}
  try{restoreNative(JSON.parse(localStorage.getItem(STORAGE)))}catch(e){}
  // Reconcile only this demo's existing local results; never import native or Connect storage.
- earnedTrophies=earnedTrophies.filter(key=>(key!=='bronze'||data.stage1.perfectRuns>=2)&&(key!=='silver'||data.stage2.perfectRuns>=2));
- if(data.stage1.perfectRuns>=2)earnTrophy('bronze');
- if(data.stage2.perfectRuns>=2)earnTrophy('silver');
+ // Les preuves locales de deux séries parfaites survivent au reset, pas les droits de progression.
+ earnedTrophies=earnedTrophies.filter(key=>(key!=='bronze'||data.earnedStageProofs.stage1)&&(key!=='silver'||data.earnedStageProofs.stage2));
+ if(data.earnedStageProofs.stage1)earnTrophy('bronze');
+ if(data.earnedStageProofs.stage2)earnTrophy('silver');
  // Ne pas recalculer des coupes à partir des anciens scores sans preuve d'autonomie.
  try{master=sessionStorage.getItem(SESSION)==='1'}catch(e){}
  const save=()=>{if(demoPreviewActive)return;try{localStorage.setItem(STORAGE,JSON.stringify(data))}catch(e){}};
@@ -1826,7 +1828,7 @@ window.MATHAS_ITEMS = [
   const beforeTrophies=earnedTrophies.length,grade=color(correct,total);
   if(correct===total){
    data[key].perfectRuns=Math.min(2,(data[key].perfectRuns||0)+1);
-   if(data[key].perfectRuns>=2)earnTrophy(key==='stage1'?'bronze':'silver');
+   if(data[key].perfectRuns>=2){data.earnedStageProofs[key]=true;earnTrophy(key==='stage1'?'bronze':'silver');}
   }
   if(grade==='red'){if(passes(key)<2){data[key].failed=true;data[key].failedScore=correct}}
   else if(passes(key)<2){data[key].passes.push(grade);data[key].passScores.push(correct);data[key].failed=false;data[key].failedScore=null}
@@ -1954,7 +1956,7 @@ window.MATHAS_ITEMS = [
    });
   }
  }
- const reset=()=>{data=blank();save();render()};
+ const reset=()=>{const proofs=connectBinding?null:{...data.earnedStageProofs};data=blank();if(proofs)data.earnedStageProofs=proofs;save();render()};
  $('masterToggle').addEventListener('click',()=>{
   if(master||guestMode||connectBinding&&!classActivityAccess.teacherFree)return;
   $('masterError').textContent='';$('masterPassword').value='';$('masterDialog').showModal();$('masterPassword').focus();
@@ -1989,10 +1991,10 @@ window.MATHAS_ITEMS = [
   restoreNative(local);
   let savedTrophies=[];try{savedTrophies=JSON.parse(localStorage.getItem(TROPHIES)||'[]')}catch{}
   earnedTrophies=Array.isArray(savedTrophies)?[...new Set(savedTrophies.filter(key=>trophyKeys.includes(key)))]:[];
-  earnedTrophies=earnedTrophies.filter(key=>(key!=='bronze'||data.stage1.perfectRuns>=2)
-   &&(key!=='silver'||data.stage2.perfectRuns>=2));
-  if(data.stage1.perfectRuns>=2)earnTrophy('bronze');
-  if(data.stage2.perfectRuns>=2)earnTrophy('silver');
+  earnedTrophies=earnedTrophies.filter(key=>(key!=='bronze'||data.earnedStageProofs.stage1)
+   &&(key!=='silver'||data.earnedStageProofs.stage2));
+  if(data.earnedStageProofs.stage1)earnTrophy('bronze');
+  if(data.earnedStageProofs.stage2)earnTrophy('silver');
   // Les coupes déjà enregistrées restent acquises, aucune attribution rétroactive.
   if($('masterDialog').open)$('masterDialog').close();
   render();
