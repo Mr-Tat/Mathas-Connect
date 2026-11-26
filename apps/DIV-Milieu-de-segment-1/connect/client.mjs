@@ -1,4 +1,5 @@
 import {questionSequence} from './seeded-questions.mjs';
+import {avatarGlyph,avatarColor} from '../../../avatar-catalog.js';
 const BASE='https://awmhpfofacaglewammxt.supabase.co';
 const KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const uuid=v=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
@@ -29,5 +30,5 @@ export async function openMilieu({classId,teacher,onInvalid}){
  pupil=snapshot.studentId;
  const storageKey='mathas.milieu-segment.official.v2.'+[classId,subject,pupil].join('.');
  try{localStorage.setItem(storageKey+'.probe','1');localStorage.removeItem(storageKey+'.probe')}catch{throw Error('Sauvegarde indisponible. Impossible de jouer officiellement.')}
- return {post,snapshot,storageKey,questionSequence,classId,subject,pupil};
+ return {post,snapshot,storageKey,questionSequence,classId,subject,pupil,avatarGlyph,avatarColor};
 }

@@ -2,6 +2,10 @@ import test,{after} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import pg from 'pg';
+import {chromium} from 'playwright';
+import {createServer} from 'node:http';
+import {readFile} from 'node:fs/promises';
+import {resolve,extname} from 'node:path';
 import {createMilieuHandler} from '../supabase/functions/connect-milieu/handler.mjs';
 import {questionSequence} from '../apps/DIV-Milieu-de-segment-1/connect/seeded-questions.mjs';
 import {LEVELS} from '../apps/DIV-Milieu-de-segment-1/connect/reward-contract.mjs';
@@ -52,4 +56,65 @@ test('PostgreSQL réel + handler Edge injecté : identité, 280 XP, projection, 
  assert.equal((await run('gi2','sudden')).ack.xp.delta,0);
  assert.equal((await ok('load',{},otherActor)).xp.appXp,0);
  const conn=await pool.connect();try{await conn.query('begin');await conn.query('set local role authenticated');await assert.rejects(conn.query('select public.connect_milieu_snapshot_v2($1)',[student]),/permission denied/)}finally{await conn.query('rollback');conn.release()}
+});
+
+test('Chromium réel avec JWT simulé, handler et PostgreSQL réels : preuve native, ACK perdu et partage différé',async()=>{
+ // The only Auth substitution is a fictive signed-in session. All game requests
+ // pass through the real handler, with the same disposable database as above.
+ for(const k of ['even','odd','mix'])for(let i=0;i<2;i++)await run(k,null,otherActor,other);
+ const root=resolve('.'),prefix='/apps/DIV-Milieu-de-segment-1/';
+ const server=createServer(async(req,res)=>{try{const path=new URL(req.url,'http://localhost').pathname;if(!path.startsWith(prefix)&&path!=='/avatar-catalog.js'){res.writeHead(404);res.end();return}const absolute=resolve(root,'.'+path);if(!absolute.startsWith(root+'/'))throw Error('path');const data=await readFile(absolute);res.setHeader('content-type',extname(path)==='.html'?'text/html; charset=utf-8':extname(path)==='.svg'?'image/svg+xml':'text/javascript');res.end(data)}catch{res.writeHead(404);res.end()}});
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ const browser=await chromium.launch({headless:true});
+ const ctx=await browser.newContext({viewport:{width:1100,height:800},serviceWorkers:'block'});
+ const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
+ let lost=true,recordCalls=0,shareCalls=0;
+ await ctx.route('https://esm.sh/**',route=>route.fulfill({contentType:'text/javascript',headers:{'access-control-allow-origin':'*'},body:"export function createClient(){return {auth:{getSession:async()=>({data:{session:{access_token:'"+otherActor+"',user:{id:'"+otherActor+"',is_anonymous:true}}}}),onAuthStateChange:()=>({})}}}"}));
+ await ctx.route('https://awmhpfofacaglewammxt.supabase.co/functions/v1/connect-milieu',async route=>{
+  const req=route.request(),data=req.postData(),body=data?JSON.parse(data):{};
+  const response=await handler(new Request(req.url(),{method:req.method(),headers:req.headers(),...(data?{body:data}:{})}));
+  if(body.action==='record'){recordCalls++;if(lost&&response.ok){lost=false;await route.abort();return}}
+  if(body.action==='share')shareCalls++;
+  await route.fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:await response.text()});
+ });
+ const url='http://127.0.0.1:'+server.address().port+prefix+'index.html?requireConnect=1&class='+cls;
+ try{
+  await page.goto(url);await page.locator('[data-start="gi1"]').waitFor();
+  assert.equal(await page.locator('#connectAccount').isVisible(),true);
+  assert.equal(await page.locator('[data-start="gi2"]').isEnabled(),false);
+  await page.locator('[data-start="gi1"]').click();
+  for(let i=0;i<6;i++){
+   await page.locator('#reveal').click();
+   const n=await page.evaluate(()=>current().n);
+   await page.locator('input[data-field="answer"]').fill(String(n/20).replace('.',','));
+   await page.locator('#ok').click();
+   const hit=await page.locator('#rulerHit').boundingBox(),mm=n/2;
+   await page.mouse.move(hit.x+(5+mm*4)*hit.width/810,hit.y+hit.height/2);
+   await page.locator('#lens [data-tick="'+mm+'"]').click();
+   await page.locator('#ok').click();
+  }
+  await page.waitForFunction(()=>document.getElementById('officialResultInfo')?.textContent.includes('non confirmé'));
+  assert.equal(recordCalls,1);
+  assert.equal((await ok('load',{},otherActor)).xp.appXp,72);
+  await page.reload();await page.locator('#officialRetry').waitFor();
+  await page.locator('#officialRetry').click();
+  await page.locator('dialog.milieu-share[open]').waitFor();
+  assert.equal(recordCalls,2);
+  assert.equal((await ok('load',{},otherActor)).xp.appXp,72);
+  await page.getByRole('button',{name:'Non',exact:true}).click();
+  assert.equal(shareCalls,0);
+  await page.locator('#officialBack').click();
+  await page.getByRole('button',{name:'Score du jour : 12 pts',exact:true}).click();
+  await page.locator('dialog.milieu-share[open]').waitFor();
+  await page.getByRole('button',{name:'Oui',exact:true}).click();
+  await page.getByText('✓ Score envoyé.',{exact:true}).waitFor();
+  await page.getByRole('button',{name:'Fermer',exact:true}).click();
+  assert.equal(shareCalls,1);
+  assert.equal((await ok('board',{expectedStudentId:other},otherActor)).boardBest,12);
+  await page.getByRole('button',{name:'Score du jour : 12 pts',exact:true}).click();
+  await page.waitForTimeout(150);
+  assert.equal(await page.locator('dialog.milieu-share[open]').count(),0);
+  for(const width of [390,320]){await page.setViewportSize({width,height:740});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'menu Connect '+width)}
+  assert.deepEqual(errors,[]);
+ }finally{await ctx.close();await browser.close();await new Promise(r=>server.close(r))}
 });
