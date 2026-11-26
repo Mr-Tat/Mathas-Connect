@@ -14,6 +14,8 @@ function selectApp(appKey,scope='class'){
   'auth-scope':{value:scope},
   'auth-description':{textContent:''},
   'auth-calculation-settings':{hidden:false},
+  'auth-progression-settings':{hidden:true},
+  'auth-restart':{disabled:true},
   'abaque-class-gates':{hidden:true},
   'auth-scope-wrap':{hidden:false},
   'auth-student-wrap':{hidden:true}
@@ -21,7 +23,7 @@ function selectApp(appKey,scope='class'){
  const from=js.indexOf('function authSwitchView(){');
  const to=js.indexOf('async function loadAuthorizations(',from);
  assert.ok(from>0&&to>from,'La fonction de sélection est isolable');
- const result=runInNewContext('const $=id=>elements[id];\n'+js.slice(from,to)+'\nauthSwitchView();',{elements});
+ const result=runInNewContext('const $=id=>elements[id]; const authTableApps=new Set([\'multiplication-ecrite-simple\',\'melange-calculs-ecrits\']); const authRestartApps=new Set([\'addition-ecrite-simple\',\'addition-ecrite-multiple\',\'multiplication-ecrite-simple\',\'soustraction-ecrite-simple\',\'melange-calculs-ecrits\']);\n'+js.slice(from,to)+'\nauthSwitchView();',{elements});
  return {isAbaque:result,elements};
 }
 
@@ -83,6 +85,8 @@ test('Masquage CSS et versionnement empêchent les anciens panneaux de rester vi
  for(const id of ['auth-calculation-settings','abaque-class-gates','auth-scope-wrap']){
   assert.ok(css.includes('#'+id+'[hidden]'));
  }
- assert.match(ui,/style\.css\?v=20261116-abaque-modes-v1/);
- assert.match(ui,/app\.js\?v=20261116-abaque-modes-v1/);
+ assert.match(ui,/style\.css\?v=20261126-progressions-v1/);
+ assert.match(ui,/app\.js\?v=20261126-progressions-v1/);
 });
+
+test('Les cinq applications de calcul ont un contrôle de nouvelle progression indépendant des résultats',()=>{for(const key of ['addition-ecrite-simple','addition-ecrite-multiple','soustraction-ecrite-simple','multiplication-ecrite-simple','melange-calculs-ecrits']){const {elements}=selectApp(key,'student');assert.equal(elements['auth-progression-settings'].hidden,false);assert.equal(elements['auth-restart'].disabled,true);assert.equal(elements['auth-calculation-settings'].hidden,!['multiplication-ecrite-simple','melange-calculs-ecrits'].includes(key));}assert.match(js,/repeatXp:xp.checked,appKey,classId/);assert.match(js,/className:\$\('auth-class'\).selectedOptions/);assert.match(js,/\$\('results-class-restart'\).hidden=true/);assert.match(css,/#auth-progression-settings\[hidden\]/);});
