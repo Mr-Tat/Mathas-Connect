@@ -63,9 +63,12 @@ const draftKey=(test=practice)=>test?RUNKEY+".master":RUNKEY;
 const master=document.getElementById("master");
 const masterDialog=document.getElementById("masterDialog"),masterPassword=document.getElementById("masterPassword"),masterError=document.getElementById("masterError");
 function toggleMaster(){if(officialRequired||run&&!run.finished)return;if(practice){practice=false;showHome();return}masterPassword.value="";masterError.hidden=true;masterDialog.showModal();masterPassword.focus()}
-document.getElementById("masterCancel").onclick=()=>masterDialog.close();
-masterDialog.addEventListener("close",()=>{masterPassword.value="";masterError.hidden=true});
-document.getElementById("masterForm").addEventListener("submit",event=>{event.preventDefault();if(officialRequired||run&&!run.finished){masterDialog.close();return}if(masterPassword.value!=="Thecakeisalie"){masterError.hidden=false;masterPassword.select();return}masterDialog.close();practice=true;showHome()});
+function clearMasterPassword(){masterPassword.value="";masterError.hidden=true}
+function closeMasterDialog(){clearMasterPassword();masterDialog.close()}
+document.getElementById("masterCancel").onclick=closeMasterDialog;
+masterDialog.addEventListener("cancel",clearMasterPassword);
+masterDialog.addEventListener("close",clearMasterPassword);
+document.getElementById("masterForm").addEventListener("submit",event=>{event.preventDefault();if(officialRequired||run&&!run.finished){closeMasterDialog();return}if(masterPassword.value!=="Thecakeisalie"){masterError.hidden=false;masterPassword.select();return}closeMasterDialog();practice=true;showHome()});
 master.onclick=toggleMaster;
 function credited(r){return r.mode||!paidHelp(r.id)?r.correct:r.q.filter(q=>q.first===true&&q.clean).length}
 function percent(r){return Math.round(100*credited(r)/LEVELS[r.id].total)}
