@@ -22,7 +22,7 @@ export function createMilieuHandler({auth,db,access='closed'}){
    const teacher=!u.is_anonymous,base={p_actor:u.id,p_class:b.classId,p_teacher:teacher};
    const call=async(name,args)=>{const {data,error}=await db.rpc('connect_milieu_'+name+'_v2',{...base,...args});if(error)throw Error(error.message);if(!data?.ok)throw Error('db_error');return data};
    const teacherCall=async(name,args={})=>{if(!teacher)throw Error('professor_required');const {data,error}=await db.rpc('connect_milieu_'+name+'_v2',{p_actor:u.id,p_class:b.classId,...args});if(error)throw Error(error.message);if(!data?.ok)throw Error('db_error');return data};
-   const draw=s=>({...s,state:state(s),ruleset:RULESET,authSubject:u.id,classId:b.classId,status:'approved',teacherFree:teacher,xp:{appXp:s.appXp,total:s.totalXp,max:XP_MAX,remaining:remaining(state(s)),delta:s.xpDelta||0},trophies:Object.keys(state(s).cups),scoreRecords:scoreRecords(state(s),s.day)});
+   const draw=s=>({...s,state:state(s),ruleset:RULESET,authSubject:u.id,classId:b.classId,status:'approved',teacherFree:teacher,xp:{appXp:s.appXp,total:s.totalXp,max:XP_MAX,remaining:remaining(state(s)),delta:s.xpDelta||0},trophies:Object.keys(state(s).cups),scoreRecords:scoreRecords(state(s),s.day,b.classId)});
    if(b.action==='teacher-summary'){const summary=await teacherCall('teacher_summary');return reply({...summary,students:summary.students.map(draw),authSubject:u.id,classId:b.classId})}
    if(b.action==='teacher-restart'){
     if(b.confirmed!==true||!['student','class'].includes(b.scope)||!['all','integerGeometry','decimalGeometry'].includes(b.part)||typeof b.repeatXp!=='boolean'||!Array.isArray(b.targets)||b.targets.length<1||b.targets.length>200||(b.scope==='student'&&b.targets.length!==1)||b.targets.some(t=>!uuid(t?.studentId)||!int(t.epoch)||!int(t.revision))||new Set(b.targets.map(t=>t.studentId)).size!==b.targets.length)throw Error('invalid_result');
@@ -50,7 +50,7 @@ export function createMilieuHandler({auth,db,access='closed'}){
     // Commit routine compares JSONB exactly; duplicate returns previous judgement, no credit.
     return reply(draw(await call('commit',{...args,p_revision:event.revision,p_proof:b.proof,p_judgement:j,p_state:state(event),p_xp:event.appXp,p_cups:Object.keys(state(event).cups)})));
    }
-   const applied=applyJudgement(state(event),j,{eventId:b.eventId,day:event.day,teacherFree:teacher});
+   const applied=applyJudgement(state(event),j,{eventId:b.eventId,day:event.day,classId:b.classId,teacherFree:teacher});
    return reply(draw(await call('commit',{...args,p_revision:event.revision,p_proof:b.proof,p_judgement:j,p_state:applied.state,p_xp:xpTotal(applied.state),p_cups:Object.keys(applied.state.cups)})));
   }catch(e){const error=errors.has(e.message)?e.message:'service_unavailable';return reply({ok:false,error},['revision_conflict','stale_reset_epoch','event_id_reused'].includes(error)?409:['app_class_not_open','app_disabled','fictive_profile_required','approved_identity_required','identity_binding_conflict','activity_locked','professor_required','not_enrolled'].includes(error)?403:error==='service_unavailable'?503:400)}
  };

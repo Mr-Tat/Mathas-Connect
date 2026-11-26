@@ -87,6 +87,9 @@ BEGIN
  INSERT INTO public.connect_xp_credits(student_id,app_key,xp_credited,evidence,ruleset_version) VALUES(p_student,'milieu-segment',p_xp,jsonb_build_object('source','milieu-v2'),2)
  ON CONFLICT(student_id,app_key) DO UPDATE SET xp_credited=excluded.xp_credited,evidence=excluded.evidence,ruleset_version=2,updated_at=now();
  FOREACH t IN ARRAY p_cups LOOP INSERT INTO public.connect_trophy_achievements(student_id,app_key,trophy_key) VALUES(p_student,'milieu-segment',t) ON CONFLICT DO NOTHING; END LOOP;
+ INSERT INTO public.connect_level_profiles(student_id,highest_level_reached,level_ruleset_version,updated_at)
+ SELECT p_student,least(999,CASE WHEN sum(xp_credited)<300 THEN 1+sum(xp_credited)/50 ELSE 7+(sum(xp_credited)-300)/100 END)::int,2,now() FROM public.connect_xp_credits WHERE student_id=p_student
+ ON CONFLICT(student_id) DO UPDATE SET highest_level_reached=greatest(connect_level_profiles.highest_level_reached,excluded.highest_level_reached),level_ruleset_version=2,updated_at=now();
  INSERT INTO public.connect_milieu_receipts(student_id,class_id,event_id,epoch,proof,judgement) VALUES(p_student,p_class,p_event,p_epoch,p_proof,p_judgement);
  RETURN public.connect_milieu_snapshot_v2(p_student)||jsonb_build_object('eventId',p_event,'duplicate',false,'xpDelta',p_xp-old_xp,'judgement',p_judgement);
 END $$;
@@ -103,7 +106,7 @@ BEGIN
  IF NOT FOUND THEN RAISE EXCEPTION 'run_missing'; END IF;
  -- After a targeted reset, old certified bests of untouched activities may still be shared.
  -- A request carrying an old epoch can never publish anything.
- IF NOT EXISTS(SELECT 1 FROM jsonb_each(coalesce(s#>'{state,scoresByActivity}','{}'::jsonb)) x WHERE x.value->>'dayEvent'=p_event::text OR x.value->>'allEvent'=p_event::text)
+ IF NOT EXISTS(SELECT 1 FROM jsonb_each(coalesce(s#>ARRAY['state','scoresByClass',p_class::text],'{}'::jsonb)) x WHERE x.value->>'dayEvent'=p_event::text OR x.value->>'allEvent'=p_event::text)
  AND r.epoch<>p_epoch THEN RAISE EXCEPTION 'stale_reset_epoch'; END IF;
  points:=coalesce((r.judgement->>'points')::int,0);
  IF points<=0 THEN RAISE EXCEPTION 'invalid_result'; END IF;

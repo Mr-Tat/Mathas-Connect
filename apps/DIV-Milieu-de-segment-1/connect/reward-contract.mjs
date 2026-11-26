@@ -12,7 +12,7 @@ const recordMilestones=f=>THRESHOLDS.map(t=>[f+':record:'+t,f==='integers'?16:24
 export const RIGHTS=Object.freeze(Object.fromEntries([...ORDER.flatMap(milestones),...Object.keys(GEO).flatMap(recordMilestones)]));
 export const TROPHIES=Object.freeze([...ORDER.filter(k=>!k.startsWith('g')),...Object.keys(GEO).map(f=>f+':segments'),...Object.keys(GEO).flatMap(f=>THRESHOLDS.map(t=>f+':sudden:'+t))]);
 const blankScore=()=>({allBest:0,dayBest:0,dayDate:null,allEvent:null,dayEvent:null});
-export const initialState=()=>({levels:{},records:{},recordCounts:{},scoresByActivity:{},rights:{},bonusRights:{},archivedBonusXp:0,repeatKeys:[],cups:{},decimalUnlocked:false,epoch:0});
+export const initialState=()=>({levels:{},records:{},recordCounts:{},scoresByActivity:{},scoresByClass:{},rights:{},bonusRights:{},archivedBonusXp:0,repeatKeys:[],cups:{},decimalUnlocked:false,epoch:0});
 export const passing=(s,k)=>(s.levels[k]||[]).filter(x=>x.percent>=80).length>=LEVELS[k].p;
 export const cleanPerfect=(s,k)=>(s.levels[k]||[]).filter(x=>x.percent===100&&x.clean).length>=LEVELS[k].p;
 export const challengesOpen=(s,f)=>GEO[f].every(k=>passing(s,k));
@@ -39,15 +39,15 @@ export function remaining(s){
  const left=entries=>entries.reduce((sum,[key,max])=>sum+(s.repeatKeys.includes(key)?max-(s.bonusRights[s.epoch+':'+key]||0):max-(s.rights[key]||0)),0);
  return Object.fromEntries([...ORDER.map(k=>[k,left(milestones(k))]),...challengeIds.map(k=>[k,left(recordMilestones(k.split(':')[0]))])]);
 }
-export function scoreRecords(s,day){
+export function scoreRecords(s,day,classId=null){
  const r=blankScore();r.dayDate=day;
- for(const a of Object.values(s.scoresByActivity)){
+ for(const a of Object.values(classId?s.scoresByClass[classId]||{}:s.scoresByActivity)){
   if(a.allBest>r.allBest){r.allBest=a.allBest;r.allEvent=a.allEvent}
   if(a.dayDate===day&&a.dayBest>r.dayBest){r.dayBest=a.dayBest;r.dayEvent=a.dayEvent}
  }return r;
 }
 // Only after identity, idempotency, epoch and revision validation.
-export function applyJudgement(old,j,{eventId,day,teacherFree=false}={}){
+export function applyJudgement(old,j,{eventId,day,classId=null,teacherFree=false}={}){
  const s=clone(old),before=xpTotal(s),k=j.activity,f=family(k);
  if(!canPlay(s,k,j.mode,teacherFree))throw Error('activity_locked');
  const award=key=>{const max=RIGHTS[key];if(!max)throw Error('invalid_milestone');
@@ -68,11 +68,12 @@ export function applyJudgement(old,j,{eventId,day,teacherFree=false}={}){
  }
  if(challengesOpen(s,'integers'))s.decimalUnlocked=true;
  if(k.startsWith('g')&&eventId&&day){
-  const key=j.mode?recordKey(k,j.mode):k,r=s.scoresByActivity[key]??blankScore();
+  const key=j.mode?recordKey(k,j.mode):k;
+  const update=map=>{const r=map[key]??blankScore();
   if(r.dayDate!==day){r.dayDate=day;r.dayBest=0;r.dayEvent=null}
   if(j.points>r.dayBest){r.dayBest=j.points;r.dayEvent=eventId}
   if(j.points>r.allBest){r.allBest=j.points;r.allEvent=eventId}
-  s.scoresByActivity[key]=r;
+  map[key]=r;};update(s.scoresByActivity);if(classId)update(s.scoresByClass[classId]??(s.scoresByClass[classId]={}));
  }
  if(Object.values(s.rights).reduce((a,b)=>a+b,0)>XP_MAX)throw Error('xp_cap');
  return {state:s,xpDelta:xpTotal(s)-before};
@@ -83,6 +84,7 @@ export function resetProgression(old,scope,repeatXp=false){
  const ids=scope==='all'?ORDER:families.flatMap(f=>GEO[f]);
  for(const k of ids){delete s.levels[k];delete s.scoresByActivity[k]}
  for(const k of challengeIds)if(families.includes(k.split(':')[0])){delete s.records[k];delete s.recordCounts[k];delete s.scoresByActivity[k]}
+ for(const map of Object.values(s.scoresByClass)){for(const k of ids)delete map[k];for(const k of challengeIds)if(families.includes(k.split(':')[0]))delete map[k]}
  if(scope==='all')s.decimalUnlocked=false;
  s.archivedBonusXp=(s.archivedBonusXp||0)+Object.values(s.bonusRights).reduce((a,b)=>a+b,0);s.bonusRights={};
  s.epoch++;
