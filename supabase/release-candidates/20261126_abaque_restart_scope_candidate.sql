@@ -11,6 +11,8 @@ BEGIN
     OR p_students IS NULL OR jsonb_typeof(p_students)<>'array' THEN RAISE EXCEPTION 'invalid_result'; END IF;
  IF jsonb_array_length(p_students)<1 OR jsonb_array_length(p_students)>200
     OR (p_scope='student' AND jsonb_array_length(p_students)<>1) THEN RAISE EXCEPTION 'invalid_result'; END IF;
+ PERFORM 1 FROM public.connect_apps WHERE app_key='abaque-longueurs' AND enabled FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'app_disabled'; END IF;
  SELECT pilot_only INTO pilot FROM public.connect_abaque_classes WHERE class_id=p_class AND enabled FOR SHARE;
  IF NOT FOUND THEN RAISE EXCEPTION 'app_class_not_open'; END IF;
  PERFORM 1 FROM public.connect_class_permissions WHERE teacher_id=p_actor AND class_id=p_class AND can_manage FOR SHARE;
@@ -44,7 +46,7 @@ BEGIN
   END IF;
  END LOOP;
  RETURN jsonb_build_object('ok',true,'count',cardinality(expected_ids),'part',p_part);
-END; $;
+END; $$;
 REVOKE ALL ON FUNCTION public.connect_abaque_restart_scope_v1(uuid,uuid,text,text,jsonb) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.connect_abaque_restart_scope_v1(uuid,uuid,text,text,jsonb) TO service_role;
 -- preserve previous perfect proofs for activities 1/2 across partial resets only.
