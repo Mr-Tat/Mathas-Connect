@@ -80,10 +80,12 @@ const http=require("node:http"),fs=require("node:fs");
  for(const geometryId of ["gi2","g3"]){
  await page.locator('[data-start="' + geometryId + '"]').click();
  assert.equal(await page.evaluate(()=>run.id==="gi2"?run.q.length===6&&run.q.every(q=>q.n%10===0):run.q.length===10&&run.q.every(q=>q.n%10!==0)),true);
+ assert.equal(await page.locator("[data-geo-select]").count(),geometryId==="gi2"?6:5);
+ assert.equal(await page.locator(".geo-card svg g").evaluateAll(gs=>new Set(gs.map(g=>g.getAttribute("transform"))).size)>1,true);
  const n=await page.evaluate(()=>current().n);
  async function pick(mm){
-   const hit=await page.locator("#rulerHit").boundingBox();
-   await page.mouse.move(hit.x+(5+mm*4)*hit.width/810,hit.y+hit.height/2);
+   const point=await page.locator("#rulerHit").evaluate((el,mm)=>{const p=el.ownerSVGElement.createSVGPoint();p.x=35+mm*4;p.y=82;const t=p.matrixTransform(el.getScreenCTM());return {x:t.x,y:t.y}},mm);
+   await page.mouse.move(point.x,point.y);
    await page.locator('#lens [data-tick="'+mm+'"]').click();
  }
  await pick(n);
@@ -95,11 +97,16 @@ const http=require("node:http"),fs=require("node:fs");
  await page.locator('input[data-field="answer"]').fill(String(n/20).replace(".",","));
  await page.locator("#ok").click();
  await pick(n/2);
+ assert.equal(await page.locator(".pencil-mark.normal").count(),1);assert.equal(await page.locator(".pencil-mark.zoom").count(),1);
+ assert.equal(await page.evaluate(()=>!current().done&&run.correct===0),true);
+ await page.locator("#ok").click();
  assert.equal(await page.evaluate(()=>current().done&&run.correct===1),true);
  await page.locator("#ok").click();
  await page.reload();await page.locator("#master").click();await page.locator("#masterPassword").fill("Thecakeisalie");await page.locator("#masterPassword").press("Enter");await page.locator("#resume").click();
  assert.equal(await page.evaluate(()=>run.index===1),true);
  assert.equal(await page.evaluate(()=>run.id),geometryId);
+ await page.locator("[data-geo-select=\"2\"]").click();assert.equal(await page.evaluate(()=>run.index===2),true);
+ const chosen=await page.evaluate(()=>current().n);const pt=await page.locator("#rulerHit").evaluate((el,mm)=>{const p=el.ownerSVGElement.createSVGPoint();p.x=35+mm*4;p.y=82;const t=p.matrixTransform(el.getScreenCTM());return {x:t.x,y:t.y}},chosen);await page.mouse.click(pt.x,pt.y);assert.equal(await page.evaluate(()=>current().measureTick===current().n&&!current().done),true);assert.equal(await page.locator(".pencil-mark.normal").count(),1);
  await page.locator("#home").click();await page.locator("#discard").click();
  }
  await page.setViewportSize({width:320,height:740});
