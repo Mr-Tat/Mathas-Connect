@@ -115,7 +115,7 @@ test('La moitié : GoTrue, Deno, PostgREST et Chromium réels, uniquement base j
   await page.locator('#officialBack').click();await page.getByRole('button',{name:'Score du jour : 12 pts',exact:true}).click();
   await page.getByRole('button',{name:'Oui',exact:true}).click();await page.getByText('✓ Score envoyé.',{exact:true}).waitFor();
   await page.getByRole('button',{name:'Fermer',exact:true}).click();
-  assert.equal(shareCalls,1);assert.equal((await ok(p.session,'board')).boardBest,12);
+  assert.equal(shareCalls,1);assert.equal((await ok(p.session,'board',{expectedStudentId:p.student})).boardBest,12);
   assert.equal((await ok(p.session,'load')).xp.appXp,72);assert.equal((await ok(t.session,'load')).xp.appXp,0);
   assert.deepEqual(errors,[]);assert.deepEqual(external,[]);
   await q("update public.connect_devices set state='revoked' where auth_user_id=$1",[p.actor]);
