@@ -68,7 +68,7 @@ test('PostgreSQL réel + handler Edge injecté : identité, 280 XP, projection, 
 test('Chromium réel avec JWT simulé, handler et PostgreSQL réels : preuve native, ACK perdu et partage différé',async()=>{
  // The only Auth substitution is a fictive signed-in session. All game requests
  // pass through the real handler, with the same disposable database as above.
- for(const k of ['even','odd','mix'])for(let i=0;i<3;i++)await run(k,null,otherActor,other);
+ for(const k of ['even','odd','mix'])for(let i=0;i<LEVELS[k].p;i++)await run(k,null,otherActor,other);
  const root=resolve('.'),prefix='/apps/DIV-Milieu-de-segment-1/';
  const server=createServer(async(req,res)=>{try{const path=new URL(req.url,'http://localhost').pathname;if(!path.startsWith(prefix)&&path!=='/avatar-catalog.js'){res.writeHead(404);res.end();return}const absolute=resolve(root,'.'+path);if(!absolute.startsWith(root+'/'))throw Error('path');const data=await readFile(absolute);res.setHeader('content-type',extname(path)==='.html'?'text/html; charset=utf-8':extname(path)==='.svg'?'image/svg+xml':'text/javascript');res.end(data)}catch{res.writeHead(404);res.end()}});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));
