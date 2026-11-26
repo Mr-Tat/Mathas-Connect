@@ -30,3 +30,5 @@ Publication : [PR #349](https://github.com/Mr-Tat/Mathas-Connect/pull/349), fusi
 
 ### Ergonomie pavé (candidat)
 Pavé 236 px, touches au moins 60 px, trois colonnes même en mobile ; passage sous la zone de travail aux écrans étroits. Avancer (clic ou Entrée) parcourt les champs modifiables, y compris les branches d'aide, sans compter d'essai avant la dernière réponse ; Valider à la dernière case, Page suivante/Terminer après correction. Géométrie et preuve serveur inchangées. Tests Chromium ciblés et régression générale avant publication.
+
+26/11 : suppression du clavier tactile système via `inputmode=none` sur réponses, deux branches de décomposition et mesure, sans modifier readonly ni les événements de saisie. Test Chromium tactile simulé : sélection, pavé intégré, clavier physique, Avancer. La fenêtre Windows native doit être vérifiée sur le PC tactile réel. Aucun changement serveur.

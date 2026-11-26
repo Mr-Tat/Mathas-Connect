@@ -17,6 +17,7 @@ const http=require("node:http"),fs=require("node:fs");
  await page.goto(url);assert.equal(await page.locator("#practice").count(),0,"pas de mode test en version élève");
  await page.goto(url);
  await page.locator('[data-start="even"]').click();
+ assert.equal(await page.locator('input[data-i]:not([inputmode="none"])').count(),0);
  const size=await page.locator('[data-key="7"]').boundingBox();assert.ok(size.height>=60&&size.width>=60,"touches agrandies");
  const fields=page.locator('input[data-field="answer"]');
  const vals=await page.evaluate(()=>pageItems().map(q=>fmt(q.n/2)));
@@ -50,7 +51,7 @@ const http=require("node:http"),fs=require("node:fs");
  await page.locator('[data-start="decimal2"]').click();
  await page.locator('[data-help="0"][data-kind="decomp"]').click();
  await page.locator('[data-help="0"][data-kind="manip"]').click();
- assert.equal(await page.locator('[data-i="0"][data-field="partA"]').count(),1);
+ assert.equal(await page.locator('[data-i="0"][data-field="partA"]').count(),1);assert.equal(await page.locator('input[data-i]:not([inputmode="none"])').count(),0);
  await page.locator('[data-i="0"][data-field="partA"]').focus();await page.locator("#padOK").click();assert.equal(await page.locator('[data-i="0"][data-field="partB"]').evaluate(el=>document.activeElement===el),true);await page.keyboard.press("Enter");assert.equal(await page.locator('[data-i="0"][data-field="answer"]').evaluate(el=>document.activeElement===el),true);
  await page.locator("#padOK").click();assert.equal(await page.locator('[data-i="1"][data-field="answer"]').evaluate(el=>document.activeElement===el),true);
  for(const width of [390,320]){
@@ -69,9 +70,11 @@ const http=require("node:http"),fs=require("node:fs");
    await page.locator('#lens [data-tick="'+mm+'"]').click();
  }
  await pick(n);
+ assert.equal(await page.locator('input[data-field="measure"]').getAttribute("inputmode"),"none");
  assert.equal(await page.locator('input[data-field="measure"]').inputValue(),"");
  await page.locator('input[data-field="measure"]').fill(String(n/10).replace(".",","));
  await page.locator("#ok").click();
+ assert.equal(await page.locator('input[data-field="answer"]').getAttribute("inputmode"),"none");
  await page.locator('input[data-field="answer"]').fill(String(n/20).replace(".",","));
  await page.locator("#ok").click();
  await pick(n/2);
@@ -86,6 +89,8 @@ const http=require("node:http"),fs=require("node:fs");
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"débordement menu");
  assert.deepEqual(errors,[]);assert.deepEqual(net,[]);
  await page.goto(url+"?requireConnect=1&test=1");assert.equal(await page.locator("[data-start]").count(),0);assert.equal(await page.locator("#practice").count(),0);assert.equal(await page.locator("#master").isVisible(),false);await page.locator("#freeLaunch").click();await page.locator('[data-start="even"]').waitFor();
+ const touch=await browser.newContext({viewport:{width:900,height:700},hasTouch:true,offline:true});
+ try{const p=await touch.newPage();await p.goto(url);await p.locator('[data-start="even"]').tap();const first=p.locator('input[data-field="answer"]').first();await first.tap();assert.equal(await first.getAttribute("inputmode"),"none");assert.equal(await first.evaluate(el=>document.activeElement===el&&!el.readOnly),true);await p.locator('[data-key="7"]').tap();assert.equal(await first.inputValue(),"7");await p.keyboard.press("Backspace");await p.keyboard.type("8");assert.equal(await first.inputValue(),"8");await p.locator("#padOK").tap();assert.equal(await p.locator('input[data-field="answer"]').nth(1).evaluate(el=>document.activeElement===el),true)}finally{await touch.close()}
  const server=http.createServer((req,res)=>{const file=new URL(req.url,"http://localhost").pathname.slice(1)||"index.html";if(!["index.html","sw.js","favicon.svg"].includes(file)){res.writeHead(404);res.end();return}res.setHeader("content-type",file==="sw.js"?"text/javascript":file==="favicon.svg"?"image/svg+xml":"text/html");res.end(fs.readFileSync(path.join(__dirname,"..",file)))});
  await new Promise((resolve,reject)=>{server.once("error",reject);server.listen(0,"127.0.0.1",resolve)});
  const web=await browser.newContext({viewport:{width:390,height:740}});
