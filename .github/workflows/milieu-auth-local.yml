@@ -1,0 +1,29 @@
+name: La moitié - Auth Deno et Chromium réels isolés
+on:
+  pull_request:
+    paths:
+      - 'tests/milieu-auth-local.e2e.mjs'
+      - 'tests/local/milieu-auth-edge.ts'
+      - 'tests/local/run-milieu-auth-local.sh'
+      - 'tests/local/abaque-prepare.mjs'
+      - 'apps/DIV-Milieu-de-segment-1/**'
+      - 'supabase/functions/connect-milieu/**'
+      - 'supabase/release-candidates/*milieu*'
+      - '.github/workflows/milieu-auth-local.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  local-auth:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      MATHAS_TEST_TOOLS: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+      - run: npm install --no-save --no-package-lock playwright@1.57.0 pg@8.16.3 esbuild@0.27.2 @supabase/supabase-js@2.95.0
+      - run: npx playwright install chromium --with-deps
+      - run: bash tests/local/run-milieu-auth-local.sh
