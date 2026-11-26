@@ -1,6 +1,6 @@
 -- CANDIDATE ONLY. Closed by default. No existing result or school visibility altered.
 BEGIN;
-CREATE TABLE public.connect_milieu_classes(class_id uuid PRIMARY KEY REFERENCES public.connect_classes(id),enabled boolean NOT NULL DEFAULT false);
+CREATE TABLE public.connect_milieu_classes(class_id uuid PRIMARY KEY REFERENCES public.connect_classes(id),enabled boolean NOT NULL DEFAULT false,max_activity int NOT NULL DEFAULT 6 CHECK(max_activity BETWEEN 1 AND 6));
 CREATE TABLE public.connect_milieu_approved(student_id uuid PRIMARY KEY REFERENCES public.connect_students(id));
 CREATE TABLE public.connect_milieu_runs(student_id uuid NOT NULL REFERENCES public.connect_students(id),class_id uuid NOT NULL REFERENCES public.connect_classes(id),event_id uuid NOT NULL,epoch bigint NOT NULL,activity text NOT NULL,mode text,seed uuid NOT NULL DEFAULT gen_random_uuid(),created_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(student_id,event_id));
 CREATE TABLE public.connect_milieu_receipts(student_id uuid NOT NULL,class_id uuid NOT NULL,event_id uuid NOT NULL,epoch bigint NOT NULL,proof jsonb NOT NULL,judgement jsonb NOT NULL,created_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(student_id,event_id),FOREIGN KEY(student_id,event_id) REFERENCES public.connect_milieu_runs(student_id,event_id));
@@ -24,10 +24,10 @@ BEGIN
  RETURN pupil;
 EXCEPTION WHEN no_data_found OR too_many_rows THEN RAISE EXCEPTION 'approved_identity_required';
 END $$;
-CREATE FUNCTION public.connect_milieu_snapshot_v2(p_student uuid) RETURNS jsonb LANGUAGE sql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+CREATE FUNCTION public.connect_milieu_snapshot_v2(p_student uuid,p_class uuid DEFAULT NULL) RETURNS jsonb LANGUAGE sql SECURITY DEFINER SET search_path=public,pg_temp AS $$
  SELECT jsonb_build_object('ok',true,'appKey','milieu-segment','studentId',s.id,'displayName',s.display_name,
  'avatar',jsonb_build_object('kind',s.avatar_kind,'value',s.avatar_value,'color',s.avatar_color),
- 'revision',coalesce(st.revision,0),'resetEpoch',coalesce(st.reset_epoch,0),'state',coalesce(st.state_data,'{}'::jsonb),
+ 'maxActivity',coalesce((SELECT max_activity FROM public.connect_milieu_classes WHERE class_id=p_class),6),'revision',coalesce(st.revision,0),'resetEpoch',coalesce(st.reset_epoch,0),'state',coalesce(st.state_data,'{}'::jsonb),
  'totalXp',(SELECT coalesce(sum(xp_credited),0) FROM public.connect_xp_credits WHERE student_id=s.id),
  'appXp',(SELECT coalesce(sum(xp_credited),0) FROM public.connect_xp_credits WHERE student_id=s.id AND app_key='milieu-segment'),
  'day',to_char(now() AT TIME ZONE 'Europe/Brussels','YYYY-MM-DD'))
@@ -38,7 +38,7 @@ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp A
 DECLARE pupil uuid;
 BEGIN pupil:=public.connect_milieu_subject_v2(p_actor,p_class,p_teacher);
  IF p_expected IS NOT NULL AND p_expected<>pupil THEN RAISE EXCEPTION 'identity_binding_conflict'; END IF;
- RETURN public.connect_milieu_snapshot_v2(pupil);
+ RETURN public.connect_milieu_snapshot_v2(pupil,p_class);
 END $$;
 CREATE FUNCTION public.connect_milieu_begin_v2(p_actor uuid,p_class uuid,p_teacher boolean,p_student uuid,p_event uuid,p_revision bigint,p_epoch bigint,p_activity text,p_mode text)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
@@ -46,10 +46,11 @@ DECLARE pupil uuid; s jsonb; r public.connect_milieu_runs%ROWTYPE;
 BEGIN
  pupil:=public.connect_milieu_subject_v2(p_actor,p_class,p_teacher);
  IF pupil IS DISTINCT FROM p_student THEN RAISE EXCEPTION 'identity_binding_conflict'; END IF;
- s:=public.connect_milieu_snapshot_v2(pupil);
+ s:=public.connect_milieu_snapshot_v2(pupil,p_class);
  IF (s->>'resetEpoch')::bigint<>p_epoch THEN RAISE EXCEPTION 'stale_reset_epoch'; END IF;
  IF (s->>'revision')::bigint<>p_revision THEN RAISE EXCEPTION 'revision_conflict'; END IF;
  IF p_activity NOT IN ('even','odd','mix','gi1','gi2','decimal','g1','g2','g3') OR (p_mode IS NOT NULL AND (p_mode NOT IN ('lives','sudden') OR p_activity NOT IN ('gi2','g3'))) THEN RAISE EXCEPTION 'invalid_result'; END IF;
+ IF NOT p_teacher AND (CASE p_activity WHEN 'even' THEN 1 WHEN 'odd' THEN 2 WHEN 'mix' THEN 3 WHEN 'gi1' THEN 4 WHEN 'gi2' THEN 4 WHEN 'decimal' THEN 5 ELSE 6 END)>(s->>'maxActivity')::int THEN RAISE EXCEPTION 'activity_locked'; END IF;
  INSERT INTO public.connect_milieu_runs(student_id,class_id,event_id,epoch,activity,mode) VALUES(pupil,p_class,p_event,p_epoch,p_activity,p_mode) ON CONFLICT DO NOTHING;
  SELECT * INTO STRICT r FROM public.connect_milieu_runs WHERE student_id=pupil AND event_id=p_event;
  IF r.class_id<>p_class OR r.epoch<>p_epoch OR r.activity<>p_activity OR r.mode IS DISTINCT FROM p_mode THEN RAISE EXCEPTION 'event_id_reused'; END IF;
@@ -61,7 +62,7 @@ DECLARE pupil uuid; r public.connect_milieu_runs%ROWTYPE; rec public.connect_mil
 BEGIN
  pupil:=public.connect_milieu_subject_v2(p_actor,p_class,p_teacher);
  IF pupil IS DISTINCT FROM p_student THEN RAISE EXCEPTION 'identity_binding_conflict'; END IF;
- s:=public.connect_milieu_snapshot_v2(pupil);
+ s:=public.connect_milieu_snapshot_v2(pupil,p_class);
  IF (s->>'resetEpoch')::bigint<>p_epoch THEN RAISE EXCEPTION 'stale_reset_epoch'; END IF;
  SELECT * INTO r FROM public.connect_milieu_runs WHERE student_id=pupil AND event_id=p_event AND class_id=p_class AND epoch=p_epoch;
  IF NOT FOUND THEN RAISE EXCEPTION 'run_missing'; END IF;
@@ -91,7 +92,7 @@ BEGIN
  SELECT p_student,least(999,CASE WHEN sum(xp_credited)<300 THEN 1+sum(xp_credited)/50 ELSE 7+(sum(xp_credited)-300)/100 END)::int,2,now() FROM public.connect_xp_credits WHERE student_id=p_student
  ON CONFLICT(student_id) DO UPDATE SET highest_level_reached=greatest(connect_level_profiles.highest_level_reached,excluded.highest_level_reached),level_ruleset_version=2,updated_at=now();
  INSERT INTO public.connect_milieu_receipts(student_id,class_id,event_id,epoch,proof,judgement) VALUES(p_student,p_class,p_event,p_epoch,p_proof,p_judgement);
- RETURN public.connect_milieu_snapshot_v2(p_student)||jsonb_build_object('eventId',p_event,'duplicate',false,'xpDelta',p_xp-old_xp,'judgement',p_judgement);
+ RETURN public.connect_milieu_snapshot_v2(p_student,p_class)||jsonb_build_object('eventId',p_event,'duplicate',false,'xpDelta',p_xp-old_xp,'judgement',p_judgement);
 END $$;
 -- Explicit consent only, scoped to the student's certified event and original class.
 CREATE FUNCTION public.connect_milieu_share_v2(p_actor uuid,p_class uuid,p_teacher boolean,p_student uuid,p_event uuid,p_epoch bigint)
@@ -100,7 +101,7 @@ DECLARE s jsonb; pupil uuid; r public.connect_milieu_receipts%ROWTYPE; points in
 BEGIN
  pupil:=public.connect_milieu_subject_v2(p_actor,p_class,p_teacher);
  IF pupil IS DISTINCT FROM p_student THEN RAISE EXCEPTION 'identity_binding_conflict'; END IF;
- s:=public.connect_milieu_snapshot_v2(pupil);
+ s:=public.connect_milieu_snapshot_v2(pupil,p_class);
  IF (s->>'resetEpoch')::bigint<>p_epoch THEN RAISE EXCEPTION 'stale_reset_epoch'; END IF;
  SELECT * INTO r FROM public.connect_milieu_receipts WHERE student_id=pupil AND class_id=p_class AND event_id=p_event;
  IF NOT FOUND THEN RAISE EXCEPTION 'run_missing'; END IF;
@@ -147,7 +148,7 @@ BEGIN
  IF NOT FOUND THEN RAISE EXCEPTION 'app_class_not_open'; END IF;
  PERFORM 1 FROM public.connect_class_permissions WHERE teacher_id=p_actor AND class_id=p_class AND (can_manage OR can_view_results) FOR SHARE;
  IF NOT FOUND THEN RAISE EXCEPTION 'professor_required'; END IF;
- SELECT coalesce(jsonb_agg(public.connect_milieu_snapshot_v2(s.id) ORDER BY s.display_name,s.id),'[]'::jsonb) INTO students
+ SELECT coalesce(jsonb_agg(public.connect_milieu_snapshot_v2(s.id,p_class) ORDER BY s.display_name,s.id),'[]'::jsonb) INTO students
  FROM public.connect_students s JOIN public.connect_milieu_approved a ON a.student_id=s.id
  WHERE s.archived_at IS NULL AND EXISTS(SELECT 1 FROM public.connect_enrollments e WHERE e.student_id=s.id AND e.class_id=p_class AND e.left_at IS NULL);
  RETURN jsonb_build_object('ok',true,'students',students);
@@ -172,7 +173,7 @@ BEGIN
   PERFORM 1 FROM public.connect_milieu_approved WHERE student_id=member FOR SHARE;
   IF NOT FOUND THEN RAISE EXCEPTION 'not_enrolled'; END IF;
   SELECT x INTO rowdata FROM jsonb_array_elements(p_targets) x WHERE (x->>'studentId')::uuid=member;
-  s:=public.connect_milieu_snapshot_v2(member);epoch:=(s->>'resetEpoch')::bigint;rev:=(s->>'revision')::bigint;xp:=(s->>'appXp')::int;next_state:=rowdata->'state';
+  s:=public.connect_milieu_snapshot_v2(member,p_class);epoch:=(s->>'resetEpoch')::bigint;rev:=(s->>'revision')::bigint;xp:=(s->>'appXp')::int;next_state:=rowdata->'state';
   IF (rowdata->>'epoch')::bigint IS DISTINCT FROM epoch THEN RAISE EXCEPTION 'stale_reset_epoch'; END IF;
   IF (rowdata->>'revision')::bigint IS DISTINCT FROM rev THEN RAISE EXCEPTION 'revision_conflict'; END IF;
   IF (next_state->>'epoch')::bigint IS DISTINCT FROM epoch+1 OR jsonb_typeof(next_state) IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'invalid_result'; END IF;
@@ -184,6 +185,22 @@ BEGIN
   INSERT INTO public.connect_states(student_id,app_key,schema_version,revision,reset_epoch,state_data) VALUES(member,'milieu-segment',2,rev+1,epoch+1,next_state) ON CONFLICT(student_id,app_key) DO UPDATE SET state_data=excluded.state_data,revision=excluded.revision,reset_epoch=excluded.reset_epoch,schema_version=2,updated_at=now();
  END LOOP;
  RETURN jsonb_build_object('ok',true,'count',cardinality(ids),'part',p_part);
+END $$;
+-- Class ceiling is optional and defaults to the entire mastery-based progression.
+-- A lower ceiling affects new runs, never an already authorized run or archived XP.
+CREATE FUNCTION public.connect_milieu_class_cap_v2(p_actor uuid,p_class uuid,p_max int DEFAULT NULL)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE cap int;
+BEGIN
+ PERFORM 1 FROM public.connect_class_permissions WHERE teacher_id=p_actor AND class_id=p_class AND can_manage FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'professor_required'; END IF;
+ IF p_max IS NULL THEN SELECT max_activity INTO cap FROM public.connect_milieu_classes WHERE class_id=p_class AND enabled FOR SHARE;
+ ELSE
+  IF p_max NOT BETWEEN 1 AND 6 THEN RAISE EXCEPTION 'invalid_result'; END IF;
+  UPDATE public.connect_milieu_classes SET max_activity=p_max WHERE class_id=p_class AND enabled RETURNING max_activity INTO cap;
+ END IF;
+ IF NOT FOUND THEN RAISE EXCEPTION 'app_class_not_open'; END IF;
+ RETURN jsonb_build_object('ok',true,'maxActivity',cap);
 END $$;
 DO $permissions$
 DECLARE n text;

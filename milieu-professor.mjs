@@ -2,7 +2,8 @@
 export function installMilieuProfessor({sb,url,key}){
  const $=id=>document.getElementById(id),panel=$('milieu-authorizations'),feedback=$('milieu-feedback');
  if(!panel)return;
- let busy=false;
+ let busy=false,capClass=null;
+ const cap=$('milieu-cap'),capSave=$('milieu-cap-save');
  const current=()=>$('auth-app').value==='milieu-segment';
  async function request(classId,action,extra={}){
   const {data:{session}}=await sb.auth.getSession();
@@ -38,5 +39,17 @@ export function installMilieuProfessor({sb,url,key}){
    dialog.showModal();check.focus();
   }catch(e){feedback.textContent='Indisponible : '+e.message}finally{if(!document.querySelector('dialog.parcours-dialog[open]'))busy=false}
  }
+ async function changeCap(save){
+  if(busy||!current())return;const cls=$('auth-class').value;
+  if(!cls||save&&capClass!==cls)return;
+  busy=true;cap.disabled=true;capSave.disabled=true;
+  try{const result=await request(cls,save?'teacher-cap-set':'teacher-cap-get',save?{maxActivity:Number(cap.value)}:{});
+   if(!current()||$('auth-class').value!==cls)return;
+   if(!Number.isInteger(result.maxActivity)||result.maxActivity<1||result.maxActivity>6)throw Error('Réglage invalide.');
+   capClass=cls;cap.value=String(result.maxActivity);cap.disabled=false;capSave.disabled=false;feedback.textContent=save?'✓ Réglage de classe enregistré.':'Réglage chargé.';
+  }catch(e){feedback.textContent='Réglage non confirmé : '+e.message;capClass=null}finally{busy=false}
+ }
+ for(const id of ['auth-app','auth-class'])$(id).addEventListener('change',()=>{capClass=null;cap.disabled=true;capSave.disabled=true});
+ $('milieu-cap-load').onclick=()=>void changeCap(false);capSave.onclick=()=>void changeCap(true);
  $('milieu-restart-open').onclick=()=>void open(true);$('milieu-results-open').onclick=()=>void open(false);
 }

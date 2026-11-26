@@ -30,6 +30,13 @@ test('PostgreSQL réel + handler Edge injecté : identité, 280 XP, projection, 
  assert.equal((await post('load',{},actor,createMilieuHandler({auth,db}))).error,'integration_closed');
  assert.equal((await post('load',{expectedStudentId:other})).error,'identity_binding_conflict');
  assert.equal((await post('teacher-summary')).error,'professor_required');
+ assert.equal((await post('teacher-cap-set',{maxActivity:1})).error,'professor_required');
+ assert.equal((await ok('teacher-cap-set',{maxActivity:1},teacher)).maxActivity,1);
+ const capRun=await ok('load');assert.equal(capRun.maxActivity,1);
+ // A lowered cap is a new-run limit, not a forced cancellation or deletion.
+ await run('even');await run('even');
+ assert.equal((await post('begin',{expectedStudentId:student,eventId:randomUUID(),resetEpoch:0,activity:'odd'})).error,'activity_locked');
+ assert.equal((await ok('teacher-cap-set',{maxActivity:6},teacher)).maxActivity,6);
  assert.equal((await post('begin',{expectedStudentId:student,eventId:randomUUID(),resetEpoch:0,activity:'decimal'})).error,'activity_locked');
  for(const k of Object.keys(LEVELS))for(let i=0;i<LEVELS[k].p;i++)await run(k);
  let a=await run('gi2','sudden');assert.equal(a.ack.judgement.points,80);assert.equal(a.ack.xp.delta,48);

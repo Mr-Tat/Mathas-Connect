@@ -16,8 +16,9 @@ export const initialState=()=>({levels:{},records:{},recordCounts:{},scoresByAct
 export const passing=(s,k)=>(s.levels[k]||[]).filter(x=>x.percent>=80).length>=LEVELS[k].p;
 export const cleanPerfect=(s,k)=>(s.levels[k]||[]).filter(x=>x.percent===100&&x.clean).length>=LEVELS[k].p;
 export const challengesOpen=(s,f)=>GEO[f].every(k=>passing(s,k));
-export function canPlay(s,k,mode=null,teacherFree=false){
- if(!Object.hasOwn(LEVELS,k))return false;
+export const activityNumber=k=>({even:1,odd:2,mix:3,gi1:4,gi2:4,decimal:5,g1:6,g2:6,g3:6})[k];
+export function canPlay(s,k,mode=null,teacherFree=false,maxActivity=6){
+ if(!Object.hasOwn(LEVELS,k)||!teacherFree&&activityNumber(k)>maxActivity)return false;
  if(mode!==null)return ['sudden','lives'].includes(mode)&&['gi2','g3'].includes(k)&&challengesOpen(s,family(k));
  if(teacherFree)return true;
  if(k==='decimal')return s.decimalUnlocked||challengesOpen(s,'integers');

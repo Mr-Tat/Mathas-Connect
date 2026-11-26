@@ -6,7 +6,7 @@ const headers={'content-type':'application/json','cache-control':'no-store','acc
 const reply=(v,status=200)=>new Response(JSON.stringify(v),{status,headers});
 const errors=new Set(['app_class_not_open','app_disabled','fictive_profile_required','approved_identity_required','identity_binding_conflict','stale_reset_epoch','revision_conflict','event_id_reused','activity_locked','run_missing','invalid_result','invalid_completion','invalid_sequence','professor_required','not_enrolled','score_reset']);
 const state=s=>Object.keys(s.state||{}).length?s.state:initialState();
-export function createMilieuHandler({auth,db,access='closed'}){
+export function createMilieuHandler({auth,db,access='closed',pilotClassId=null}){
  return async request=>{
   if(request.method==='OPTIONS')return new Response('',{headers});
   if(request.method!=='POST')return reply({ok:false,error:'method_not_allowed'},405);
@@ -16,13 +16,15 @@ export function createMilieuHandler({auth,db,access='closed'}){
   try{
    const raw=await request.text();if(raw.length>2000000)return reply({ok:false,error:'payload_too_large'},413);
    const b=JSON.parse(raw);
-   if(b.appKey!==APP_KEY||!uuid(b.classId)||!['load','begin','record','share','board','teacher-summary','teacher-restart'].includes(b.action))throw Error('invalid_result');
+   if(b.appKey!==APP_KEY||!uuid(b.classId)||!['load','begin','record','share','board','teacher-summary','teacher-restart','teacher-cap-get','teacher-cap-set'].includes(b.action))throw Error('invalid_result');
+   if(pilotClassId&&b.classId!==pilotClassId)throw Error('app_class_not_open');
    const verified=await auth.auth.getUser(token),u=verified.data?.user;
    if(verified.error||!uuid(u?.id)||typeof u.is_anonymous!=='boolean')return reply({ok:false,error:'authentication_required'},401);
    const teacher=!u.is_anonymous,base={p_actor:u.id,p_class:b.classId,p_teacher:teacher};
    const call=async(name,args)=>{const {data,error}=await db.rpc('connect_milieu_'+name+'_v2',{...base,...args});if(error)throw Error(error.message);if(!data?.ok)throw Error('db_error');return data};
    const teacherCall=async(name,args={})=>{if(!teacher)throw Error('professor_required');const {data,error}=await db.rpc('connect_milieu_'+name+'_v2',{p_actor:u.id,p_class:b.classId,...args});if(error)throw Error(error.message);if(!data?.ok)throw Error('db_error');return data};
    const draw=s=>({...s,state:state(s),ruleset:RULESET,authSubject:u.id,classId:b.classId,status:'approved',teacherFree:teacher,xp:{appXp:s.appXp,total:s.totalXp,max:XP_MAX,remaining:remaining(state(s)),delta:s.xpDelta||0},trophies:Object.keys(state(s).cups),scoreRecords:scoreRecords(state(s),s.day,b.classId)});
+   if(b.action==='teacher-cap-get'||b.action==='teacher-cap-set'){if(b.action==='teacher-cap-set'&&(!int(b.maxActivity)||b.maxActivity<1||b.maxActivity>6))throw Error('invalid_result');return reply({...await teacherCall('class_cap',{p_max:b.action==='teacher-cap-set'?b.maxActivity:null}),authSubject:u.id,classId:b.classId})}
    if(b.action==='teacher-summary'){const summary=await teacherCall('teacher_summary');return reply({...summary,students:summary.students.map(draw),authSubject:u.id,classId:b.classId})}
    if(b.action==='teacher-restart'){
     if(b.confirmed!==true||!['student','class'].includes(b.scope)||!['all','integerGeometry','decimalGeometry'].includes(b.part)||typeof b.repeatXp!=='boolean'||!Array.isArray(b.targets)||b.targets.length<1||b.targets.length>200||(b.scope==='student'&&b.targets.length!==1)||b.targets.some(t=>!uuid(t?.studentId)||!int(t.epoch)||!int(t.revision))||new Set(b.targets.map(t=>t.studentId)).size!==b.targets.length)throw Error('invalid_result');
@@ -38,7 +40,7 @@ export function createMilieuHandler({auth,db,access='closed'}){
    if(b.action==='share'){if(b.confirmed!==true)throw Error('invalid_result');return reply({...await call('share',args),authSubject:u.id,classId:b.classId})}
    if(b.action==='begin'){
     const loaded=await call('load',{p_expected:b.expectedStudentId});
-    if(!canPlay(state(loaded),b.activity,b.mode??null,teacher))throw Error('activity_locked');
+    if(!canPlay(state(loaded),b.activity,b.mode??null,teacher,loaded.maxActivity))throw Error('activity_locked');
     if(loaded.resetEpoch!==b.resetEpoch)throw Error('stale_reset_epoch');
     return reply(draw(await call('begin',{...args,p_revision:loaded.revision,p_activity:b.activity,p_mode:b.mode??null})));
    }
