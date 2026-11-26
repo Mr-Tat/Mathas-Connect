@@ -12,7 +12,7 @@ const stageCode=html.slice(start,end);
 function localProgress(){
  const makeStage=()=>({passes:[],passScores:[],perfectRuns:0,failed:false,failedScore:null});
  const make=new Function(`
-  const data={stage1:{passes:[],passScores:[],perfectRuns:0,failed:false,failedScore:null},
+  const data={earnedStageProofs:{stage1:false,stage2:false},stage1:{passes:[],passScores:[],perfectRuns:0,failed:false,failedScore:null},
               stage2:{passes:[],passScores:[],perfectRuns:0,failed:false,failedScore:null}};
   const earnedTrophies=[];
   const color=(correct,total)=>correct===total?'green':correct/total>=.8?'orange':'red';
@@ -33,12 +33,14 @@ test('Abaque bronze : deux réussites à 80 % débloquent mais ne donnent pas le
  p.recordStage('stage1',10,12);
  assert.equal(p.data.stage1.passes.length,2);
  assert.equal(p.earnedTrophies.includes('bronze'),false);
+ assert.equal(p.data.earnedStageProofs.stage1,false);
  p.recordStage('stage1',12,12);
  assert.equal(p.data.stage1.perfectRuns,1);
  assert.equal(p.earnedTrophies.includes('bronze'),false);
  p.recordStage('stage1',12,12);
  assert.equal(p.data.stage1.perfectRuns,2);
  assert.equal(p.earnedTrophies.includes('bronze'),true);
+ assert.equal(p.data.earnedStageProofs.stage1,true);
  p.recordStage('stage1',12,12);
  assert.equal(p.earnedTrophies.filter(k=>k==='bronze').length,1);
 });
@@ -54,6 +56,7 @@ test('Abaque argent : deux 8/8 distincts, indépendamment des séries à 80 %',(
  p.recordStage('stage2',8,8);
  assert.equal(p.data.stage2.perfectRuns,2);
  assert.equal(p.earnedTrophies.includes('silver'),true);
+ assert.equal(p.data.earnedStageProofs.stage2,true);
 });
 
 test('Abaque : les 2 séries directement à 100 % donnent les 2 trophées',()=>{
