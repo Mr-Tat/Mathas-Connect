@@ -17,7 +17,7 @@ const http=require("node:http"),fs=require("node:fs");
  await page.goto(url);assert.equal(await page.locator("#practice").count(),0,"pas de mode test en version élève");
  await page.goto(url);
  await page.locator('[data-start="even"]').click();
- for(let series=0;series<2;series++){
+ for(let series=0;series<3;series++){
    if(series)await page.locator('[data-start="even"]').click();
    for(let p=0;p<2;p++){
      const answers=await page.evaluate(()=>pageItems().map(q=>fmt(q.n/2)));
@@ -29,8 +29,8 @@ const http=require("node:http"),fs=require("node:fs");
    await page.locator("#back").click();
  }
  assert.equal(await page.locator('[data-start="odd"]').isEnabled(),true);
- assert.equal(await page.evaluate(()=>progress.cups.even),true);
- await page.goto(url+"?test=1");await page.locator("#practice").click();
+ assert.equal(await page.evaluate(()=>progress.cups.even),true);assert.equal(await page.evaluate(()=>{const x=document.querySelector(".challenge"),y=x.querySelector(".tile");return Math.abs(y.getBoundingClientRect().width/x.getBoundingClientRect().width-.65)<.03}),true,"boutons centrés à 65%");
+ await page.goto(url);assert.equal(await page.locator('[data-start="g3"]').isDisabled(),true);await page.locator("#master").click();assert.equal(await page.locator('[data-start="g3"]').isDisabled(),true);page.removeAllListeners("dialog");page.on("dialog",d=>d.type()==="prompt"?d.accept("Thecakeisalie"):d.accept());await page.locator("#master").click();assert.equal(await page.locator('[data-start="g3"]').isEnabled(),true);
  await page.locator('[data-start="odd"]').click();
  await page.locator('[data-help="0"][data-kind="manip"]').click();
  const drag=page.locator('[data-drag="0"]'), b=await drag.boundingBox();
@@ -40,7 +40,8 @@ const http=require("node:http"),fs=require("node:fs");
  await page.locator('[data-undo="0"]').click();
  assert.equal(await page.evaluate(()=>run.q[0].removed),0);
  await page.locator("#home").click();await page.locator("#discard").click();
- await page.locator('[data-start="decimal"]').click();
+ for(const [id,pages] of [["decimal1",1],["decimal2",2],["decimal3",3]]){await page.locator('[data-start="'+id+'"]').click();assert.equal(await page.locator("#master").isVisible(),false);for(let i=0;i<pages;i++){assert.match(await page.locator(".top .muted").innerText(),new RegExp("Page "+(i+1)+" / "+pages));const answers=await page.evaluate(()=>pageItems().map(q=>fmt(q.n/2)));for(let j=0;j<5;j++)await page.locator('input[data-field="answer"]:not([readonly])').nth(j).fill(answers[j]);await page.locator("#ok").click();await page.locator("#ok").click();}assert.equal(await page.locator(".result b").innerText(),"100 %");await page.locator("#back").click();}assert.equal(await page.evaluate(()=>progress.cups.decimal??false),false,"Master sans coupe");
+ await page.locator('[data-start="decimal2"]').click();
  await page.locator('[data-help="0"][data-kind="decomp"]').click();
  await page.locator('[data-help="0"][data-kind="manip"]').click();
  assert.equal(await page.locator('[data-i="0"][data-field="partA"]').count(),1);
@@ -68,7 +69,7 @@ const http=require("node:http"),fs=require("node:fs");
  await pick(n/2);
  assert.equal(await page.evaluate(()=>current().done&&run.correct===1),true);
  await page.locator("#ok").click();
- await page.reload();await page.locator("#resume").click();
+ await page.reload();await page.locator("#master").click();await page.locator("#resume").click();
  assert.equal(await page.evaluate(()=>run.index===1),true);
  assert.equal(await page.evaluate(()=>run.id),geometryId);
  await page.locator("#home").click();await page.locator("#discard").click();
@@ -76,7 +77,7 @@ const http=require("node:http"),fs=require("node:fs");
  await page.setViewportSize({width:320,height:740});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"débordement menu");
  assert.deepEqual(errors,[]);assert.deepEqual(net,[]);
- await page.goto(url+"?requireConnect=1&test=1");assert.equal(await page.locator("[data-start]").count(),0);assert.equal(await page.locator("#practice").count(),0);await page.locator("#freeLaunch").click();await page.locator('[data-start="even"]').waitFor();
+ await page.goto(url+"?requireConnect=1&test=1");assert.equal(await page.locator("[data-start]").count(),0);assert.equal(await page.locator("#practice").count(),0);assert.equal(await page.locator("#master").isVisible(),false);await page.locator("#freeLaunch").click();await page.locator('[data-start="even"]').waitFor();
  const server=http.createServer((req,res)=>{const file=new URL(req.url,"http://localhost").pathname.slice(1)||"index.html";if(!["index.html","sw.js","favicon.svg"].includes(file)){res.writeHead(404);res.end();return}res.setHeader("content-type",file==="sw.js"?"text/javascript":file==="favicon.svg"?"image/svg+xml":"text/html");res.end(fs.readFileSync(path.join(__dirname,"..",file)))});
  await new Promise((resolve,reject)=>{server.once("error",reject);server.listen(0,"127.0.0.1",resolve)});
  const web=await browser.newContext({viewport:{width:390,height:740}});
@@ -100,6 +101,6 @@ const http=require("node:http"),fs=require("node:fs");
   await p.goto(base+"?hub=toutes&class=71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e");
   assert.equal(await p.getByRole("button",{name:"Parcours Connect · TEST"}).count(),0);
  }finally{await routeCtx.close();await new Promise(resolve=>routeServer.close(resolve))}
- console.log("Chromium : cache web local, refus Connect non certifié, menu, deux séries, glisser, aides décimales, 320/390 px, loupe, mesure, milieu, reprise et accès hors ligne OK.");
+ console.log("Chromium : cache web local, refus Connect non certifié, menu, trois séries, glisser, aides décimales, 320/390 px, loupe, mesure, milieu, reprise et accès hors ligne OK.");
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});

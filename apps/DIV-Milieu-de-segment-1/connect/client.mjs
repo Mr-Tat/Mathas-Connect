@@ -1,4 +1,4 @@
-import {questionSequence} from './seeded-questions.mjs';
+import {questionSequence} from './seeded-questions.mjs?v=20261126-v3';
 import {avatarGlyph,avatarColor} from '../../../avatar-catalog.js';
 const BASE='https://awmhpfofacaglewammxt.supabase.co';
 const KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
@@ -17,7 +17,7 @@ export async function openMilieu({classId,teacher,onInvalid}){
   if(!active||!session?.access_token||session.user?.id!==subject)throw Object.assign(Error('Session modifiée.'),{status:401});
   const c=new AbortController(),timer=setTimeout(()=>c.abort(),12000);
   try{
-   const response=await fetch(BASE+'/functions/v1/connect-milieu',{method:'POST',signal:c.signal,cache:'no-store',headers:{apikey:KEY,authorization:'Bearer '+session.access_token,'content-type':'application/json'},body:JSON.stringify({...body,action,appKey:'milieu-segment',classId,...(pupil?{expectedStudentId:pupil}:{})})});
+   const response=await fetch(BASE+'/functions/v1/connect-milieu',{method:'POST',signal:c.signal,cache:'no-store',headers:{apikey:KEY,authorization:'Bearer '+session.access_token,'content-type':'application/json'},body:JSON.stringify({...body,action,ruleset:3,appKey:'milieu-segment',classId,...(pupil?{expectedStudentId:pupil}:{})})});
    const value=await response.json().catch(()=>null);
    if(!active)throw Object.assign(Error('Session modifiée.'),{status:401});
    if(!response.ok||value?.ok!==true)throw Object.assign(Error(value?.error||'Connexion indisponible.'),{status:response.status,code:value?.error});
@@ -26,9 +26,9 @@ export async function openMilieu({classId,teacher,onInvalid}){
   }finally{clearTimeout(timer)}
  }
  const snapshot=await post('load');
- if(!uuid(snapshot.studentId)||snapshot.ruleset!==2||snapshot.status!=='approved'||!Number.isSafeInteger(snapshot.resetEpoch)||!Number.isSafeInteger(snapshot.revision)||snapshot.xp?.max!==280||!snapshot.state?.levels||!Array.isArray(snapshot.trophies))throw Error('Réponse Connect invalide.');
+ if(!uuid(snapshot.studentId)||snapshot.ruleset!==3||snapshot.status!=='approved'||!Number.isSafeInteger(snapshot.resetEpoch)||!Number.isSafeInteger(snapshot.revision)||snapshot.xp?.max!==280||!snapshot.state?.levels||!Array.isArray(snapshot.trophies))throw Error('Réponse Connect invalide.');
  pupil=snapshot.studentId;
- const storageKey='mathas.milieu-segment.official.v2.'+[classId,subject,pupil].join('.');
+ const storageKey='mathas.milieu-segment.official.v3.'+[classId,subject,pupil].join('.');
  try{localStorage.setItem(storageKey+'.probe','1');localStorage.removeItem(storageKey+'.probe')}catch{throw Error('Sauvegarde indisponible. Impossible de jouer officiellement.')}
  return {post,snapshot,storageKey,questionSequence,classId,subject,pupil,avatarGlyph,avatarColor};
 }

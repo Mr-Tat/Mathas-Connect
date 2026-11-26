@@ -14,7 +14,7 @@ export function installMilieuProfessor({sb,url,key}){
   return v;
  }
  function select(label,values){const wrap=document.createElement('label'),s=document.createElement('select');wrap.textContent=label;for(const [name,val] of values)s.add(new Option(name,val));wrap.append(s);return {wrap,s}}
- function describe(row){return ['even','odd','mix','gi1','gi2','decimal','g1','g2','g3'].map((id,i)=>['1','2','3','4.1','4.2','5','6.1','6.2','6.3'][i]+': '+(row.state.levels[id]?.map(r=>r.percent+' %').join(' · ')||'—')).join(' | ')}
+ function describe(row){return ['even','odd','mix','gi1','gi2','decimal1','decimal2','decimal3','g1','g2','g3'].map((id,i)=>['1','2','3','4.1','4.2','5.1','5.2','5.3','6.1','6.2','6.3'][i]+': '+(row.state.levels[id]?.map(r=>r.percent+' %').join(' · ')||'—')).join(' | ')}
  async function open(reset){
   if(busy||!current())return;const classId=$('auth-class').value,className=$('auth-class').selectedOptions[0]?.textContent||'Classe';
   if(!classId)return;busy=true;feedback.textContent='Chargement des résultats certifiés…';

@@ -49,6 +49,7 @@ jobs:
           CREATE TABLE public.connect_projection_score_periods(class_id uuid,app_key text,score_since timestamptz,PRIMARY KEY(class_id,app_key));
           SQL
           psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/20261126_milieu_connect_v2_candidate.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/20261126_milieu_v3_progression_candidate.sql
       - run: npm install --no-save --no-package-lock pg@8.16.3 playwright@1.56.1
       - run: npx playwright install --with-deps chromium
       - run: node --test tests/milieu-connect.runtime.mjs
