@@ -32,13 +32,13 @@ test('PostgreSQL réel + handler Edge injecté : identité, 280 XP, projection, 
  assert.equal((await post('teacher-summary')).error,'professor_required');
  assert.equal((await post('teacher-cap-set',{maxActivity:4})).error,'professor_required');
  assert.equal((await ok('teacher-cap-set',{maxActivity:4},teacher)).maxActivity,4);
- const capRun=await ok('load');assert.equal(capRun.maxActivity,1);
+ const capRun=await ok('load');assert.equal(capRun.maxActivity,4);assert.equal((await post('teacher-cap-set',{maxActivity:5},teacher)).error,'invalid_result');
  // A lowered cap is a new-run limit, not a forced cancellation or deletion.
  for(const k of ['even','odd','mix','gi1','gi2'])for(let i=0;i<LEVELS[k].p;i++)await run(k);
  assert.equal((await ok('load')).state.decimalUnlocked,true);
  assert.equal((await post('begin',{expectedStudentId:student,eventId:randomUUID(),resetEpoch:0,activity:'decimal1'})).error,'activity_locked');
  assert.equal((await ok('teacher-cap-set',{maxActivity:6},teacher)).maxActivity,6);
- assert.equal((await post('begin',{expectedStudentId:student,eventId:randomUUID(),resetEpoch:0,activity:'decimal1'})).error,'activity_locked');
+ assert.equal((await ok('begin',{expectedStudentId:student,eventId:randomUUID(),resetEpoch:0,activity:'decimal1'})).activity,'decimal1');
  for(const k of Object.keys(LEVELS))for(let i=0;i<LEVELS[k].p;i++)await run(k);
  let a=await run('gi2','sudden');assert.equal(a.ack.judgement.points,80);assert.equal(a.ack.xp.delta,48);
  let b=await run('g3','sudden');assert.equal(b.ack.judgement.points,120);assert.equal(b.ack.xp.appXp,280);assert.equal(b.ack.trophies.length,12);
