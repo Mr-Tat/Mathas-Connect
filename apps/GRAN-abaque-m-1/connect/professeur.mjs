@@ -35,7 +35,7 @@ async function refresh(){
   cell((native.stage2?.passes?.length||0)+'/2 · meilleur '+(native.stage2?.best||0)+'/8');
   cell('1 page : '+(native.modeScores?.one||0)+'/4\n3 pages : '+(native.modeScores?.three||0)+'/12\n5 pages : '+(native.modeScores?.five||0)+'/20');
   cell('Meilleur : '+(native.scoreRecords?.allBest||0)+' pts\n3 vies : '+(native.recordsByMode?.lives||0)+' pts\nMort subite : '+(native.recordsByMode?.sudden||0)+' pts\nSérie : '+(native.suddenBest||0));
-  cell(result.xp.appXp+' / 160');
+  cell(result.xp.appXp+' / '+(Number.isSafeInteger(result.xp.max)&&result.xp.max>0?result.xp.max:'—'));
   cell([['Parcours',''],['Mort subite','sudden-']].map(([label,prefix])=>label+' : '+[['bronze','bronze'],['silver','argent'],['gold','or']].map(([key,name])=>result.trophies.includes('abaque:'+prefix+key)?name:'—').join(' · ')).join('\n'));
   const action=cell(''),button=document.createElement('button');button.type='button';button.textContent='Remettre à zéro';action.append(button);
   button.onclick=()=>run(async()=>{

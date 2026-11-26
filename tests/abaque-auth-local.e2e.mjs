@@ -163,7 +163,7 @@ test('Chromium + Auth/Edge réels : clavier, XP, trophées, réponse perdue/offl
   assert.equal(await page.locator('#personalTrophyCount').textContent(),'1 / 6');
   assert.equal((await request(pupil,'load')).data.xp.appXp,54,'la deuxième perfection donne la coupe sans nouveau crédit');
   await seed(pupil,classic('three',10));await seed(pupil,classic('five',16));
-  await page.locator('#abaque-connect-panel button').click();
+  await page.reload();await page.locator('html[data-abaque-connected]').waitFor();
   await page.waitForFunction(()=>document.querySelector('.abaque-account-xp')?.textContent.includes('100 / 204'));
   await page.locator('[data-variant="lives"]').click();
   for(let i=1;i<=15;i++){await inputConversion(page,false,{expectModal:i%5===0});if(i%5===0)await modal(page,'Page suivante')}
@@ -191,7 +191,7 @@ test('Chromium + Auth/Edge réels : clavier, XP, trophées, réponse perdue/offl
   await pool.query('insert into connect_abaque_pilot_students(student_id) values($1)',[replacement]);
   await pool.query('insert into connect_enrollments(id,class_id,student_id) values($1,$2,$3)',[randomUUID(),pilotClass,replacement]);
   await pool.query('update connect_devices set student_id=$1 where auth_user_id=$2',[replacement,pupil.subject]);
-  await page.locator('#abaque-connect-panel button').click();
+  await page.evaluate(()=>window.dispatchEvent(new Event('online')));
   await page.waitForFunction(()=>document.querySelector('#abaque-connect-panel').textContent.includes('identity_binding_conflict'));
   assert.equal(await page.locator('.abaque-account-xp').textContent(),'');assert.equal(await page.locator('.shell').isVisible(),false);
   assert.deepEqual(h.external,[]);assert.deepEqual(h.errors,[]);
@@ -294,7 +294,7 @@ test('Chromium + Auth réels : XP absents sans compte/approbation, hors ligne et
   assert.equal(await page.locator('.abaque-xp-remaining:visible').count(),0,'masquage immédiat sans attendre une nouvelle partie');
   await h.context.setOffline(false);
   await page.waitForFunction(()=>document.querySelector('#launchBtn>.abaque-xp-remaining')?.hidden===false);
-  delayed=h.holdNextLoad();await page.locator('#abaque-connect-panel button').click();await delayed.wait();
+  delayed=h.holdNextLoad();await page.evaluate(()=>window.dispatchEvent(new Event('online')));await delayed.wait();
   const signOut=await page.evaluate(async({api,anon})=>{
    const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.95.0');
    const client=createClient(api,anon,{auth:{persistSession:true,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'sb-awmhpfofacaglewammxt-auth-token'}});
