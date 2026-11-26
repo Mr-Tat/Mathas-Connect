@@ -50,7 +50,7 @@ const http=require("node:http"),fs=require("node:fs");
  assert.equal(await page.locator('[data-start="odd"]').isEnabled(),true);
  assert.equal(await page.evaluate(()=>progress.cups.even),true);assert.equal(await page.evaluate(()=>{const x=document.querySelector(".challenge"),y=x.querySelector(".tile");return Math.abs(y.getBoundingClientRect().width/x.getBoundingClientRect().width-.65)<.03}),true,"boutons centrés à 65%");
  await page.goto(url);assert.equal(await page.locator('[data-start="g3"]').isDisabled(),true);
- assert.equal(await page.locator('[data-start="g3"]').evaluate(el=>getComputedStyle(el).opacity),'0.64');assert.equal(await page.locator('[data-start="even"]').evaluate(el=>getComputedStyle(el).opacity),'1');
+ assert.equal(await page.locator('[data-start="g3"]').evaluate(el=>getComputedStyle(el).opacity),'0.48');assert.equal(await page.locator('[data-start="even"]').evaluate(el=>getComputedStyle(el).opacity),'1');
  const master=page.locator("#master"),dialog=page.locator("#masterDialog"),pw=page.locator("#masterPassword");
  assert.equal(await master.innerText(),"M");const masterBox=await master.boundingBox();assert.ok(masterBox.x<=15&&masterBox.y+masterBox.height>=785);
  assert.equal(await page.locator('[data-start="even"] .activity-title').evaluate(el=>el.nextElementSibling.classList.contains("activity-example")),true);
