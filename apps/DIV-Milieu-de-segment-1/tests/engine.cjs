@@ -19,6 +19,15 @@ const checks=''+
 'start("g3","sudden");q=current();assert(!helpAllowed(),"aucune aide mathématique en défi");selectTick(q.n);q.measure=fmt(q.n);validate();q.answer="99";validate();assert(run.finished&&run.lives===0,"mort subite dès première erreur");'+
 'start("g3","lives");for(let i=0;i<3;i++){q=current();selectTick(q.n);q.measure="99";validate();if(i<2){assert(run.lives===2-i&&!run.finished,"vie retirée une fois");validate()}}assert(run.finished&&run.lives===0,"troisième erreur termine");'+
 'start("g3","lives");for(let i=0;i<3;i++){q=current();selectTick(q.n);q.measure=fmt(q.n);validate();q.answer=fmt(q.n/2);validate();selectTick(q.n/2);validate()}assert(run.correct===3&&run.lives===3&&run.index===3,"série illimitée");const resumed=safeGet(RUNKEY);assert(validRun(resumed)&&resumed.index===3,"reprise locale");'+
+''+
+'reset();for(const id of ["even","odd","mix"]){progress.levels[id]=[{score:80},{score:80}]}assert(unlocked("gi1")&&!unlocked("gi2")&&!unlocked("decimal")&&!challengesOpen("integers"),"nouveaux verrous entiers");'+
+'function solveGeo(){let q=current();if(q.stage==="measure"){selectTick(q.n);assert(q.measure==="","mesure manuelle");q.measure=fmt(q.n);validate()}else{q.revealed=true}q.answer=fmt(q.n/2);validate();selectTick(q.n/2);validate()}'+
+'for(const id of ["gi1","gi2"]){start(id);assert(run.q.length===6&&run.q.every(q=>q.n%10===0),"six segments entiers");for(let i=0;i<6;i++)solveGeo()}assert(challengesOpen("integers")&&unlocked("decimal")&&!challengesOpen("decimals")&&progress.cups["integers:segments"],"déblocage simultané et coupe entière");'+
+'start("gi2","sudden");for(let i=0;i<21;i++){assert(current().n%10===0,"défi entier");solveGeo()}assert(run.index===21&&progress.records["integers:sudden"]===21&&progress.cups["integers:sudden20"]&&!progress.records["decimals:sudden"],"records et coupes indépendants");'+
+'safeRemove(RUNKEY);practice=true;start("g3","lives");for(let i=0;i<25;i++){assert(current().n%10!==0&&current().n%2===0,"défi décimal strict");solveGeo()}assert(run.index===25&&run.lives===3,"défi décimal sans limite");'+
+'assert(pool("gi1").includes(10)&&pool("gi1").includes(200)&&pool("g3").every(n=>n%10!==0),"domaines de génération disjoints");'+
+'reset();for(const id of ["even","odd","mix"])progress.levels[id]=[{score:80},{score:80}];start("gi1");for(let i=0;i<6;i++){let q=current();q.revealed=true;if(i===0){helpToggle(run.index,"manip");q.answer="99";validate()}q.answer=fmt(q.n/2);validate();selectTick(q.n/2);validate()}const proof=completionProof(run);assert(proof.items.length===6&&proof.items[0].helps.includes("manip")&&proof.items[0].attempts.length===3&&proof.items[0].attempts[0].value===990&&proof.items[0].attempts[2].stage==="place"&&run.correct===5,"preuve premier essai, aide et correction");'+
+'start("gi2");let q2=current();selectTick(q2.n);q2.measure=fmt(q2.n);validate();q2.answer=fmt(q2.n/2);validate();selectTick(q2.n/2);assert(q2.evidence.attempts.map(a=>a.stage).join(",")==="measure,calc,place","preuve complète de mesure");'+
 'return results;';
 const results=new Function(stub+code.replace(/showHome\(\);\s*$/,"")+checks)();
-console.log("6500 questions générées ; "+results.length+" contrôles réussis.");
+console.log("Questions générées ; "+results.length+" contrôles réussis.");

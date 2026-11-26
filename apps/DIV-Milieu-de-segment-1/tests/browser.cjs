@@ -49,7 +49,9 @@ const assert=require("node:assert/strict");
  }
  await page.setViewportSize({width:1100,height:800});
  await page.locator("#home").click();await page.locator("#discard").click();
- await page.locator('[data-start="g3"]').click();
+ for(const geometryId of ["gi2","g3"]){
+ await page.locator('[data-start="' + geometryId + '"]').click();
+ assert.equal(await page.evaluate(()=>run.id==="gi2"?run.q.length===6&&run.q.every(q=>q.n%10===0):run.q.length===10&&run.q.every(q=>q.n%10!==0)),true);
  const n=await page.evaluate(()=>current().n);
  async function pick(mm){
    const hit=await page.locator("#rulerHit").boundingBox();
@@ -67,7 +69,9 @@ const assert=require("node:assert/strict");
  await page.locator("#ok").click();
  await page.reload();await page.locator("#resume").click();
  assert.equal(await page.evaluate(()=>run.index===1),true);
+ assert.equal(await page.evaluate(()=>run.id),geometryId);
  await page.locator("#home").click();await page.locator("#discard").click();
+ }
  await page.setViewportSize({width:320,height:740});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"débordement menu");
  assert.deepEqual(errors,[]);assert.deepEqual(net,[]);
