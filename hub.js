@@ -53,7 +53,7 @@ function progressFor(appKey){
 function progressText(appKey){
   if(appKey==='padlet-jeux')return '🎲 Jeux en ligne · lien externe';
   if(appKey==='bowling-multiplication')return '🎳 Jeu de multiplication · lien externe';
-  if(!connectedGameKeys.has(appKey))return 'Jeu actuel · scores locaux';
+  if(!connectedGameKeys.has(appKey)&&appKey!=='milieu-segment')return 'Jeu actuel · scores locaux';
   if(!activeProfile)return 'Classique : local · Connecté : compte élève';
   const p=progressFor(appKey);
   if(!p)return 'Progression momentanément indisponible';
