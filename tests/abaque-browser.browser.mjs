@@ -68,10 +68,14 @@ test('Abaque : premiers essais 10/12 et 7/8, déblocages, puis trophées parfait
   assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'false');
   assert.equal(await page.locator('#moveLaunchBtn').getAttribute('aria-disabled'),'false');
   await solveConstruction(page);
+  assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'false','une seule série parfaite ne suffit pas');
+  await solveConstruction(page);
   assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'true');
   for(let run=0;run<2;run++)await solveMoves(page,{imperfect:true});
   assert.deepEqual((await progress(page)).stage2.passScores,[7,7]);
   assert.equal(await page.locator('#trophy-moveLaunchBtn').getAttribute('data-earned'),'false');
+  await solveMoves(page);
+  assert.equal(await page.locator('#trophy-moveLaunchBtn').getAttribute('data-earned'),'false','une seule série parfaite ne suffit pas');
   await solveMoves(page);
   assert.equal(await page.locator('[data-mode="one"]').getAttribute('aria-disabled'),'false');
   assert.equal(await page.locator('#trophy-moveLaunchBtn').getAttribute('data-earned'),'true');
@@ -88,7 +92,7 @@ test('Abaque : or seulement après les trois vraies séries parfaites, scores na
  const h=await setup(),{page}=h;
  try{
   await page.goto(h.url);await fixture(page);
-  for(const [mode,pages,max] of [['one',1,100],['three',3,324],['five',5,580]]){
+  for(const [mode,pages,max] of [['one',1,12],['three',3,36],['five',5,60]]){
    await page.locator(`[data-mode="${mode}"]`).click();
    for(let n=0;n<pages;n++){await inputConversion(page);await modal(page,n+1===pages?'Accueil':'Page suivante');}
    assert.equal((await progress(page)).recordsByMode[mode],max);
@@ -113,46 +117,43 @@ test('Abaque : or seulement après les trois vraies séries parfaites, scores na
  }finally{await h.close();}
 });
 
-test('Abaque : 3 vies, réponse incomplète, doublon, cœur perdu permanent ; Mort subite sans double bonus',async()=>{
+test('Abaque : 3 vies, réponse incomplète, cœur perdu permanent ; Mort subite ×2',async()=>{
  const h=await setup(),{page}=h;
  try{
   await page.goto(h.url);await fixture(page);
   await page.locator('[data-variant="lives"]').click();
   await page.locator('#t3Verify').click();
   assert.equal(await page.locator('#recordLives').getAttribute('aria-label'),'3 vies restantes');
-  // Five successes cross the native four-question step, without a second +20%.
-  for(let success=0;success<5;success++){
-   await inputConversion(page);
-   assert.equal(await page.locator('#t3ScoreNow').textContent(),(success<4?25*(success+1):129)+' points');
-   await modal(page,'Suivante');
+  for(let i=1;i<=5;i++){
+   await inputConversion(page,false,{expectModal:i===5});
+   assert.equal(await page.locator('#t3ScoreNow').textContent(),3*i+' points');
+   if(i===5)await modal(page,'Page suivante');
   }
-  assert.equal(await page.locator('.t3Open').isDisabled(),true,'manipulation verrouillée dès la quatrième réussite');
-  for(let remaining=2;remaining>=0;remaining--){
-   await inputConversion(page,true);
-   await page.evaluate(()=>document.querySelector('#t3Verify').click());
-   assert.equal(await page.locator('#recordLives').getAttribute('aria-label'),remaining+' vies restantes');
-   assert.equal(await page.locator('.t3retry').count(),0);
-   await modal(page,remaining?'Suivante':'Accueil');
-   if(remaining===2){
-    await page.locator('.heart-lost').evaluate(el=>{el.dataset.retainedHeart='yes';});
-    await inputConversion(page);
-    assert.equal(await page.locator('[data-retained-heart="yes"]').count(),1,'le cœur déjà brisé garde son élément');
-    assert.equal(await page.locator('.heart-breaking').count(),0,'aucune nouvelle animation de perte sur bonne réponse');
-    await modal(page,'Suivante');
-   }
-  }
-  assert.deepEqual(await trophies(page),[],'3 vies ne rapporte aucun trophée');
-  assert.deepEqual((await progress(page)).scoreRecords.medals,[],'3 vies ne rapporte aucune médaille locale');
+  assert.equal(await page.locator('.t3Ex:not(:has(input:disabled)) .t3Open').isDisabled(),true,'manipulation verrouillée après 3 réussites');
+  await inputConversion(page,true,{expectModal:false});
+  assert.equal(await page.locator('#recordLives').getAttribute('aria-label'),'2 vies restantes');
+  assert.equal(await page.locator('.t3retry').count(),0);
+  await page.locator('.heart-lost').evaluate(el=>{el.dataset.retainedHeart='yes'});
+  await inputConversion(page,false,{expectModal:false});
+  assert.equal(await page.locator('[data-retained-heart="yes"]').count(),1);
+  assert.equal(await page.locator('.heart-breaking').count(),0);
+  await inputConversion(page,true,{expectModal:false});
+  assert.equal(await page.locator('#recordLives').getAttribute('aria-label'),'1 vies restantes');
+  await inputConversion(page,true,{expectModal:true});
+  assert.equal(await page.locator('#recordLives').getAttribute('aria-label'),'0 vies restantes');
+  await modal(page,'Accueil');
+  assert.deepEqual(await trophies(page),[]);
+  assert.deepEqual((await progress(page)).scoreRecords.medals,[]);
   await page.locator('[data-variant="sudden"]').click();
-  for(let success=0;success<5;success++){
-   await inputConversion(page);
-   assert.equal(await page.locator('#t3ScoreNow').textContent(),(success<4?30*(success+1):155)+' points');
-   await modal(page,'Suivante');
-   if(success===0)assert.equal(await page.locator('.t3UnitsBtn').isDisabled(),true);
+  for(let i=1;i<=5;i++){
+   await inputConversion(page,false,{expectModal:i===5});
+   assert.equal(await page.locator('#t3ScoreNow').textContent(),6*i+' points');
+   if(i===1)assert.equal(await page.locator('.t3Ex:not(:has(input:disabled)) .t3UnitsBtn').isDisabled(),true);
+   if(i===5)await modal(page,'Page suivante');
   }
   await inputConversion(page,true);await modal(page,'Accueil');
   assert.equal((await progress(page)).suddenBest,5);
-  assert.match(await page.locator('[data-variant="sudden"] .modeResult').textContent(),/5 de suite/);
+  assert.match(await page.locator('[data-variant="sudden"] .modeResult').textContent(),/30 pts/);
   assert.deepEqual(h.external,[]);assert.deepEqual(h.errors,[]);
  }finally{await h.close();}
 });
@@ -179,10 +180,10 @@ test('Abaque : Master au départ ou pendant une partie exclut résultats et trop
    assert.deepEqual(await trophies(page),[]);
   }
   await page.locator('[data-mode="one"]').click();await inputConversion(page);await modal(page,'Accueil');
-  assert.equal((await progress(page)).recordsByMode.one,100,'la prochaine partie ordinaire compte normalement');
+  assert.equal((await progress(page)).recordsByMode.one,12,'la prochaine partie ordinaire compte normalement');
   await enterMaster(page);await page.locator('[data-variant="sudden"]').click();await page.locator('#masterExit').click();
-  for(let n=0;n<3;n++){await inputConversion(page);await modal(page,n===2?'Accueil':'Suivante');}
-  assert.deepEqual(await trophies(page),[],'trois pages commencées en Master ne donnent pas de coupe Mort subite');
+  for(let n=1;n<=15;n++){await inputConversion(page,false,{expectModal:n%5===0});if(n%5===0)await modal(page,n===15?'Accueil':'Page suivante');}
+  assert.deepEqual(await trophies(page),[],'quinze conversions commencées en Master ne donnent pas de coupe Mort subite');
   assert.equal((await progress(page)).suddenBest,0,'la série Master ne devient pas un record');
 
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
@@ -221,9 +222,9 @@ test('Abaque : correction au deuxième essai et aides conservent les points nati
   assert.equal(await page.locator('.t3retry').count(),1);
   await inputConversion(page);await modal(page,'Accueil');
   assert.equal((await progress(page)).modeScores.one,3,'3 bonnes réponses au premier essai, pas 4');
-  assert.equal((await progress(page)).recordsByMode.one,81,'3×25 + 6 points de correction');
-  assert.equal(await page.locator('[data-mode="three"]').getAttribute('aria-disabled'),'true');
-  for(const [withUnits,expected] of [[false,95],[true,90]]){
+  assert.equal((await progress(page)).recordsByMode.one,9,'3×3 + 0 point de correction');
+  assert.equal(await page.locator('[data-mode="three"]').getAttribute('aria-disabled'),'false','3/4 suffit pour passer à 3 pages');
+  for(const [withUnits,expected] of [[false,12],[true,12]]){
    await page.locator('[data-mode="one"]').click();
    const first=page.locator('.t3Ex').first();
    await first.locator('.t3Open').click();
@@ -282,14 +283,16 @@ test('Abaque : les anciennes réussites de la même démo réaffichent les troph
    stage2:{passes:['orange','green'],passScores:[7,8]},
    modes:{one:'green',three:'green',five:'green'}
   });
-  // Les anciennes coupes déjà acquises demeurent ; la couleur verte seule
-  // ne crée plus rétroactivement de coupe sans preuve d'autonomie.
+  // Anciennes coupes bronze/argent insuffisamment prouvées : ne pas les réattribuer.
+  // L'or local déjà acquis demeure ; les nouvelles coupes nécessitent 2 séries parfaites.
   await page.evaluate(key=>localStorage.setItem(key,'["bronze","silver","gold"]'),trophyKey);
   await page.reload();
-  assert.deepEqual((await trophies(page)).sort(),['bronze','gold','silver']);
-  assert.equal(await page.locator('.homeCard>.trophy-hint.earned').count(),3);
+  assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'false');
+  assert.equal(await page.locator('#trophy-moveLaunchBtn').getAttribute('data-earned'),'false');
+  assert.equal(await page.locator('#trophy-convertLaunchCard').getAttribute('data-earned'),'true');
+  assert.equal(await page.locator('.homeCard>.trophy-hint.earned').count(),1);
   await page.evaluate(()=>window.MATHAS_PROGRESS.reset());await page.reload();
-  assert.equal(await page.locator('.homeCard>.trophy-hint.earned').count(),3);
+  assert.equal(await page.locator('.homeCard>.trophy-hint.earned').count(),1);
   assert.equal(await page.evaluate(()=>localStorage.getItem('mathas_abaque_longueurs_progress_v1')),null);
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
@@ -301,7 +304,7 @@ test('Abaque démo : trois états de compte simulés, XP discrets et zéro modif
   await page.goto(h.url);
   await page.evaluate(({key,trophyKey})=>{
    const saved=JSON.parse(localStorage.getItem(key));
-   saved.scoreRecords.allBest=129;saved.scoreRecords.allMode='lives';saved.recordsByMode.lives=129;
+   saved.scoreRecords.allBest=129;saved.scoreRecords.allMode='lives';saved.recordsByMode.lives=129;saved.stage2.perfectRuns=2;
    localStorage.setItem(key,JSON.stringify(saved));localStorage.setItem(trophyKey,'["silver"]');
   },{key,trophyKey});
   await page.reload();
@@ -309,7 +312,7 @@ test('Abaque démo : trois états de compte simulés, XP discrets et zéro modif
   const choice=page.locator('#abaque-demo-state');
   assert.equal(await choice.inputValue(),'signed-out');
   assert.equal(await page.locator('.abaque-xp-remaining:visible').count(),0);
-  assert.equal(await page.locator('#personalBest').textContent(),'129');
+  assert.equal(await page.locator('#scoreHistory').textContent(),'129 pts');
   await choice.selectOption('connected');
   assert.equal(await page.locator('.abaque-demo-xp:visible').count(),7);
   assert.equal(await page.locator('#launchBtn>.abaque-xp-remaining').textContent(),'Reste 6 XP');
@@ -320,7 +323,7 @@ test('Abaque démo : trois états de compte simulés, XP discrets et zéro modif
   assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'true','une activité reste jouable dans le profil fictif');
   await choice.selectOption('collected');
   assert.equal(await page.locator('#personalTrophyCount').textContent(),'6 / 6');
-  assert.equal(await page.locator('#personalBest').textContent(),'580');
+  assert.equal(await page.locator('#scoreHistory').textContent(),'580 pts');
   assert.equal(await page.locator('.collection-trophy.earned').count(),6);
   assert.deepEqual(await page.locator('.abaque-demo-xp').allTextContents(),Array(7).fill('Reste 0 XP'));
   assert.equal(await page.locator('#recordChoice .record-caption .abaque-xp-remaining').count(),0);
@@ -342,7 +345,7 @@ test('Abaque démo : trois états de compte simulés, XP discrets et zéro modif
   await page.screenshot({path:resolve(tmpdir(),'abaque-demo-scenarios-desktop.png'),fullPage:true});
   await choice.selectOption('signed-out');
   assert.equal(await page.locator('.abaque-xp-remaining:visible').count(),0);
-  assert.equal(await page.locator('#personalBest').textContent(),'129');
+  assert.equal(await page.locator('#scoreHistory').textContent(),'129 pts');
   assert.equal(await page.locator('#personalTrophyCount').textContent(),'1 / 6');
   assert.deepEqual(await page.evaluate(()=>Object.fromEntries(Object.entries(localStorage))),initial,'aucun faux résultat, XP ou trophée enregistré');
   await choice.selectOption('collected');await page.reload();
@@ -375,37 +378,37 @@ test('Abaque : les deux modes record exigent 75 % dans chacun des trois formats,
  }finally{await h.close();}
 });
 
-test('Abaque : coupes Mort subite aux pages 3, 5 et 8 seulement, ni cumul ni 3 vies ni or classique',async()=>{
+test('Abaque : coupes Mort subite à 15, 25 et 40 conversions sans aide, ni cumul ni 3 vies',async()=>{
  const h=await setup(),{page}=h;
  try{
   await page.goto(h.url);await fixture(page);
   await page.locator('[data-variant="lives"]').click();
-  for(let n=0;n<8;n++){await inputConversion(page);await modal(page,'Suivante');}
-  for(let n=0;n<3;n++){await inputConversion(page,true);await modal(page,n===2?'Accueil':'Suivante');}
-  assert.deepEqual(await trophies(page),[],'huit pages en 3 vies ne donnent aucune coupe');
+  for(let n=1;n<=40;n++){await inputConversion(page,false,{expectModal:n%5===0});if(n%5===0)await modal(page,'Page suivante')}
+  for(let n=1;n<=3;n++){await inputConversion(page,true,{expectModal:n===3});if(n===3)await modal(page,'Accueil')}
+  assert.deepEqual(await trophies(page),[],'40 bonnes conversions en 3 vies ne donnent aucune coupe');
   await page.locator('[data-variant="sudden"]').click();
-  for(let n=0;n<2;n++){await inputConversion(page);await modal(page,'Suivante');}
+  for(let n=1;n<=14;n++){await inputConversion(page,false,{expectModal:n%5===0});if(n%5===0)await modal(page,'Page suivante')}
   await inputConversion(page,true);await modal(page,'Accueil');
-  assert.deepEqual(await trophies(page),[]);
+  assert.deepEqual(await trophies(page),[],'14 bonnes conversions ne suffisent pas');
   await page.locator('[data-variant="sudden"]').click();
-  for(let pages=1;pages<=8;pages++){
-   await inputConversion(page);
-   const expected=[...(pages>=3?['sudden-bronze']:[]),...(pages>=5?['sudden-silver']:[]),...(pages>=8?['sudden-gold']:[])];
-   assert.deepEqual(await trophies(page),expected,'seuil exact à '+pages+' pages consécutives');
-   await modal(page,pages===8?'Accueil':'Suivante');
+  for(let n=1;n<=40;n++){
+   await inputConversion(page,false,{expectModal:n%5===0});
+   const expected=[...(n>=15?['sudden-bronze']:[]),...(n>=25?['sudden-silver']:[]),...(n>=40?['sudden-gold']:[])];
+   assert.deepEqual(await trophies(page),expected,'seuil exact à '+n+' conversions consécutives');
+   if(n%5===0)await modal(page,'Page suivante');
   }
+  await inputConversion(page,true);await modal(page,'Accueil');
   await page.reload();
   assert.equal(await page.locator('#personalTrophyCount').textContent(),'3 / 6');
-  assert.equal(await page.locator('#trophy-convertLaunchCard').getAttribute('data-earned'),'false','l’or classique est indépendant');
+  assert.equal(await page.locator('#trophy-convertLaunchCard').getAttribute('data-earned'),'false');
   assert.equal(await page.locator('.record-trophies .earned').count(),3);
-  assert.equal((await progress(page)).suddenBest,8);
-  assert.deepEqual((await progress(page)).scoreRecords.medals,[],'aucune médaille de score');
+  assert.equal((await progress(page)).suddenBest,40);
+  assert.deepEqual((await progress(page)).scoreRecords.medals,[]);
   await page.evaluate(()=>window.MATHAS_PROGRESS.reset());await page.reload();
   assert.equal(await page.locator('.record-trophies .earned').count(),3,'coupes conservées après reset');
   assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
  }finally{await h.close();}
 });
-
 
 test('GRAN : ancienne adresse conservée, paramètres et acquis de la démo préservés',async()=>{
  // This scenario checks URL forwarding; real Auth is exercised by the local service suite.
@@ -418,7 +421,7 @@ test('GRAN : ancienne adresse conservée, paramètres et acquis de la démo pré
   await page.evaluate(k=>{const state=JSON.parse(localStorage.getItem(k));state.scoreRecords.allBest=129;state.scoreRecords.allMode='lives';localStorage.setItem(k,JSON.stringify(state));},key);
   await page.goto(h.origin+'/apps/abaque-longueurs/?demo=1#accueil');
   await page.waitForURL(url=>url.pathname==='/apps/GRAN-abaque-m-1/'&&url.search==='?demo=1'&&url.hash==='#accueil');
-  assert.equal(await page.locator('#personalBest').textContent(),'129');
+  assert.equal(await page.locator('#scoreHistory').textContent(),'129 pts');
   assert.equal(await page.locator('#abaque-demo-state').inputValue(),'signed-out');
   assert.equal(await page.locator('.abaque-xp-remaining:visible').count(),0);
   await page.goto(h.origin+'/apps/abaque-longueurs/?connect=1&class='+labClass+'#retour');
