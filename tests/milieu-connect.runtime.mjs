@@ -133,3 +133,32 @@ test('Chromium réel avec JWT simulé, handler et PostgreSQL réels : preuve nat
   assert.deepEqual(errors,[]);
  }finally{await ctx.close();await browser.close();await new Promise(r=>server.close(r))}
 });
+
+test('classe scolaire fictive : carte masquée, contrôle professeur, appareil approuvé et consentement',async()=>{
+ const school=randomUUID(),pupil=randomUUID(),device=randomUUID(),unapproved=randomUUID();
+ users.set(device,true);users.set(unapproved,true);
+ const open=createMilieuHandler({auth,db,access:'open',pilotClassId:cls});
+ const send=(action,body={},who=device,h=open)=>post(action,{classId:school,...body},who,h);
+ await query("insert into connect_classes(id,name) values($1,'Fictive scolaire')",[school]);
+ await query("insert into connect_milieu_classes(class_id,enabled,preset_slug) values($1,true,'phase2')",[school]);
+ await query('insert into connect_class_permissions(teacher_id,class_id,can_manage) values($1,$2,true)',[teacher,school]);
+ await query("insert into connect_students(id,display_name) values($1,'Fictif scolaire')",[pupil]);
+ await query("insert into connect_devices(auth_user_id,student_id,state) values($1,$2,'approved')",[device,pupil]);
+ await query('insert into connect_enrollments(id,class_id,student_id) values($1,$2,$3)',[randomUUID(),school,pupil]);
+ await query("insert into connect_hub_preset_entries(preset_slug,app_key,section,display_order,visible,featured) values('phase2','milieu-segment','outil',75,false,false)");
+ assert.equal((await send('load')).error,'app_class_not_open');
+ assert.equal((await send('teacher-cap-get',{},teacher)).maxActivity,4);
+ assert.equal((await send('teacher-summary',{},teacher)).students.length,1);
+ assert.equal((await send('teacher-cap-set',{maxActivity:6},teacher)).maxActivity,6);
+ await query("update connect_hub_preset_entries set visible=true where preset_slug='phase2' and app_key='milieu-segment'");
+ assert.equal((await send('load',{},unapproved)).error,'approved_identity_required');
+ assert.equal((await send('load',{},device,createMilieuHandler({auth,db,access:'pilot',pilotClassId:cls}))).error,'app_class_not_open');
+ assert.equal((await send('load',{expectedStudentId:student})).error,'identity_binding_conflict');
+ const load=await send('load');assert.equal(load.ok,true);assert.equal(load.studentId,pupil);assert.equal(load.xp.appXp,0);
+ const eventId=randomUUID(),args={expectedStudentId:pupil,eventId,resetEpoch:0},beg=await send('begin',{...args,activity:'even',mode:null});assert.equal(beg.ok,true);
+ const ack=await send('record',{...args,proof:proof('even',null,beg.seed)});assert.equal(ack.ok,true);assert.equal(ack.xp.appXp,14);
+ assert.equal((await send('record',{...args,proof:proof('even',null,beg.seed)})).xp.delta,0);
+ await query("update connect_hub_preset_entries set visible=false where preset_slug='phase2' and app_key='milieu-segment'");
+ assert.equal((await send('load')).error,'app_class_not_open');
+ assert.equal((await send('teacher-summary',{},teacher)).students[0].xp.appXp,14);
+});
