@@ -81,6 +81,25 @@ const http=require("node:http"),fs=require("node:fs");
  await new Promise((resolve,reject)=>{server.once("error",reject);server.listen(0,"127.0.0.1",resolve)});
  const web=await browser.newContext({viewport:{width:390,height:740}});
  try{const p=await web.newPage(),entry="http://127.0.0.1:"+server.address().port+"/index.html";await p.goto(entry);await p.evaluate(()=>navigator.serviceWorker.ready);await p.waitForFunction(()=>!!navigator.serviceWorker.controller);await web.setOffline(true);await p.goto(entry+"?hub=toutes");await p.locator('[data-start="even"]').click();await p.locator('input[data-field="answer"]').first().fill("2");await p.reload();await p.locator("#resume").click();assert.equal(await p.locator('input[data-field="answer"]').first().inputValue(),"2");await p.locator("#home").click();assert.equal(await p.locator('[data-start="even"]').isVisible(),true)}finally{await web.close();await new Promise(resolve=>server.close(resolve))}
+ // Actual browser routing for both fictive TEST roles, without a live login.
+ const routeServer=http.createServer((req,res)=>{const u=new URL(req.url,"http://localhost");if(u.pathname==="/hub.html"){res.setHeader("content-type","text/html");res.end("<h1>HUB fictif</h1>");return}const name=u.pathname.split("/").pop()||"index.html";if(!["index.html","sw.js","favicon.svg"].includes(name)){res.writeHead(404);res.end();return}res.setHeader("content-type",name==="sw.js"?"text/javascript":name==="favicon.svg"?"image/svg+xml":"text/html");res.end(fs.readFileSync(path.join(__dirname,"..",name)))});
+ await new Promise(resolve=>routeServer.listen(0,"127.0.0.1",resolve));
+ const routeCtx=await browser.newContext({serviceWorkers:"block"});try{
+  await routeCtx.route("https://esm.sh/**",r=>r.abort());
+  const p=await routeCtx.newPage(),base="http://127.0.0.1:"+routeServer.address().port+"/apps/DIV-Milieu-de-segment-1/index.html",cls="4bf3400d-a315-4ea4-a2f3-afaca24dc9b9";
+  for(const role of ["","&joueur=prof"]){
+   await p.goto(base+"?hub=toutes&class="+cls+role);
+   await p.getByRole("button",{name:"Parcours Connect · TEST"}).click();
+   await p.locator("#freeLaunch").waitFor();
+   assert.equal(new URL(p.url()).searchParams.get("requireConnect"),"1");
+   await p.locator("#freeLaunch").click();await p.getByRole("button",{name:"Parcours Connect · TEST"}).waitFor();
+   assert.equal(new URL(p.url()).searchParams.get("class"),cls);
+   await p.locator("#hubReturn").click();await p.waitForURL("**/hub.html?**");
+   const back=new URL(p.url());assert.equal(back.searchParams.get("class"),cls);assert.equal(back.searchParams.get("toutes"),"1");assert.equal(back.searchParams.get("joueur"),role?"prof":null);
+  }
+  await p.goto(base+"?hub=toutes&class=71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e");
+  assert.equal(await p.getByRole("button",{name:"Parcours Connect · TEST"}).count(),0);
+ }finally{await routeCtx.close();await new Promise(resolve=>routeServer.close(resolve))}
  console.log("Chromium : cache web local, refus Connect non certifié, menu, deux séries, glisser, aides décimales, 320/390 px, loupe, mesure, milieu, reprise et accès hors ligne OK.");
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
