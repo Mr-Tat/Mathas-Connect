@@ -53,4 +53,4 @@
 - Le [contrat complet](CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md), la [doctrine historique](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) et le [suivi hérité](SUIVI_DECISIONS_OUVERTES_20261107.md) restent conservés. Ne pas supposer clos un point historique sans nouvelle preuve.
 
 
-- Milieu d'un segment — pilote v0.2.2 publié dans Toutes → Tests ; barèmes 280 XP/12 trophées/score unique validés, [PR #342](https://github.com/Mr-Tat/Mathas-Connect/pull/342) en recette candidate fermée ; [fiche](applications/milieu-segment.md). Aucun déploiement Connect ni ouverture scolaire.
+- La moitié — [#342](https://github.com/Mr-Tat/Mathas-Connect/pull/342) fusionnée, Pages et Edge publiées ; pilote Connect limité à TEST et quatre profils fictifs, zéro visibilité scolaire. Recette réelle Auth hébergée à faire. [Fiche](applications/milieu-segment.md).

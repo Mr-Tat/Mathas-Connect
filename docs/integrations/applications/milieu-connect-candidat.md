@@ -33,3 +33,6 @@ Recette dédiée 45828397941 SUCCESS : PostgreSQL17 + Chromium (Auth injectée),
 Recette PostgreSQL 17 et Chromium intégrée 45828397941 verte ; plafond pédagogique facultatif par classe et entrée TEST explicite validés par 45829161717. Reprise après ACK perdu, consentement différé, mode libre et mobile testés. Fusion de main #343 dans cette branche ; routage professeur des jeux précédents conservé. Authentification réelle hébergée non recettée.
 
 Préflight final 26/11 : recette intégrée 45829970386 et régression 45829970322 vertes ; catalogue Toutes/test uniquement, zéro état La moitié. Schéma réel compatible avec candidat SQL et projection consentie sans modification des RPC communes. Politique de release : projet Connect officiel uniquement, classe TEST exacte, ligne DB fermée par défaut + approbation fictive nominative ; secret absent permet le pilote DB seulement, valeur explicite closed/inconnue ferme toujours. Aucun secret créé ni modifié. Contrôle statique et test de politique ajoutés avant installation.
+
+## Publication pilote confirmée
+Voir [fiche active](milieu-segment.md#pilote-connect-publié--26-novembre-2026). SQL, Edge et Pages installés, TEST seulement ; pas de résultats réels modifiés ni de recette hébergée authentifiée affirmée. Les sections précédentes sont historiques.
