@@ -129,16 +129,16 @@ dialog.reward-detail{width:min(560px,calc(100vw - 24px));max-height:calc(100dvh 
 <script>
 "use strict";
 /* Moteur indépendant : tous les nombres sont des dixièmes entiers. */
-const LEVELS={even:{name:"1. Pairs",total:10,page:5,passes:3},odd:{name:"2. Impairs",total:10,page:5,passes:3},mix:{name:"3. Mélangés",total:10,page:5,passes:3},gi1:{name:"4.1 · Longueur donnée",total:6,page:1,passes:1},gi2:{name:"4.2 · Mesurer d’abord",total:6,page:1,passes:1},decimal1:{name:"5.1 · Découvrir",total:5,page:5,passes:1},decimal2:{name:"5.2 · S’entraîner",total:10,page:5,passes:1},decimal3:{name:"5.3 · Maîtriser",total:15,page:5,passes:1},g1:{name:"6.1 · 5 segments",total:5,page:1,passes:1},g2:{name:"6.2 · 10 segments",total:10,page:1,passes:1},g3:{name:"6.3 · Mesurer et placer",total:10,page:1,passes:1}};
+const LEVELS={even:{name:"1. Pairs",total:10,page:5,passes:2},odd:{name:"2. Impairs",total:10,page:5,passes:2},mix:{name:"3. Mélangés",total:10,page:5,passes:2},gi1:{name:"4.1 · Longueur donnée",total:6,page:1,passes:1},gi2:{name:"4.2 · Mesurer d’abord",total:6,page:1,passes:1},decimal1:{name:"5.1 · Découvrir",total:5,page:5,passes:1},decimal2:{name:"5.2 · S’entraîner",total:10,page:5,passes:1},decimal3:{name:"5.3 · Maîtriser",total:15,page:5,passes:1},g1:{name:"6.1 · 5 segments",total:5,page:1,passes:1},g2:{name:"6.2 · 10 segments",total:10,page:1,passes:1},g3:{name:"6.3 · Mesurer et placer",total:10,page:1,passes:1}};
 const ORDER=Object.keys(LEVELS),KEY="mathas.milieu-segment.pilot.v2",RUNKEY=KEY+".run",LEGACY="mathas.milieu-segment.pilot.v1",TROPHIES=[5,10,20];
 const DECIMALS=["decimal1","decimal2","decimal3"],paidHelp=id=>id==="decimal2"||id==="decimal3";
 const cupMetal=id=>["even","odd"].includes(id)||id.endsWith("sudden5")?"bronze":id==="mix"||id==="decimal"||id.endsWith("sudden10")?"silver":"gold";
 const CUP_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 50" aria-hidden="true"><path d="M12 5h24v12c0 11-5 18-12 18S12 28 12 17V5Z" fill="var(--cup)" stroke="var(--cup-dark)" stroke-width="2"/><path d="M13 10H5v6c0 10 6 13 12 13M35 10h8v6c0 10-6 13-12 13" stroke="var(--cup-dark)" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M18 9h4v18c-4-2-6-9-4-18Z" fill="var(--cup-gloss)" opacity=".83"/><path d="M22 33h4v8h-4Z" fill="var(--cup-dark)"/><path d="M14 44h20v4H14Z" fill="var(--cup)" stroke="var(--cup-dark)" stroke-width="2"/></svg>';
 const cupSymbol=id=>'<span class="milieu-cup-art" data-trophy-color="'+cupMetal(id)+'">'+CUP_SVG+'</span>';
 const trophySpecs=[
- ["even","1. Pairs","Réussis trois séries à 100 % sans aide."],
- ["odd","2. Impairs","Réussis trois séries à 100 % sans aide."],
- ["mix","3. Mélangés","Réussis trois séries à 100 % sans aide."],
+ ["even","1. Pairs","Réussis deux séries de deux pages à 100 % sans aide."],
+ ["odd","2. Impairs","Réussis deux séries de deux pages à 100 % sans aide."],
+ ["mix","3. Mélangés","Réussis deux séries de deux pages à 100 % sans aide."],
  ["integers:segments","4. Segments entiers","Réussis les activités 4.1 et 4.2 à 100 % sans aide."],
  ["decimal","5. Calculs décimaux","Réussis 5.1, 5.2 et 5.3 à 100 %. Les aides gratuites de 5.1 sont autorisées ; aucune aide en 5.2 et 5.3."],
  ["decimals:segments","6. Segments décimaux","Réussis 6.1, 6.2 et 6.3 à 100 % sans aide."],
@@ -162,7 +162,7 @@ function showXpDetails(){
  if(!summary){detailDialog("xpDetails","XP à récupérer",'<p class="reward-intro">Les XP Math’as Connect sont attribués après validation par le serveur. En mode libre et Master, aucun XP Connect n’est enregistré.</p>');return}
  const row=(label,key,rule)=>{const left=x.remaining?.[key],known=Number.isSafeInteger(left)&&left>=0;return '<div class="reward-row xp-row"><div><strong>'+esc(label)+'</strong><p>'+esc(rule)+'</p></div><span class="reward-state '+(known&&left===0?'done':'')+'">'+(!known?'Indisponible':left===0?'✓ Acquis':left+' XP restants')+'</span></div>'};
  const groups=[["Moitié d’entiers",["even","odd","mix"]],["Segments entiers",["gi1","gi2"]],["Calculs décimaux",DECIMALS],["Segments décimaux",["g1","g2","g3"]]];
- const parts=groups.map(([label,ids])=>'<h3>'+label+'</h3>'+ids.map(id=>row(LEVELS[id].name,id,(LEVELS[id].passes===3?'Trois séries à 80 % ou plus ; bonus pour une série parfaite sans aide.':id==="decimal1"?'Une série à 80 % ou plus ; bonus à 100 %, aides gratuites autorisées.':'Une série à 80 % ou plus ; bonus à 100 % sans aide.'))).join("")).join("");
+ const parts=groups.map(([label,ids])=>'<h3>'+label+'</h3>'+ids.map(id=>row(LEVELS[id].name,id,(LEVELS[id].passes===2?'Deux séries de deux pages à 80 % ou plus ; bonus pour une série parfaite sans aide.':id==="decimal1"?'Une série à 80 % ou plus ; bonus à 100 %, aides gratuites autorisées.':'Une série à 80 % ou plus ; bonus à 100 % sans aide.'))).join("")).join("");
  const challenges='<h3>Défis de segments</h3>'+["integers","decimals"].map(f=>row(f==="integers"?"Défis entiers":"Défis décimaux",f+":sudden","Paliers de 5, 10 et 20 segments réussis, en Mort subite ou 3 vies. Les deux modes partagent les mêmes XP.")).join("");
  detailDialog("xpDetails","Tes XP · "+summary.earned+" récupérés",'<p class="reward-intro">'+summary.max+' XP possibles pour le premier parcours. Les droits de recrédit éventuellement ouverts par le professeur sont comptabilisés à part dans le total acquis. Les quantités restantes ci-dessous proviennent du serveur.</p>'+parts+challenges);
 }
