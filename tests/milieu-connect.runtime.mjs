@@ -91,6 +91,10 @@ test('Chromium réel avec JWT simulé, handler et PostgreSQL réels : preuve nat
  try{
   await page.goto(url);await page.locator('[data-start="gi1"]').waitFor();
   assert.equal(await page.locator('#connectAccount').isVisible(),true);
+  assert.equal(await page.locator('.account-name').innerText(),'Fictif');
+  assert.equal(await page.locator('.account-level strong').innerText(),'2');
+  assert.equal(await page.locator('.account-rail').getAttribute('aria-valuenow'),'10');
+  assert.equal(await page.locator('.account-avatar').isVisible(),true);
   await page.locator('#refreshProgress').click();await page.locator('#refreshProgress').filter({hasText:'Actualiser la progression'}).waitFor();
   assert.equal(await page.locator('[data-start="gi2"]').isEnabled(),false);
   await page.locator('[data-start="gi1"]').click();
