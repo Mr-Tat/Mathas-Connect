@@ -1,4 +1,4 @@
-import {installMilieuProfessor} from './milieu-professor.mjs';
+import {installMilieuProfessor} from './milieu-professor.mjs?v=20261126-deux-etapes';
 import {avatarGlyph,avatarColor} from './avatar-catalog.js';
 import {attachResultsOverviewSticky} from './results-overview-sticky.mjs';
 import {hubUrl} from './connect-context.js';
