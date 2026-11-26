@@ -15,3 +15,5 @@ Candidat isolé, testé en mémoire. Restent à raccorder : preuves des premiers
 
 ## Décisions VALIDÉES (26/11/2026)
 Le professeur valide 280 XP, 12 trophées, coûts des aides, trois resets, recrédit facultatif et un classement unique. Points entiers 2/4 (classique ou 3 vies / Mort subite), décimaux 3/6 ; exercices 1,2,3,5 non scorés ; 4.2 manipulation −1, autres coûts décimaux inchangés. Record général du jour/historique et quatre records personnels. Contrat V2 remplace le candidat 204 XP ; modèle testé, pas encore branché à Supabase. Les records actifs après reset ciblé sont recalculés à partir des meilleures séries par activité, les anciens restent archivés.
+
+Candidat backend fermé : connect-milieu, RPC dédiées, liste d'élèves fictifs et classes fermées par défaut, graine serveur par partie, preuve arithmétique + séquence, CAS révision, epoch et reçu idempotent, XP/trophées atomiques. Consentement dédié enregistré, mais pas encore raccordé au classement existant. Aucun SQL/Edge appliqué. Restent : tests SQL/Edge, UI et file de reprise, reset enseignant transactionnel, projection existante et recette authentifiée.
