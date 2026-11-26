@@ -64,8 +64,24 @@ for(let attempt=0;attempt<30;attempt++){
 }
 if(!ready)throw Error('disposable_database_relay_not_ready');
 JS
+# Retain the historical installation test unchanged, then rebuild from its
+# pristine local schema so obsolete record:5/10 rights cannot pollute V4.
+docker_local exec "$RUN_NAME-db" pg_dump -U postgres -d abaque_test -Fc > "$LAB/pristine.dump"
 node --test "$ROOT/tests/abaque-postgres.runtime.mjs"
 if [ "${1:-}" = '--postgres-only' ]; then exit 0;fi
+docker_local exec "$RUN_NAME-db" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c 'DROP DATABASE abaque_test WITH (FORCE)' >/dev/null
+docker_local exec "$RUN_NAME-db" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c 'CREATE DATABASE abaque_test' >/dev/null
+docker_local exec -i "$RUN_NAME-db" pg_restore -U postgres -d abaque_test --exit-on-error < "$LAB/pristine.dump"
+# Same migration sequence already exercised by the dedicated restart CI.
+for migration in "$ROOT"/supabase/migrations/*abaque*.sql; do
+ case "$migration" in *projection*) continue;; esac
+ docker_local exec -i "$RUN_NAME-db" psql -U postgres -d abaque_test -v ON_ERROR_STOP=1 < "$migration" >/dev/null
+done
+docker_local exec -i "$RUN_NAME-db" psql -U postgres -d abaque_test -v ON_ERROR_STOP=1 < "$ROOT/supabase/release-candidates/20261126_abaque_restart_scope_candidate.sql" >/dev/null
+docker_local exec -i "$RUN_NAME-db" psql -U postgres -d abaque_test -v ON_ERROR_STOP=1 <<'SQL' >/dev/null
+UPDATE public.connect_apps SET enabled=true WHERE app_key='abaque-longueurs';
+UPDATE public.connect_abaque_classes SET enabled=true,unlock_mode='mastery_80',activity_2_allowed=true,activity_3_allowed=true WHERE class_id='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
+SQL
 for image in "$ABAQUE_AUTH_IMAGE" "$ABAQUE_REST_IMAGE" "$ABAQUE_EDGE_IMAGE" "$ABAQUE_GATEWAY_IMAGE"; do
  docker_local image inspect "$image" >/dev/null 2>&1 || docker_local pull "$image" >/dev/null
 done
