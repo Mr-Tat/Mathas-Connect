@@ -30,12 +30,12 @@ test('PostgreSQL réel + handler Edge injecté : identité, 280 XP, projection, 
  assert.equal((await post('load',{},actor,createMilieuHandler({auth,db}))).error,'integration_closed');
  assert.equal((await post('load',{expectedStudentId:other})).error,'identity_binding_conflict');
  assert.equal((await post('teacher-summary')).error,'professor_required');
- assert.equal((await post('teacher-cap-set',{maxActivity:1})).error,'professor_required');
- assert.equal((await ok('teacher-cap-set',{maxActivity:1},teacher)).maxActivity,1);
+ assert.equal((await post('teacher-cap-set',{maxActivity:4})).error,'professor_required');
+ assert.equal((await ok('teacher-cap-set',{maxActivity:4},teacher)).maxActivity,4);
  const capRun=await ok('load');assert.equal(capRun.maxActivity,1);
  // A lowered cap is a new-run limit, not a forced cancellation or deletion.
  await run('even');await run('even');
- assert.equal((await post('begin',{expectedStudentId:student,eventId:randomUUID(),resetEpoch:0,activity:'odd'})).error,'activity_locked');
+ assert.equal((await post('begin',{expectedStudentId:student,eventId:randomUUID(),resetEpoch:0,activity:'decimal1'})).error,'activity_locked');
  assert.equal((await ok('teacher-cap-set',{maxActivity:6},teacher)).maxActivity,6);
  assert.equal((await post('begin',{expectedStudentId:student,eventId:randomUUID(),resetEpoch:0,activity:'decimal1'})).error,'activity_locked');
  for(const k of Object.keys(LEVELS))for(let i=0;i<LEVELS[k].p;i++)await run(k);
@@ -62,6 +62,8 @@ test('PostgreSQL réel + handler Edge injecté : identité, 280 XP, projection, 
  await run('gi1');await run('gi2');await run('gi2','lives');snapshot=await ok('load');assert.equal(snapshot.xp.appXp,356);
  assert.equal((await run('gi2','sudden')).ack.xp.delta,0);
  assert.equal((await ok('load',{},otherActor)).xp.appXp,0);
+ const stage2=(await ok('teacher-summary',{},teacher)).students.find(x=>x.studentId===student);assert.equal((await ok('teacher-restart',{scope:'student',part:'decimalStage',repeatXp:true,confirmed:true,targets:[target(stage2)]},teacher)).count,1);
+ const dec=await ok('load');assert.equal(dec.state.levels.decimal1,undefined);assert.equal(dec.state.levels.g3,undefined);assert.ok(dec.state.levels.gi1);assert.equal(dec.trophies.length,12);assert.equal(dec.xp.appXp,356);assert.equal(dec.xp.remaining.decimal1,4);assert.equal(dec.xp.remaining['decimals:sudden'],72);assert.equal(dec.xp.remaining.gi1,0);
  const conn=await pool.connect();try{await conn.query('begin');await conn.query('set local role authenticated');await assert.rejects(conn.query('select public.connect_milieu_snapshot_v2($1)',[student]),/permission denied/)}finally{await conn.query('rollback');conn.release()}
 });
 
