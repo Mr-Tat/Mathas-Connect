@@ -724,7 +724,7 @@ async function showResults(){
   if(!menu.querySelector('option[value="addition-ecrite-multiple"]'))
    menu.add(new Option(multiTeacherMeta.title,multiTeacherMeta.app_key));
  }
- $('results-class-restart').hidden=!( ['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple'].includes($('results-app').value)||additionMultipleAllowed($('results-app').value)||mixedAllowed($('results-app').value));
+ $('results-class-restart').hidden=true;
  syncResultsClassPicker();
  const id=$('class-selector').value;if(!id){showResultMessage('Aucune classe.');return}
  $('results-detail').hidden=true;$('results-list').hidden=false;
@@ -760,8 +760,8 @@ function showDetail(v){
  if(v.studentId&&(['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple'].includes($('results-app').value)||additionMultipleAllowed($('results-app').value)||mixedAllowed($('results-app').value)))addParcoursControls(div,v.studentId,v.name,$('results-app').value,$('results-app').selectedOptions[0]?.textContent||'Application',v.xp);
 }
 
-function openParcoursDialog({scope,studentId=null,studentName='',count=null,appKey='addition-ecrite-simple',appName='Addition écrite simple'}){
- const name=scope==='class'?$('class-selector').selectedOptions[0]?.textContent||'Classe':studentName;
+function openParcoursDialog({scope,studentId=null,studentName='',count=null,appKey='addition-ecrite-simple',appName='Addition écrite simple',classId=$('class-selector').value,className=$('class-selector').selectedOptions[0]?.textContent||'Classe',fromAuth=false}){
+ const name=scope==='class'?className:studentName;
  const dialog=document.createElement('dialog');dialog.className='parcours-dialog';
  const form=document.createElement('form');const title=document.createElement('h2');title.textContent='Recommencer le parcours';
  const description=document.createElement('p');
@@ -781,10 +781,10 @@ function openParcoursDialog({scope,studentId=null,studentName='',count=null,appK
   if(check.value.trim()!==name){feedback.textContent='Le nom de confirmation ne correspond pas.';return}
   go.disabled=true;back.disabled=true;feedback.textContent='Enregistrement du nouveau parcours…';
   try{
-   const outcome=await resultCall('teacher-parcours-restart',{scope,studentId,repeatXp:xp.checked,appKey});
+   const outcome=await resultCall('teacher-parcours-restart',{scope,studentId,repeatXp:xp.checked,appKey,classId});
    dialog.close();
    msg(scope==='class'?'Nouveau parcours ouvert pour '+outcome.count+' élèves.':'Nouveau parcours ouvert pour '+studentName+'.',true);
-   await showResults();
+   if(fromAuth){authSay('✓ Nouveau parcours enregistré.');void loadAuthorizations(studentId);}else await showResults();
   }catch(e){feedback.textContent='Opération non confirmée : '+(e.message||'Erreur');go.disabled=false;back.disabled=false}
  };
  dialog.showModal();check.focus();
@@ -861,8 +861,8 @@ function addParcoursControls(container,studentId,name,appKey,appName,xpSnapshot=
  const panel=document.createElement('section');panel.className='parcours-student-actions';
  const title=document.createElement('strong');title.textContent='Parcours de cet élève';
  const summary=document.createElement('div');summary.textContent='Chargement des anciens parcours…';
- const reset=document.createElement('button');reset.type='button';reset.className='results-restart-button';reset.textContent='↻ Recommencer le parcours';
- reset.onclick=()=>openParcoursDialog({scope:'student',studentId,studentName:name,appKey,appName});
+ const reset=document.createElement('button');reset.type='button';reset.className='results-restart-button';reset.textContent='⚙ Nouvelle progression · Autorisations';
+ reset.onclick=()=>{ $('auth-class').value=$('class-selector').value;$('auth-app').value=appKey;$('auth-scope').value='student';showTeacherTab('authorizations');void loadAuthorizations(studentId); };
  panel.append(title,summary,reset);container.append(panel);if(appKey==='multiplication-ecrite-simple'||mixedAllowed(appKey))multiplierLockPanel(container,studentId,appKey);
  resultCall('teacher-parcours-history',{studentId,appKey}).then(r=>{
   if(!summary.isConnected)return;
@@ -906,11 +906,14 @@ for(let n=2;n<=9;n++){
 for(const [id,{name}] of Object.entries(CLASS_SPACES))
  $('auth-class').add(new Option(name,CLASS_SPACES[id].id));
 $('auth-class').add(new Option('Classe TEST',labTestClass));
-let authLocks=[],authAid=[],authLoadSequence=0,authSettingsLoaded=false;
+let authLocks=[],authAid=[],authLoadSequence=0,authSettingsLoaded=false,authRoster=[];
+const authRestartApps=new Set(['addition-ecrite-simple','addition-ecrite-multiple','multiplication-ecrite-simple','soustraction-ecrite-simple','melange-calculs-ecrits']);
+const authTableApps=new Set(['multiplication-ecrite-simple','melange-calculs-ecrits']);
 const authSay=(message)=>{$('auth-feedback').textContent=message};
 const authSelected=()=>$('auth-scope').value==='student' ? $('auth-student').value : 'class';
 function authRender(){
  const scope=authSelected(),student=scope!=='class';
+ $('auth-restart').disabled=!authSettingsLoaded||(student&&!scope);
  $('auth-student-wrap').hidden=$('auth-scope').value!=='student';
  const configured=authLocks.find(x=>x.scope_key===scope);
  const inherited=authLocks.find(x=>x.scope_key==='class');
@@ -933,8 +936,10 @@ function authRender(){
  }
 }
 function authSwitchView(){
- const isAbaque=$('auth-app').value==='abaque-longueurs';
- $('auth-calculation-settings').hidden=isAbaque;
+ const appKey=$('auth-app').value,isAbaque=appKey==='abaque-longueurs';
+ $('auth-calculation-settings').hidden=!authTableApps.has(appKey);
+ $('auth-progression-settings').hidden=!authRestartApps.has(appKey);
+ $('auth-restart').disabled=true;
  $('abaque-class-gates').hidden=!isAbaque;
  $('auth-scope-wrap').hidden=isAbaque;
  $('auth-student-wrap').hidden=isAbaque||$('auth-scope').value!=='student';
@@ -945,7 +950,7 @@ function authSwitchView(){
 }
 async function loadAuthorizations(requestedStudent=null){
  const seq=++authLoadSequence;
- authSettingsLoaded=false;
+ authSettingsLoaded=false;authRoster=[];$('auth-restart').disabled=true;
  $('auth-saved-summary').hidden=true;
  const cls=$('auth-class');if(!cls.value)cls.value=$('class-selector').value||CLASS_SPACES.observation.id;
  // The Abaque uses class-wide rights only: do not call the multiplication RPCs.
@@ -957,13 +962,14 @@ async function loadAuthorizations(requestedStudent=null){
   const classId=cls.value,appKey=$('auth-app').value;
   const [dashboard,locks,aid]=await Promise.all([
    call('teacher-dashboard',{classId}),
-   resultCall('teacher-multipliers-get',{classId,appKey}),
-   resultCall('teacher-table-aid-get',{classId,appKey})
+   authTableApps.has(appKey)?resultCall('teacher-multipliers-get',{classId,appKey}):Promise.resolve({locks:[]}),
+   authTableApps.has(appKey)?resultCall('teacher-table-aid-get',{classId,appKey}):Promise.resolve({locks:[]})
   ]);
   if(seq!==authLoadSequence||cls.value!==classId||$('auth-app').value!==appKey)return false;
   authLocks=locks.locks||[];authAid=aid.locks||[];
   authSettingsLoaded=true;
   const students=(dashboard.students||[]).slice().sort((a,b)=>String(a.display_name).localeCompare(String(b.display_name),'fr'));
+  authRoster=students;
   for(const student of students)$('auth-student').add(new Option(student.display_name,student.id));
   if(requestedStudent&&students.some(s=>s.id===requestedStudent))$('auth-student').value=requestedStudent;
   if($('auth-scope').value==='student'&&!students.length){
@@ -984,8 +990,9 @@ $('auth-class').onchange=()=>void loadAuthorizations();
 $('auth-app').onchange=()=>void loadAuthorizations();
 $('auth-scope').onchange=()=>authRender();
 $('auth-student').onchange=()=>authRender();
+$('auth-restart').onclick=()=>{const appKey=$('auth-app').value,classId=$('auth-class').value,scope=$('auth-scope').value,studentId=scope==='student'?$('auth-student').value:null,student=authRoster.find(s=>s.id===studentId);if(!authSettingsLoaded||!authRestartApps.has(appKey)||!classId||(scope==='student'&&!student))return;openParcoursDialog({scope,studentId,studentName:student?.display_name||'',count:authRoster.length,appKey,appName:$('auth-app').selectedOptions[0]?.textContent,classId,className:$('auth-class').selectedOptions[0]?.textContent,fromAuth:true});};
 async function authSave(action,data){
- if($('auth-app').value==='abaque-longueurs')return;
+ if(!authTableApps.has($('auth-app').value))return;
  const scope=authSelected(),classId=$('auth-class').value;
  if($('auth-scope').value==='student'&&!scope){authSay('Sélectionne un élève.');return}
  const buttons=[...document.querySelectorAll('#teacher-authorizations .authorization-actions button')];
