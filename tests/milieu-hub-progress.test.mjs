@@ -8,8 +8,9 @@ const opts={url:'https://awmhpfofacaglewammxt.supabase.co',classId:cls,actor:'ac
 test('badge TEST, identité validée et droits permanents sans compter les recrédits',async()=>{
  let calls=0;const db={rpc:async(name,args)=>{calls++;assert.equal(name,'connect_milieu_load_v2');assert.deepEqual(args,{p_actor:'actor',p_class:cls,p_teacher:false,p_expected:'pupil'});return {data:{ok:true,appKey:'milieu-segment',studentId:'pupil',state:{rights:{a:20,b:12},bonusRights:{c:20},archivedBonusXp:400,cups:{a:true,b:true}}}}}};
  const v=await appendMilieuProgress(previous,{...opts,db});assert.equal(calls,1);assert.deepEqual(v.apps,[...previous.apps,{appKey:'milieu-segment',xpEarned:32,xpMax:280,trophiesEarned:2,trophiesMax:12}]);assert.equal(previous.apps.length,1);assert.equal(v.other,'preserved');
- for(const change of [{classId:'other'},{setting:'closed'},{setting:'open'},{url:'https://other.supabase.co'}])assert.equal(await appendMilieuProgress(previous,{...opts,...change,db}),previous);
+ for(const change of [{classId:'other'},{setting:'closed'},{url:'https://other.supabase.co'}])assert.equal(await appendMilieuProgress(previous,{...opts,...change,db}),previous);
  assert.equal(calls,1);
+ const school='1b021ed9-4846-4203-9c7b-4b5fa8d7adab';let checked=0;const schoolDb={rpc:async(_name,args)=>{checked++;assert.equal(args.p_class,school);return {error:{message:'app_class_not_open'}}}};assert.equal(await appendMilieuProgress(previous,{...opts,classId:school,db:schoolDb}),previous);assert.equal(checked,1);assert.equal(await appendMilieuProgress(previous,{...opts,classId:school,setting:'pilot',db:schoolDb}),previous);assert.equal(checked,1);
 });
 test('absence de profil ou panne : aucun faux 0 XP ; nouveau profil approuvé : 0/280 et 0/12',async()=>{
  for(const response of [{error:{message:'denied'}},{data:{ok:true,appKey:'milieu-segment',studentId:'other',state:{}}},{data:{ok:true,appKey:'milieu-segment',studentId:'pupil',state:{rights:{a:281}}}}])assert.equal(await appendMilieuProgress(previous,{...opts,db:{rpc:async()=>response}}),previous);

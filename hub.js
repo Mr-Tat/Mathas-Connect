@@ -94,12 +94,14 @@ function card(app) {
   // silencieusement un 4/4 sans preuve et sans XP. Le mode Classique reste libre.
   if(schoolMultiplication && !inFreeMode() && target.origin===location.origin)
     target.searchParams.set('requireConnect','1');
+  if(SCHOOL_CLASS_IDS.includes(classId)&&app.app_key==='milieu-segment'&&!allMode&&!inFreeMode()&&target.origin===location.origin)target.searchParams.set('requireConnect','1');
+  if(!allMode&&SCHOOL_CLASS_IDS.includes(classId)&&app.app_key==='milieu-segment'&&target.origin===location.origin){target.searchParams.delete('hub');target.searchParams.set('hub','classe');if(inFreeMode()){target.searchParams.delete('requireConnect');target.searchParams.delete('connect')}}
    // Un lancement dans Toutes conserve l'identité approuvée Monsieur T
   // pour TOUS les jeux Connect. Sans « joueur=prof », leurs hôtes lisent la
   // session anonyme de l'élève au lieu du stockage Auth professeur, et le
   // bandeau niveau/XP disparaît malgré la connexion dans le HUB.
   // Les liens externes du catalogue ne reçoivent jamais la session TEST.
-  if(playingAsTeacher&&allMode&&app.app_key==='milieu-segment'&&target.origin===location.origin) target.searchParams.set('joueur','prof');
+  if(playingAsTeacher&&app.app_key==='milieu-segment'&&target.origin===location.origin) target.searchParams.set('joueur','prof');
   if(playingAsTeacher&&connectedGameKeys.has(app.app_key)&&(!allMode||target.origin===location.origin||app.app_key==='abaque-longueurs'))
     target.searchParams.set('joueur','prof');
   node.href = target.href;
