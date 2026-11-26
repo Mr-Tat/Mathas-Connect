@@ -34,7 +34,8 @@ test('PostgreSQL réel + handler Edge injecté : identité, 280 XP, projection, 
  assert.equal((await ok('teacher-cap-set',{maxActivity:4},teacher)).maxActivity,4);
  const capRun=await ok('load');assert.equal(capRun.maxActivity,1);
  // A lowered cap is a new-run limit, not a forced cancellation or deletion.
- await run('even');await run('even');
+ for(const k of ['even','odd','mix','gi1','gi2'])for(let i=0;i<LEVELS[k].p;i++)await run(k);
+ assert.equal((await ok('load')).state.decimalUnlocked,true);
  assert.equal((await post('begin',{expectedStudentId:student,eventId:randomUUID(),resetEpoch:0,activity:'decimal1'})).error,'activity_locked');
  assert.equal((await ok('teacher-cap-set',{maxActivity:6},teacher)).maxActivity,6);
  assert.equal((await post('begin',{expectedStudentId:student,eventId:randomUUID(),resetEpoch:0,activity:'decimal1'})).error,'activity_locked');
@@ -90,6 +91,7 @@ test('Chromium réel avec JWT simulé, handler et PostgreSQL réels : preuve nat
  try{
   await page.goto(url);await page.locator('[data-start="gi1"]').waitFor();
   assert.equal(await page.locator('#connectAccount').isVisible(),true);
+  await page.locator('#refreshProgress').click();await page.locator('#refreshProgress').filter({hasText:'Actualiser la progression'}).waitFor();
   assert.equal(await page.locator('[data-start="gi2"]').isEnabled(),false);
   await page.locator('[data-start="gi1"]').click();
   for(let i=0;i<6;i++){
