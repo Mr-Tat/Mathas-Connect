@@ -1,7 +1,7 @@
 // Validated 26/11/2026. Server reward model; no client points accepted.
 import {judgeNativeCompletion} from './completion-proof.mjs';
 export const APP_KEY='milieu-segment',XP_MAX=280,RULESET=3;
-export const LEVELS=Object.freeze({even:{n:10,p:3,xp:[8,3,3,6]},odd:{n:10,p:3,xp:[8,3,3,6]},mix:{n:10,p:3,xp:[8,3,3,6]},gi1:{n:6,p:1,xp:[8,4]},gi2:{n:6,p:1,xp:[10,6]},decimal1:{n:5,p:1,xp:[2,2]},decimal2:{n:10,p:1,xp:[4,2]},decimal3:{n:15,p:1,xp:[6,4]},g1:{n:5,p:1,xp:[8,4]},g2:{n:10,p:1,xp:[10,6]},g3:{n:10,p:1,xp:[16,8]}});
+export const LEVELS=Object.freeze({even:{n:10,p:2,xp:[8,6,6]},odd:{n:10,p:2,xp:[8,6,6]},mix:{n:10,p:2,xp:[8,6,6]},gi1:{n:6,p:1,xp:[8,4]},gi2:{n:6,p:1,xp:[10,6]},decimal1:{n:5,p:1,xp:[2,2]},decimal2:{n:10,p:1,xp:[4,2]},decimal3:{n:15,p:1,xp:[6,4]},g1:{n:5,p:1,xp:[8,4]},g2:{n:10,p:1,xp:[10,6]},g3:{n:10,p:1,xp:[16,8]}});
 export const DECIMALS=['decimal1','decimal2','decimal3'];
 export const ORDER=Object.keys(LEVELS),GEO={integers:['gi1','gi2'],decimals:['g1','g2','g3']},THRESHOLDS=[5,10,20];
 export const family=k=>['even','odd','mix','gi1','gi2'].includes(k)?'integers':'decimals';
