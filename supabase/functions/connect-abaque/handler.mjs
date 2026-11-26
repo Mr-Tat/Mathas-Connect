@@ -26,7 +26,7 @@ export function createAbaqueHandler({auth,db,access='closed'}){
   let body;
   try{body=await readBody(request);}catch(error){return deny(error.message,error.message==='payload_too_large'?413:400);}
   if(!body||body.appKey!==APP_KEY||!uuid.test(body.classId)||
-   !['load','record','teacher-summary','teacher-reset','teacher-pilot-status','teacher-pilot-approve','teacher-activity-get','teacher-activity-set','teacher-mode-get','teacher-mode-set'].includes(body.action))return deny('invalid_request');
+   !['load','record','teacher-summary','teacher-reset','teacher-pilot-status','teacher-pilot-approve','teacher-activity-get','teacher-activity-set','teacher-mode-get','teacher-mode-set','teacher-parcours-restart'].includes(body.action))return deny('invalid_request');
   if(access==='pilot'&&body.classId!==PILOT_CLASS)return deny('app_class_not_open',403);
   try{
    const verified=await auth.auth.getUser(token),user=verified.data?.user;
@@ -65,6 +65,9 @@ export function createAbaqueHandler({auth,db,access='closed'}){
        !body.studentIds.every(id=>uuid.test(id))||typeof body.includeTeacher!=='boolean'||(!body.studentIds.length&&!body.includeTeacher))return deny('invalid_request');
       routine='connect_abaque_pilot_approve_v1';Object.assign(args,{p_students:body.studentIds,p_include_teacher:body.includeTeacher,p_confirmed:true});
      }
+    }else if(body.action==='teacher-parcours-restart'){
+     if(body.confirmed!==true||!['student','class'].includes(body.scope)||!['all','activity3'].includes(body.part)||!Array.isArray(body.students)||body.students.length<1||body.students.length>200||(body.scope==='student'&&body.students.length!==1)||body.students.some(s=>!s||!uuid.test(s.studentId)||!integer(s.resetEpoch))||new Set(body.students.map(s=>s.studentId)).size!==body.students.length)return deny('invalid_request');
+     routine='connect_abaque_restart_scope_v1';Object.assign(args,{p_scope:body.scope,p_part:body.part,p_students:body.students.map(s=>({studentId:s.studentId,resetEpoch:s.resetEpoch}))});
     }else if(body.action==='teacher-summary')routine='connect_abaque_teacher_v1';
     else{
      if(!uuid.test(body.studentId)||!integer(body.resetEpoch)||body.repeatXp===true)return deny('invalid_request');

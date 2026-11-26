@@ -1,0 +1,57 @@
+name: Abaque - nouvelle progression PostgreSQL isolé
+on:
+  pull_request:
+    paths:
+      - 'supabase/release-candidates/20261126_abaque_restart_scope_candidate.sql'
+      - 'tests/abaque-restart-scope.runtime.mjs'
+      - '.github/workflows/abaque-restart-postgres.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  postgres:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: abaque_test
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d abaque_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 55432
+      PGUSER: postgres
+      PGPASSWORD: local-test-only
+      PGDATABASE: abaque_test
+      ABAQUE_RESTART_LOCAL: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer PostgreSQL de test sans données réelles
+        run: |
+          set -euo pipefail
+          for fixture in tests/postgres/calculs-melanges-fixture.sql tests/postgres/calculs-melanges-auth-fixture.sql supabase/release-candidates/20261031_permanent_trophies_hub_v1.sql supabase/release-candidates/connect_lab_hub_visibility_v1.sql; do
+            psql -v ON_ERROR_STOP=1 -f "$fixture"
+          done
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE SCHEMA auth;
+          ALTER ROLE service_role BYPASSRLS;
+          INSERT INTO public.connect_classes(id,name) VALUES('4bf3400d-a315-4ea4-a2f3-afaca24dc9b9','Classe démo - TEST');
+          SQL
+          psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/20261102_abaque_longueurs_v1.sql
+          for migration in supabase/migrations/*abaque*.sql; do
+            case "$migration" in *projection*) continue;; esac
+            psql -v ON_ERROR_STOP=1 -f "$migration"
+          done
+          psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/20261126_abaque_restart_scope_candidate.sql
+      - run: npm install --no-save --no-package-lock pg@8.16.3 playwright@1.57.0
+      - run: npx playwright install chromium --with-deps
+      - run: node --test tests/abaque-restart-scope.runtime.mjs

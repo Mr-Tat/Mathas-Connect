@@ -634,4 +634,6 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
 
 #auth-progression-settings[hidden]{display:none!important}
 
+#teacher-authorizations #abaque-restart-settings[hidden],.parcours-dialog label[hidden]{display:none!important}
+
 #milieu-authorizations[hidden],#milieu-results[hidden],.parcours-dialog label[hidden]{display:none!important}
