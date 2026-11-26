@@ -39,8 +39,9 @@ BEGIN
   receipt:=public.connect_abaque_restart_v1(p_actor,p_class,member,epoch);
   IF receipt->>'ok' IS DISTINCT FROM 'true' THEN RAISE EXCEPTION 'invalid_result'; END IF;
   IF p_part='activity3' THEN
-   preserved:=jsonb_strip_nulls(jsonb_build_object('stage1',old_state->'stage1','stage2',old_state->'stage2',
-     'stage12ProofEpoch',coalesce((old_state->>'stage12ProofEpoch')::bigint,epoch)));
+   preserved:=jsonb_build_object('stage12ProofEpoch',coalesce((old_state->>'stage12ProofEpoch')::bigint,epoch))
+     ||CASE WHEN old_state ? 'stage1' THEN jsonb_build_object('stage1',old_state->'stage1') ELSE '{}'::jsonb END
+     ||CASE WHEN old_state ? 'stage2' THEN jsonb_build_object('stage2',old_state->'stage2') ELSE '{}'::jsonb END;
    UPDATE public.connect_states SET state_data=preserved,updated_at=now()
     WHERE student_id=member AND app_key='abaque-longueurs';
   END IF;
