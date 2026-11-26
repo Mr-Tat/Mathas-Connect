@@ -10,14 +10,14 @@ export function createMilieuHandler({auth,db,access='closed',pilotClassId=null})
  return async request=>{
   if(request.method==='OPTIONS')return new Response('',{headers});
   if(request.method!=='POST')return reply({ok:false,error:'method_not_allowed'},405);
-  if(access!=='pilot')return reply({ok:false,error:'integration_closed'},403);
+  if(!['pilot','open'].includes(access))return reply({ok:false,error:'integration_closed'},403);
   const token=request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];
   if(!token)return reply({ok:false,error:'authentication_required'},401);
   try{
    const raw=await request.text();if(raw.length>2000000)return reply({ok:false,error:'payload_too_large'},413);
    const b=JSON.parse(raw);
    if(b.appKey!==APP_KEY||!uuid(b.classId)||!['load','begin','record','share','board','teacher-summary','teacher-restart','teacher-cap-get','teacher-cap-set'].includes(b.action))throw Error('invalid_result');
-   if(pilotClassId&&b.classId!==pilotClassId)throw Error('app_class_not_open');
+   if(access==='pilot'&&pilotClassId&&b.classId!==pilotClassId)throw Error('app_class_not_open');
    if(['begin','record'].includes(b.action)&&b.ruleset!==RULESET)throw Error('invalid_result');
    const verified=await auth.auth.getUser(token),u=verified.data?.user;
    if(verified.error||!uuid(u?.id)||typeof u.is_anonymous!=='boolean')return reply({ok:false,error:'authentication_required'},401);
