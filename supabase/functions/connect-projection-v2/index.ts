@@ -22,7 +22,7 @@ const allowKey=(k:unknown)=>typeof k==='string'&&keys.includes(k);
 const distinct=(x:string[])=>[...new Set(x)];
 const classOptions=(o:any)=>o&&typeof o==='object'&&!Array.isArray(o)&&
  Array.isArray(o.scoreApps)&&o.scoreApps.length<=keys.length&&o.scoreApps.every(allowKey)&&
- Array.isArray(o.percentageApps)&&o.percentageApps.length<=percentageKeys.length&&o.percentageApps.every(k=>percentageKeys.includes(k))&&
+ Array.isArray(o.percentageApps)&&o.percentageApps.length<=percentageKeys.length&&o.percentageApps.every((k:unknown)=>typeof k==='string'&&percentageKeys.includes(k))&&
  Array.isArray(o.comparisons)&&o.comparisons.length<=4&&o.comparisons.every(uuid)&&
  (o.comparisonDisplay===undefined||(Array.isArray(o.comparisonDisplay)&&o.comparisonDisplay.length<=4&&
    o.comparisonDisplay.every((v:any)=>v&&uuid(v.classId)&&typeof v.score==='boolean'&&

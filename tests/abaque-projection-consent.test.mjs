@@ -8,17 +8,19 @@ const screen=read('projection-v2-live.js');
 const bootstrap=read('apps/GRAN-abaque-m-1/connect/bootstrap.mjs');
 const share=read('apps/GRAN-abaque-m-1/connect/projection-share.mjs');
 
-test('L’Abaque est un sixième classement, sans faux pourcentages et sans perdre les cinq jeux',()=>{
- for(const key of ['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple',
-  'addition-ecrite-multiple','melange-calculs-ecrits','abaque-longueurs']){
-  assert.ok(api.includes(key),key);assert.ok(screen.includes(key),key);
- }
+test('Les sept classements existent, et seuls les cinq calculs écrits ont des pourcentages',()=>{
+ const written=['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple','addition-ecrite-multiple','melange-calculs-ecrits'];
+ const pointOnly=['abaque-longueurs','milieu-segment'];
+ for(const key of [...written,...pointOnly]){assert.ok(api.includes(key),key);assert.ok(screen.includes(key),key)}
  assert.match(screen,/MAX_VISIBLE_APPS=3/);
- assert.match(api,/const percentageKeys=keys\.filter\(k=>k!=='abaque-longueurs'\)/);
- assert.match(screen,/const percentageKeys=allKeys\.filter\(k=>k!=='abaque-longueurs'\)/);
- assert.match(screen,/field==='percentageApps'&&app\.key==='abaque-longueurs'/);
+ for(const [source,arr] of [[api,'keys'],[screen,'allKeys']]){
+  const expression=source.match(new RegExp('const percentageKeys='+arr+'\\.filter\\(([^\\n;]+)\\)'))?.[1];
+  assert.ok(expression,'filtre explicite');assert.deepEqual([...written,...pointOnly].filter(Function('return '+expression)()),written);
+ }
+ assert.match(screen,/field==='percentageApps'&&\['abaque-longueurs','milieu-segment'\]\.includes\(app\.key\)/);
  assert.match(api,/connect_projection_abaque_summary_v1/);
  assert.match(api,/connect_projection_abaque_share_v1/);
+ assert.match(api,/if\(b\.appKey==='milieu-segment'\)return deny\('use_milieu_certified_endpoint'/);
 });
 test('Aucun score non consenti : seulement un reçu arithmétique serveur, dans la classe et le parcours',()=>{
  assert.match(sql,/connect_abaque_receipts/);
