@@ -16,7 +16,18 @@ const http=require("node:http"),fs=require("node:fs");
  const url=pathToFileURL(path.join(__dirname,"..","index.html")).href;
  await page.goto(url);assert.equal(await page.locator("#practice").count(),0,"pas de mode test en version élève");
  await page.goto(url);
+ // DA : matériaux distincts, texture intégrée et lisibilité à toutes les tailles.
+ assert.equal(await page.evaluate(()=>getComputedStyle(document.body).backgroundImage.includes("data:image/svg+xml")),true,"grain local du fond");
+ const skins=await page.evaluate(()=>[".integers",".decimals",".segments"].map(sel=>getComputedStyle(document.querySelector(sel)).backgroundImage));
+ assert.equal(new Set(skins).size,3,"trame distincte par famille");
+ assert.equal(await page.locator('[data-start="even"]').evaluate(el=>getComputedStyle(el).backgroundImage.includes("data:image/svg+xml")),true,"carte texturée");
+ assert.equal(await page.locator('[data-start="even"] .activity-title').evaluate(el=>el.nextElementSibling.classList.contains("activity-example")),true);
+ assert.equal(await page.locator('[data-start="gi1"] .mini-segment text').count(),3);
+ for(const width of [320,390,768,1100]){await page.setViewportSize({width,height:800});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"menu DA "+width)}
+ await page.setViewportSize({width:1100,height:800});
  await page.locator('[data-start="even"]').click();
+ assert.equal(await page.locator('.pad [data-key="7"]').evaluate(el=>getComputedStyle(el).backgroundImage.includes("data:image/svg+xml")),true,"pavé texturé");
+ assert.equal(await page.locator('input[data-field="answer"]').first().evaluate(el=>getComputedStyle(el).backgroundImage),"none","champ de réponse uni");
  assert.equal(await page.locator('input[data-i]:not([inputmode="none"])').count(),0);
  const size=await page.locator('[data-key="7"]').boundingBox();assert.ok(size.height>=60&&size.width>=60,"touches agrandies");
  const fields=page.locator('input[data-field="answer"]');
