@@ -51,3 +51,6 @@
 - **À la livraison** : déplacer la ligne vers le registre de fiches terminées dans [applications/README.md](applications/README.md), garder dans cet index **les seuls sujets encore actifs ou en attente**.
 - **À la rencontre d'un incident** : consigner d'abord dans la fiche. S'il se répète sur plusieurs applications, analyser le **motif commun**, le promouvoir dans [RETEX_OPERATIONNEL.md](RETEX_OPERATIONNEL.md) avec références et nombre de cas ; n'afficher ici qu'**une alerte courte si une action globale est nécessaire**.
 - Le [contrat complet](CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md), la [doctrine historique](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) et le [suivi hérité](SUIVI_DECISIONS_OUVERTES_20261107.md) restent conservés. Ne pas supposer clos un point historique sans nouvelle preuve.
+
+
+- Milieu d'un segment — pilote élève autonome dans Toutes → Tests ; [fiche](applications/milieu-segment.md). Aucun XP/score Connect ni ouverture des classes ; recette réelle à confirmer.
