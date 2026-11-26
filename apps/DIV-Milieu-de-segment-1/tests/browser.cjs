@@ -17,6 +17,13 @@ const http=require("node:http"),fs=require("node:fs");
  await page.goto(url);assert.equal(await page.locator("#practice").count(),0,"pas de mode test en version élève");
  await page.goto(url);
  await page.locator('[data-start="even"]').click();
+ assert.equal(await page.locator('input[data-i]:not([inputmode="none"])').count(),0);
+ const size=await page.locator('[data-key="7"]').boundingBox();assert.ok(size.height>=60&&size.width>=60,"touches agrandies");
+ const fields=page.locator('input[data-field="answer"]');
+ const vals=await page.evaluate(()=>pageItems().map(q=>fmt(q.n/2)));
+ await fields.first().focus();assert.equal(await page.locator("#padOK").innerText(),"Avancer");
+ for(let i=0;i<5;i++){await fields.nth(i).fill(vals[i]);assert.equal(await page.locator("#padOK").innerText(),i===4?"Valider":"Avancer");await page.locator("#padOK").click();if(i<4){assert.equal(await fields.nth(i+1).evaluate(el=>document.activeElement===el),true);assert.equal(await page.evaluate(()=>run.q[0].attempts),0,"aucune validation anticipée")}}
+ assert.equal(await page.locator("#padOK").innerText(),"Page suivante");assert.equal(await page.evaluate(()=>run.checked),true);await page.locator("#home").click();await page.locator("#discard").click();await page.locator('[data-start="even"]').click();
  for(let series=0;series<3;series++){
    if(series)await page.locator('[data-start="even"]').click();
    for(let p=0;p<2;p++){
@@ -30,7 +37,12 @@ const http=require("node:http"),fs=require("node:fs");
  }
  assert.equal(await page.locator('[data-start="odd"]').isEnabled(),true);
  assert.equal(await page.evaluate(()=>progress.cups.even),true);assert.equal(await page.evaluate(()=>{const x=document.querySelector(".challenge"),y=x.querySelector(".tile");return Math.abs(y.getBoundingClientRect().width/x.getBoundingClientRect().width-.65)<.03}),true,"boutons centrés à 65%");
- await page.goto(url);assert.equal(await page.locator('[data-start="g3"]').isDisabled(),true);await page.locator("#master").click();assert.equal(await page.locator('[data-start="g3"]').isDisabled(),true);page.removeAllListeners("dialog");page.on("dialog",d=>d.type()==="prompt"?d.accept("Thecakeisalie"):d.accept());await page.locator("#master").click();assert.equal(await page.locator('[data-start="g3"]').isEnabled(),true);
+ await page.goto(url);assert.equal(await page.locator('[data-start="g3"]').isDisabled(),true);
+ const master=page.locator("#master"),dialog=page.locator("#masterDialog"),pw=page.locator("#masterPassword");
+ assert.equal(await master.innerText(),"M");const masterBox=await master.boundingBox();assert.ok(masterBox.x<=15&&masterBox.y+masterBox.height>=785);
+ assert.equal(await page.locator('[data-start="even"] .activity-title').evaluate(el=>el.nextElementSibling.classList.contains("activity-example")),true);
+ await master.click();assert.equal(await pw.getAttribute("type"),"password");await pw.fill("incorrect");await pw.press("Enter");assert.equal(await page.locator("#masterError").isVisible(),true);assert.equal(await page.locator('[data-start="g3"]').isDisabled(),true);
+ await page.locator("#masterCancel").click();assert.equal(await dialog.isVisible(),false);assert.equal(await pw.inputValue(),"");await master.click();await pw.fill("Thecakeisalie");await pw.press("Enter");assert.equal(await dialog.isVisible(),false);assert.equal(await page.locator('[data-start="g3"]').isEnabled(),true);
  await page.locator('[data-start="odd"]').click();
  await page.locator('[data-help="0"][data-kind="manip"]').click();
  const drag=page.locator('[data-drag="0"]'), b=await drag.boundingBox();
@@ -44,10 +56,12 @@ const http=require("node:http"),fs=require("node:fs");
  await page.locator('[data-start="decimal2"]').click();
  await page.locator('[data-help="0"][data-kind="decomp"]').click();
  await page.locator('[data-help="0"][data-kind="manip"]').click();
- assert.equal(await page.locator('[data-i="0"][data-field="partA"]').count(),1);
+ assert.equal(await page.locator('[data-i="0"][data-field="partA"]').count(),1);assert.equal(await page.locator('input[data-i]:not([inputmode="none"])').count(),0);
+ await page.locator('[data-i="0"][data-field="partA"]').focus();await page.locator("#padOK").click();assert.equal(await page.locator('[data-i="0"][data-field="partB"]').evaluate(el=>document.activeElement===el),true);await page.keyboard.press("Enter");assert.equal(await page.locator('[data-i="0"][data-field="answer"]').evaluate(el=>document.activeElement===el),true);
+ await page.locator("#padOK").click();assert.equal(await page.locator('[data-i="1"][data-field="answer"]').evaluate(el=>document.activeElement===el),true);
  for(const width of [390,320]){
    await page.setViewportSize({width,height:740});
-   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"débordement décimal "+width);
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"débordement décimal "+width);assert.ok((await page.locator('[data-key="7"]').boundingBox()).height>=60);
  }
  await page.setViewportSize({width:1100,height:800});
  await page.locator("#home").click();await page.locator("#discard").click();
@@ -61,15 +75,17 @@ const http=require("node:http"),fs=require("node:fs");
    await page.locator('#lens [data-tick="'+mm+'"]').click();
  }
  await pick(n);
+ assert.equal(await page.locator('input[data-field="measure"]').getAttribute("inputmode"),"none");
  assert.equal(await page.locator('input[data-field="measure"]').inputValue(),"");
  await page.locator('input[data-field="measure"]').fill(String(n/10).replace(".",","));
  await page.locator("#ok").click();
+ assert.equal(await page.locator('input[data-field="answer"]').getAttribute("inputmode"),"none");
  await page.locator('input[data-field="answer"]').fill(String(n/20).replace(".",","));
  await page.locator("#ok").click();
  await pick(n/2);
  assert.equal(await page.evaluate(()=>current().done&&run.correct===1),true);
  await page.locator("#ok").click();
- await page.reload();await page.locator("#master").click();await page.locator("#resume").click();
+ await page.reload();await page.locator("#master").click();await page.locator("#masterPassword").fill("Thecakeisalie");await page.locator("#masterPassword").press("Enter");await page.locator("#resume").click();
  assert.equal(await page.evaluate(()=>run.index===1),true);
  assert.equal(await page.evaluate(()=>run.id),geometryId);
  await page.locator("#home").click();await page.locator("#discard").click();
@@ -78,6 +94,8 @@ const http=require("node:http"),fs=require("node:fs");
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"débordement menu");
  assert.deepEqual(errors,[]);assert.deepEqual(net,[]);
  await page.goto(url+"?requireConnect=1&test=1");assert.equal(await page.locator("[data-start]").count(),0);assert.equal(await page.locator("#practice").count(),0);assert.equal(await page.locator("#master").isVisible(),false);await page.locator("#freeLaunch").click();await page.locator('[data-start="even"]').waitFor();
+ const touch=await browser.newContext({viewport:{width:900,height:700},hasTouch:true,offline:true});
+ try{const p=await touch.newPage();await p.goto(url);await p.locator('[data-start="even"]').tap();const first=p.locator('input[data-field="answer"]').first();await first.tap();assert.equal(await first.getAttribute("inputmode"),"none");assert.equal(await first.evaluate(el=>document.activeElement===el&&el.readOnly),true);await p.locator('[data-key="7"]').tap();assert.equal(await first.inputValue(),"7");await p.keyboard.press("Backspace");await p.keyboard.type("8");assert.equal(await first.inputValue(),"8");await p.keyboard.press("ArrowLeft");await p.keyboard.press("Delete");assert.equal(await first.inputValue(),"");await p.keyboard.type("1.5");assert.equal(await first.inputValue(),"1,5");await p.locator("#padOK").tap();assert.equal(await p.locator('input[data-field="answer"]').nth(1).evaluate(el=>document.activeElement===el),true)}finally{await touch.close()}
  const server=http.createServer((req,res)=>{const file=new URL(req.url,"http://localhost").pathname.slice(1)||"index.html";if(!["index.html","sw.js","favicon.svg"].includes(file)){res.writeHead(404);res.end();return}res.setHeader("content-type",file==="sw.js"?"text/javascript":file==="favicon.svg"?"image/svg+xml":"text/html");res.end(fs.readFileSync(path.join(__dirname,"..",file)))});
  await new Promise((resolve,reject)=>{server.once("error",reject);server.listen(0,"127.0.0.1",resolve)});
  const web=await browser.newContext({viewport:{width:390,height:740}});
