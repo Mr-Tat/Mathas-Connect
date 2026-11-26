@@ -26,7 +26,7 @@ BEGIN
  FROM public.connect_students s WHERE s.archived_at IS NULL AND
   (NOT pilot OR EXISTS(SELECT 1 FROM public.connect_abaque_pilot_students a WHERE a.student_id=s.id))
   AND EXISTS(SELECT 1 FROM public.connect_enrollments e WHERE e.student_id=s.id AND e.class_id=p_class AND e.left_at IS NULL);
- IF (p_scope='class' AND expected_ids IS DISTINCT FROM live_ids) OR NOT expected_ids <@ live_ids THEN RAISE EXCEPTION 'not_enrolled'; END IF;
+ IF (p_scope='class' AND expected_ids IS DISTINCT FROM live_ids) OR NOT (expected_ids <@ live_ids) THEN RAISE EXCEPTION 'not_enrolled'; END IF;
  -- deterministic lock order; original restart rechecks permission/enrollment and epoch,
  -- archives full old state and preserves all permanent rewards. Any failure rolls back the batch.
  FOREACH member IN ARRAY expected_ids LOOP
@@ -44,7 +44,7 @@ BEGIN
   END IF;
  END LOOP;
  RETURN jsonb_build_object('ok',true,'count',cardinality(expected_ids),'part',p_part);
-END $$;
+END; $;
 REVOKE ALL ON FUNCTION public.connect_abaque_restart_scope_v1(uuid,uuid,text,text,jsonb) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.connect_abaque_restart_scope_v1(uuid,uuid,text,text,jsonb) TO service_role;
 -- preserve previous perfect proofs for activities 1/2 across partial resets only.
