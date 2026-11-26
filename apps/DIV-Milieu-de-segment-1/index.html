@@ -100,14 +100,14 @@ async function settleOfficial(){
  const pending=run,connection=official,session=pending.session;officialBusy=true;
  if(!safeSet(activeRunKey(),pending)){officialBusy=false;pending.error="Sauvegarde indisponible. Garde cette page ouverte.";renderOfficialResult();return}
  renderOfficialResult();
- try{const ack=await official.post("record",{eventId:session.eventId,resetEpoch:session.epoch,proof:completionProof(pending)});if(official!==connection||run!==pending)return;if(ack.eventId!==session.eventId)throw Error("Accusé invalide.");applyOfficial(ack);pending.ack={points:pending.id.startsWith("g")?ack.judgement.points:null,xpDelta:ack.xp.delta};safeRemove(activeRunKey());officialBusy=false;renderOfficialResult();if(pending.ack.points>0)void requestShare(session.eventId,pending.ack.points);
+ try{const ack=await official.post("record",{eventId:session.eventId,resetEpoch:session.epoch,proof:completionProof(pending)});if(official!==connection||run!==pending)return;if(ack.eventId!==session.eventId)throw Error("Accusé invalide.");applyOfficial(ack);pending.ack={points:pending.id.startsWith("g")?ack.judgement.points:null,xpDelta:ack.xp.delta};safeRemove(activeRunKey());officialBusy=false;renderOfficialResult();if(pending.ack.points>0)void requestShare(session.eventId,pending.ack.points,true);
  }catch(e){if(official!==connection||run!==pending)return;pending.error="Enregistrement non confirmé : "+e.message;checkpoint();officialBusy=false;renderOfficialResult();if(e.code==="stale_reset_epoch"){try{applyOfficial(await official.post("load"));safeRemove(activeRunKey());showHome()}catch{}}}
  finally{officialBusy=false}
 }
-async function requestShare(eventId,points){
+async function requestShare(eventId,points,isToday=false){
  if(!official||!eventId||!points)return;
  const connection=official;let board;try{board=await official.post("board")}catch{return}if(official!==connection)return;
- const r=official.snapshot.scoreRecords;if(points<=board.boardBest&&(eventId!==r.dayEvent||points<=board.boardTodayBest))return;
+ const r=official.snapshot.scoreRecords;if(points<=board.boardBest&&(!isToday&&eventId!==r.dayEvent||points<=board.boardTodayBest))return;
  if(document.querySelector("dialog.milieu-share"))return;
  const d=document.createElement("dialog");d.className="milieu-share";const title=document.createElement("h2");title.textContent="Envoyer "+points+" points au tableau ?";const actions=document.createElement("div");actions.className="actions";const yes=document.createElement("button"),no=document.createElement("button");yes.textContent="Oui";no.textContent="Non";const message=document.createElement("p");actions.append(yes,no);d.append(title,message,actions);document.body.append(d);d.addEventListener("close",()=>d.remove(),{once:true});no.onclick=()=>d.close();yes.onclick=async()=>{yes.disabled=true;no.disabled=true;try{const result=await connection.post("share",{eventId,resetEpoch:connection.snapshot.resetEpoch,confirmed:true});if(official!==connection)throw Error("Session modifiée.");message.textContent=result.consentRecorded?"✓ Score envoyé.":"Ce score est déjà couvert par le tableau.";yes.hidden=true;no.textContent="Fermer";no.disabled=false}catch(e){message.textContent="Envoi non confirmé : "+e.message;yes.disabled=false;no.disabled=false}};d.showModal();
 }

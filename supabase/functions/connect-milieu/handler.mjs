@@ -44,8 +44,8 @@ export function createMilieuHandler({auth,db,access='closed'}){
    }
    const event=await call('event',args);
    if(event.activity!==b.proof?.activity||event.mode!==b.proof?.mode)throw Error('invalid_completion');
-   verifySequence(b.proof,event.seed);
    const j=judgeCompletion(b.proof);
+   verifySequence(b.proof,event.seed);
    if(event.receipt){
     // Commit routine compares JSONB exactly; duplicate returns previous judgement, no credit.
     return reply(draw(await call('commit',{...args,p_revision:event.revision,p_proof:b.proof,p_judgement:j,p_state:state(event),p_xp:event.appXp,p_cups:Object.keys(state(event).cups)})));

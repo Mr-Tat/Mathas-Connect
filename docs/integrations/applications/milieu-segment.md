@@ -8,3 +8,6 @@
 
 ### 26 novembre — pilote v0.2.2
 Source autonome : 911e7e067772050748231dcbf67d5ba04af56910 (PR #1 fusionnée, CI 45822349984 verte). Garde requireConnect=1, accès libre explicite, recette cache web local après premier chargement. Synchronisation exacte des cinq fichiers natifs. Barèmes Connect toujours à valider ; aucune attribution officielle activée.
+
+### Décisions confirmées et intégration candidate
+280 XP, 12 trophées, classement commun, points entiers 2/4 et décimaux 3/6, coûts des aides tels que validés. Nouvelle progression complète, géométrie entière ou décimale, recrédit optionnel, conservation du parcours décimal déjà ouvert. PR #342 : contrat V2, graine et preuves natives, candidat SQL/Edge fermé, adaptateur officiel, consentement et panneau professeur. Suite moteur simulée 143/143, tests récompenses et générateur 5/5 dans runtime JS. Workflow PostgreSQL et handler ajouté mais aucune nouvelle exécution Actions observée pour les nouveaux commits ; recette navigateur authentifiée et validation SQL réelle NON EXECUTEES sur cette version. Aucun déploiement, aucune ouverture scolaire ; pilote v0.2.2 reste publié. À faire : recette SQL/Edge/Chromium, plafond de classe et harmonisation du profil, examen régressions communes et merge coordonné avec #343 puis déploiement limité et vérifié.
