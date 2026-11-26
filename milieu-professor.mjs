@@ -21,14 +21,14 @@ export function installMilieuProfessor({sb,url,key}){
   try{const roster=(await request(classId,'teacher-summary')).students;if(!current()||$('auth-class').value!==classId)return;if(!Array.isArray(roster))throw Error('Liste invalide.');if(!roster.length){feedback.textContent='Aucun élève approuvé pour La moitié.';return}
    if(!reset){const results=$('milieu-results');results.replaceChildren();for(const row of roster){const details=document.createElement('details'),name=document.createElement('summary'),p=document.createElement('p'),record=document.createElement('p');name.textContent=row.displayName+' · '+row.xp.appXp+' XP · '+row.trophies.length+'/12 trophées';p.textContent=describe(row);record.textContent='Score du jour : '+row.scoreRecords.dayBest+' · Record : '+row.scoreRecords.allBest;details.append(name,p,record);results.append(details)}results.hidden=false;feedback.textContent='✓ Résultats chargés.';return}
    const dialog=document.createElement('dialog');dialog.className='parcours-dialog';const form=document.createElement('form'),title=document.createElement('h2');title.textContent='Nouvelle progression · La moitié';
-   const scope=select('Pour',[['Un élève','student'],['Toute la classe','class']]),student=select('Élève',roster.map(r=>[r.displayName,r.studentId])),part=select('Parcours',[['Application complète','all'],['Géométrie entière · activité 4','integerGeometry'],['Géométrie décimale · activité 6','decimalGeometry']]);
+   const scope=select('Pour',[['Un élève','student'],['Toute la classe','class']]),student=select('Élève',roster.map(r=>[r.displayName,r.studentId])),part=select('Parcours',[['Depuis l’étape 1 — Entiers','all'],['Depuis l’étape 2 — Décimaux','decimalStage']]);
    const repeatLabel=document.createElement('label'),repeat=document.createElement('input');repeat.type='checkbox';repeatLabel.append(repeat,' Autoriser le recrédit des XP de ce parcours (sans double crédit)');
    const hint=document.createElement('p'),checkLabel=document.createElement('label'),checkText=document.createElement('span'),check=document.createElement('input');check.required=true;check.autocomplete='off';checkLabel.append(checkText,check);
    const message=document.createElement('p');message.setAttribute('role','alert');const actions=document.createElement('div');actions.className='button-row';
    const cancel=document.createElement('button'),go=document.createElement('button');cancel.type='button';cancel.textContent='Annuler';go.type='submit';go.textContent='Confirmer';go.className='danger';actions.append(cancel,go);
    const targets=()=>scope.s.value==='class'?roster:roster.filter(r=>r.studentId===student.s.value);
    const name=()=>scope.s.value==='class'?className:targets()[0]?.displayName||'';
-   function paint(){student.wrap.hidden=scope.s.value==='class';check.value='';checkText.textContent='Pour confirmer, recopie exactement : '+name();hint.textContent=part.s.value==='all'?'Toutes les activités et défis recommencent.':part.s.value==='integerGeometry'?'Activité 4 et défis entiers recommencent ; les acquis décimaux sont conservés.':'Activité 6 et défis décimaux recommencent ; les autres acquis sont conservés.'}
+   function paint(){student.wrap.hidden=scope.s.value==='class';check.value='';checkText.textContent='Pour confirmer, recopie exactement : '+name();hint.textContent=part.s.value==='all'?'Toute l’application recommence, entiers puis décimaux.':'Les activités 5 et 6 et les défis décimaux recommencent ; les entiers restent acquis.'}
    scope.s.onchange=student.s.onchange=part.s.onchange=paint;paint();
    form.append(title,scope.wrap,student.wrap,part.wrap,repeatLabel,hint,checkLabel,message,actions);dialog.append(form);document.body.append(dialog);
    let submitting=false;dialog.addEventListener('cancel',e=>{if(submitting)e.preventDefault()});dialog.addEventListener('close',()=>{dialog.remove();busy=false},{once:true});cancel.onclick=()=>dialog.close();
@@ -46,7 +46,7 @@ export function installMilieuProfessor({sb,url,key}){
   try{const result=await request(cls,save?'teacher-cap-set':'teacher-cap-get',save?{maxActivity:Number(cap.value)}:{});
    if(!current()||$('auth-class').value!==cls)return;
    if(!Number.isInteger(result.maxActivity)||result.maxActivity<1||result.maxActivity>6)throw Error('Réglage invalide.');
-   capClass=cls;cap.value=String(result.maxActivity);cap.disabled=false;capSave.disabled=false;feedback.textContent=save?'✓ Réglage de classe enregistré.':'Réglage chargé.';
+   capClass=cls;cap.value=String(result.maxActivity<=4?4:6);cap.disabled=false;capSave.disabled=false;feedback.textContent=save?'✓ Réglage de classe enregistré.':[4,6].includes(result.maxActivity)?'Réglage chargé.':'Ancien réglage : activité '+result.maxActivity+'. Enregistre une des deux étapes pour le remplacer.';
   }catch(e){feedback.textContent='Réglage non confirmé : '+e.message;capClass=null}finally{busy=false}
  }
  for(const id of ['auth-app','auth-class'])$(id).addEventListener('change',()=>{capClass=null;cap.disabled=true;capSave.disabled=true});

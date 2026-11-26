@@ -228,6 +228,7 @@ const old=safeGet(activeRunKey());if(official&&old?.finished&&!old.ack){run=old;
 app.innerHTML='<div class="top"><div><h1>La moitié</h1><div class="muted">Du calcul mental au milieu d’un segment</div></div>'+'</div>'+(old&&!old.finished&&!!old.practice===practice?'<div class="actions"><button id="resume" class="primary">Reprendre la partie</button><button id="discard">Abandonner</button></div>':'')+'<section class="group integers"><h2>Moitié d’entiers</h2><div class="grid3">'+tile("even","8 : 2")+tile("odd","7 : 2")+tile("mix","? : 2")+'</div>'+geometryGroup("integers","4. Milieu d’un segment entier",tile("gi1","6 segments")+tile("gi2","📏"))+challenges("integers","gi2","Entiers")+'</section><section class="group decimals"><h2>Moitié de décimaux</h2><div class="top"><h3>5. Calculs décimaux</h3>'+cup("decimal")+'</div><div class="grid3">'+tile("decimal1","3,6 : 2")+tile("decimal2","3,6 : 2")+tile("decimal3","3,6 : 2")+'</div>'+geometryGroup("decimals","6. Milieu d’un segment décimal",tile("g1","5 segments")+tile("g2","10 segments")+tile("g3","📏"))+challenges("decimals","g3","Décimaux")+'</section>'+(practice?'<p class="muted">Master mode : toutes les activités sont accessibles, aucun résultat enregistré.</p>':'')+(storageFailed?'<p class="feedback">Sauvegarde locale indisponible sur ce navigateur.</p>':'');
 if(!officialRequired&&hubAccess&&params.get("class")==="4bf3400d-a315-4ea4-a2f3-afaca24dc9b9"){const connectButton=document.createElement("button");connectButton.textContent="Parcours Connect · TEST";connectButton.onclick=()=>{const u=new URL(location.href);u.searchParams.set("requireConnect","1");location.assign(u.href)};app.prepend(connectButton)}
 mountRewardCards();
+if(official){const gate=document.createElement('div');gate.className='actions';const refresh=document.createElement('button');refresh.type='button';refresh.id='refreshProgress';refresh.textContent='↻ Actualiser la progression';refresh.onclick=()=>void refreshOfficialHome();gate.append(refresh);app.querySelector('#rewardCards').after(gate)}
 if(official){for(const b of app.querySelectorAll("[data-start],[data-mode]")){const key=b.dataset.start||recordKey(b.dataset.geo,b.dataset.mode),xp=official.snapshot.xp.remaining[key];if(Number.isSafeInteger(xp)&&xp>0){const tag=document.createElement("span");tag.className="xp-corner";tag.textContent="Reste "+xp+" XP";b.append(tag)}}}
 app.querySelectorAll("[data-start]").forEach(b=>b.onclick=()=>start(b.dataset.start));app.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>start(b.dataset.geo,b.dataset.mode));
 
@@ -264,6 +265,14 @@ function seededNext(r){
  if(seedEvent!==r.session.eventId||seedCount!==r.q.length){seedCursor=official.questionSequence(r.id,r.session.seed);seedEvent=r.session.eventId;seedCount=0;while(seedCount<r.q.length){seedCursor();seedCount++}}
  seedCount++;return seedCursor()
 }
+async function refreshOfficialHome(){
+ if(!official||officialBusy||run||document.querySelector("dialog[open]"))return;
+ const connection=official,button=document.getElementById("refreshProgress");if(!button)return;
+ officialBusy=true;button.disabled=true;button.textContent="Actualisation…";
+ try{const snapshot=await connection.post("load");if(official!==connection||run)return;applyOfficial(snapshot);showHome()}
+ catch(e){if(official===connection&&!run){button.disabled=false;button.textContent="↻ Actualiser la progression";const p=document.createElement("p");p.textContent="Actualisation non confirmée : "+e.message;button.after(p)}}
+ finally{officialBusy=false}
+}
 async function startOfficial(id,mode){
  if(!official||officialBusy||!LEVELS[id]||!unlocked(id)||mode&&!challengesOpen(family(id)))return;
  const old=safeGet(activeRunKey());if(old?.finished&&!old.ack){run=old;renderOfficialResult();return}if(old&&!confirm("Remplacer la partie en cours ?"))return;
@@ -273,7 +282,7 @@ async function startOfficial(id,mode){
  run={id,mode,practice:false,index:0,correct:0,lives:mode==="sudden"?1:3,q:qs,checked:false,finished:false,used:[],feedback:"",session:{eventId,epoch,seed:started.seed}};
  seedCursor=next;seedEvent=eventId;seedCount=qs.length;
  if(!safeSet(activeRunKey(),run)){run=null;throw Error("Sauvegarde indisponible. Partie non démarrée.")}render();
- }catch(e){if(e.code==="stale_reset_epoch"){try{applyOfficial(await official.post("load"))}catch{}}showHome();const p=document.createElement("p");p.textContent="Partie non démarrée : "+e.message;app.prepend(p)}finally{officialBusy=false}
+ }catch(e){if(["stale_reset_epoch","activity_locked"].includes(e.code)&&official===connection){try{applyOfficial(await official.post("load"))}catch{}}showHome();const p=document.createElement("p");p.textContent="Partie non démarrée : "+e.message;app.prepend(p)}finally{officialBusy=false}
 }
 function renderOfficialResult(){
  if(!run||!official)return showHome();home.hidden=false;master.hidden=true;active=null;
