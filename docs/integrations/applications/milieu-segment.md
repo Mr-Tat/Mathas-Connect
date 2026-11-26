@@ -54,3 +54,5 @@ La règle V3 des trois séries est remplacée par deux séries de deux pages de 
 
 ### Feuilles de géométrie et manipulation — décision professeur
 PR #358 : 6 segments sur une feuille 4.1/4.2, 5 par feuille en 6.1–6.3, choix du segment avec vue détaillée. Orientations variées en classique et défis ; latitude de corriger le point au crayon avant validation, même graduation dans la latte et la loupe, preuve enregistrée à la validation seulement. Défis séquentiels inchangés. Manipulation : retrait d'une seule unité par geste même long, nombre initial maintenu dans son emplacement avec opacité 55 %, reste affiché en dessous. Tests adaptés, cache v042. Aucun changement SQL, Edge, score, XP, trophée ni autorisation. Publication après recette.
+
+Précision du professeur après capture : un seul jeton au total par calcul (et non un par geste). Retrait bloqué après 1, réactivé uniquement après annulation ; anciens brouillons à plusieurs jetons ramenés à un sans toucher aux réponses, preuves ou résultats. Nombre initial en haut atténué, nombre diminué en dessous à 145 % et contraste fort. Parenthèses conservées.
