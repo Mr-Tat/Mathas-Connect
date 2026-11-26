@@ -1,3 +1,4 @@
+import {appendMilieuProgress} from './milieu-profile-progress.mjs';
 
 import { createClient } from 'npm:@supabase/supabase-js@2.95.0';
 const url=Deno.env.get('SUPABASE_URL')!, anon=Deno.env.get('SUPABASE_ANON_KEY')!, secret=Deno.env.get('SUPABASE_'+'SERVICE_ROLE_KEY')!;
@@ -79,7 +80,8 @@ async function handle(req:Request){
        ?db.rpc('connect_abaque_profile_progress_v1',{p_student:studentId})
        :db.rpc('connect_profile_progress_v1',{p_student:studentId});
      const {data,error}=await query;
-     return error||!data?null:data;
+     if(error||!data)return null;
+     return await appendMilieuProgress(data,{db,url,setting:Deno.env.get('CONNECT_MILIEU_ACCESS'),classId:b.classId,actor:user.id,teacher:!user.is_anonymous,studentId});
    }catch{return null;}
  };
  const optionalXp=async(studentId:string)=>{

@@ -45,7 +45,7 @@ test('Soustraction reste téléchargeable en libre, sans réapparaître dans les
  assert.match(hub,/apps=fallbackApps;/);
  assert.doesNotMatch(hub,/fallbackApps\.filter\(a=>a\.app_key!=='soustraction-ecrite-simple'\)/);
  assert.match(hub,/mathas\.connect\.global-catalog\.v2/);
- assert.match(read('../hub.html'),/hub\.js\?v=20261113-jeux-confirm-v1/);
+ assert.match(read('../hub.html'),/hub\.js\?v=20261126-milieu-hub-v1/);
 });
 
 
