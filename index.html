@@ -121,7 +121,7 @@
         <p class="teacher-context" id="auth-description">Prépare les réglages même avant le premier résultat. La classe définit les valeurs générales ; une exception pour un élève les remplace. Les résultats et les XP restent indépendants.</p>
         <div class="authorization-card">
           <div class="authorization-fields">
-            <label for="auth-app">Application<select id="auth-app"><option value="multiplication-ecrite-simple">Multiplication écrite</option><option value="melange-calculs-ecrits">Calculs écrits mélangés</option><option value="abaque-longueurs">Abaque des longueurs</option><option value="addition-ecrite-simple">Addition écrite simple</option><option value="addition-ecrite-multiple">Addition de plusieurs nombres</option><option value="soustraction-ecrite-simple">Soustraction écrite</option></select></label>
+            <label for="auth-app">Application<select id="auth-app"><option value="multiplication-ecrite-simple">Multiplication écrite</option><option value="melange-calculs-ecrits">Calculs écrits mélangés</option><option value="abaque-longueurs">Abaque des longueurs</option><option value="milieu-segment">La moitié</option><option value="addition-ecrite-simple">Addition écrite simple</option><option value="addition-ecrite-multiple">Addition de plusieurs nombres</option><option value="soustraction-ecrite-simple">Soustraction écrite</option></select></label>
             <label for="auth-class">Classe<select id="auth-class"></select></label>
             <label for="auth-scope" id="auth-scope-wrap">Appliquer à<select id="auth-scope"><option value="class">Toute la classe</option><option value="student">Un élève</option></select></label>
             <label for="auth-student" id="auth-student-wrap" hidden>Élève<select id="auth-student"></select></label>
@@ -143,7 +143,7 @@
           </div>
           <p id="auth-saved-summary" class="authorization-saved-summary" role="status" aria-live="polite" hidden></p>
           </div>
-          <p id="auth-feedback" class="teacher-context" role="status" aria-live="polite"></p>
+          <p id="auth-feedback" class="teacher-context" role="status" aria-live="polite"></p><section class="authorization-options" id="milieu-authorizations" hidden><h3>La moitié · nouvelle progression</h3><p class="hint">Sélectionne un élève ou toute la classe. Les XP et trophées historiques sont conservés. Les parcours concernés et leurs défis seront reverrouillés.</p><button type="button" id="milieu-restart-open">↻ Préparer une nouvelle progression</button><button type="button" id="milieu-results-open" class="soft">Consulter les résultats</button><div id="milieu-results" hidden></div><p id="milieu-feedback" role="status"></p></section>
           <section class="authorization-options" id="auth-progression-settings" hidden><h3>Nouvelle progression</h3><p class="hint">Archive le parcours actuel de la classe ou de l’élève sélectionné. Les acquis restent conservés. Le choix de regagner des XP est proposé dans la confirmation.</p><div class="authorization-actions"><button type="button" id="auth-restart" disabled>↻ Lancer une nouvelle progression</button></div></section>
           <section class="authorization-options" id="abaque-class-gates" aria-labelledby="abaque-class-gates-title" hidden>
             <h3 id="abaque-class-gates-title">📏 Abaque des longueurs · ouverture des activités</h3>

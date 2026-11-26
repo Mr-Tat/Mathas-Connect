@@ -1,3 +1,4 @@
+import {installMilieuProfessor} from './milieu-professor.mjs';
 import {avatarGlyph,avatarColor} from './avatar-catalog.js';
 import {attachResultsOverviewSticky} from './results-overview-sticky.mjs';
 import {hubUrl} from './connect-context.js';
@@ -954,6 +955,8 @@ async function loadAuthorizations(requestedStudent=null){
  $('auth-saved-summary').hidden=true;
  const cls=$('auth-class');if(!cls.value)cls.value=$('class-selector').value||CLASS_SPACES.observation.id;
  // The Abaque uses class-wide rights only: do not call the multiplication RPCs.
+ const isMilieu=$('auth-app').value==='milieu-segment';$('milieu-authorizations').hidden=!isMilieu;$('milieu-results').hidden=true;
+ if(isMilieu){authSwitchView();$('auth-scope-wrap').hidden=true;$('auth-student-wrap').hidden=true;++abaqueModeSequence;abaqueModeEnabled(false);authSay('La moitié · résultats officiels et nouvelles progressions.');return false;}
  if(authSwitchView()){void abaqueModeLoad();return false;}
  ++abaqueModeSequence;abaqueModeEnabled(false);
  authSay('Chargement des autorisations…');
@@ -1074,6 +1077,7 @@ async function abaqueModeSave(mode){
 }
 abaqueModeInputs.forEach(input=>input.onchange=()=>{if(input.checked)void abaqueModeSave(input.value);});
 
+installMilieuProfessor({sb,url,key});
 const teacherTabs=['home','apps','authorizations','results','management'];
 function showTeacherTab(tab){
  const selected=teacherTabs.includes(tab)?tab:'home';

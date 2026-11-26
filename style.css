@@ -633,3 +633,5 @@ button.request-reconnect-badge:focus-visible{outline:3px solid #2056a5;outline-o
 .results-overview-floating-table thead th:first-child{position:relative;left:auto;z-index:6}
 
 #auth-progression-settings[hidden]{display:none!important}
+
+#milieu-authorizations[hidden],#milieu-results[hidden],.parcours-dialog label[hidden]{display:none!important}

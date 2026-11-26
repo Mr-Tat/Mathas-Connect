@@ -21,10 +21,11 @@ const apps=[
  {key:'soustraction-ecrite-simple',title:'Soustraction écrite'},
  {key:'addition-ecrite-multiple',title:'Addition multiple'},
  {key:'melange-calculs-ecrits',title:'Mélange de calculs'},
- {key:'abaque-longueurs',title:'Abaque des longueurs'}
+ {key:'abaque-longueurs',title:'Abaque des longueurs'},
+ {key:'milieu-segment',title:'La moitié'}
 ];
 const allKeys=apps.map(a=>a.key);
-const percentageKeys=allKeys.filter(k=>k!=='abaque-longueurs'); // Abaque : score uniquement
+const percentageKeys=allKeys.filter(k=>!['abaque-longueurs','milieu-segment'].includes(k)); // Abaque : score uniquement
 let client=null,classesAvailable=[],data=null,fetching=false,refreshTicket=0;
 let hasLoaded=false,connected=false,optionsLoaded=false,pendingReset=null;
 let scoreMode='today'; // new default; the manually shared historical score stays available
@@ -577,7 +578,7 @@ function buildSettings(){
   const name=document.createElement('td');name.textContent=app.title;tr.append(name);
   for(const field of ['scoreApps','percentageApps']){
    const cell=document.createElement('td');
-   if(field==='percentageApps'&&app.key==='abaque-longueurs'){cell.textContent='—';cell.title='Le tableau Abaque affiche les points, pas un pourcentage';tr.append(cell);continue;}
+   if(field==='percentageApps'&&['abaque-longueurs','milieu-segment'].includes(app.key)){cell.textContent='—';cell.title='Cette application affiche les points, pas un pourcentage';tr.append(cell);continue;}
    const cb=document.createElement('input');
    cb.type='checkbox';cb.checked=options[field].includes(app.key);
    if(field==='scoreApps')cb.disabled=(cb.checked&&options.scoreApps.length<=1)
