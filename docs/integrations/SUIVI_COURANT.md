@@ -53,6 +53,6 @@
 - Le [contrat complet](CONTRAT_FONCTIONNEL_COMMUN_APPLICATIONS_20261109.md), la [doctrine historique](DOCTRINE_EFFICACITE_ET_RETEX_20261104.md) et le [suivi hérité](SUIVI_DECISIONS_OUVERTES_20261107.md) restent conservés. Ne pas supposer clos un point historique sans nouvelle preuve.
 
 
-- La moitié — [#342](https://github.com/Mr-Tat/Mathas-Connect/pull/342) + [#345](https://github.com/Mr-Tat/Mathas-Connect/pull/345) publiées ; pilote TEST uniquement, badges HUB et retour identité terminés ; recette réelle Auth hébergée à faire. [Fiche](applications/milieu-segment.md).
+- La moitié — [#349](https://github.com/Mr-Tat/Mathas-Connect/pull/349) publiée : V3 décimaux 1/2/3 pages, trophées gradués, Master local, TEST uniquement ; SQL/Edge v2 et Pages vérifiés, recette Auth hébergée à faire, #348 à réaligner. [Fiche](applications/milieu-segment.md).
 
 - Abaque — [#343](https://github.com/Mr-Tat/Mathas-Connect/pull/343) publiée ; [#346](https://github.com/Mr-Tat/Mathas-Connect/pull/346) recette navigateur historique à actualiser, pas de modification pédagogique.
