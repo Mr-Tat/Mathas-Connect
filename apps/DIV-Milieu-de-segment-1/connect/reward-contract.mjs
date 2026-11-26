@@ -12,7 +12,7 @@ const recordMilestones=f=>THRESHOLDS.map(t=>[f+':record:'+t,f==='integers'?16:24
 export const RIGHTS=Object.freeze(Object.fromEntries([...ORDER.flatMap(milestones),...Object.keys(GEO).flatMap(recordMilestones)]));
 export const TROPHIES=Object.freeze([...ORDER.filter(k=>!k.startsWith('g')),...Object.keys(GEO).map(f=>f+':segments'),...Object.keys(GEO).flatMap(f=>THRESHOLDS.map(t=>f+':sudden:'+t))]);
 const blankScore=()=>({allBest:0,dayBest:0,dayDate:null,allEvent:null,dayEvent:null});
-export const initialState=()=>({levels:{},records:{},recordCounts:{},scoresByActivity:{},rights:{},bonusRights:{},repeatKeys:[],cups:{},decimalUnlocked:false,epoch:0});
+export const initialState=()=>({levels:{},records:{},recordCounts:{},scoresByActivity:{},rights:{},bonusRights:{},archivedBonusXp:0,repeatKeys:[],cups:{},decimalUnlocked:false,epoch:0});
 export const passing=(s,k)=>(s.levels[k]||[]).filter(x=>x.percent>=80).length>=LEVELS[k].p;
 export const cleanPerfect=(s,k)=>(s.levels[k]||[]).filter(x=>x.percent===100&&x.clean).length>=LEVELS[k].p;
 export const challengesOpen=(s,f)=>GEO[f].every(k=>passing(s,k));
@@ -34,7 +34,7 @@ export function judgeCompletion(proof){
  const j=judgeNativeCompletion(proof);
  return {...j,percent:Math.round(100*j.firstGood/j.total),points:j.items.reduce((sum,item)=>sum+(item.firstGood?segmentPoints(j.activity,j.mode,item.helps):0),0)};
 }
-export const xpTotal=s=>Object.values(s.rights).reduce((a,b)=>a+b,0)+Object.values(s.bonusRights).reduce((a,b)=>a+b,0);
+export const xpTotal=s=>(s.archivedBonusXp||0)+Object.values(s.rights).reduce((a,b)=>a+b,0)+Object.values(s.bonusRights).reduce((a,b)=>a+b,0);
 export function remaining(s){
  const left=entries=>entries.reduce((sum,[key,max])=>sum+(s.repeatKeys.includes(key)?max-(s.bonusRights[s.epoch+':'+key]||0):max-(s.rights[key]||0)),0);
  return Object.fromEntries([...ORDER.map(k=>[k,left(milestones(k))]),...challengeIds.map(k=>[k,left(recordMilestones(k.split(':')[0]))])]);
@@ -84,6 +84,7 @@ export function resetProgression(old,scope,repeatXp=false){
  for(const k of ids){delete s.levels[k];delete s.scoresByActivity[k]}
  for(const k of challengeIds)if(families.includes(k.split(':')[0])){delete s.records[k];delete s.recordCounts[k];delete s.scoresByActivity[k]}
  if(scope==='all')s.decimalUnlocked=false;
+ s.archivedBonusXp=(s.archivedBonusXp||0)+Object.values(s.bonusRights).reduce((a,b)=>a+b,0);s.bonusRights={};
  s.epoch++;
  s.repeatKeys=repeatXp?[...ids.flatMap(milestones),...families.flatMap(recordMilestones)].map(([key])=>key).filter(key=>s.rights[key]===RIGHTS[key]):[];
  return {archive,state:s};
