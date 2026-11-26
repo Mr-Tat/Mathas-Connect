@@ -82,9 +82,9 @@ export function applyJudgement(old,j,{eventId,day,classId=null,teacherFree=false
  return {state:s,xpDelta:xpTotal(s)-before};
 }
 export function resetProgression(old,scope,repeatXp=false){
- if(!['all','integerGeometry','decimalGeometry'].includes(scope)||typeof repeatXp!=='boolean')throw Error('invalid_scope');
+ if(!['all','integerGeometry','decimalGeometry','decimalStage'].includes(scope)||typeof repeatXp!=='boolean')throw Error('invalid_scope');
  const archive=clone(old),s=clone(old),families=scope==='all'?Object.keys(GEO):[scope==='integerGeometry'?'integers':'decimals'];
- const ids=scope==='all'?ORDER:families.flatMap(f=>GEO[f]);
+ const ids=scope==='all'?ORDER:scope==='decimalStage'?[...DECIMALS,...GEO.decimals]:families.flatMap(f=>GEO[f]);
  for(const k of ids){delete s.levels[k];delete s.scoresByActivity[k]}
  for(const k of challengeIds)if(families.includes(k.split(':')[0])){delete s.records[k];delete s.recordCounts[k];delete s.scoresByActivity[k]}
  for(const map of Object.values(s.scoresByClass)){for(const k of ids)delete map[k];for(const k of challengeIds)if(families.includes(k.split(':')[0]))delete map[k]}
