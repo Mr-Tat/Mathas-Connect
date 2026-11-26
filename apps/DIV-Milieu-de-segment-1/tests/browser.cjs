@@ -17,6 +17,12 @@ const http=require("node:http"),fs=require("node:fs");
  await page.goto(url);assert.equal(await page.locator("#practice").count(),0,"pas de mode test en version élève");
  await page.goto(url);
  await page.locator('[data-start="even"]').click();
+ const size=await page.locator('[data-key="7"]').boundingBox();assert.ok(size.height>=60&&size.width>=60,"touches agrandies");
+ const fields=page.locator('input[data-field="answer"]');
+ const vals=await page.evaluate(()=>pageItems().map(q=>fmt(q.n/2)));
+ await fields.first().focus();assert.equal(await page.locator("#padOK").innerText(),"Avancer");
+ for(let i=0;i<5;i++){await fields.nth(i).fill(vals[i]);assert.equal(await page.locator("#padOK").innerText(),i===4?"Valider":"Avancer");await page.locator("#padOK").click();if(i<4){assert.equal(await fields.nth(i+1).evaluate(el=>document.activeElement===el),true);assert.equal(await page.evaluate(()=>run.q[0].attempts),0,"aucune validation anticipée")}}
+ assert.equal(await page.locator("#padOK").innerText(),"Page suivante");assert.equal(await page.evaluate(()=>run.checked),true);await page.locator("#home").click();await page.locator("#discard").click();await page.locator('[data-start="even"]').click();
  for(let series=0;series<3;series++){
    if(series)await page.locator('[data-start="even"]').click();
    for(let p=0;p<2;p++){
@@ -45,9 +51,11 @@ const http=require("node:http"),fs=require("node:fs");
  await page.locator('[data-help="0"][data-kind="decomp"]').click();
  await page.locator('[data-help="0"][data-kind="manip"]').click();
  assert.equal(await page.locator('[data-i="0"][data-field="partA"]').count(),1);
+ await page.locator('[data-i="0"][data-field="partA"]').focus();await page.locator("#padOK").click();assert.equal(await page.locator('[data-i="0"][data-field="partB"]').evaluate(el=>document.activeElement===el),true);await page.keyboard.press("Enter");assert.equal(await page.locator('[data-i="0"][data-field="answer"]').evaluate(el=>document.activeElement===el),true);
+ await page.locator("#padOK").click();assert.equal(await page.locator('[data-i="1"][data-field="answer"]').evaluate(el=>document.activeElement===el),true);
  for(const width of [390,320]){
    await page.setViewportSize({width,height:740});
-   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"débordement décimal "+width);
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"débordement décimal "+width);assert.ok((await page.locator('[data-key="7"]').boundingBox()).height>=60);
  }
  await page.setViewportSize({width:1100,height:800});
  await page.locator("#home").click();await page.locator("#discard").click();
