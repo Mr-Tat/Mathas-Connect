@@ -17,6 +17,7 @@ function selectApp(appKey,scope='class'){
   'auth-progression-settings':{hidden:true},
   'auth-restart':{disabled:true},
   'abaque-class-gates':{hidden:true},
+  'abaque-restart-settings':{hidden:true},
   'auth-scope-wrap':{hidden:false},
   'auth-student-wrap':{hidden:true}
  };
@@ -44,6 +45,7 @@ test('Abaque : quatre modes exclusifs, sans réglages de multiplication ni profi
  const abaque=selectApp('abaque-longueurs','student');
  assert.equal(abaque.isAbaque,true);
  assert.equal(abaque.elements['abaque-class-gates'].hidden,false);
+ assert.equal(abaque.elements['abaque-restart-settings'].hidden,false);
  assert.equal(abaque.elements['auth-calculation-settings'].hidden,true);
  assert.equal(abaque.elements['auth-scope-wrap'].hidden,true);
  assert.equal(abaque.elements['auth-student-wrap'].hidden,true);
@@ -60,6 +62,7 @@ test('Multiplication et Mélange gardent les réglages et le choix élève exist
   const {isAbaque,elements}=selectApp(key,'student');
   assert.equal(isAbaque,false);
   assert.equal(elements['abaque-class-gates'].hidden,true);
+  assert.equal(elements['abaque-restart-settings'].hidden,true);
   assert.equal(elements['auth-calculation-settings'].hidden,false);
   assert.equal(elements['auth-scope-wrap'].hidden,false);
   assert.equal(elements['auth-student-wrap'].hidden,false);
@@ -85,8 +88,16 @@ test('Masquage CSS et versionnement empêchent les anciens panneaux de rester vi
  for(const id of ['auth-calculation-settings','abaque-class-gates','auth-scope-wrap']){
   assert.ok(css.includes('#'+id+'[hidden]'));
  }
- assert.match(ui,/style\.css\?v=20261126-progressions-v1/);
- assert.match(ui,/app\.js\?v=20261126-progressions-v1/);
+ assert.match(ui,/style\.css\?v=20261126-abaque-progression-v2/);
+ assert.match(ui,/app\.js\?v=20261126-abaque-progression-v2/);
 });
 
 test('Les cinq applications de calcul ont un contrôle de nouvelle progression indépendant des résultats',()=>{for(const key of ['addition-ecrite-simple','addition-ecrite-multiple','soustraction-ecrite-simple','multiplication-ecrite-simple','melange-calculs-ecrits']){const {elements}=selectApp(key,'student');assert.equal(elements['auth-progression-settings'].hidden,false);assert.equal(elements['auth-restart'].disabled,true);assert.equal(elements['auth-calculation-settings'].hidden,!['multiplication-ecrite-simple','melange-calculs-ecrits'].includes(key));}assert.match(js,/repeatXp:xp.checked,appKey,classId/);assert.match(js,/className:\$\('auth-class'\).selectedOptions/);assert.match(js,/\$\('results-class-restart'\).hidden=true/);assert.match(css,/#auth-progression-settings\[hidden\]/);});
+
+test('Nouvelle progression Abaque : sélection indépendante des droits de classe, confirmation et roster figé',()=>{
+ assert.match(ui,/id="abaque-restart-settings" hidden/);assert.match(ui,/id="abaque-restart-open"/);
+ assert.match(js,/abaqueTeacherRequest\('teacher-summary',classId\)/);assert.match(js,/\['Activité 3 uniquement','activity3'\]/);assert.match(js,/\['Application entière','all'\]/);
+ assert.match(js,/check.value.trim\(\)!==name/);assert.match(js,/confirmed:true,scope:selectedScope,part:selectedPart,students:targets.map/);
+ assert.match(js,/result.count!==targets.length\|\|result.part!==selectedPart/);assert.match(js,/seq!==authLoadSequence/);
+ assert.match(css,/#abaque-restart-settings\[hidden\]/);
+});

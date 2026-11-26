@@ -941,6 +941,7 @@ function authSwitchView(){
  $('auth-progression-settings').hidden=!authRestartApps.has(appKey);
  $('auth-restart').disabled=true;
  $('abaque-class-gates').hidden=!isAbaque;
+ $('abaque-restart-settings').hidden=!isAbaque;
  $('auth-scope-wrap').hidden=isAbaque;
  $('auth-student-wrap').hidden=isAbaque||$('auth-scope').value!=='student';
  $('auth-description').textContent=isAbaque
@@ -1027,7 +1028,7 @@ const abaqueModeEnabled=value=>abaqueModeInputs.forEach(input=>{input.disabled=!
 function abaqueModePaint(mode){
  abaqueModeInputs.forEach(input=>{input.checked=input.value===mode;});
 }
-async function abaqueModeRequest(action,classId,extra={}){
+async function abaqueTeacherRequest(action,classId,extra={}){
  const {data:{session}}=await sb.auth.getSession();
  if(!session?.access_token||session.user?.is_anonymous!==false)throw Error('Connexion professeur requise.');
  const response=await fetch(url+'/functions/v1/connect-abaque',{method:'POST',cache:'no-store',
@@ -1035,7 +1036,12 @@ async function abaqueModeRequest(action,classId,extra={}){
   body:JSON.stringify({appKey:'abaque-longueurs',classId,action,...extra})});
  const value=await response.json().catch(()=>null);
  if(!response.ok||value?.ok!==true)throw Error(value?.error||'Mode de déblocage indisponible.');
- if(value.authSubject!==session.user.id||value.classId!==classId||!abaqueModeValues.includes(value.mode))throw Error('Réponse invalide ou session modifiée.');
+ if(value.authSubject!==session.user.id||value.classId!==classId||(['teacher-summary','teacher-parcours-restart'].includes(action)&&value.appKey!=null&&value.appKey!=='abaque-longueurs'))throw Error('Réponse invalide ou session modifiée.');
+ return value;
+}
+async function abaqueModeRequest(action,classId,extra={}){
+ const value=await abaqueTeacherRequest(action,classId,extra);
+ if(!abaqueModeValues.includes(value.mode))throw Error('Réponse invalide : mode inconnu.');
  return value;
 }
 async function abaqueModeLoad(){
@@ -1073,6 +1079,66 @@ async function abaqueModeSave(mode){
  }
 }
 abaqueModeInputs.forEach(input=>input.onchange=()=>{if(input.checked)void abaqueModeSave(input.value);});
+
+
+// Nouvelle progression Abaque : lecture du roster seulement sur action explicite.
+// La liste prévisualisée et les epochs sont transmis sans recalcul après confirmation.
+let abaqueRestartBusy=false;
+const abaqueRestartButton=$('abaque-restart-open');
+async function openAbaqueRestart(){
+ if(abaqueRestartBusy||$('auth-app').value!=='abaque-longueurs')return;
+ const classId=$('auth-class').value,className=$('auth-class').selectedOptions[0]?.textContent||'Classe',seq=authLoadSequence;
+ if(!classId)return;
+ abaqueRestartBusy=true;abaqueRestartButton.disabled=true;
+ try{
+  const summary=await abaqueTeacherRequest('teacher-summary',classId);
+  if(seq!==authLoadSequence||$('auth-class').value!==classId||$('auth-app').value!=='abaque-longueurs')return;
+  if(!Array.isArray(summary.students))throw Error('Liste des élèves invalide.');
+  const roster=summary.students.map(s=>({studentId:s.studentId,displayName:s.displayName,resetEpoch:s.result?.resetEpoch}));
+  if(!roster.length){authSay('Aucun élève autorisé à l’Abaque dans cette classe.');return}
+  if(roster.some(s=>typeof s.studentId!=='string'||typeof s.displayName!=='string'||!Number.isSafeInteger(s.resetEpoch)||s.resetEpoch<0)||new Set(roster.map(s=>s.studentId)).size!==roster.length)throw Error('Liste des élèves invalide.');
+  const dialog=document.createElement('dialog');dialog.className='parcours-dialog';
+  const form=document.createElement('form');const title=document.createElement('h2');title.textContent='Nouvelle progression · Abaque';
+  const description=document.createElement('p');description.textContent='Classe : '+className+'. Les XP et trophées permanents restent acquis. Les anciens résultats concernés sont archivés ; les défis se reverrouillent.';
+  const makeSelect=(label,options)=>{const wrap=document.createElement('label');wrap.textContent=label;const select=document.createElement('select');for(const [text,value] of options)select.add(new Option(text,value));wrap.append(select);return {wrap,select}};
+  const scope=makeSelect('Pour',[['Un élève','student'],['Toute la classe','class']]);
+  const pupil=makeSelect('Élève',roster.map(s=>[s.displayName,s.studentId]));
+  const part=makeSelect('Parcours à recommencer',[['Activité 3 uniquement','activity3'],['Application entière','all']]);
+  const explanation=document.createElement('p');explanation.className='hint';
+  const checkLabel=document.createElement('label'),checkText=document.createElement('span'),check=document.createElement('input');check.required=true;check.autocomplete='off';checkLabel.append(checkText,check);
+  const feedback=document.createElement('p');feedback.setAttribute('role','alert');
+  const buttons=document.createElement('div');buttons.className='button-row';
+  const cancel=document.createElement('button');cancel.type='button';cancel.className='soft';cancel.textContent='Annuler';cancel.onclick=()=>dialog.close();
+  const go=document.createElement('button');go.type='submit';go.className='danger';go.textContent='Confirmer la nouvelle progression';
+  const selected=()=>scope.select.value==='class'?roster:roster.filter(s=>s.studentId===pupil.select.value);
+  const targetName=()=>scope.select.value==='class'?className:selected()[0]?.displayName||'';
+  const refresh=()=>{pupil.wrap.hidden=scope.select.value==='class';check.value='';checkText.textContent='Pour confirmer, recopie exactement : '+targetName();explanation.textContent=(part.select.value==='activity3'?'Activités 1 et 2 conservées. Les conversions et défis doivent être recommencés.':'Les trois activités et les défis doivent être recommencés.')+' Aucun recrédit XP automatique.'+(scope.select.value==='class'?' '+roster.length+' élèves concernés.':'')};
+  scope.select.onchange=refresh;pupil.select.onchange=refresh;part.select.onchange=refresh;refresh();
+  buttons.append(cancel,go);form.append(title,description,scope.wrap,pupil.wrap,part.wrap,explanation,checkLabel,feedback,buttons);dialog.append(form);document.body.append(dialog);
+  let submitting=false;
+  dialog.addEventListener('cancel',e=>{if(submitting)e.preventDefault()});
+  dialog.addEventListener('close',()=>{dialog.remove();abaqueRestartBusy=false;abaqueRestartButton.disabled=false},{once:true});
+  form.onsubmit=async e=>{
+   e.preventDefault();if(submitting)return;
+   const targets=selected(),name=targetName(),selectedScope=scope.select.value,selectedPart=part.select.value;
+   if(!targets.length||!name||check.value.trim()!==name){feedback.textContent='Le nom de confirmation ne correspond pas.';return}
+   if(seq!==authLoadSequence||$('auth-app').value!=='abaque-longueurs'||$('auth-class').value!==classId){feedback.textContent='La classe a changé : ferme et recharge la liste.';return}
+   submitting=true;for(const node of [scope.select,pupil.select,part.select,check,cancel,go])node.disabled=true;
+   feedback.textContent='Enregistrement de la nouvelle progression…';
+   try{
+    const result=await abaqueTeacherRequest('teacher-parcours-restart',classId,{confirmed:true,scope:selectedScope,part:selectedPart,students:targets.map(({studentId,resetEpoch})=>({studentId,resetEpoch}))});
+    if(result.count!==targets.length||result.part!==selectedPart)throw Error('Accusé serveur inattendu.');
+    dialog.close();authSay('✓ Nouvelle progression enregistrée · '+result.count+' élève(s).');
+   }catch(error){
+    feedback.textContent='Opération non confirmée : '+error.message+'. Ferme et recharge la liste avant de réessayer.';
+    cancel.disabled=false;submitting=false;
+   }
+  };
+  dialog.showModal();check.focus();
+ }catch(error){authSay('Impossible de préparer la nouvelle progression : '+error.message)}
+ finally{if(!document.querySelector('dialog.parcours-dialog[open]')){abaqueRestartBusy=false;abaqueRestartButton.disabled=false}}
+}
+abaqueRestartButton.onclick=()=>void openAbaqueRestart();
 
 const teacherTabs=['home','apps','authorizations','results','management'];
 function showTeacherTab(tab){
