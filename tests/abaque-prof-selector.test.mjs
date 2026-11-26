@@ -88,8 +88,8 @@ test('Masquage CSS et versionnement empêchent les anciens panneaux de rester vi
  for(const id of ['auth-calculation-settings','abaque-class-gates','auth-scope-wrap']){
   assert.ok(css.includes('#'+id+'[hidden]'));
  }
- assert.match(ui,/style\.css\?v=20261126-abaque-progression-v2/);
- assert.match(ui,/app\.js\?v=20261126-abaque-progression-v2/);
+ assert.match(ui,/style\.css\?v=20261126-progression-milieu-v3/);
+ assert.match(ui,/app\.js\?v=20261126-progression-milieu-v3/);
 });
 
 test('Les cinq applications de calcul ont un contrôle de nouvelle progression indépendant des résultats',()=>{for(const key of ['addition-ecrite-simple','addition-ecrite-multiple','soustraction-ecrite-simple','multiplication-ecrite-simple','melange-calculs-ecrits']){const {elements}=selectApp(key,'student');assert.equal(elements['auth-progression-settings'].hidden,false);assert.equal(elements['auth-restart'].disabled,true);assert.equal(elements['auth-calculation-settings'].hidden,!['multiplication-ecrite-simple','melange-calculs-ecrits'].includes(key));}assert.match(js,/repeatXp:xp.checked,appKey,classId/);assert.match(js,/className:\$\('auth-class'\).selectedOptions/);assert.match(js,/\$\('results-class-restart'\).hidden=true/);assert.match(css,/#auth-progression-settings\[hidden\]/);});

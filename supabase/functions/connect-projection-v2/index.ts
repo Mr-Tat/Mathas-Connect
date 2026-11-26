@@ -16,13 +16,13 @@ const respond=(body:object,status=200)=>new Response(JSON.stringify(body),{statu
 const deny=(code:string,status=400)=>respond({ok:false,error:code},status);
 const uuid=(s:unknown)=>typeof s==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
 const keys=['addition-ecrite-simple','multiplication-ecrite-simple','soustraction-ecrite-simple',
- 'addition-ecrite-multiple','melange-calculs-ecrits','abaque-longueurs'];
-const percentageKeys=keys.filter(k=>k!=='abaque-longueurs');
+ 'addition-ecrite-multiple','melange-calculs-ecrits','abaque-longueurs','milieu-segment'];
+const percentageKeys=keys.filter(k=>!['abaque-longueurs','milieu-segment'].includes(k));
 const allowKey=(k:unknown)=>typeof k==='string'&&keys.includes(k);
 const distinct=(x:string[])=>[...new Set(x)];
 const classOptions=(o:any)=>o&&typeof o==='object'&&!Array.isArray(o)&&
  Array.isArray(o.scoreApps)&&o.scoreApps.length<=keys.length&&o.scoreApps.every(allowKey)&&
- Array.isArray(o.percentageApps)&&o.percentageApps.length<=percentageKeys.length&&o.percentageApps.every(k=>percentageKeys.includes(k))&&
+ Array.isArray(o.percentageApps)&&o.percentageApps.length<=percentageKeys.length&&o.percentageApps.every((k:unknown)=>typeof k==='string'&&percentageKeys.includes(k))&&
  Array.isArray(o.comparisons)&&o.comparisons.length<=4&&o.comparisons.every(uuid)&&
  (o.comparisonDisplay===undefined||(Array.isArray(o.comparisonDisplay)&&o.comparisonDisplay.length<=4&&
    o.comparisonDisplay.every((v:any)=>v&&uuid(v.classId)&&typeof v.score==='boolean'&&
@@ -63,6 +63,8 @@ Deno.serve(async(req:Request)=>{
   // Pupil score publication is a separate, explicit opt-in. A stored
   // game result or general projection enrollment never implies submission.
   if(b.action==='student-share-score'||b.action==='student-score-history'){
+   // La moitié uses its own certified, class-bound consent endpoint; never the generic fallback.
+   if(b.appKey==='milieu-segment')return deny('use_milieu_certified_endpoint',400);
    if(!allowKey(b.appKey)||(b.action==='student-share-score'&&!uuid(b.eventId)))
     return deny('invalid_score_event',400);
    let studentId:string|null=null;

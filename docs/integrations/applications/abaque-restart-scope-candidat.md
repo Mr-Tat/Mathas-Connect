@@ -8,3 +8,6 @@ Candidat non appliqué. Restent : interface Autorisations (charger teacher-summa
 Recette PostgreSQL 17 dédiée : run 45823114629, commit 8683e3a, SUCCESS après préservation exacte des objets stage1/stage2 (y compris champs null). Régression générale 45823114463 SUCCESS. Anciennes recettes Chromium 45823114657 / 45823115365 encore en échec, déjà constatées avant le formulaire de reset ; ne pas assimiler à une validation complète. SQL non appliqué, Edge non déployée. Aucune donnée élève réelle modifiée.
 
 Ajout recette ciblée du vrai dialogue Autorisations dans Chromium avec handler réel, PostgreSQL17 jetable et Auth fictive injectée : aucun reset à l'ouverture/annulation, refus de confirmation erronée, classe complète, ACK et epochs. Les tests historiques 160 XP / ancienne notation / une conversion par page nécessitent une actualisation indépendante ; ne pas revenir aux anciens barèmes pour les satisfaire. Aucun changement de moteur ou données réelles dans ce commit.
+
+## Mise en production 26/11/2026
+Migration `abaque_restart_scope_20261126` appliquée avec garde de définition live. Edge `connect-abaque` v13 ACTIVE, JWT obligatoire, RPC réservée à service_role. PR #343 fusionnée (`5cfe6dd`), Pages 45829452627 et régression main 45829453366 réussies. Recette PostgreSQL/Chromium isolée 45828884945 verte. Aucun reset réel exécuté.
