@@ -254,14 +254,23 @@ Deno.serve(async req=>{
   // Tableau GLOBAL historique : une seule interface pour quatre espaces indépendants.
   if(b.action==='teacher-app-matrix-get'||b.action==='teacher-app-matrix-save'){
    if(!await managed())return deny('forbidden',403);
-   const slugs=['observation','phase1','phase2','phase2b','2eco'];
+   // Historical keys are storage aliases, not a restriction on eligible classes.
+   const legacy:Record<string,string>={'8fe170fa-9e8f-4e80-885a-b0ba68026f64':'observation','71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'phase1','1b021ed9-4846-4203-9c7b-4b5fa8d7adab':'phase2','0d8ba828-59cc-468b-a4b8-7b2a1af10b88':'phase2b','a9195199-0a28-4e86-99ce-47b36dd6e646':'2eco'};
+   const permissionRows=await db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('can_manage',true);
+   if(permissionRows.error)throw Error('db_error');
+   const ids=(permissionRows.data||[]).map(p=>p.class_id).filter(id=>id!=='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9');
+   const classes=ids.length?await db.from('connect_classes').select('id,name').in('id',ids):{data:[],error:null};
+   if(classes.error)throw Error('db_error');
+   const spaces=(classes.data||[]).map(c=>({classId:c.id,slug:legacy[c.id]||'class-'+c.id.replace(/-/g,''),label:c.name}))
+    .sort((a,b)=>{const old=Object.values(legacy);const rank=(slug:string)=>old.includes(slug)?old.indexOf(slug):old.length;return rank(a.slug)-rank(b.slug)||a.label.localeCompare(b.label,'fr')});
+   const slugs=spaces.map(s=>s.slug);
    if(b.action==='teacher-app-matrix-get'){
     const [apps,entries]=await Promise.all([
      db.from('connect_apps').select('app_key,title,launch_url,image_url,enabled,display_order').order('display_order'),
-     db.from('connect_hub_preset_entries').select('preset_slug,app_key,section,display_order,visible,featured').in('preset_slug',slugs)
+     slugs.length?db.from('connect_hub_preset_entries').select('preset_slug,app_key,section,display_order,visible,featured').in('preset_slug',slugs):Promise.resolve({data:[],error:null})
     ]);
     if(apps.error||entries.error)throw Error('db_error');
-    return answer({ok:true,apps:apps.data||[],entries:entries.data||[]});
+    return answer({ok:true,apps:apps.data||[],entries:entries.data||[],spaces});
    }
    const changes=b.changes;
    const sections=['objectif','calculs_ecrits','depassement','revision','outil','jeux'];
@@ -271,6 +280,11 @@ Deno.serve(async req=>{
      !sections.includes(row.section)||typeof row.visible!=='boolean'||typeof row.featured!=='boolean'||!int(row.order,0,100000))return deny('invalid_changes');
    const existing=await read(db.from('connect_apps').select('app_key').eq('app_key',row.appKey));
    if(!existing)return deny('unknown_app');
+   const space=spaces.find(s=>s.slug===row.slug);
+   if(!space)return deny('forbidden',403);
+   // Create only this class's missing configuration; never replace existing settings.
+   const preset=await db.from('connect_hub_presets').upsert({slug:space.slug,label:space.label.slice(0,80)},{onConflict:'slug',ignoreDuplicates:true});
+   if(preset.error)throw Error('db_error');
    const {error}=await db.from('connect_hub_preset_entries').upsert({
     preset_slug:row.slug,app_key:row.appKey,visible:row.visible,featured:row.featured,
     section:row.section,display_order:row.order

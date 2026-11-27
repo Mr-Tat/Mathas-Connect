@@ -302,24 +302,25 @@ async function showCatalog() {
     apps=fallbackApps;
     const classPresets={'8fe170fa-9e8f-4e80-885a-b0ba68026f64':'observation','71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'phase1','1b021ed9-4846-4203-9c7b-4b5fa8d7adab':'phase2','0d8ba828-59cc-468b-a4b8-7b2a1af10b88':'phase2b','a9195199-0a28-4e86-99ce-47b36dd6e646':'2eco'};
     const selectedSpace=classPresets[classId]||new URLSearchParams(location.search).get('space')||'observation';
+    const catalogQuery='space='+encodeURIComponent(selectedSpace)+(classId?'&class='+encodeURIComponent(classId):'');
     // Un simple JSON public n'accorde aucune visibilité de classe. Si Edge
     // est indisponible et que le cache a expiré, suivre le SNAPSHOT conservateur
     // du preset approuvé. En cas de propriété invalide, masquer (fail-closed).
     // Les réglages dynamiques du professeur restent prioritaires dès que le
     // catalogue authentique revient ; aucune restriction serveur n'est changée.
-    apps=apps.filter(app=>!Object.hasOwn(app,'fallback_visible_spaces')||
+    apps=classId?[]:apps.filter(app=>!Object.hasOwn(app,'fallback_visible_spaces')||
       (Array.isArray(app.fallback_visible_spaces)&&app.fallback_visible_spaces.includes(selectedSpace)));
     // Une lecture globale courte, mise en cache côté navigateur. Le catalogue statique reste le secours.
     try{
       const cacheKey='mathas.connect.global-catalog.v2';
-      const scopedKey=cacheKey+':'+selectedSpace;
+      const scopedKey=cacheKey+':'+(classId?'class:'+classId:selectedSpace);
       const cached=JSON.parse(sessionStorage.getItem(scopedKey)||'null');
       if(cached&&Date.now()-cached.at<60000&&Array.isArray(cached.apps))apps=cached.apps;
       else{
         const controller=new AbortController();
         const timeout=setTimeout(()=>controller.abort(),1600);
         try{
-          const r=await fetch(url+'/functions/v1/connect-catalog?space='+encodeURIComponent(selectedSpace),{signal:controller.signal,cache:'default'});
+          const r=await fetch(url+'/functions/v1/connect-catalog?'+catalogQuery,{signal:controller.signal,cache:'default'});
           if(r.ok){const data=await r.json();if(data.ok&&Array.isArray(data.apps)){
             const images=new Map(fallbackApps.map(a=>[a.app_key,a.image_url]));
             apps=data.apps.map(a=>({...a,image_url:a.image_url||images.get(a.app_key)}));

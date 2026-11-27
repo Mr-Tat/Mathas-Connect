@@ -1234,7 +1234,6 @@ document.querySelectorAll('.teacher-space .teacher-space-small[href]').forEach(a
 });
 const APP_SECTIONS=[['objectif','Objectif'],['calculs_ecrits','Calculs écrits'],['depassement','Dépassement'],['revision','Révision'],['outil','Outils'],['jeux','Jeux']];
 const ALL_SECTIONS=[['test','🧪 Tests'],...APP_SECTIONS];
-const APP_SPACES=[['observation','Observation'],['phase1','Phase 1'],['phase2','Phase 2 A'],['phase2b','Phase 2 B'],['2eco','2 ECO']];
 
 async function loadTeacherAppPreview(){
  const body=$('teacher-app-tbody');if(!body)return;
@@ -1242,6 +1241,19 @@ async function loadTeacherAppPreview(){
  const loading=document.createElement('tr'),loadingCell=document.createElement('td');loadingCell.colSpan=11;loadingCell.textContent='Chargement du tableau GLOBAL…';loading.append(loadingCell);body.append(loading);
  try{
   const data=await resultCall('teacher-app-matrix-get');
+  if(!Array.isArray(data.spaces))throw Error('Catalogue des classes indisponible');
+  const APP_SPACES=data.spaces.map(s=>[s.slug,s.label]);
+  const header=body.closest('table')?.querySelector('thead tr');
+  if(header){
+   const first=header.firstElementChild,last=[...header.children].slice(-5);
+   const columns=APP_SPACES.map(([slug,label])=>{
+    const th=document.createElement('th'),button=document.createElement('button');
+    button.type='button';button.dataset.matrixClearDay=slug;button.className='teacher-matrix-clear';button.textContent='Vider « Du jour »';
+    th.append(document.createTextNode(label+' '),button);return th;
+   });
+   header.replaceChildren(first,...columns,...last);
+  }
+  loadingCell.colSpan=APP_SPACES.length+6;
   const entries=new Map((data.entries||[]).map(e=>[e.preset_slug+'|'+e.app_key,e]));
   const {data:{session:allSession}}=await sb.auth.getSession();
   let allSettings=new Map();
@@ -1269,7 +1281,7 @@ async function loadTeacherAppPreview(){
   const feedback=$('teacher-app-feedback');
   const info=(text,error=false)=>{if(feedback){feedback.textContent=text;feedback.classList.toggle('error',error)}};
   let saving=false;
-  const current=(slug,app)=>entries.get(slug+'|'+app.app_key)||{visible:app.enabled!==false,featured:false,section:'calculs_ecrits',display_order:app.display_order??0};
+  const current=(slug,app)=>entries.get(slug+'|'+app.app_key)||{visible:false,featured:false,section:APP_SECTIONS.some(([id])=>id===app.hub_section)?app.hub_section:'calculs_ecrits',display_order:app.display_order??0};
   const change=(slug,app,extra={})=>{const e=current(slug,app);return {slug,appKey:app.app_key,visible:!!e.visible,featured:!!e.featured,section:e.section||'calculs_ecrits',order:Number(e.display_order??app.display_order??0),...extra}};
   async function save(changes,controls=[]){
    if(saving)return false;saving=true;controls.forEach(c=>c.disabled=true);info('Enregistrement…');
