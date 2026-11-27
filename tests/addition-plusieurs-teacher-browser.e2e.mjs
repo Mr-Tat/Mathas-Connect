@@ -96,8 +96,8 @@ try{
     'individual restart controls must be scoped to selected app and its fictive student ID');
    await page.locator('#results-back').click();
    await page.locator('#results-app').selectOption('addition-ecrite-multiple');
-   await page.waitForFunction(()=>
-    document.getElementById('results-class-restart')?.hidden===false,{timeout:12000});
+   assert.equal(await page.locator("#results-class-restart").isVisible(),false,
+    "le redémarrage de classe est géré dans Autorisations, pas directement depuis Résultats");
    assert.ok(edgeCalls.some(c=>c.action==='teacher-summary'&&c.appKey==='addition-ecrite-multiple'));
   }
   assert.ok(edgeCalls.some(c=>c.action==='teacher-overview'));

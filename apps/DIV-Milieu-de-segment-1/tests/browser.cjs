@@ -153,7 +153,7 @@ const http=require("node:http"),fs=require("node:fs");
   p.on("dialog",d=>d.accept());
   for(const role of ["","&joueur=prof"]){
    await p.goto(base+"?hub=toutes&class="+cls+role);
-   await p.locator("#homeScreen").waitFor();
+   await p.getByRole("heading",{name:"Connexion Math’as Connect nécessaire"}).waitFor();
    assert.equal(await p.locator("[data-start]").count(),0,"ancienne URL Toutes exige automatiquement Connect");
    assert.equal(await p.locator("#freeLaunch").count(),0,"aucun repli libre après une connexion scolaire manquante");
    assert.equal(new URL(p.url()).searchParams.get("class"),cls);
