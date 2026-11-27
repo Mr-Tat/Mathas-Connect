@@ -15,7 +15,8 @@ test('le portail remplace Autres par Autorisations sans dépendre des résultats
  assert.match(app,/call\('teacher-dashboard',\{classId\}\)/);
  assert.match(app,/resultCall\('teacher-multipliers-get',\{classId,appKey\}\)/);
  assert.match(app,/resultCall\('teacher-table-aid-get',\{classId,appKey\}\)/);
- assert.match(app,/showTeacherTab\('authorizations'\)/);
+ assert.match(app,/showTeacherTab\('authorizations',studentId\)/);
+ assert.doesNotMatch(app,/\$\('auth-scope'\)\.value='class';\s*authSay\('Aucun élève/,'la portée élève ne peut pas devenir classe silencieusement');
 });
 test('la configuration des multiplicateurs reste facultativement étendue par les élèves',()=>{
  const html=read('index.html'),native=read('apps/multiplication-simple/game-original.html');

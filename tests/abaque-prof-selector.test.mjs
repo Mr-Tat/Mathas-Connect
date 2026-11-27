@@ -77,7 +77,7 @@ test('Changer de classe recharge les droits du bon jeu sans requête de multipli
  assert.ok(loader.indexOf('if(authSwitchView())')<loader.indexOf("teacher-multipliers-get"));
  assert.match(js,/\$\('auth-class'\)\.onchange=\(\)=>void loadAuthorizations\(\)/);
  assert.match(js,/\$\('auth-app'\)\.onchange=\(\)=>void loadAuthorizations\(\)/);
- assert.match(js,/if\(selected==='authorizations'\)void loadAuthorizations\(\)/);
+ assert.match(js,/if\(selected==='authorizations'\)void loadAuthorizations\(requestedStudent\)/);
  assert.match(js,/abaqueModeRequest\('teacher-mode-get',classId\)/);
  assert.match(js,/abaqueModeRequest\('teacher-mode-set',classId,\{mode\}\)/);
  assert.match(js,/if\(sequence!==abaqueModeSequence\|\|abaqueModeClass.value!==classId/);
@@ -89,7 +89,7 @@ test('Masquage CSS et versionnement empêchent les anciens panneaux de rester vi
   assert.ok(css.includes('#'+id+'[hidden]'));
  }
  assert.match(ui,/style\.css\?v=20261126-progression-milieu-v3/);
- assert.match(ui,/app\.js\?v=20261126-progression-milieu-v3/);
+ assert.match(ui,/app\.js\?v=20261127-authorizations-safe-reset-v1/);
 });
 
 test('Les cinq applications de calcul ont un contrôle de nouvelle progression indépendant des résultats',()=>{for(const key of ['addition-ecrite-simple','addition-ecrite-multiple','soustraction-ecrite-simple','multiplication-ecrite-simple','melange-calculs-ecrits']){const {elements}=selectApp(key,'student');assert.equal(elements['auth-progression-settings'].hidden,false);assert.equal(elements['auth-restart'].disabled,true);assert.equal(elements['auth-calculation-settings'].hidden,!['multiplication-ecrite-simple','melange-calculs-ecrits'].includes(key));}assert.match(js,/repeatXp:xp.checked,appKey,classId/);assert.match(js,/className:\$\('auth-class'\).selectedOptions/);assert.match(js,/\$\('results-class-restart'\).hidden=true/);assert.match(css,/#auth-progression-settings\[hidden\]/);});
