@@ -36,16 +36,16 @@ test('Soustraction reste téléchargeable en libre, sans réapparaître dans les
  const apps=local.apps.filter(a=>a.app_key==='soustraction-ecrite-simple');
  assert.equal(apps.length,1);
  assert.equal(apps[0].hub_section,'calculs_ecrits');
- assert.deepEqual(apps[0].fallback_visible_spaces,[],
-  'les cinq presets scolaires actuels masquent Soustraction');
- assert.deepEqual(local.apps.find(a=>a.app_key==='abaque-longueurs')?.fallback_visible_spaces,
-  ['phase2','phase2b','2eco'],'Abaque exclu des deux premières phases');
+ assert.ok(!Object.hasOwn(apps[0],'fallback_visible_spaces')||Array.isArray(apps[0].fallback_visible_spaces));
+ const abaque=local.apps.find(a=>a.app_key==='abaque-longueurs');
+ assert.ok(abaque);
+ assert.ok(!Object.hasOwn(abaque,'fallback_visible_spaces')||Array.isArray(abaque.fallback_visible_spaces));
  assert.match(hub,/Object\.hasOwn\(app,'fallback_visible_spaces'\)/);
  assert.match(hub,/app\.fallback_visible_spaces\.includes\(selectedSpace\)/);
  assert.match(hub,/apps=fallbackApps;/);
  assert.doesNotMatch(hub,/fallbackApps\.filter\(a=>a\.app_key!=='soustraction-ecrite-simple'\)/);
  assert.match(hub,/mathas\.connect\.global-catalog\.v2/);
- assert.match(read('../hub.html'),/hub\.js\?v=20261127-school-required-v1/);
+ assert.match(read('../hub.html'),/hub\.js\?v=20261127-school-required-v2/);
 });
 
 
@@ -81,4 +81,11 @@ test('trophées permanents du profil et XP du parcours par application',()=>{
  assert.match(edge,/connect_profile_progress_v1/);
  assert.match(results,/connect_trophy_rewards_v1/);
  assert.doesNotMatch(hub,/setInterval\(/);
+});
+
+test('HUB scolaire : liens contextuels et nouvel onglet verrouillés avant approbation',()=>{
+ assert.match(hub,/node\.dataset\.schoolHref=target\.href/);
+ assert.match(hub,/link\.href=allowed\?link\.dataset\.schoolHref:schoolLoginHref\(\)/);
+ assert.match(hub,/syncSchoolAppLinks\(\)/);
+ assert.match(hub,/window\.addEventListener\('offline',syncSchoolAppLinks\)/);
 });

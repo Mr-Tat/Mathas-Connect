@@ -118,7 +118,9 @@ test('HUB scolaire sans profil : la carte ne démarre pas Multiplication', {time
   await hub.goto(url+'/hub.html?space=phase2',{waitUntil:'domcontentloaded'});
   const link=hub.locator('#levels a.app-card[data-app-key="multiplication-ecrite-simple"]');
   await link.waitFor({timeout:18000});
-  const target=new URL(await link.getAttribute('href'));
+  const locked=new URL(await link.getAttribute('href'),url);
+  assert.ok(locked.pathname.endsWith('/index.html'),'nouvel onglet non connecté : connexion et non jeu');
+  const target=new URL(await link.getAttribute('data-school-href'));
   assert.equal(target.searchParams.get('class'),'1b021ed9-4846-4203-9c7b-4b5fa8d7adab');
   assert.equal(target.searchParams.get('requireConnect'),'1');
   assert.equal(target.searchParams.has('libre'),false);

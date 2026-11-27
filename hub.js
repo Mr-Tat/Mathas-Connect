@@ -32,6 +32,14 @@ function getTeacherSupabase(){
 const $ = id => document.getElementById(id);
 const FREE_KEY = 'mathas.connect.mode-libre.v1';
 const schoolHub = Boolean(classId) || allMode;
+const schoolLoginHref=()=>allMode?loginUrl(LAB_CLASS,'Classe démo - TEST'):loginUrl();
+// Keep context-menu/new-tab targets locked until a validated school identity.
+function syncSchoolAppLinks(){
+ if(!schoolHub)return;
+ const allowed=Boolean(activeProfile)&&navigator.onLine;
+ for(const link of document.querySelectorAll('a.app-card[data-school-href]'))
+  link.href=allowed?link.dataset.schoolHref:schoolLoginHref();
+}
 const inFreeMode = () => { if(schoolHub)return false; try { return localStorage.getItem(FREE_KEY) === '1' } catch { return false } };
 const setFree = enabled => { try { if (enabled) localStorage.setItem(FREE_KEY, '1'); else localStorage.removeItem(FREE_KEY) } catch {} };
 
@@ -111,7 +119,10 @@ function card(app) {
     target.searchParams.set('requireConnect','1');
     target.searchParams.set('connect','1');
   }
-  node.href = target.href;
+  if(schoolHub){
+    node.dataset.schoolHref=target.href;
+    node.href=activeProfile&&navigator.onLine?target.href:schoolLoginHref();
+  }else node.href=target.href;
   if(schoolHub){
     const guard=event=>{
       if(activeProfile && navigator.onLine)return;
@@ -513,6 +524,7 @@ function drawIdentity(profile) {
   // Ne montrer le nom Connect dans les HUB qu'après approbation du compte pour cette classe.
   $('hub-connect-suffix').hidden=!authorized;
   refreshCardProgress();
+  syncSchoolAppLinks();
   if(authorized && classId && profile.classId===classId){
     rememberRecentProfile(classId,profile.displayName);
     rememberRecentAvatar(classId,profile.displayName,profile.avatar);
@@ -609,6 +621,8 @@ async function showIdentity(refresh=false) {
 
 // Retour d'un onglet de jeu : un seul résumé à la demande, jamais de polling.
 window.addEventListener('focus',()=>{if(activeProfile)void showIdentity(true)});
+window.addEventListener('offline',syncSchoolAppLinks);
+window.addEventListener('online',()=>{if(schoolHub)void showIdentity(false)});
 if(allMode)import('./hub-toutes-auth.mjs?v=20261107-abaque-toutes-v1')
  .then(({mountHubToutesAuth})=>mountHubToutesAuth({
    teacherClient:getTeacherSupabase, studentClient:getSupabase, isTeacherMode:playingAsTeacher,
