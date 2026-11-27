@@ -59,3 +59,6 @@ Précision du professeur après capture : un seul jeton au total par calcul (et 
 
 ### Boutons verrouillés — 27/11/2026
 #358 fusionnée `2a0b19bd`, régression et PostgreSQL/Chromium réussis après relance (installation Chromium initialement bloquée par un dépôt tiers HTTP 403) ; Pages 45909715657 réussi. Ajustement visuel : opacité 48 % pour les activités et défis verrouillés (accentuée après retour visuel du professeur), 85 % si contraste renforcé demandé ; boutons ouverts inchangés. Cache v043. Aucun changement des droits ou du moteur, ni de Supabase. Test Chromium ciblé ajouté.
+
+### Loupe et segment — 27/11/2026
+#359 fusionnée c8e58c96, Chromium OK, Pages 45911228074 réussi. Sur demande du professeur : rapprocher le segment du bord gradué (6 unités SVG), afficher dans la loupe exactement la portion visible du segment avec ses extrémités si présentes, point crayon sur la ligne dans les deux vues (une sélection hors segment reste à sa graduation, sans correction automatique), cadre mauve commun englobant le segment et les graduations. Même fonctionnement dans mesurer/placer, orientations et défis conservés. Cache v044, tests coordonnées/alignement/validation. Aucun changement serveur, droits, scores ou XP.
