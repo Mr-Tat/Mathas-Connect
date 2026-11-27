@@ -49,6 +49,7 @@ jobs:
           PY
           mkdir -p supabase/functions/connect-results supabase/functions/connect-api supabase/functions/connect-objective-record-school
           cp "$ROOT/supabase/functions/connect-objective-record-school/index.ts" supabase/functions/connect-objective-record-school/
+          cp -R "$ROOT/supabase/functions/connect-projection-v2" supabase/functions/
           python3 - "$ROOT/supabase/functions/connect-results/index.ts" <<'PY'
           from pathlib import Path
           import sys
@@ -114,6 +115,11 @@ jobs:
           for migration in 20261103120000_school_certified_additions_tables.sql 20261103120040_school_addition_multiple_issue.sql 20261103120050_school_addition_multiple_finish.sql 20261127124500_school_dynamic_class_eligibility.sql; do
             psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/supabase/migrations/$migration" >/dev/null
           done
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/supabase/migrations/20261103130000_school_extended_sessions.sql" >/dev/null
+          for migration in 20261031_projection_v2_score_journal.sql 20261031_projection_v2_explicit_score_consent.sql 20261103_projection_additions_improved_only.sql; do
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/supabase/release-candidates/$migration" >/dev/null
+          done
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/supabase/migrations/20261110120000_projection_written_daily_best_consent.sql" >/dev/null
           (supabase functions serve > "$LAB/edge.log" 2>&1 & echo $! > "$LAB/edge.pid")
           npm install --prefix "$LAB" --no-save --no-audit --no-fund @supabase/supabase-js@2.95.0 playwright@1.58.2 esbuild@0.25.12 >/dev/null
           printf "export {createClient} from '@supabase/supabase-js';\n" > "$LAB/browser-sdk-entry.mjs"

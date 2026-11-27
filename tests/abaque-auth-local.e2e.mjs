@@ -180,8 +180,8 @@ test('Chromium + Auth/Edge réels : clavier, XP, trophées, réponse perdue/offl
   await page.evaluate(()=>window.dispatchEvent(new Event('online')));
   await page.waitForFunction(()=>document.querySelector('.abaque-account-xp')?.textContent.includes('100 / 204'));
   await page.locator('[data-variant="lives"]').click();
-  for(let i=0;i<5;i++){await inputConversion(page);await modal(page,'Suivante');}
-  for(let i=0;i<3;i++){await inputConversion(page,true);await modal(page,i===2?'Accueil':'Suivante');}
+  for(let i=1;i<=5;i++){await inputConversion(page,false,{expectModal:i%5===0});if(i%5===0)await modal(page,'Page suivante');}
+  for(let i=1;i<=3;i++){await inputConversion(page,true,{expectModal:i===3});if(i===3)await modal(page,'Accueil');}
   await page.waitForFunction(()=>document.querySelector('.abaque-account-xp')?.textContent.includes('100 / 204'));
   assert.equal(await page.locator('[data-variant="sudden"] .abaque-xp-remaining').textContent(),'Reste 72 XP');
   assert.equal(await page.locator('#recordChoice .record-caption .abaque-xp-remaining').count(),0,'XP hors du cadre sombre');
@@ -190,7 +190,7 @@ test('Chromium + Auth/Edge réels : clavier, XP, trophées, réponse perdue/offl
    return hint.top>=inner.bottom&&hint.bottom<=bounds.bottom&&bounds.bottom-hint.bottom<22&&hint.left-bounds.left<18&&hint.right<cups.left&&bounds.right-cups.right<18&&cups.top>inner.bottom;
   }),true,'XP et coupes séparés en bas du bouton, hors du cadre sombre');
   await page.locator('[data-variant="sudden"]').click();
-  for(let i=0;i<40;i++){await inputConversion(page);assert.equal(await page.locator('.record-trophies .earned').count(),0,'coupes Connect attendent la preuve validée serveur');await modal(page,'Suivante');}
+  for(let i=1;i<=40;i++){await inputConversion(page,false,{expectModal:i%5===0});assert.equal(await page.locator('.record-trophies .earned').count(),0,'coupes Connect attendent la preuve validée serveur');if(i%5===0)await modal(page,'Page suivante');}
   await inputConversion(page,true);await modal(page,'Accueil');
   await page.waitForFunction(()=>document.querySelector('.abaque-account-xp')?.textContent.includes('148 / 204'));
   const recorded=await request(pupil,'load');assert.equal(recorded.data.state.suddenBest,40);

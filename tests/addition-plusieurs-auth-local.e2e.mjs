@@ -81,6 +81,16 @@ assert.equal(duplicate.duplicate,true);assert.equal(duplicate.xp.delta,0);
 const state=success(await post(student,'connect-results',{action:'student-load',appKey}),'reload');
 assert.equal(state.state.classic[0]['4'],4);
 assert.equal(state.state.rewards.mastery['4'][0],true);
+const history=success(await post(student,'connect-projection-v2',{action:'student-score-history',appKey}),'private certified score history');
+assert.equal(history.todayBest.eventId,proof.sessionId);
+assert.equal(history.boardTodayBest,0,'no implicit consent');
+assert.ok(history.todayBest.points>0);
+const share=success(await post(student,'connect-projection-v2',{action:'student-share-score',appKey,eventId:proof.sessionId}),'explicit consent');
+assert.equal(share.consentRecorded,true);
+assert.equal((await post(student,'connect-projection-v2',{action:'student-share-score',appKey,eventId:proof.sessionId})).status,409);
+const published=success(await post(student,'connect-projection-v2',{action:'student-score-history',appKey}),'published history');
+assert.equal(published.boardTodayBest,history.todayBest.points);
+assert.equal((await post(outsider,'connect-projection-v2',{action:'student-score-history',appKey})).status,403);
 const overview=success(await post(teacher,'connect-results',{action:'teacher-overview'}),'professor overview');
 const profApp=overview.students.find(x=>x.id===studentId)?.apps.find(x=>x.appKey===appKey);
 assert.equal(profApp?.state?.classic[0]['4'],4);
@@ -148,7 +158,8 @@ try{
   await route.fulfill({response:res,contentType:'text/javascript',body:original.replace(base,'const BASE='+JSON.stringify(url)+';').replace(key,'const KEY='+JSON.stringify(anon)+';')});
  });
  const gameUrl=site+'/apps/objective-record/eleve.html?app=addition-multiple&requireConnect=1&class='+classId;
- const failedRequests=[];
+ const failedRequests=[],httpErrors=[];
+ pupilPage.on('response',res=>{if(res.status()>=400)httpErrors.push(res.status()+' '+res.url())});
  pupilPage.on('requestfailed',req=>failedRequests.push(req.url()+' '+(req.failure()?.errorText||'')));
  pupilPage.on('console',message=>{if(['error','warning'].includes(message.type()))errors.push('console: '+message.text())});
  const openGame=async()=>{
@@ -239,7 +250,7 @@ try{
  const offlineConsole=errors.splice(0);
  assert.deepEqual(offlineConsole.filter(message=>
   message!=='console: Failed to load resource: net::ERR_INTERNET_DISCONNECTED'),
-  [],'only the intentional Chromium network-disconnection error may occur');
+  [],'only the intentional Chromium network-disconnection error may occur; HTTP: '+JSON.stringify(httpErrors));
  const stored=checked(await admin.from('connect_states')
   .select('revision,reset_epoch,state_data').eq('student_id',browserStudentId)
   .eq('app_key',appKey).single(),'browser actual PostgreSQL save');
