@@ -39,15 +39,9 @@ test('Server: both TEST endpoints close client-declared score bypass for additio
  assert.match(host,/nativeRecordAllowed\(activeApp\)/);
  assert.match(host,/isWritableTestApp\(appKey\)&&!SERVER_PROOF_ADDITIONS.has\(appKey\)/);
  assert.match(testEdge,/const APPS=new Set\(\['soustraction-ecrite-simple','multiplication-ecrite-simple'\]\)/);
- assert.match(resultsEdge,/proofOnlyAddClasses=new Set\(/);
- for(const id of ['4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',
-  '8fe170fa-9e8f-4e80-885a-b0ba68026f64',
-  '71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e',
-  '1b021ed9-4846-4203-9c7b-4b5fa8d7adab',
-  '0d8ba828-59cc-468b-a4b8-7b2a1af10b88',
-  'a9195199-0a28-4e86-99ce-47b36dd6e646'])assert.ok(resultsEdge.includes(id),id);
- assert.match(resultsEdge,/b\.action==='game-record'&&proofOnlyAddClasses\.has\(b\.classId\)/);
- assert.match(resultsEdge,/b\.appKey===app\|\|b\.appKey===addMulti/);
+ // No class-dependent exception: all four certified apps reject client-declared records.
+ assert.doesNotMatch(resultsEdge,/proofOnlyAddClasses/);
+ assert.match(resultsEdge,/if\(b\.action==='game-record'\s*&&\(b\.appKey===app\|\|b\.appKey===addMulti\|\|b\.appKey===mul\|\|b\.appKey===sub\)\)\s*return deny\('server_proof_required',403\)/);
  assert.match(resultsEdge,/return deny\('server_proof_required',403\)/);
   assert.ok(host.includes("nativeConnectHud?'?connect=1"));
  assert.match(host,/SERVER_PROOF_ADDITIONS\.has\(activeApp\)\|\|/);
