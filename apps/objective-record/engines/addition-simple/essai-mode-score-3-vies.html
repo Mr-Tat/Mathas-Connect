@@ -350,6 +350,10 @@ if(new URL(location.href).searchParams.get('connect')==='1'){
    if(hostedByConnect)game=window.MathasCertifiedSurvivalPatch(game,'add');
     if(hostedByConnect&&typeof window.MathasWrittenGuidedNativePatch==='function')
       game=await window.MathasWrittenGuidedNativePatch(game,'addition-ecrite-simple');
+   if(hostedByConnect&&window.parent?.MathasConnectOfficialSchoolProgress?.teacherFree===true){
+    const {grantNativeTeacherAccess}=await import('../../../teacher-free-native.mjs?v=20261127-v1');
+    game=grantNativeTeacherAccess(game,true);
+   }
    frame.srcdoc=game;
    status.remove();
  }catch(error){

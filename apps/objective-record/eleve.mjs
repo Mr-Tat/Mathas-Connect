@@ -8,7 +8,7 @@ import {createAdditionProofUI} from './certified-addition-ui.mjs';
 import {createMultipleProofUI} from './certified-multiple-ui.mjs';
 import {createCertifiedExtendedUI} from './certified-extended-ui.mjs?v=20261106-native-survival-v1';
 import {installNativeCertifiedLaunch,renderNativeOfficialXp} from './native-connect-bridge.mjs?v=20261106-survival-40xp-v1';
-import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs?v=20261106-certified-results-v2';
+import {schoolProgressSnapshot,schoolModeAllowed,schoolModeLockReason,syncOfficialGameProgress,syncOfficialHardSummary} from './school-official-unlocks.mjs?v=20261127-teacher-access-v1';
 import {createProjectionConsent} from '../../projection-consent.mjs?v=20261110-daily-share-v1';
 import {createSchoolScoreView} from './school-score-view.mjs?v=20261110-daily-share-v1';
 import {installTensFirstDuringGame} from './in-game-tens-first.mjs?v=20261106-manual-validation-per-profile-v2';
@@ -57,7 +57,7 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 const SERVER_PROOF_ADDITIONS=new Set(['addition-ecrite-simple','addition-ecrite-multiple']);
 const nativeRecordAllowed=appKey=>isWritableTestApp(appKey)&&!SERVER_PROOF_ADDITIONS.has(appKey);
 
-let statusTimer=null,barTimer=null,lastOfficialXp=null,lastOfficialProgress=null,missingNativeProfileSince=0;
+let statusTimer=null,barTimer=null,lastOfficialXp=null,lastOfficialProgress=null,missingNativeProfileSince=0,teacherFree=false;
 const bar=$('connect-bar'),handle=$('bar-handle'),xpPanel=$('xp-panel'),challengePanel=$('challenge-panel');
 function message(s){
  const status=$('status');
@@ -189,7 +189,7 @@ const clear=()=>{
   $('certified-tools').hidden=true;$('certify').disabled=true;
   bar.hidden=true;handle.hidden=true;$('guest-home').hidden=false;stopBarTimer();closePanels();
   missingNativeProfileSince=0;document.documentElement.classList.remove('mathas-native-connect-fallback');
-  lastOfficialXp=null;lastOfficialProgress=null;window.MathasConnectOfficialSchoolProgress=null;
+  lastOfficialXp=null;lastOfficialProgress=null;teacherFree=false;window.MathasConnectOfficialSchoolProgress=null;
   $('xp-toggle-main').textContent='✨ XP à récupérer';
 };
 // Reuse a recently server-verified JWT; every Edge Function still checks it.
@@ -228,7 +228,7 @@ function showOfficial({xp,loaded,appKey}){
  latestState=loaded.state||{};
  schoolScoreView?.updateState(latestState);
  if(schoolScoreView)void schoolScoreView.load();
- lastOfficialProgress=schoolProgressSnapshot(appKey,loaded.state);
+ lastOfficialProgress=schoolProgressSnapshot(appKey,loaded.state,{teacherFree});
  window.MathasConnectOfficialSchoolProgress=lastOfficialProgress;
  if(SERVER_PROOF_ADDITIONS.has(appKey)){
   // A null official award snapshot is 'unavailable', never a local fake zero.
@@ -500,6 +500,7 @@ async function choose(){
   message('Vérification de l’identité et de la classe Connect…');
   const approved=await approvedProfile();
   if(seq!==generation)return;
+  teacherFree=teacher&&approved.teacherFree===true;
   message('Lecture des XP globaux et trophées permanents officiels…');
   const initial=await refresh(seq);
   if(seq!==generation)return;
@@ -544,7 +545,7 @@ async function choose(){
    for(const option of $('certified-mode').options)option.disabled=option.value!=='classic';
   }
   updateCertifiedModeControls();
-  $('gameFrame').src=GAME_URLS[slug][1]+(nativeConnectHud?'?connect=1&ui=20261107-profile-hud-restored-v2':'');
+  $('gameFrame').src=GAME_URLS[slug][1]+(nativeConnectHud?'?connect=1&ui=20261127-teacher-access-v1':'');
   $('gameFrame').hidden=false;$('refresh').disabled=false;
   watchGame(seq);
   message(SERVER_PROOF_ADDITIONS.has(activeApp)

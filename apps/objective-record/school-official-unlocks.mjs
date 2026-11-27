@@ -38,6 +38,7 @@ export function schoolHardRecords(state){
 }
 export function schoolModeAllowed(profile,mode,level){
  if(!allowedLevels.includes(level)||!profile?.active||!APPS.has(profile.appKey))return false;
+ if(profile.teacherFree===true)return ['classic','sudden','three-lives','hard-sudden','hard-three-lives'].includes(mode);
  const p=profile.progress;
  if(mode==='classic')return level===1||(level===2&&p.level2===true)||(level===3&&p.level3===true);
  if(mode==='sudden'||mode==='three-lives')return p['sudden'+level]===true;
@@ -90,11 +91,12 @@ export function schoolOfficialResultRecords(state,progress=schoolUnlockProgress(
   hardUnlocked:progress.hard===true
  });
 }
-export function schoolProgressSnapshot(appKey,state){
+export function schoolProgressSnapshot(appKey,state,{teacherFree=false}={}){
  if(!APPS.has(appKey))return null;
  const progress=schoolUnlockProgress(state);
  return Object.freeze({
   active:true,appKey,
+  ...(teacherFree===true?{teacherFree:true}:{}),
   progress,
   hardRecords:schoolHardRecords(state),
   records:schoolOfficialResultRecords(state,progress)
