@@ -10,23 +10,19 @@ CREATE TABLE public.connect_classes(id uuid PRIMARY KEY,name text NOT NULL,year_
 CREATE TABLE public.connect_multiplier_locks(class_id uuid NOT NULL REFERENCES public.connect_classes(id) ON DELETE CASCADE,scope_key text NOT NULL,multipliers smallint[] NOT NULL,
  PRIMARY KEY(class_id,scope_key),CHECK(cardinality(multipliers) BETWEEN 1 AND 8 AND multipliers <@ ARRAY[2,3,4,5,6,7,8,9]::smallint[]));
 CREATE TABLE public.connect_join_requests(id uuid PRIMARY KEY,class_id uuid,first_name text,last_initial text,verify_code text,expires_at timestamptz,state text,created_at timestamptz);
--- Match the current published mixed-only class controls in this disposable database.
--- The original installation candidate predates these additive live columns/tables.
+-- Match the currently published mixed-only controls in the disposable database.
+-- Other test suites reuse this generic fixture without installing the mixed app.
 DO $local_mixed$
 BEGIN
  IF to_regclass('public.connect_mixed_multiplier_locks') IS NOT NULL THEN
   ALTER TABLE public.connect_mixed_multiplier_locks
    ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
-CREATE TABLE public.connect_mixed_table_aid(
- class_id uuid NOT NULL REFERENCES public.connect_classes(id) ON DELETE CASCADE,
- scope_key text NOT NULL CHECK(scope_key='class' OR scope_key ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12} FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'connect_%' \gexec
-GRANT USAGE ON SCHEMA public TO service_role,authenticated,anon;
-GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
-NOTIFY pgrst,'reload schema';
-),
- allowed boolean NOT NULL DEFAULT true,
- updated_at timestamptz NOT NULL DEFAULT now(),
- PRIMARY KEY(class_id,scope_key)
+  CREATE TABLE public.connect_mixed_table_aid(
+   class_id uuid NOT NULL REFERENCES public.connect_classes(id) ON DELETE CASCADE,
+   scope_key text NOT NULL CHECK(scope_key='class' OR scope_key ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'),
+   allowed boolean NOT NULL DEFAULT true,
+   updated_at timestamptz NOT NULL DEFAULT now(),
+   PRIMARY KEY(class_id,scope_key)
   );
  END IF;
 END $local_mixed$;
