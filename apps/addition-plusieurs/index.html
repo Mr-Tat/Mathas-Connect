@@ -5,7 +5,7 @@ import {createProjectionConsent} from '../../projection-consent.mjs';
 import {createLocalLab} from './local-lab.mjs';
 import {buildConnectPilot,CONNECT_WRITE_READY as writeReady} from './connect-pilot.mjs';
 import {createEdgePost} from './edge-transport.mjs';
-import {createAuthenticatedHost,CONNECT_URL,CONNECT_APP} from './connect-host.mjs';
+import {createAuthenticatedHost,CONNECT_URL,CONNECT_APP} from './connect-host.mjs?v=20261127-teacher-access-v1';
 import {hydrateNativeRecords} from './connect-hydration.mjs';
 (async()=>{const frame=document.getElementById('game'),output=document.getElementById('result'),recorded=[];
  // No Connect credentials are read until the backend has been validated and enabled.
@@ -173,6 +173,7 @@ recorded.push(normalized);output.textContent=item.label+' : '+item.score;if(lab)
      frame.addEventListener('load',()=>collective?.mount());
     }catch(error){console.warn('Guidé collectif non chargé ; autres modes préservés.',error)}
    }
+   if(connected&&host?.teacherFree===true){const {grantNativeTeacherAccess}=await import('../teacher-free-native.mjs?v=20261127-v1');game=grantNativeTeacherAccess(game,true);}
    frame.srcdoc=game;
   }catch(e){output.textContent='Erreur : '+e.message}
 })();

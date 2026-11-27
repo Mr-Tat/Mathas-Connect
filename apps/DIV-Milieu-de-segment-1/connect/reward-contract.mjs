@@ -20,7 +20,7 @@ export const challengesOpen=(s,f)=>GEO[f].every(k=>passing(s,k));
 export const activityNumber=k=>({even:1,odd:2,mix:3,gi1:4,gi2:4,decimal1:5,decimal2:5,decimal3:5,g1:6,g2:6,g3:6})[k];
 export function canPlay(s,k,mode=null,teacherFree=false,maxActivity=6){
  if(!Object.hasOwn(LEVELS,k)||!teacherFree&&activityNumber(k)>maxActivity)return false;
- if(mode!==null)return ['sudden','lives'].includes(mode)&&['gi2','g3'].includes(k)&&challengesOpen(s,family(k));
+ if(mode!==null)return ['sudden','lives'].includes(mode)&&['gi2','g3'].includes(k)&&(teacherFree===true||challengesOpen(s,family(k)));
  if(teacherFree)return true;
  if(k==='decimal1')return s.decimalUnlocked||challengesOpen(s,'integers');
  return k===ORDER[0]||passing(s,ORDER[ORDER.indexOf(k)-1]);

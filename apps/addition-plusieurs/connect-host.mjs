@@ -36,6 +36,7 @@ export async function createAuthenticatedHost({classId,teacherPlayer=false,creat
  if(profile.status!=='approved'||profile.classId!==classId)throw Error('connect_profile_not_approved');
  return Object.freeze({
   classId,
+  teacherFree:teacherPlayer&&profile.teacherFree===true,
   // Unique authenticated user ID used ONLY to namespace local data.
   // The Edge derives the actual student_id from the authenticated token.
   studentId:subject,
