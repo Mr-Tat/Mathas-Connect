@@ -233,6 +233,21 @@ const challengesOpen=f=>classAllows(f==="integers"?"gi2":"g3")&&(practice||offic
 const cupId=id=>id.startsWith("g")?family(id)+":segments":DECIMALS.includes(id)?"decimal":id;
 function save(){if(!officialRequired&&!safeSet(KEY,progress))storageFailed=true}
 const activeRunKey=()=>officialRequired?official?.storageKey+".run":draftKey();
+// A new teacher parcours cannot claim a previous event. Preserve its proof
+// for the same approved identity instead of erasing an unacknowledged run.
+function isolatePreviousRun(key,reason){
+ const previous=safeGet(key);
+ if(!previous)return true;
+ const archiveKey=key+".isolated";
+ const archive=safeGet(archiveKey);
+ if(archive!==null&&!Array.isArray(archive))return false;
+ const records=archive||[];
+ if(!records.some(item=>item.run?.session?.eventId===previous.session?.eventId)){
+  if(!safeSet(archiveKey,[...records,{run:previous,reason,isolatedAt:Date.now()}]))return false;
+ }
+ safeRemove(key);
+ return true;
+}
 function checkpoint(){if(run&&(!run.finished||officialRequired&&!run.ack)&&(!officialRequired||official)&&!safeSet(activeRunKey(),run))storageFailed=true}
 function storeResult(){if(run.practice)return;const id=run.id;if(run.mode){progress.records[recordKey(run.id,run.mode)]=Math.max(progress.records[recordKey(run.id,run.mode)]||0,run.correct);if(run.mode==="sudden")for(const t of TROPHIES)if(run.correct>=t)progress.cups[cupKey(run.id,t)]=true;save();return}const score=percent(run);let a=scores(id).slice();a.push({score,clean:run.q.every(q=>q.clean),at:Date.now()});a.sort((x,y)=>y.score-x.score||Number(y.clean)-Number(x.clean));progress.levels[id]=a.slice(0,LEVELS[id].passes);const perfect=x=>scores(x).filter(s=>s.score===100&&(x==="decimal1"||s.clean)).length>=LEVELS[x].passes;if(id.startsWith("g")){if(geoIds(family(id)).every(perfect))progress.cups[cupId(id)]=true}else if(DECIMALS.includes(id)){if(DECIMALS.every(perfect))progress.cups.decimal=true}else if(perfect(id))progress.cups[id]=true;save()}
 function activityExample(id,symbol){if(id.startsWith("g"))return '<b class="activity-example geo-example"><svg class="mini-segment" viewBox="0 0 120 37" aria-hidden="true"><path d="M10 15H110M10 9V21M110 9V21" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M32 11L36 19M84 11L88 19" stroke="currentColor" stroke-width="1.5"/><circle cx="60" cy="15" r="4" fill="#bd873f" stroke="currentColor" stroke-width="1.2"/><g fill="currentColor" font-family="Georgia,serif" font-weight="bold" font-size="10" text-anchor="middle"><text x="10" y="32">A</text><text x="60" y="32">M</text><text x="110" y="32">B</text></g></svg><span>'+symbol+'</span></b>';const demo={even:["8 : 2","4"],odd:["7 : 2","3,5"],mix:["9 : 2","4,5"],decimal1:["3,6 : 2","1,8"],decimal2:["3,6 : 2","1,8"],decimal3:["3,6 : 2","1,8"]}[id];return '<b class="activity-example"><span>'+ (demo?demo[0]:symbol)+'</span>'+(demo?'<span class="example-answer">= '+demo[1]+'</span>':'')+'</b>'}
@@ -248,7 +263,7 @@ if(official){const gate=document.createElement('div');gate.className='actions';c
 if(official){for(const b of app.querySelectorAll("[data-start],[data-mode]")){const key=b.dataset.start||recordKey(b.dataset.geo,b.dataset.mode),xp=official.snapshot.xp.remaining[key];if(Number.isSafeInteger(xp)&&xp>0){const tag=document.createElement("span");tag.className="xp-corner";tag.textContent="Reste "+xp+" XP";b.append(tag)}}}
 app.querySelectorAll("[data-start]").forEach(b=>b.onclick=()=>start(b.dataset.start));app.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>start(b.dataset.geo,b.dataset.mode));
 
-if(old&&!old.finished&&!!old.practice===practice){document.getElementById("resume").onclick=()=>{if(!validRun(old)||official&&old.session?.epoch!==official.snapshot.resetEpoch){safeRemove(activeRunKey());showHome();return}run=old;practice=!!run.practice;render()};document.getElementById("discard").onclick=()=>{if(confirm("Abandonner cette partie ?")){safeRemove(activeRunKey());showHome()}}}
+if(old&&!old.finished&&!!old.practice===practice){document.getElementById("resume").onclick=()=>{if(!validRun(old)||official&&old.session?.epoch!==official.snapshot.resetEpoch){if(!official||!isolatePreviousRun(activeRunKey(),"invalid_or_changed_parcours"))storageFailed=true;showHome();return}run=old;practice=!!run.practice;render()};document.getElementById("discard").onclick=()=>{if(confirm("Abandonner cette partie ?")){safeRemove(activeRunKey());showHome()}}}
 }
 function validRun(r){return r&&LEVELS[r.id]&&Array.isArray(r.q)&&r.q.length>0&&(r.mode||r.q.length===LEVELS[r.id].total)&&Number.isInteger(r.index)&&r.index>=0&&r.index<r.q.length&&r.q.every(q=>Number.isInteger(q.n)&&pool(r.id).includes(q.n)&&Array.isArray(q.evidence?.helps)&&Array.isArray(q.evidence?.attempts))&&(!r.mode||(["sudden","lives"].includes(r.mode)&&isMeasured(r.id)))}
 function start(id,mode=null){if(officialRequired){void startOfficial(id,mode);return}if(!LEVELS[id]||!unlocked(id)||mode&&(!isMeasured(id)||!["sudden","lives"].includes(mode)||!challengesOpen(family(id))))return;if(safeGet(draftKey())&&!confirm("Remplacer la partie en cours ?"))return;run={id,mode,practice,index:0,correct:0,lives:mode==="sudden"?1:3,q:questions(id,mode?1:LEVELS[id].total),checked:false,finished:false,used:[],feedback:"",resultStored:false};if(mode)run.used.push(run.q[0].n);checkpoint();render()}
@@ -274,7 +289,7 @@ function applyOfficial(snapshot){
 async function connectOfficial(){
  if(connecting||official)return;connecting=true;officialMessage="Vérification de la connexion…";showHome();
  try{const {openMilieu}=await import("./connect/client.mjs?v=20261126-v3");official=await openMilieu({classId:params.get("class"),teacher:params.get("joueur")==="prof",onInvalid:()=>{checkpoint();official=null;officialMessage="Session modifiée. Ouvre le jeu depuis ton HUB.";document.getElementById("connectAccount").hidden=true;showHome()}});
- applyOfficial(official.snapshot);const old=safeGet(activeRunKey());if(old&&old.session?.epoch!==official.snapshot.resetEpoch){safeRemove(activeRunKey());officialMessage="Le professeur a ouvert une nouvelle progression."}showHome();
+ applyOfficial(official.snapshot);const old=safeGet(activeRunKey());if(old&&old.session?.epoch!==official.snapshot.resetEpoch){if(isolatePreviousRun(activeRunKey(),"changed_parcours"))officialMessage="Le professeur a ouvert une nouvelle progression. L'ancienne partie reste archivée sans crédit.";else officialMessage="Ancienne partie conservée : stockage des archives indisponible."}showHome();if(run?.finished&&!run.ack)void settleOfficial();
  }catch(e){official=null;officialMessage=e.message||"Connexion indisponible.";showHome()}finally{connecting=false}
 }
 function seededNext(r){
@@ -312,7 +327,7 @@ async function settleOfficial(){
  if(!safeSet(activeRunKey(),pending)){officialBusy=false;pending.error="Sauvegarde indisponible. Garde cette page ouverte.";renderOfficialResult();return}
  renderOfficialResult();
  try{const ack=await official.post("record",{eventId:session.eventId,resetEpoch:session.epoch,proof:completionProof(pending)});if(official!==connection||run!==pending)return;if(ack.eventId!==session.eventId)throw Error("Accusé invalide.");applyOfficial(ack);pending.ack={points:pending.id.startsWith("g")?ack.judgement.points:null,xpDelta:ack.xp.delta};safeRemove(activeRunKey());officialBusy=false;renderOfficialResult();if(pending.ack.points>0)void requestShare(session.eventId,pending.ack.points,true);
- }catch(e){if(official!==connection||run!==pending)return;pending.error="Enregistrement non confirmé : "+e.message;checkpoint();officialBusy=false;renderOfficialResult();if(e.code==="stale_reset_epoch"){try{applyOfficial(await official.post("load"));safeRemove(activeRunKey());showHome()}catch{}}}
+ }catch(e){if(official!==connection||run!==pending)return;pending.error="Enregistrement non confirmé : "+e.message;checkpoint();officialBusy=false;renderOfficialResult();if(e.code==="stale_reset_epoch"){try{applyOfficial(await official.post("load"));if(!isolatePreviousRun(activeRunKey(),"stale_reset_epoch"))throw Error("archive_unavailable");showHome()}catch{}}}
  finally{officialBusy=false}
 }
 async function requestShare(eventId,points,isToday=false){
@@ -414,5 +429,6 @@ const hit=document.getElementById("rulerHit"),lens=document.getElementById("lens
 }
 const hubReturn=document.getElementById("hubReturn");if((hubAccess||classHubAccess||officialRequired)&&typeof location!=="undefined"&&location.protocol!=="file:"){hubReturn.hidden=false;hubReturn.onclick=()=>{checkpoint();const u=new URL("../../hub.html",location.href);if(hubAccess){u.searchParams.set("toutes","1");u.searchParams.set("class","4bf3400d-a315-4ea4-a2f3-afaca24dc9b9");u.searchParams.set("name","Toutes");if(params.get("joueur")==="prof")u.searchParams.set("joueur","prof")}else{for(const key of ["class","name","joueur"]){if(params.has(key))u.searchParams.set(key,params.get(key))}}location.assign(u.href)}}
 if(typeof location!=="undefined"&&(location.protocol==="https:"||location.protocol==="http:"&&["localhost","127.0.0.1"].includes(location.hostname))&&"serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});
+window.addEventListener("online",()=>{if(official&&run?.finished&&!run.ack&&!officialBusy)void settleOfficial()});
 home.onclick=()=>{checkpoint();showHome()};document.getElementById("full").onclick=()=>{if(document.fullscreenElement)document.exitFullscreen?.();else document.documentElement.requestFullscreen?.().catch(()=>{})};showHome();if(officialRequired&&params.get("class"))void connectOfficial();
 </script></body></html>
