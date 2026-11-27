@@ -856,8 +856,7 @@ function multiplierLockPanel(container,studentId=null,appKey='multiplication-ecr
   if(cls)$('auth-class').value=cls;
   $('auth-app').value=appKey;
   $('auth-scope').value=studentId?'student':'class';
-  showTeacherTab('authorizations');
-  void loadAuthorizations(studentId);
+  showTeacherTab('authorizations',studentId);
  };
  container.append(link);
 }
@@ -873,7 +872,7 @@ function addParcoursControls(container,studentId,name,appKey,appName,xpSnapshot=
  const title=document.createElement('strong');title.textContent='Parcours de cet élève';
  const summary=document.createElement('div');summary.textContent='Chargement des anciens parcours…';
  const reset=document.createElement('button');reset.type='button';reset.className='results-restart-button';reset.textContent='⚙ Nouvelle progression · Autorisations';
- reset.onclick=()=>{ $('auth-class').value=$('class-selector').value;$('auth-app').value=appKey;$('auth-scope').value='student';showTeacherTab('authorizations');void loadAuthorizations(studentId); };
+ reset.onclick=()=>{ $('auth-class').value=$('class-selector').value;$('auth-app').value=appKey;$('auth-scope').value='student';showTeacherTab('authorizations',studentId); };
  panel.append(title,summary,reset);container.append(panel);if(appKey==='multiplication-ecrite-simple'||mixedAllowed(appKey))multiplierLockPanel(container,studentId,appKey);
  resultCall('teacher-parcours-history',{studentId,appKey}).then(r=>{
   if(!summary.isConnected)return;
@@ -987,8 +986,9 @@ async function loadAuthorizations(requestedStudent=null){
   for(const student of students)$('auth-student').add(new Option(student.display_name,student.id));
   if(requestedStudent&&students.some(s=>s.id===requestedStudent))$('auth-student').value=requestedStudent;
   if($('auth-scope').value==='student'&&!students.length){
-   $('auth-scope').value='class';
-   authSay('Aucun élève dans cette classe. Tu peux déjà préparer ses autorisations.');
+   // Never silently change an individual-pupil reset into a whole-class reset.
+   // The teacher must explicitly select the class scope if that is intended.
+   authSay('Aucun élève trouvé dans cette classe. Vérifie la classe avant de choisir éventuellement « toute la classe ».');
   }else authSay('Réglages chargés · application aux nouvelles parties.');
   authRender();
   return true;
@@ -1155,7 +1155,7 @@ abaqueRestartButton.onclick=()=>void openAbaqueRestart();
 
 const teacherTabs=['home','apps','authorizations','results','management'];
 installMilieuProfessor({sb,url,key});
-function showTeacherTab(tab){
+function showTeacherTab(tab,requestedStudent=null){
  const selected=teacherTabs.includes(tab)?tab:'home';
  if(selected!=='results')detachResultsOverviewSticky();
  for(const t of teacherTabs){
@@ -1163,7 +1163,7 @@ function showTeacherTab(tab){
   if(node)node.hidden=t!==selected;
  }
  if(selected==='apps')loadTeacherAppPreview();
- if(selected==='authorizations')void loadAuthorizations();
+ if(selected==='authorizations')void loadAuthorizations(requestedStudent);
  if(selected==='management'&&!busy)run(refresh);
  if(selected==='home'&&!busy)run(refreshGlobalRequests);
  if(selected==='results' && !currentTeacherSpace)run(showResults);
