@@ -137,9 +137,12 @@ if(process.env.SDK_BROWSER_PATH){
   check(await admin.from('connect_mixed_multiplier_locks').insert({class_id:classId,scope_key:'class',multipliers:[2,7]}),'mixed-only table minimums');
   let frame=await openGame();
   await frame.locator('.mult-chip[data-mult="3"]').click();
-  await frame.locator('.mult-chip[data-mult="2"]').click();
-  assert.ok(await frame.locator('.mult-chip[data-mult="2"]').evaluate(e=>e.classList.contains('active')));
-  assert.ok(await frame.locator('.mult-chip[data-mult="7"]').evaluate(e=>e.classList.contains('active')));
+  for(const n of [2,7]){
+   const chip=frame.locator('.mult-chip[data-mult="'+n+'"]');
+   assert.equal(await chip.isDisabled(),true,'mandatory table cannot be deselected');
+   assert.ok(await chip.evaluate(e=>e.classList.contains('active')));
+  }
+  assert.equal(await frame.locator('.mult-chip[data-mult="3"]').isEnabled(),true,'optional table remains editable');
   await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='22 XP');
   await playMixedClassic({frame,page,total:4,afterStart:()=>context.setOffline(true)});
   await page.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('en attente (offline)'));
@@ -185,7 +188,11 @@ if(process.env.SDK_BROWSER_PATH){
   async function assertMinimums(values){
    frame=await openGame();
    assert.deepEqual(await frame.evaluate(()=>window.__mathasMixedMultiplierLock),values);
-   for(const n of values){await frame.locator('.mult-chip[data-mult="'+n+'"]').click();assert.ok(await frame.locator('.mult-chip[data-mult="'+n+'"]').evaluate(e=>e.classList.contains('active')))}
+   for(const n of values){
+    const chip=frame.locator('.mult-chip[data-mult="'+n+'"]');
+    assert.equal(await chip.isDisabled(),true,'teacher-required table must be locked');
+    assert.ok(await chip.evaluate(e=>e.classList.contains('active')));
+   }
   }
   await saveMinimums('class',[3,8]);
   const classMinimum=check(await admin.from('connect_mixed_multiplier_locks').select('multipliers').eq('class_id',classId).eq('scope_key','class').single(),'class minimum from actual professor UI');
