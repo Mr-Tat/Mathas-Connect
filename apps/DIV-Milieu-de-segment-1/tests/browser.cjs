@@ -150,13 +150,14 @@ const http=require("node:http"),fs=require("node:fs");
  const routeCtx=await browser.newContext({serviceWorkers:"block"});try{
   await routeCtx.route("https://esm.sh/**",r=>r.abort());
   const p=await routeCtx.newPage(),base="http://127.0.0.1:"+routeServer.address().port+"/apps/DIV-Milieu-de-segment-1/index.html",cls="4bf3400d-a315-4ea4-a2f3-afaca24dc9b9";
+  p.on("dialog",d=>d.accept());
   for(const role of ["","&joueur=prof"]){
    await p.goto(base+"?hub=toutes&class="+cls+role);
    await p.locator("#freeLaunch").waitFor();
    assert.equal(await p.locator("[data-start]").count(),0,"ancienne URL Toutes exige automatiquement Connect");
    await p.locator("#freeLaunch").click();await p.getByRole("button",{name:"Revenir au mode Connect"}).waitFor();
    assert.equal(new URL(p.url()).searchParams.get("libre"),"1");
-   await p.locator('[data-start="even"]').click();await p.locator('input[data-field="answer"]').first().waitFor();await p.locator("#home").click();
+   await p.locator('[data-start="even"]').click();await p.locator('input[data-field="answer"]').first().waitFor();await p.locator("#home").click();await p.locator("#discard").click();
    assert.equal(new URL(p.url()).searchParams.get("class"),cls);
    await p.locator("#hubReturn").click();await p.waitForURL("**/hub.html?**");
    const back=new URL(p.url());assert.equal(back.searchParams.get("class"),cls);assert.equal(back.searchParams.get("toutes"),"1");assert.equal(back.searchParams.get("joueur"),role?"prof":null);
