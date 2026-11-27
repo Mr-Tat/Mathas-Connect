@@ -229,7 +229,7 @@ const passing=id=>scores(id).filter(x=>x.score>=80).length>=LEVELS[id].passes;
 const stageNumber=id=>({even:1,odd:2,mix:3,gi1:4,gi2:4,decimal1:5,decimal2:5,decimal3:5,g1:6,g2:6,g3:6})[id];
 const classAllows=id=>!official||official.snapshot.teacherFree||stageNumber(id)<=official.snapshot.maxActivity;
 const unlocked=id=>classAllows(id)&&(practice||official?.snapshot?.teacherFree||id==="decimal1"&&official?.snapshot?.state?.decimalUnlocked||id===ORDER[0]||passing(ORDER[ORDER.indexOf(id)-1]));
-const challengesOpen=f=>classAllows(f==="integers"?"gi2":"g3")&&(practice||geoIds(f).every(passing));
+const challengesOpen=f=>classAllows(f==="integers"?"gi2":"g3")&&(practice||official?.snapshot?.teacherFree===true||geoIds(f).every(passing));
 const cupId=id=>id.startsWith("g")?family(id)+":segments":DECIMALS.includes(id)?"decimal":id;
 function save(){if(!officialRequired&&!safeSet(KEY,progress))storageFailed=true}
 const activeRunKey=()=>officialRequired?official?.storageKey+".run":draftKey();

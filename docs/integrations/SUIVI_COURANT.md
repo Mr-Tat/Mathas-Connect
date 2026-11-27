@@ -58,3 +58,5 @@
 - Abaque — [#343](https://github.com/Mr-Tat/Mathas-Connect/pull/343) publiée ; [#346](https://github.com/Mr-Tat/Mathas-Connect/pull/346) recette navigateur historique à actualiser, pas de modification pédagogique.
 
 - 27/11/2026 — [Compte unique multiclasse](applications/multiclass-identity-projection-20261127.md) : correction identité, capture et retrait d'inscription ; état de recette dans la fiche.
+
+- 27/11/2026 — [Monsieur T, accès intégral](applications/monsieur-t-acces-integral-20261127.md) : généralisation de la capacité authentifiée sans modification des acquis ni ouverture des catalogues ; voir la fiche pour la recette.

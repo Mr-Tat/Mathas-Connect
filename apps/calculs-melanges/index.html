@@ -5,7 +5,7 @@ import {createProjectionConsent} from '../../projection-consent.mjs';
 import {createLocalLab} from './local-lab.mjs';
 import {buildConnectPilot,CONNECT_WRITE_READY as writeReady} from './connect-pilot.mjs';
 import {createEdgePost} from './edge-transport.mjs';
-import {createAuthenticatedHost} from './connect-host.mjs';
+import {createAuthenticatedHost} from './connect-host.mjs?v=20261127-teacher-access-v1';
 import {hydrateNativeRecords} from './connect-hydration.mjs';
 import {installMixedOfficialUi} from './official-ui.mjs?v=20261107-profile-avatar-v1';
 (async()=>{const frame=document.getElementById('game'),output=document.getElementById('result'),recorded=[];
@@ -186,6 +186,7 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261107-profile-avata
    game=game.replace('<head>','<head><script>'+storageCode+'</'+'script><script src="./native-bridge.js"></'+'script>');
    const v=connected?.version()??lab?.version()??{revision:0,resetEpoch:0};
    frame.setAttribute('data-revision',v.revision);frame.setAttribute('data-reset-epoch',v.resetEpoch);
+   if(connected&&host?.teacherFree===true){const {grantNativeTeacherAccess}=await import('../teacher-free-native.mjs?v=20261127-v1');game=grantNativeTeacherAccess(game,true);}
    frame.srcdoc=game;
   }catch(e){output.textContent='Erreur : '+e.message}
 })();

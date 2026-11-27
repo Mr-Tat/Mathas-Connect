@@ -10,7 +10,7 @@ const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
 const requireConnect=query.get('requireConnect')==='1';
-const free=!teacherPlayer&&!requireConnect&&(query.get('libre')==='1'||localStorage.getItem('mathas.connect.mode-libre.v1')==='1');let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,studentName='',studentAvatar=null,connectionCheckRequired=false,consent=null;
+const free=!teacherPlayer&&!requireConnect&&(query.get('libre')==='1'||localStorage.getItem('mathas.connect.mode-libre.v1')==='1');let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,studentName='',studentAvatar=null,teacherFree=false,connectionCheckRequired=false,consent=null;
 const status=s=>document.getElementById('message').textContent=s;
 const originalPromise=fetch('./game-original.html').then(r=>{if(!r.ok)throw Error('Copie du jeu non disponible');return r.text()});
 // Un visiteur sans profil approuvé ouvre directement le jeu classique.
@@ -34,6 +34,7 @@ try{
     mode='connected';revision=x.revision;resetEpoch=x.resetEpoch??0;initial=x.state;cloud=sb;
     try{
       const profile=await profilePromise;
+      teacherFree=teacherPlayer&&profile?.ok===true&&profile.status==='approved'&&profile.classId===classId&&profile.teacherFree===true;
       if(profile?.ok&&profile.status==='approved'&&profile.classId===classId&&typeof profile.displayName==='string'){
         studentName=profile.displayName.trim().slice(0,70);
         studentAvatar=profile.avatar??null;
@@ -649,6 +650,7 @@ if(mode==='connected'&&classroomReady){
   iframe.addEventListener('load',()=>guidedCollective?.mount());
  }catch(error){console.warn('Contrôleur collectif indisponible ; guidé individuel disponible.',error)}
 }
+if(mode==='connected'&&teacherFree){const {grantNativeTeacherAccess}=await import('../teacher-free-native.mjs?v=20261127-v1');html=grantNativeTeacherAccess(html,true);}
 iframe.srcdoc=html;
 const toolbar=document.createElement('header');toolbar.id='ce-toolbar';
 toolbar.hidden=true;
