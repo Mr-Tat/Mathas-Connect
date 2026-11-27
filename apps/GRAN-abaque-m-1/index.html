@@ -2056,7 +2056,7 @@ function drawRound(){// Toujours 8 images : le plus souvent 2 par unité, parfoi
  let selection=[];for(const u of TARGET){const candidates=shuffle(items.filter(a=>a.unit===u));const fresh=candidates.filter(a=>!history.includes(a.id)),old=candidates.filter(a=>history.includes(a.id));selection.push(...[...fresh,...old].slice(0,counts[u]));}history=[...new Set([...selection.map(x=>x.id),...history])].slice(0,14);return shuffle(selection);
 }
 function say(t,cl=''){$('feedback').textContent=t;$('feedback').className='feedback '+cl;}
-function start(){window.MATHAS_PROGRESS.beginRun();window.MATHAS_ABAQUE_PROOF.start('build');round=drawRound();unitPosition={};imgPosition={};stage=1;verified=false;chosen=null;showUnitErrors=false;unitFirstScore=0;unitScored=false;$('homeScreen').classList.add('hidden');$('moveScreen').classList.add('hidden');$('convertScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');$('homeBtn').classList.remove('hidden');$('helpBtn').classList.remove('hidden');$('help').classList.add('hidden');say('');render();}
+async function start(){if(window.MATHAS_ABAQUE_SCHOOL_GATE&&!await window.MATHAS_ABAQUE_SCHOOL_GATE('stage1'))return;window.MATHAS_PROGRESS.beginRun();window.MATHAS_ABAQUE_PROOF.start('build');round=drawRound();unitPosition={};imgPosition={};stage=1;verified=false;chosen=null;showUnitErrors=false;unitFirstScore=0;unitScored=false;$('homeScreen').classList.add('hidden');$('moveScreen').classList.add('hidden');$('convertScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');$('homeBtn').classList.remove('hidden');$('helpBtn').classList.remove('hidden');$('help').classList.add('hidden');say('');render();}
 function home(){$('homeScreen').classList.remove('hidden');$('gameScreen').classList.add('hidden');$('convertScreen').classList.add('hidden');$('moveScreen').classList.add('hidden');$('homeBtn').classList.add('hidden');$('helpBtn').classList.add('hidden');stage=0;}
 function mapForStage(){return stage===1?unitPosition:imgPosition;}
 function itemFor(id){return items.find(a=>a.id===id);}
@@ -2145,7 +2145,9 @@ function hideHelp(){
  $('moveAbacus').classList.add('hidden');$('moveAbacus').classList.remove('compactDone');$('moveHelpTop').classList.remove('hidden');$('showMoveAbacus').setAttribute('aria-expanded','false');
  $('showMoveAbacus').textContent='▦ Afficher l’abaque';
 }
-function openMoves(){
+async function openMoves(){
+ if(!window.MATHAS_PROGRESS.unlocked('stage2'))return;
+ if(window.MATHAS_ABAQUE_SCHOOL_GATE&&!await window.MATHAS_ABAQUE_SCHOOL_GATE('stage2'))return;
  if(!window.MATHAS_PROGRESS.unlocked('stage2'))return;
  window.MATHAS_PROGRESS.beginRun();
  window.MATHAS_ABAQUE_PROOF.start('moves');
@@ -2321,8 +2323,10 @@ function verifyHelp(){
  else{$('moveHelpFeedback').textContent=`${good} unité${good>1?'s':''} correcte${good>1?'s':''} sur 4. Corrige le placement et valide à nouveau.`}
 }
 $('moveLaunchBtn').addEventListener('click',openMoves);
-$('verifyMoves').addEventListener('click',verifyAll);$('moveNew').addEventListener('click',()=>{
+$('verifyMoves').addEventListener('click',verifyAll);$('moveNew').addEventListener('click',async()=>{
  if(!pageChecked)return;
+ // The second page belongs to the ongoing run; a restart after page 2 does not.
+ if(movePage===1&&window.MATHAS_ABAQUE_SCHOOL_GATE&&!await window.MATHAS_ABAQUE_SCHOOL_GATE('stage2'))return;
  if(movePage===0){movePage=1;$('movePageLabel').textContent='Page 2 / 2';}else{movePage=0;moveCorrect=0;$('movePageLabel').textContent='Page 1 / 2';}
  pageChecked=false;newTasks();renderAll();$('moveNew').classList.add('hidden');$('verifyMoves').classList.remove('hidden');
 });
@@ -2511,7 +2515,9 @@ function makeSeries(){
  $('t3Verify').classList.remove('hidden');$('t3New').classList.add('hidden');
  scoreView();renderAll();
 }
-function startMode(mode,variant="sudden"){
+async function startMode(mode,variant="sudden"){
+ if(!window.MATHAS_PROGRESS.unlocked(mode))return;
+ if(window.MATHAS_ABAQUE_SCHOOL_GATE&&!await window.MATHAS_ABAQUE_SCHOOL_GATE('stage3'))return;
  if(!window.MATHAS_PROGRESS.unlocked(mode))return;
  window.MATHAS_PROGRESS.beginRun();
  $('homeScreen').classList.add('hidden');$('moveScreen').classList.add('hidden');$('gameScreen').classList.add('hidden');
