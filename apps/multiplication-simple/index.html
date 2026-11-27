@@ -25,7 +25,7 @@ const actualClassName=CONNECT_CLASS_NAMES[classId]||(UUID.test(classId)?'ID '+cl
 const classTag=actualClassName?(actualClassName==='TEST'?'Classe TEST':'Classe : '+actualClassName):'';
 const teacherPlayer=query.get('joueur')==='prof';
 // Les lancements depuis « Tests en ligne » ne sont PAS des démos sans XP.
-const requireConnect=query.get('requireConnect')==='1'||Boolean(classId)&&query.get('libre')!=='1';
+const requireConnect=query.get('requireConnect')==='1'||Boolean(classId);
 const isTestClass=classId==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 const free=!teacherPlayer&&!requireConnect&&(query.get('libre')==='1'||localStorage.getItem('mathas.connect.mode-libre.v1')==='1');let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,multiplierLock=null,multiplierLockVersion=null,tableAidAllowed=true,studentName='',studentAvatar=null,teacherFree=false,connectionCheckRequired=false;
 const status=s=>document.getElementById('message').textContent=s;
