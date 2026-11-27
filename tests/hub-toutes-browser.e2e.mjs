@@ -97,7 +97,10 @@ test('HUB Toutes : Abaque connecté dans Tests uniquement, sans doublons scolair
    const hrefs=await f.page.locator('#levels .app-card').evaluateAll(elements=>elements.map(a=>a.href));
    assert.equal(new Set(hrefs).size,7);
    for(const link of hrefs){assert.ok(link.includes('class='+testClass));assert.ok(link.includes('joueur=prof'),'tous les jeux Connect gardent le profil Monsieur T : '+link)}
-   const milieu=new URL(await f.page.locator('[data-app-key="milieu-segment"]').getAttribute('href'));
+   const milieuCard=f.page.locator('[data-app-key="milieu-segment"]');
+   const locked=new URL(await milieuCard.getAttribute('href'),f.base);
+   assert.ok(locked.pathname.endsWith('/index.html'),'sans approbation le lien ouvre la connexion');
+   const milieu=new URL(await milieuCard.getAttribute('data-school-href'));
    assert.equal(milieu.searchParams.get('requireConnect'),'1');assert.equal(milieu.searchParams.get('joueur'),'prof');assert.equal(milieu.searchParams.get('hub'),'toutes');assert.equal(milieu.searchParams.has('libre'),false);
    assert.equal(f.getRequests(),1);
  }finally{await close(f)}
@@ -219,7 +222,7 @@ test('Côté élève, seul le retour vers Monsieur T est proposé ; approbations
    assert.equal(await f.page.locator('#levels .app-card').count(),7);
    const milieu=new URL(await f.page.locator('[data-app-key="milieu-segment"]').getAttribute('href'));
    assert.equal(milieu.searchParams.get('requireConnect'),'1');assert.equal(milieu.searchParams.get('class'),testClass);assert.equal(milieu.searchParams.has('joueur'),false);
-   const abaqueHref=await f.page.locator('#levels .app-card[data-app-key="abaque-longueurs"]').getAttribute('href');
+   const abaqueHref=await f.page.locator('#levels .app-card[data-app-key="abaque-longueurs"]').getAttribute('data-school-href');
    assert.ok(!abaqueHref.includes('joueur=prof'),'un élève de Toutes ne joue jamais avec Monsieur T');
    assert.equal(await f.page.locator('#toutes-abaque-controls').count(),0,'administration cachée côté élève');
    assert.equal(f.getApiActions().includes('teacher-dashboard'),false,'aucune lecture de code ou demande professeur sur la page élève');
