@@ -19,7 +19,7 @@ export function normalizeCompletion(e){
  if(['hard','hard-three-lives'].includes(e.mode)&&selected.length!==3)return null;
  return Object.freeze({schemaVersion:1,appKey:APP_KEY,eventId:e.eventId.toLowerCase(),mode:e.mode,level:e.level,score:e.score,total:e.total,
   operationsSelectedAtStart:[...selected],operationsCompleted:[...completed],firstTry:[...first],aidUsed:e.aidUsed,masterMode:e.masterMode,
-  expectedRevision:e.expectedRevision,expectedResetEpoch:e.expectedResetEpoch,...(normalizeRewards(e.rewards)?{rewards:normalizeRewards(e.rewards)}:{})});
+  expectedRevision:e.expectedRevision,expectedResetEpoch:e.expectedResetEpoch,...(e.startAuthorized===true?{startAuthorized:true}:{}),...(normalizeRewards(e.rewards)?{rewards:normalizeRewards(e.rewards)}:{})});
 }
 // Teacher-approved policy: the immutable START selection determines the rate.
 // A lucky single-operation draw with all three selected still receives 100%.

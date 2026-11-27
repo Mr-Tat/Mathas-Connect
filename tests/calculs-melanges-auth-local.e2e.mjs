@@ -47,9 +47,15 @@ const slug='class-'+classId.replace(/-/g,'');
  assert.ok(matrix.apps.some(a=>a.app_key==='melange-calculs-ecrits'),'mixed remains available for teacher activation');
  assert.equal(matrix.entries.filter(x=>x.app_key==='melange-calculs-ecrits').length,0,'new class has no explicit visible entry');
  const entry={slug,appKey:'melange-calculs-ecrits',section:'calculs_ecrits',order:60,visible:true,featured:false};
+ const startRequest={action:'game-start',mode:'classic',level:1,total:4,operationsSelectedAtStart:['add','sub','mul'],expectedRevision:1,expectedResetEpoch:0,expectedMultiplierLockVersion:null,expectedTableAidAllowed:true};
+ assert.equal((await post(student,startRequest)).body.error,'app_hidden_for_class');
  assert.equal((await post(student,{action:'teacher-app-matrix-save',changes:[entry]})).status,403);
  assert.equal((await post(prof,{action:'teacher-app-matrix-save',changes:[{...entry,slug:'observation'}]})).status,400);
  ok(await post(prof,{action:'teacher-app-matrix-save',changes:[entry]}));
+ const issued=ok(await post(student,startRequest));assert.ok(issued.eventId);
+ assert.equal((await post(student,{...event,action:'game-record-v2',eventId:randomUUID()})).body.error,'start_ticket_invalid');
+ assert.equal((await post(student,{...event,action:'game-record-v2',eventId:issued.eventId,level:2,expectedRevision:1})).body.error,'start_ticket_invalid');
+ assert.ok((await pupil.from('connect_school_start_tickets').select('event_id')).error,'no direct pupil ticket access');
  const updatedMatrix=ok(await post(prof,{action:'teacher-app-matrix-get'}));
  assert.deepEqual(updatedMatrix.entries.filter(x=>x.app_key===entry.appKey).map(x=>[x.preset_slug,x.visible,x.featured]),[[slug,true,false]]);
  const legacy=check(await admin.from('connect_hub_preset_entries').select('preset_slug,visible').eq('app_key',entry.appKey).in('preset_slug',['observation','phase1','phase2','2eco']),'isolated historical fixtures');
@@ -151,17 +157,36 @@ if(process.env.SDK_BROWSER_PATH){
   assert.match(await frame.locator('#mathasMixedStartStatus').innerText(),/Connexion nécessaire|Connexion ou autorisation/);
   assert.equal(await frame.locator('#menuScreen').isVisible(),true);
   assert.equal(await frame.locator('#gameScreen').isVisible(),false);
+  assert.equal(check(await admin.from('connect_school_start_tickets').select('event_id').eq('student_id',browserStudent),'offline new start denied').length,0);
   await context.setOffline(false);
-  await playMixedClassic({frame,page,total:4,afterStart:()=>context.setOffline(true)});
+  // Hide the fictitious class app only AFTER the game has a server ticket.
+  await playMixedClassic({frame,page,total:4,afterStart:async()=>{
+   await context.setOffline(true);
+   ok(await post(prof,{action:'teacher-app-matrix-save',changes:[{...entry,visible:false}]}));
+  }});
   await page.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('en attente (offline)'));
   const queueKey='mathas.calculs-melanges.connect.'+classId+'.'+signed+'.'+browserStudent+'.v1';
   const queued=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)||'[]'),queueKey);assert.equal(queued.length,1);assert.equal(queued[0].score,4);assert.equal(new Set(queued[0].operationsCompleted).size>=2,true);
+  assert.equal(queued[0].action,'game-record-v2');
+  assert.equal(queued[0].startAuthorized,true);
+  const ticket=check(await admin.from('connect_school_start_tickets').select('student_id,class_id,auth_user_id,reset_epoch,game_config').eq('event_id',queued[0].eventId).single(),'actual browser-issued ticket');
+  assert.equal(ticket.student_id,browserStudent);assert.equal(ticket.class_id,classId);assert.equal(ticket.auth_user_id,signed);assert.equal(ticket.reset_epoch,0);
+  assert.equal(ticket.game_config.mode,'classic');assert.equal(ticket.game_config.total,4);
   assert.equal(await page.locator('#xp-total').innerText(),'22 XP');
   assert.equal(check(await admin.from('connect_states').select('student_id').eq('student_id',browserStudent).eq('app_key','melange-calculs-ecrits'),'offline DB').length,0);
   await context.setOffline(false);await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='50 XP',null,{timeout:20000});
   assert.equal(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)||'[]').length,queueKey),0);
   const saved=check(await admin.from('connect_states').select('revision,state_data').eq('student_id',browserStudent).eq('app_key','melange-calculs-ecrits').single(),'browser SQL');
   assert.equal(saved.revision,1);assert.equal(saved.state_data.rewards.mastery[4][0],true);
+  // A direct URL may load the pupil's existing results/queue, but cannot
+  // start a new official game while the class visibility is off.
+  frame=await openGame();
+  await frame.locator('.countBtn[data-count="4"]').click();
+  await frame.locator('#mathasMixedStartStatus').waitFor();
+  assert.match(await frame.locator('#mathasMixedStartStatus').innerText(),/professeur/);
+  assert.equal(await frame.locator('#gameScreen').isVisible(),false);
+  ok(await post(prof,{action:'teacher-app-matrix-save',changes:[entry]}));
+  console.log('PASS online ticket → offline start denied → class hidden mid-game → durable ACK → direct hidden start denied');
   await page.goto(site+'/tests/.mixed-auth-only.html');
   const refreshed=await page.evaluate(async({url,anon,SDK_URL})=>{const {createClient}=await import(SDK_URL);const sb=createClient(url,anon,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});const r=await sb.auth.refreshSession();if(r.error)throw r.error;return r.data.user.id},{url,anon,SDK_URL});
   assert.equal(refreshed,signed);
@@ -243,10 +268,19 @@ if(process.env.SDK_BROWSER_PATH){
   assert.equal((await frame.evaluate(()=>window.__mathasGameStorageScope)).endsWith('.'+rebound),true);
   console.log('PASS same JWT reassigned: stale offline proof rejected despite matching revision/epoch, no new-pupil record, separate cache and queue');
   // Capacity stress uses 100 explicitly synthetic journal copies, not 100 claimed real games.
-  const blockRecords=async route=>{if(route.request().postDataJSON()?.action==='game-record')return route.abort('internetdisconnected');return route.continue()};
+  const blockRecords=async route=>{if(['game-record','game-record-v2'].includes(route.request().postDataJSON()?.action))return route.abort('internetdisconnected');return route.continue()};
   await context.route(url+'/functions/v1/connect-results',blockRecords);
   const newQueueKey='mathas.calculs-melanges.connect.'+classId+'.'+signed+'.'+rebound+'.v1';
-  await page.evaluate(({oldKey,key,pupil})=>{const proof=JSON.parse(localStorage.getItem(oldKey))[0];localStorage.setItem(key,JSON.stringify(Array.from({length:100},()=>({...proof,eventId:crypto.randomUUID(),expectedStudentId:pupil}))))},{oldKey:queueKey,key:newQueueKey,pupil:rebound});
+  const copies=await page.evaluate(({oldKey,key,pupil})=>{
+   const proof=JSON.parse(localStorage.getItem(oldKey))[0],items=Array.from({length:100},()=>({...proof,eventId:crypto.randomUUID(),expectedStudentId:pupil}));
+   localStorage.setItem(key,JSON.stringify(items));return items;
+  },{oldKey:queueKey,key:newQueueKey,pupil:rebound});
+  // Explicit synthetic tickets for the queue-capacity stress, in this disposable
+  // DB only: no production ticket or purported native completion is fabricated.
+  check(await admin.from('connect_school_start_tickets').insert(copies.map(e=>({
+   event_id:e.eventId,student_id:rebound,class_id:classId,auth_user_id:signed,app_key:e.appKey,reset_epoch:e.expectedResetEpoch,
+   game_config:{mode:e.mode,level:e.level,total:e.total,operationsSelectedAtStart:[...e.operationsSelectedAtStart].sort()}
+  }))), 'synthetic capacity-test start tickets');
   frame=await openGame();await page.waitForFunction(()=>document.getElementById('game')?.contentDocument?.body?.inert===true);
   assert.match(await page.locator('#result').innerText(),/File offline pleine/);
   await assert.rejects(frame.locator('.countBtn[data-count="4"]').click({timeout:800}),/Timeout/);
