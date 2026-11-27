@@ -207,7 +207,10 @@ test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et repr
   assert.equal(reset.body.parcours,2);
   const after=await call('student-load');
   assert.equal(after.body.resetEpoch,1);
-  assert.deepEqual(after.body.state,{});
+  assert.deepEqual(Object.keys(after.body.state).sort(),['rewards'],'seuls les acquis permanents survivent au nouveau parcours');
+  assert.deepEqual(after.body.state.rewards,other.body.state.rewards);
+  assert.equal(after.body.state.rewards.mastery['4'][0],true);
+  assert.equal(after.body.state.rewards.mastery['10'][0],true);
   const stale=await proof('finish-classic-v1',{sessionId:pending.sessionId,answers:pending.questions.map(correct)});
   assert.equal(stale.status,409);
   assert.equal(stale.body.error,'stale_reset_epoch');
