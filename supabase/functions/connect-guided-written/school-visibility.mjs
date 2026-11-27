@@ -10,6 +10,7 @@ export const WRITTEN_GUIDED_SCHOOL_PRESETS=Object.freeze({
  'a9195199-0a28-4e86-99ce-47b36dd6e646':'2eco'
 });
 export function writtenGuidedSchoolPreset(classId){
+ if(classId===WRITTEN_GUIDED_TEST_CLASS)return null;
  return Object.hasOwn(WRITTEN_GUIDED_SCHOOL_PRESETS,classId)
   ? WRITTEN_GUIDED_SCHOOL_PRESETS[classId]:
   (typeof classId==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(classId)?'class-'+classId.toLowerCase().replace(/-/g,''):null);

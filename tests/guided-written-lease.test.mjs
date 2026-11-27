@@ -30,7 +30,11 @@ test('Droits du professeur liés au compte, au bon onglet, à la bonne page et s
 test('Classe TEST conservée ; les autres doivent avoir un preset visible autorisé',()=>{
  assert.equal(mayStartWrittenGuidedSchool(WRITTEN_GUIDED_TEST_CLASS,false),true);
  assert.equal(writtenGuidedSchoolPreset(WRITTEN_GUIDED_TEST_CLASS),null);
- assert.equal(mayStartWrittenGuidedSchool('f7d3f280-726e-4e61-86d2-13256aac1746',true),false);
+ const future='f7d3f280-726e-4e61-86d2-13256aac1746';
+ assert.equal(writtenGuidedSchoolPreset(future),'class-f7d3f280726e4e6186d213256aac1746');
+ assert.equal(mayStartWrittenGuidedSchool(future,false),false);
+ assert.equal(mayStartWrittenGuidedSchool(future,true),true);
+ assert.equal(mayStartWrittenGuidedSchool('invalid',true),false);
  assert.equal(mayStartWrittenGuidedSchool('71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e',false),false);
  assert.equal(mayStartWrittenGuidedSchool('71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e',true),true);
 });
