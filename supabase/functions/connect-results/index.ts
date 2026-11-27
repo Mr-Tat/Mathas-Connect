@@ -24,6 +24,14 @@ const EMPTY_SCHOOL_ADDITION_TROPHIES=Object.freeze({
 // every pupil needs its approved device, class membership and bound identity.
 const MIXED_SERVER_READY=true;
 const mixed='melange-calculs-ecrits';
+// Compatibility phase ONLY: existing deployed clients and queued pre-ticket
+// results use game-record. New clients never fall back from game-record-v2.
+// Flip to true only after compatible Edge + Pages rollout and an explicit
+// decision on old offline queues. Strict mode is covered by tests.
+const MIXED_REQUIRE_START_TICKET=false;
+const SCHOOL_TEST_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
+const legacy:Record<string,string>={'8fe170fa-9e8f-4e80-885a-b0ba68026f64':'observation','71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'phase1','1b021ed9-4846-4203-9c7b-4b5fa8d7adab':'phase2','0d8ba828-59cc-468b-a4b8-7b2a1af10b88':'phase2b','a9195199-0a28-4e86-99ce-47b36dd6e646':'2eco'};
+const schoolPreset=(classId:string)=>legacy[classId.toLowerCase()]||'class-'+classId.toLowerCase().replace(/-/g,'');
 // Normal release needs no extra secret. Optional emergency/pilot overrides:
 // closed, pilot:<uuid>[,<uuid>...], open. Empty/invalid overrides stay closed.
 const mixedAccess=(Deno.env.get('CONNECT_MIXED_ACCESS')??'open').trim();
@@ -183,13 +191,21 @@ Deno.serve(async req=>{
      await db.from('connect_mixed_multiplier_locks').upsert({class_id:b.classId,scope_key:student??'class',multipliers:values,updated_at:new Date().toISOString()},{onConflict:'class_id,scope_key'});
     return r.error?deny('db_error',500):answer({ok:true});
    }
-   if(['student-load','student-xp','game-record'].includes(b.action)){
+   if(['student-load','student-xp','game-start','game-record','game-record-v2'].includes(b.action)){
     const row=await read(db.from('connect_apps').select('enabled').eq('app_key',mixed));
     if(!row?.enabled)return deny('app_disabled',403);
     const studentId=await identity();if(!studentId)return deny('forbidden',403);
     // Bind offline proofs to the actual pupil, including device reassignment with the SAME JWT.
     if((b.action!=='student-load'||b.expectedStudentId!=null)&&(!valid(b.expectedStudentId)||b.expectedStudentId!==studentId))return deny('identity_binding_conflict',409);
-    if(b.action==='student-load'){
+    if(b.action==='game-record'&&MIXED_REQUIRE_START_TICKET)return deny('start_ticket_required',403);
+    if(b.action==='student-load'||b.action==='game-start'){
+     // Class visibility governs new pupil starts, not a finish authorized
+     // before the teacher hid the app. TEST and authenticated teacher preview
+     // keep their existing role-based access.
+     if(b.action==='game-start'&&user.is_anonymous&&b.classId.toLowerCase()!==SCHOOL_TEST_CLASS){
+      const entry=await read(db.from('connect_hub_preset_entries').select('visible').eq('preset_slug',schoolPreset(b.classId)).eq('app_key',mixed));
+      if(entry?.visible!==true)return deny('app_hidden_for_class',403);
+     }
      const current=await read(db.from('connect_states').select('revision,state_data,reset_epoch').eq('student_id',studentId).eq('app_key',mixed));
      const [locks,aids]=await Promise.all([
        db.from('connect_mixed_multiplier_locks').select('scope_key,multipliers,updated_at').eq('class_id',b.classId).in('scope_key',['class',studentId]).limit(2),
@@ -200,6 +216,27 @@ Deno.serve(async req=>{
      const multiplierLock=configured?.multipliers??null;
      const multiplierLockVersion=configured?.updated_at??null;
      const tableAidAllowed=(aids.data??[]).find((x:any)=>x.scope_key===studentId)?.allowed??(aids.data??[]).find((x:any)=>x.scope_key==='class')?.allowed??true;
+     if(b.action==='game-start'){
+      const revision=current?.revision??0,resetEpoch=current?.reset_epoch??0;
+      const ops=b.operationsSelectedAtStart;
+      if(!['training','classic','sudden','hard','three-lives','hard-three-lives'].includes(b.mode)||!int(b.level,1,3)
+       ||(b.mode==='classic'?![4,10,20].includes(b.total):b.total!==null)
+       ||!Array.isArray(ops)||!ops.length||ops.length>3||new Set(ops).size!==ops.length||ops.some((op:any)=>!['add','sub','mul'].includes(op))
+       ||(['hard','hard-three-lives'].includes(b.mode)&&ops.length!==3)
+       ||!int(b.expectedRevision,0,1e9)||!int(b.expectedResetEpoch,0,1e9)
+       ||typeof b.expectedTableAidAllowed!=='boolean'
+       ||(b.expectedMultiplierLockVersion!==null&&typeof b.expectedMultiplierLockVersion!=='string'))return deny('invalid_start');
+      if(b.expectedRevision!==revision||b.expectedResetEpoch!==resetEpoch)return deny('start_parcours_changed',409);
+      if(b.expectedMultiplierLockVersion!==multiplierLockVersion||b.expectedTableAidAllowed!==tableAidAllowed)return deny('start_permissions_changed',409);
+      let eventId=null;
+      if(b.mode!=='training'){
+       eventId=crypto.randomUUID();
+       const gameConfig={mode:b.mode,level:b.level,total:b.total,operationsSelectedAtStart:[...ops].sort()};
+       const saved=await db.from('connect_school_start_tickets').insert({event_id:eventId,student_id:studentId,class_id:b.classId,auth_user_id:user.id,app_key:mixed,reset_epoch:resetEpoch,game_config:gameConfig});
+       if(saved.error)return deny('start_ticket_unavailable',503);
+      }
+      return answer({ok:true,eventId,revision,resetEpoch,multiplierLock,multiplierLockVersion,tableAidAllowed,storageSubject:studentId});
+     }
      const {data:permanent,error:trophyError}=await db.rpc('connect_trophy_rewards_v1',{p_student:studentId,p_app:mixed});
       if(trophyError)return deny('trophies_unavailable',503);
       const state=permanent?{...(current?.state_data??{}),rewards:permanent}:current?.state_data??null;
@@ -216,6 +253,14 @@ Deno.serve(async req=>{
      ||typeof b.aidUsed!=='boolean'||typeof b.masterMode!=='boolean'
      ||!Array.isArray(b.operationsSelectedAtStart)||!Array.isArray(b.operationsCompleted)||!Array.isArray(b.firstTry)
      ||b.operationsSelectedAtStart.length>3||b.operationsCompleted.length>1000||b.firstTry.length!==b.operationsCompleted.length)return deny('invalid_result');
+    if(b.action==='game-record-v2'){
+     const ticket=await read(db.from('connect_school_start_tickets').select('event_id,game_config,reset_epoch')
+      .eq('event_id',b.eventId).eq('student_id',studentId).eq('class_id',b.classId).eq('auth_user_id',user.id).eq('app_key',mixed));
+     const cfg=ticket?.game_config;
+     if(!ticket||ticket.reset_epoch!==b.expectedResetEpoch||cfg?.mode!==b.mode||cfg?.level!==b.level||cfg?.total!==b.total
+      ||JSON.stringify(cfg?.operationsSelectedAtStart)!==JSON.stringify([...b.operationsSelectedAtStart].sort()))
+      return deny('start_ticket_invalid',403);
+    }
     let rewards=null;try{rewards=normalizeRewards(b.rewards)}catch{return deny('invalid_rewards')}
     const {data,error}=await db.rpc('connect_mixed_record_v1',{
      p_student:studentId,p_event:b.eventId,p_expected_revision:b.expectedRevision,p_reset_epoch:b.expectedResetEpoch,
@@ -255,13 +300,12 @@ Deno.serve(async req=>{
   if(b.action==='teacher-app-matrix-get'||b.action==='teacher-app-matrix-save'){
    if(!await managed())return deny('forbidden',403);
    // Historical keys are storage aliases, not a restriction on eligible classes.
-   const legacy:Record<string,string>={'8fe170fa-9e8f-4e80-885a-b0ba68026f64':'observation','71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'phase1','1b021ed9-4846-4203-9c7b-4b5fa8d7adab':'phase2','0d8ba828-59cc-468b-a4b8-7b2a1af10b88':'phase2b','a9195199-0a28-4e86-99ce-47b36dd6e646':'2eco'};
    const permissionRows=await db.from('connect_class_permissions').select('class_id').eq('teacher_id',user.id).eq('can_manage',true);
    if(permissionRows.error)throw Error('db_error');
    const ids=(permissionRows.data||[]).map(p=>p.class_id).filter(id=>id!=='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9');
    const classes=ids.length?await db.from('connect_classes').select('id,name').in('id',ids):{data:[],error:null};
    if(classes.error)throw Error('db_error');
-   const spaces=(classes.data||[]).map(c=>({classId:c.id,slug:legacy[c.id]||'class-'+c.id.replace(/-/g,''),label:c.name}))
+   const spaces=(classes.data||[]).map(c=>({classId:c.id,slug:schoolPreset(c.id),label:c.name}))
     .sort((a,b)=>{const old=Object.values(legacy);const rank=(slug:string)=>old.includes(slug)?old.indexOf(slug):old.length;return rank(a.slug)-rank(b.slug)||a.label.localeCompare(b.label,'fr')});
    const slugs=spaces.map(s=>s.slug);
    if(b.action==='teacher-app-matrix-get'){
