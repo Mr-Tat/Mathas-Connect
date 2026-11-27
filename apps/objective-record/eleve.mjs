@@ -561,7 +561,7 @@ async function choose(){
   // Un visitor sans profil approuvé garde le moteur natif jouable, sans
   // aucune requête de validation XP ni privilège d'enregistrement.
   // Le repli libre est EXPLICITE pour ne jamais faire croire à un crédit Connect.
-  if(SERVER_PROOF_ADDITIONS.has(activeApp)){
+  if(!classId&&params.get('requireConnect')!=='1'&&!teacher&&SERVER_PROOF_ADDITIONS.has(activeApp)){
    $('gameFrame').src=GAME_URLS[slug][1]+'?connect=1&ui=20261106-resumable-school-v1';
    $('gameFrame').hidden=false;
    $('guest-home').hidden=true; // le bouton HUB existe dans le moteur lui-même
