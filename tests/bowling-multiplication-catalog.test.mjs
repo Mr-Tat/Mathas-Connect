@@ -21,7 +21,7 @@ test('Bowling multiplication: lien externe unique, Jeux, miniature du dépôt Ex
  assert.equal(a[0].display_order,90);
  assert.match(hub,/if\(appKey==='bowling-multiplication'\)return '🎳 Jeu de multiplication · lien externe'/);
  assert.doesNotMatch(hub,/connectedGameKeys=new Set\(\[[^\]]*'bowling-multiplication'/s);
- assert.match(html,/hub\.js\?v=20261126-milieu-hub-v1/);
+ assert.match(html,/hub\.js\?v=20261127-milieu-hub-v2/);
 });
 test('Bowling multiplication: SQL idempotent dans cinq classes, Toutes et TEST',()=>{
  for(const slug of ['observation','phase1','phase2','phase2b','2eco'])
