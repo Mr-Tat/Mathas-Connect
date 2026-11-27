@@ -9,7 +9,8 @@ const PILOT='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const integer=value=>Number.isSafeInteger(value)&&value>=0;
 const params=new URLSearchParams(location.search);
-const enabled=params.get('connect')==='1';
+const required=params.get('requireConnect')==='1'||(params.has('class')&&params.get('libre')!=='1');
+const enabled=required||params.get('connect')==='1';
 const CLASS=params.get('class')?.toLowerCase();
 
 function element(tag,text,cls){const node=document.createElement(tag);node.textContent=text||'';if(cls)node.className=cls;return node;}
@@ -35,7 +36,7 @@ async function connect(){
  const details=element('span');details.setAttribute('role','status');details.setAttribute('aria-live','polite');
  const xp=element('span','','abaque-account-xp');
  const retry=element('button','Actualiser les autorisations','btn');retry.type='button';retry.hidden=true;
- const demo=element('a','Ouvrir la démo isolée');demo.href='./';
+ const demo=element('a','Ouvrir la démo isolée');demo.href=required?'../../hub.html?class='+encodeURIComponent(CLASS||''):'./';if(required)demo.textContent='Retour au HUB pour se connecter';
  panel.append(dot,face,label,details,xp,retry,demo);document.body.prepend(panel);setInert(true);
  const nativeModal=window.MATHAS_CELEBRATE.modal;
  window.MATHAS_CELEBRATE.modal=options=>{if(!document.documentElement.dataset.abaqueBlocked)nativeModal(options);};
@@ -209,7 +210,7 @@ async function connect(){
   catch(error){
    // Cache permits local play only after a prior approved response, never new XP.
    // An explicit refusal does not fall back to the cache.
-   if(error.status||!subject)throw error;
+   if(required||error.status||!subject)throw error;
    const binding=JSON.parse(localStorage.getItem(cachedBindingKey+subject)||'null');
    if(!uuid.test(binding?.studentId))throw error;
    pupil=binding.studentId;cacheKey='mathas.abaque.approved.'+[CLASS,subject,pupil].join('.')+'.v1';
@@ -266,7 +267,7 @@ async function connect(){
   window.addEventListener('offline',()=>handleState('offline'));
  }catch(error){
   // Mode invité uniquement avant toute session authentifiée ; pas après refus serveur.
-  if(!subject&&!sessionActive){
+  if(!required&&!subject&&!sessionActive){
    try{if(startGuest())return;}catch(guestError){
     details.textContent='Parcours local indisponible : '+guestError.message;
    }
