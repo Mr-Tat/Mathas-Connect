@@ -113,8 +113,9 @@ test('Chromium réel avec JWT simulé, handler et PostgreSQL réels : preuve nat
   await page.waitForFunction(()=>document.getElementById('officialResultInfo')?.textContent.includes('non confirmé'));
   assert.equal(recordCalls,1);
   assert.equal((await ok('load',{},otherActor)).xp.appXp,72);
-  await page.reload();await page.locator('#officialRetry').waitFor();
-  await page.locator('#officialRetry').click();
+  // Automatic replay on reload must obtain ACK before showing sharing consent.
+  // The open consent dialog correctly blocks clicks on the retry button below.
+  await page.reload();
   await page.locator('dialog.milieu-share[open]').waitFor();
   assert.equal(recordCalls,2);
   assert.equal((await ok('load',{},otherActor)).xp.appXp,72);

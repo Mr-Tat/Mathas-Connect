@@ -274,7 +274,10 @@ test('Abaque : carte expérimentale dans le HUB TEST seulement, avec catalogues 
    assert.equal(await page.locator('.app-card[data-app-key="abaque-longueurs"]').count(),0,space);
   }
   assert.equal(calls,6);
-  assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
+  assert.deepEqual(h.errors,[]);
+  // The school hub loads an SDK to verify the identity, but must not launch a game.
+  assert.ok(h.external.every(url=>url==='https://esm.sh/@supabase/supabase-js@2.95.0'),
+   'Aucun autre appel externe inattendu dans le HUB scolaire');
  }finally{await h.close();}
 });
 
@@ -734,7 +737,7 @@ test('Abaque Connect démarre même si le module facultatif du tableau ne se cha
  }finally{await h.close();}
 });
 
-test('Abaque sans compte : scores et trophées locaux, deux réussites à 80 %, aucun XP ni publication',async()=>{
+test('Abaque sans compte : scolaire refusé, moteur autonome et trophées locaux sans XP',async()=>{
  const requests=[];
  const mockSdk=`export function createClient(){return {auth:{
   getSession:async()=>({data:{session:null}}),
@@ -750,16 +753,19 @@ test('Abaque sans compte : scores et trophées locaux, deux réussites à 80 %, 
  });
  try{
   const {page}=h;
+  // School class context forbids the historical automatic local guest fallback.
   await page.goto(h.url+'?connect=1&class='+labClass);
-  await page.waitForFunction(()=>document.documentElement.dataset.abaqueGuest==='true');
+  await page.locator('#abaque-connect-panel').waitFor();
+  assert.notEqual(await page.evaluate(()=>document.documentElement.dataset.abaqueGuest),'true');
+  assert.equal(await page.locator('#launchBtn').evaluate(x=>x.inert),true);
+  // Direct standalone entry, with no class identity, stays freely playable.
+  await page.goto(h.url);
   assert.equal(await page.locator('#homeScreen').isVisible(),true);
   assert.equal(await page.locator('#launchBtn').evaluate(x=>x.inert),false);
   assert.equal(await page.locator('#moveLaunchBtn').getAttribute('aria-disabled'),'true');
-  assert.equal(await page.locator('#masterToggle').isVisible(),false);
   assert.equal(await page.locator('#homeConnectAccount').isVisible(),false);
-  assert.match(await page.locator('#abaque-connect-panel').textContent(),/sans connexion/);
-  assert.match(await page.locator('#abaque-connect-panel').textContent(),/aucun XP/i);
-  assert.equal(await page.evaluate(()=>window.MATHAS_PROGRESS.practice),false);
+  assert.equal(await page.locator('#abaque-connect-panel').count(),0,
+   'Aucun adaptateur scolaire dans le moteur autonome');
   for(let n=0;n<2;n++)await solveConstruction(page,{imperfect:true});
   assert.equal(await page.locator('#moveLaunchBtn').getAttribute('aria-disabled'),'false',
    'deux séries de construction >=80 % débloquent l’activité 2 sans serveur');
@@ -781,13 +787,11 @@ test('Abaque sans compte : scores et trophées locaux, deux réussites à 80 %, 
   await solveConstruction(page);
   await solveConstruction(page);
   assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'true');
-  const guestKey='mathas.abaque.guest.'+labClass+'.v1';
-  const saved=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),guestKey);
-  assert.equal(saved.modeScores.one,4);
-  assert.equal(saved.scoreRecords.allBest,45);
-  assert.ok(Array.isArray(JSON.parse(await page.evaluate(k=>localStorage.getItem(k+'.trophies'),guestKey))));
+  const saved=await progress(page);
+  assert.ok(saved&&saved.stage1&&saved.stage2,'résultats locaux du moteur autonome');
+  assert.ok(Array.isArray(await trophies(page)),'trophées locaux stockés sans Supabase');
   await page.reload();
-  await page.waitForFunction(()=>document.documentElement.dataset.abaqueGuest==='true');
+  assert.equal(await page.locator('#abaque-connect-panel').count(),0);
   assert.equal(await page.locator('[data-mode="three"]').getAttribute('aria-disabled'),'false');
   assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'true');
   assert.equal(await page.locator('#scoreHistory').textContent(),'45 pts');
