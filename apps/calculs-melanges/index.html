@@ -95,6 +95,26 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261107-profile-avata
    }});
    if(loaded?.ok!==true||!candidate.initialize(loaded.revision,loaded.resetEpoch))throw Error('connect_load_failed');
    connected=candidate;guardQueue();multiplierLock=loaded.multiplierLock??null;multiplierLockVersion=loaded.multiplierLockVersion??null;tableAidAllowed=loaded.tableAidAllowed!==false;activeState=loaded.state??null;
+   // Check actual server identity and current parcours at EACH explicit start,
+   // not each calculation. A loaded menu/cache is never an online authorization.
+   frame.mathasAuthorizeMixedStart=async()=>{
+    if(!connected||blockedSession)return {ok:false,message:'Session Connect à vérifier : rouvrez le jeu.'};
+    if(navigator.onLine===false)return {ok:false,message:'Connexion nécessaire pour commencer une nouvelle partie.'};
+    try{
+     if(connected.pending()>0){
+      await connected.retry();
+      if(connected.pending()>0||blockedSession)return {ok:false,message:'Résultat en attente : reconnectez-vous et synchronisez avant une nouvelle partie.'};
+     }
+     const fresh=await host.load(),version=connected.version();
+     if(fresh.revision!==version.revision||fresh.resetEpoch!==version.resetEpoch
+      ||JSON.stringify(fresh.multiplierLock??null)!==JSON.stringify(multiplierLock)
+      ||(fresh.multiplierLockVersion??null)!==multiplierLockVersion
+      ||(fresh.tableAidAllowed!==false)!==tableAidAllowed)
+      return {ok:false,message:'Le parcours ou les autorisations ont changé. Rouvrez le jeu pour les actualiser.'};
+     if(blockedSession||connected.pending()>0)return {ok:false,message:'Session Connect à vérifier : synchronisez puis rouvrez le jeu.'};
+     return {ok:true};
+    }catch{return {ok:false,message:'Connexion ou autorisation indisponible. Réessayez pour commencer une nouvelle partie.'};}
+   };
    // No polling: when classroom Wi-Fi returns, retry queued results automatically.
    // The queue remains durable until the server confirms each event.
    window.addEventListener('online',()=>{void connected?.retry()});
@@ -187,6 +207,14 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261107-profile-avata
    const v=connected?.version()??lab?.version()??{revision:0,resetEpoch:0};
    frame.setAttribute('data-revision',v.revision);frame.setAttribute('data-reset-epoch',v.resetEpoch);
    if(connected&&host?.teacherFree===true){const {grantNativeTeacherAccess}=await import('../teacher-free-native.mjs?v=20261127-v1');game=grantNativeTeacherAccess(game,true);}
+   if(connected){
+    // Adapt only the two real native entry points, keeping the autonomous
+    // engine and its recorded source unchanged. Fail closed on source drift.
+    const replaceStart=(from,to)=>{if(game.split(from).length!==2)throw Error('Entrée native incompatible : '+from);game=game.replace(from,to)};
+    replaceStart('function startSession(mode,total=null){','async function startSession(mode,total=null){\n  if(!await window.MathasMixedBridge.authorizeStart())return;');
+    replaceStart('function startHard(level,mode){','async function startHard(level,mode){');
+    replaceStart('  hardSession={level,mode,score:0,completed:0,mistakes:0,max:HARD[level],currentFirstTry:true};','  if(!await window.MathasMixedBridge.authorizeStart())return;\n  hardSession={level,mode,score:0,completed:0,mistakes:0,max:HARD[level],currentFirstTry:true};');
+   }
    frame.srcdoc=game;
   }catch(e){output.textContent='Erreur : '+e.message}
 })();

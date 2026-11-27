@@ -144,6 +144,14 @@ if(process.env.SDK_BROWSER_PATH){
   }
   assert.equal(await frame.locator('.mult-chip[data-mult="3"]').isEnabled(),true,'optional table remains editable');
   await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='22 XP');
+  // A loaded, approved menu does not authorize a new official offline game.
+  await context.setOffline(true);
+  await frame.locator('.countBtn[data-count="4"]').click();
+  await frame.locator('#mathasMixedStartStatus').waitFor();
+  assert.match(await frame.locator('#mathasMixedStartStatus').innerText(),/Connexion nécessaire|Connexion ou autorisation/);
+  assert.equal(await frame.locator('#menuScreen').isVisible(),true);
+  assert.equal(await frame.locator('#gameScreen').isVisible(),false);
+  await context.setOffline(false);
   await playMixedClassic({frame,page,total:4,afterStart:()=>context.setOffline(true)});
   await page.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('en attente (offline)'));
   const queueKey='mathas.calculs-melanges.connect.'+classId+'.'+signed+'.'+browserStudent+'.v1';
@@ -262,15 +270,13 @@ if(process.env.SDK_BROWSER_PATH){
   await playMixedClassic({frame:halfFrame,page:halfPage,total:4,operations:['add']});
   await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='7 XP',null,{timeout:20000});
   halfFrame=await openHalfGame();await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='7 XP');
-  await halfContext.setOffline(true);
-  await playMixedClassic({frame:halfFrame,page:halfPage,total:4,operations:['add','sub']});
+  await playMixedClassic({frame:halfFrame,page:halfPage,total:4,operations:['add','sub'],afterStart:()=>halfContext.setOffline(true)});
   await halfPage.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('en attente (offline)'));
   assert.equal(await halfPage.locator('#xp-total').innerText(),'7 XP');
   await halfContext.setOffline(false);
   await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='14 XP',null,{timeout:20000});
   halfFrame=await openHalfGame();await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='14 XP');
-  await halfContext.setOffline(true);
-  await playMixedClassic({frame:halfFrame,page:halfPage,total:4,operations:['add','sub','mul']});
+  await playMixedClassic({frame:halfFrame,page:halfPage,total:4,operations:['add','sub','mul'],afterStart:()=>halfContext.setOffline(true)});
   await halfPage.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('en attente (offline)'));
   assert.equal(await halfPage.locator('#xp-total').innerText(),'14 XP');
   await halfContext.setOffline(false);

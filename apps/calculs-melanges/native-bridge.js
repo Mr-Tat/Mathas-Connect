@@ -11,7 +11,26 @@
  Object.defineProperty(window,'__mathasMixedMultiplierVersion',{value:frame?.getAttribute('data-multiplier-lock-version')||null});
  Object.defineProperty(window,'__mathasMixedTeacherAllowTables',{value:frame?.getAttribute('data-table-aid-allowed')!=='false'});
  const number=name=>Number(frame?.getAttribute(name)||0);
+ let checkingStart=false;
+ async function authorizeStart(){
+  if(checkingStart||document.body.inert||frame?.inert)return false;
+  checkingStart=true;
+  document.body.inert=true;
+  let reply;
+  try{reply=await frame?.mathasAuthorizeMixedStart?.()}catch{}
+  finally{checkingStart=false;document.body.inert=!!frame?.inert}
+  let status=document.getElementById('mathasMixedStartStatus');
+  if(reply?.ok===true&&!frame?.inert){status?.remove();return true}
+  if(!status){
+   status=document.createElement('div');status.id='mathasMixedStartStatus';status.setAttribute('role','status');
+   Object.assign(status.style,{position:'fixed',top:'12px',left:'50%',transform:'translateX(-50%)',width:'max-content',maxWidth:'calc(100% - 32px)',padding:'12px 16px',borderRadius:'12px',background:'#fff4d8',color:'#442800',fontWeight:'700',textAlign:'center',zIndex:'99999',pointerEvents:'none'});
+   document.body.append(status);
+  }
+  status.textContent=reply?.message||'Connexion nécessaire pour commencer une nouvelle partie.';
+  return false;
+ }
  Object.defineProperty(window,'MathasMixedBridge',{value:Object.freeze({
+  authorizeStart,
   begin(s,hard){
    current=s;
    sessions.set(s,{hard,eventId:crypto.randomUUID(),selected:hard?['add','sub','mul']:[...s.ops],operations:[],first:[],ended:false,aid:false,
