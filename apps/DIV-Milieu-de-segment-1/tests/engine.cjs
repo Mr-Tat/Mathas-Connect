@@ -3,7 +3,7 @@
 const fs=require("node:fs"),path=require("node:path");
 const html=fs.readFileSync(path.join(__dirname,"..","index.html"),"utf8");
 const code=html.match(/<script>([\s\S]*?)<\/script>/)[1];
-const stub='const store=new Map();const localStorage={getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)};const nodes=new Map();const document={getElementById:id=>{if(!nodes.has(id))nodes.set(id,{hidden:false,addEventListener:()=>{},querySelector:()=>null,querySelectorAll:()=>[],innerHTML:""});return nodes.get(id)}};const confirm=()=>true;';
+const stub='const store=new Map();const localStorage={getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)};const nodes=new Map();const document={getElementById:id=>{if(!nodes.has(id))nodes.set(id,{hidden:false,addEventListener:()=>{},querySelector:()=>null,querySelectorAll:()=>[],innerHTML:""});return nodes.get(id)}};const window={addEventListener:()=>{}};const confirm=()=>true;';
 const checks=''+
 'const results=[];const assert=(x,m)=>{if(!x)throw Error(m);results.push(m)};'+
 'render=()=>checkpoint();renderResult=()=>{};function reset(){progress=blank();safeRemove(RUNKEY);run=null;practice=false}'+

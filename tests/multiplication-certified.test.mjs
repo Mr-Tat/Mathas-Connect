@@ -138,11 +138,11 @@ test('LAB Tests en ligne : Multiplication impose la vraie session Connect avant 
   'Le LAB doit lancer le moteur V7 certifié, pas l ancien hôte Objectif record');
  assert.match(lab,/SCHOOL_RECORD_LAUNCHER/,
   'les autres applications conservent leur routage existant');
- assert.match(launcher,/const requireConnect=query\.get\('requireConnect'\)==='1'/);
+ assert.match(launcher,/const requireConnect=query\.get\('requireConnect'\)==='1'\|\|Boolean\(classId\)/);
  assert.match(launcher,/!teacherPlayer&&!requireConnect&&\(query\.get\('libre'\)==='1'\|\|localStorage\.getItem/);
  assert.match(launcher,/target\.searchParams\.delete\('requireConnect'\)/);
  assert.match(launcher,/target\.searchParams\.set\('libre','1'\)/);
- assert.match(launcher,/actions\.append\(retry,classic\)/);
+ assert.match(launcher,/actions\.append\(retry\);if\(!requireConnect&&!teacherPlayer\)actions\.append\(classic\)/);
  assert.match(launcher,/connectionCheckRequired\|\|teacherPlayer\|\|requireConnect/);
  assert.match(launcher,/Se connecter avec un élève fictif TEST/);
  assert.match(launcher,/if\(requireConnect\)\{/);
