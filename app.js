@@ -110,6 +110,9 @@ async function teacher(){
  const r=await call('teacher-dashboard');
  const box=$('class-selector');
  box.replaceChildren(...(r.classes||[]).filter(c=>!c.name.includes('TEST')).map(c=>new Option(c.name,c.id)));
+ const authBox=$('auth-class'),previousAuthClass=authBox.value;
+ authBox.replaceChildren(...(r.classes||[]).map(c=>new Option(c.name,c.id)));
+ authBox.value=[...authBox.options].some(o=>o.value===previousAuthClass)?previousAuthClass:box.value;
  $('year-selector').replaceChildren(...(r.years||[]).map(v=>new Option(v.label,v.id)));
  show('teacher');showTeacherTab('home');
  // Accueil GLOBAL : une seule requête pour toutes les classes.
@@ -913,9 +916,7 @@ for(let n=2;n<=9;n++){
  label.append(input,document.createTextNode(' '+n));
  $('auth-multipliers').append(label);
 }
-for(const [id,{name}] of Object.entries(CLASS_SPACES))
- $('auth-class').add(new Option(name,CLASS_SPACES[id].id));
-$('auth-class').add(new Option('Classe TEST',labTestClass));
+// Authorization classes are populated from the authenticated teacher dashboard.
 let authLocks=[],authAid=[],authLoadSequence=0,authSettingsLoaded=false,authRoster=[];
 const authRestartApps=new Set(['addition-ecrite-simple','addition-ecrite-multiple','multiplication-ecrite-simple','soustraction-ecrite-simple','melange-calculs-ecrits']);
 const authTableApps=new Set(['multiplication-ecrite-simple','melange-calculs-ecrits']);
@@ -963,7 +964,8 @@ async function loadAuthorizations(requestedStudent=null){
  const seq=++authLoadSequence;
  authSettingsLoaded=false;authRoster=[];$('auth-restart').disabled=true;
  $('auth-saved-summary').hidden=true;
- const cls=$('auth-class');if(!cls.value)cls.value=$('class-selector').value||CLASS_SPACES.observation.id;
+ const cls=$('auth-class');if(!cls.value&&!requestedStudent)cls.value=$('class-selector').value;
+ if(!cls.value){authSay('Sélectionne une classe autorisée.');return false;}
  // The Abaque uses class-wide rights only: do not call the multiplication RPCs.
  const isMilieu=$('auth-app').value==='milieu-segment';$('milieu-authorizations').hidden=!isMilieu;$('milieu-results').hidden=true;
  if(isMilieu){authSwitchView();$('auth-scope-wrap').hidden=true;$('auth-student-wrap').hidden=true;++abaqueModeSequence;abaqueModeEnabled(false);authSay('La moitié · résultats officiels et nouvelles progressions.');return false;}
@@ -984,11 +986,11 @@ async function loadAuthorizations(requestedStudent=null){
   const students=(dashboard.students||[]).slice().sort((a,b)=>String(a.display_name).localeCompare(String(b.display_name),'fr'));
   authRoster=students;
   for(const student of students)$('auth-student').add(new Option(student.display_name,student.id));
-  if(requestedStudent&&students.some(s=>s.id===requestedStudent))$('auth-student').value=requestedStudent;
-  if($('auth-scope').value==='student'&&!students.length){
+  if(requestedStudent)$('auth-student').value=students.some(s=>s.id===requestedStudent)?requestedStudent:'';
+  if($('auth-scope').value==='student'&&!$('auth-student').value){
    // Never silently change an individual-pupil reset into a whole-class reset.
    // The teacher must explicitly select the class scope if that is intended.
-   authSay('Aucun élève trouvé dans cette classe. Vérifie la classe avant de choisir éventuellement « toute la classe ».');
+   authSay('L’élève demandé est absent ou non sélectionné. Vérifie la classe et choisis explicitement un élève.');
   }else authSay('Réglages chargés · application aux nouvelles parties.');
   authRender();
   return true;
