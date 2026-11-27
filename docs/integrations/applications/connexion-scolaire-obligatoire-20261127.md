@@ -21,6 +21,18 @@ Adaptateurs : HUB, multiplication, soustraction, addition multiple, calculs mél
 - Milieu : nouvelle activité uniquement avec `begin` certifié ; résultat achevé non confirmé relancé automatiquement à la reconnexion / réouverture ; archivage local isolé d'une preuve devenue incompatible avec une nouvelle époque, sans crédit artificiel.
 - Tests navigateur `tests/ce-free-launch.browser.mjs` réorientés vers les parcours autonomes sans SDK **et** les refus scolaires sans authentification. Ne pas supprimer les parcours guidés / classiques.
 
+## Reprise vérifiée du 27 novembre 2026 — branche de la PR #366
+
+- Connecteurs **GitHub (lecture/écriture)** et **Supabase Connect (lecture SQL et inventaire Edge)** vérifiés réellement ; projet `awmhpfofacaglewammxt` en état `ACTIVE_HEALTHY`. Aucun élève réel, aucune écriture SQL, migration, fonction Edge déployée ou changement de classe pendant cette reprise.
+- **Commits ajoutés sur la même branche :**
+  - [`a21b0cb`](https://github.com/Mr-Tat/Mathas-Connect/commit/a21b0cb7297b60927944aaa95d1e0a4c5dfcb699) : 11 fichiers de tests réalignés sur les nouvelles versions et la suppression du repli scolaire ; objet `window` simulé pour le moteur Node du Milieu.
+  - [`ab0d7f8`](https://github.com/Mr-Tat/Mathas-Connect/commit/ab0d7f868e00a4e32b0f408e1f9c8bd934f94c07) : scénarios Chromium Abaque « scolaire sans session refusé » / « autonome libre », et test de reprise automatique ACK du Milieu sans clic fictif à travers la fenêtre de consentement.
+  - [`2dda2eb`](https://github.com/Mr-Tat/Mathas-Connect/commit/2dda2eb9565a05d55757d5f9bc6a2041f8ebe0ae) : course asynchrone du contrôle scolaire Abaque, fixture élève fictif du tableau professeur Addition multiple, suppression des anciens scénarios `#freeLaunch` scolaires dans le navigateur Milieu.
+- **Échecs CI requalifiés :** les anciennes assertions exigeant `hub.js?v=20261127-milieu-hub-v2`, `eleve.mjs?v=20261110-daily-share-v1`, `bootstrap?v=20261116-guest-mode-v1` ou un bouton libre scolaire n'étaient plus compatibles avec les décisions du professeur. Les assertions ont été remplacées par des vérifications des versions *effectivement attendues* et des refus scolaires ; aucune suppression générale de tests.
+- **Écart de production confirmé par SQL en lecture seule** : `connect_hub_preset_entries` contient `abaque-longueurs` avec `observation.visible=true` ; `phase1.visible=false`, et `phase2`, `phase2b`, `2eco` à `true`. La règle pédagogique durable exclut **Observation et Phase 1**. La suite `tests/abaque-school-public.test.mjs` échoue à juste titre. **Ne pas neutraliser ce contrôle** ; le rétablissement des droits de la classe réelle est une action sensible demandant une autorisation appropriée. Aucune mise à jour de la ligne de production n'a été faite.
+- **Limites restantes** : workflows GitHub encore à conclure sur le dernier SHA ; essais PostgreSQL/Chromium isolés distincts d'une vraie Auth ; aucun parcours hébergé complet avec deux profils fictifs approuvés et coupure/reconnexion ; revalidation systématique d'identité HUB lors d'un clic droit/nouvel onglet et files des divers calculs à recetter jusqu'au bout. Un lien externe n'est contrôlé qu'au niveau du HUB, pas dans le service tiers.
+- **Livraison** : PR volontairement en brouillon, non fusionnée ; aucun nouveau déploiement Pages ni modification SQL/Edge. Ne pas proclamer « tout est vert » sur la base d'une CI antérieure.
+
 ## Contrôles et publication (à renseigner sur SHA final)
 
 | Vérification | État | Justificatif ou limite |
@@ -31,7 +43,7 @@ Adaptateurs : HUB, multiplication, soustraction, addition multiple, calculs mél
 | Validité syntaxique des scripts inline Abaque et Milieu | OK (statique) | Analyse sans exécution du moteur |
 | Contrat de verrouillage serveur | PARTIEL | RPC abaque contient identité, époque, vérification `activity_locked`; vrai scénario joueur à recetter |
 | Reprise automatique et files tous jeux | PARTIEL | Code abaque et milieu inspecté/corrigé ; autres files et risques de sessions à tester |
-| CI de branche et Chromium de non-régression | EN ATTENTE | Ne jamais conclure sur les succès d'une ancienne SHA |
+| CI de branche et Chromium de non-régression | PARTIEL | Les tests historiques incompatibles ont été corrigés ; échec réel encore présent sur visibilité de l'abaque en Observation ; contrôler le SHA final et les autres suites navigateur |
 | Recette réelle professeur et élève **fictifs approuvés** avec coupure, reprise, autre appareil et 2 comptes | NON EXÉCUTÉ | Nécessaire avant publication aux classes |
 | Fusion PR / Pages / vérification URL servie | NON EXÉCUTÉ | PR à garder en brouillon tant que portes bloquantes ouvertes |
 | Nouvelle migration SQL / Edge | SANS OBJET à ce stade | Aucune modification backend dans cette branche |
