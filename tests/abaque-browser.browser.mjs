@@ -737,7 +737,7 @@ test('Abaque Connect démarre même si le module facultatif du tableau ne se cha
  }finally{await h.close();}
 });
 
-test('Abaque sans compte : scolaire refusé, moteur autonome et trophées locaux sans XP',async()=>{
+test('Abaque sans compte : scores et trophées locaux, scolaire refusé, moteur autonome sans XP',async()=>{
  const requests=[];
  const mockSdk=`export function createClient(){return {auth:{
   getSession:async()=>({data:{session:null}}),
@@ -756,9 +756,9 @@ test('Abaque sans compte : scolaire refusé, moteur autonome et trophées locaux
   // School class context forbids the historical automatic local guest fallback.
   await page.goto(h.url+'?connect=1&class='+labClass);
   await page.locator('#abaque-connect-panel').waitFor();
-  await page.waitForFunction(()=>document.querySelector('#launchBtn')?.inert===true);
+  await page.waitForFunction(()=>document.querySelector('#abaque-connect-panel')?.textContent?.includes('Connexion non disponible'));
   assert.notEqual(await page.evaluate(()=>document.documentElement.dataset.abaqueGuest),'true');
-  assert.equal(await page.locator('#launchBtn').evaluate(x=>x.inert),true);
+  assert.equal(await page.locator('#launchBtn').evaluate(x=>x.closest('[inert]')!==null),true);
   // Direct standalone entry, with no class identity, stays freely playable.
   await page.goto(h.url);
   assert.equal(await page.locator('#homeScreen').isVisible(),true);

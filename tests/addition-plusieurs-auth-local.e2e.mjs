@@ -148,7 +148,7 @@ try{
    +"||typeof getToken!=='function'||typeof fetchImpl!=='function')throw Error('invalid_transport');";
   await route.fulfill({response:res,contentType:'text/javascript',body:lines.join('\n')});
  });
- await pupilContext.route('**/apps/addition-plusieurs/connect-host.mjs',async route=>{
+ await pupilContext.route(u=>u.pathname.endsWith('/apps/addition-plusieurs/connect-host.mjs'),async route=>{
   const res=await route.fetch(),original=await res.text();
   assert.ok(original.includes('https://awmhpfofacaglewammxt.supabase.co'));
   const parts=original.split('\n'),i=parts.findIndex(line=>line.includes("throw Error('untrusted_connect_endpoint')"));
