@@ -98,8 +98,8 @@ test('HUB Toutes : Abaque connecté dans Tests uniquement, sans doublons scolair
    assert.equal(new Set(hrefs).size,7);
    for(const link of hrefs){assert.ok(link.includes('class='+testClass));assert.ok(link.includes('joueur=prof'),'tous les jeux Connect gardent le profil Monsieur T : '+link)}
    const milieuCard=f.page.locator('[data-app-key="milieu-segment"]');
-   const locked=new URL(await milieuCard.getAttribute('href'),f.base);
-   assert.ok(locked.pathname.endsWith('/index.html'),'sans approbation le lien ouvre la connexion');
+   await f.page.locator('#identity-box.identity-connected').waitFor();
+   assert.equal(await milieuCard.getAttribute('href'),await milieuCard.getAttribute('data-school-href'),'Monsieur T authentifié et approuvé dispose du lien scolaire');
    const milieu=new URL(await milieuCard.getAttribute('data-school-href'));
    assert.equal(milieu.searchParams.get('requireConnect'),'1');assert.equal(milieu.searchParams.get('joueur'),'prof');assert.equal(milieu.searchParams.get('hub'),'toutes');assert.equal(milieu.searchParams.has('libre'),false);
    assert.equal(f.getRequests(),1);

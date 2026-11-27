@@ -80,8 +80,15 @@ SQL
 # Chromium then tests current 204 XP, class permissions and native Edge.
 for migration in \
  "$ROOT/supabase/migrations/20261107223500_abaque_204xp_5perpage_records.sql" \
+ "$ROOT/supabase/migrations/20261116081500_abaque_sudden_trophies_by_pages.sql" \
+ "$ROOT/supabase/migrations/20261116083000_abaque_record_awards_constraint.sql" \
  "$ROOT/supabase/migrations/20261116100000_abaque_prof_class_gates_top_two.sql" \
- "$ROOT/supabase/migrations/20261116120000_abaque_four_classroom_unlock_modes.sql"; do
+ "$ROOT/supabase/migrations/20261116111500_abaque_classic_result_dots.sql" \
+ "$ROOT/supabase/migrations/20261116120000_abaque_four_classroom_unlock_modes.sql" \
+ "$ROOT/supabase/migrations/20261116133000_abaque_autonomie_scores_xp75.sql" \
+ "$ROOT/supabase/migrations/20261116190500_abaque_t3_internal_75_percent_gates.sql" \
+ "$ROOT/supabase/migrations/20261116213000_abaque_helpers_confirmation_clean_trophies_v3.sql" \
+ "$ROOT/supabase/migrations/20261117110002_abaque_independent_hints_v4.sql"; do
  docker_local exec -i "$RUN_NAME-db" psql -U postgres -d abaque_test -v ON_ERROR_STOP=1 < "$migration" >/dev/null
 done
 # Only the disposable TEST-class fixture can open every classroom activity.

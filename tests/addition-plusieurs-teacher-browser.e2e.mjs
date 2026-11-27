@@ -98,8 +98,10 @@ try{
    await page.locator('#results-app').selectOption('addition-ecrite-multiple');
    assert.equal(await page.locator("#results-class-restart").isVisible(),false,
     "le redémarrage de classe est géré dans Autorisations, pas directement depuis Résultats");
-   assert.ok(edgeCalls.some(c=>c.action==='teacher-detail'&&c.appKey==='addition-ecrite-multiple'),
-    'les résultats d’un élève affichés proviennent du détail authentifié');
+   await page.locator('#results-list .result-person').filter({hasText:'Élève fictif'}).click();
+   await page.locator('#results-student-content .result-table:visible').waitFor();
+   assert.ok(edgeCalls.some(c=>c.action==='teacher-detail'&&c.appKey==='addition-ecrite-multiple'&&c.studentId===student),
+    'le détail individuel est bien chargé avec le JWT et le bon élève');
    assert.ok(edgeCalls.some(c=>c.action==='teacher-parcours-history'&&c.appKey==='addition-ecrite-multiple'),
     'historique individuel chargé sans modification');
   }
