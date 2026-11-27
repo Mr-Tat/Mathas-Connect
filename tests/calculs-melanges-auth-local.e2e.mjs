@@ -41,7 +41,25 @@ const event={action:'game-record',schemaVersion:1,eventId:randomUUID(),mode:'cla
 const result=ok(await post(student,event));assert.equal(result.xp.delta,28);assert.equal(result.xp.total,50);
 const duplicate=ok(await post(student,event));assert.equal(duplicate.duplicate,true);assert.equal(duplicate.xp.delta,0);
 const loaded=ok(await post(student,{action:'student-load'}));assert.equal(loaded.state.classic[0][4],4);assert.equal(loaded.state.eligible.classic[0][4],4);
-const matrix=ok(await post(prof,{action:'teacher-app-matrix-get'}));assert.equal(matrix.entries.filter(x=>x.app_key==='melange-calculs-ecrits').length,4);assert.ok(matrix.entries.filter(x=>x.app_key==='melange-calculs-ecrits').every(x=>!x.visible));
+const slug='class-'+classId.replace(/-/g,'');
+ const matrix=ok(await post(prof,{action:'teacher-app-matrix-get'}));
+ assert.deepEqual(matrix.spaces.map(s=>({classId:s.classId,slug:s.slug})),[{classId,slug}],'only actual managed classes');
+ assert.ok(matrix.apps.some(a=>a.app_key==='melange-calculs-ecrits'),'mixed remains available for teacher activation');
+ assert.equal(matrix.entries.filter(x=>x.app_key==='melange-calculs-ecrits').length,0,'new class has no explicit visible entry');
+ const entry={slug,appKey:'melange-calculs-ecrits',section:'calculs_ecrits',order:60,visible:true,featured:false};
+ const startRequest={action:'game-start',mode:'classic',level:1,total:4,operationsSelectedAtStart:['add','sub','mul'],expectedRevision:1,expectedResetEpoch:0,expectedMultiplierLockVersion:null,expectedTableAidAllowed:true};
+ assert.equal((await post(student,startRequest)).body.error,'app_hidden_for_class');
+ assert.equal((await post(student,{action:'teacher-app-matrix-save',changes:[entry]})).status,403);
+ assert.equal((await post(prof,{action:'teacher-app-matrix-save',changes:[{...entry,slug:'observation'}]})).status,400);
+ ok(await post(prof,{action:'teacher-app-matrix-save',changes:[entry]}));
+ const issued=ok(await post(student,startRequest));assert.ok(issued.eventId);
+ assert.equal((await post(student,{...event,action:'game-record-v2',eventId:randomUUID()})).body.error,'start_ticket_invalid');
+ assert.equal((await post(student,{...event,action:'game-record-v2',eventId:issued.eventId,level:2,expectedRevision:1})).body.error,'start_ticket_invalid');
+ assert.ok((await pupil.from('connect_school_start_tickets').select('event_id')).error,'no direct pupil ticket access');
+ const updatedMatrix=ok(await post(prof,{action:'teacher-app-matrix-get'}));
+ assert.deepEqual(updatedMatrix.entries.filter(x=>x.app_key===entry.appKey).map(x=>[x.preset_slug,x.visible,x.featured]),[[slug,true,false]]);
+ const legacy=check(await admin.from('connect_hub_preset_entries').select('preset_slug,visible').eq('app_key',entry.appKey).in('preset_slug',['observation','phase1','phase2','2eco']),'isolated historical fixtures');
+ assert.equal(legacy.length,4);assert.ok(legacy.every(x=>!x.visible),'unmanaged historical settings untouched');
 const detail=ok(await post(prof,{action:'teacher-detail',studentId}));assert.equal(detail.state.classic[0][4],4);assert.equal(detail.xp.appXp,28);
 assert.equal((await post(student,{action:'teacher-parcours-restart',scope:'class',repeatXp:false})).status,403);
 const reset=ok(await post(prof,{action:'teacher-parcours-restart',scope:'student',studentId,repeatXp:false}));assert.equal(reset.parcours,2);
@@ -77,7 +95,12 @@ if(process.env.SDK_BROWSER_PATH){
   await context.grantPermissions(['local-network-access'],{origin:site});
   await context.route('**/*',route=>{
    const u=new URL(route.request().url());if([new URL(site).origin,new URL(url).origin].includes(u.origin))return route.continue();
-   throw Error('No external request allowed in local auth recipe: '+u.origin);
+   // Public catalogue/avatars render decorative images. The local Auth
+   // recipe never reaches these hosts; unexpected external API/script
+   // requests still fail, as before.
+   if(route.request().resourceType()==='image'&&['https://raw.githubusercontent.com','https://mr-tat.github.io','https://avatars.githubusercontent.com'].includes(u.origin))
+    return route.abort('blockedbyclient');
+   throw Error('No external request allowed in local auth recipe: '+route.request().resourceType()+' '+u.origin+u.pathname);
   });
   await context.route(SDK_URL,route=>route.fulfill({status:200,contentType:'text/javascript',body:sdk}));
   await context.route('**/tests/.mixed-auth-only.html',route=>route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Local Auth only</title>'}));
@@ -86,7 +109,7 @@ if(process.env.SDK_BROWSER_PATH){
   const context=await browser.newContext();await setup(context);
   await context.addInitScript(()=>{let seed=5168789;Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296}});
   async function configureGame(context){
-  await context.route('**/apps/calculs-melanges/connect-host.mjs',async route=>{
+  await context.route(u=>u.pathname.endsWith('/apps/calculs-melanges/connect-host.mjs'),async route=>{
    const response=await route.fetch(),lines=(await response.text()).split('\n');const i=lines.findIndex(x=>x.includes("throw Error('untrusted_connect_endpoint')"));assert.ok(i>=0);
    lines[i]=' if(baseUrl!=='+JSON.stringify(url)+'||apikey!=='+JSON.stringify(anon)+")throw Error('untrusted_connect_endpoint');";
    const original=lines.join('\n').replace(/export const CONNECT_URL='[^']+';/,'export const CONNECT_URL='+JSON.stringify(url)+';').replace(/export const CONNECT_PUBLISHABLE_KEY='[^']+';/,'export const CONNECT_PUBLISHABLE_KEY='+JSON.stringify(anon)+';');
@@ -125,20 +148,50 @@ if(process.env.SDK_BROWSER_PATH){
   check(await admin.from('connect_mixed_multiplier_locks').insert({class_id:classId,scope_key:'class',multipliers:[2,7]}),'mixed-only table minimums');
   let frame=await openGame();
   await frame.locator('.mult-chip[data-mult="3"]').click();
-  await frame.locator('.mult-chip[data-mult="2"]').click();
-  assert.ok(await frame.locator('.mult-chip[data-mult="2"]').evaluate(e=>e.classList.contains('active')));
-  assert.ok(await frame.locator('.mult-chip[data-mult="7"]').evaluate(e=>e.classList.contains('active')));
+  for(const n of [2,7]){
+   const chip=frame.locator('.mult-chip[data-mult="'+n+'"]');
+   assert.equal(await chip.isDisabled(),true,'mandatory table cannot be deselected');
+   assert.ok(await chip.evaluate(e=>e.classList.contains('active')));
+  }
+  assert.equal(await frame.locator('.mult-chip[data-mult="3"]').isEnabled(),true,'optional table remains editable');
   await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='22 XP');
-  await context.setOffline(true);await playMixedClassic({frame,page,total:4});
+  // A loaded, approved menu does not authorize a new official offline game.
+  await context.setOffline(true);
+  await frame.locator('.countBtn[data-count="4"]').click();
+  await frame.locator('#mathasMixedStartStatus').waitFor();
+  assert.match(await frame.locator('#mathasMixedStartStatus').innerText(),/Connexion nécessaire|Connexion ou autorisation/);
+  assert.equal(await frame.locator('#menuScreen').isVisible(),true);
+  assert.equal(await frame.locator('#gameScreen').isVisible(),false);
+  assert.equal(check(await admin.from('connect_school_start_tickets').select('event_id').eq('student_id',browserStudent),'offline new start denied').length,0);
+  await context.setOffline(false);
+  // Hide the fictitious class app only AFTER the game has a server ticket.
+  await playMixedClassic({frame,page,total:4,afterStart:async()=>{
+   await context.setOffline(true);
+   ok(await post(prof,{action:'teacher-app-matrix-save',changes:[{...entry,visible:false}]}));
+  }});
   await page.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('en attente (offline)'));
   const queueKey='mathas.calculs-melanges.connect.'+classId+'.'+signed+'.'+browserStudent+'.v1';
   const queued=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)||'[]'),queueKey);assert.equal(queued.length,1);assert.equal(queued[0].score,4);assert.equal(new Set(queued[0].operationsCompleted).size>=2,true);
+  assert.equal(queued[0].action,'game-record-v2');
+  assert.equal(queued[0].startAuthorized,true);
+  const ticket=check(await admin.from('connect_school_start_tickets').select('student_id,class_id,auth_user_id,reset_epoch,game_config').eq('event_id',queued[0].eventId).single(),'actual browser-issued ticket');
+  assert.equal(ticket.student_id,browserStudent);assert.equal(ticket.class_id,classId);assert.equal(ticket.auth_user_id,signed);assert.equal(ticket.reset_epoch,0);
+  assert.equal(ticket.game_config.mode,'classic');assert.equal(ticket.game_config.total,4);
   assert.equal(await page.locator('#xp-total').innerText(),'22 XP');
   assert.equal(check(await admin.from('connect_states').select('student_id').eq('student_id',browserStudent).eq('app_key','melange-calculs-ecrits'),'offline DB').length,0);
   await context.setOffline(false);await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='50 XP',null,{timeout:20000});
   assert.equal(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)||'[]').length,queueKey),0);
   const saved=check(await admin.from('connect_states').select('revision,state_data').eq('student_id',browserStudent).eq('app_key','melange-calculs-ecrits').single(),'browser SQL');
   assert.equal(saved.revision,1);assert.equal(saved.state_data.rewards.mastery[4][0],true);
+  // A direct URL may load the pupil's existing results/queue, but cannot
+  // start a new official game while the class visibility is off.
+  frame=await openGame();
+  await frame.locator('.countBtn[data-count="4"]').click();
+  await frame.locator('#mathasMixedStartStatus').waitFor();
+  assert.match(await frame.locator('#mathasMixedStartStatus').innerText(),/professeur/);
+  assert.equal(await frame.locator('#gameScreen').isVisible(),false);
+  ok(await post(prof,{action:'teacher-app-matrix-save',changes:[entry]}));
+  console.log('PASS online ticket → offline start denied → class hidden mid-game → durable ACK → direct hidden start denied');
   await page.goto(site+'/tests/.mixed-auth-only.html');
   const refreshed=await page.evaluate(async({url,anon,SDK_URL})=>{const {createClient}=await import(SDK_URL);const sb=createClient(url,anon,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});const r=await sb.auth.refreshSession();if(r.error)throw r.error;return r.data.user.id},{url,anon,SDK_URL});
   assert.equal(refreshed,signed);
@@ -152,10 +205,10 @@ if(process.env.SDK_BROWSER_PATH){
   });
   const professor=await tc.newPage();professor.on('pageerror',e=>errors.push('teacher: '+e.message));await professor.goto(site+'/?portail=prof&profClass='+classId);
   await professor.locator('#login-form:visible').waitFor();await professor.locator('#email').fill(teacherEmail);await professor.locator('#password').fill(teacherPassword);await professor.locator('#login-form button[type=submit]').click();
-  await professor.locator('.results-overview-table').waitFor({timeout:30000});
+  await professor.locator('.results-overview-table:not(.results-overview-floating-table)').waitFor({timeout:30000});
   assert.equal(await professor.evaluate(()=>Boolean(localStorage.getItem('mathas-connect-professor-auth-v1'))),true);
-  await professor.reload();await professor.locator('.results-overview-table').waitFor({timeout:30000});
-  await professor.getByRole('button',{name:'Voir les résultats de Élève Chromium Mélange dans Calculs écrits mélangés'}).click();
+  await professor.reload();await professor.locator('.results-overview-table:not(.results-overview-floating-table)').waitFor({timeout:30000});
+  await professor.locator('.results-overview-table:not(.results-overview-floating-table)').getByRole('button',{name:'Voir les résultats de Élève Chromium Mélange dans Calculs écrits mélangés'}).click();
   const rows=await professor.locator('#results-student-content .result-table tr').allTextContents();assert.match(rows.join('|'),/4\/4/);assert.doesNotMatch(rows[0],/HARD 5/);
   await professor.waitForFunction(()=>document.querySelector('#results-student-content .mixed-xp')?.textContent?.includes('28 XP'));
   // Real HUB professor controls: class minimums, pupil override, inheritance,
@@ -173,7 +226,11 @@ if(process.env.SDK_BROWSER_PATH){
   async function assertMinimums(values){
    frame=await openGame();
    assert.deepEqual(await frame.evaluate(()=>window.__mathasMixedMultiplierLock),values);
-   for(const n of values){await frame.locator('.mult-chip[data-mult="'+n+'"]').click();assert.ok(await frame.locator('.mult-chip[data-mult="'+n+'"]').evaluate(e=>e.classList.contains('active')))}
+   for(const n of values){
+    const chip=frame.locator('.mult-chip[data-mult="'+n+'"]');
+    assert.equal(await chip.isDisabled(),true,'teacher-required table must be locked');
+    assert.ok(await chip.evaluate(e=>e.classList.contains('active')));
+   }
   }
   await saveMinimums('class',[3,8]);
   const classMinimum=check(await admin.from('connect_mixed_multiplier_locks').select('multipliers').eq('class_id',classId).eq('scope_key','class').single(),'class minimum from actual professor UI');
@@ -189,7 +246,7 @@ if(process.env.SDK_BROWSER_PATH){
   assert.deepEqual(existingMinimum.multipliers,[4,9]);
   await saveMinimums('class',[2,7]);
   console.log('PASS actual HUB controls → mixed-only class/pupil minimums → native enforced digits after reload → inheritance restored; multiplication-simple locks unchanged');
-  await professor.locator('#results-student-content .results-restart-button').click();const dialog=professor.locator('dialog.parcours-dialog');await dialog.waitFor();await dialog.locator('input[type=checkbox]').uncheck();await dialog.locator('input[required]').fill('Élève Chromium Mélange');await dialog.getByRole('button',{name:'Confirmer le nouveau parcours'}).click();await dialog.waitFor({state:'detached'});
+  await professor.locator('#results-student-content .results-restart-button').click();await professor.locator('#teacher-authorizations:visible').waitFor();await professor.locator('#auth-restart:enabled').waitFor({timeout:20000});assert.equal(await professor.locator('#auth-class').inputValue(),classId);assert.equal(await professor.locator('#auth-app').inputValue(),'melange-calculs-ecrits');assert.equal(await professor.locator('#auth-scope').inputValue(),'student');assert.equal(await professor.locator('#auth-student').inputValue(),browserStudent);await professor.locator('#auth-restart').click();const dialog=professor.locator('dialog.parcours-dialog');await dialog.waitFor();await dialog.locator('input[type=checkbox]').uncheck();await dialog.locator('input[required]').fill('Élève Chromium Mélange');await dialog.getByRole('button',{name:'Confirmer le nouveau parcours'}).click();await dialog.waitFor({state:'detached'});
   frame=await openGame();await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='50 XP');assert.deepEqual(await frame.evaluate(()=>JSON.parse(localStorage.getItem('mixcalc_classic_v1'))),{});
   const after=check(await admin.from('connect_states').select('reset_epoch,state_data').eq('student_id',browserStudent).eq('app_key','melange-calculs-ecrits').single(),'UI reset');assert.equal(after.reset_epoch,1);assert.deepEqual(after.state_data,{});
   const playerPage=await tc.newPage();playerPage.on('pageerror',e=>errors.push('teacher player: '+e.message));
@@ -201,7 +258,7 @@ if(process.env.SDK_BROWSER_PATH){
   const pupilAfter=check(await admin.from('connect_states').select('state_data').eq('student_id',browserStudent).eq('app_key','melange-calculs-ecrits').single(),'pupil unchanged by teacher player');assert.deepEqual(pupilAfter.state_data,{});
   console.log('PASS real Monsieur T game uses professor auth storage and separate server player, no pupil overwrite');
   // Same JWT/device, new pupil: match revision+epoch so only identity binding can stop the old proof.
-  frame=await openGame();await context.setOffline(true);await playMixedClassic({frame,page,total:4});
+  frame=await openGame();await playMixedClassic({frame,page,total:4,afterStart:()=>context.setOffline(true)});
   await page.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('en attente (offline)'));
   const rebound=randomUUID(),oldVersion=check(await admin.from('connect_states').select('revision,reset_epoch').eq('student_id',browserStudent).eq('app_key','melange-calculs-ecrits').single(),'old binding version');
   check(await admin.from('connect_students').insert({id:rebound,display_name:'Fictif réaffecté même JWT'}),'rebound pupil');
@@ -216,10 +273,19 @@ if(process.env.SDK_BROWSER_PATH){
   assert.equal((await frame.evaluate(()=>window.__mathasGameStorageScope)).endsWith('.'+rebound),true);
   console.log('PASS same JWT reassigned: stale offline proof rejected despite matching revision/epoch, no new-pupil record, separate cache and queue');
   // Capacity stress uses 100 explicitly synthetic journal copies, not 100 claimed real games.
-  const blockRecords=async route=>{if(route.request().postDataJSON()?.action==='game-record')return route.abort('internetdisconnected');return route.continue()};
+  const blockRecords=async route=>{if(['game-record','game-record-v2'].includes(route.request().postDataJSON()?.action))return route.abort('internetdisconnected');return route.continue()};
   await context.route(url+'/functions/v1/connect-results',blockRecords);
   const newQueueKey='mathas.calculs-melanges.connect.'+classId+'.'+signed+'.'+rebound+'.v1';
-  await page.evaluate(({oldKey,key,pupil})=>{const proof=JSON.parse(localStorage.getItem(oldKey))[0];localStorage.setItem(key,JSON.stringify(Array.from({length:100},()=>({...proof,eventId:crypto.randomUUID(),expectedStudentId:pupil}))))},{oldKey:queueKey,key:newQueueKey,pupil:rebound});
+  const copies=await page.evaluate(({oldKey,key,pupil})=>{
+   const proof=JSON.parse(localStorage.getItem(oldKey))[0],items=Array.from({length:100},()=>({...proof,eventId:crypto.randomUUID(),expectedStudentId:pupil}));
+   localStorage.setItem(key,JSON.stringify(items));return items;
+  },{oldKey:queueKey,key:newQueueKey,pupil:rebound});
+  // Explicit synthetic tickets for the queue-capacity stress, in this disposable
+  // DB only: no production ticket or purported native completion is fabricated.
+  check(await admin.from('connect_school_start_tickets').insert(copies.map(e=>({
+   event_id:e.eventId,student_id:rebound,class_id:classId,auth_user_id:signed,app_key:e.appKey,reset_epoch:e.expectedResetEpoch,
+   game_config:{mode:e.mode,level:e.level,total:e.total,operationsSelectedAtStart:[...e.operationsSelectedAtStart].sort()}
+  }))), 'synthetic capacity-test start tickets');
   frame=await openGame();await page.waitForFunction(()=>document.getElementById('game')?.contentDocument?.body?.inert===true);
   assert.match(await page.locator('#result').innerText(),/File offline pleine/);
   await assert.rejects(frame.locator('.countBtn[data-count="4"]').click({timeout:800}),/Timeout/);
@@ -243,15 +309,13 @@ if(process.env.SDK_BROWSER_PATH){
   await playMixedClassic({frame:halfFrame,page:halfPage,total:4,operations:['add']});
   await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='7 XP',null,{timeout:20000});
   halfFrame=await openHalfGame();await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='7 XP');
-  await halfContext.setOffline(true);
-  await playMixedClassic({frame:halfFrame,page:halfPage,total:4,operations:['add','sub']});
+  await playMixedClassic({frame:halfFrame,page:halfPage,total:4,operations:['add','sub'],afterStart:()=>halfContext.setOffline(true)});
   await halfPage.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('en attente (offline)'));
   assert.equal(await halfPage.locator('#xp-total').innerText(),'7 XP');
   await halfContext.setOffline(false);
   await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='14 XP',null,{timeout:20000});
   halfFrame=await openHalfGame();await halfPage.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='14 XP');
-  await halfContext.setOffline(true);
-  await playMixedClassic({frame:halfFrame,page:halfPage,total:4,operations:['add','sub','mul']});
+  await playMixedClassic({frame:halfFrame,page:halfPage,total:4,operations:['add','sub','mul'],afterStart:()=>halfContext.setOffline(true)});
   await halfPage.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('en attente (offline)'));
   assert.equal(await halfPage.locator('#xp-total').innerText(),'14 XP');
   await halfContext.setOffline(false);

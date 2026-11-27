@@ -5,13 +5,11 @@ import {createClient} from 'npm:@supabase/supabase-js@2.95.0';
 const URL=Deno.env.get('SUPABASE_URL')!;
 const PUBLIC=Deno.env.get('SUPABASE_ANON_KEY')!;
 const ADMIN=Deno.env.get('SUPABASE_'+'SERVICE_ROLE_KEY')!;
-const SCHOOL=new Set([
- '8fe170fa-9e8f-4e80-885a-b0ba68026f64',
- '71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e',
- '1b021ed9-4846-4203-9c7b-4b5fa8d7adab',
- '0d8ba828-59cc-468b-a4b8-7b2a1af10b88',
- 'a9195199-0a28-4e86-99ce-47b36dd6e646'
-]);
+const TEST_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
+// Same historical aliases and dynamic class keys as the teacher catalogue.
+// No pedagogical restriction by school level or fixed class list.
+const LEGACY_PRESETS:Record<string,string>={'8fe170fa-9e8f-4e80-885a-b0ba68026f64':'observation','71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'phase1','1b021ed9-4846-4203-9c7b-4b5fa8d7adab':'phase2','0d8ba828-59cc-468b-a4b8-7b2a1af10b88':'phase2b','a9195199-0a28-4e86-99ce-47b36dd6e646':'2eco'};
+const schoolPreset=(cls:string)=>LEGACY_PRESETS[cls]||'class-'+cls.replace(/-/g,'');
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const valid=(v:unknown):v is string=>typeof v==='string'&&UUID.test(v);
 const cors={'access-control-allow-origin':'*','access-control-allow-headers':'authorization,apikey,content-type',
@@ -39,7 +37,7 @@ Deno.serve(async(req:Request)=>{
  let b:any;try{b=JSON.parse(raw)}catch{return deny('invalid_json');}
  const cls=typeof b?.classId==='string'?b.classId.toLowerCase():'';
  const contract=(map as Record<string,typeof map['addition-ecrite-simple']>)[b?.appKey];
- if(!SCHOOL.has(cls)||!contract)return deny('school_class_not_allowed',403);
+ if(!valid(cls)||cls===TEST_CLASS||!contract)return deny('school_class_not_allowed',403);
  const extendedStart=b.action==='start-extended-proof-v1';
  const extendedFinish=b.action==='finish-extended-proof-v1';
  const extendedResume=b.action==='resume-extended-proof-v1';
@@ -64,6 +62,9 @@ Deno.serve(async(req:Request)=>{
     return deny('invalid_answers');
  }
  try{
+  const {data:allowed,error:classError}=await db.rpc('connect_objective_record_school_class_allowed_v1',{p_class:cls});
+  if(classError)return deny('database_unavailable',503);
+  if(allowed!==true)return deny('school_class_not_allowed',403);
   let student:string|null=null;
   if(user.is_anonymous===true){
    const device=await one(db.from('connect_devices').select('student_id')
@@ -87,6 +88,13 @@ Deno.serve(async(req:Request)=>{
   if(!alive)return deny('inactive_student',403);
   const app=await one(db.from('connect_apps').select('enabled').eq('app_key',b.appKey));
   if(app?.enabled!==true)return deny('app_disabled',403);
+  // New official pupil starts respect the actual professor choice. Do not
+  // strand already-issued proofs or deny the authenticated teacher preview.
+  if((start||extendedStart)&&user.is_anonymous===true){
+   const entry=await one(db.from('connect_hub_preset_entries').select('visible')
+    .eq('preset_slug',schoolPreset(cls)).eq('app_key',b.appKey));
+   if(entry?.visible!==true)return deny('app_hidden_for_class',403);
+  }
   if(extendedResume){
    // Auth et appartenance à la classe validées ci-dessus ; le service-role
    // ne doit jamais retrouver une session par son UUID seul.
@@ -95,20 +103,20 @@ Deno.serve(async(req:Request)=>{
     .eq('session_id',b.sessionId).eq('student_id',student)
     .eq('class_id',cls).eq('app_key',b.appKey));
    if(!pending)return deny('proof_not_found',404);
-   if(pending.consumed_at)return deny('proof_already_finished',409);
-   if(!Number.isFinite(Date.parse(pending.expires_at))||Date.parse(pending.expires_at)<=Date.now())
-    return deny('proof_expired',410);
+   // Resume only this already-issued proof, never a new challenge.
+   // A lost final ACK must remain retrievable after a long outage.
+   if(!Number.isFinite(Date.parse(pending.expires_at)))return deny('invalid_proof_response',503);
    const state=await one(db.from('connect_states').select('revision,reset_epoch')
     .eq('student_id',student).eq('app_key',b.appKey));
    const revision=Number(pending.expected_revision),epoch=Number(pending.reset_epoch);
    if(!Number.isSafeInteger(revision)||!Number.isSafeInteger(epoch)||
-      revision!==Number(state?.revision??0)||epoch!==Number(state?.reset_epoch??0))
+      (pending.consumed_at?revision>=Number(state?.revision??0):revision!==Number(state?.revision??0))||epoch!==Number(state?.reset_epoch??0))
     return deny('revision_conflict',409);
    if(!Array.isArray(pending.questions)||pending.questions.length!==120||
       !['three-lives','sudden','hard-three-lives','hard-sudden'].includes(pending.mode)||
       ![1,2,3].includes(pending.level)||pending.total!==120)
     return deny('invalid_proof_response',503);
-   return reply({ok:true,resumed:true,sessionId:pending.session_id,appKey:b.appKey,
+   return reply({ok:true,resumed:true,consumed:Boolean(pending.consumed_at),sessionId:pending.session_id,appKey:b.appKey,
     mode:pending.mode,level:pending.level,width:pending.width,limit:pending.total,
     revision,resetEpoch:epoch,questions:pending.questions,expiresAt:pending.expires_at});
   }

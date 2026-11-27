@@ -17,6 +17,8 @@ test('The two additions ship independently; other 3 apps, TEST, and missing flag
   assert.match(schoolAdditionsLaunch({classId:school,appKey,legacyUrl:'old'}),/objective-record\/eleve.html\?app=addition-/);
   assert.match(schoolAdditionsLaunch({classId:school,appKey,legacyUrl:'old',rollout:release}),/objective-record\/eleve.html\?app=addition-/);
   assert.equal(schoolAdditionsLaunch({classId:pilot,appKey,legacyUrl:'old',rollout:release}),'old');
+  assert.match(schoolAdditionsLaunch({classId:'12345678-1234-4234-8234-123456789abc',appKey,legacyUrl:'old'}),/objective-record\/eleve.html\?app=addition-/);
+  assert.equal(schoolAdditionsLaunch({classId:'invalid',appKey,legacyUrl:'old'}),'old');
   for(const key of Object.keys(release))
    assert.equal(schoolAdditionsLaunch({classId:school,appKey,legacyUrl:'old',rollout:{...release,[key]:false}}),'old');
  }
@@ -29,7 +31,8 @@ test('School Edge accepts only authenticated, enrolled, approved pupils or autho
  const s=read('supabase/functions/connect-objective-record-school/index.ts');
  for(const term of ['auth.getUser(token)','connect_devices','connect_enrollments','connect_class_permissions',
    'connect_teacher_players','connect_students','connect_apps','proof_only','valid(b.sessionId)'])assert.ok(s.includes(term),term);
- assert.ok(!s.includes(pilot));
+ assert.ok(s.includes(pilot));assert.match(s,/cls===TEST_CLASS/);
+ assert.ok(s.includes('connect_objective_record_school_class_allowed_v1'));
  assert.ok(!s.includes('b.score'));
  assert.ok(!s.includes('b.rewards'));
  assert.ok(!s.includes('b.expectedStudentId'));
@@ -37,7 +40,7 @@ test('School Edge accepts only authenticated, enrolled, approved pupils or autho
   assert.ok(s.includes('connect_objective_record_school_'+fn));
  const host=read('apps/objective-record/eleve.mjs');
  assert.match(host,/classId===CLASS_TEST\?'connect-objective-record-test':'connect-objective-record-school'/);
- assert.match(host,/SCHOOL_CLASSES\.has\(classId\)/);
+ assert.match(host,/isSchoolClass\(classId\)/);
  assert.match(host,/nativeRecordAllowed=appKey=>isWritableTestApp\(appKey\)&&!SERVER_PROOF_ADDITIONS\.has\(appKey\)/);
 });
 const migrations=[
@@ -68,4 +71,18 @@ test('School proof DB is isolated from LAB, with RLS, private RPCs, server arith
 test('Both school certification controllers are valid native JavaScript modules',()=>{
  assert.equal(typeof createAdditionProofUI,'function');
  assert.equal(typeof createMultipleProofUI,'function');
+});
+
+test('Legacy browser scores cannot bypass proof via a new class UUID',()=>{
+ const edge=read('supabase/functions/connect-results/index.ts');
+ assert.doesNotMatch(edge,/proofOnlyAddClasses/);
+ assert.match(edge,/if\(b\.action==='game-record'\s*&&\(b\.appKey===app\|\|b\.appKey===addMulti\|\|b\.appKey===mul\|\|b\.appKey===sub\)\)\s*return deny\('server_proof_required',403\)/);
+});
+
+test('School additions check dynamic teacher visibility only for new pupil starts',()=>{
+ const s=read('supabase/functions/connect-objective-record-school/index.ts');
+ assert.ok(s.includes("if((start||extendedStart)&&user.is_anonymous===true)"));
+ assert.ok(s.includes("db.from('connect_hub_preset_entries').select('visible')"));
+ assert.ok(s.includes("schoolPreset(cls)"));
+ assert.ok(s.includes("deny('app_hidden_for_class',403)"));
 });

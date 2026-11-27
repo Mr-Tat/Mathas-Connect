@@ -22,5 +22,7 @@ for(const name of ['results','api']){
   .replace("if(error)throw Error('db_error');return data",
    "if(error){console.error('LOCAL_READ_QUERY_FAILURE',error.code,error.message);throw Error('db_error')}return data");
  writeFileSync(path.join(dir,'index.ts'),compiled);
+ // Preserve relative modules of the real Edge entrypoint in the isolated lab.
+ if(name==='api')writeFileSync(path.join(dir,'milieu-profile-progress.mjs'),readFileSync(path.join(root,'supabase/functions/connect-api/milieu-profile-progress.mjs')));
  env(name+'/edge.env',`SUPABASE_URL=http://mathas-mixed-kong:8000\nSUPABASE_ANON_KEY=${anon}\nSUPABASE_SERVICE_ROLE_KEY=${service}\nNO_PROXY=mathas-mixed-kong,localhost,127.0.0.1\n`);
 }

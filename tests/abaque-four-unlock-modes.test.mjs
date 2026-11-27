@@ -54,7 +54,7 @@ test('Droits connectés : validation stricte des modes et sélection par classe'
  assert.match(html,/snapshot\.activityAccess\.unlockMode/);
  assert.match(frontend,/abaqueModeRequest\('teacher-mode-get',classId\)/);
  assert.match(frontend,/abaqueModeRequest\('teacher-mode-set',classId,\{mode\}\)/);
- assert.match(html,/connect\/bootstrap\.mjs\?v=20261116-guest-mode-v1/);
+ assert.match(html,/connect\/bootstrap\.mjs\?v=20261127-school-required-v1/);
 });
 
 test('Le professeur peut lire et enregistrer les 4 modes ; un élève ou mode inconnu est refusé',async()=>{

@@ -59,6 +59,9 @@ BEGIN
     IF (SELECT class_id FROM public.connect_objective_record_school_proof_sessions
       WHERE session_id=id) IS DISTINCT FROM first_class
     THEN RAISE EXCEPTION 'wrong_class_in_session';END IF;
+    -- Simulate a week-long loss of network after online issue, for all 18 variants.
+    UPDATE public.connect_objective_record_school_proof_sessions
+     SET created_at=now()-interval '8 days',expires_at=now()-interval '7 days' WHERE session_id=id;
     answer:=public.test_school_addition_answers(issued->'questions',lvl,app);
     IF app='addition-ecrite-simple' THEN
      received:=public.connect_objective_record_school_finish_add_v1(student,first_class,id,answer);
@@ -124,3 +127,22 @@ BEGIN
  THEN RAISE EXCEPTION 'untrusted_role_can_grade';END IF;
  RAISE NOTICE 'School additions 18 variants, idempotency, wrong digits, class isolation, RLS PASS';
 END $test$;
+
+-- A class created after rollout is eligible, but only enrolled identities may obtain proofs.
+DO $future$
+DECLARE c uuid:='12345678-1234-4234-8234-123456789abc';
+ pupil uuid:='11111111-1111-4111-8111-111111111111';
+ proof jsonb;
+BEGIN
+ IF public.connect_objective_record_school_class_allowed_v1(c) THEN RAISE EXCEPTION 'unknown_class_allowed'; END IF;
+ INSERT INTO public.connect_classes(id) VALUES(c);
+ IF NOT public.connect_objective_record_school_class_allowed_v1(c) THEN RAISE EXCEPTION 'new_class_denied'; END IF;
+ BEGIN
+  PERFORM public.connect_objective_record_school_issue_add_v1(pupil,c,1,4);
+  RAISE EXCEPTION 'unenrolled_future_class_accepted';
+ EXCEPTION WHEN OTHERS THEN IF SQLERRM<>'not_school_subject' THEN RAISE; END IF; END;
+ INSERT INTO public.connect_enrollments(student_id,class_id) VALUES(pupil,c);
+ proof:=public.connect_objective_record_school_issue_add_v1(pupil,c,1,4);
+ IF proof->>'sessionId' IS NULL THEN RAISE EXCEPTION 'future_class_proof_missing'; END IF;
+ IF public.connect_objective_record_school_class_allowed_v1('4bf3400d-a315-4ea4-a2f3-afaca24dc9b9') THEN RAISE EXCEPTION 'TEST_in_school_ledger'; END IF;
+END $future$;

@@ -66,39 +66,24 @@ function harness(){
 }
 const id=n=>'11111111-1111-4111-8111-'+String(n).padStart(12,'0');
 const result=(n,rest={})=>({action:'game-record',eventId:id(n),expectedRevision:0,expectedResetEpoch:0,mode:'classic',level:1,score:4,total:4,points:20,...rest});
-test('fin Classique sur Soustraction : écriture isolée + XP sync une fois',async()=>{
- const h=harness();h.states.set(a,{revision:1,reset_epoch:0,state_data:{classic:[{'4':4},{},{}]}});
- const x=await h.call(result(1));assert.equal(x.status,200,JSON.stringify(x.body));
- assert.equal(h.states.get(sub).state_data.classic[0][4],4);
- assert.equal(h.states.get(a).revision,1);
- assert.equal(h.xpSyncs,1);
-});
-test('Mort subite : deux méthodes de records séparées, historique conservé',async()=>{
- const h=harness();const first=await h.call(result(2,{mode:'sudden',score:4,total:null,method:'addBottom'}));
- assert.equal(first.status,200,JSON.stringify(first.body));
- const second=await h.call(result(3,{mode:'sudden',score:7,total:null,method:'takeTop',expectedRevision:first.body.revision}));
- assert.equal(second.status,200,JSON.stringify(second.body));
- const state=h.states.get(sub).state_data;
- assert.equal(state.suddenMethods.addBottom[0],4);
- assert.equal(state.suddenMethods.takeTop[0],7);
- assert.equal(state.sudden[0],7);
- assert.equal(state.recent[0].method,'takeTop');
- assert.equal(h.updates,2);
-});
-test('doublon ID idempotent et mauvais epoch refusé',async()=>{
- const h=harness();const first=await h.call(result(4));assert.equal(first.status,200);
- const second=await h.call(result(4,{expectedRevision:0}));
- assert.equal(second.status,200);assert.equal(second.body.duplicate,true);assert.equal(h.updates,1);
- const bad=await h.call(result(5,{expectedResetEpoch:1,expectedRevision:1}));
- assert.equal(bad.status,409);assert.equal(h.updates,1);
-});
-test('méthode Mort subite absente refusée sans écriture',async()=>{
- const h=harness();const x=await h.call(result(6,{mode:'sudden',score:3,total:null}));
- assert.equal(x.status,400);assert.equal(x.body.error,'invalid_method');assert.equal(h.updates,0);
-});
-test('modes limités et écriture student-save refusée',async()=>{
+// The positive certified path (including real PostgreSQL and Chromium) is exercised
+// by soustraction-edge-postgres.runtime.test.mjs. This endpoint must never credit it.
+for(const appKey of [sub,mul,a,'addition-ecrite-multiple']){
+ test('Écriture directe interdite : '+appKey,async()=>{
+  const h=harness();h.states.set(a,{revision:1,reset_epoch:0,state_data:{classic:[{'4':4},{},{}]}});
+  for(const classId of [klass,'4bf3400d-a315-4ea4-a2f3-afaca24dc9b9','8fe170fa-9e8f-4e80-885a-b0ba68026f64']){
+   for(const payload of [result(1),result(1,{mode:'sudden',method:'takeTop',total:null}),result(2,{mode:'imaginary',expectedResetEpoch:99})]){
+    const x=await h.call({...payload,appKey,classId});
+    assert.equal(x.status,403,JSON.stringify(x.body));
+    assert.equal(x.body.error,'server_proof_required');
+   }
+  }
+  assert.equal(h.states.get(a).revision,1);
+  assert.equal(h.updates,0);assert.equal(h.xpSyncs,0);
+ });
+}
+test('student-save ne peut pas fabriquer un résultat certifié',async()=>{
  const h=harness();
- const bad=await h.call(result(7,{mode:'imaginary'}));assert.equal(bad.status,400);
- const save=await h.call({action:'student-save',state:{classic:[{'4':4},{},{}]}});assert.equal(save.status,403);
- assert.equal(h.updates,0);
+ const x=await h.call({action:'student-save',state:{classic:[{'4':4},{},{}]}});
+ assert.equal(x.status,403);assert.equal(h.updates,0);assert.equal(h.xpSyncs,0);
 });

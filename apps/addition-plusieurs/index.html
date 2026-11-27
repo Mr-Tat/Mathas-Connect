@@ -19,8 +19,9 @@ import {hydrateNativeRecords} from './connect-hydration.mjs';
  // (or the separate teacher player session). Explicit free mode never queries.
  const classId=launch.get('class')||'';
  const teacherPlayer=launch.get('joueur')==='prof';
- const requireConnect=launch.get('requireConnect')==='1';
+ const requireConnect=launch.get('requireConnect')==='1'||Boolean(classId);
  const free=!teacherPlayer&&!requireConnect&&(launch.get('libre')==='1'||localStorage.getItem('mathas.connect.mode-libre.v1')==='1');
+ if(requireConnect&&(!classId||simulate||!writeReady)){modeNote.textContent='Connexion scolaire obligatoire';output.textContent='Ouvre le jeu depuis ton HUB avec un compte approuvé.';return;}
  if(writeReady&&classId&&!free){
   try{
    const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.95.0');
@@ -67,7 +68,7 @@ import {hydrateNativeRecords} from './connect-hydration.mjs';
     target.searchParams.delete('joueur');
     location.assign(target.href);
    };
-   modeNote.after(retry,openFree);
+   modeNote.after(retry);if(!requireConnect&&!teacherPlayer)modeNote.after(openFree);
    console.warn('Addition plusieurs : connexion non disponible',error?.message||'unknown');
    return;
   }

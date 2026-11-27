@@ -54,6 +54,8 @@ SQL
 tail -n +3 "$ROOT/tests/postgres/calculs-melanges-fixture.sql" | docker_local exec -i "$RUN_NAME-db" psql -U postgres -v ON_ERROR_STOP=1 >/dev/null
 docker_local exec -i "$RUN_NAME-db" psql -U postgres -v ON_ERROR_STOP=1 < "$ROOT/supabase/release-candidates/calculs_melanges_locked_v1.sql" >/dev/null
 docker_local exec -i "$RUN_NAME-db" psql -U postgres -v ON_ERROR_STOP=1 < "$ROOT/tests/postgres/calculs-melanges-auth-fixture.sql" >/dev/null
+# The real online-start authorization table is created by the production candidate migration.
+docker_local exec -i "$RUN_NAME-db" psql -U postgres -v ON_ERROR_STOP=1 < "$ROOT/supabase/migrations/20261127131500_school_start_tickets.sql" >/dev/null
 # Durable trophy RPCs and profile summaries in this disposable lab only.
 docker_local exec -i "$RUN_NAME-db" psql -U postgres -v ON_ERROR_STOP=1 < "$ROOT/supabase/release-candidates/20261031_permanent_trophies_hub_v1.sql" >/dev/null
 docker_local run -d --name "$RUN_NAME-auth" --network "$RUN_NAME" --network-alias mathas-mixed-auth --env-file "$LAB/auth.env" supabase/gotrue:v2.186.0 >/dev/null

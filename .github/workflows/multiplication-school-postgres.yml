@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'supabase/migrations/2026110411*.sql'
+      - 'supabase/migrations/20261127132100_school_multiplication_finish_retention.sql'
       - 'supabase/migrations/20261104130000_mul_optional_carries_native_v1.sql'
       - 'supabase/migrations/20261104131000_school_mul_unlocked_gold_v1.sql'
       - 'tests/postgres/multiplication-school-fixture.sql'
@@ -13,6 +14,7 @@ on:
   pull_request:
     paths:
       - 'supabase/migrations/2026110411*.sql'
+      - 'supabase/migrations/20261127132100_school_multiplication_finish_retention.sql'
       - 'supabase/migrations/20261104130000_mul_optional_carries_native_v1.sql'
       - 'supabase/migrations/20261104131000_school_mul_unlocked_gold_v1.sql'
       - 'tests/postgres/multiplication-school-fixture.sql'
@@ -66,6 +68,8 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261104110300_mul_server_level_unlock_guards_v1.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261104130000_mul_optional_carries_native_v1.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261104131000_school_mul_unlocked_gold_v1.sql
+      - name: Preserve issued multiplication proofs through outages
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261127132100_school_multiplication_finish_retention.sql
       - name: Test 9 classic, 4 extended, HARD, replay XP and ACL
         run: |
           # Les contrôles de verrouillage doivent précéder toute partie qui débloque

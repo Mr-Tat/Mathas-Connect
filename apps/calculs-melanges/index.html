@@ -1,9 +1,9 @@
 <!doctype html><html lang="fr"><head>
 <link rel="icon" type="image/png" href="../../assets/brand/favicon.png"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Calculs écrits mélangés | Math’as Connect</title><style>html,body{margin:0;width:100%;height:100%;background:#0c2235;color:white;font-family:system-ui}main{height:100dvh;display:flex;flex-direction:column}.notice{padding:7px 12px;background:#173956;font-size:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}iframe{flex:1;width:100%;border:0;min-height:0}a{color:#a3ebff}button{background:#225477;color:white;border:1px solid #739cba;border-radius:6px;padding:5px 9px;cursor:pointer}output{font-size:12px;color:#b0ebc1}.xp-meter{display:flex;align-items:center;gap:7px;min-width:170px;font-size:11px;font-weight:700}.xp-track{width:100px;height:11px;border-radius:10px;background:#667d8d;overflow:hidden;border:1px solid #a2c3d0}.xp-fill{width:0;height:100%;display:block;background:#1A4675;transition:width .35s ease}.xp-level{white-space:nowrap;color:#ffd66a}.xp-total{white-space:nowrap}.notice[hidden]{display:none!important}</style></head><body><main><div class="notice" hidden><strong>Calculs écrits mélangés</strong><span>690 XP maximum. Mort subite : jusqu’à 40 XP, 3 vies : jusqu’à 20 XP par niveau à taux complet. Opérations cochées au départ : 1 = 25 % des XP, 2 = 50 %, 3 = 100 %. Une nouvelle réussite à un palier supérieur verse seulement le complément manquant. Master et entraînement : 0 XP. </span><span id="mode-note">Mode libre seulement — aucun XP Connect ni envoi serveur</span><button id="retry" type="button" hidden>Réessayer la synchronisation</button><button id="audit" type="button">Événements : 0</button><div class="xp-meter" aria-label="Progression XP"><span class="xp-level" id="xp-level">Niveau 1</span><div class="xp-track" id="xp-track"><i id="xp-fill" class="xp-fill"></i></div><span id="xp-total" class="xp-total">0 XP</span></div><output id="result" aria-live="polite"></output><a href="../../">Retour au HUB</a></div><iframe id="game" title="Calculs écrits mélangés" allow="fullscreen"></iframe></main><script type="module">
-import {normalizeCompletion} from './completion-contract.mjs';
+import {normalizeCompletion} from './completion-contract.mjs?v=20261127-start-ticket-v1';
 import {createProjectionConsent} from '../../projection-consent.mjs';
 import {createLocalLab} from './local-lab.mjs';
-import {buildConnectPilot,CONNECT_WRITE_READY as writeReady} from './connect-pilot.mjs';
+import {buildConnectPilot,CONNECT_WRITE_READY as writeReady} from './connect-pilot.mjs?v=20261127-start-ticket-v1';
 import {createEdgePost} from './edge-transport.mjs';
 import {createAuthenticatedHost} from './connect-host.mjs?v=20261127-teacher-access-v1';
 import {hydrateNativeRecords} from './connect-hydration.mjs';
@@ -12,7 +12,7 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261107-profile-avata
  // Class launches require the native approved session and an enabled backend.
  const launch=new URLSearchParams(location.search);
  const simulate=launch.get('simulation')==='1';
- const requireConnect=launch.get('requireConnect')==='1';
+ const requireConnect=launch.get('requireConnect')==='1'||launch.has('class');
  const modeNote=document.getElementById('mode-note');
  if(simulate){document.querySelector('.notice').hidden=false;modeNote.textContent='Laboratoire · simulation seulement — aucun envoi Supabase';}
  let connected=null,host=null,consent=null,multiplierLock=null,multiplierLockVersion=null,tableAidAllowed=true,blockedSession=false;
@@ -95,6 +95,35 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261107-profile-avata
    }});
    if(loaded?.ok!==true||!candidate.initialize(loaded.revision,loaded.resetEpoch))throw Error('connect_load_failed');
    connected=candidate;guardQueue();multiplierLock=loaded.multiplierLock??null;multiplierLockVersion=loaded.multiplierLockVersion??null;tableAidAllowed=loaded.tableAidAllowed!==false;activeState=loaded.state??null;
+   // Check actual server identity and current parcours at EACH explicit start,
+   // not each calculation. A loaded menu/cache is never an online authorization.
+   frame.mathasAuthorizeMixedStart=async(request)=>{
+    if(!connected||blockedSession)return {ok:false,message:'Session Connect à vérifier : rouvrez le jeu.'};
+    if(navigator.onLine===false)return {ok:false,message:'Connexion nécessaire pour commencer une nouvelle partie.'};
+    try{
+     if(connected.pending()>0){
+      await connected.retry();
+      if(connected.pending()>0||blockedSession)return {ok:false,message:'Résultat en attente : reconnectez-vous et synchronisez avant une nouvelle partie.'};
+     }
+     const version=connected.version();
+     const fresh=await post({action:'game-start',appKey:'melange-calculs-ecrits',classId,expectedStudentId:host.pupilId,
+      mode:request.mode,level:request.level,total:request.total,operationsSelectedAtStart:request.operationsSelectedAtStart,
+      expectedRevision:version.revision,expectedResetEpoch:version.resetEpoch,expectedMultiplierLockVersion:multiplierLockVersion,expectedTableAidAllowed:tableAidAllowed});
+     if(fresh?.ok!==true){
+      if(fresh?.error==='app_hidden_for_class')return {ok:false,message:'Cette application n’est pas affichée dans votre classe par le professeur.'};
+      if(fresh?.status===409)return {ok:false,message:'Le parcours ou les autorisations ont changé. Rouvrez le jeu pour les actualiser.'};
+      return {ok:false,message:'Connexion ou autorisation indisponible. Réessayez pour commencer une nouvelle partie.'};
+     }
+     const validEvent=request.mode==='training'?fresh.eventId===null:typeof fresh.eventId==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(fresh.eventId);
+     if(!validEvent||fresh.storageSubject!==host.pupilId||fresh.revision!==version.revision||fresh.resetEpoch!==version.resetEpoch
+      ||JSON.stringify(fresh.multiplierLock??null)!==JSON.stringify(multiplierLock)
+      ||(fresh.multiplierLockVersion??null)!==multiplierLockVersion
+      ||(fresh.tableAidAllowed!==false)!==tableAidAllowed)
+      return {ok:false,message:'Le parcours ou les autorisations ont changé. Rouvrez le jeu pour les actualiser.'};
+     if(blockedSession||connected.pending()>0)return {ok:false,message:'Session Connect à vérifier : synchronisez puis rouvrez le jeu.'};
+     return {ok:true,eventId:fresh.eventId,revision:fresh.revision,resetEpoch:fresh.resetEpoch};
+    }catch{return {ok:false,message:'Connexion ou autorisation indisponible. Réessayez pour commencer une nouvelle partie.'};}
+   };
    // No polling: when classroom Wi-Fi returns, retry queued results automatically.
    // The queue remains durable until the server confirms each event.
    window.addEventListener('online',()=>{void connected?.retry()});
@@ -167,6 +196,7 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261107-profile-avata
  window.addEventListener('message',e=>{
   if(e.source!==frame.contentWindow||e.origin!==location.origin||e.data?.type!=='mathas-mixed-completion-v1')return;
   const item=normalizeCompletion(e.data.event);if(!item){output.textContent='Résultat hors contrat Connect (journal limité à 1 000 calculs) : score natif conservé, aucun XP envoyé.';return;}if(recorded.some(x=>x.eventId===item.eventId))return;
+  if(connected&&item.startAuthorized!==true){output.textContent='Départ Connect non certifié : aucun résultat officiel envoyé.';return;}
   recorded.push(item);output.textContent=item.mode+' · niveau '+item.level+' : '+item.score+(item.total?'/'+item.total:'');
   if(lab)lab.completed(item);if(connected)connected.completed(item);
   document.getElementById('audit').textContent='Événements : '+recorded.length;
@@ -183,10 +213,20 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261107-profile-avata
    frame.setAttribute('data-multiplier-lock',JSON.stringify(multiplierLock));
    frame.setAttribute('data-multiplier-lock-version',String(multiplierLockVersion??''));
    frame.setAttribute('data-table-aid-allowed',String(tableAidAllowed));
-   game=game.replace('<head>','<head><script>'+storageCode+'</'+'script><script src="./native-bridge.js"></'+'script>');
+   game=game.replace('<head>','<head><script>'+storageCode+'</'+'script><script src="./native-bridge.js?v=20261127-start-ticket-v1"></'+'script>');
    const v=connected?.version()??lab?.version()??{revision:0,resetEpoch:0};
    frame.setAttribute('data-revision',v.revision);frame.setAttribute('data-reset-epoch',v.resetEpoch);
    if(connected&&host?.teacherFree===true){const {grantNativeTeacherAccess}=await import('../teacher-free-native.mjs?v=20261127-v1');game=grantNativeTeacherAccess(game,true);}
+   if(connected){
+    // Adapt only the two real native entry points, keeping the autonomous
+    // engine and its recorded source unchanged. Fail closed on source drift.
+    const replaceStart=(from,to)=>{if(game.split(from).length!==2)throw Error('Entrée native incompatible : '+from);game=game.replace(from,to)};
+    replaceStart('function startSession(mode,total=null){','async function startSession(mode,total=null){\n  const permit=await window.MathasMixedBridge.authorizeStart({mode,level:settings.level,total,operationsSelectedAtStart:[...settings.ops]});if(!permit)return;');
+    replaceStart('window.MathasMixedBridge?.begin(session,false);','window.MathasMixedBridge?.begin(session,false,permit);');
+    replaceStart('function startHard(level,mode){','async function startHard(level,mode){');
+    replaceStart('  hardSession={level,mode,score:0,completed:0,mistakes:0,max:HARD[level],currentFirstTry:true};','  const permit=await window.MathasMixedBridge.authorizeStart({mode:mode==="training"?"training":mode==="three-lives"?"hard-three-lives":"hard",level,total:null,operationsSelectedAtStart:["add","sub","mul"]});if(!permit)return;\n  hardSession={level,mode,score:0,completed:0,mistakes:0,max:HARD[level],currentFirstTry:true};');
+    replaceStart('window.MathasMixedBridge?.begin(hardSession,true);','window.MathasMixedBridge?.begin(hardSession,true,permit);');
+   }
    frame.srcdoc=game;
   }catch(e){output.textContent='Erreur : '+e.message}
 })();

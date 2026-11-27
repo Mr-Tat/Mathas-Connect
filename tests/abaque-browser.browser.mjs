@@ -243,7 +243,7 @@ test('Abaque : correction au deuxième essai et aides conservent les points nati
  }finally{await h.close();}
 });
 
-test('Abaque : carte expérimentale dans le HUB TEST seulement, avec catalogues entièrement fictifs',async()=>{
+test('Abaque : visibilités dynamiques dans toutes les classes et authentification obligatoire',async()=>{
  let calls=0;
  const h=await setup(async route=>{
   const url=new URL(route.request().url());
@@ -252,7 +252,7 @@ test('Abaque : carte expérimentale dans le HUB TEST seulement, avec catalogues 
   }
   if(url.hostname==='awmhpfofacaglewammxt.supabase.co'&&['/functions/v1/connect-lab-catalog','/functions/v1/connect-catalog'].includes(url.pathname)){
    calls++;
-   const apps=url.pathname.endsWith('/connect-lab-catalog')?[{app_key:'abaque-longueurs',title:'Abaque des longueurs',launch_url:'./apps/GRAN-abaque-m-1/?connect=1',hub_section:'outil',display_order:70,enabled:true,featured:false,visible:true}]:[];
+   const apps=[{app_key:'abaque-longueurs',title:'Abaque des longueurs',launch_url:'./apps/GRAN-abaque-m-1/?connect=1',hub_section:'outil',display_order:70,enabled:true,featured:false,visible:true}];
    await route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({ok:true,apps})});return true;
   }
   return false;
@@ -263,7 +263,9 @@ test('Abaque : carte expérimentale dans le HUB TEST seulement, avec catalogues 
   await page.goto(h.origin+'/hub.html?class='+labClass);
   const preview=page.locator('.app-card[data-app-key="abaque-longueurs"]');
   await preview.waitFor();
-  const labLink=new URL(await preview.getAttribute('href'));
+  const loginLink=new URL(await preview.getAttribute('href'));
+  assert.equal(loginLink.pathname,'/index.html','un élève non approuvé ne peut pas ouvrir un jeu depuis le menu contextuel');
+  const labLink=new URL(await preview.getAttribute('data-school-href'));
   assert.equal(labLink.pathname,'/apps/GRAN-abaque-m-1/');
   assert.equal(labLink.searchParams.get('connect'),'1');
   assert.equal(labLink.searchParams.get('class'),labClass);
@@ -271,10 +273,17 @@ test('Abaque : carte expérimentale dans le HUB TEST seulement, avec catalogues 
    // The teacher portal supplies both class and space, including Phase 2 B.
    await page.goto(h.origin+'/hub.html?class='+classId+'&space='+space);
    await page.locator('#levels .level-title').first().waitFor();
-   assert.equal(await page.locator('.app-card[data-app-key="abaque-longueurs"]').count(),0,space);
+   const card=page.locator('.app-card[data-app-key="abaque-longueurs"]');
+   assert.equal(await card.count(),1,space+' : visible quand le catalogue dynamique le décide');
+   const route=new URL(await card.getAttribute('data-school-href'));
+   assert.equal(route.searchParams.get('class'),classId);
+   assert.equal((new URL(await card.getAttribute('href'))).pathname,'/index.html');
   }
   assert.equal(calls,6);
-  assert.deepEqual(h.errors,[]);assert.deepEqual(h.external,[]);
+  assert.deepEqual(h.errors,[]);
+  // The school hub loads an SDK to verify the identity, but must not launch a game.
+  assert.ok(h.external.every(url=>url==='https://esm.sh/@supabase/supabase-js@2.95.0'),
+   'Aucun autre appel externe inattendu dans le HUB scolaire');
  }finally{await h.close();}
 });
 
@@ -734,7 +743,7 @@ test('Abaque Connect démarre même si le module facultatif du tableau ne se cha
  }finally{await h.close();}
 });
 
-test('Abaque sans compte : scores et trophées locaux, deux réussites à 80 %, aucun XP ni publication',async()=>{
+test('Abaque sans compte : scores et trophées locaux, scolaire refusé, moteur autonome sans XP',async()=>{
  const requests=[];
  const mockSdk=`export function createClient(){return {auth:{
   getSession:async()=>({data:{session:null}}),
@@ -750,16 +759,20 @@ test('Abaque sans compte : scores et trophées locaux, deux réussites à 80 %, 
  });
  try{
   const {page}=h;
+  // School class context forbids the historical automatic local guest fallback.
   await page.goto(h.url+'?connect=1&class='+labClass);
-  await page.waitForFunction(()=>document.documentElement.dataset.abaqueGuest==='true');
+  await page.locator('#abaque-connect-panel').waitFor();
+  await page.waitForFunction(()=>document.querySelector('#abaque-connect-panel')?.textContent?.includes('Connexion non disponible'));
+  assert.notEqual(await page.evaluate(()=>document.documentElement.dataset.abaqueGuest),'true');
+  assert.equal(await page.locator('#launchBtn').evaluate(x=>x.closest('[inert]')!==null),true);
+  // Direct standalone entry, with no class identity, stays freely playable.
+  await page.goto(h.url);
   assert.equal(await page.locator('#homeScreen').isVisible(),true);
   assert.equal(await page.locator('#launchBtn').evaluate(x=>x.inert),false);
   assert.equal(await page.locator('#moveLaunchBtn').getAttribute('aria-disabled'),'true');
-  assert.equal(await page.locator('#masterToggle').isVisible(),false);
   assert.equal(await page.locator('#homeConnectAccount').isVisible(),false);
-  assert.match(await page.locator('#abaque-connect-panel').textContent(),/sans connexion/);
-  assert.match(await page.locator('#abaque-connect-panel').textContent(),/aucun XP/i);
-  assert.equal(await page.evaluate(()=>window.MATHAS_PROGRESS.practice),false);
+  assert.equal(await page.locator('#abaque-connect-panel').count(),0,
+   'Aucun adaptateur scolaire dans le moteur autonome');
   for(let n=0;n<2;n++)await solveConstruction(page,{imperfect:true});
   assert.equal(await page.locator('#moveLaunchBtn').getAttribute('aria-disabled'),'false',
    'deux séries de construction >=80 % débloquent l’activité 2 sans serveur');
@@ -781,13 +794,11 @@ test('Abaque sans compte : scores et trophées locaux, deux réussites à 80 %, 
   await solveConstruction(page);
   await solveConstruction(page);
   assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'true');
-  const guestKey='mathas.abaque.guest.'+labClass+'.v1';
-  const saved=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),guestKey);
-  assert.equal(saved.modeScores.one,4);
-  assert.equal(saved.scoreRecords.allBest,45);
-  assert.ok(Array.isArray(JSON.parse(await page.evaluate(k=>localStorage.getItem(k+'.trophies'),guestKey))));
+  const saved=await progress(page);
+  assert.ok(saved&&saved.stage1&&saved.stage2,'résultats locaux du moteur autonome');
+  assert.ok(Array.isArray(await trophies(page)),'trophées locaux stockés sans Supabase');
   await page.reload();
-  await page.waitForFunction(()=>document.documentElement.dataset.abaqueGuest==='true');
+  assert.equal(await page.locator('#abaque-connect-panel').count(),0);
   assert.equal(await page.locator('[data-mode="three"]').getAttribute('aria-disabled'),'false');
   assert.equal(await page.locator('#trophy-launchBtn').getAttribute('data-earned'),'true');
   assert.equal(await page.locator('#scoreHistory').textContent(),'45 pts');

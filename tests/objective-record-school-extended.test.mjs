@@ -87,8 +87,11 @@ test('School Edge is proof-only, does not receive client score/XP or allow TEST'
  for(const action of ['start-extended-proof-v1','finish-extended-proof-v1',
   'connect_objective_record_school_issue_extended_v1',
   'connect_objective_record_school_finish_extended_v1'])assert.ok(edge.includes(action));
- for(const forbidden of ['b.score','b.rewards','b.xp','4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'])
+ for(const forbidden of ['b.score','b.rewards','b.xp'])
   assert.equal(edge.includes(forbidden),false);
+ assert.match(edge,/const TEST_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'/);
+ assert.match(edge,/if\(!valid\(cls\)\|\|cls===TEST_CLASS\|\|!contract\)return deny\('school_class_not_allowed',403\)/);
+ assert.ok(edge.includes('connect_objective_record_school_class_allowed_v1'));
  const html=read('apps/objective-record/eleve.html');
  for(const mode of EXTENDED_MODES)assert.ok(html.includes('value="'+mode+'"'));
  const host=read('apps/objective-record/eleve.mjs');

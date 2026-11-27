@@ -7,6 +7,8 @@ import {createServer} from 'node:http';
 import {resolve,extname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {stripTypeScriptTypes} from 'node:module';
+import {SUBTRACTION_TEST_CLASS,subtractionSchoolPreset,mayStartSoustractionSchoolProof} from '../supabase/functions/connect-soustraction-school/school-visibility.mjs';
+const proofSource=stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/connect-soustraction-school/index.ts',import.meta.url),'utf8').replace(/^import .*;\n/gm,''),{mode:'strip'});
 // Ce test exige pg seulement dans le workflow PostgreSQL isolé.
 // Dans la CI Node générale, l'absence du paquet fait ignorer ce test coûteux.
 const pg=(await import('pg').catch(()=>null))?.default;
@@ -75,21 +77,25 @@ function adapter(table){
  return api;
 }
 
-function makeEdge(){
+function makeEdge(kind='results'){
  let serve;
  const pgService={
   from:adapter,
   async rpc(name,values){
-   if(!/^(connect_xp_sync_v2|connect_xp_read_v2|connect_parcours_restart_one|connect_parcours_restart_class|connect_trophy_rewards_v1)$/.test(name))throw Error('unexpected_rpc '+name);
    const columns={
     connect_xp_sync_v2:['p_student','p_app','p_force'],
     connect_trophy_rewards_v1:['p_student','p_app'],
     connect_xp_read_v2:['p_student','p_app','p_include_milestones'],
     connect_parcours_restart_one:['p_teacher','p_class','p_student','p_app','p_repeat_xp'],
-    connect_parcours_restart_class:['p_teacher','p_class','p_app','p_repeat_xp']
+    connect_parcours_restart_class:['p_teacher','p_class','p_app','p_repeat_xp'],
+    connect_objective_record_school_sub_issue_classic_v1:['p_student','p_class','p_level','p_total','p_method'],
+    connect_objective_record_school_sub_issue_extended_v1:['p_student','p_class','p_mode','p_level','p_method'],
+    connect_objective_record_school_sub_finish_classic_v1:['p_student','p_class','p_session','p_answers'],
+    connect_objective_record_school_sub_finish_extended_v1:['p_student','p_class','p_session','p_answers']
    }[name];
+   if(!columns)throw Error('unexpected_rpc '+name);
    try{
-    const out=await db.query('SELECT public.'+identifier(name)+'('+columns.map((_,i)=>'$'+(i+1)).join(',')+') AS result',columns.map(k=>values[k]));
+    const out=await db.query('SELECT public.'+identifier(name)+'('+columns.map((_,i)=>'$'+(i+1)).join(',')+') AS result',columns.map(k=>k==='p_answers'?JSON.stringify(values[k]):values[k]));
     return {data:out.rows[0].result,error:null};
    }catch(e){return {data:null,error:{code:e.code,message:e.message}}}
   }
@@ -98,20 +104,49 @@ function makeEdge(){
    data:{user:{id:token==='FAKE_TEACHER'?TEACHER:AUTH,is_anonymous:token!=='FAKE_TEACHER'}},error:null
  })}};
  const context=vm.createContext({
+  console,SUBTRACTION_TEST_CLASS,subtractionSchoolPreset,mayStartSoustractionSchoolProof,
   createClient:(_url,key)=>key==='priv'?pgService:authService,
   Deno:{env:{get:k=>k==='SUPABASE_SERVICE_ROLE_KEY'?'priv':'pub'},serve:h=>{serve=h}},
   Date,Intl,Response,Headers,Request,crypto:globalThis.crypto,TextEncoder,URL,structuredClone,JSON,Object,Array,Number,Map,Set,Error,RegExp
  });
- vm.runInContext(source,context);
+ vm.runInContext(kind==='proof'?proofSource:source,context);
  return async (action,body={},teacher=false)=>{
   const req=new Request('http://localhost/functions/v1/connect-results',{
    method:'POST',headers:{authorization:'Bearer '+(teacher?'FAKE_TEACHER':'FAKE_STUDENT')},
-   body:JSON.stringify({classId:CLASS,appKey:SUB,action,...body})
+   body:JSON.stringify({classId:CLASS,...(kind==='results'?{appKey:SUB}:{}),action,...body})
   });
   const response=await serve(req);
   return {status:response.status,body:await response.json()};
  };
 }
+async function fillCalc(frame,index,raw){
+ await frame.locator('#calculationsPair').evaluate((pair,{index,raw})=>{
+  const box=pair.querySelectorAll('.calc-box')[index];
+  if(!box)throw Error('Calcul natif absent '+index);
+  const fields=[...box.querySelectorAll('.answer-input')];
+  const digits=String(raw).padStart(fields.length,'0').split('').reverse();
+  if(digits.length!==fields.length)throw Error('Valeur à trop de chiffres');
+  for(let col=0;col<fields.length;col++){
+   const input=box.querySelector('.answer-input[data-col="'+col+'"]');
+   if(!input)throw Error('Saisie native absente, colonne '+col);
+   input.focus();
+   const key=document.querySelector('#numpad .num-key[data-key="'+digits[col]+'"]');
+   if(!key)throw Error('Touche native absente : '+digits[col]);
+   key.click();
+  }
+ },{index,raw});
+}
+async function solvePair(frame,questions){
+ // La validation du premier rend le second accessible.
+ for(let i=0;i<questions.length;i++){
+  await fillCalc(frame,i,String(BigInt(questions[i].a)-BigInt(questions[i].b)));
+  await frame.locator('#calculationsPair .calc-box[data-calc="'+i+'"].mathas-calc-verified').waitFor({timeout:8000,state:'attached'});
+ }
+ await frame.locator('#primaryBtn').evaluate(btn=>{
+  if(!btn.closest('#gameScreen')?.classList.contains('hidden')&&btn.textContent.includes('Valider'))btn.click();
+ });
+}
+
 test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et reprise isolée', {skip:!pg?'Nécessite pg dans la CI PostgreSQL':false},async()=>{
  await db.connect();
  try{
@@ -119,34 +154,55 @@ test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et repr
   await db.query("INSERT INTO public.connect_students(id,display_name) VALUES($1,'Élève fictif Edge+SQL') ON CONFLICT DO NOTHING",[STUDENT]);
   await db.query("INSERT INTO public.connect_enrollments(class_id,student_id) VALUES($1,$2)",[CLASS,STUDENT]);
   await db.query("INSERT INTO public.connect_devices(auth_user_id,student_id,state) VALUES($1,$2,'approved')",[AUTH,STUDENT]);
-  const call=makeEdge();
+  const call=makeEdge(),proof=makeEdge('proof');
+  const correct=q=>({id:q.id,answer:String(BigInt(q.a)-BigInt(q.b))});
+  const issue=async(action,body)=>{const x=await proof(action,body);assert.equal(x.status,200,JSON.stringify(x));return x.body};
+  const finish=async(action,body)=>{const x=await proof(action,body);assert.equal(x.status,200,JSON.stringify(x));assert.equal(x.body.proofVerified,true);return x};
   const load=await call('student-load');
   assert.equal(load.status,200,JSON.stringify(load));
   assert.equal(load.body.revision,0);
   assert.equal(load.body.state,null);
 
   const first={eventId:uuid(1),expectedRevision:0,expectedResetEpoch:0,mode:'classic',level:1,score:4,total:4,points:20};
-  const played=await call('game-record',first);
-  assert.equal(played.status,200,JSON.stringify(played));
+  const forged=await call('game-record',first);
+  assert.equal(forged.status,403);assert.equal(forged.body.error,'server_proof_required');
+  assert.equal((await call('student-load')).body.revision,0);
+  const start=await issue('start-classic-v1',{level:1,total:4,method:'addBottom'});
+  const payload={sessionId:start.sessionId,answers:start.questions.map(correct)};
+  await db.query("UPDATE public.connect_objective_record_school_proof_sessions SET created_at=now()-interval '8 days',expires_at=now()-interval '7 days' WHERE session_id=$1",[start.sessionId]);
+  const played=await finish('finish-classic-v1',payload);
+  assert.equal(played.body.verifiedScore,4);
   assert.equal(played.body.revision,1);
   assert.equal(played.body.xp.appXp,22);
   assert.equal(played.body.xp.total,22);
-  const duplicate=await call('game-record',first);
-  assert.equal(duplicate.status,200,JSON.stringify(duplicate));
+  const duplicate=await finish('finish-classic-v1',payload);
   assert.equal(duplicate.body.duplicate,true);
   assert.equal(duplicate.body.xp.delta,0);
-
-  const other=await call('game-record',{eventId:uuid(2),expectedRevision:1,expectedResetEpoch:0,
-    mode:'sudden',method:'takeTop',level:1,score:5,total:null,points:31});
-  assert.equal(other.status,200,JSON.stringify(other));
-  assert.equal(other.body.xp.appXp,32);
-  assert.equal(other.body.state.suddenMethods.takeTop[0],5);
-  assert.equal(other.body.state.suddenMethods.addBottom[0],null);
+  const collision=await proof('finish-classic-v1',{...payload,answers:payload.answers.map((x,i)=>i===0?{...x,answer:'0'}:x)});
+  assert.equal(collision.status,409);
+  const unlock=await issue('start-classic-v1',{level:1,total:10,method:'addBottom'});
+  await finish('finish-classic-v1',{sessionId:unlock.sessionId,answers:unlock.questions.map(correct)});
+  const missing=await proof('start-extended-v1',{mode:'sudden',level:1});
+  assert.equal(missing.status,400);
+  async function sudden(method,n){
+   const s=await issue('start-extended-v1',{mode:'sudden',level:1,method});
+   await db.query("UPDATE public.connect_objective_record_school_extended_sessions SET created_at=now()-interval '8 days',expires_at=now()-interval '7 days' WHERE session_id=$1",[s.sessionId]);
+   return finish('finish-extended-v1',{sessionId:s.sessionId,answers:[...s.questions.slice(0,n).map(correct),{id:s.questions[n].id,answer:'0'}]});
+  }
+  const left=await sudden('addBottom',4);
+  const other=await sudden('takeTop',7);
+  assert.equal(left.body.verifiedScore,4);
+  assert.equal(other.body.verifiedScore,7);
+  assert.equal(other.body.state.suddenMethods.takeTop[0],7);
+  assert.equal(other.body.state.suddenMethods.addBottom[0],4);
+  const beforeReset=other.body.xp.appXp;
+  const pending=await issue('start-classic-v1',{level:1,total:4,method:'addBottom'});
+  await db.query("UPDATE public.connect_objective_record_school_proof_sessions SET created_at=now()-interval '8 days',expires_at=now()-interval '7 days' WHERE session_id=$1",[pending.sessionId]);
 
   const professor=await call('teacher-overview',{},true);
   assert.equal(professor.status,200,JSON.stringify(professor));
   const fake=professor.body.students.find(x=>x.id===STUDENT);
-  assert.equal(fake.apps.find(a=>a.appKey===SUB).state.suddenMethods.takeTop[0],5);
+  assert.equal(fake.apps.find(a=>a.appKey===SUB).state.suddenMethods.takeTop[0],7);
   const forbidden=await call('teacher-parcours-restart',{scope:'student',studentId:STUDENT,repeatXp:false});
   assert.equal(forbidden.status,403);
   const reset=await call('teacher-parcours-restart',{scope:'student',studentId:STUDENT,repeatXp:false},true);
@@ -154,14 +210,17 @@ test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et repr
   assert.equal(reset.body.parcours,2);
   const after=await call('student-load');
   assert.equal(after.body.resetEpoch,1);
-  assert.deepEqual(after.body.state,{});
-  const stale=await call('game-record',{...first,eventId:uuid(3),expectedRevision:2});
+  assert.deepEqual(Object.keys(after.body.state).sort(),['rewards'],'seuls les acquis permanents survivent au nouveau parcours');
+  assert.deepEqual(after.body.state.rewards,other.body.state.rewards);
+  assert.equal(after.body.state.rewards.mastery['4'][0],true);
+  assert.equal(after.body.state.rewards.mastery['10'][0],true);
+  const stale=await proof('finish-classic-v1',{sessionId:pending.sessionId,answers:pending.questions.map(correct)});
   assert.equal(stale.status,409);
   assert.equal(stale.body.error,'stale_reset_epoch');
   const preserved=await db.query(
    'SELECT xp_credited FROM public.connect_xp_credits WHERE student_id=$1 AND app_key=$2',[STUDENT,SUB]
   );
-  assert.equal(preserved.rows[0].xp_credited,32);
+  assert.equal(preserved.rows[0].xp_credited,beforeReset);
   const unrelated=await db.query(
    'SELECT xp_credited FROM public.connect_xp_credits WHERE student_id=$1 AND app_key=$2',
    ['11111111-1111-4111-8111-111111111111',ADD]
@@ -205,6 +264,8 @@ test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et repr
       const data=JSON.parse(route.request().postData()||'{}');
       const out=uri.endsWith('/connect-api')
        ?{status:200,body:{ok:true,status:'approved',classId:CLASS,displayName:'Élève fictif'}}
+       :uri.endsWith('/connect-soustraction-school')?await proof(data.action,data)
+       :uri.endsWith('/connect-projection-v2')?{status:503,body:{ok:false,error:'projection_not_in_this_fixture'}}
        :await call(data.action,data);
       responses.push({action:data.action,body:out.body});
       return route.fulfill({status:out.status,contentType:'application/json',
@@ -217,10 +278,22 @@ test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et repr
    await page.goto(host+'/apps/soustraction-simple/?class='+CLASS,{waitUntil:'domcontentloaded'});
    const frame=page.frameLocator('iframe');
    await frame.locator('#menuScreen').waitFor({timeout:25000});
-   await frame.locator('body').evaluate(()=>window.__setLastWork({label:'Calculs · Niveau 1',score:'4/4',rulerUsed:false}));
-   await page.waitForFunction(()=>document.querySelector('#ce-sync')?.textContent?.includes('Synchronisé'),{timeout:25000});
-   assert.equal(responses.filter(x=>x.action==='game-record').length,1);
-   assert.equal(responses.find(x=>x.action==='game-record').body.revision,4);
+   await page.waitForFunction(()=>document.querySelector('iframe')?.contentDocument?.__mathasSubCertifiedRouter===true,null,{timeout:30000});
+   await frame.locator('input[name="borrowMethod"][value="addBottom"]').evaluate(input=>input.closest('label').click());
+   const target=frame.locator('#classicCountPicker .classic-count-btn[data-count="4"]');
+   await target.locator('.mathas-sub-official-xp').waitFor({state:'attached',timeout:15000});
+   await target.press('Enter');
+   await frame.locator('#gameScreen:not(.hidden) #calculationsPair .calc-box').first().waitFor({timeout:20000});
+   const challenge=responses.find(x=>x.action==='start-classic-v1')?.body;
+   assert.equal(challenge?.questions?.length,4);
+   await solvePair(frame,challenge.questions.slice(0,2));
+   await frame.locator('#primaryBtn').click();
+   await solvePair(frame,challenge.questions.slice(2,4));
+   await page.getByRole('heading',{name:'Série vérifiée ✓'}).waitFor({timeout:25000});
+   assert.equal(responses.filter(x=>x.action==='game-record').length,0);
+   assert.equal(responses.filter(x=>x.action==='finish-classic-v1').length,1);
+   assert.equal(responses.find(x=>x.action==='finish-classic-v1').body.verifiedScore,4);
+   assert.equal(responses.find(x=>x.action==='finish-classic-v1').body.xp.delta,0);
    const persisted=await call('student-load');
    assert.equal(persisted.body.resetEpoch,1);
    assert.equal(persisted.body.state.classic[0]['4'],4);

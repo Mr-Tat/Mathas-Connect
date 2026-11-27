@@ -16,14 +16,14 @@ import {installManualValidationForWrittenCalc} from './in-game-manual-validation
 import {installSessionToolbarLayout} from './in-game-session-layout.mjs?v=20261106-all-confirmed-v3';
 import {paintConnectedAvatar} from './profile-avatar-badge.mjs?v=20261107-v1';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
-import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
+import {isSchoolClass} from './release-routing.mjs';
 import {mountWrittenGuidedClass} from './guided-written-school.mjs?v=20261120-guided-v1';
 
 // Canonical school/test host; the HUB rollout flag controls when real pupils
 // see this route. JWT and PostgreSQL proofs remain mandatory even by direct URL.
 // Other three written-calculation games remain on their existing school URLs.
 const CLASS_TEST='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
-const SCHOOL_CLASSES=new Set(SCHOOL_CLASS_IDS);
+
 const BASE='https://awmhpfofacaglewammxt.supabase.co';
 const KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const GAME_URLS=Object.freeze({
@@ -210,7 +210,7 @@ async function call(endpoint,action,appKey,payload={}){
  }finally{clearTimeout(timeout)}
 }
 async function approvedProfile(){
- if(classId!==CLASS_TEST&&!SCHOOL_CLASSES.has(classId))throw Error('Classe non autorisée pour ces calculs');
+ if(classId!==CLASS_TEST&&!isSchoolClass(classId))throw Error('Classe non autorisée pour ces calculs');
  if(classId!==CLASS_TEST&&!SERVER_PROOF_ADDITIONS.has(activeApp))throw Error('Ce calcul écrit n’est pas encore ouvert aux classes scolaires');
  const profile=await call('connect-api',teacher?'teacher-player':'student-me');
  if(profile.status!=='approved'||profile.classId!==classId)throw Error('Profil Connect non approuvé dans cette classe');
@@ -319,6 +319,9 @@ function watchGame(seq){
     if(seq!==generation||!pupilId)return true;
     // The first click must react immediately, even when the network is slow.
     // This also prevents a double-click from creating two server challenges.
+    if(activeProofUI.hasPending()||extendedUI.hasPending()){
+     message('Termine ou synchronise d’abord le résultat officiel.');return true;
+    }
     if(doc.__mathasNativeLaunchPending){
      message('Préparation de ton exercice certifié en cours…');return true;
     }
@@ -519,6 +522,10 @@ async function choose(){
    schoolScoreView.updateState(latestState||initial.loaded?.state||{});
    void schoolScoreView.load();
   }
+  if(SERVER_PROOF_ADDITIONS.has(activeApp)){
+   await (activeApp==='addition-ecrite-multiple'?certifiedMultiUI:certifiedUI).recover();
+   if(seq!==generation)return;
+  }
   if(nativeRecordAllowed(activeApp)){
    recorder=createAtomicTestRecorder({classId,appKey:activeApp,subject:pupilId,storage:localStorage,
     send:request=>call(activeApp===ATOMIC_TEST_APP||activeApp===MIXED_TEST_APP?'connect-results':'connect-objective-record-test','game-record',activeApp,{...request,expectedStudentId:pupilId}),
@@ -561,7 +568,7 @@ async function choose(){
   // Un visitor sans profil approuvé garde le moteur natif jouable, sans
   // aucune requête de validation XP ni privilège d'enregistrement.
   // Le repli libre est EXPLICITE pour ne jamais faire croire à un crédit Connect.
-  if(SERVER_PROOF_ADDITIONS.has(activeApp)){
+  if(!classId&&params.get('requireConnect')!=='1'&&!teacher&&SERVER_PROOF_ADDITIONS.has(activeApp)){
    $('gameFrame').src=GAME_URLS[slug][1]+'?connect=1&ui=20261106-resumable-school-v1';
    $('gameFrame').hidden=false;
    $('guest-home').hidden=true; // le bouton HUB existe dans le moteur lui-même
@@ -572,6 +579,13 @@ async function choose(){
 $('refresh').addEventListener('click',async()=>{const seq=generation;try{if(extendedUI.hasPending())await extendedUI.retry();else if(certifiedUI.hasPending())await certifiedUI.retry();else if(certifiedMultiUI.hasPending())await certifiedMultiUI.retry();else if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
   if(seq===generation&&!recorder?.hasPending())message('Profil officiel actualisé.');
  }catch(e){if(seq===generation)message('⚠️ '+e.message)}});
+window.addEventListener('online',()=>{
+ if(!pupilId){if(classId)void choose();return;}
+ if(extendedUI.hasPending())void extendedUI.retry();
+ else if(activeApp==='addition-ecrite-multiple')void certifiedMultiUI.recover();
+ else if(activeApp==='addition-ecrite-simple')void certifiedUI.recover();
+ else if(recorder?.hasPending())void recorder.retry();
+});
 $('app').addEventListener('change',()=>{const next=new URL(location.href);next.searchParams.set('app',$('app').value);history.replaceState(null,'',next);void choose()});
 const requested=params.get('app');
 if(requested&&Object.hasOwn(GAME_URLS,requested))$('app').value=requested;

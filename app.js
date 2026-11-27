@@ -110,6 +110,9 @@ async function teacher(){
  const r=await call('teacher-dashboard');
  const box=$('class-selector');
  box.replaceChildren(...(r.classes||[]).filter(c=>!c.name.includes('TEST')).map(c=>new Option(c.name,c.id)));
+ const authBox=$('auth-class'),previousAuthClass=authBox.value;
+ authBox.replaceChildren(...(r.classes||[]).map(c=>new Option(c.name,c.id)));
+ authBox.value=[...authBox.options].some(o=>o.value===previousAuthClass)?previousAuthClass:box.value;
  $('year-selector').replaceChildren(...(r.years||[]).map(v=>new Option(v.label,v.id)));
  show('teacher');showTeacherTab('home');
  // Accueil GLOBAL : une seule requête pour toutes les classes.
@@ -856,8 +859,7 @@ function multiplierLockPanel(container,studentId=null,appKey='multiplication-ecr
   if(cls)$('auth-class').value=cls;
   $('auth-app').value=appKey;
   $('auth-scope').value=studentId?'student':'class';
-  showTeacherTab('authorizations');
-  void loadAuthorizations(studentId);
+  showTeacherTab('authorizations',studentId);
  };
  container.append(link);
 }
@@ -873,7 +875,7 @@ function addParcoursControls(container,studentId,name,appKey,appName,xpSnapshot=
  const title=document.createElement('strong');title.textContent='Parcours de cet élève';
  const summary=document.createElement('div');summary.textContent='Chargement des anciens parcours…';
  const reset=document.createElement('button');reset.type='button';reset.className='results-restart-button';reset.textContent='⚙ Nouvelle progression · Autorisations';
- reset.onclick=()=>{ $('auth-class').value=$('class-selector').value;$('auth-app').value=appKey;$('auth-scope').value='student';showTeacherTab('authorizations');void loadAuthorizations(studentId); };
+ reset.onclick=()=>{ $('auth-class').value=$('class-selector').value;$('auth-app').value=appKey;$('auth-scope').value='student';showTeacherTab('authorizations',studentId); };
  panel.append(title,summary,reset);container.append(panel);if(appKey==='multiplication-ecrite-simple'||mixedAllowed(appKey))multiplierLockPanel(container,studentId,appKey);
  resultCall('teacher-parcours-history',{studentId,appKey}).then(r=>{
   if(!summary.isConnected)return;
@@ -914,9 +916,7 @@ for(let n=2;n<=9;n++){
  label.append(input,document.createTextNode(' '+n));
  $('auth-multipliers').append(label);
 }
-for(const [id,{name}] of Object.entries(CLASS_SPACES))
- $('auth-class').add(new Option(name,CLASS_SPACES[id].id));
-$('auth-class').add(new Option('Classe TEST',labTestClass));
+// Authorization classes are populated from the authenticated teacher dashboard.
 let authLocks=[],authAid=[],authLoadSequence=0,authSettingsLoaded=false,authRoster=[];
 const authRestartApps=new Set(['addition-ecrite-simple','addition-ecrite-multiple','multiplication-ecrite-simple','soustraction-ecrite-simple','melange-calculs-ecrits']);
 const authTableApps=new Set(['multiplication-ecrite-simple','melange-calculs-ecrits']);
@@ -964,7 +964,8 @@ async function loadAuthorizations(requestedStudent=null){
  const seq=++authLoadSequence;
  authSettingsLoaded=false;authRoster=[];$('auth-restart').disabled=true;
  $('auth-saved-summary').hidden=true;
- const cls=$('auth-class');if(!cls.value)cls.value=$('class-selector').value||CLASS_SPACES.observation.id;
+ const cls=$('auth-class');if(!cls.value&&!requestedStudent)cls.value=$('class-selector').value;
+ if(!cls.value){authSay('Sélectionne une classe autorisée.');return false;}
  // The Abaque uses class-wide rights only: do not call the multiplication RPCs.
  const isMilieu=$('auth-app').value==='milieu-segment';$('milieu-authorizations').hidden=!isMilieu;$('milieu-results').hidden=true;
  if(isMilieu){authSwitchView();$('auth-scope-wrap').hidden=true;$('auth-student-wrap').hidden=true;++abaqueModeSequence;abaqueModeEnabled(false);authSay('La moitié · résultats officiels et nouvelles progressions.');return false;}
@@ -985,10 +986,11 @@ async function loadAuthorizations(requestedStudent=null){
   const students=(dashboard.students||[]).slice().sort((a,b)=>String(a.display_name).localeCompare(String(b.display_name),'fr'));
   authRoster=students;
   for(const student of students)$('auth-student').add(new Option(student.display_name,student.id));
-  if(requestedStudent&&students.some(s=>s.id===requestedStudent))$('auth-student').value=requestedStudent;
-  if($('auth-scope').value==='student'&&!students.length){
-   $('auth-scope').value='class';
-   authSay('Aucun élève dans cette classe. Tu peux déjà préparer ses autorisations.');
+  if(requestedStudent)$('auth-student').value=students.some(s=>s.id===requestedStudent)?requestedStudent:'';
+  if($('auth-scope').value==='student'&&!$('auth-student').value){
+   // Never silently change an individual-pupil reset into a whole-class reset.
+   // The teacher must explicitly select the class scope if that is intended.
+   authSay('L’élève demandé est absent ou non sélectionné. Vérifie la classe et choisis explicitement un élève.');
   }else authSay('Réglages chargés · application aux nouvelles parties.');
   authRender();
   return true;
@@ -1155,7 +1157,7 @@ abaqueRestartButton.onclick=()=>void openAbaqueRestart();
 
 const teacherTabs=['home','apps','authorizations','results','management'];
 installMilieuProfessor({sb,url,key});
-function showTeacherTab(tab){
+function showTeacherTab(tab,requestedStudent=null){
  const selected=teacherTabs.includes(tab)?tab:'home';
  if(selected!=='results')detachResultsOverviewSticky();
  for(const t of teacherTabs){
@@ -1163,7 +1165,7 @@ function showTeacherTab(tab){
   if(node)node.hidden=t!==selected;
  }
  if(selected==='apps')loadTeacherAppPreview();
- if(selected==='authorizations')void loadAuthorizations();
+ if(selected==='authorizations')void loadAuthorizations(requestedStudent);
  if(selected==='management'&&!busy)run(refresh);
  if(selected==='home'&&!busy)run(refreshGlobalRequests);
  if(selected==='results' && !currentTeacherSpace)run(showResults);
@@ -1232,7 +1234,6 @@ document.querySelectorAll('.teacher-space .teacher-space-small[href]').forEach(a
 });
 const APP_SECTIONS=[['objectif','Objectif'],['calculs_ecrits','Calculs écrits'],['depassement','Dépassement'],['revision','Révision'],['outil','Outils'],['jeux','Jeux']];
 const ALL_SECTIONS=[['test','🧪 Tests'],...APP_SECTIONS];
-const APP_SPACES=[['observation','Observation'],['phase1','Phase 1'],['phase2','Phase 2 A'],['phase2b','Phase 2 B'],['2eco','2 ECO']];
 
 async function loadTeacherAppPreview(){
  const body=$('teacher-app-tbody');if(!body)return;
@@ -1240,6 +1241,19 @@ async function loadTeacherAppPreview(){
  const loading=document.createElement('tr'),loadingCell=document.createElement('td');loadingCell.colSpan=11;loadingCell.textContent='Chargement du tableau GLOBAL…';loading.append(loadingCell);body.append(loading);
  try{
   const data=await resultCall('teacher-app-matrix-get');
+  if(!Array.isArray(data.spaces))throw Error('Catalogue des classes indisponible');
+  const APP_SPACES=data.spaces.map(s=>[s.slug,s.label]);
+  const header=body.closest('table')?.querySelector('thead tr');
+  if(header){
+   const first=header.firstElementChild,last=[...header.children].slice(-5);
+   const columns=APP_SPACES.map(([slug,label])=>{
+    const th=document.createElement('th'),button=document.createElement('button');
+    button.type='button';button.dataset.matrixClearDay=slug;button.className='teacher-matrix-clear';button.textContent='Vider « Du jour »';
+    th.append(document.createTextNode(label+' '),button);return th;
+   });
+   header.replaceChildren(first,...columns,...last);
+  }
+  loadingCell.colSpan=APP_SPACES.length+6;
   const entries=new Map((data.entries||[]).map(e=>[e.preset_slug+'|'+e.app_key,e]));
   const {data:{session:allSession}}=await sb.auth.getSession();
   let allSettings=new Map();
@@ -1267,7 +1281,7 @@ async function loadTeacherAppPreview(){
   const feedback=$('teacher-app-feedback');
   const info=(text,error=false)=>{if(feedback){feedback.textContent=text;feedback.classList.toggle('error',error)}};
   let saving=false;
-  const current=(slug,app)=>entries.get(slug+'|'+app.app_key)||{visible:app.enabled!==false,featured:false,section:'calculs_ecrits',display_order:app.display_order??0};
+  const current=(slug,app)=>entries.get(slug+'|'+app.app_key)||{visible:false,featured:false,section:APP_SECTIONS.some(([id])=>id===app.hub_section)?app.hub_section:'calculs_ecrits',display_order:app.display_order??0};
   const change=(slug,app,extra={})=>{const e=current(slug,app);return {slug,appKey:app.app_key,visible:!!e.visible,featured:!!e.featured,section:e.section||'calculs_ecrits',order:Number(e.display_order??app.display_order??0),...extra}};
   async function save(changes,controls=[]){
    if(saving)return false;saving=true;controls.forEach(c=>c.disabled=true);info('Enregistrement…');

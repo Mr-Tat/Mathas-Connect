@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 // This reads each addend from the rendered native DOM and enters every answer
 // and carry using real Playwright focus/keyboard interactions. No game internals
 // or native completion functions are called.
-export async function playFourAdditions({frame,page}){
+export async function playFourAdditions({frame,page,afterStart}){
  await frame.locator('#menuScreen:not(.hidden) .classic-count-btn[data-count="4"]').waitFor({timeout:20000});
  // The V6 UI hides #startClassic deliberately. The visible 4-calculs button
  // is the real user action and internally triggers the original launch code.
@@ -11,6 +11,7 @@ export async function playFourAdditions({frame,page}){
  await frame.locator('.classic-count-btn[data-count="4"]').click();
  await frame.locator('#gameScreen:not(.hidden)').waitFor();
  assert.match(await frame.locator('#sessionLevel').innerText(),/Niveau 1/);
+ if(afterStart)await afterStart();
 
  for(let pair=0;pair<2;pair++){
   for(let calc=0;calc<2;calc++){
@@ -58,9 +59,7 @@ export async function playFourAdditions({frame,page}){
   if(message==='Valider')await frame.locator('#primaryBtn').click();
   await frame.locator('#sessionScore').waitFor();
   if(pair===0){
-   await page.waitForFunction(()=>
-     document.getElementById('game')?.contentDocument?.getElementById('primaryBtn')?.textContent?.includes('Passer aux 2 calculs suivants'),
-     null,{timeout:15000});
+   await frame.locator('#primaryBtn').filter({hasText:'Passer aux 2 calculs suivants'}).waitFor({timeout:15000});
    await frame.locator('#primaryBtn').click({force:true});
    await frame.locator('#gameScreen .operation').first().waitFor();
   }

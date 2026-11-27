@@ -1,14 +1,13 @@
 // Authenticated pupil multiplication proof. Isolated from both Addition functions.
 // Never accepts a game score, point count, rewards or student identifier from the browser.
 import {createClient} from 'npm:@supabase/supabase-js@2.95.0';
-import {MULTIPLICATION_TEST_CLASS,MULTIPLICATION_SCHOOL_PRESETS,multiplicationSchoolPreset,mayStartMultiplicationSchoolProof} from './school-visibility.mjs';
+import {MULTIPLICATION_TEST_CLASS,multiplicationSchoolPreset,mayStartMultiplicationSchoolProof} from './school-visibility.mjs';
 
 const BASE=Deno.env.get('SUPABASE_URL')!;
 const PUBLIC=Deno.env.get('SUPABASE_ANON_KEY')!;
 const SERVICE=Deno.env.get('SUPABASE_'+'SERVICE_ROLE_KEY')!;
 const db=createClient(BASE,SERVICE,{auth:{persistSession:false,autoRefreshToken:false}});
 const APP='multiplication-ecrite-simple';
-const CLASSES=new Set([MULTIPLICATION_TEST_CLASS,...Object.keys(MULTIPLICATION_SCHOOL_PRESETS)]);
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const valid=(x:unknown):x is string=>typeof x==='string'&&UUID.test(x);
 const cors={'access-control-allow-origin':'*',
@@ -36,7 +35,7 @@ Deno.serve(async(req:Request)=>{
  const b=input;
  if(!b||typeof b!=='object'||Array.isArray(b))return deny('invalid_request');
  const cls=typeof b.classId==='string'?b.classId.toLowerCase():'';
- if(!CLASSES.has(cls))return deny('school_class_not_allowed',403);
+ if(!valid(cls))return deny('school_class_not_allowed',403);
  const classicStart=b.action==='start-classic-v1';
  const classicFinish=b.action==='finish-classic-v1';
  const extendedStart=b.action==='start-extended-v1';

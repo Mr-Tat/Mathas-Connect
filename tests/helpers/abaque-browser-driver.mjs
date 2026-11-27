@@ -3,6 +3,8 @@ const units=['km','hm','dam','m','dm','cm','mm'];
 export const modal=(page,label)=>page.locator('#celebrateActions').getByRole('button',{name:label,exact:true}).click();
 export async function inputConversion(page,wrong=false,{expectModal=true}={}){
  const articles=page.locator('.t3Ex');
+ // A school launch revalidates authorization asynchronously before rendering.
+ await articles.first().waitFor({state:'visible'});
  const count=await articles.count();assert.ok(count>0);
  for(let i=0;i<count;i++){
   const article=articles.nth(i),input=article.locator('input.t3Answer');

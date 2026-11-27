@@ -71,7 +71,11 @@ test('lancement TEST ou deux additions scolaires : JWT approuvé, classe stricte
  assert.doesNotMatch(html,/<button id="challenge-toggle"/);
  assert.match(html,/id="certified-tools"/,'the native proof controller keeps its internal selectors');
  assert.match(code,/showConnectedBar\(approved\)/);
-  assert.match(code,/SCHOOL_CLASSES\.has\(classId\)/);
+  assert.match(code,/classId!==CLASS_TEST&&!isSchoolClass\(classId\)/);
+  assert.match(code,/profile\.status!=='approved'\|\|profile\.classId!==classId/);
+  const routing=read('apps/objective-record/release-routing.mjs');
+  assert.match(routing,/export function isSchoolClass\(classId\)/);
+  assert.match(routing,/classId\.toLowerCase\(\)!==TEST_CLASS/);
   assert.match(code,/classId===CLASS_TEST\?'connect-objective-record-test':'connect-objective-record-school'/);
  assert.doesNotMatch(code,/connect-record-pilot/);
  assert.doesNotMatch(code,/action:\s*['"](?:game-record|record|student-save)['"]/);

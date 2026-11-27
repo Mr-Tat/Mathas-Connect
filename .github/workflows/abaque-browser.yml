@@ -21,7 +21,9 @@ jobs:
         with:
           node-version: '22.22.0'
       - run: npm install --no-save --no-package-lock playwright@1.57.0
-      - run: npx playwright install chromium --with-deps
+      - run: npx playwright install chromium
+      # Runner Ubuntu possède les dépendances navigateur ; éviter apt update
+      # qui échoue sur une signature de dépôt tiers non liée au projet.
       - name: Vérifier les déplacements et le responsive dans Chromium (test ciblé)
         run: node --test --test-name-pattern="opération de conversion et indicateurs hors du pavé fixe" tests/abaque-browser.browser.mjs
       - name: Vérifier aussi la régression Node commune avant publication

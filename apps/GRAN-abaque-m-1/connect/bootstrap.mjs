@@ -9,7 +9,8 @@ const PILOT='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const integer=value=>Number.isSafeInteger(value)&&value>=0;
 const params=new URLSearchParams(location.search);
-const enabled=params.get('connect')==='1';
+const required=params.get('requireConnect')==='1'||params.has('class');
+const enabled=required||params.get('connect')==='1';
 const CLASS=params.get('class')?.toLowerCase();
 
 function element(tag,text,cls){const node=document.createElement(tag);node.textContent=text||'';if(cls)node.className=cls;return node;}
@@ -35,12 +36,49 @@ async function connect(){
  const details=element('span');details.setAttribute('role','status');details.setAttribute('aria-live','polite');
  const xp=element('span','','abaque-account-xp');
  const retry=element('button','Actualiser les autorisations','btn');retry.type='button';retry.hidden=true;
- const demo=element('a','Ouvrir la démo isolée');demo.href='./';
+ const demo=element('a','Ouvrir la démo isolée');demo.href=required?'../../hub.html?class='+encodeURIComponent(CLASS||''):'./';if(required)demo.textContent='Retour au HUB pour se connecter';
  panel.append(dot,face,label,details,xp,retry,demo);document.body.prepend(panel);setInert(true);
  const nativeModal=window.MATHAS_CELEBRATE.modal;
  window.MATHAS_CELEBRATE.modal=options=>{if(!document.documentElement.dataset.abaqueBlocked)nativeModal(options);};
  if(!uuid.test(CLASS||'')){label.textContent='Classe manquante';details.textContent='Ouvre ce jeu depuis le HUB de ta classe.';return;}
  let client,subject,pupil,queue,latest=null,cacheKey=null,sessionActive=false,sessionVersion=0;
+ let verifyingLaunch=false;
+ // Called only when the native engine begins a NEW activity/series.
+ // Continuation of an already authorized exercise remains local during an outage.
+ if(required)window.MATHAS_ABAQUE_SCHOOL_GATE=async activity=>{
+  if(verifyingLaunch)return false;
+  if(!sessionActive||!queue||!navigator.onLine){
+   details.textContent='Connexion nécessaire pour commencer une nouvelle activité scolaire. Termine l’exercice déjà commencé ou reconnecte-toi.';
+   return false;
+  }
+  verifyingLaunch=true;
+  try{
+   // Flush completed offline work before refreshing teacher gates and revision.
+   await queue.flush();
+   const snapshot=await post({action:'load'});
+   if(!validSnapshot(snapshot,subject,pupil))throw Error('invalid_server_snapshot');
+   if(queue.version().resetEpoch!==snapshot.resetEpoch){
+    await initialize(snapshot,true);
+    details.textContent='Le professeur a ouvert un nouveau parcours. Vérifie la progression avant de commencer.';
+    return false;
+   }
+   window.MATHAS_PROGRESS.applyServer(snapshot);
+   draw(snapshot,true);
+   const gates=snapshot.activityAccess;
+   if(!gates.teacherFree&&
+    (activity==='stage2'&&!gates.activity2||activity==='stage3'&&!gates.activity3)){
+    details.textContent='Cette activité est actuellement bloquée par ton professeur.';
+    return false;
+   }
+   // No false XP or game access from cached teacher permissions.
+   if(queue.pending()===0&&queue.version().revision!==snapshot.revision)queue.initialize(snapshot.revision,snapshot.resetEpoch);
+   return true;
+  }catch(error){
+   details.textContent='Nouveau lancement refusé : vérification des droits indisponible. '+(error?.message||'Réessaie après reconnexion.');
+   if([401,403].includes(error?.status)){queue?.halt();setInert(true);hideRemaining();}
+   return false;
+  }finally{verifyingLaunch=false;}
+ };
  function startGuest(){
   // Une absence de session autorise la progression locale. En revanche, un
   // refus explicite du serveur pour une identité connue reste bloquant.
@@ -160,7 +198,7 @@ async function connect(){
    }
    if(value.xp.delta>0&&!value.duplicate&&!celebrated)window.MATHAS_CELEBRATE?.toast('+'+value.xp.delta+' XP');
   }else if(state==='pending'){details.textContent='Résultat conservé en attente de synchronisation.';if(queue.pending()>=100){setInert(true);details.textContent='100 résultats en attente. Reconnecte-toi avant une nouvelle partie.';}}
-  else if(state==='offline'){hideRemaining();details.textContent='Hors connexion : résultats conservés sur cet appareil.';}
+  else if(state==='offline'){document.documentElement.dataset.abaqueOnline='false';hideRemaining();details.textContent='Hors connexion : résultats conservés sur cet appareil.';}
   else if(state==='quarantined')details.textContent='Les résultats antérieurs à la remise à zéro restent archivés et ne seront pas recrédités.';
   else if(state==='conflict'){hideRemaining();setInert(true);details.textContent='Le parcours a changé sur le serveur. Réessaie la connexion avant de continuer.';}
   else if(state==='unauthorized'){hideRemaining();setInert(true);document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';dot.hidden=true;face.hidden=true;face.style.display='none';xp.textContent='';details.textContent='La session ou l’appareil n’est plus approuvé. Reconnecte-toi depuis le HUB.';}
@@ -187,37 +225,6 @@ async function connect(){
   retry.hidden=false;retry.textContent='Actualiser les autorisations';setInert(false);
   if(online){await queue.flush();projectionShare.flush();}
  }
- try{
-  const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.95.0');
-  client=createClient(BASE,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
-   storageKey:params.get('joueur')==='prof'?'mathas-connect-professor-auth-v1':'sb-awmhpfofacaglewammxt-auth-token'}});
-  const session=(await client.auth.getSession()).data?.session;
-  if(!session?.access_token||!uuid.test(session.user?.id))throw Error('session_missing');
-  subject=session.user.id;
-  sessionActive=true;
-  client.auth.onAuthStateChange((_event,updated)=>{
-   if(subject&&(!updated?.access_token||updated.user?.id!==subject)){sessionActive=false;sessionVersion++;queue?.halt();setInert(true);hideRemaining();document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';dot.hidden=true;face.hidden=true;face.style.display='none';xp.textContent='';details.textContent='La session a changé. Ouvre à nouveau le jeu depuis le HUB.';}
-   else if(updated?.user?.id===subject)sessionActive=true;
-  });
-  retry.onclick=async()=>{
-   retry.disabled=true;retry.textContent='Vérification…';
-   try{await queue?.flush();const loaded=await post({action:'load'});if(pupil&&loaded.studentId!==pupil)throw Error('identity_changed');await initialize(loaded,true);}
-   catch(error){hideRemaining();document.documentElement.dataset.abaqueAttention='true';if([401,403,409].includes(error.status)||error.message==='identity_changed'){queue?.halt();setInert(true);document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';dot.hidden=true;face.hidden=true;face.style.display='none';xp.textContent='';}details.textContent='Connexion indisponible : '+error.message;}
-   finally{retry.disabled=false;retry.textContent='Actualiser les autorisations';}
-  };
-  try{await initialize(await post({action:'load'}),true);}
-  catch(error){
-   // Cache permits local play only after a prior approved response, never new XP.
-   // An explicit refusal does not fall back to the cache.
-   if(error.status||!subject)throw error;
-   const binding=JSON.parse(localStorage.getItem(cachedBindingKey+subject)||'null');
-   if(!uuid.test(binding?.studentId))throw error;
-   pupil=binding.studentId;cacheKey='mathas.abaque.approved.'+[CLASS,subject,pupil].join('.')+'.v1';
-   const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');await initialize(cached,false);handleState('offline');
-  }
-  // Identité, avatar et XP globaux du profil Connect, facultatifs :
-  // la lecture n'autorise jamais un jeu ni l'attribution de points.
-  // Elle utilise les données calculées côté serveur pour le HUB.
   async function refreshConnectProfile(){
    if(profileRead){profileReadAgain=true;return profileRead;}
    profileRead=(async()=>{
@@ -261,12 +268,45 @@ async function connect(){
     if(profileReadAgain){profileReadAgain=false;void refreshConnectProfile();}
    }
   }
-  void refreshConnectProfile();
+
+ try{
+  const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.95.0');
+  client=createClient(BASE,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,
+   storageKey:params.get('joueur')==='prof'?'mathas-connect-professor-auth-v1':'sb-awmhpfofacaglewammxt-auth-token'}});
+  const session=(await client.auth.getSession()).data?.session;
+  if(!session?.access_token||!uuid.test(session.user?.id))throw Error('session_missing');
+  subject=session.user.id;
+  sessionActive=true;
+  client.auth.onAuthStateChange((_event,updated)=>{
+   if(subject&&(!updated?.access_token||updated.user?.id!==subject)){sessionActive=false;sessionVersion++;queue?.halt();setInert(true);hideRemaining();document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';dot.hidden=true;face.hidden=true;face.style.display='none';xp.textContent='';details.textContent='La session a changé. Ouvre à nouveau le jeu depuis le HUB.';}
+   else if(updated?.user?.id===subject)sessionActive=true;
+  });
+  retry.onclick=async()=>{
+   retry.disabled=true;retry.textContent='Vérification…';
+   try{await queue?.flush();const loaded=await post({action:'load'});if(pupil&&loaded.studentId!==pupil)throw Error('identity_changed');await initialize(loaded,true);}
+   catch(error){hideRemaining();document.documentElement.dataset.abaqueAttention='true';if([401,403,409].includes(error.status)||error.message==='identity_changed'){queue?.halt();setInert(true);document.documentElement.dataset.abaquePending='true';label.textContent='Session à reconnecter';dot.hidden=true;face.hidden=true;face.style.display='none';xp.textContent='';}details.textContent='Connexion indisponible : '+error.message;}
+   finally{retry.disabled=false;retry.textContent='Actualiser les autorisations';}
+  };
   window.addEventListener('online',()=>{if(!retry.disabled)retry.click();});
   window.addEventListener('offline',()=>handleState('offline'));
+  try{await initialize(await post({action:'load'}),true);}
+  catch(error){
+   // Cache permits local play only after a prior approved response, never new XP.
+   // An explicit refusal does not fall back to the cache.
+   if(required||error.status||!subject)throw error;
+   const binding=JSON.parse(localStorage.getItem(cachedBindingKey+subject)||'null');
+   if(!uuid.test(binding?.studentId))throw error;
+   pupil=binding.studentId;cacheKey='mathas.abaque.approved.'+[CLASS,subject,pupil].join('.')+'.v1';
+   const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');await initialize(cached,false);handleState('offline');
+  }
+  // Identité, avatar et XP globaux du profil Connect, facultatifs :
+  // la lecture n'autorise jamais un jeu ni l'attribution de points.
+  // Elle utilise les données calculées côté serveur pour le HUB.
+  void refreshConnectProfile();
+
  }catch(error){
   // Mode invité uniquement avant toute session authentifiée ; pas après refus serveur.
-  if(!subject&&!sessionActive){
+  if(!required&&!subject&&!sessionActive){
    try{if(startGuest())return;}catch(guestError){
     details.textContent='Parcours local indisponible : '+guestError.message;
    }

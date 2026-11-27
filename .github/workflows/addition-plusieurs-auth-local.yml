@@ -5,6 +5,10 @@ on:
       - 'tests/addition-plusieurs-auth-local.e2e.mjs'
       - 'tests/addition-plusieurs-real-play-helper.mjs'
       - 'apps/addition-plusieurs/**'
+      - 'apps/objective-record/**'
+      - 'supabase/functions/connect-objective-record-school/**'
+      - 'supabase/migrations/20261103*school*'
+      - 'supabase/migrations/20261127124500_school_dynamic_class_eligibility.sql'
       - 'app.js'
       - '.github/workflows/addition-plusieurs-auth-local.yml'
       - 'supabase/functions/connect-results/index.ts'
@@ -43,7 +47,9 @@ jobs:
           assert 'enable_anonymous_sign_ins = false' in text
           p.write_text(text.replace('enable_anonymous_sign_ins = false','enable_anonymous_sign_ins = true',1))
           PY
-          mkdir -p supabase/functions/connect-results supabase/functions/connect-api
+          mkdir -p supabase/functions/connect-results supabase/functions/connect-api supabase/functions/connect-objective-record-school
+          cp "$ROOT/supabase/functions/connect-objective-record-school/index.ts" supabase/functions/connect-objective-record-school/
+          cp -R "$ROOT/supabase/functions/connect-projection-v2" supabase/functions/
           python3 - "$ROOT/supabase/functions/connect-results/index.ts" <<'PY'
           from pathlib import Path
           import sys
@@ -71,6 +77,9 @@ jobs:
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/supabase/release-candidates/20261031_permanent_trophies_hub_v1.sql" >/dev/null
           psql "$DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
           UPDATE public.connect_apps SET enabled=true WHERE app_key='addition-ecrite-multiple';
+          -- Real teacher catalogue upsert includes label; local schema only.
+          ALTER TABLE public.connect_hub_presets ADD COLUMN IF NOT EXISTS label text;
+          UPDATE public.connect_hub_presets SET label=slug WHERE label IS NULL;
           -- The production connect-api also reads avatar columns.
           ALTER TABLE public.connect_students
             ADD COLUMN public_alias text,
@@ -85,9 +94,11 @@ jobs:
           );
           CREATE TABLE public.connect_devices (
             id uuid primary key, auth_user_id uuid not null, student_id uuid not null,
-            state text not null
+            state text not null, requested_at timestamptz DEFAULT now(), device_label varchar,
+            revoked_at timestamptz
           );
           CREATE TABLE public.connect_teachers (auth_user_id uuid primary key);
+          CREATE TABLE public.connect_teacher_players (teacher_id uuid primary key,student_id uuid not null);
           CREATE TABLE public.connect_school_years (
             id uuid primary key, label text not null, starts_on date, ends_on date
           );
@@ -105,6 +116,14 @@ jobs:
           \gexec
           NOTIFY pgrst, 'reload schema';
           SQL
+          for migration in 20261103120000_school_certified_additions_tables.sql 20261103120040_school_addition_multiple_issue.sql 20261103120050_school_addition_multiple_finish.sql 20261127124500_school_dynamic_class_eligibility.sql; do
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/supabase/migrations/$migration" >/dev/null
+          done
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/supabase/migrations/20261103130000_school_extended_sessions.sql" >/dev/null
+          for migration in 20261031_projection_v2_score_journal.sql 20261031_projection_v2_explicit_score_consent.sql 20261103_projection_additions_improved_only.sql; do
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/supabase/release-candidates/$migration" >/dev/null
+          done
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/supabase/migrations/20261110120000_projection_written_daily_best_consent.sql" >/dev/null
           (supabase functions serve > "$LAB/edge.log" 2>&1 & echo $! > "$LAB/edge.pid")
           npm install --prefix "$LAB" --no-save --no-audit --no-fund @supabase/supabase-js@2.95.0 playwright@1.58.2 esbuild@0.25.12 >/dev/null
           printf "export {createClient} from '@supabase/supabase-js';\n" > "$LAB/browser-sdk-entry.mjs"

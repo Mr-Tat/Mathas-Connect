@@ -25,11 +25,16 @@ test('TEST class alone can start while all five school presets are hidden',()=>{
   assert.equal(mayStartMultiplicationSchoolProof(cls,true),true);
  }
 });
-test('invalid or foreign classes are denied even if a catalog flag is true',()=>{
- for(const cls of ['',undefined,'11111111-1111-4111-8111-111111111111']){
+test('invalid IDs denied; future class requires its own visible preset and authenticated membership',()=>{
+ for(const cls of ['',undefined,'not-a-uuid']){
   assert.equal(multiplicationSchoolPreset(cls),null);
   assert.equal(mayStartMultiplicationSchoolProof(cls,true),false);
  }
+ const future='11111111-1111-4111-8111-111111111111';
+ assert.equal(multiplicationSchoolPreset(future),'class-11111111111141118111111111111111');
+ assert.equal(mayStartMultiplicationSchoolProof(future,false),false);
+ assert.equal(mayStartMultiplicationSchoolProof(future,null),false);
+ assert.equal(mayStartMultiplicationSchoolProof(future,true),true);
 });
 test('authenticated Edge uses the same mapping and checks preset visibility server-side',()=>{
  assert.match(edge,/getUser\(token\)/);
@@ -53,7 +58,7 @@ test('school hide during a session prevents new challenges but not proven finish
 test('official school Multiplication links use certified native launcher, with explicit Connect in school mode',()=>{
  const hub=readFileSync(new URL('../hub.js',import.meta.url),'utf8');
  const launcher=readFileSync(new URL('../apps/multiplication-simple/index.html',import.meta.url),'utf8');
- assert.match(hub,/SCHOOL_CLASS_IDS\.includes\(classId\)&&app\.app_key==='multiplication-ecrite-simple'/);
+ assert.match(hub,/isSchoolClass\(classId\)&&app\.app_key==='multiplication-ecrite-simple'/);
  assert.match(hub,/schoolMultiplication\?'\.\/apps\/multiplication-simple\/'/);
  assert.match(hub,/schoolMultiplication && !inFreeMode\(\) && target\.origin===location\.origin/);
  assert.match(hub,/if\(\(testMultiplication\|\|testMixed\) && target\.origin===location\.origin\)/);

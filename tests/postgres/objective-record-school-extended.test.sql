@@ -74,7 +74,9 @@ BEGIN
     v_bad:=CASE WHEN v_count=3 THEN ARRAY[1,2,3] ELSE ARRAY[1] END;
     v_ans:=public.test_school_extended_answers(v_issued->'questions',v_count,v_bad);
     v_session:=(v_issued->>'sessionId')::uuid;
-    v_ack:=public.connect_objective_record_school_finish_extended_v1(
+    UPDATE public.connect_objective_record_school_extended_sessions
+      SET created_at=now()-interval '8 days',expires_at=now()-interval '7 days' WHERE session_id=v_session;
+     v_ack:=public.connect_objective_record_school_finish_extended_v1(
       v_student,v_class,v_app,v_session,v_ans);
     v_again:=public.connect_objective_record_school_finish_extended_v1(
       v_student,v_class,v_app,v_session,v_ans);

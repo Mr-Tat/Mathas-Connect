@@ -1,8 +1,8 @@
 import {MULTI_PROOF_APP,MULTI_PROOF_WIDTH,acceptMultiChallenge,
  normalizeMultiFirstAttempt,multipleFirstAttemptCorrect,createMultiProofQueue} from './certified-multiple.mjs';
-import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
+import {isSchoolClass} from './release-routing.mjs';
 import {schoolModeAllowed,schoolModeLockReason} from './school-official-unlocks.mjs';
-const VALID_PROOF_CLASSES=new Set(['4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',...SCHOOL_CLASS_IDS]);
+const validProofClass=id=>id==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'||isSchoolClass(id);
 
 
 // Uses the SAME existing school host and native game. No additional LAB page.
@@ -57,10 +57,10 @@ export function createMultipleProofUI({
     notify('Résultat en cours de confirmation Connect. Utilise « Actualiser » si nécessaire.');
    },true);
   }
-  if(run&&win.__mathasServerCertifiedMulti?.sessionId!==run.sessionId)
+  if(run&&!run.finished&&win.__mathasServerCertifiedMulti?.sessionId!==run.sessionId)
    win.__mathasServerCertifiedMulti={sessionId:run.sessionId,
     level:run.level,total:run.total,questions:run.questions};
-  else if(!run&&win.__mathasServerCertifiedMulti)delete win.__mathasServerCertifiedMulti;
+  else if((!run||run.finished)&&win.__mathasServerCertifiedMulti)delete win.__mathasServerCertifiedMulti;
   win.MathasCertifiedMultipleAttempt=raw=>{
    if(!run||!isCurrent(run.generation)||sending||run.finished||run.invalid)return;
    const expected=run.questions[run.answers.length];
@@ -109,10 +109,20 @@ export function createMultipleProofUI({
   if(event?.phase!=='ended')suppressedTerminal=false;
   return false;
  }
+ async function recover(){
+  const ctx=getContext();
+  if(!validProofClass(ctx.classId)||!ctx.pupilId||ctx.activeApp!==MULTI_PROOF_APP||sending)return;
+  if(run){if(run.finished)await finish();return;}
+  const stored=createMultiProofQueue({storage:localStorage,studentId:ctx.pupilId,classId:ctx.classId});
+  const previous=stored?.read({allowExpired:true});
+  if(!previous||![4,10,20].includes(previous.total)||previous.answers.length!==previous.total)return;
+  queue=stored;run={...previous,generation:ctx.generation,finished:true,invalid:false};
+  await finish();
+ }
  async function start(){
   if(modeSelect&&modeSelect.value!=='classic')return;
   const ctx=getContext(),seq=ctx.generation;
-  if(!VALID_PROOF_CLASSES.has(ctx.classId)
+  if(!validProofClass(ctx.classId)
    ||ctx.activeApp!==MULTI_PROOF_APP||!ctx.pupilId)return;
   const {win,doc}=inner();
   if(!win||!doc?.getElementById('menuScreen')
@@ -128,6 +138,8 @@ export function createMultipleProofUI({
    notify('Choisis un niveau et une série valides.');return;
   }
   if(run||sending)return;
+  await recover();
+  if(run||sending||!isCurrent(seq))return;
   button.disabled=true;proofStatus('starting');
   try{
    const data=await call('start-proof-multi-v1',{level,total});
@@ -188,6 +200,6 @@ export function createMultipleProofUI({
   return start();
  }
  button.addEventListener('click',()=>{void start()});
- return Object.freeze({reset,bind,onGameEvent,startNative,hasPending:()=>!!run?.finished,
+ return Object.freeze({reset,bind,onGameEvent,startNative,recover,hasPending:()=>!!run?.finished,
   retry:()=>run?.finished?finish():Promise.resolve()});
 }

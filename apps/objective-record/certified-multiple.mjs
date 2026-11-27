@@ -51,10 +51,10 @@ export function multipleFirstAttemptCorrect(question,raw,level){
 export function createMultiProofQueue({storage,studentId,classId}){
  if(!UUID.test(studentId)||!UUID.test(classId))return null;
  const key='mathas.multiple-certified.v1.'+classId+'.'+studentId;
- function read(){try{
+ function read({allowExpired=false}={}){try{
   const v=JSON.parse(storage.getItem(key));
   if(!v||!UUID.test(v.sessionId)||!Array.isArray(v.answers)||v.answers.length>20
-   ||!Number.isFinite(Date.parse(v.expiresAt))||Date.parse(v.expiresAt)<Date.now())return null;
+   ||!Number.isFinite(Date.parse(v.expiresAt))||(!allowExpired&&Date.parse(v.expiresAt)<Date.now()))return null;
   return v;
  }catch{return null}}
  function save(challenge,answers){

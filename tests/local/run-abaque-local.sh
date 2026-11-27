@@ -66,6 +66,38 @@ if(!ready)throw Error('disposable_database_relay_not_ready');
 JS
 node --test "$ROOT/tests/abaque-postgres.runtime.mjs"
 if [ "${1:-}" = '--postgres-only' ]; then exit 0;fi
+# The isolated PostgreSQL contract above intentionally exercises the
+# historical 160-XP schema, including test-generated retired record:5/10
+# milestones. Remove ONLY those disposable historical fixture rights before
+# installing a current 204-XP schema. Production retains the migration guard.
+docker_local exec -i "$RUN_NAME-db" psql -U postgres -d abaque_test -v ON_ERROR_STOP=1 <<'SQL' >/dev/null
+DO $local_guard$
+BEGIN
+ IF current_database()<>'abaque_test' THEN RAISE EXCEPTION 'disposable_db_required'; END IF;
+ DELETE FROM public.connect_abaque_rights WHERE milestone IN ('record:5','record:10');
+END $local_guard$;
+SQL
+# Chromium then tests current 204 XP, class permissions and native Edge.
+for migration in \
+ "$ROOT/supabase/migrations/20261107223500_abaque_204xp_5perpage_records.sql" \
+ "$ROOT/supabase/migrations/20261116081500_abaque_sudden_trophies_by_pages.sql" \
+ "$ROOT/supabase/migrations/20261116083000_abaque_record_awards_constraint.sql" \
+ "$ROOT/supabase/migrations/20261116100000_abaque_prof_class_gates_top_two.sql" \
+ "$ROOT/supabase/migrations/20261116111500_abaque_classic_result_dots.sql" \
+ "$ROOT/supabase/migrations/20261116120000_abaque_four_classroom_unlock_modes.sql" \
+ "$ROOT/supabase/migrations/20261116133000_abaque_autonomie_scores_xp75.sql" \
+ "$ROOT/supabase/migrations/20261116190500_abaque_t3_internal_75_percent_gates.sql" \
+ "$ROOT/supabase/migrations/20261116213000_abaque_helpers_confirmation_clean_trophies_v3.sql" \
+ "$ROOT/supabase/migrations/20261117110002_abaque_independent_hints_v4.sql"; do
+ docker_local exec -i "$RUN_NAME-db" psql -U postgres -d abaque_test -v ON_ERROR_STOP=1 < "$migration" >/dev/null
+done
+# Only the disposable TEST-class fixture can open every classroom activity.
+# No real visibility or teaching preference is ever changed.
+docker_local exec -i "$RUN_NAME-db" psql -U postgres -d abaque_test -v ON_ERROR_STOP=1 <<'SQL' >/dev/null
+UPDATE public.connect_abaque_classes
+SET enabled=true, activity_2_allowed=true, activity_3_allowed=true, unlock_mode='all_open'
+WHERE class_id='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
+SQL
 for image in "$ABAQUE_AUTH_IMAGE" "$ABAQUE_REST_IMAGE" "$ABAQUE_EDGE_IMAGE" "$ABAQUE_GATEWAY_IMAGE"; do
  docker_local image inspect "$image" >/dev/null 2>&1 || docker_local pull "$image" >/dev/null
 done

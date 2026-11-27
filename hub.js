@@ -3,7 +3,7 @@ import {PROFILE_REWARDS,AVATAR_LEVELS,officialInitial,unlockedProfileLevel,avata
 import {createProfileCelebrations} from './profile-celebration.mjs?v=20261104-levels-v2';
 import { classId, classLabel, loginUrl } from './connect-context.js';
 import {rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
-import {schoolRecordLaunch,schoolAdditionsLaunch,SCHOOL_RECORD_APPS,SCHOOL_RECORD_LAUNCHER,SCHOOL_CLASS_IDS} from './apps/objective-record/release-routing.mjs';
+import {schoolRecordLaunch,schoolAdditionsLaunch,SCHOOL_RECORD_APPS,SCHOOL_RECORD_LAUNCHER,isSchoolClass} from './apps/objective-record/release-routing.mjs';
 
 const url = 'https://awmhpfofacaglewammxt.supabase.co';
 const key = 'sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
@@ -31,7 +31,16 @@ function getTeacherSupabase(){
 }
 const $ = id => document.getElementById(id);
 const FREE_KEY = 'mathas.connect.mode-libre.v1';
-const inFreeMode = () => { try { return localStorage.getItem(FREE_KEY) === '1' } catch { return false } };
+const schoolHub = Boolean(classId) || allMode;
+const schoolLoginHref=()=>allMode?loginUrl(LAB_CLASS,'Classe démo - TEST'):loginUrl();
+// Keep context-menu/new-tab targets locked until a validated school identity.
+function syncSchoolAppLinks(){
+ if(!schoolHub)return;
+ const allowed=Boolean(activeProfile)&&navigator.onLine;
+ for(const link of document.querySelectorAll('a.app-card[data-school-href]'))
+  link.href=allowed?link.dataset.schoolHref:schoolLoginHref();
+}
+const inFreeMode = () => { if(schoolHub)return false; try { return localStorage.getItem(FREE_KEY) === '1' } catch { return false } };
 const setFree = enabled => { try { if (enabled) localStorage.setItem(FREE_KEY, '1'); else localStorage.removeItem(FREE_KEY) } catch {} };
 
 const levels = [
@@ -54,7 +63,7 @@ function progressText(appKey){
   if(appKey==='padlet-jeux')return '🎲 Jeux en ligne · lien externe';
   if(appKey==='bowling-multiplication')return '🎳 Jeu de multiplication · lien externe';
   if(!connectedGameKeys.has(appKey)&&appKey!=='milieu-segment')return 'Jeu actuel · scores locaux';
-  if(!activeProfile)return 'Classique : local · Connecté : compte élève';
+  if(!activeProfile)return schoolHub?'Connexion obligatoire':'Jeu libre · résultats locaux';
   const p=progressFor(appKey);
   if(!p)return 'Progression momentanément indisponible';
   const valid=n=>Number.isSafeInteger(n)&&n>=0;
@@ -75,7 +84,7 @@ function card(app) {
   // Mélange dans « Toutes → Tests » pointe vers sa vraie version Connect et
   // non vers l'ancien hôte expérimental Objectif record.
   const testMixed=classId===LAB_CLASS&&app.app_key==='melange-calculs-ecrits';
-  const schoolMultiplication=SCHOOL_CLASS_IDS.includes(classId)&&app.app_key==='multiplication-ecrite-simple';
+  const schoolMultiplication=isSchoolClass(classId)&&app.app_key==='multiplication-ecrite-simple';
   // Addition engines are locally playable without the Supabase SDK; the
   // certified Objectif record launcher is intentionally not an offline guest UI.
   const freeAddition=inFreeMode()&&['addition-ecrite-simple','addition-ecrite-multiple'].includes(app.app_key);
@@ -94,9 +103,9 @@ function card(app) {
   // silencieusement un 4/4 sans preuve et sans XP. Le mode Classique reste libre.
   if(schoolMultiplication && !inFreeMode() && target.origin===location.origin)
     target.searchParams.set('requireConnect','1');
-  if(app.app_key==='milieu-segment'&&target.origin===location.origin&&(classId===LAB_CLASS||SCHOOL_CLASS_IDS.includes(classId))&&(allMode||playingAsTeacher||!inFreeMode())){target.searchParams.delete('libre');target.searchParams.set('requireConnect','1');}
+  if(app.app_key==='milieu-segment'&&target.origin===location.origin&&(classId===LAB_CLASS||isSchoolClass(classId))&&(allMode||playingAsTeacher||!inFreeMode())){target.searchParams.delete('libre');target.searchParams.set('requireConnect','1');}
   else if(app.app_key==='milieu-segment'&&target.origin===location.origin&&inFreeMode()){target.searchParams.delete('requireConnect');target.searchParams.delete('connect');target.searchParams.set('libre','1');}
-  if(!allMode&&SCHOOL_CLASS_IDS.includes(classId)&&app.app_key==='milieu-segment'&&target.origin===location.origin){target.searchParams.delete('hub');target.searchParams.set('hub','classe');if(inFreeMode()&&!playingAsTeacher){target.searchParams.delete('requireConnect');target.searchParams.delete('connect')}}
+  if(!allMode&&isSchoolClass(classId)&&app.app_key==='milieu-segment'&&target.origin===location.origin){target.searchParams.delete('hub');target.searchParams.set('hub','classe');if(inFreeMode()&&!playingAsTeacher){target.searchParams.delete('requireConnect');target.searchParams.delete('connect')}}
    // Un lancement dans Toutes conserve l'identité approuvée Monsieur T
   // pour TOUS les jeux Connect. Sans « joueur=prof », leurs hôtes lisent la
   // session anonyme de l'élève au lieu du stockage Auth professeur, et le
@@ -105,7 +114,27 @@ function card(app) {
   if(playingAsTeacher&&app.app_key==='milieu-segment'&&target.origin===location.origin) target.searchParams.set('joueur','prof');
   if(playingAsTeacher&&connectedGameKeys.has(app.app_key)&&(!allMode||target.origin===location.origin||app.app_key==='abaque-longueurs'))
     target.searchParams.set('joueur','prof');
-  node.href = target.href;
+  if(schoolHub && (connectedGameKeys.has(app.app_key)||app.app_key==='milieu-segment')){
+    target.searchParams.delete('libre');
+    target.searchParams.set('requireConnect','1');
+    target.searchParams.set('connect','1');
+  }
+  if(schoolHub){
+    node.dataset.schoolHref=target.href;
+    node.href=activeProfile&&navigator.onLine?target.href:schoolLoginHref();
+  }else node.href=target.href;
+  if(schoolHub){
+    const guard=event=>{
+      if(activeProfile && navigator.onLine)return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if(refreshingIdentity){alert('Vérification de la connexion en cours. Réessaie.');return;}
+      if(!navigator.onLine){alert('Connexion Internet nécessaire pour lancer une application scolaire.');return;}
+      location.href=allMode?loginUrl(LAB_CLASS,'Classe démo - TEST'):loginUrl();
+    };
+    node.addEventListener('click',guard,true);
+    node.addEventListener('auxclick',guard,true);
+  }
   if(testSlug&&!allMode)node.dataset.labSchool=testSlug;
   else node.dataset.appKey=app.app_key;
   node.target = '_blank';
@@ -273,24 +302,25 @@ async function showCatalog() {
     apps=fallbackApps;
     const classPresets={'8fe170fa-9e8f-4e80-885a-b0ba68026f64':'observation','71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'phase1','1b021ed9-4846-4203-9c7b-4b5fa8d7adab':'phase2','0d8ba828-59cc-468b-a4b8-7b2a1af10b88':'phase2b','a9195199-0a28-4e86-99ce-47b36dd6e646':'2eco'};
     const selectedSpace=classPresets[classId]||new URLSearchParams(location.search).get('space')||'observation';
+    const catalogQuery='space='+encodeURIComponent(selectedSpace)+(classId?'&class='+encodeURIComponent(classId):'');
     // Un simple JSON public n'accorde aucune visibilité de classe. Si Edge
     // est indisponible et que le cache a expiré, suivre le SNAPSHOT conservateur
     // du preset approuvé. En cas de propriété invalide, masquer (fail-closed).
     // Les réglages dynamiques du professeur restent prioritaires dès que le
     // catalogue authentique revient ; aucune restriction serveur n'est changée.
-    apps=apps.filter(app=>!Object.hasOwn(app,'fallback_visible_spaces')||
+    apps=classId?[]:apps.filter(app=>!Object.hasOwn(app,'fallback_visible_spaces')||
       (Array.isArray(app.fallback_visible_spaces)&&app.fallback_visible_spaces.includes(selectedSpace)));
     // Une lecture globale courte, mise en cache côté navigateur. Le catalogue statique reste le secours.
     try{
       const cacheKey='mathas.connect.global-catalog.v2';
-      const scopedKey=cacheKey+':'+selectedSpace;
+      const scopedKey=cacheKey+':'+(classId?'class:'+classId:selectedSpace);
       const cached=JSON.parse(sessionStorage.getItem(scopedKey)||'null');
       if(cached&&Date.now()-cached.at<60000&&Array.isArray(cached.apps))apps=cached.apps;
       else{
         const controller=new AbortController();
         const timeout=setTimeout(()=>controller.abort(),1600);
         try{
-          const r=await fetch(url+'/functions/v1/connect-catalog?space='+encodeURIComponent(selectedSpace),{signal:controller.signal,cache:'default'});
+          const r=await fetch(url+'/functions/v1/connect-catalog?'+catalogQuery,{signal:controller.signal,cache:'default'});
           if(r.ok){const data=await r.json();if(data.ok&&Array.isArray(data.apps)){
             const images=new Map(fallbackApps.map(a=>[a.app_key,a.image_url]));
             apps=data.apps.map(a=>({...a,image_url:a.image_url||images.get(a.app_key)}));
@@ -495,6 +525,7 @@ function drawIdentity(profile) {
   // Ne montrer le nom Connect dans les HUB qu'après approbation du compte pour cette classe.
   $('hub-connect-suffix').hidden=!authorized;
   refreshCardProgress();
+  syncSchoolAppLinks();
   if(authorized && classId && profile.classId===classId){
     rememberRecentProfile(classId,profile.displayName);
     rememberRecentAvatar(classId,profile.displayName,profile.avatar);
@@ -502,7 +533,7 @@ function drawIdentity(profile) {
   $('identity-box').className=authorized?'identity-connected':'identity-classic';
   const shownName=authorized&&!playingAsTeacher&&aliasUnlocked(unlockedProfileLevel(profile))&&profile.publicAlias&&profile.publicAlias!==profile.displayName
     ?profile.publicAlias:profile?.displayName;
-  $('identity-title').textContent=authorized?String(shownName||'Élève').replace(/\.\s*(?=[\p{L}]$)/u,' '):'Mode Classique';
+  $('identity-title').textContent=authorized?String(shownName||'Élève').replace(/\.\s*(?=[\p{L}]$)/u,' '):(schoolHub?'Connexion requise':'Mode Classique');
   const oldBar=$('connect-xp-bar');if(oldBar)oldBar.remove();
   if(authorized&&profile.xp?.active){
     const level=profile.xp.level,total=profile.xp.total,from=level<=7?(level-1)*50:300+(level-7)*100,to=profile.xp.next;
@@ -571,13 +602,13 @@ async function showIdentity(refresh=false) {
   try {
     const sb=await getSupabase();
     const { data: { session } } = await sb.auth.getSession();
-    if (!session?.user) return;
+    if (!session?.user){drawIdentity(null);return;}
     const response = await fetch(url + '/functions/v1/connect-api', {
       method: 'POST',
       headers: { apikey: key, authorization: 'Bearer ' + session.access_token, 'content-type': 'application/json' },
       body: JSON.stringify({ action: session.user.is_anonymous ? 'student-me' : 'teacher-player', classId, includeXp:true })
     });
-    if (!response.ok) return;
+    if (!response.ok){drawIdentity(null);return;}
     const profile = await response.json();
     if (profile.ok && profile.status === 'approved' && (profile.classId === classId)) {
       // Une seule requête authentifiée pour identité + XP + progressions.
@@ -585,12 +616,14 @@ async function showIdentity(refresh=false) {
       profileCelebrations.receive(profile);
     }else if(refresh)drawIdentity(null);
     // Aucun accès reconnu au seul motif de connaître le lien de classe.
-  } catch { /* Toujours laisser le HUB et les jeux accessibles en mode libre. */ }
+  } catch { if(schoolHub)drawIdentity(null); }
   finally{refreshingIdentity=false;}
 }
 
 // Retour d'un onglet de jeu : un seul résumé à la demande, jamais de polling.
 window.addEventListener('focus',()=>{if(activeProfile)void showIdentity(true)});
+window.addEventListener('offline',syncSchoolAppLinks);
+window.addEventListener('online',()=>{if(schoolHub)void showIdentity(false)});
 if(allMode)import('./hub-toutes-auth.mjs?v=20261107-abaque-toutes-v1')
  .then(({mountHubToutesAuth})=>mountHubToutesAuth({
    teacherClient:getTeacherSupabase, studentClient:getSupabase, isTeacherMode:playingAsTeacher,
