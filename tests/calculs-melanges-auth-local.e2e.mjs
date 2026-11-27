@@ -205,10 +205,10 @@ if(process.env.SDK_BROWSER_PATH){
   });
   const professor=await tc.newPage();professor.on('pageerror',e=>errors.push('teacher: '+e.message));await professor.goto(site+'/?portail=prof&profClass='+classId);
   await professor.locator('#login-form:visible').waitFor();await professor.locator('#email').fill(teacherEmail);await professor.locator('#password').fill(teacherPassword);await professor.locator('#login-form button[type=submit]').click();
-  await professor.locator('.results-overview-table').waitFor({timeout:30000});
+  await professor.locator('.results-overview-table:not(.results-overview-floating-table)').waitFor({timeout:30000});
   assert.equal(await professor.evaluate(()=>Boolean(localStorage.getItem('mathas-connect-professor-auth-v1'))),true);
-  await professor.reload();await professor.locator('.results-overview-table').waitFor({timeout:30000});
-  await professor.getByRole('button',{name:'Voir les résultats de Élève Chromium Mélange dans Calculs écrits mélangés'}).click();
+  await professor.reload();await professor.locator('.results-overview-table:not(.results-overview-floating-table)').waitFor({timeout:30000});
+  await professor.locator('.results-overview-table:not(.results-overview-floating-table)').getByRole('button',{name:'Voir les résultats de Élève Chromium Mélange dans Calculs écrits mélangés'}).click();
   const rows=await professor.locator('#results-student-content .result-table tr').allTextContents();assert.match(rows.join('|'),/4\/4/);assert.doesNotMatch(rows[0],/HARD 5/);
   await professor.waitForFunction(()=>document.querySelector('#results-student-content .mixed-xp')?.textContent?.includes('28 XP'));
   // Real HUB professor controls: class minimums, pupil override, inheritance,
