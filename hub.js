@@ -589,13 +589,13 @@ async function showIdentity(refresh=false) {
   try {
     const sb=await getSupabase();
     const { data: { session } } = await sb.auth.getSession();
-    if (!session?.user) return;
+    if (!session?.user){drawIdentity(null);return;}
     const response = await fetch(url + '/functions/v1/connect-api', {
       method: 'POST',
       headers: { apikey: key, authorization: 'Bearer ' + session.access_token, 'content-type': 'application/json' },
       body: JSON.stringify({ action: session.user.is_anonymous ? 'student-me' : 'teacher-player', classId, includeXp:true })
     });
-    if (!response.ok) return;
+    if (!response.ok){drawIdentity(null);return;}
     const profile = await response.json();
     if (profile.ok && profile.status === 'approved' && (profile.classId === classId)) {
       // Une seule requête authentifiée pour identité + XP + progressions.
