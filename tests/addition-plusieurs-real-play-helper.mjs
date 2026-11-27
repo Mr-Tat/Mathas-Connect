@@ -59,9 +59,7 @@ export async function playFourAdditions({frame,page,afterStart}){
   if(message==='Valider')await frame.locator('#primaryBtn').click();
   await frame.locator('#sessionScore').waitFor();
   if(pair===0){
-   await page.waitForFunction(()=>
-     document.getElementById('game')?.contentDocument?.getElementById('primaryBtn')?.textContent?.includes('Passer aux 2 calculs suivants'),
-     null,{timeout:15000});
+   await frame.locator('#primaryBtn').filter({hasText:'Passer aux 2 calculs suivants'}).waitFor({timeout:15000});
    await frame.locator('#primaryBtn').click({force:true});
    await frame.locator('#gameScreen .operation').first().waitFor();
   }

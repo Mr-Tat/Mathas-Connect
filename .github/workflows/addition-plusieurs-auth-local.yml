@@ -5,6 +5,10 @@ on:
       - 'tests/addition-plusieurs-auth-local.e2e.mjs'
       - 'tests/addition-plusieurs-real-play-helper.mjs'
       - 'apps/addition-plusieurs/**'
+      - 'apps/objective-record/**'
+      - 'supabase/functions/connect-objective-record-school/**'
+      - 'supabase/migrations/20261103*school*'
+      - 'supabase/migrations/20261127124500_school_dynamic_class_eligibility.sql'
       - 'app.js'
       - '.github/workflows/addition-plusieurs-auth-local.yml'
       - 'supabase/functions/connect-results/index.ts'
@@ -43,7 +47,8 @@ jobs:
           assert 'enable_anonymous_sign_ins = false' in text
           p.write_text(text.replace('enable_anonymous_sign_ins = false','enable_anonymous_sign_ins = true',1))
           PY
-          mkdir -p supabase/functions/connect-results supabase/functions/connect-api
+          mkdir -p supabase/functions/connect-results supabase/functions/connect-api supabase/functions/connect-objective-record-school
+          cp "$ROOT/supabase/functions/connect-objective-record-school/index.ts" supabase/functions/connect-objective-record-school/
           python3 - "$ROOT/supabase/functions/connect-results/index.ts" <<'PY'
           from pathlib import Path
           import sys
@@ -88,6 +93,7 @@ jobs:
             state text not null
           );
           CREATE TABLE public.connect_teachers (auth_user_id uuid primary key);
+          CREATE TABLE public.connect_teacher_players (teacher_id uuid primary key,student_id uuid not null);
           CREATE TABLE public.connect_school_years (
             id uuid primary key, label text not null, starts_on date, ends_on date
           );
@@ -105,6 +111,9 @@ jobs:
           \gexec
           NOTIFY pgrst, 'reload schema';
           SQL
+          for migration in 20261103120000_school_certified_additions_tables.sql 20261103120040_school_addition_multiple_issue.sql 20261103120050_school_addition_multiple_finish.sql 20261127124500_school_dynamic_class_eligibility.sql; do
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/supabase/migrations/$migration" >/dev/null
+          done
           (supabase functions serve > "$LAB/edge.log" 2>&1 & echo $! > "$LAB/edge.pid")
           npm install --prefix "$LAB" --no-save --no-audit --no-fund @supabase/supabase-js@2.95.0 playwright@1.58.2 esbuild@0.25.12 >/dev/null
           printf "export {createClient} from '@supabase/supabase-js';\n" > "$LAB/browser-sdk-entry.mjs"

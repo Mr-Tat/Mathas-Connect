@@ -30,6 +30,7 @@ const teacher=checked(await teacherAuth.auth.signUp({
  email:teacherEmail,password:teacherPassword
 }),'teacher signup').session;
 assert.ok(student?.user?.is_anonymous&&outsider?.access_token&&teacher?.access_token&&!teacher.user.is_anonymous);
+checked(await admin.from('connect_classes').insert({id:classId,name:'Classe fictive addition',year_id:null}),'actual local class');
 checked(await admin.from('connect_students').insert({id:studentId,display_name:'Élève fictif'}),'student');
 checked(await admin.from('connect_enrollments').insert({id:randomUUID(),class_id:classId,student_id:studentId}),'class');
 checked(await admin.from('connect_devices').insert({id:randomUUID(),auth_user_id:student.user.id,student_id:studentId,state:'approved'}),'device');
@@ -39,6 +40,7 @@ checked(await admin.from('connect_xp_credits').insert({student_id:studentId,app_
 assert.equal(success(await post(student,'connect-api',{action:'student-me'}),'student identity').status,'approved');
 // Same approved anonymous identity, two active classes, no second account.
 const otherClass=randomUUID(),foreignClass=randomUUID();
+checked(await admin.from('connect_classes').insert({id:otherClass,name:'Seconde classe fictive',year_id:null}),'actual second class');
 checked(await admin.from('connect_enrollments').insert({id:randomUUID(),class_id:otherClass,student_id:studentId}),'second membership');
 for(const selectedClass of [classId,otherClass]){
  const choice=success(await post(student,'connect-api',{action:'student-join-status',classId:selectedClass}),'approved shortcut');
@@ -63,9 +65,18 @@ const rewards={version:3,mastery:{4:[true,false,false],10:[false,false,false],20
  scoreOne:{bronze:false,silver:false,gold:false},unlockedGold:false};
 const event={action:'game-record',appKey,eventId,mode:'classic',level:1,score:4,total:4,
  points:0,expectedRevision:0,expectedResetEpoch:0,rewards};
-const result=success(await post(student,'connect-results',event),'saved game');
+const rejectedEvent=await post(student,'connect-results',event);
+assert.equal(rejectedEvent.status,403);assert.equal(rejectedEvent.data.error,'server_proof_required');
+const proof=success(await post(student,'connect-objective-record-school',{action:'start-proof-multi-v1',appKey,level:1,total:4}),'issued proof');
+assert.equal(proof.questions.length,4);
+assert.equal((await post(outsider,'connect-objective-record-school',{action:'start-proof-multi-v1',appKey,level:1,total:4})).status,403);
+assert.equal((await post(student,'connect-objective-record-school',{action:'start-proof-multi-v1',appKey,level:1,total:4,classId:foreignClass})).status,403);
+const answers=proof.questions.map(q=>({id:q.id,digits:String(q.addends.reduce((sum,n)=>sum+n,0)).split('').reverse(),carries:['',...Array.from({length:4},(_,i)=>{const p=10**(i+1);const n=Math.floor(q.addends.reduce((sum,v)=>sum+v%p,0)/p);return n?String(n):''})]}));
+const finish={action:'finish-proof-multi-v1',appKey,sessionId:proof.sessionId,answers};
+const result=success(await post(student,'connect-objective-record-school',finish),'saved certified game');
+assert.equal(result.proofVerified,true);assert.equal(result.verifiedScore,4);
 assert.equal(result.revision,1);assert.equal(result.xp.delta,22);assert.equal(result.xp.total,44);
-const duplicate=success(await post(student,'connect-results',event),'duplicate');
+const duplicate=success(await post(student,'connect-objective-record-school',finish),'duplicate certified proof');
 assert.equal(duplicate.duplicate,true);assert.equal(duplicate.xp.delta,0);
 const state=success(await post(student,'connect-results',{action:'student-load',appKey}),'reload');
 assert.equal(state.state.classic[0]['4'],4);
@@ -106,9 +117,6 @@ const {playFourAdditions}=await import('./addition-plusieurs-real-play-helper.mj
 const browserStudentId=randomUUID();
 // The learner account MUST originate inside Chromium's real supabase-js SDK.
 // Do not pre-create a browser JWT from Node or inject an auth session.
-checked(await admin.from('connect_classes').insert({
- id:classId,name:'Classe fictive addition',year_id:null
-}),'browser professor class');
 const site='http://127.0.0.1:8765';
 const browser=await chromium.launch({headless:true});
 const errors=[];
@@ -130,48 +138,24 @@ try{
  const pupilPage=await pupilContext.newPage();
  pupilPage.on('pageerror',e=>errors.push('pupil: '+e.message));
  await provideRealSdk(pupilContext);
- // All three changes below are Playwright response overrides, NOT files
- // in the repository or Edge deployments. A future production URL cannot
- // accidentally receive our anonymous pupil's local request.
- await pupilContext.route('**/apps/addition-plusieurs/connect-pilot.mjs',async route=>{
+ // Only change the candidate's HTTP destination and public local key.
+ // Fail closed for ANY hosted Supabase URL, even if another module is added.
+ await pupilContext.route('**/*.supabase.co/**',route=>route.abort());
+ await pupilContext.route(u=>u.pathname.endsWith('/apps/objective-record/eleve.mjs'),async route=>{
   const res=await route.fetch(),original=await res.text();
-  assert.equal(original.split('CONNECT_WRITE_READY=true').length,2);
-  await route.fulfill({response:res,contentType:'text/javascript',
-   body:original});
+  const base="const BASE='https://awmhpfofacaglewammxt.supabase.co';",key="const KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';";
+  assert.ok(original.includes(base)&&original.includes(key));
+  await route.fulfill({response:res,contentType:'text/javascript',body:original.replace(base,'const BASE='+JSON.stringify(url)+';').replace(key,'const KEY='+JSON.stringify(anon)+';')});
  });
- await pupilContext.route('**/apps/addition-plusieurs/edge-transport.mjs',async route=>{
-  const res=await route.fetch(),original=await res.text();
-  const lines=original.split('\n');
-  const i=lines.findIndex(line=>line.includes("throw Error('invalid_transport')"));
-  assert.ok(i>=0,'real Edge transport validation must exist');
-  lines[i]=" if(endpoint!=="+JSON.stringify(url+'/functions/v1/connect-results')
-   +"||typeof getToken!=='function'||typeof fetchImpl!=='function')throw Error('invalid_transport');";
-  await route.fulfill({response:res,contentType:'text/javascript',body:lines.join('\n')});
- });
- await pupilContext.route(u=>u.pathname.endsWith('/apps/addition-plusieurs/connect-host.mjs'),async route=>{
-  const res=await route.fetch(),original=await res.text();
-  assert.ok(original.includes('https://awmhpfofacaglewammxt.supabase.co'));
-  const parts=original.split('\n'),i=parts.findIndex(line=>line.includes("throw Error('untrusted_connect_endpoint')"));
-  assert.ok(i>=0);
-  parts[i]=" if(baseUrl!=="+JSON.stringify(url)+"||apikey!=="+JSON.stringify(anon)+")throw Error('untrusted_connect_endpoint');";
-  let testVersion=parts.join('\n');
-  testVersion=testVersion.replace(
-   "export const CONNECT_URL='https://awmhpfofacaglewammxt.supabase.co';",
-   'export const CONNECT_URL='+JSON.stringify(url)+';');
-  testVersion=testVersion.replace(
-   "export const CONNECT_PUBLISHABLE_KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';",
-   'export const CONNECT_PUBLISHABLE_KEY='+JSON.stringify(anon)+';');
-  assert.ok(testVersion.includes('export const CONNECT_URL='+JSON.stringify(url)));
-  assert.ok(testVersion.includes('export const CONNECT_PUBLISHABLE_KEY='+JSON.stringify(anon)));
-  await route.fulfill({response:res,contentType:'text/javascript',body:testVersion});
- });
+ const gameUrl=site+'/apps/objective-record/eleve.html?app=addition-multiple&requireConnect=1&class='+classId;
  const failedRequests=[];
  pupilPage.on('requestfailed',req=>failedRequests.push(req.url()+' '+(req.failure()?.errorText||'')));
  pupilPage.on('console',message=>{if(['error','warning'].includes(message.type()))errors.push('console: '+message.text())});
  const openGame=async()=>{
-  const response=await pupilPage.goto(site+'/apps/addition-plusieurs/?class='+classId,{waitUntil:'domcontentloaded'});
+  const response=await pupilPage.goto(gameUrl,{waitUntil:'domcontentloaded'});
   try{
-   await pupilPage.waitForFunction(()=>document.getElementById('game')?.contentWindow?.__mathasGameStorageScope?.startsWith('connect.'),null,{timeout:18000});
+   await pupilPage.frameLocator('#gameFrame').frameLocator('#game').locator('#menuScreen:not(.hidden) .classic-count-btn[data-count="4"]').waitFor({timeout:25000});
+   await pupilPage.waitForFunction(()=>document.getElementById('app-xp')?.textContent!=='—',null,{timeout:15000});
   }catch(error){
    const info=await pupilPage.evaluate(()=>({
     url:location.href,title:document.title,
@@ -185,17 +169,13 @@ try{
    }));
    throw error;
   }
-  return pupilPage.frameLocator('iframe#game');
+  return pupilPage.frameLocator('#gameFrame').frameLocator('#game');
  };
  // On a brand-new browser profile, Connect must refuse to start without
  // session. This also loads the real SDK, with empty browser storage.
- await pupilPage.goto(site+'/apps/addition-plusieurs/?class='+classId);
- await pupilPage.waitForFunction(()=>document.querySelector('#mode-note')?.textContent?.includes('Connexion indisponible'),null,{timeout:20000});
- assert.equal(await pupilPage.locator('iframe#game').evaluate(el=>Boolean(el.srcdoc)),false);
- // The fail-closed warning is expected while this profile is not signed in.
- // Count it as a successful denial rather than an unexpected JS error.
- assert.ok(errors.some(e=>e.includes('connect_session_missing')),
-  'Missing browser session must be visibly and explicitly rejected');
+ await pupilPage.goto(gameUrl);
+ await pupilPage.waitForFunction(()=>document.querySelector('#status')?.textContent?.includes('Jeu non lancé'),null,{timeout:20000});
+ assert.equal(await pupilPage.locator('#gameFrame').getAttribute('hidden'),'');
  errors.splice(0);
  // Change document before creating the SDK used for login: the previous
  // fail-closed game client must not overlap this dedicated auth client.
@@ -226,32 +206,33 @@ try{
   student_id:browserStudentId,app_key:oldApp,xp_credited:22
  }),'browser historical XP');
  const frame=await openGame();
- await pupilPage.waitForFunction(()=>document.querySelector('#xp-total')?.textContent==='22 XP',null,{timeout:15000});
+ await pupilPage.waitForFunction(()=>document.querySelector('#connect-xp-meter')?.title?.includes('22 XP au total'),null,{timeout:15000});
  // Real Chromium offline mode, not a fake Edge response. Four actual
  // written calculations must persist as ONE unsent local queue entry.
- await pupilContext.setOffline(true);
- assert.equal(await pupilPage.evaluate(()=>navigator.onLine),false,'Chromium is truly offline');
- await playFourAdditions({frame,page:pupilPage});
- await pupilPage.waitForFunction(()=>document.querySelector('#result')?.textContent?.includes('résultat en attente (offline)'),null,{timeout:15000});
- const durableQueueKey='mathas.addition-plusieurs.connect.'+classId+'.'+signed.id+'.v1';
- const queuedBefore=await pupilPage.evaluate(key=>JSON.parse(localStorage.getItem(key)||'[]'),durableQueueKey);
- assert.equal(queuedBefore.length,1,'one real completed 4/4 must survive as queued local event');
- assert.equal(queuedBefore[0].mode,'classic');
- assert.equal(queuedBefore[0].score,4);
- assert.equal(queuedBefore[0].points,0,'offline events cannot author their XP');
+ await playFourAdditions({frame,page:pupilPage,afterStart:async()=>{
+  await pupilContext.setOffline(true);
+  assert.equal(await pupilPage.evaluate(()=>navigator.onLine),false,'Chromium is truly offline');
+ }});
+ const durableQueueKey='mathas.multiple-certified.v1.'+classId+'.'+browserStudentId;
+ await pupilPage.waitForFunction(key=>JSON.parse(localStorage.getItem(key)||'null')?.answers?.length===4,durableQueueKey,{timeout:15000});
+ const queuedBefore=await pupilPage.evaluate(key=>JSON.parse(localStorage.getItem(key)||'null'),durableQueueKey);
+ assert.equal(queuedBefore.total,4);
+ assert.equal(queuedBefore.answers.length,4);
+ assert.ok(queuedBefore.sessionId);
+ assert.equal(Object.hasOwn(queuedBefore,'score'),false,'offline transcript cannot author its score');
  const beforeRecovery=checked(await admin.from('connect_states')
   .select('student_id').eq('student_id',browserStudentId).eq('app_key',appKey),
   'offline database unchanged');
  assert.equal(beforeRecovery.length,0,'no result credited before reconnect');
- assert.equal(await pupilPage.locator('#xp-total').innerText(),'22 XP',
+ assert.match(await pupilPage.locator('#connect-xp-meter').getAttribute('title'),/22 XP au total/,
   'XP must not be granted optimistically when offline');
  // Restore Wi-Fi without reloading. The genuine online event must cause
  // exactly one retry; no polling, no second completion and no pupil action.
  await pupilContext.setOffline(false);
  assert.equal(await pupilPage.evaluate(()=>navigator.onLine),true,'Chromium is back online');
- await pupilPage.waitForFunction(()=>document.querySelector('#xp-total')?.textContent==='44 XP',null,{timeout:30000});
- const queuedAfter=await pupilPage.evaluate(key=>JSON.parse(localStorage.getItem(key)||'[]'),durableQueueKey);
- assert.equal(queuedAfter.length,0,'server acknowledgment must clear the durable queue');
+ await pupilPage.waitForFunction(()=>document.querySelector('#connect-xp-meter')?.title?.includes('44 XP au total'),null,{timeout:30000});
+ const queuedAfter=await pupilPage.evaluate(key=>localStorage.getItem(key),durableQueueKey);
+ assert.equal(queuedAfter,null,'server acknowledgment must clear the durable queue');
  // The only acceptable browser console error during intentional Wi-Fi loss
  // is Chromium's own ERR_INTERNET_DISCONNECTED for the failed HTTP request.
  // Do not ignore JavaScript errors, auth problems or other failed resources.
@@ -286,18 +267,19 @@ try{
  assert.equal(refreshed.id,signed.id,'browser refresh must preserve student identity');
  assert.equal(refreshed.hasRefreshToken,true,'native refresh token expected');
  const reloaded=await openGame();
- await pupilPage.waitForFunction(()=>document.querySelector('#xp-total')?.textContent==='44 XP',null,{timeout:15000});
- const native=await reloaded.locator('body').evaluate(()=>({
-  classic:JSON.parse(localStorage.getItem('addition2_classic_v1')||'{}'),
-  trophy:JSON.parse(localStorage.getItem('mathas_trophies_v3_addition-plusieurs')||'null')
- }));
- assert.equal(native.classic.levels['1']['4'],4);
- assert.equal(native.trophy.mastery['4'][0],true);
+ await pupilPage.waitForFunction(()=>document.querySelector('#connect-xp-meter')?.title?.includes('44 XP au total'),null,{timeout:15000});
+ const native=await pupilPage.evaluate(()=>({progress:window.MathasConnectOfficialSchoolProgress,trophy:window.MathasConnectOfficialTrophies}));
+ assert.ok(native.progress,'official progression restored after reload');
+ assert.equal(native.trophy?.rewards?.mastery?.['4']?.[0],true);
+ const persisted=success(await post(student,'connect-results',{action:'student-load',appKey}),'independent API remains available');
+ assert.equal(persisted.resetEpoch,1);
+
 
  // Real teacher portal, actual professor JWT, real Edge teacher-dashboard,
  // teacher-overview, history, and reset via visible confirmation controls.
  const teacherContext=await browser.newContext();
  await provideRealSdk(teacherContext);
+ await teacherContext.route('**/*.supabase.co/**',route=>route.abort());
  await teacherContext.route(urlToMatch=>urlToMatch.pathname==='/app.js',async route=>{
   const res=await route.fetch(),original=await res.text();
   const config="const url='https://awmhpfofacaglewammxt.supabase.co', key='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';";
@@ -342,13 +324,10 @@ try{
  await dialog.getByRole('button',{name:'Confirmer le nouveau parcours'}).click();
  await dialog.waitFor({state:'detached',timeout:15000});
  const afterReset=await openGame();
- await pupilPage.waitForFunction(()=>document.querySelector('#xp-total')?.textContent==='44 XP',null,{timeout:15000});
- const cleared=await afterReset.locator('body').evaluate(()=>({
-  classic:JSON.parse(localStorage.getItem('addition2_classic_v1')||'{}'),
-  trophy:JSON.parse(localStorage.getItem('mathas_trophies_v3_addition-plusieurs')||'null')
- }));
- assert.deepEqual(cleared.classic,{levels:{}});
- assert.equal(cleared.trophy?.mastery?.['4']?.[0],true,'le moteur doit restaurer le trophée acquis après reset');
+ await pupilPage.waitForFunction(()=>document.querySelector('#connect-xp-meter')?.title?.includes('44 XP au total'),null,{timeout:15000});
+ const cleared=await pupilPage.evaluate(()=>({progress:window.MathasConnectOfficialSchoolProgress,trophy:window.MathasConnectOfficialTrophies}));
+ assert.ok(cleared.progress);
+ assert.equal(cleared.trophy?.rewards?.mastery?.['4']?.[0],true,'official trophy stays after reset');
  const savedAfterReset=checked(await admin.from('connect_states').select('reset_epoch,state_data')
   .eq('student_id',browserStudentId).eq('app_key',appKey).single(),'browser reset on DB');
  assert.equal(savedAfterReset.reset_epoch,1);
