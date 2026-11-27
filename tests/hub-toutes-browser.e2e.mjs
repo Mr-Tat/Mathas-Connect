@@ -15,8 +15,9 @@ const apps=[
  ['soustraction-ecrite-simple','Soustraction écrite','calculs_ecrits','test'],
  ['addition-ecrite-multiple','Addition de plusieurs nombres','calculs_ecrits','published'],
  ['melange-calculs-ecrits','Calculs écrits mélangés','calculs_ecrits','test'],
- ['abaque-longueurs','Abaque des longueurs','outil','test']
-].map(([app_key,title,hub_section,stage],i)=>({app_key,title,hub_section,stage,all_order:10+i*10,display_order:10+i*10,enabled:true,visible:true,in_test:true,all_section:stage==='test'?'test':hub_section,featured:false,launch_url:'https://mr-tat.github.io/Mathas-Connect/apps/'+app_key+'/',image_url:null}));
+ ['abaque-longueurs','Abaque des longueurs','outil','test'],
+ ['milieu-segment','La moitié','outil','test']
+].map(([app_key,title,hub_section,stage],i)=>({app_key,title,hub_section,stage,all_order:10+i*10,display_order:10+i*10,enabled:true,visible:true,in_test:true,all_section:stage==='test'?'test':hub_section,featured:false,launch_url:'https://mr-tat.github.io/Mathas-Connect/apps/'+(app_key==='milieu-segment'?'DIV-Milieu-de-segment-1/?hub=toutes':app_key+'/'),image_url:null}));
 const session={user:{id:'11111111-1111-4111-8111-111111111111',is_anonymous:false},access_token:'FAKE_TEST_ONLY_TEACHER_JWT'};
 const sdk=(authorized)=>'export function createClient(url,key,options){return {auth:{getSession:async()=>({data:{session:options?.auth?.storageKey?'+JSON.stringify(authorized?session:null)+':null}}),signOut:async()=>({error:null})}}}';
 async function fixture(authorized){
@@ -78,7 +79,7 @@ test('HUB Toutes : Abaque connecté dans Tests uniquement, sans doublons scolair
  try{
    await f.page.goto(f.base+'/hub.html?toutes=1&joueur=prof&class='+testClass+'&name=Toutes',{waitUntil:'domcontentloaded'});
    await f.page.locator('.level-title').first().waitFor({timeout:20000});
-   try{await f.page.waitForFunction(()=>document.querySelectorAll('#levels .app-card').length===6,null,{timeout:15000});}
+   try{await f.page.waitForFunction(()=>document.querySelectorAll('#levels .app-card').length===7,null,{timeout:15000});}
     catch(error){
       const state=await f.page.evaluate(()=>({appCount:document.querySelectorAll('#levels .app-card').length,sectionTitles:[...document.querySelectorAll('#levels .level-title')].map(el=>el.textContent),daily:document.querySelector('#dailyApps')?.textContent,levelsSnippet:document.querySelector('#levels')?.textContent?.slice(0,300),url:location.href}));
       console.error('HUB_TOUTES_DIAGNOSTIC',JSON.stringify({state,requests:f.getRequests()}));
@@ -86,16 +87,18 @@ test('HUB Toutes : Abaque connecté dans Tests uniquement, sans doublons scolair
     }
    const sections=await f.page.locator('#levels .level-title').allTextContents();
    assert.match(sections[0],/Tests/);
-    assert.equal(await f.page.locator('#levels .level').first().locator('.app-card').count(),3,'l Abaque est dans Tests de Toutes');
+    assert.equal(await f.page.locator('#levels .level').first().locator('.app-card').count(),4,'l Abaque est dans Tests de Toutes');
    assert.equal(await f.page.locator('#levels .app-card[data-app-key="abaque-longueurs"]').count(),1);
    assert.equal(await f.page.locator('#levels .app-card[data-app-key="abaque-longueurs"]').count(),1);
-   assert.equal(await f.page.locator('#levels .app-card').count(),6);
+   assert.equal(await f.page.locator('#levels .app-card').count(),7);
    assert.equal(await f.page.locator('#levels .level').first().getAttribute('aria-expanded'),null);
    assert.equal(await f.page.locator('#levels .level').first().locator('button.level-toggle').getAttribute('aria-expanded'),'true');
    assert.equal(await f.page.locator('.daily-section').isVisible(),false);
    const hrefs=await f.page.locator('#levels .app-card').evaluateAll(elements=>elements.map(a=>a.href));
-   assert.equal(new Set(hrefs).size,6);
+   assert.equal(new Set(hrefs).size,7);
    for(const link of hrefs){assert.ok(link.includes('class='+testClass));assert.ok(link.includes('joueur=prof'),'tous les jeux Connect gardent le profil Monsieur T : '+link)}
+   const milieu=new URL(await f.page.locator('[data-app-key="milieu-segment"]').getAttribute('href'));
+   assert.equal(milieu.searchParams.get('requireConnect'),'1');assert.equal(milieu.searchParams.get('joueur'),'prof');assert.equal(milieu.searchParams.get('hub'),'toutes');assert.equal(milieu.searchParams.has('libre'),false);
    assert.equal(f.getRequests(),1);
  }finally{await close(f)}
 });
@@ -114,7 +117,7 @@ test('Le HUB Toutes reste lisible sur un petit écran de téléphone', {timeout:
  try{
    await f.page.setViewportSize({width:390,height:844});
    await f.page.goto(f.base+'/hub.html?toutes=1&joueur=prof&class='+testClass+'&name=Toutes',{waitUntil:'domcontentloaded'});
-   try{await f.page.waitForFunction(()=>document.querySelectorAll('#levels .app-card').length===6,null,{timeout:15000});}
+   try{await f.page.waitForFunction(()=>document.querySelectorAll('#levels .app-card').length===7,null,{timeout:15000});}
     catch(error){
       const state=await f.page.evaluate(()=>({appCount:document.querySelectorAll('#levels .app-card').length,sectionTitles:[...document.querySelectorAll('#levels .level-title')].map(el=>el.textContent),daily:document.querySelector('#dailyApps')?.textContent,levelsSnippet:document.querySelector('#levels')?.textContent?.slice(0,300),url:location.href}));
       console.error('HUB_TOUTES_DIAGNOSTIC',JSON.stringify({state,requests:f.getRequests()}));
