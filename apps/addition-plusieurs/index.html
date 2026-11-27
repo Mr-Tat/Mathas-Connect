@@ -19,7 +19,7 @@ import {hydrateNativeRecords} from './connect-hydration.mjs';
  // (or the separate teacher player session). Explicit free mode never queries.
  const classId=launch.get('class')||'';
  const teacherPlayer=launch.get('joueur')==='prof';
- const requireConnect=launch.get('requireConnect')==='1'||Boolean(classId)&&launch.get('libre')!=='1';
+ const requireConnect=launch.get('requireConnect')==='1'||Boolean(classId);
  const free=!teacherPlayer&&!requireConnect&&(launch.get('libre')==='1'||localStorage.getItem('mathas.connect.mode-libre.v1')==='1');
  if(requireConnect&&(!classId||simulate||!writeReady)){modeNote.textContent='Connexion scolaire obligatoire';output.textContent='Ouvre le jeu depuis ton HUB avec un compte approuvé.';return;}
  if(writeReady&&classId&&!free){
