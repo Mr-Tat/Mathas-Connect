@@ -327,6 +327,14 @@ try{
  const rows=await professor.locator('#results-student-content .result-table tr').allTextContents();
  assert.match(rows.join(' | '),/4\/4/,'real professor DOM must show actual PostgreSQL result');
  await professor.locator('#results-student-content .results-restart-button').click();
+ // The live professor UI deliberately routes sensitive resets through
+ // Authorisations; never bypass that step or invoke the dialog directly.
+ await professor.locator('#teacher-authorizations:visible').waitFor();
+ await professor.locator('#auth-restart:enabled').waitFor({timeout:20000});
+ assert.equal(await professor.locator('#auth-app').inputValue(),appKey);
+ assert.equal(await professor.locator('#auth-scope').inputValue(),'student');
+ assert.equal(await professor.locator('#auth-student').inputValue(),browserStudentId);
+ await professor.locator('#auth-restart').click();
  const dialog=professor.locator('dialog.parcours-dialog');
  await dialog.waitFor();
  await dialog.locator('input[type=checkbox]').uncheck();

@@ -66,6 +66,22 @@ if(!ready)throw Error('disposable_database_relay_not_ready');
 JS
 node --test "$ROOT/tests/abaque-postgres.runtime.mjs"
 if [ "${1:-}" = '--postgres-only' ]; then exit 0;fi
+# The isolated PostgreSQL contract above tests the historical installation
+# manifest. The actual Chromium release candidate uses the later 204 XP
+# ruleset and the classroom gates, as deployed on production.
+for migration in \
+ "$ROOT/supabase/migrations/20261107223500_abaque_204xp_5perpage_records.sql" \
+ "$ROOT/supabase/migrations/20261116100000_abaque_prof_class_gates_top_two.sql" \
+ "$ROOT/supabase/migrations/20261116120000_abaque_four_classroom_unlock_modes.sql"; do
+ docker_local exec -i "$RUN_NAME-db" psql -U postgres -d abaque_test -v ON_ERROR_STOP=1 < "$migration" >/dev/null
+done
+# Only the disposable TEST-class fixture can open every classroom activity.
+# No real visibility or teaching preference is ever changed.
+docker_local exec -i "$RUN_NAME-db" psql -U postgres -d abaque_test -v ON_ERROR_STOP=1 <<'SQL' >/dev/null
+UPDATE public.connect_abaque_classes
+SET enabled=true, activity_2_allowed=true, activity_3_allowed=true, unlock_mode='all_open'
+WHERE class_id='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
+SQL
 for image in "$ABAQUE_AUTH_IMAGE" "$ABAQUE_REST_IMAGE" "$ABAQUE_EDGE_IMAGE" "$ABAQUE_GATEWAY_IMAGE"; do
  docker_local image inspect "$image" >/dev/null 2>&1 || docker_local pull "$image" >/dev/null
 done
