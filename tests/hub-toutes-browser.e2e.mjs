@@ -216,7 +216,9 @@ test('Côté élève, seul le retour vers Monsieur T est proposé ; approbations
    assert.equal(await f.page.locator('#toutes-switch').textContent(),'Se connecter avec Monsieur T');
    assert.equal(await f.page.locator('#toutes-connect-student').isVisible(),false);
    assert.equal(await f.page.locator('#toutes-requests-open').isVisible(),false);
-   assert.equal(await f.page.locator('#levels .app-card').count(),6);
+   assert.equal(await f.page.locator('#levels .app-card').count(),7);
+   const milieu=new URL(await f.page.locator('[data-app-key="milieu-segment"]').getAttribute('href'));
+   assert.equal(milieu.searchParams.get('requireConnect'),'1');assert.equal(milieu.searchParams.get('class'),testClass);assert.equal(milieu.searchParams.has('joueur'),false);
    const abaqueHref=await f.page.locator('#levels .app-card[data-app-key="abaque-longueurs"]').getAttribute('href');
    assert.ok(!abaqueHref.includes('joueur=prof'),'un élève de Toutes ne joue jamais avec Monsieur T');
    assert.equal(await f.page.locator('#toutes-abaque-controls').count(),0,'administration cachée côté élève');
