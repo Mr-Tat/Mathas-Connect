@@ -1,5 +1,5 @@
 // School rollout permission for the certified multiplication engine.
-// Exact mapping of the five existing class IDs to GLOBAL school presets.
+// Existing class IDs keep their historical storage keys; new classes use a separate UUID key.
 // Neither a direct URL nor the generic connect_apps.enabled flag opens a class.
 export const WRITTEN_GUIDED_TEST_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 export const WRITTEN_GUIDED_SCHOOL_PRESETS=Object.freeze({
@@ -11,7 +11,8 @@ export const WRITTEN_GUIDED_SCHOOL_PRESETS=Object.freeze({
 });
 export function writtenGuidedSchoolPreset(classId){
  return Object.hasOwn(WRITTEN_GUIDED_SCHOOL_PRESETS,classId)
-  ? WRITTEN_GUIDED_SCHOOL_PRESETS[classId]:null;
+  ? WRITTEN_GUIDED_SCHOOL_PRESETS[classId]:
+  (typeof classId==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(classId)?'class-'+classId.toLowerCase().replace(/-/g,''):null);
 }
 export function mayStartWrittenGuidedSchool(classId,visible){
  return classId===WRITTEN_GUIDED_TEST_CLASS

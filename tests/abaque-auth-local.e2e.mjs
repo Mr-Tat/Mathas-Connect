@@ -151,8 +151,13 @@ test('Chromium + Auth/Edge réels : clavier, XP, trophées, réponse perdue/offl
   assert.equal(await page.locator('#masterToggle').isVisible(),false,'Master interdit à un élève scolaire');
   assert.equal((await request(pupil,'load')).data.xp.appXp,28,'aucun crédit sans partie');
   assert.equal(await pending(page),0);
+  let declined=0;
+  await page.addLocatorHandler(page.locator('#abaque-projection-consent[open]'),async()=>{
+   await page.locator('#abaque-share-no').click();declined++;
+  });
   await page.locator('[data-mode="one"]').click();await inputConversion(page);await modal(page,'Accueil');
   await page.waitForFunction(()=>document.querySelector('.abaque-account-xp')?.textContent.includes('48 / 204'));
+  assert.ok(declined>=1,'le consentement de projection est réellement présenté et refusé');
   await page.locator('#launchBtn').click();await page.locator('#unitBank [data-id="km"]').waitFor();
   h.offline(true);await solveConstruction(page,{started:true});
   await page.waitForFunction(()=>document.querySelector('#abaque-connect-panel').textContent.includes('Hors connexion'));
@@ -195,7 +200,7 @@ test('Chromium + Auth/Edge réels : clavier, XP, trophées, réponse perdue/offl
   const second=sdk(),auth=await second.auth.signInAnonymously();assert.equal(auth.error,null);
   await pool.query("insert into connect_devices(auth_user_id,student_id,state) values($1,$2,'approved')",[auth.data.user.id,pupil.studentId]);
   const another=await browserPage({session:auth.data.session});
-  try{await another.page.goto(game);await expectConnected(another.page);assert.match(await another.page.locator('.abaque-account-xp').textContent(),/148 \/ 204/);assert.equal(await another.page.locator('#trophy-launchBtn').getAttribute('data-earned'),'false');assert.equal(await another.page.locator('#personalTrophyCount').textContent(),'4 / 6');assert.equal(await another.page.locator('#personalBest').textContent(),String(recorded.data.state.scoreRecords.allBest));assert.deepEqual(another.external,[]);assert.deepEqual(another.errors,[]);}finally{await another.context.close();}
+  try{await another.page.goto(game);await expectConnected(another.page);assert.match(await another.page.locator('.abaque-account-xp').textContent(),/148 \/ 204/);assert.equal(await another.page.locator('#trophy-launchBtn').getAttribute('data-earned'),'false');assert.equal(await another.page.locator('#personalTrophyCount').textContent(),recorded.data.trophies.length+' / 6');assert.equal(await another.page.locator('#personalBest').textContent(),String(recorded.data.state.scoreRecords.allBest));assert.deepEqual(another.external,[]);assert.deepEqual(another.errors,[]);}finally{await another.context.close();}
   const replacement=randomUUID();await pool.query('insert into connect_students(id,display_name) values($1,$2)',[replacement,'Autre profil fictif']);
   await pool.query('insert into connect_abaque_pilot_students(student_id) values($1)',[replacement]);
   await pool.query('insert into connect_enrollments(id,class_id,student_id) values($1,$2,$3)',[randomUUID(),pilotClass,replacement]);

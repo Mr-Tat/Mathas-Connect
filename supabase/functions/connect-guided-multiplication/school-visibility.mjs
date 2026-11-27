@@ -1,5 +1,5 @@
 // School rollout permission for the certified multiplication engine.
-// Exact mapping of the five existing class IDs to GLOBAL school presets.
+// Existing class IDs keep their historical storage keys; new classes use a separate UUID key.
 // Neither a direct URL nor the generic connect_apps.enabled flag opens a class.
 export const MULTIPLICATION_TEST_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 export const MULTIPLICATION_SCHOOL_PRESETS=Object.freeze({
@@ -11,7 +11,8 @@ export const MULTIPLICATION_SCHOOL_PRESETS=Object.freeze({
 });
 export function multiplicationSchoolPreset(classId){
  return Object.hasOwn(MULTIPLICATION_SCHOOL_PRESETS,classId)
-  ? MULTIPLICATION_SCHOOL_PRESETS[classId]:null;
+  ? MULTIPLICATION_SCHOOL_PRESETS[classId]:
+  (typeof classId==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(classId)?'class-'+classId.toLowerCase().replace(/-/g,''):null);
 }
 export function mayStartMultiplicationSchoolProof(classId,visible){
  return classId===MULTIPLICATION_TEST_CLASS

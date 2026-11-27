@@ -29,7 +29,18 @@ test('hub uses session cache and static fallback without SDK',()=>{
 });
 test('teacher browser JavaScript module parses',()=>{execFileSync(process.execPath,['--check','--input-type=module'],{input:teacher})});
 
-test('five class columns, distinct Phase 2 scopes and separate caches',()=>{for(const name of ['Observation','Phase 1','Phase 2 A','Phase 2 B','2 ECO','Partout','Position'])assert.ok(html.includes(name));assert.match(hub,/classPresets\[classId\]/);assert.match(result,/teacher-app-matrix-save/);assert.match(result,/const slugs=\['observation','phase1','phase2','phase2b','2eco'\]/);assert.match(catalog,/phase2b/);assert.match(read('../connect-context.js'),/phase2b:/);});
+test('dynamic authorized classes, historical Phase 2 keys and per-class caches',()=>{
+ assert.match(teacher,/data\.spaces\.map/);
+ assert.match(teacher,/header\.replaceChildren/);
+ assert.match(result,/connect_class_permissions'\)\.select\('class_id'\)\.eq\('teacher_id',user\.id\)\.eq\('can_manage',true\)/);
+ assert.match(result,/spaces\.find\(s=>s\.slug===row\.slug\)/);
+ assert.match(result,/ignoreDuplicates:true/);
+ assert.match(result,/phase2b/);
+ assert.match(catalog,/phase2b/);
+ assert.match(catalog,/connect_classes/);
+ assert.match(hub,/classId\?'class:'\+classId:selectedSpace/);
+ assert.match(hub,/apps=classId\?\[\]/);
+});
 
 test('Soustraction reste téléchargeable en libre, sans réapparaître dans les presets masqués',()=>{
  const local=JSON.parse(read('../hub-catalog.json'));

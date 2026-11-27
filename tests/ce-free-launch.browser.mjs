@@ -112,6 +112,7 @@ test('HUB scolaire sans profil : la carte ne démarre pas Multiplication', {time
   await hub.route('**/*',route=>{
    const uri=route.request().url();
    if(uri===url+'/hub-catalog.json')return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(catalog)});
+   if(uri.includes('/functions/v1/connect-catalog?'))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,apps:catalog.apps})});
    if(uri.startsWith(url+'/'))return route.continue();
    return route.abort();
   });
@@ -169,7 +170,7 @@ test('Addition multiple avec classe : pas de repli libre sans connexion', {timeo
  }finally{await browser.close();await new Promise(ok=>server.close(ok))}
 });
 
-test('HUB sans Edge : les deux classes de petits ne voient pas Abaque, les trois autres oui', {timeout:120000},async()=>{
+test('HUB scolaire sans Edge ni cache : aucune configuration statique ne remplace les choix du professeur', {timeout:120000},async()=>{
  const {server,url}=await serve();
  const browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
  try{
@@ -190,12 +191,7 @@ test('HUB sans Edge : les deux classes de petits ne voient pas Abaque, les trois
     }
     const keys=await page.locator('#levels .app-card[data-app-key]').evaluateAll(cards=>
      cards.map(card=>card.dataset.appKey));
-    assert.equal(keys.includes('abaque-longueurs'),!['observation','phase1'].includes(space),
-     'Abaque ne doit jamais réapparaître chez les petits en panne Edge : '+space);
-    assert.equal(keys.includes('soustraction-ecrite-simple'),false,
-     'Soustraction est actuellement masquée par le professeur dans les cinq classes : '+space);
-    for(const key of ['multiplication-ecrite-simple','addition-ecrite-simple','padlet-jeux','bowling-multiplication'])
-     assert.equal(keys.includes(key),true,'la panne ne masque pas les applications autorisées : '+key+' '+space);
+    assert.deepEqual(keys,[],'Pas de carte scolaire non confirmée en cas de panne Edge : '+space);
     assert.deepEqual(errors,[],'aucune erreur JS ne doit empêcher le repli statique');
    }finally{await page.close()}
   }
