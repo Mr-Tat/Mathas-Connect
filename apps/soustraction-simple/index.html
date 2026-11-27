@@ -9,7 +9,7 @@ import {paintConnectedAvatar} from '../objective-record/profile-avatar-badge.mjs
 const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM',APP='soustraction-ecrite-simple';
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
-const requireConnect=query.get('requireConnect')==='1'||Boolean(classId)&&query.get('libre')!=='1';
+const requireConnect=query.get('requireConnect')==='1'||Boolean(classId);
 const free=!teacherPlayer&&!requireConnect&&(query.get('libre')==='1'||localStorage.getItem('mathas.connect.mode-libre.v1')==='1');let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,studentName='',studentAvatar=null,teacherFree=false,connectionCheckRequired=false,consent=null;
 const status=s=>document.getElementById('message').textContent=s;
 const originalPromise=fetch('./game-original.html').then(r=>{if(!r.ok)throw Error('Copie du jeu non disponible');return r.text()});
