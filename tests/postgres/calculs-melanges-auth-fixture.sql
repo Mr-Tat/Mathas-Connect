@@ -1,6 +1,6 @@
 -- LOCAL ONLY extra tables read by the existing connect-api and professor UI.
 ALTER TABLE public.connect_students ADD COLUMN avatar_kind text DEFAULT 'letter',ADD COLUMN avatar_value text DEFAULT 'E',ADD COLUMN avatar_color text DEFAULT 'ocean',ADD COLUMN public_alias text,ADD COLUMN projection_opt_in boolean DEFAULT false;
-CREATE TABLE public.connect_devices(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),auth_user_id uuid NOT NULL,student_id uuid NOT NULL,state text NOT NULL);
+CREATE TABLE public.connect_devices(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),auth_user_id uuid NOT NULL,student_id uuid NOT NULL,state text NOT NULL,requested_at timestamptz DEFAULT now(),device_label varchar,revoked_at timestamptz);
 CREATE TABLE public.connect_teachers(auth_user_id uuid PRIMARY KEY);
 CREATE TABLE public.connect_teacher_players(teacher_id uuid PRIMARY KEY,student_id uuid NOT NULL);
 CREATE TABLE public.connect_school_years(id uuid PRIMARY KEY,label text NOT NULL,starts_on date,ends_on date);
@@ -9,7 +9,9 @@ CREATE TABLE public.connect_classes(id uuid PRIMARY KEY,name text NOT NULL,year_
 -- updates must never overwrite these existing application preferences.
 CREATE TABLE public.connect_multiplier_locks(class_id uuid NOT NULL REFERENCES public.connect_classes(id) ON DELETE CASCADE,scope_key text NOT NULL,multipliers smallint[] NOT NULL,
  PRIMARY KEY(class_id,scope_key),CHECK(cardinality(multipliers) BETWEEN 1 AND 8 AND multipliers <@ ARRAY[2,3,4,5,6,7,8,9]::smallint[]));
-CREATE TABLE public.connect_join_requests(id uuid PRIMARY KEY,class_id uuid,first_name text,last_initial text,verify_code text,expires_at timestamptz,state text,created_at timestamptz);
+CREATE TABLE public.connect_join_requests(id uuid PRIMARY KEY,class_id uuid,first_name text,last_initial text,verify_code text,expires_at timestamptz,state text,created_at timestamptz,auth_user_id uuid,student_id uuid);
+-- Dynamic matrix creates presets only for managed classes. This is a disposable schema.
+CREATE TABLE IF NOT EXISTS public.connect_hub_presets(slug text PRIMARY KEY,label text,display_order integer DEFAULT 0);
 -- Match the currently published mixed-only controls in the disposable database.
 -- Other test suites reuse this generic fixture without installing the mixed app.
 DO $local_mixed$

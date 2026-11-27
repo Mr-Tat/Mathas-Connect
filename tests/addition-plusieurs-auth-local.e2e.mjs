@@ -323,7 +323,9 @@ try{
  // The live professor UI deliberately routes sensitive resets through
  // Authorisations; never bypass that step or invoke the dialog directly.
  await professor.locator('#teacher-authorizations:visible').waitFor();
- await professor.locator('#auth-restart:enabled').waitFor({timeout:20000});
+ const roster=success(await post(teacher,'connect-api',{action:'teacher-dashboard'}),'real class roster for authorizations');
+  assert.ok(roster.students.some(s=>s.id===browserStudentId),'browser pupil is in the authorized class roster');
+  await professor.locator('#auth-restart:enabled').waitFor({timeout:20000}).catch(async error=>{throw Error('Authorization reset unavailable: '+JSON.stringify(await professor.evaluate(()=>({feedback:document.getElementById('auth-feedback')?.textContent,classId:document.getElementById('auth-class')?.value,studentId:document.getElementById('auth-student')?.value,scope:document.getElementById('auth-scope')?.value}))),{cause:error})});
  assert.equal(await professor.locator('#auth-app').inputValue(),appKey);
  assert.equal(await professor.locator('#auth-scope').inputValue(),'student');
  assert.equal(await professor.locator('#auth-student').inputValue(),browserStudentId);

@@ -91,7 +91,8 @@ jobs:
           );
           CREATE TABLE public.connect_devices (
             id uuid primary key, auth_user_id uuid not null, student_id uuid not null,
-            state text not null
+            state text not null, requested_at timestamptz DEFAULT now(), device_label varchar,
+            revoked_at timestamptz
           );
           CREATE TABLE public.connect_teachers (auth_user_id uuid primary key);
           CREATE TABLE public.connect_teacher_players (teacher_id uuid primary key,student_id uuid not null);
