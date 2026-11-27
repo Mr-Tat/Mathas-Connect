@@ -101,7 +101,7 @@ async function browserPage(identity,{teacher=false}={}){
 }
 // Show only the public status text of the local test, never JWTs or fixture keys.
 async function expectConnected(page){
- try{await expectConnected(page);}
+ try{await page.locator('html[data-abaque-connected]').waitFor();}
  catch(error){
   const state=await page.evaluate(()=>({panel:document.querySelector('#abaque-connect-panel')?.textContent?.slice(0,320),
    pending:document.documentElement.dataset.abaquePending,blocked:document.documentElement.dataset.abaqueBlocked}));
