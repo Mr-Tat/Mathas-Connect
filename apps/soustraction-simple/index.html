@@ -9,7 +9,7 @@ import {paintConnectedAvatar} from '../objective-record/profile-avatar-badge.mjs
 const URL='https://awmhpfofacaglewammxt.supabase.co',KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM',APP='soustraction-ecrite-simple';
 const query=new URLSearchParams(location.search),classId=query.get('class')||'',UUID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const teacherPlayer=query.get('joueur')==='prof';
-const requireConnect=query.get('requireConnect')==='1';
+const requireConnect=query.get('requireConnect')==='1'||Boolean(classId)&&query.get('libre')!=='1';
 const free=!teacherPlayer&&!requireConnect&&(query.get('libre')==='1'||localStorage.getItem('mathas.connect.mode-libre.v1')==='1');let session=null,cloud=null,mode='free',revision=0,resetEpoch=0,initial=null,studentName='',studentAvatar=null,teacherFree=false,connectionCheckRequired=false,consent=null;
 const status=s=>document.getElementById('message').textContent=s;
 const originalPromise=fetch('./game-original.html').then(r=>{if(!r.ok)throw Error('Copie du jeu non disponible');return r.text()});
@@ -52,7 +52,7 @@ const original=await originalPromise;
 // silencieusement des parties Connect dans les résultats locaux.
 if((connectionCheckRequired||teacherPlayer||requireConnect)&&mode!=='connected'){
  const view=document.getElementById('loading');
- document.getElementById('message').textContent=requireConnect?'Les résultats officiels de soustraction nécessitent un compte Connect approuvé. Connecte-toi via ton HUB ou choisis « Jouer librement » : aucune partie libre ne donne de XP Connect.':'Impossible de vérifier les sauvegardes Connect. Tu peux réessayer ou choisir « Jouer librement » : cette partie restera locale, sans XP Connect.';
+ document.getElementById('message').textContent=requireConnect?'Les résultats officiels de soustraction nécessitent un compte Connect approuvé. Connecte-toi via ton HUB.':'Impossible de vérifier les sauvegardes Connect. Tu peux réessayer ou choisir « Jouer librement » : cette partie restera locale, sans XP Connect.';
  const actions=document.createElement('div');actions.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-top:20px';
  const retry=document.createElement('button');retry.textContent='Réessayer';retry.onclick=()=>location.reload();
  const classic=document.createElement('button');classic.textContent='Jouer librement (sans XP Connect)';
@@ -61,7 +61,7 @@ if((connectionCheckRequired||teacherPlayer||requireConnect)&&mode!=='connected')
  // et ne désactive pas Connect pour les autres jeux de cet appareil.
  classic.onclick=()=>{const target=new window.URL(location.href);target.searchParams.delete('requireConnect');target.searchParams.delete('joueur');target.searchParams.set('libre','1');location.assign(target.href)};
  for(const b of [retry,classic])b.style.cssText='padding:12px;border:0;border-radius:10px;background:#176e8d;color:white;font:600 13px system-ui;cursor:pointer';
- actions.append(retry,classic);
+ actions.append(retry);if(!requireConnect&&!teacherPlayer)actions.append(classic);
  if(requireConnect){const link=document.createElement('a');link.href='../../index.html?class='+encodeURIComponent(classId);link.textContent='Se connecter au HUB';link.style.cssText='color:#fff;border:1px solid #8dbccc;padding:12px;border-radius:9px;text-decoration:none';actions.append(link)}
  view.appendChild(actions);
 }else{
