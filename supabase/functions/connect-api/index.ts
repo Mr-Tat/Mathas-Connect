@@ -105,7 +105,7 @@ async function handle(req:Request){
    if(!student||student.archived_at)return ok({status:'revoked'});
    const xp=b.includeXp===true?await optionalXp(player.student_id):undefined;
    const progress=b.includeXp===true?await optionalProgress(player.student_id):undefined;
-   return ok({status:'approved',displayName:student.display_name,avatar:{kind:student.avatar_kind||'letter',value:student.avatar_value||'T',color:student.avatar_color||'transparent'},publicAlias:student.public_alias||student.display_name,unlockLevel:20,classId:b.classId,...(b.includeXp===true?{xp,progress}:{})});
+   return ok({status:'approved',displayName:student.display_name,avatar:{kind:student.avatar_kind||'letter',value:student.avatar_value||'T',color:student.avatar_color||'transparent'},publicAlias:student.public_alias||student.display_name,unlockLevel:20,teacherFree:true,classId:b.classId,...(b.includeXp===true?{xp,progress}:{})});
  }
  case 'player-xp':{
    let id:string|null=null;
