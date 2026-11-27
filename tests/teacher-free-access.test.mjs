@@ -18,7 +18,11 @@ test('Teacher access patches native gates, does not use Master or fake storage',
 test('All school addition modes open to authenticated professor, actual records untouched',()=>{
  for(const app of ['addition-ecrite-simple','addition-ecrite-multiple']){
   const student=schoolProgressSnapshot(app,{}),teacher=schoolProgressSnapshot(app,{},{teacherFree:true});
-  assert.deepEqual(teacher.progress,student.progress);assert.deepEqual(teacher.hardRecords,student.hardRecords);assert.deepEqual(teacher.records,student.records);
+  assert.deepEqual(teacher.progress,student.progress);assert.deepEqual(teacher.hardRecords,student.hardRecords);
+  for(const key of ['classics','suddens','hardRows'])assert.deepEqual(teacher.records[key],student.records[key]);
+  assert.deepEqual(teacher.records.visibleLevels,[true,true,true]);assert.equal(teacher.records.hardUnlocked,true);
+  const actual=schoolProgressSnapshot(app,{classic:[{},{},{4:3}],hard:[null,null,10]},{teacherFree:true});
+  assert.equal(actual.records.classics[2][4],3);assert.deepEqual(actual.records.hardRows,[{level:3,score:10}]);
   for(const mode of ['classic','sudden','three-lives','hard-sudden','hard-three-lives'])for(const level of [1,2,3]){
     assert.equal(schoolModeAllowed(teacher,mode,level),true);
     assert.equal(schoolModeAllowed(student,mode,level),mode==='classic'&&level===1);

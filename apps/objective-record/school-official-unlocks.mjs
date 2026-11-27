@@ -61,7 +61,7 @@ export function schoolModeLockReason(mode,level){
 // Données de la grille "Niv. 1 / Niv. 2 / Niv. 3" : le moteur natif ne
 // connaissait que ses records locaux, d'où les —/4, —/10 et —/20 sous Connect.
 // Construire une vue STRICTEMENT LECTURE SEULE à partir du profil authentifié.
-export function schoolOfficialResultRecords(state,progress=schoolUnlockProgress(state)){
+export function schoolOfficialResultRecords(state,progress=schoolUnlockProgress(state),teacherFree=false){
  const totals=[4,10,20];
  const classics=Array.from({length:3},(_,i)=>{
   const row=state?.classic?.[i],out={};
@@ -87,8 +87,8 @@ export function schoolOfficialResultRecords(state,progress=schoolUnlockProgress(
   classics:Object.freeze(classics),
   suddens:Object.freeze(suddens),
   hardRows:Object.freeze(hardRows),
-  visibleLevels:Object.freeze([true,!!(progress.level2||progress.level3),!!progress.level3]),
-  hardUnlocked:progress.hard===true
+  visibleLevels:Object.freeze(teacherFree===true?[true,true,true]:[true,!!(progress.level2||progress.level3),!!progress.level3]),
+  hardUnlocked:teacherFree===true||progress.hard===true
  });
 }
 export function schoolProgressSnapshot(appKey,state,{teacherFree=false}={}){
@@ -99,7 +99,7 @@ export function schoolProgressSnapshot(appKey,state,{teacherFree=false}={}){
   ...(teacherFree===true?{teacherFree:true}:{}),
   progress,
   hardRecords:schoolHardRecords(state),
-  records:schoolOfficialResultRecords(state,progress)
+  records:schoolOfficialResultRecords(state,progress,teacherFree)
  });
 }
 // Only copy an authenticated server snapshot into the original engine's
