@@ -243,6 +243,11 @@ async function handle(req:Request){
    const revoked=await one(db.from('connect_devices').select('id').eq('auth_user_id',user.id).eq('state','revoked').limit(1));
    return ok({status:revoked?'revoked':'unregistered'});
  }
+ case 'teacher-detach-student-class':{
+   if(!await teacher()||!U.test(b.classId||'')||!U.test(b.studentId||'')||b.confirmed!==true||!await manage(b.classId))return fail('forbidden',403);
+   const r=await db.rpc('connect_detach_student_class_v1',{p_teacher:user.id,p_class:b.classId,p_student:b.studentId});
+   return r.error||r.data!==true?fail('detach_failed',409):ok({detached:true});
+ }
  case 'teacher-manage-student':{
    if(!await teacher()||!U.test(b.classId||'')||!U.test(b.studentId||'')||!['archive','restore','delete'].includes(b.operation))return fail('forbidden',403);
    if(!await manage(b.classId))return fail('forbidden',403);
@@ -314,12 +319,14 @@ async function handle(req:Request){
    ]);
    if(requests.error||enrollments.error)return fail('db_failed',500);
    const studentsIds=[...new Set(enrollments.data.map((x:any)=>x.student_id))];
-   const [students,devices]=await Promise.all([
+   const [students,devices,memberships]=await Promise.all([
      studentsIds.length?db.from('connect_students').select('id,display_name,archived_at').in('id',studentsIds):Promise.resolve({data:[],error:null}),
-     studentsIds.length?db.from('connect_devices').select('id,student_id,state,requested_at,device_label').in('student_id',studentsIds).limit(500):Promise.resolve({data:[],error:null})
+     studentsIds.length?db.from('connect_devices').select('id,student_id,state,requested_at,device_label').in('student_id',studentsIds).limit(500):Promise.resolve({data:[],error:null}),
+     studentsIds.length?db.from('connect_enrollments').select('student_id').in('student_id',studentsIds).neq('class_id',b.classId).is('left_at',null):Promise.resolve({data:[],error:null})
    ]);
-   if(students.error||devices.error)return fail('db_failed',500);
-   return ok({years:years.data,classes:classes.data,requests:requests.data,students:students.data.filter((s:any)=>!s.archived_at),archivedStudents:students.data.filter((s:any)=>!!s.archived_at),devices:devices.data});
+   if(students.error||devices.error||memberships.error)return fail('db_failed',500);
+   const sharedIds=new Set(memberships.data.map((m:any)=>m.student_id));
+   return ok({years:years.data,classes:classes.data,requests:requests.data,students:students.data.filter((s:any)=>!s.archived_at).map((s:any)=>({...s,multiClass:sharedIds.has(s.id)})),archivedStudents:students.data.filter((s:any)=>!!s.archived_at),devices:devices.data});
  }
  case 'teacher-results':{
    if(!U.test(b.classId||'')||!await manage(b.classId))return fail('forbidden',403);
@@ -406,12 +413,14 @@ async function handle(req:Request){
      const d=await one(db.from('connect_devices').select('student_id')
        .eq('auth_user_id',user.id).eq('state','approved').limit(1));
      if(d){
-       const [student,enrolled]=await Promise.all([
+       const [student,requestedEnrollment]=await Promise.all([
          one(db.from('connect_students').select('display_name,public_alias,avatar_kind,avatar_value,avatar_color')
            .eq('id',d.student_id).is('archived_at',null)),
          one(db.from('connect_enrollments').select('class_id')
-           .eq('student_id',d.student_id).is('left_at',null).limit(1))
+           .eq('student_id',d.student_id).eq('class_id',b.classId).is('left_at',null).limit(1))
        ]);
+       const enrolled=requestedEnrollment||await one(db.from('connect_enrollments').select('class_id')
+         .eq('student_id',d.student_id).is('left_at',null).order('joined_at',{ascending:true}).order('id',{ascending:true}).limit(1));
        if(student&&enrolled&&b.awaitingApproval===true&&r.data?.state==='approved'&&enrolled.class_id===b.classId)return ok({request:{state:'approved'}});
        if(student&&enrolled)return ok({request:{state:'already_approved',
          classId:enrolled.class_id,displayName:student.display_name,

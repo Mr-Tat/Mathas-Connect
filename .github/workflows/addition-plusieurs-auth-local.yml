@@ -54,7 +54,7 @@ jobs:
           # The disposable local Edge uses the exact reviewed source.
           Path('supabase/functions/connect-results/index.ts').write_text(source)
           PY
-          cp "$ROOT/supabase/functions/connect-api/index.ts" supabase/functions/connect-api/index.ts
+          cp "$ROOT/supabase/functions/connect-api/index.ts" "$ROOT/supabase/functions/connect-api/milieu-profile-progress.mjs" supabase/functions/connect-api/
           supabase start -x studio,realtime,storage-api,imgproxy,postgres-meta,mailpit,logflare,vector,supavisor
           trap 'supabase stop --no-backup >/dev/null 2>&1 || true' EXIT
           supabase status -o env > "$LAB/local.env"
@@ -97,7 +97,8 @@ jobs:
           );
           CREATE TABLE public.connect_join_requests (
             id uuid primary key, class_id uuid, first_name text, last_initial text,
-            verify_code text, expires_at timestamptz, state text, created_at timestamptz
+            verify_code text, expires_at timestamptz, state text, created_at timestamptz,
+            auth_user_id uuid, student_id uuid
           );
           SELECT format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', tablename)
           FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'connect_%'

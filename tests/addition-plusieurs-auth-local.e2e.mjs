@@ -37,6 +37,24 @@ checked(await admin.from('connect_teachers').insert({auth_user_id:teacher.user.i
 checked(await admin.from('connect_class_permissions').insert({class_id:classId,teacher_id:teacher.user.id,can_manage:true}),'teacher permission');
 checked(await admin.from('connect_xp_credits').insert({student_id:studentId,app_key:oldApp,xp_credited:22}),'previous XP');
 assert.equal(success(await post(student,'connect-api',{action:'student-me'}),'student identity').status,'approved');
+// Same approved anonymous identity, two active classes, no second account.
+const otherClass=randomUUID(),foreignClass=randomUUID();
+checked(await admin.from('connect_enrollments').insert({id:randomUUID(),class_id:otherClass,student_id:studentId}),'second membership');
+for(const selectedClass of [classId,otherClass]){
+ const choice=success(await post(student,'connect-api',{action:'student-join-status',classId:selectedClass}),'approved shortcut');
+ assert.equal(choice.request.state,'already_approved');
+ assert.equal(choice.request.classId,selectedClass,'respect the shortcut despite two active memberships');
+ const identity=success(await post(student,'connect-api',{action:'student-me',classId:selectedClass,includeXp:true}),'shared profile');
+ assert.equal(identity.status,'approved');assert.equal(identity.classId,selectedClass);
+ const shared=success(await post(student,'connect-results',{action:'student-load',appKey,classId:selectedClass}),'shared app account');
+ assert.equal(shared.storageSubject,studentId,'both classes resolve to the identical student');
+}
+const rejected=success(await post(student,'connect-api',{action:'student-me',classId:foreignClass}),'unregistered class');
+assert.equal(rejected.status,'wrong_class');
+const fallback=success(await post(student,'connect-api',{action:'student-join-status',classId:foreignClass}),'fallback account');
+assert.equal(fallback.request.classId,classId,'unauthorized shortcut falls back to first enrolled class');
+checked(await admin.from('connect_enrollments').delete().eq('student_id',studentId).eq('class_id',otherClass),'remove test membership');
+console.log('PASS actual local Auth: one approved device and account in two classes, requested shortcut, outsiders rejected');
 const load=success(await post(student,'connect-results',{action:'student-load',appKey}),'first load');
 assert.equal(load.revision,0);assert.equal(load.resetEpoch,0);
 assert.equal((await post(outsider,'connect-results',{action:'student-load',appKey})).status,403);

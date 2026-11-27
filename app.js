@@ -237,10 +237,20 @@ async function refresh(){
    });
    const archive=document.createElement('button');archive.type='button';archive.className='soft';archive.textContent='Archiver cet élève';archive.title='Désactiver le compte tout en conservant ses résultats';
    archive.onclick=()=>run(async()=>{
-    if(!confirm('Archiver '+e.display_name+' ? Tous ses appareils seront révoqués, mais ses résultats seront conservés.'))return;
+    if(!confirm('Archiver '+e.display_name+' dans TOUTES ses classes ? Tous ses appareils seront révoqués, mais ses résultats seront conservés.'))return;
     await call('teacher-manage-student',{classId:id,studentId:e.id,operation:'archive'});
     await refresh();msg('Élève archivé et résultats conservés.',true)
    });
+   if(e.multiClass){
+     const badge=document.createElement('p');badge.className='hint';badge.textContent='Compte partagé avec une autre classe : acquis et appareils communs.';item.append(badge);
+     const detach=document.createElement('button');detach.type='button';detach.className='soft';detach.textContent='Retirer de cette classe uniquement';
+     detach.onclick=()=>run(async()=>{
+       if(!confirm('Retirer '+e.display_name+' de cette classe uniquement ? Son compte, ses acquis et ses autres classes restent inchangés.'))return;
+       await call('teacher-detach-student-class',{classId:id,studentId:e.id,confirmed:true});
+       await refresh();msg('Inscription retirée, compte conservé.',true)
+     });
+     item.append(detach);
+   }
    item.append(archive);
    students.append(item);
  }
@@ -464,7 +474,7 @@ $('finish-avatar').onclick=()=>run(async()=>{
  rememberRecentProfile(cls,$('first-name').value.trim()+' '+$('last-initial').value.trim().toUpperCase());
  stopWaiting();location.href=hubLink;
 });
-$('continue-profile').onclick=()=>{if(existingProfileClass&&hubLink.includes('toutes=1')&&existingProfileClass===labTestClass)location.href=hubLink;else if(existingProfileClass)location.href=hubUrl(existingProfileClass);else location.href=hubLink};
+$('continue-profile').onclick=()=>{if(existingProfileClass&&hubLink.includes('toutes=1')&&existingProfileClass===labTestClass)location.href=hubLink;else if(existingProfileClass===cls)location.href=hubLink;else if(existingProfileClass)location.href=hubUrl(existingProfileClass);else location.href=hubLink};
 $('switch-profile').onclick=()=>run(async()=>{
  if(!confirm('Changer de profil sur cet appareil ? Les scores et XP restent sauvegardés. Le professeur devra autoriser de nouveau cet appareil si tu reviens à ce profil.'))return;
  await call('student-release');const {error}=await sb.auth.signOut({scope:'local'});if(error)throw error;
@@ -766,7 +776,7 @@ function openParcoursDialog({scope,studentId=null,studentName='',count=null,appK
  const dialog=document.createElement('dialog');dialog.className='parcours-dialog';
  const form=document.createElement('form');const title=document.createElement('h2');title.textContent='Recommencer le parcours';
  const description=document.createElement('p');
- description.textContent=appName+' · '+name+(scope==='class'?' · toute la classe ('+count+' élèves)':'')+'. Les anciens résultats sont archivés et les XP restent acquis.';
+ description.textContent=appName+' · '+name+(scope==='class'?' · toute la classe ('+count+' élèves)':'')+'. Les anciens résultats sont archivés et les XP restent acquis. Pour un élève inscrit dans plusieurs classes, le nouveau parcours est commun à toutes ses classes.';
  const xpLabel=document.createElement('label');xpLabel.className='parcours-xp-choice';const xp=document.createElement('input');xp.type='checkbox';xp.checked=appKey!=='melange-calculs-ecrits';
  const xpText=document.createElement('span');xpText.textContent='Permettre de regagner des XP au cours du nouveau parcours (en plus des acquis)';xpLabel.append(xp,xpText);
  const checkLabel=document.createElement('label');checkLabel.textContent='Pour confirmer, recopie exactement : '+name;
@@ -1102,7 +1112,7 @@ async function openAbaqueRestart(){
   if(roster.some(s=>typeof s.studentId!=='string'||typeof s.displayName!=='string'||!Number.isSafeInteger(s.resetEpoch)||s.resetEpoch<0)||new Set(roster.map(s=>s.studentId)).size!==roster.length)throw Error('Liste des élèves invalide.');
   const dialog=document.createElement('dialog');dialog.className='parcours-dialog';
   const form=document.createElement('form');const title=document.createElement('h2');title.textContent='Nouvelle progression · Abaque';
-  const description=document.createElement('p');description.textContent='Classe : '+className+'. Les XP et trophées permanents restent acquis. Les anciens résultats concernés sont archivés ; les défis se reverrouillent.';
+  const description=document.createElement('p');description.textContent='Classe : '+className+'. Les XP et trophées permanents restent acquis. Les anciens résultats concernés sont archivés ; les défis se reverrouillent. Un compte partagé redémarre aussi dans ses autres classes.';
   const makeSelect=(label,options)=>{const wrap=document.createElement('label');wrap.textContent=label;const select=document.createElement('select');for(const [text,value] of options)select.add(new Option(text,value));wrap.append(select);return {wrap,select}};
   const scope=makeSelect('Pour',[['Un élève','student'],['Toute la classe','class']]);
   const pupil=makeSelect('Élève',roster.map(s=>[s.displayName,s.studentId]));
