@@ -13,8 +13,10 @@ Dans « Reconstitue l'abaque pour obtenir l'aide » comme après déblocage de l
 
 ## Contrôles
 - **OK** : rendu Chromium sur une reproduction fidèle de l'abaque avec CSS source aux largeurs 320, 390, 500, 610, 820 et 1440 px ; sept colonnes sans dépassement ni texte d'étiquette tronqué ;
-- **À vérifier sur les versions fusionnées :** GitHub Actions, Pages et test réel authentifié prof/élève fictifs de l'ouverture, du glisser-déposer, de la validation et de l'abaque complet ;
+- **OK** : CI navigateur du laboratoire Connect : 26/26 tests Chromium, y compris activité 2 ; 7 autres workflows ciblés de contrôles Math'as Connect réussis.
+- **ÉCHECS NON LIÉS AU CSS** : suite Node commune du laboratoire, 1 échec sur la visibilité réelle Observation/Phase 1 (à auditer séparément sans modifier les permissions) ; banc Auth jetable non disponible (`disposable_database_relay_not_ready`) ; autonome 10/12 tests, 2 échecs de résultats/trophées. Ces échecs ne sont pas masqués et la CI globale n'est pas verte.
+- **À vérifier après fusion** : Pages et test réel authentifié prof/élève fictifs de l'ouverture, du glisser-déposer, de la validation et de l'abaque complet ;
 - **Non modifiés :** exercices et scores, XP, coupes, verrous, droit des classes, activité 3 et fonctions Supabase.
 
 ## Prochaine action
-Confirmer la CI, fusionner les deux PR si validées, vérifier Pages puis recetter dans la classe TEST avec profils fictifs.
+Fusionner les deux PR ciblées après examen des tests malgré les échecs préexistants/indépendants, vérifier Pages puis recetter dans la classe TEST avec profils fictifs. Auditer séparément le défaut du test de visibilité et l'infrastructure Auth jetable.
