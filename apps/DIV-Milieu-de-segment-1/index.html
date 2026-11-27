@@ -239,9 +239,12 @@ function isolatePreviousRun(key,reason){
  const previous=safeGet(key);
  if(!previous)return true;
  const archiveKey=key+".isolated";
- const archive=safeGet(archiveKey);
- if(archive!==null&&!Array.isArray(archive))return false;
- const records=archive||[];
+ let records;
+ try{
+  const serialized=localStorage.getItem(archiveKey);
+  records=serialized===null?[]:JSON.parse(serialized);
+  if(!Array.isArray(records))return false;
+ }catch{return false;}
  if(!records.some(item=>item.run?.session?.eventId===previous.session?.eventId)){
   if(!safeSet(archiveKey,[...records,{run:previous,reason,isolatedAt:Date.now()}]))return false;
  }
