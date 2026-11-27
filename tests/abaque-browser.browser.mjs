@@ -756,6 +756,7 @@ test('Abaque sans compte : scolaire refusé, moteur autonome et trophées locaux
   // School class context forbids the historical automatic local guest fallback.
   await page.goto(h.url+'?connect=1&class='+labClass);
   await page.locator('#abaque-connect-panel').waitFor();
+  await page.waitForFunction(()=>document.querySelector('#launchBtn')?.inert===true);
   assert.notEqual(await page.evaluate(()=>document.documentElement.dataset.abaqueGuest),'true');
   assert.equal(await page.locator('#launchBtn').evaluate(x=>x.inert),true);
   // Direct standalone entry, with no class identity, stays freely playable.

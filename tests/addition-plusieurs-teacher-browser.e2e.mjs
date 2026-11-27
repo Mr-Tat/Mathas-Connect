@@ -65,7 +65,7 @@ try{
    if(p.action==='teacher-summary')return answer({ok:true,students:[{
     id:student,name:'Élève fictif',recent:record.recent,bestPoints:null,todayBest:null
    }]});
-   if(p.action==='teacher-detail')return answer({ok:true,name:'Élève fictif',state:record});
+   if(p.action==='teacher-detail')return answer({ok:true,studentId:student,name:'Élève fictif',state:record});
    if(p.action==='teacher-parcours-history')return answer({ok:true,current:{parcours_number:1,repeat_xp:false},history:[]});
    throw Error('Unexpected teacher results action: '+p.action);
   });
@@ -92,8 +92,8 @@ try{
    assert.match(rows.join(' | '),/19\/20/);
    assert.match(rows.join(' | '),/3\/5/);
    assert.match(rows.join(' | '),/7/);
-   assert.ok(await page.locator('#results-student-content').getByText(/Recommencer/).count(),
-    'individual restart controls must be scoped to selected app');
+   assert.equal(await page.locator('#results-student-content .parcours-student-actions .results-restart-button').count(),1,
+    'individual restart controls must be scoped to selected app and its fictive student ID');
    await page.locator('#results-back').click();
    await page.locator('#results-app').selectOption('addition-ecrite-multiple');
    await page.waitForFunction(()=>

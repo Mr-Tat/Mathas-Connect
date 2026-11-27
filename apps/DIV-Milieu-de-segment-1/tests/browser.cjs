@@ -137,7 +137,7 @@ const http=require("node:http"),fs=require("node:fs");
  await page.setViewportSize({width:320,height:740});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"débordement menu");
  assert.deepEqual(errors,[]);assert.deepEqual(net,[]);
- await page.goto(url+"?requireConnect=1&test=1");assert.equal(await page.locator("[data-start]").count(),0);assert.equal(await page.locator("#practice").count(),0);assert.equal(await page.locator("#master").isVisible(),false);await page.locator("#freeLaunch").click();await page.locator('[data-start="even"]').waitFor();
+ await page.goto(url+"?requireConnect=1&test=1");assert.equal(await page.locator("[data-start]").count(),0);assert.equal(await page.locator("#practice").count(),0);assert.equal(await page.locator("#master").isVisible(),false);assert.equal(await page.locator("#freeLaunch").count(),0);await page.goto(url);await page.locator('[data-start="even"]').waitFor();
  const touch=await browser.newContext({viewport:{width:900,height:700},hasTouch:true,offline:true});
  try{const p=await touch.newPage();await p.goto(url);await p.locator('[data-start="even"]').tap();const first=p.locator('input[data-field="answer"]').first();await first.tap();assert.equal(await first.getAttribute("inputmode"),"none");assert.equal(await first.evaluate(el=>document.activeElement===el&&el.readOnly),true);await p.locator('[data-key="7"]').tap();assert.equal(await first.inputValue(),"7");await p.keyboard.press("Backspace");await p.keyboard.type("8");assert.equal(await first.inputValue(),"8");await p.keyboard.press("ArrowLeft");await p.keyboard.press("Delete");assert.equal(await first.inputValue(),"");await p.keyboard.type("1.5");assert.equal(await first.inputValue(),"1,5");await p.locator("#padOK").tap();assert.equal(await p.locator('input[data-field="answer"]').nth(1).evaluate(el=>document.activeElement===el),true)}finally{await touch.close()}
  const server=http.createServer((req,res)=>{const file=new URL(req.url,"http://localhost").pathname.slice(1)||"index.html";if(!["index.html","sw.js","favicon.svg"].includes(file)){res.writeHead(404);res.end();return}res.setHeader("content-type",file==="sw.js"?"text/javascript":file==="favicon.svg"?"image/svg+xml":"text/html");res.end(fs.readFileSync(path.join(__dirname,"..",file)))});
@@ -153,17 +153,15 @@ const http=require("node:http"),fs=require("node:fs");
   p.on("dialog",d=>d.accept());
   for(const role of ["","&joueur=prof"]){
    await p.goto(base+"?hub=toutes&class="+cls+role);
-   await p.locator("#freeLaunch").waitFor();
+   await p.locator("#homeScreen").waitFor();
    assert.equal(await p.locator("[data-start]").count(),0,"ancienne URL Toutes exige automatiquement Connect");
-   await p.locator("#freeLaunch").click();await p.getByRole("button",{name:"Revenir au mode Connect"}).waitFor();
-   assert.equal(new URL(p.url()).searchParams.get("libre"),"1");
-   await p.locator('[data-start="even"]').click();await p.locator('input[data-field="answer"]').first().waitFor();await p.locator("#home").click();await p.locator("#discard").click();
+   assert.equal(await p.locator("#freeLaunch").count(),0,"aucun repli libre après une connexion scolaire manquante");
    assert.equal(new URL(p.url()).searchParams.get("class"),cls);
    await p.locator("#hubReturn").click();await p.waitForURL("**/hub.html?**");
    const back=new URL(p.url());assert.equal(back.searchParams.get("class"),cls);assert.equal(back.searchParams.get("toutes"),"1");assert.equal(back.searchParams.get("joueur"),role?"prof":null);
   }
   await p.goto(base+"?hub=toutes&class=71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e");
-  assert.equal(await p.getByRole("button",{name:"Revenir au mode Connect"}).count(),0);
+  assert.equal(await p.locator("#freeLaunch").count(),0);
  }finally{await routeCtx.close();await new Promise(resolve=>routeServer.close(resolve))}
  console.log("Chromium : cache web local, refus Connect non certifié, menu, deux séries, glisser, aides décimales, 320/390 px, loupe, mesure, milieu, reprise et accès hors ligne OK.");
  }finally{await browser.close()}
