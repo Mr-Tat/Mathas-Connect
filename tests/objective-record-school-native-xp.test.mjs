@@ -135,7 +135,7 @@ test('le déverrouillage Objectif record ne dépend jamais de vieux drapeaux ou 
 });
 test('le lanceur ne contourne plus les conditions de la classe TEST',()=>{
  const host=readFileSync(new URL('../apps/objective-record/eleve.mjs',import.meta.url),'utf8');
- assert.match(host,/lastOfficialProgress=schoolProgressSnapshot\(appKey,loaded\.state\)/);
+ assert.match(host,/lastOfficialProgress=schoolProgressSnapshot\(appKey,loaded\.state,\{teacherFree\}\)/);
  assert.match(host,/if\(!schoolModeAllowed\(lastOfficialProgress,choice\.mode,choice\.level\)\)/);
  assert.doesNotMatch(host,/classId!==CLASS_TEST&&!schoolModeAllowed/);
 });
