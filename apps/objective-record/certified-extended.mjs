@@ -78,7 +78,7 @@ export function createExtendedQueue({storage,studentId,classId,appKey,mode,level
  return Object.freeze({
   read(){try{const d=JSON.parse(storage.getItem(key));return d&&UUID.test(d.sessionId)
    &&Array.isArray(d.answers)&&d.answers.length<=EXTENDED_LIMIT
-   &&Date.parse(d.expiresAt)>Date.now()?d:null;}catch{return null}},
+   &&Number.isFinite(Date.parse(d.expiresAt))?d:null;}catch{return null}},
   save(challenge,answers){try{storage.setItem(key,JSON.stringify({
     sessionId:challenge.sessionId,expiresAt:challenge.expiresAt,
     answers}));return true;}catch{return false}},

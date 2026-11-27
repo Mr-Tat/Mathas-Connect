@@ -5,12 +5,12 @@ export const MULTIPLICATION_APP='multiplication-ecrite-simple';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CLASSIC_COUNTS=[4,10,20],WIDTHS={1:3,2:5,3:7};
 const isInt=Number.isSafeInteger;
-export function acceptMultiplicationChallenge(data,level,total,multipliers){
+export function acceptMultiplicationChallenge(data,level,total,multipliers,{allowExpired=false}={}){
  if(data?.ok!==true||!UUID.test(data.sessionId)
   ||data.level!==level||data.total!==total||!CLASSIC_COUNTS.includes(total)
   ||!Object.hasOwn(WIDTHS,level)||!isInt(data.revision)||data.revision<0
   ||!isInt(data.resetEpoch)||data.resetEpoch<0
-  ||Date.parse(data.expiresAt)<=Date.now()
+  ||!Number.isFinite(Date.parse(data.expiresAt))||(!allowExpired&&Date.parse(data.expiresAt)<=Date.now())
   ||!Array.isArray(data.questions)||data.questions.length!==total)return null;
  const allowed=new Set(multipliers);
  for(const [index,q] of data.questions.entries()){
@@ -55,12 +55,12 @@ export function expectedMultiplicationWidth(mode,level){
  if(!MULTIPLICATION_EXTENDED_MODES.includes(mode)||![1,2,3].includes(level))return null;
  return EXTENDED_WIDTHS[mode.startsWith('hard-')?'hard':'normal'][level-1];
 }
-export function acceptMultiplicationExtendedChallenge(data,level,mode,multipliers){
+export function acceptMultiplicationExtendedChallenge(data,level,mode,multipliers,{allowExpired=false}={}){
  const width=expectedMultiplicationWidth(mode,level),allowed=new Set(multipliers);
  if(width===null||data?.ok!==true||!UUID.test(data.sessionId)
   ||data.level!==level||data.mode!==mode||data.limit!==120||data.width!==width
   ||!isInt(data.revision)||data.revision<0||!isInt(data.resetEpoch)||data.resetEpoch<0
-  ||Date.parse(data.expiresAt)<=Date.now()
+  ||!Number.isFinite(Date.parse(data.expiresAt))||(!allowExpired&&Date.parse(data.expiresAt)<=Date.now())
   ||!Array.isArray(data.questions)||data.questions.length!==120)return null;
  for(const [i,q] of data.questions.entries()){
   if(q?.id!=='q'+(i+1)||q.op!=='mul'||typeof q.a!=='string'
@@ -89,13 +89,13 @@ export function restoreMultiplicationTranscript(snapshot,mode){
   ||snapshot.multipliers.some(m=>!isInt(m)||m<2||m>9))return null;
  const allowed=snapshot.multipliers;
  const parsed=mode==='classic'
-  ?acceptMultiplicationChallenge(snapshot,snapshot.level,snapshot.total,allowed)
-  :acceptMultiplicationExtendedChallenge(snapshot,snapshot.level,mode,allowed);
+  ?acceptMultiplicationChallenge(snapshot,snapshot.level,snapshot.total,allowed,{allowExpired:true})
+  :acceptMultiplicationExtendedChallenge(snapshot,snapshot.level,mode,allowed,{allowExpired:true});
  if(!parsed||!Array.isArray(snapshot.answers)||snapshot.answers.length>parsed.total)return null;
  const answers=snapshot.answers.map((a,i)=>normalizeMultiplicationAttempt(parsed.questions[i],a));
  if(answers.some(a=>!a))return null;
  const state=multiplicationEndState(mode,answers,parsed.questions);
- if(!state.valid)return null;
+ if(!state.valid||(!state.complete&&Date.parse(parsed.expiresAt)<=Date.now()))return null;
  return {...parsed,mode,answers,multipliers:[...allowed],
   method:snapshot.method==='side'?'side':'top',
   tensFirst:snapshot.tensFirst===true,finished:state.complete};
@@ -110,7 +110,7 @@ export function multiplicationQueue(storage,studentId,classId,mode='classic',lev
    if(!raw||raw.length>52000)return null;
    const v=JSON.parse(raw);
    return v&&UUID.test(v.sessionId)&&Array.isArray(v.answers)
-    &&v.answers.length<=cap&&Date.parse(v.expiresAt)>Date.now()?v:null;
+    &&v.answers.length<=cap&&Number.isFinite(Date.parse(v.expiresAt))?v:null;
   }catch{return null}},
   save(challenge,answers){
    try{

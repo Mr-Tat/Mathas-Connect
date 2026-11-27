@@ -16,17 +16,17 @@ function goodQuestion(q,i,expectedWidth,method){
   ||BigInt(q.b)>BigInt(q.a))return false;
  return true;
 }
-export function acceptSubtractionChallenge(data,level,total,method='addBottom'){
+export function acceptSubtractionChallenge(data,level,total,method='addBottom',{allowExpired=false}={}){
  if(![1,2,3].includes(level)||!COUNTS.includes(total)||!['addBottom','takeTop'].includes(method)
   ||data?.ok!==true||!UUID.test(data.sessionId)
   ||data.level!==level||data.total!==total||data.method!==method
   ||!Number.isSafeInteger(data.revision)||data.revision<0
   ||!Number.isSafeInteger(data.resetEpoch)||data.resetEpoch<0
   ||!Array.isArray(data.questions)||data.questions.length!==total
-  ||!Number.isFinite(Date.parse(data.expiresAt))||Date.parse(data.expiresAt)<=Date.now())return null;
+  ||!Number.isFinite(Date.parse(data.expiresAt))||(!allowExpired&&Date.parse(data.expiresAt)<=Date.now()))return null;
  return data.questions.every((q,i)=>goodQuestion(q,i,WIDTHS.normal[level-1],method))?data:null;
 }
-export function acceptSubtractionExtended(data,level,mode,method='addBottom'){
+export function acceptSubtractionExtended(data,level,mode,method='addBottom',{allowExpired=false}={}){
  if(!SUBTRACTION_EXTENDED_MODES.includes(mode)||![1,2,3].includes(level)
   ||!['addBottom','takeTop'].includes(method)||data?.ok!==true
   ||!UUID.test(data.sessionId)||data.level!==level||data.mode!==mode
@@ -34,7 +34,7 @@ export function acceptSubtractionExtended(data,level,mode,method='addBottom'){
   ||!Number.isSafeInteger(data.revision)||data.revision<0
   ||!Number.isSafeInteger(data.resetEpoch)||data.resetEpoch<0
   ||!Array.isArray(data.questions)||data.questions.length!==120
-  ||!Number.isFinite(Date.parse(data.expiresAt))||Date.parse(data.expiresAt)<=Date.now())return null;
+  ||!Number.isFinite(Date.parse(data.expiresAt))||(!allowExpired&&Date.parse(data.expiresAt)<=Date.now()))return null;
  return data.questions.every((q,i)=>goodQuestion(q,i,expectedSubtractionWidth(mode,level),method))?data:null;
 }
 export function subtractionAttemptCorrect(question,raw){
@@ -70,7 +70,7 @@ export function subtractionTranscriptStore(storage,studentId,classId,mode,level,
     const raw=storage.getItem(key);
     const value=raw?JSON.parse(raw):legacy();
     if(!value||!UUID.test(value.sessionId)||!Array.isArray(value.answers)
-      ||Date.parse(value.expiresAt)<=Date.now()||value.method!==method
+      ||!Number.isFinite(Date.parse(value.expiresAt))||value.method!==method
       ||value.mode!==mode||value.level!==level
       ||countScoped&&value.total!==total)return null;
     return value;
@@ -92,11 +92,12 @@ function restore(snapshot,mode,level,method){
  if(!snapshot||snapshot.mode!==mode||snapshot.level!==level||snapshot.method!==method
   ||!Array.isArray(snapshot.answers))return null;
  const accepted=mode==='classic'
-  ?acceptSubtractionChallenge(snapshot,level,snapshot.total,method)
-  :acceptSubtractionExtended(snapshot,level,mode,method);
+  ?acceptSubtractionChallenge(snapshot,level,snapshot.total,method,{allowExpired:true})
+  :acceptSubtractionExtended(snapshot,level,mode,method,{allowExpired:true});
  if(!accepted||snapshot.answers.length>accepted.questions.length)return null;
  if(snapshot.answers.some((x,i)=>!x||x.id!==accepted.questions[i].id||!digits(x.answer)))return null;
- if(!subtractionEndState(mode,snapshot.answers,snapshot.questions))return null;
+ const state=subtractionEndState(mode,snapshot.answers,snapshot.questions);
+ if(!state||(!state.complete&&Date.parse(snapshot.expiresAt)<=Date.now()))return null;
  return snapshot;
 }
 const CSS=String.raw`

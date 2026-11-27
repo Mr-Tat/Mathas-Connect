@@ -51,6 +51,8 @@ test('sauvegarde de preuve : session et réponses conservées pendant la validit
  const reloaded=createExtendedQueue(cfg).read();
  assert.equal(reloaded?.sessionId,challenge.sessionId);
  assert.deepEqual(reloaded?.answers,answers);
+ assert.equal(queue.save({...challenge,expiresAt:'2000-01-01T00:00:00Z'},answers),true);
+ assert.deepEqual(queue.read()?.answers,answers,'preuve expirée conservée pour reprise serveur');
  assert.equal(createExtendedQueue({...cfg,studentId:'44444444-4444-4444-8444-444444444444'}).read(),null,
   'un autre élève ne doit jamais reprendre cette session');
 });
@@ -64,7 +66,9 @@ test('API reprise : droits, identité, durée, version et validation de la sauve
  assert.match(edge,/eq\('app_key',b\.appKey\)/);
  assert.match(edge,/eq\('session_id',b\.sessionId\)/);
  assert.match(edge,/pending\.consumed_at/);
- assert.match(edge,/Date\.parse\(pending\.expires_at\)<=Date\.now\(\)/);
+ assert.match(edge,/Number\.isFinite\(Date\.parse\(pending\.expires_at\)\)/);
+ assert.doesNotMatch(edge,/Date\.parse\(pending\.expires_at\)<=Date\.now\(\)/);
+ assert.match(browser,/received\.consumed===true&&!state\.complete/);
  assert.match(edge,/revision!==Number\(state\?\.revision\?\?0\)/);
  assert.match(edge,/epoch!==Number\(state\?\.reset_epoch\?\?0\)/);
  assert.ok(browser.indexOf("resume-extended-proof-v1")<

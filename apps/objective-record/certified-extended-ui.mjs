@@ -342,7 +342,7 @@ export function createCertifiedExtendedUI({
    if(!received)received=await call('start-extended-proof-v1',ctx.activeApp,{level,mode});
    if(seq!==getContext().generation)return;
    const parsed=parseExtendedChallenge(received,ctx.activeApp,mode,level);
-   if(!parsed||Date.parse(parsed.expiresAt)<=Date.now())throw Error('Défi serveur invalide ou expiré');
+   if(!parsed||(Date.parse(parsed.expiresAt)<=Date.now()&&received.resumed!==true))throw Error('Défi serveur invalide ou expiré');
    run={...parsed,appKey:ctx.activeApp,generation:seq,
      answers:[],finished:false,invalid:false};
    if(previous?.sessionId===parsed.sessionId&&previous.answers.every((x,i)=>
@@ -350,9 +350,10 @@ export function createCertifiedExtendedUI({
     const previousState=extendedEndState(mode,previous.answers,parsed.questions);
     if(previousState.valid)run.answers=previous.answers;
    }
+   const state=extendedEndState(mode,run.answers,run.questions);
+   if(received.consumed===true&&!state.complete)throw Error('Partie déjà enregistrée ; sauvegarde locale incomplète, préviens ton professeur.');
    if(!queue.save(run,run.answers))throw Error('Sauvegarde de la session impossible');
    frame.hidden=true;root.dataset.mode=mode;root.hidden=false;
-   const state=extendedEndState(mode,run.answers,run.questions);
    if(state.complete){run.finished=true;info('Reprise de la preuve terminée…');void finish();}
    else if(!run.answers.length&&startNativeView())return;
    else render();
