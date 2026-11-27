@@ -9,7 +9,7 @@ const PILOT='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const integer=value=>Number.isSafeInteger(value)&&value>=0;
 const params=new URLSearchParams(location.search);
-const required=params.get('requireConnect')==='1'||(params.has('class')&&params.get('libre')!=='1');
+const required=params.get('requireConnect')==='1'||params.has('class');
 const enabled=required||params.get('connect')==='1';
 const CLASS=params.get('class')?.toLowerCase();
 
