@@ -31,7 +31,8 @@ function getTeacherSupabase(){
 }
 const $ = id => document.getElementById(id);
 const FREE_KEY = 'mathas.connect.mode-libre.v1';
-const inFreeMode = () => { try { return localStorage.getItem(FREE_KEY) === '1' } catch { return false } };
+const schoolHub = Boolean(classId) || allMode;
+const inFreeMode = () => { if(schoolHub)return false; try { return localStorage.getItem(FREE_KEY) === '1' } catch { return false } };
 const setFree = enabled => { try { if (enabled) localStorage.setItem(FREE_KEY, '1'); else localStorage.removeItem(FREE_KEY) } catch {} };
 
 const levels = [
@@ -54,7 +55,7 @@ function progressText(appKey){
   if(appKey==='padlet-jeux')return '🎲 Jeux en ligne · lien externe';
   if(appKey==='bowling-multiplication')return '🎳 Jeu de multiplication · lien externe';
   if(!connectedGameKeys.has(appKey)&&appKey!=='milieu-segment')return 'Jeu actuel · scores locaux';
-  if(!activeProfile)return 'Classique : local · Connecté : compte élève';
+  if(!activeProfile)return schoolHub?'Connexion obligatoire':'Jeu libre · résultats locaux';
   const p=progressFor(appKey);
   if(!p)return 'Progression momentanément indisponible';
   const valid=n=>Number.isSafeInteger(n)&&n>=0;
@@ -105,7 +106,24 @@ function card(app) {
   if(playingAsTeacher&&app.app_key==='milieu-segment'&&target.origin===location.origin) target.searchParams.set('joueur','prof');
   if(playingAsTeacher&&connectedGameKeys.has(app.app_key)&&(!allMode||target.origin===location.origin||app.app_key==='abaque-longueurs'))
     target.searchParams.set('joueur','prof');
+  if(schoolHub && (connectedGameKeys.has(app.app_key)||app.app_key==='milieu-segment')){
+    target.searchParams.delete('libre');
+    target.searchParams.set('requireConnect','1');
+    target.searchParams.set('connect','1');
+  }
   node.href = target.href;
+  if(schoolHub){
+    const guard=event=>{
+      if(activeProfile && navigator.onLine)return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if(refreshingIdentity){alert('Vérification de la connexion en cours. Réessaie.');return;}
+      if(!navigator.onLine){alert('Connexion Internet nécessaire pour lancer une application scolaire.');return;}
+      location.href=allMode?loginUrl(LAB_CLASS,'Classe démo - TEST'):loginUrl();
+    };
+    node.addEventListener('click',guard,true);
+    node.addEventListener('auxclick',guard,true);
+  }
   if(testSlug&&!allMode)node.dataset.labSchool=testSlug;
   else node.dataset.appKey=app.app_key;
   node.target = '_blank';
@@ -502,7 +520,7 @@ function drawIdentity(profile) {
   $('identity-box').className=authorized?'identity-connected':'identity-classic';
   const shownName=authorized&&!playingAsTeacher&&aliasUnlocked(unlockedProfileLevel(profile))&&profile.publicAlias&&profile.publicAlias!==profile.displayName
     ?profile.publicAlias:profile?.displayName;
-  $('identity-title').textContent=authorized?String(shownName||'Élève').replace(/\.\s*(?=[\p{L}]$)/u,' '):'Mode Classique';
+  $('identity-title').textContent=authorized?String(shownName||'Élève').replace(/\.\s*(?=[\p{L}]$)/u,' '):(schoolHub?'Connexion requise':'Mode Classique');
   const oldBar=$('connect-xp-bar');if(oldBar)oldBar.remove();
   if(authorized&&profile.xp?.active){
     const level=profile.xp.level,total=profile.xp.total,from=level<=7?(level-1)*50:300+(level-7)*100,to=profile.xp.next;
@@ -585,7 +603,7 @@ async function showIdentity(refresh=false) {
       profileCelebrations.receive(profile);
     }else if(refresh)drawIdentity(null);
     // Aucun accès reconnu au seul motif de connaître le lien de classe.
-  } catch { /* Toujours laisser le HUB et les jeux accessibles en mode libre. */ }
+  } catch { if(schoolHub)drawIdentity(null); }
   finally{refreshingIdentity=false;}
 }
 
