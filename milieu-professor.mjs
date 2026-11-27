@@ -28,7 +28,7 @@ export function installMilieuProfessor({sb,url,key}){
    const cancel=document.createElement('button'),go=document.createElement('button');cancel.type='button';cancel.textContent='Annuler';go.type='submit';go.textContent='Confirmer';go.className='danger';actions.append(cancel,go);
    const targets=()=>scope.s.value==='class'?roster:roster.filter(r=>r.studentId===student.s.value);
    const name=()=>scope.s.value==='class'?className:targets()[0]?.displayName||'';
-   function paint(){student.wrap.hidden=scope.s.value==='class';check.value='';checkText.textContent='Pour confirmer, recopie exactement : '+name();hint.textContent=part.s.value==='all'?'Toute l’application recommence, entiers puis décimaux.':'Les activités 5 et 6 et les défis décimaux recommencent ; les entiers restent acquis.'}
+   function paint(){student.wrap.hidden=scope.s.value==='class';check.value='';checkText.textContent='Pour confirmer, recopie exactement : '+name();hint.textContent=(part.s.value==='all'?'Toute l’application recommence, entiers puis décimaux.':'Les activités 5 et 6 et les défis décimaux recommencent ; les entiers restent acquis.')+' Un compte partagé redémarre aussi dans ses autres classes.'}
    scope.s.onchange=student.s.onchange=part.s.onchange=paint;paint();
    form.append(title,scope.wrap,student.wrap,part.wrap,repeatLabel,hint,checkLabel,message,actions);dialog.append(form);document.body.append(dialog);
    let submitting=false;dialog.addEventListener('cancel',e=>{if(submitting)e.preventDefault()});dialog.addEventListener('close',()=>{dialog.remove();busy=false},{once:true});cancel.onclick=()=>dialog.close();
