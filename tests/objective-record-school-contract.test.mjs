@@ -78,3 +78,11 @@ test('Legacy browser scores cannot bypass proof via a new class UUID',()=>{
  assert.doesNotMatch(edge,/proofOnlyAddClasses/);
  assert.match(edge,/if\(b\.action==='game-record'\s*&&\(b\.appKey===app\|\|b\.appKey===addMulti\|\|b\.appKey===mul\|\|b\.appKey===sub\)\)\s*return deny\('server_proof_required',403\)/);
 });
+
+test('School additions check dynamic teacher visibility only for new pupil starts',()=>{
+ const s=read('supabase/functions/connect-objective-record-school/index.ts');
+ assert.ok(s.includes("if((start||extendedStart)&&user.is_anonymous===true)"));
+ assert.ok(s.includes("db.from('connect_hub_preset_entries').select('visible')"));
+ assert.ok(s.includes("schoolPreset(cls)"));
+ assert.ok(s.includes("deny('app_hidden_for_class',403)"));
+});

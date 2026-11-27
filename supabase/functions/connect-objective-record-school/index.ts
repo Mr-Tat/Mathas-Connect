@@ -6,6 +6,10 @@ const URL=Deno.env.get('SUPABASE_URL')!;
 const PUBLIC=Deno.env.get('SUPABASE_ANON_KEY')!;
 const ADMIN=Deno.env.get('SUPABASE_'+'SERVICE_ROLE_KEY')!;
 const TEST_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
+// Same historical aliases and dynamic class keys as the teacher catalogue.
+// No pedagogical restriction by school level or fixed class list.
+const LEGACY_PRESETS:Record<string,string>={'8fe170fa-9e8f-4e80-885a-b0ba68026f64':'observation','71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e':'phase1','1b021ed9-4846-4203-9c7b-4b5fa8d7adab':'phase2','0d8ba828-59cc-468b-a4b8-7b2a1af10b88':'phase2b','a9195199-0a28-4e86-99ce-47b36dd6e646':'2eco'};
+const schoolPreset=(cls:string)=>LEGACY_PRESETS[cls]||'class-'+cls.replace(/-/g,'');
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const valid=(v:unknown):v is string=>typeof v==='string'&&UUID.test(v);
 const cors={'access-control-allow-origin':'*','access-control-allow-headers':'authorization,apikey,content-type',
@@ -84,6 +88,13 @@ Deno.serve(async(req:Request)=>{
   if(!alive)return deny('inactive_student',403);
   const app=await one(db.from('connect_apps').select('enabled').eq('app_key',b.appKey));
   if(app?.enabled!==true)return deny('app_disabled',403);
+  // New official pupil starts respect the actual professor choice. Do not
+  // strand already-issued proofs or deny the authenticated teacher preview.
+  if((start||extendedStart)&&user.is_anonymous===true){
+   const entry=await one(db.from('connect_hub_preset_entries').select('visible')
+    .eq('preset_slug',schoolPreset(cls)).eq('app_key',b.appKey));
+   if(entry?.visible!==true)return deny('app_hidden_for_class',403);
+  }
   if(extendedResume){
    // Auth et appartenance à la classe validées ci-dessus ; le service-role
    // ne doit jamais retrouver une session par son UUID seul.

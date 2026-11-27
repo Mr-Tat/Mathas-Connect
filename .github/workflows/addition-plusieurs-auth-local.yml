@@ -77,6 +77,9 @@ jobs:
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$ROOT/supabase/release-candidates/20261031_permanent_trophies_hub_v1.sql" >/dev/null
           psql "$DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
           UPDATE public.connect_apps SET enabled=true WHERE app_key='addition-ecrite-multiple';
+          -- Real teacher catalogue upsert includes label; local schema only.
+          ALTER TABLE public.connect_hub_presets ADD COLUMN IF NOT EXISTS label text;
+          UPDATE public.connect_hub_presets SET label=slug WHERE label IS NULL;
           -- The production connect-api also reads avatar columns.
           ALTER TABLE public.connect_students
             ADD COLUMN public_alias text,

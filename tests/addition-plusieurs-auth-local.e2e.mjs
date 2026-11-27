@@ -67,17 +67,28 @@ const event={action:'game-record',appKey,eventId,mode:'classic',level:1,score:4,
  points:0,expectedRevision:0,expectedResetEpoch:0,rewards};
 const rejectedEvent=await post(student,'connect-results',event);
 assert.equal(rejectedEvent.status,403);assert.equal(rejectedEvent.data.error,'server_proof_required');
-const proof=success(await post(student,'connect-objective-record-school',{action:'start-proof-multi-v1',appKey,level:1,total:4}),'issued proof');
+const startBody={action:'start-proof-multi-v1',appKey,level:1,total:4};
+const hidden=await post(student,'connect-objective-record-school',startBody);
+assert.equal(hidden.status,403);assert.equal(hidden.data.error,'app_hidden_for_class');
+const classEntry={slug:'class-'+classId.replace(/-/g,''),appKey,section:'calculs_ecrits',order:20,visible:true,featured:false};
+success(await post(teacher,'connect-results',{action:'teacher-app-matrix-save',changes:[classEntry]}),'teacher enables actual fictitious class');
+const proof=success(await post(student,'connect-objective-record-school',startBody),'issued proof');
 assert.equal(proof.questions.length,4);
 assert.equal((await post(outsider,'connect-objective-record-school',{action:'start-proof-multi-v1',appKey,level:1,total:4})).status,403);
 assert.equal((await post(student,'connect-objective-record-school',{action:'start-proof-multi-v1',appKey,level:1,total:4,classId:foreignClass})).status,403);
 const answers=proof.questions.map(q=>({id:q.id,digits:String(q.addends.reduce((sum,n)=>sum+n,0)).split('').reverse(),carries:['',...Array.from({length:4},(_,i)=>{const p=10**(i+1);const n=Math.floor(q.addends.reduce((sum,v)=>sum+v%p,0)/p);return n?String(n):''})]}));
 const finish={action:'finish-proof-multi-v1',appKey,sessionId:proof.sessionId,answers};
-const result=success(await post(student,'connect-objective-record-school',finish),'saved certified game');
+// Hiding the application prevents new official departures but never cancels a
+// proof already issued under the authorized profile and current parcours.
+success(await post(teacher,'connect-results',{action:'teacher-app-matrix-save',changes:[{...classEntry,visible:false}]}),'teacher hides only this fictitious class app');
+const hiddenAgain=await post(student,'connect-objective-record-school',startBody);
+assert.equal(hiddenAgain.status,403);assert.equal(hiddenAgain.data.error,'app_hidden_for_class');
+const result=success(await post(student,'connect-objective-record-school',finish),'saved certified game after teacher hid app');
 assert.equal(result.proofVerified,true);assert.equal(result.verifiedScore,4);
 assert.equal(result.revision,1);assert.equal(result.xp.delta,22);assert.equal(result.xp.total,44);
 const duplicate=success(await post(student,'connect-objective-record-school',finish),'duplicate certified proof');
 assert.equal(duplicate.duplicate,true);assert.equal(duplicate.xp.delta,0);
+success(await post(teacher,'connect-results',{action:'teacher-app-matrix-save',changes:[classEntry]}),'restore fictitious class visibility for browser test');
 const state=success(await post(student,'connect-results',{action:'student-load',appKey}),'reload');
 assert.equal(state.state.classic[0]['4'],4);
 assert.equal(state.state.rewards.mastery['4'][0],true);
