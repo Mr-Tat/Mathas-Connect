@@ -86,7 +86,7 @@ if(process.env.SDK_BROWSER_PATH){
   const context=await browser.newContext();await setup(context);
   await context.addInitScript(()=>{let seed=5168789;Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296}});
   async function configureGame(context){
-  await context.route('**/apps/calculs-melanges/connect-host.mjs',async route=>{
+  await context.route(u=>u.pathname.endsWith('/apps/calculs-melanges/connect-host.mjs'),async route=>{
    const response=await route.fetch(),lines=(await response.text()).split('\n');const i=lines.findIndex(x=>x.includes("throw Error('untrusted_connect_endpoint')"));assert.ok(i>=0);
    lines[i]=' if(baseUrl!=='+JSON.stringify(url)+'||apikey!=='+JSON.stringify(anon)+")throw Error('untrusted_connect_endpoint');";
    const original=lines.join('\n').replace(/export const CONNECT_URL='[^']+';/,'export const CONNECT_URL='+JSON.stringify(url)+';').replace(/export const CONNECT_PUBLISHABLE_KEY='[^']+';/,'export const CONNECT_PUBLISHABLE_KEY='+JSON.stringify(anon)+';');
@@ -129,7 +129,7 @@ if(process.env.SDK_BROWSER_PATH){
   assert.ok(await frame.locator('.mult-chip[data-mult="2"]').evaluate(e=>e.classList.contains('active')));
   assert.ok(await frame.locator('.mult-chip[data-mult="7"]').evaluate(e=>e.classList.contains('active')));
   await page.waitForFunction(()=>document.getElementById('xp-total')?.textContent==='22 XP');
-  await context.setOffline(true);await playMixedClassic({frame,page,total:4});
+  await playMixedClassic({frame,page,total:4,afterStart:()=>context.setOffline(true)});
   await page.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('en attente (offline)'));
   const queueKey='mathas.calculs-melanges.connect.'+classId+'.'+signed+'.'+browserStudent+'.v1';
   const queued=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)||'[]'),queueKey);assert.equal(queued.length,1);assert.equal(queued[0].score,4);assert.equal(new Set(queued[0].operationsCompleted).size>=2,true);
@@ -201,7 +201,7 @@ if(process.env.SDK_BROWSER_PATH){
   const pupilAfter=check(await admin.from('connect_states').select('state_data').eq('student_id',browserStudent).eq('app_key','melange-calculs-ecrits').single(),'pupil unchanged by teacher player');assert.deepEqual(pupilAfter.state_data,{});
   console.log('PASS real Monsieur T game uses professor auth storage and separate server player, no pupil overwrite');
   // Same JWT/device, new pupil: match revision+epoch so only identity binding can stop the old proof.
-  frame=await openGame();await context.setOffline(true);await playMixedClassic({frame,page,total:4});
+  frame=await openGame();await playMixedClassic({frame,page,total:4,afterStart:()=>context.setOffline(true)});
   await page.waitForFunction(()=>document.getElementById('result')?.textContent?.includes('en attente (offline)'));
   const rebound=randomUUID(),oldVersion=check(await admin.from('connect_states').select('revision,reset_epoch').eq('student_id',browserStudent).eq('app_key','melange-calculs-ecrits').single(),'old binding version');
   check(await admin.from('connect_students').insert({id:rebound,display_name:'Fictif réaffecté même JWT'}),'rebound pupil');
