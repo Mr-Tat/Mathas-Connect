@@ -55,7 +55,7 @@
 
 - La moitié — #355–357 publiées, deux étapes professeur, reprise décimale, Edge v5 ; cinq classes préparées (Entiers, cartes masquées), Auth hébergée fictive à vérifier avant visibilité. [Fiche](applications/milieu-segment.md).
 
-- Abaque — [#343](https://github.com/Mr-Tat/Mathas-Connect/pull/343) publiée ; [#346](https://github.com/Mr-Tat/Mathas-Connect/pull/346) recette navigateur historique à actualiser, pas de modification pédagogique.
+- Abaque — [#343](https://github.com/Mr-Tat/Mathas-Connect/pull/343) publiée ; [#346](https://github.com/Mr-Tat/Mathas-Connect/pull/346) recette navigateur historique à actualiser. **#365** : correction visuelle de l’aide activité 2, [fiche](applications/abaque-activite2-aide-responsive-20261127.md) ; PR/source/Pages à vérifier, sans changement pédagogique.
 
 - 27/11/2026 — [Compte unique multiclasse](applications/multiclass-identity-projection-20261127.md) : correction identité, capture et retrait d'inscription ; état de recette dans la fiche.
 
