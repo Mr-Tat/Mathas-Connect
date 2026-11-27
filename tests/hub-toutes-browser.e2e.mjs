@@ -221,7 +221,7 @@ test('Côté élève, seul le retour vers Monsieur T est proposé ; approbations
    assert.equal(await f.page.locator('#toutes-requests-open').isVisible(),false);
    assert.equal(await f.page.locator('#levels .app-card').count(),7);
    const milieuCard=f.page.locator('[data-app-key="milieu-segment"]');
-   assert.equal(new URL(await milieuCard.getAttribute('href')).pathname,'/index.html',
+   assert.equal(new URL(await milieuCard.getAttribute('href')).pathname,new URL(f.base+'/index.html').pathname,
     'sans profil autorisé, le lien du menu contextuel ouvre la connexion');
    const milieu=new URL(await milieuCard.getAttribute('data-school-href'));
    assert.equal(milieu.searchParams.get('requireConnect'),'1');assert.equal(milieu.searchParams.get('class'),testClass);assert.equal(milieu.searchParams.has('joueur'),false);

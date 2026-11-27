@@ -56,7 +56,7 @@ try{
    if(req.url().endsWith('/connect-api')){
     if(p.action==='teacher-dashboard')return answer({
      ok:true,classes:[{id:classroom,name:'Classe fictive'}],
-     years:[],requests:[]
+     years:[],requests:[],students:[{id:student,display_name:'Élève fictif'}]
     });
     throw Error('Unexpected teacher API action: '+p.action);
    }
