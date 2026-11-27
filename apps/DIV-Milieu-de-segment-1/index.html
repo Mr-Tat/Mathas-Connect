@@ -205,7 +205,7 @@ function questions(id,count){let values;if(id==="mix"){values=shuffle([...shuffl
 function safeGet(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch{return null}}function safeSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch{return false}}function safeRemove(k){try{localStorage.removeItem(k)}catch{}}
 function blank(){return {levels:{},records:{},cups:{}}}
 function loadProgress(){const current=safeGet(KEY);if(current?.levels&&current?.records&&current?.cups)return current;const next=blank(),old=safeGet(LEGACY);if(old){for(const id of ["even","odd","mix","decimal"]){if(Array.isArray(old.levels?.[id]))next.levels[id]=old.levels[id];if(old.cups?.[id])next.cups[id]=true}safeSet(KEY,next)}return next}
-const params=new URLSearchParams(typeof location==="undefined"?"":location.search),hubAccess=params.get("hub")==="toutes",classHubAccess=params.get("hub")==="classe",officialRequired=params.get("requireConnect")==="1"||params.get("connect")==="1"||(hubAccess&&params.get("class")==="4bf3400d-a315-4ea4-a2f3-afaca24dc9b9"&&params.get("libre")!=="1");
+const params=new URLSearchParams(typeof location==="undefined"?"":location.search),hubAccess=params.get("hub")==="toutes",classHubAccess=params.get("hub")==="classe",officialRequired=params.get("requireConnect")==="1"||params.get("connect")==="1"||params.has("class");
 let official=null,connecting=false,officialMessage="",officialBusy=false,seedCursor=null,seedEvent=null,seedCount=0;
 let progress=officialRequired?blank():loadProgress();
 let run=null,practice=false,active=null,locked=false,storageFailed=false;
