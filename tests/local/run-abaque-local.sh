@@ -66,9 +66,18 @@ if(!ready)throw Error('disposable_database_relay_not_ready');
 JS
 node --test "$ROOT/tests/abaque-postgres.runtime.mjs"
 if [ "${1:-}" = '--postgres-only' ]; then exit 0;fi
-# The isolated PostgreSQL contract above tests the historical installation
-# manifest. The actual Chromium release candidate uses the later 204 XP
-# ruleset and the classroom gates, as deployed on production.
+# The isolated PostgreSQL contract above intentionally exercises the
+# historical 160-XP schema, including test-generated retired record:5/10
+# milestones. Remove ONLY those disposable historical fixture rights before
+# installing a current 204-XP schema. Production retains the migration guard.
+docker_local exec -i "$RUN_NAME-db" psql -U postgres -d abaque_test -v ON_ERROR_STOP=1 <<'SQL' >/dev/null
+DO $local_guard$
+BEGIN
+ IF current_database()<>'abaque_test' THEN RAISE EXCEPTION 'disposable_db_required'; END IF;
+ DELETE FROM public.connect_abaque_rights WHERE milestone IN ('record:5','record:10');
+END $local_guard$;
+SQL
+# Chromium then tests current 204 XP, class permissions and native Edge.
 for migration in \
  "$ROOT/supabase/migrations/20261107223500_abaque_204xp_5perpage_records.sql" \
  "$ROOT/supabase/migrations/20261116100000_abaque_prof_class_gates_top_two.sql" \

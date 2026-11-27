@@ -98,7 +98,10 @@ try{
    await page.locator('#results-app').selectOption('addition-ecrite-multiple');
    assert.equal(await page.locator("#results-class-restart").isVisible(),false,
     "le redémarrage de classe est géré dans Autorisations, pas directement depuis Résultats");
-   assert.ok(edgeCalls.some(c=>c.action==='teacher-summary'&&c.appKey==='addition-ecrite-multiple'));
+   assert.ok(edgeCalls.some(c=>c.action==='teacher-detail'&&c.appKey==='addition-ecrite-multiple'),
+    'les résultats d’un élève affichés proviennent du détail authentifié');
+   assert.ok(edgeCalls.some(c=>c.action==='teacher-parcours-history'&&c.appKey==='addition-ecrite-multiple'),
+    'historique individuel chargé sans modification');
   }
   assert.ok(edgeCalls.some(c=>c.action==='teacher-overview'));
   assert.ok(!edgeCalls.some(c=>c.action?.includes('restart')),
