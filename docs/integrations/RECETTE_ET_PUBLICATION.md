@@ -8,7 +8,8 @@ Remplir **OK / ÉCHEC / NON EXÉCUTÉ / SANS OBJET**, lien run/capture ou journa
 
 | Test minimal et condition d'arrêt | Contrat/Node | PG + Auth/Edge locaux | Chromium vrai moteur | Pages + LAB authentifié |
 | --- | :---: | :---: | :---: | :---: |
-| Démarrage **sans compte / hors connexion Connect** depuis HUB + URL directe : avec/sans classe, SDK/Edge inaccessibles, clics Guidé + Classique, retour menu, stockage local isolé | ✓ | – | ✓ **obligatoire** | ✓ |
+| Démarrage **autonome sans classe**, sans compte ni SDK/Edge : menus, guidé si présent, Classique, retour menu et résultats locaux isolés ; une première ouverture sans cache requiert Internet | ✓ | – | ✓ **obligatoire** | ✓ |
+| HUB **scolaire** / lien de classe : identité et appareil approuvés requis, y compris avec `libre=1`, ancienne préférence libre, Auth/SDK indisponible ; aucun bouton « Jouer librement », aucune nouvelle partie hors connexion | ✓ | ✓ | ✓ **obligatoire** | ✓ |
 | Lancement scolaire `requireConnect=1` sans Auth valide : **pas de partie non certifiée ni de faux XP** | ✓ | ✓ | ✓ **obligatoire** | ✓ |
 | Moteur original, mode libre, vrais menus, saisies et focus (320 px) | ✓ | – | ✓ | ✓ |
 | Session approuvée / révoquée ; classe et autre élève refusés | ✓ | ✓ | ✓ | ✓ |
