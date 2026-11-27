@@ -7,6 +7,9 @@ on:
       - 'tests/sql/soustraction-pg-scenarios.sql'
       - 'tests/soustraction-edge-postgres.runtime.test.mjs'
       - 'supabase/functions/connect-results/index.ts'
+      - 'supabase/functions/connect-soustraction-school/**'
+      - 'supabase/release-candidates/20261127_soustraction_certified_live_snapshot.sql'
+      - 'supabase/migrations/20261127124500_school_dynamic_class_eligibility.sql'
       - '.github/workflows/soustraction-postgres.yml'
   workflow_dispatch:
 permissions:
@@ -49,6 +52,22 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/soustraction-pg-scenarios.sql
       - name: Apply permanent-trophies candidate in disposable PostgreSQL
         run: psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/20261031_permanent_trophies_hub_v1.sql
+      - name: Prepare certified proof schema and isolated class
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE IF NOT EXISTS public.connect_classes(id uuid PRIMARY KEY);
+          INSERT INTO public.connect_classes(id) VALUES('22222222-2222-4222-8222-222222222222') ON CONFLICT DO NOTHING;
+          CREATE TABLE IF NOT EXISTS public.connect_teacher_players(teacher_id uuid PRIMARY KEY, student_id uuid);
+          SQL
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261103120000_school_certified_additions_tables.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261103130000_school_extended_sessions.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261127124500_school_dynamic_class_eligibility.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/20261127_soustraction_certified_live_snapshot.sql
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO public.connect_hub_presets(slug,label) VALUES('class-22222222222242228222222222222222','Classe fictive') ON CONFLICT DO NOTHING;
+          INSERT INTO public.connect_hub_preset_entries(preset_slug,app_key,visible) VALUES('class-22222222222242228222222222222222','soustraction-ecrite-simple',true) ON CONFLICT DO NOTHING;
+          UPDATE public.connect_apps SET enabled=true WHERE app_key='soustraction-ecrite-simple';
+          SQL
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
