@@ -129,15 +129,8 @@ Deno.serve(async req=>{
  // proofs must stop the legacy browser-declared score path. These four
  // school games require server-issued arithmetic proofs.
  // Deploy this Edge version BEFORE enabling SCHOOL_ADDITIONS_ROLLOUT in Pages.
- const proofOnlyAddClasses=new Set([
-  '4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',
-  '8fe170fa-9e8f-4e80-885a-b0ba68026f64',
-  '71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e',
-  '1b021ed9-4846-4203-9c7b-4b5fa8d7adab',
-  '0d8ba828-59cc-468b-a4b8-7b2a1af10b88',
-  'a9195199-0a28-4e86-99ce-47b36dd6e646'
- ]);
- if(b.action==='game-record'&&proofOnlyAddClasses.has(b.classId)
+ // This also covers newly created classes; their UUID must never allow a browser-declared score.
+ if(b.action==='game-record'
     &&(b.appKey===app||b.appKey===addMulti||b.appKey===mul||b.appKey===sub))
    return deny('server_proof_required',403);
  if(b.appKey===mixed&&!MIXED_SERVER_READY)return deny('integration_not_ready',403);

@@ -24,12 +24,14 @@ export const SCHOOL_CLASS_IDS=Object.freeze([
   '0d8ba828-59cc-468b-a4b8-7b2a1af10b88',
   'a9195199-0a28-4e86-99ce-47b36dd6e646'
 ]);
-const SCHOOL_CLASSES=new Set(SCHOOL_CLASS_IDS);
+// The historic IDs above are retained for existing callers, not authorization.
+const TEST_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
+export function isSchoolClass(classId){return typeof classId==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(classId)&&classId.toLowerCase()!==TEST_CLASS;}
 const APP_KEYS=new Set(Object.keys(SCHOOL_RECORD_APPS));
 export function schoolRecordLaunch({classId,appKey,legacyUrl,rollout=SCHOOL_RECORD_ROLLOUT}){
   // No query string, student storage or client-supplied flag may activate this.
   // This is a navigation switch ONLY: server authentication remains mandatory.
-  if(!APP_KEYS.has(appKey)||!SCHOOL_CLASSES.has(classId)
+  if(!APP_KEYS.has(appKey)||!isSchoolClass(classId)
      ||rollout?.enabled!==true
      ||rollout?.atomicXpAndTrophiesVerified!==true
      ||rollout?.hostedTestClassE2EVerified!==true)return legacyUrl;
@@ -50,7 +52,7 @@ export function schoolAdditionsLaunch({classId,appKey,legacyUrl,rollout=SCHOOL_A
   // The HUB's explicitly selected free mode must never open the certified
   // school launcher: that launcher needs the remote Supabase SDK even for a guest.
   if(freeMode===true)return legacyUrl;
-  if(!SCHOOL_CLASSES.has(classId)||!ADDITION_KEYS.has(appKey)
+  if(!isSchoolClass(classId)||!ADDITION_KEYS.has(appKey)
     ||rollout.enabled!==true||rollout.proofRpcsReady!==true
     ||rollout.hostedJwtVerified!==true||rollout.projectionVerified!==true)return legacyUrl;
   return SCHOOL_RECORD_LAUNCHER+'?app='+encodeURIComponent(SCHOOL_RECORD_APPS[appKey]);

@@ -3,7 +3,7 @@ import {PROFILE_REWARDS,AVATAR_LEVELS,officialInitial,unlockedProfileLevel,avata
 import {createProfileCelebrations} from './profile-celebration.mjs?v=20261104-levels-v2';
 import { classId, classLabel, loginUrl } from './connect-context.js';
 import {rememberRecentProfile,rememberRecentAvatar} from './recent-profiles.js?v=20261027avatars2';
-import {schoolRecordLaunch,schoolAdditionsLaunch,SCHOOL_RECORD_APPS,SCHOOL_RECORD_LAUNCHER,SCHOOL_CLASS_IDS} from './apps/objective-record/release-routing.mjs';
+import {schoolRecordLaunch,schoolAdditionsLaunch,SCHOOL_RECORD_APPS,SCHOOL_RECORD_LAUNCHER,isSchoolClass} from './apps/objective-record/release-routing.mjs';
 
 const url = 'https://awmhpfofacaglewammxt.supabase.co';
 const key = 'sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
@@ -84,7 +84,7 @@ function card(app) {
   // Mélange dans « Toutes → Tests » pointe vers sa vraie version Connect et
   // non vers l'ancien hôte expérimental Objectif record.
   const testMixed=classId===LAB_CLASS&&app.app_key==='melange-calculs-ecrits';
-  const schoolMultiplication=SCHOOL_CLASS_IDS.includes(classId)&&app.app_key==='multiplication-ecrite-simple';
+  const schoolMultiplication=isSchoolClass(classId)&&app.app_key==='multiplication-ecrite-simple';
   // Addition engines are locally playable without the Supabase SDK; the
   // certified Objectif record launcher is intentionally not an offline guest UI.
   const freeAddition=inFreeMode()&&['addition-ecrite-simple','addition-ecrite-multiple'].includes(app.app_key);
@@ -103,9 +103,9 @@ function card(app) {
   // silencieusement un 4/4 sans preuve et sans XP. Le mode Classique reste libre.
   if(schoolMultiplication && !inFreeMode() && target.origin===location.origin)
     target.searchParams.set('requireConnect','1');
-  if(app.app_key==='milieu-segment'&&target.origin===location.origin&&(classId===LAB_CLASS||SCHOOL_CLASS_IDS.includes(classId))&&(allMode||playingAsTeacher||!inFreeMode())){target.searchParams.delete('libre');target.searchParams.set('requireConnect','1');}
+  if(app.app_key==='milieu-segment'&&target.origin===location.origin&&(classId===LAB_CLASS||isSchoolClass(classId))&&(allMode||playingAsTeacher||!inFreeMode())){target.searchParams.delete('libre');target.searchParams.set('requireConnect','1');}
   else if(app.app_key==='milieu-segment'&&target.origin===location.origin&&inFreeMode()){target.searchParams.delete('requireConnect');target.searchParams.delete('connect');target.searchParams.set('libre','1');}
-  if(!allMode&&SCHOOL_CLASS_IDS.includes(classId)&&app.app_key==='milieu-segment'&&target.origin===location.origin){target.searchParams.delete('hub');target.searchParams.set('hub','classe');if(inFreeMode()&&!playingAsTeacher){target.searchParams.delete('requireConnect');target.searchParams.delete('connect')}}
+  if(!allMode&&isSchoolClass(classId)&&app.app_key==='milieu-segment'&&target.origin===location.origin){target.searchParams.delete('hub');target.searchParams.set('hub','classe');if(inFreeMode()&&!playingAsTeacher){target.searchParams.delete('requireConnect');target.searchParams.delete('connect')}}
    // Un lancement dans Toutes conserve l'identité approuvée Monsieur T
   // pour TOUS les jeux Connect. Sans « joueur=prof », leurs hôtes lisent la
   // session anonyme de l'élève au lieu du stockage Auth professeur, et le

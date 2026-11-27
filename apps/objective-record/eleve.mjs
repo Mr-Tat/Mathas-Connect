@@ -16,14 +16,14 @@ import {installManualValidationForWrittenCalc} from './in-game-manual-validation
 import {installSessionToolbarLayout} from './in-game-session-layout.mjs?v=20261106-all-confirmed-v3';
 import {paintConnectedAvatar} from './profile-avatar-badge.mjs?v=20261107-v1';
 import {officialAdditionRewards} from './official-addition-trophies.mjs';
-import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
+import {isSchoolClass} from './release-routing.mjs';
 import {mountWrittenGuidedClass} from './guided-written-school.mjs?v=20261120-guided-v1';
 
 // Canonical school/test host; the HUB rollout flag controls when real pupils
 // see this route. JWT and PostgreSQL proofs remain mandatory even by direct URL.
 // Other three written-calculation games remain on their existing school URLs.
 const CLASS_TEST='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
-const SCHOOL_CLASSES=new Set(SCHOOL_CLASS_IDS);
+
 const BASE='https://awmhpfofacaglewammxt.supabase.co';
 const KEY='sb_publishable_oI2Pyl3kXzmLkK-CBnw9Nw_66a4fZgM';
 const GAME_URLS=Object.freeze({
@@ -210,7 +210,7 @@ async function call(endpoint,action,appKey,payload={}){
  }finally{clearTimeout(timeout)}
 }
 async function approvedProfile(){
- if(classId!==CLASS_TEST&&!SCHOOL_CLASSES.has(classId))throw Error('Classe non autorisée pour ces calculs');
+ if(classId!==CLASS_TEST&&!isSchoolClass(classId))throw Error('Classe non autorisée pour ces calculs');
  if(classId!==CLASS_TEST&&!SERVER_PROOF_ADDITIONS.has(activeApp))throw Error('Ce calcul écrit n’est pas encore ouvert aux classes scolaires');
  const profile=await call('connect-api',teacher?'teacher-player':'student-me');
  if(profile.status!=='approved'||profile.classId!==classId)throw Error('Profil Connect non approuvé dans cette classe');

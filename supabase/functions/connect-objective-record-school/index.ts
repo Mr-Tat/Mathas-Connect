@@ -5,13 +5,7 @@ import {createClient} from 'npm:@supabase/supabase-js@2.95.0';
 const URL=Deno.env.get('SUPABASE_URL')!;
 const PUBLIC=Deno.env.get('SUPABASE_ANON_KEY')!;
 const ADMIN=Deno.env.get('SUPABASE_'+'SERVICE_ROLE_KEY')!;
-const SCHOOL=new Set([
- '8fe170fa-9e8f-4e80-885a-b0ba68026f64',
- '71f5f4a5-3f25-4ec7-ac29-c33d2e6b395e',
- '1b021ed9-4846-4203-9c7b-4b5fa8d7adab',
- '0d8ba828-59cc-468b-a4b8-7b2a1af10b88',
- 'a9195199-0a28-4e86-99ce-47b36dd6e646'
-]);
+const TEST_CLASS='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const valid=(v:unknown):v is string=>typeof v==='string'&&UUID.test(v);
 const cors={'access-control-allow-origin':'*','access-control-allow-headers':'authorization,apikey,content-type',
@@ -39,7 +33,7 @@ Deno.serve(async(req:Request)=>{
  let b:any;try{b=JSON.parse(raw)}catch{return deny('invalid_json');}
  const cls=typeof b?.classId==='string'?b.classId.toLowerCase():'';
  const contract=(map as Record<string,typeof map['addition-ecrite-simple']>)[b?.appKey];
- if(!SCHOOL.has(cls)||!contract)return deny('school_class_not_allowed',403);
+ if(!valid(cls)||cls===TEST_CLASS||!contract)return deny('school_class_not_allowed',403);
  const extendedStart=b.action==='start-extended-proof-v1';
  const extendedFinish=b.action==='finish-extended-proof-v1';
  const extendedResume=b.action==='resume-extended-proof-v1';
@@ -64,6 +58,9 @@ Deno.serve(async(req:Request)=>{
     return deny('invalid_answers');
  }
  try{
+  const {data:allowed,error:classError}=await db.rpc('connect_objective_record_school_class_allowed_v1',{p_class:cls});
+  if(classError)return deny('database_unavailable',503);
+  if(allowed!==true)return deny('school_class_not_allowed',403);
   let student:string|null=null;
   if(user.is_anonymous===true){
    const device=await one(db.from('connect_devices').select('student_id')
