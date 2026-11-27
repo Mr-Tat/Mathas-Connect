@@ -12,7 +12,7 @@ import {installMixedOfficialUi} from './official-ui.mjs?v=20261107-profile-avata
  // Class launches require the native approved session and an enabled backend.
  const launch=new URLSearchParams(location.search);
  const simulate=launch.get('simulation')==='1';
- const requireConnect=launch.get('requireConnect')==='1';
+ const requireConnect=launch.get('requireConnect')==='1'||(launch.has('class')&&launch.get('libre')!=='1');
  const modeNote=document.getElementById('mode-note');
  if(simulate){document.querySelector('.notice').hidden=false;modeNote.textContent='Laboratoire · simulation seulement — aucun envoi Supabase';}
  let connected=null,host=null,consent=null,multiplierLock=null,multiplierLockVersion=null,tableAidAllowed=true,blockedSession=false;
