@@ -95,7 +95,12 @@ if(process.env.SDK_BROWSER_PATH){
   await context.grantPermissions(['local-network-access'],{origin:site});
   await context.route('**/*',route=>{
    const u=new URL(route.request().url());if([new URL(site).origin,new URL(url).origin].includes(u.origin))return route.continue();
-   throw Error('No external request allowed in local auth recipe: '+u.origin);
+   // Public catalogue/avatars render decorative images. The local Auth
+   // recipe never reaches these hosts; unexpected external API/script
+   // requests still fail, as before.
+   if(route.request().resourceType()==='image'&&['https://raw.githubusercontent.com','https://mr-tat.github.io','https://avatars.githubusercontent.com'].includes(u.origin))
+    return route.abort('blockedbyclient');
+   throw Error('No external request allowed in local auth recipe: '+route.request().resourceType()+' '+u.origin+u.pathname);
   });
   await context.route(SDK_URL,route=>route.fulfill({status:200,contentType:'text/javascript',body:sdk}));
   await context.route('**/tests/.mixed-auth-only.html',route=>route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Local Auth only</title>'}));
