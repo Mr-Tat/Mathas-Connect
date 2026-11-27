@@ -1,8 +1,8 @@
 import {PROOF_APP,acceptAdditionProofChallenge,normalizeAdditionFirstAttempt,
  createCertifiedAdditionQueue} from './certified-addition.mjs';
-import {SCHOOL_CLASS_IDS} from './release-routing.mjs';
+import {isSchoolClass} from './release-routing.mjs';
 import {schoolModeAllowed,schoolModeLockReason} from './school-official-unlocks.mjs';
-const VALID_PROOF_CLASSES=new Set(['4bf3400d-a315-4ea4-a2f3-afaca24dc9b9',...SCHOOL_CLASS_IDS]);
+const validProofClass=id=>id==='4bf3400d-a315-4ea4-a2f3-afaca24dc9b9'||isSchoolClass(id);
 
 
 // Server-issued Addition simple, CLASSIC 4/10/20 across 3 levels; TEST-only until school release.
@@ -58,9 +58,9 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,mode
     notify('Résultat en cours de confirmation Connect. Utilise « Actualiser » si nécessaire.');
    },true);
   }
-  if(run && win.__mathasServerCertified?.sessionId!==run.sessionId){
+  if(run&&!run.finished && win.__mathasServerCertified?.sessionId!==run.sessionId){
    win.__mathasServerCertified={sessionId:run.sessionId,level:run.level,total:run.total,questions:run.questions,index:0};
-  }else if(!run&&win.__mathasServerCertified){
+  }else if((!run||run.finished)&&win.__mathasServerCertified){
    delete win.__mathasServerCertified;
   }
   win.MathasCertifiedAttempt=raw=>{
@@ -114,10 +114,20 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,mode
   if(event?.phase!=='ended')suppressedTerminal=false;
   return false;
  }
+ async function recover(){
+  const ctx=getContext();
+  if(!validProofClass(ctx.classId)||!ctx.pupilId||ctx.activeApp!==PROOF_APP||sending)return;
+  if(run){if(run.finished)await finish();return;}
+  const stored=createCertifiedAdditionQueue({storage:localStorage,studentId:ctx.pupilId,classId:ctx.classId});
+  const previous=stored?.read({allowExpired:true});
+  if(!previous||![4,10,20].includes(previous.total)||previous.answers.length!==previous.total)return;
+  queue=stored;run={...previous,generation:ctx.generation,finished:true,invalid:false};
+  await finish();
+ }
  async function start(){
   if(modeSelect&&modeSelect.value!=='classic')return;
   const ctx=getContext(),seq=ctx.generation;
-  if(!VALID_PROOF_CLASSES.has(ctx.classId)
+  if(!validProofClass(ctx.classId)
     ||ctx.activeApp!==PROOF_APP||!ctx.pupilId)return;
   const {win,doc}=inner();
   if(!win||!doc?.getElementById('menuScreen')||
@@ -133,6 +143,8 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,mode
    notify('Choisis un niveau et une série de calculs valides.');return;
   }
   if(run||sending)return;
+  await recover();
+  if(run||sending||!isCurrent(seq))return;
   button.disabled=true;proofStatus('starting');
   try{
    const data=await call('start-proof-v2',{level,total});
@@ -176,6 +188,6 @@ export function createAdditionProofUI({button,panel,levelSelect,totalSelect,mode
   return start();
  }
  button.addEventListener('click',()=>{void start()});
- return Object.freeze({reset,bind,onGameEvent,startNative,
+ return Object.freeze({reset,bind,onGameEvent,startNative,recover,
   hasPending:()=>!!run?.finished,retry:()=>run?.finished?finish():Promise.resolve()});
 }

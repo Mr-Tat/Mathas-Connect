@@ -319,6 +319,9 @@ function watchGame(seq){
     if(seq!==generation||!pupilId)return true;
     // The first click must react immediately, even when the network is slow.
     // This also prevents a double-click from creating two server challenges.
+    if(activeProofUI.hasPending()||extendedUI.hasPending()){
+     message('Termine ou synchronise d’abord le résultat officiel.');return true;
+    }
     if(doc.__mathasNativeLaunchPending){
      message('Préparation de ton exercice certifié en cours…');return true;
     }
@@ -519,6 +522,10 @@ async function choose(){
    schoolScoreView.updateState(latestState||initial.loaded?.state||{});
    void schoolScoreView.load();
   }
+  if(SERVER_PROOF_ADDITIONS.has(activeApp)){
+   await (activeApp==='addition-ecrite-multiple'?certifiedMultiUI:certifiedUI).recover();
+   if(seq!==generation)return;
+  }
   if(nativeRecordAllowed(activeApp)){
    recorder=createAtomicTestRecorder({classId,appKey:activeApp,subject:pupilId,storage:localStorage,
     send:request=>call(activeApp===ATOMIC_TEST_APP||activeApp===MIXED_TEST_APP?'connect-results':'connect-objective-record-test','game-record',activeApp,{...request,expectedStudentId:pupilId}),
@@ -572,6 +579,13 @@ async function choose(){
 $('refresh').addEventListener('click',async()=>{const seq=generation;try{if(extendedUI.hasPending())await extendedUI.retry();else if(certifiedUI.hasPending())await certifiedUI.retry();else if(certifiedMultiUI.hasPending())await certifiedMultiUI.retry();else if(recorder?.hasPending())await recorder.retry();else await refresh(seq);
   if(seq===generation&&!recorder?.hasPending())message('Profil officiel actualisé.');
  }catch(e){if(seq===generation)message('⚠️ '+e.message)}});
+window.addEventListener('online',()=>{
+ if(!pupilId){if(classId)void choose();return;}
+ if(extendedUI.hasPending())void extendedUI.retry();
+ else if(activeApp==='addition-ecrite-multiple')void certifiedMultiUI.recover();
+ else if(activeApp==='addition-ecrite-simple')void certifiedUI.recover();
+ else if(recorder?.hasPending())void recorder.retry();
+});
 $('app').addEventListener('change',()=>{const next=new URL(location.href);next.searchParams.set('app',$('app').value);history.replaceState(null,'',next);void choose()});
 const requested=params.get('app');
 if(requested&&Object.hasOwn(GAME_URLS,requested))$('app').value=requested;
