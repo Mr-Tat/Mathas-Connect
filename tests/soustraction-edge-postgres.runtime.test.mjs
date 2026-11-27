@@ -169,6 +169,7 @@ test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et repr
   assert.equal((await call('student-load')).body.revision,0);
   const start=await issue('start-classic-v1',{level:1,total:4,method:'addBottom'});
   const payload={sessionId:start.sessionId,answers:start.questions.map(correct)};
+  await db.query("UPDATE public.connect_objective_record_school_proof_sessions SET created_at=now()-interval '8 days',expires_at=now()-interval '7 days' WHERE session_id=$1",[start.sessionId]);
   const played=await finish('finish-classic-v1',payload);
   assert.equal(played.body.verifiedScore,4);
   assert.equal(played.body.revision,1);
@@ -185,6 +186,7 @@ test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et repr
   assert.equal(missing.status,400);
   async function sudden(method,n){
    const s=await issue('start-extended-v1',{mode:'sudden',level:1,method});
+   await db.query("UPDATE public.connect_objective_record_school_extended_sessions SET created_at=now()-interval '8 days',expires_at=now()-interval '7 days' WHERE session_id=$1",[s.sessionId]);
    return finish('finish-extended-v1',{sessionId:s.sessionId,answers:[...s.questions.slice(0,n).map(correct),{id:s.questions[n].id,answer:'0'}]});
   }
   const left=await sudden('addBottom',4);
@@ -195,6 +197,7 @@ test('Edge réel raccordé à PostgreSQL : partie, idempotence, XP, prof et repr
   assert.equal(other.body.state.suddenMethods.addBottom[0],4);
   const beforeReset=other.body.xp.appXp;
   const pending=await issue('start-classic-v1',{level:1,total:4,method:'addBottom'});
+  await db.query("UPDATE public.connect_objective_record_school_proof_sessions SET created_at=now()-interval '8 days',expires_at=now()-interval '7 days' WHERE session_id=$1",[pending.sessionId]);
 
   const professor=await call('teacher-overview',{},true);
   assert.equal(professor.status,200,JSON.stringify(professor));

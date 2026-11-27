@@ -59,6 +59,9 @@ BEGIN
     IF (SELECT class_id FROM public.connect_objective_record_school_proof_sessions
       WHERE session_id=id) IS DISTINCT FROM first_class
     THEN RAISE EXCEPTION 'wrong_class_in_session';END IF;
+    -- Simulate a week-long loss of network after online issue, for all 18 variants.
+    UPDATE public.connect_objective_record_school_proof_sessions
+     SET created_at=now()-interval '8 days',expires_at=now()-interval '7 days' WHERE session_id=id;
     answer:=public.test_school_addition_answers(issued->'questions',lvl,app);
     IF app='addition-ecrite-simple' THEN
      received:=public.connect_objective_record_school_finish_add_v1(student,first_class,id,answer);

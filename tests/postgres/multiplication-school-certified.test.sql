@@ -63,6 +63,8 @@ BEGIN
    IF q->>'ok'<>'true' OR jsonb_array_length(q->'questions')<>n
      THEN RAISE EXCEPTION 'classic_issue_bad % %',lv,n;END IF;
    ans:=public.test_school_mul_answers(q->'questions');
+   UPDATE public.connect_objective_record_school_proof_sessions
+    SET created_at=now()-interval '8 days',expires_at=now()-interval '7 days' WHERE session_id=(q->>'sessionId')::uuid;
    ack:=public.connect_objective_record_school_mul_finish_classic_v1(
        st,test_class,(q->>'sessionId')::uuid,ans);
    IF (ack->>'verifiedScore')::int<>n OR ack->>'proofVerified'<>'true'
@@ -113,6 +115,8 @@ BEGIN
    ans:=jsonb_set(ans,ARRAY[lv::text,'digits','0'],
      to_jsonb(CASE WHEN ans#>>ARRAY[lv::text,'digits','0']='9' THEN '8' ELSE '9' END));
   END LOOP;
+  UPDATE public.connect_objective_record_school_extended_sessions
+   SET created_at=now()-interval '8 days',expires_at=now()-interval '7 days' WHERE session_id=(q->>'sessionId')::uuid;
   ack:=public.connect_objective_record_school_mul_finish_extended_v1(
     st,test_class,(q->>'sessionId')::uuid,ans);
   IF ack->>'proofVerified'<>'true' OR (ack->>'verifiedScore')::int<>0

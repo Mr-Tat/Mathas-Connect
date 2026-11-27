@@ -10,6 +10,7 @@ on:
       - 'supabase/functions/connect-soustraction-school/**'
       - 'supabase/release-candidates/20261127_soustraction_certified_live_snapshot.sql'
       - 'supabase/migrations/20261127124500_school_dynamic_class_eligibility.sql'
+      - 'supabase/migrations/20261127132200_school_subtraction_finish_retention.sql'
       - '.github/workflows/soustraction-postgres.yml'
   workflow_dispatch:
 permissions:
@@ -63,6 +64,7 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261103130000_school_extended_sessions.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261127124500_school_dynamic_class_eligibility.sql
           psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/20261127_soustraction_certified_live_snapshot.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261127132200_school_subtraction_finish_retention.sql
           psql -v ON_ERROR_STOP=1 <<'SQL'
           INSERT INTO public.connect_hub_presets(slug,label) VALUES('class-22222222222242228222222222222222','Classe fictive') ON CONFLICT DO NOTHING;
           INSERT INTO public.connect_hub_preset_entries(preset_slug,app_key,section,visible) VALUES('class-22222222222242228222222222222222','soustraction-ecrite-simple','calculs_ecrits',true) ON CONFLICT DO NOTHING;

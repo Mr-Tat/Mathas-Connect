@@ -53,6 +53,7 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/20261126_milieu_two_stages_candidate.sql
           psql -v ON_ERROR_STOP=1 -f supabase/release-candidates/20261126_milieu_school_policy_candidate.sql
       - run: npm install --no-save --no-package-lock pg@8.16.3 playwright@1.56.1
-      - run: npx playwright install --with-deps chromium
+      - name: Install pinned Chromium (runner already supplies browser libraries)
+        run: npx playwright install chromium
       - run: node --test tests/milieu-connect.runtime.mjs
       - run: node apps/DIV-Milieu-de-segment-1/tests/browser.cjs
