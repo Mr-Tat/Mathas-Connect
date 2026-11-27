@@ -42,6 +42,43 @@ async function connect(){
  window.MATHAS_CELEBRATE.modal=options=>{if(!document.documentElement.dataset.abaqueBlocked)nativeModal(options);};
  if(!uuid.test(CLASS||'')){label.textContent='Classe manquante';details.textContent='Ouvre ce jeu depuis le HUB de ta classe.';return;}
  let client,subject,pupil,queue,latest=null,cacheKey=null,sessionActive=false,sessionVersion=0;
+ let verifyingLaunch=false;
+ // Called only when the native engine begins a NEW activity/series.
+ // Continuation of an already authorized exercise remains local during an outage.
+ if(required)window.MATHAS_ABAQUE_SCHOOL_GATE=async activity=>{
+  if(verifyingLaunch)return false;
+  if(!sessionActive||!queue||!navigator.onLine){
+   details.textContent='Connexion nécessaire pour commencer une nouvelle activité scolaire. Termine l’exercice déjà commencé ou reconnecte-toi.';
+   return false;
+  }
+  verifyingLaunch=true;
+  try{
+   // Flush completed offline work before refreshing teacher gates and revision.
+   await queue.flush();
+   const snapshot=await post({action:'load'});
+   if(!validSnapshot(snapshot,subject,pupil))throw Error('invalid_server_snapshot');
+   if(queue.version().resetEpoch!==snapshot.resetEpoch){
+    await initialize(snapshot,true);
+    details.textContent='Le professeur a ouvert un nouveau parcours. Vérifie la progression avant de commencer.';
+    return false;
+   }
+   window.MATHAS_PROGRESS.applyServer(snapshot);
+   draw(snapshot,true);
+   const gates=snapshot.activityAccess;
+   if(!gates.teacherFree&&
+    (activity==='stage2'&&!gates.activity2||activity==='stage3'&&!gates.activity3)){
+    details.textContent='Cette activité est actuellement bloquée par ton professeur.';
+    return false;
+   }
+   // No false XP or game access from cached teacher permissions.
+   if(queue.pending()===0&&queue.version().revision!==snapshot.revision)queue.initialize(snapshot.revision,snapshot.resetEpoch);
+   return true;
+  }catch(error){
+   details.textContent='Nouveau lancement refusé : vérification des droits indisponible. '+(error?.message||'Réessaie après reconnexion.');
+   if([401,403].includes(error?.status)){queue?.halt();setInert(true);hideRemaining();}
+   return false;
+  }finally{verifyingLaunch=false;}
+ };
  function startGuest(){
   // Une absence de session autorise la progression locale. En revanche, un
   // refus explicite du serveur pour une identité connue reste bloquant.
