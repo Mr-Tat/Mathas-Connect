@@ -1,5 +1,7 @@
 # Instructions pour ChatGPT, Codex et autres IA — Math'as Connect
 
+**Décision professeur — 27/11/2026 :** aucune application ne doit être interdite à une classe en raison de son niveau. Toute application doit être activable dans toute classe actuelle ou future via le tableau professeur (« Afficher »). Seul le professeur choisit la visibilité ; conserver les réglages existants. Aucun filtre, droit ou test ne doit figer une exclusion pédagogique par classe, ni une valeur de visibilité/vedette d'une classe réelle. Les droits authentifiés et les déblocages pédagogiques restent obligatoires. Cette décision remplace l'ancienne exclusion de l'abaque en Observation/Phase 1.
+
 **Démarrage frugal :** lire la [synthèse commune](docs/integrations/00_DEMARRER_ICI.md) puis le **résumé et la ligne utile** du [suivi actif](docs/integrations/SUIVI_COURANT.md). Ouvrir la [fiche propre au jeu](docs/integrations/applications/README.md) si elle existe. **Ne pas charger automatiquement les guides, contrats longs ou archives.**
 
 1. **Brainstorm pédagogique obligatoire pour chaque nouvelle application :** après audit, proposer au professeur les **XP**, les **trophées** et les **scores**, avec exemples chiffrés et possibilité `SANS OBJET`. **Attendre sa décision explicite pour chacun AVANT de coder les barèmes, jalons ou classements.** La partie technique indépendante peut avancer. Noter les choix datés dans la fiche.

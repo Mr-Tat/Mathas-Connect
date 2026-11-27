@@ -1,5 +1,7 @@
 # Contrat fonctionnel commun des applications Math'as Connect — version 2026-11-09
 
+**Décision professeur — 27/11/2026 :** aucune application ne doit être interdite à une classe en raison de son niveau. Toute application doit être activable dans toute classe actuelle ou future via le tableau professeur (« Afficher »). Seul le professeur choisit la visibilité ; conserver les réglages existants. Aucun filtre, droit ou test ne doit figer une exclusion pédagogique par classe, ni une valeur de visibilité/vedette d'une classe réelle. Les droits authentifiés et les déblocages pédagogiques restent obligatoires. Cette décision remplace l'ancienne exclusion de l'abaque en Observation/Phase 1.
+
 > **RÉFÉRENCE DÉTAILLÉE POUR IA / CHATGPT / CODEX — consulter les sections utiles après la [synthèse express](00_DEMARRER_ICI.md) et le [suivi courant](SUIVI_COURANT.md), sans charger automatiquement l'intégralité.**
 >
 > **[DÉCISION professeur, 09/11/2026]** Construire un socle d'expérience Connect cohérent d'une application à l'autre ; les capacités `XP`, `trophées`, `scores`, `Objectif record` et `projection` sont déclarées, pas simulées ni imposées quand elles n'ont pas de sens pédagogique. **Mort subite = coefficient de POINTS x2 par rapport à 3 vies**, à difficulté et nombre de bonnes réponses identiques, **et droit XP entier contre demi-droit XP en 3 vies** lorsque ces modes partagent les mêmes jalons. **Ne pas reproduire l'ancien « +20 % de points ».**

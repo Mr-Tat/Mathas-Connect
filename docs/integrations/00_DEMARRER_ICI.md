@@ -1,5 +1,7 @@
 # Math'as Connect — synthèse commune à lire en premier
 
+**Décision professeur — 27/11/2026 :** aucune application ne doit être interdite à une classe en raison de son niveau. Toute application doit être activable dans toute classe actuelle ou future via le tableau professeur (« Afficher »). Seul le professeur choisit la visibilité ; conserver les réglages existants. Aucun filtre, droit ou test ne doit figer une exclusion pédagogique par classe, ni une valeur de visibilité/vedette d'une classe réelle. Les droits authentifiés et les déblocages pédagogiques restent obligatoires. Cette décision remplace l'ancienne exclusion de l'abaque en Observation/Phase 1.
+
 > **Document normatif court**, pas un état de production. Après `AGENTS.md`, lire le [suivi actif](SUIVI_COURANT.md) (**résumé + jeu pertinent**). Pour une formule, un incident ou du SQL, ouvrir **la section utile seulement** des références ci-dessous.
 
 ## Méthode efficace
